@@ -10,63 +10,23 @@ on:
       - 'IaC/**'
       - '.github/workflows/plan.yml'
 
-env:
-  working_dir: IaC/production/homelab
-
 permissions: {}
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-
-      - name: Check terragrunt HCL
-        uses: gruntwork-io/terragrunt-action@5e86476ca61eaf74adb9c0525745f29f921f2199 # v3
-        with:
-          tg_dir: ${{ env.working_dir }}
-          tg_command: 'hcl fmt --check --diff'
+    uses: ./.github/workflows/terragrunt-checks.yml
+    with:
+      working_dir: IaC/production/homelab
 
   plan:
-    runs-on: ubuntu-latest
-    needs: [ checks ]
-    concurrency:
-      group: terragrunt
-    permissions:
-      contents: read
-      id-token: write
-      pull-requests: write
-    steps:
-      - name: 'Checkout'
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
-        with:
-          aws-region: us-west-2
-          role-to-assume: arn:aws:iam::716182248480:role/Github-TF-State
-          role-session-name: github-actions-session
-
-      - name: Tailscale
-        uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
-        with:
-          authkey: ${{ secrets.TS_AUTH_KEY }}
-          tags: tag:ci
-          statedir: /tmp/tailscale-state/
-
-      - name: Setup kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-
-      - name: Terragrunt Plan
-        uses: gruntwork-io/terragrunt-action@5e86476ca61eaf74adb9c0525745f29f921f2199 # v3
-        with:
-          tg_dir: ${{ env.working_dir }}
-          tg_command: 'run --all --non-interactive --summary-per-unit --log-level stderr --log-format bare -- plan'
-          tg_comment: 1
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    needs: [checks]
+    uses: ./.github/workflows/terragrunt-run.yml
+    with:
+      working_dir: IaC/production/homelab
+      command: 'run --all --non-interactive --summary-per-unit --log-level stderr --log-format bare -- plan'
+      tg_comment: '1'
+    secrets:
+      aws_role_arn: arn:aws:iam::716182248480:role/Github-TF-State
+      tailscale_auth_key: ${{ secrets.TS_AUTH_KEY }}
+      kube_config: ${{ secrets.KUBE_CONFIG }}
+      github_token: ${{ secrets.GITHUB_TOKEN }}
