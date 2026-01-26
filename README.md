@@ -101,17 +101,20 @@ Ensure you have the following tools installed:
 ### Steps 📝
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/your-username/homelab.git
    cd homelab
    ```
 
 2. Initialize Terragrunt:
+
    ```bash
    terragrunt init
    ```
 
 3. Plan and apply changes:
+
    ```bash
    terragrunt plan
    terragrunt apply
@@ -132,42 +135,55 @@ This project uses the following tools and technologies:
 ## Modules 📦
 
 ### ArgoCD 🎯
+
 - Deploy and manage GitOps workflows.
 
 ### cert-manager 🔒
+
 - Automated management and issuance of TLS certificates for Kubernetes.
 
 ### Longhorn 🐂
+
 - Distributed block storage for Kubernetes.
 
 ### MetalLB 🌐
+
 - Load balancer for bare-metal Kubernetes clusters.
 
 ### Monitoring 📈
+
 - Monitoring stack for observability (Prometheus, Grafana, etc.).
 
 ### Open WebUI 🌐
+
 - Web-based user interface for managing applications.
 
 ### Tailscale 🦎
+
 - Zero-config VPN for secure networking between nodes and remote access.
 
 ### Technitium DNS 🧩
+
 - Self-hosted DNS server for your homelab.
 
 ### Traefik 🚦
+
 - Reverse proxy and load balancer for Kubernetes.
 
 ### Home Assistant 🏠
+
 - Home automation platform to control smart home devices.
 
 ### Media Services 🎥
+
 - Deploy and manage media services like Plex and Jellyfin.
 
 ### External Secrets 🔑
+
 - Integrate external secret management systems with Kubernetes.
 
 ### Descheduler 🔄
+
 - Kubernetes Descheduler for rescheduling pods based on custom policies.
 
 ## Contributing 🤝

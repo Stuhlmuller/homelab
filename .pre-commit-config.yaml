@@ -20,9 +20,9 @@ repos:
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
-    - id: codespell
+      - id: codespell
   - repo: https://github.com/bridgecrewio/checkov.git
-    rev: '3.2.495' # change to tag or sha
+    rev: "3.2.495" # change to tag or sha
     hooks:
       # - id: checkov
       # - id: checkov_container
@@ -30,5 +30,11 @@ repos:
       # - id: checkov_diff_container
       - id: checkov_secrets
         args:
-          - '-v'
+          - "-v"
       # - id: checkov_secrets_container
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    # Zizmor version.
+    rev: v1.22.0
+    hooks:
+      # Run the linter.
+      - id: zizmor
