@@ -1,10 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-      ":semanticCommits",
-      ":rebaseStalePrs",
-      "group:allNonMajor"
-  ],
+  "extends": [":semanticCommits", ":rebaseStalePrs", "group:allNonMajor"],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],

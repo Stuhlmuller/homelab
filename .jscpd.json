@@ -1,0 +1,13 @@
+{
+  "threshold": 0,
+  "reporters": ["console"],
+  "ignore": [
+    "**/.terragrunt-cache/**",
+    "**/.terraform/**",
+    "**/node_modules/**",
+    "**/*.tfstate",
+    "**/*.tfstate.*",
+    "**/.qlty/**"
+  ],
+  "gitignore": true
+}
