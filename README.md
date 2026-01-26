@@ -1,6 +1,8 @@
 # Homelab Infrastructure as Code (IaC) 🏡💻
 
-Welcome to the **Homelab Infrastructure as Code (IaC)** repository! This project is designed to manage and deploy a Kubernetes-based homelab environment using Terraform, Terragrunt, Helm, and Kubernetes. 🚀
+Welcome to the **Homelab Infrastructure as Code (IaC)** repository! This
+project is designed to manage and deploy a Kubernetes-based homelab environment
+using Terraform, Terragrunt, Helm, and Kubernetes. 🚀
 
 ## Hardware 🖥️
 
@@ -21,19 +23,27 @@ Welcome to the **Homelab Infrastructure as Code (IaC)** repository! This project
 
 ## Overview 🌟
 
-This repository provides a modular and reusable setup for managing a Kubernetes-based homelab. It leverages the power of Terraform and Terragrunt to define infrastructure as code, making it easy to deploy, manage, and scale your homelab environment. 🛠️
+This repository provides a modular and reusable setup for managing a
+Kubernetes-based homelab. It leverages the power of Terraform and Terragrunt
+to define infrastructure as code, making it easy to deploy, manage, and scale
+your homelab environment. 🛠️
 
 ## Features ✨
 
 - **Kubernetes Management**: Deploy and manage Kubernetes resources with ease.
 - **Helm Integration**: Use Helm charts for application deployment.
-- **Modular Design**: Reusable modules for common components like Longhorn, MetalLB, Traefik, cert-manager, monitoring, Tailscale, Technitium, and more.
+- **Modular Design**: Reusable modules for common components like Longhorn,
+  MetalLB, Traefik, cert-manager, monitoring, Tailscale, Technitium, and more.
 - **Terragrunt**: Simplify Terraform configurations and manage remote state.
 - **AWS S3 Backend**: Store Terraform state securely in an S3 bucket.
-- **Pre-commit Hooks**: Ensure code quality with pre-commit checks for Terraform and YAML files.
-- **ArgoCD Integration**: Seamlessly manage GitOps workflows for continuous deployment.
-- **Certificate Management**: Automated issuance and renewal of TLS certificates with cert-manager.
-- **Monitoring Stack**: Comprehensive monitoring and alerting setup with Prometheus, Grafana, and Loki.
+- **Pre-commit Hooks**: Ensure code quality with pre-commit checks for
+  Terraform and YAML files.
+- **ArgoCD Integration**: Seamlessly manage GitOps workflows for continuous
+  deployment.
+- **Certificate Management**: Automated issuance and renewal of TLS
+  certificates with cert-manager.
+- **Monitoring Stack**: Comprehensive monitoring and alerting setup with
+  Prometheus, Grafana, and Loki.
 
 ## Folder Structure 🗂️
 
@@ -107,20 +117,20 @@ Ensure you have the following tools installed:
    cd homelab
    ```
 
-2. Initialize Terragrunt:
+1. Initialize Terragrunt:
 
    ```bash
    terragrunt init
    ```
 
-3. Plan and apply changes:
+1. Plan and apply changes:
 
    ```bash
    terragrunt plan
    terragrunt apply
    ```
 
-4. Access your Kubernetes cluster and deployed applications! 🎉
+1. Access your Kubernetes cluster and deployed applications! 🎉
 
 ## Tools and Technologies 🛠️
 
@@ -191,12 +201,13 @@ This project uses the following tools and technologies:
 Contributions are welcome! Please follow these steps:
 
 1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Submit a pull request with a detailed description of your changes.
+1. Create a new branch for your feature or bugfix.
+1. Submit a pull request with a detailed description of your changes.
 
 ## License 📜
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE)
+file for details.
 
 ---
 
