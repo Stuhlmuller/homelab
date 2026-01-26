@@ -144,7 +144,7 @@ EOF
             id   = "microsoft"
             name = "Azure"
             config = {
-              clientID     = "5dd3e953-5c5d-4854-b284-a9f1fd0d00fa" # `ArgoCD` azure app
+              clientID     = "5dd3e953-5c5d-4854-b284-a9f1fd0d00fa" # `ArgoCD` azure app #gitleaks:allow
               clientSecret = "$${dex.azure.clientSecret}"
               redirectURI  = "https://argocd.stinkyboi.com/api/dex/callback"
               tenant       = "2aee152b-5281-40d0-8f4b-60faf40514ab"
