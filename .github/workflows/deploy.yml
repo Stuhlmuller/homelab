@@ -6,8 +6,8 @@ on:
     branches:
       - main
     paths:
-      - 'IaC/**'
-      - '.github/workflows/deploy.yml'
+      - "IaC/**"
+      - ".github/workflows/deploy.yml"
 
 permissions: {}
 
@@ -22,10 +22,10 @@ jobs:
     uses: ./.github/workflows/terragrunt-run.yml
     with:
       working_dir: IaC/production/homelab
-      command: 'run --all --non-interactive -- apply'
-      tg_comment: 'true'
+      command: "run --all --non-interactive -- apply"
+      tg_comment: "1"
     secrets:
       aws_role_arn: arn:aws:iam::716182248480:role/Github-TF-State
       tailscale_auth_key: ${{ secrets.TS_AUTH_KEY }}
       kube_config: ${{ secrets.KUBE_CONFIG }}
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      gh_token: ${{ secrets.GITHUB_TOKEN }}

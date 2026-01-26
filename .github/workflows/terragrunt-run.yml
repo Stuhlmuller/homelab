@@ -4,30 +4,30 @@ on:
   workflow_call:
     inputs:
       working_dir:
-        description: 'Terragrunt working directory'
+        description: "Terragrunt working directory"
         required: true
         type: string
       command:
-        description: 'Terragrunt command to run'
+        description: "Terragrunt command to run"
         required: true
         type: string
       tg_comment:
-        description: 'Whether to add PR comment'
+        description: "Whether to add PR comment"
         required: false
         type: string
-        default: 'false'
+        default: "false"
     secrets:
       aws_role_arn:
-        description: 'AWS IAM role ARN to assume'
+        description: "AWS IAM role ARN to assume"
         required: true
       tailscale_auth_key:
-        description: 'Tailscale auth key'
+        description: "Tailscale auth key"
         required: true
       kube_config:
-        description: 'Kubeconfig content'
+        description: "Kubeconfig content"
         required: true
-      github_token:
-        description: 'GitHub token for PR comments'
+      gh_token:
+        description: "GitHub token for PR comments"
         required: true
 
 permissions: {}
@@ -42,7 +42,7 @@ jobs:
       id-token: write
       pull-requests: write
     steps:
-      - name: 'Checkout'
+      - name: "Checkout"
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
 
       - name: Setup Infrastructure
@@ -58,4 +58,4 @@ jobs:
           tg_dir: ${{ inputs.working_dir }}
           tg_command: ${{ inputs.command }}
           tg_comment: ${{ inputs.tg_comment }}
-          github_token: ${{ secrets.github_token }}
+          github_token: ${{ secrets.gh_token }}
