@@ -16,10 +16,16 @@ jobs:
     uses: ./.github/workflows/terragrunt-checks.yml
     with:
       working_dir: IaC/production/homelab
+    permissions:
+      contents: read
 
   deploy:
     needs: [checks]
     uses: ./.github/workflows/terragrunt-run.yml
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
     with:
       working_dir: IaC/production/homelab
       command: "run --all --non-interactive -- apply"
