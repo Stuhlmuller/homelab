@@ -4,6 +4,8 @@ Welcome to the **Homelab Infrastructure as Code (IaC)** repository! This
 project is designed to manage and deploy a Kubernetes-based homelab environment
 using Terraform, Terragrunt, Helm, and Kubernetes. 🚀
 
+[![Super-Linter](https://github.com/Stuhlmuller/homelab/actions/workflows/lint.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
+
 ## Hardware 🖥️
 
 - **Control Plane Node:** Acer N4640G running Talos as the Kubernetes control plane
