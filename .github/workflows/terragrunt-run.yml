@@ -1,0 +1,63 @@
+name: "Terragrunt Run"
+
+on:
+  workflow_call:
+    inputs:
+      working_dir:
+        description: "Terragrunt working directory"
+        required: true
+        type: string
+      command:
+        description: "Terragrunt command to run"
+        required: true
+        type: string
+      tg_comment:
+        description: "Whether to add PR comment"
+        required: false
+        type: string
+        default: "false"
+    secrets:
+      aws_role_arn:
+        description: "AWS IAM role ARN to assume"
+        required: true
+      tailscale_auth_key:
+        description: "Tailscale auth key"
+        required: true
+      kube_config:
+        description: "Kubeconfig content"
+        required: true
+      gh_token:
+        description: "GitHub token for PR comments"
+        required: true
+
+permissions: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: terragrunt
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Infrastructure
+        uses: ./.github/actions/setup-infrastructure
+        with:
+          aws-role-arn: ${{ secrets.aws_role_arn }}
+          tailscale-auth-key: ${{ secrets.tailscale_auth_key }}
+          kube-config: ${{ secrets.kube_config }}
+
+      - name: Terragrunt
+        uses: gruntwork-io/terragrunt-action@5e86476ca61eaf74adb9c0525745f29f921f2199 # v3
+        with:
+          tg_dir: ${{ inputs.working_dir }}
+          tg_command: ${{ inputs.command }}
+          tg_comment: ${{ inputs.tg_comment }}
+          github_token: ${{ secrets.gh_token }}

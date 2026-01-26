@@ -1,12 +1,12 @@
 branches:
-    - main
-    - refs/pull/*/merge
+  - main
+  - refs/pull/*/merge
 plugins:
-- - "@semantic-release/commit-analyzer"
-  - releaseRules:
-    - type: refactor
-      release: patch
-    - scope: no-release
-      release: false
-- - "@semantic-release/release-notes-generator"
-  - preset: angular
+  - - "@semantic-release/commit-analyzer"
+    - releaseRules:
+        - type: refactor
+          release: patch
+        - scope: no-release
+          release: false
+  - - "@semantic-release/release-notes-generator"
+    - preset: angular
