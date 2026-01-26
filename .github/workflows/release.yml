@@ -13,14 +13,4 @@ permissions: {}
 
 jobs:
   release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # for creating releases
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-        with:
-          persist-credentials: false
-
-      - name: Semantic Release
-        uses: Stuhlmuller/workflows/.github/workflows/release.yml@f396233c815800e049c9def65a3562899a56110b # main
+    uses: Stuhlmuller/workflows/.github/workflows/release.yml@f396233c815800e049c9def65a3562899a56110b # main
