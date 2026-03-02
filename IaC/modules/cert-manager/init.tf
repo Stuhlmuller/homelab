@@ -2,7 +2,7 @@ terraform {
   required_providers {
     argocd = {
       source  = "argoproj-labs/argocd"
-      version = "7.12.5"
+      version = "7.14.0"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
