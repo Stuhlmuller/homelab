@@ -11,7 +11,7 @@ resource "helm_release" "release" {
   name       = "external-secrets"
   chart      = "external-secrets"
   repository = "https://charts.external-secrets.io"
-  version    = "1.3.1"
+  version    = "1.3.2"
   timeout    = "1500"
   namespace  = kubernetes_namespace_v1.external_secrets.metadata[0].name
 }
