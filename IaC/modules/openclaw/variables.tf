@@ -1,0 +1,1 @@
+# Variables for openclaw module
