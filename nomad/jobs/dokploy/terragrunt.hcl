@@ -20,7 +20,7 @@ inputs = {
 
   # Description: Path to jobspec file
   # Type: string
-  jobspec_file = "${dirname(find_in_parent_folders("root.hcl"))}/jobs/dockploy.nomad.hcl"
+  jobspec_file = "${dirname(find_in_parent_folders("root.hcl"))}/jobs/dokploy.nomad.hcl"
 
   # Description: Whether the jobspec is in JSON format
   # Type: bool
@@ -32,7 +32,7 @@ inputs = {
 
   # Description: Purge job when resource is destroyed
   # Type: bool
-  # purge_on_destroy = false
+  purge_on_destroy = true
 
   # Description: Deregister job if the ID changes
   # Type: bool
@@ -40,7 +40,7 @@ inputs = {
 
   # Description: Force job to run again if status is dead
   # Type: bool
-  # rerun_if_dead = false
+  rerun_if_dead = true
 
   # Description: Return immediately after creating/updating
   # Type: bool

@@ -13,6 +13,12 @@ inputs = {
   plugin_id   = "nfs-csi"        # Adjust if your CSI plugin has a different ID
   external_id = "10.1.0.2:/data" # Change to your actual NFS export path
 
+  # NFS CSI driver requires server and share passed as volume_context to NodePublishVolume
+  context = {
+    server = "10.1.0.2"
+    share  = "/data"
+  }
+
   # Access configuration - allows multiple nodes to read and write
   capabilities = [
     {
