@@ -13,9 +13,11 @@ job "dockploy" {
     }
 
     volume "dockploy-data" {
-      type      = "host"
-      read_only = false
-      source    = "dockploy-data"
+      type            = "csi"
+      source          = "shared-data"
+      read_only       = false
+      access_mode     = "multi-node-multi-writer"
+      attachment_mode = "file-system"
     }
 
     service {

@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:github.com)",
-      "Bash(terragrunt plan:*)"
+      "Bash(terragrunt plan:*)",
+      "Bash(terragrunt apply:*)",
+      "Bash(cat:*)",
+      "Bash(export AWS_REGION=us-west-2:*)",
+      "Bash(curl:*)",
+      "Bash(terragrunt force-unlock:*)"
     ]
   }
 }
