@@ -60,9 +60,10 @@ job "dokploy" {
 
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.dokploy.rule=Host(`dokploy.homelab.local`)",
+        "traefik.http.routers.dokploy.rule=Host(`dokploy.stinkyboi.com`)",
         "traefik.http.routers.dokploy.entrypoints=websecure",
         "traefik.http.routers.dokploy.tls=true",
+        "traefik.http.routers.dokploy.tls.certresolver=letsencrypt",
         "traefik.http.services.dokploy.loadbalancer.server.port=3000",
       ]
 
@@ -84,7 +85,8 @@ job "dokploy" {
       user = "65534"
 
       config {
-        image = "postgres:16-alpine"
+        image        = "postgres:16-alpine"
+        network_mode = "host"
       }
 
       env {
@@ -113,8 +115,9 @@ job "dokploy" {
       user = "65534"
 
       config {
-        image = "redis:7-alpine"
-        args  = ["redis-server", "--save", "60", "1", "--dir", "/data/redis-data"]
+        image        = "redis:7-alpine"
+        network_mode = "host"
+        args         = ["redis-server", "--save", "60", "1", "--dir", "/data/redis-data"]
       }
 
       volume_mount {
@@ -133,13 +136,9 @@ job "dokploy" {
       driver = "docker"
 
       config {
-        image = "dokploy/dokploy:latest"
-        ports = ["http"]
-      }
-
-      template {
-        data        = "10.1.0.200 dokploy-postgres\n10.1.0.200 dokploy-redis"
-        destination = "local/hosts"
+        image        = "dokploy/dokploy:latest"
+        ports        = ["http"]
+        network_mode = "host"
       }
 
       volume_mount {
@@ -153,6 +152,10 @@ job "dokploy" {
         DOKPLOY_TRAEFIK_ENABLED = "false"
         DOKPLOY_SERVER_IP       = "10.1.0.200"
         DOKPLOY_ROOT_DOMAIN     = "homelab.local"
+
+        # Point dokploy at the postgres and redis tasks sharing the host network
+        DATABASE_URL = "postgresql://dokploy:dokploy_secure_password@127.0.0.1:5432/dokploy" #checkov:skip=CKV_SECRET_4: placeholder
+        REDIS_URL    = "redis://127.0.0.1:6379"
       }
 
       resources {

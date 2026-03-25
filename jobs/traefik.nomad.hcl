@@ -1,14 +1,13 @@
 job "traefik" {
   datacenters = ["homelab"]
-  type        = "system"
+  type        = "service"
 
   group "traefik" {
     count = 1
 
     network {
       port "http" {
-        static = 80
-        to     = 80
+        static = 8080
       }
 
       port "websecure" {
@@ -16,9 +15,8 @@ job "traefik" {
         to     = 443
       }
 
-      port "admin" {
-        static = 8080
-        to     = 8080
+      port "api" {
+        static = 8081
       }
     }
 
@@ -37,7 +35,6 @@ job "traefik" {
 
     service {
       name = "traefik"
-      port = "http"
 
       check {
         name     = "alive"
@@ -48,25 +45,11 @@ job "traefik" {
       }
     }
 
-    service {
-      name = "traefik-admin"
-      port = "admin"
-
-      check {
-        name     = "admin-alive"
-        type     = "http"
-        path     = "/ping"
-        port     = "admin"
-        interval = "10s"
-        timeout  = "2s"
-      }
-    }
-
     task "traefik" {
       driver = "docker"
 
       config {
-        image        = "traefik:v3.3"
+        image        = "traefik:v3.6.6"
         network_mode = "host"
 
         volumes = [
@@ -91,34 +74,30 @@ job "traefik" {
       template {
         data = <<EOF
 [entryPoints]
-  [entryPoints.http]
-  address = ":80"
+    [entryPoints.http]
+    address = ":8080"
+    [entryPoints.traefik]
+    address = ":8081"
+    [entryPoints.websecure]
+    address = ":443"
+    [entryPoints.websecure.http.tls]
+    certResolver = "letsencrypt"
     [entryPoints.http.http.redirections.entryPoint]
     to     = "websecure"
     scheme = "https"
 
-  [entryPoints.websecure]
-  address = ":443"
-    [entryPoints.websecure.http.tls]
-    certResolver = "letsencrypt"
-
-  [entryPoints.traefik]
-  address = ":8080"
-
 [api]
-  dashboard = true
-  insecure  = true
+    dashboard = true
+    insecure  = true
 
-[ping]
-  entryPoint = "traefik"
-
+# Enable Consul Catalog configuration backend.
 [providers.consulCatalog]
-  prefix           = "traefik"
-  exposedByDefault = false
+    prefix           = "traefik"
+    exposedByDefault = false
 
-  [providers.consulCatalog.endpoint]
-    address = "127.0.0.1:8500"
-    scheme  = "http"
+    [providers.consulCatalog.endpoint]
+      address = "127.0.0.1:8500"
+      scheme  = "http"
 
 [certificatesResolvers.letsencrypt.acme]
   email   = "rodman@stuhlmuller.net"
@@ -128,18 +107,6 @@ job "traefik" {
     provider         = "cloudflare"
     delayBeforeCheck = 0
     resolvers        = ["1.1.1.1:53", "8.8.8.8:53"]
-
-[log]
-  level = "INFO"
-
-[accessLog]
-  format = "json"
-
-[metrics]
-  [metrics.prometheus]
-    addEntryPointsLabels = true
-    addRoutersLabels     = true
-    addServicesLabels    = true
 EOF
 
         destination = "local/traefik.toml"
@@ -151,8 +118,8 @@ EOF
       }
 
       resources {
-        cpu    = 200
-        memory = 256
+        cpu    = 100
+        memory = 128
       }
     }
   }
