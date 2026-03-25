@@ -11,7 +11,7 @@ job "traefik" {
         to     = 80
       }
 
-      port "https" {
+      port "websecure" {
         static = 443
         to     = 443
       }
@@ -19,6 +19,19 @@ job "traefik" {
       port "admin" {
         static = 8080
         to     = 8080
+      }
+    }
+
+    volume "shared-data" {
+      type            = "csi"
+      source          = "shared-data"
+      read_only       = false
+      attachment_mode = "file-system"
+      access_mode     = "multi-node-multi-writer"
+
+      mount_options {
+        fs_type     = "nfs"
+        mount_flags = ["vers=4.1", "noatime", "nodiratime"]
       }
     }
 
@@ -66,16 +79,28 @@ job "traefik" {
       }
 
       template {
+        data        = <<-EOT
+          {{ with nomadVar "nomad/jobs/traefik/cf_dns_api_token" }}
+          CF_DNS_API_TOKEN={{ .cf_dns_api_token }}
+          {{ end }}
+        EOT
+        destination = "secrets/traefik.env"
+        env         = true
+      }
+
+      template {
         data = <<EOF
 [entryPoints]
   [entryPoints.http]
   address = ":80"
     [entryPoints.http.http.redirections.entryPoint]
-    to = "https"
+    to     = "websecure"
     scheme = "https"
 
-  [entryPoints.https]
+  [entryPoints.websecure]
   address = ":443"
+    [entryPoints.websecure.http.tls]
+    certResolver = "letsencrypt"
 
   [entryPoints.traefik]
   address = ":8080"
@@ -95,6 +120,15 @@ job "traefik" {
     address = "127.0.0.1:8500"
     scheme  = "http"
 
+[certificatesResolvers.letsencrypt.acme]
+  email   = "rodman@stuhlmuller.net"
+  storage = "/data/traefik/acme.json"
+
+  [certificatesResolvers.letsencrypt.acme.dnsChallenge]
+    provider         = "cloudflare"
+    delayBeforeCheck = 0
+    resolvers        = ["1.1.1.1:53", "8.8.8.8:53"]
+
 [log]
   level = "INFO"
 
@@ -104,11 +138,16 @@ job "traefik" {
 [metrics]
   [metrics.prometheus]
     addEntryPointsLabels = true
-    addRoutersLabels = true
-    addServicesLabels = true
+    addRoutersLabels     = true
+    addServicesLabels    = true
 EOF
 
         destination = "local/traefik.toml"
+      }
+
+      volume_mount {
+        volume      = "shared-data"
+        destination = "/data"
       }
 
       resources {
