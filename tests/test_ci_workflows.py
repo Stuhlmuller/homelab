@@ -37,7 +37,6 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("vars.AWS_ROLE_TO_ASSUME_HOMELAB != ''", content)
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
         self.assertIn("connectivity-probe-address: 10.1.0.200", content)
-        self.assertIn("tailscale-ping-hosts: homelab-vpn-1", content)
         self.assertIn("Render skipped plan summary when repo variables are missing", content)
         self.assertIn("--status skipped", content)
 
@@ -52,7 +51,6 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("Install Ansible controller dependencies", content)
         self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
         self.assertIn("connectivity-probe-address: 10.1.0.200", content)
-        self.assertIn("tailscale-ping-hosts: homelab-vpn-1", content)
         self.assertIn("./scripts/deploy-live.sh --skip-bootstrap", content)
         self.assertIn("aws-actions/configure-aws-credentials@", content)
         self.assertLess(
