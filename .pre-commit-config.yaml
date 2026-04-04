@@ -1,40 +1,57 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      - id: check-added-large-files
       - id: check-yaml
-        exclude: templates/.*
         args:
           - --allow-multiple-documents
-      - id: check-added-large-files
-      - id: sort-simple-yaml
+
   - repo: https://github.com/gruntwork-io/pre-commit
     rev: v0.1.30
     hooks:
       - id: tofu-fmt
       - id: terragrunt-hcl-fmt
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
       - id: codespell
+
   - repo: https://github.com/bridgecrewio/checkov.git
-    rev: "3.2.495" # change to tag or sha
+    rev: "3.2.495"
     hooks:
-      # - id: checkov
-      # - id: checkov_container
       - id: checkov_diff
-      # - id: checkov_diff_container
       - id: checkov_secrets
         args:
           - "-v"
-      # - id: checkov_secrets_container
+
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    # Zizmor version.
     rev: v1.22.0
     hooks:
-      # Run the linter.
       - id: zizmor
+
+  - repo: local
+    hooks:
+      - id: validate-nomad
+        name: validate-nomad
+        entry: ./scripts/validate-nomad.sh
+        language: system
+        pass_filenames: false
+      - id: validate-terraform
+        name: validate-terraform
+        entry: ./scripts/validate-terraform.sh
+        language: system
+        pass_filenames: false
+      - id: validate-ansible
+        name: validate-ansible
+        entry: ./scripts/validate-ansible.sh
+        language: system
+        pass_filenames: false
+      - id: repo-tests
+        name: repo-tests
+        entry: python3 -m unittest discover -s tests -p test_*.py
+        language: system
+        pass_filenames: false

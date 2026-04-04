@@ -38,6 +38,10 @@ terraform.rc
 
 .terragrunt-cache/
 .DS_Store
+.pytest_cache/
+__pycache__/
+*.pyc
+plan.out
 
 
 #Ignore vscode AI rules

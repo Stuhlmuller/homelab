@@ -1,37 +1,66 @@
-name: "Terragrunt Deploy"
+name: "Homelab Deploy"
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - "IaC/**"
+      - "nomad/**"
+      - "terraform/**"
+      - "root.hcl"
+      - "mise.toml"
+      - "scripts/deploy-live.sh"
+      - "scripts/validate-ansible-layout.sh"
+      - "scripts/validate-ansible.sh"
+      - "scripts/validate-aws-kms.sh"
+      - "scripts/validate-aws-ssm.sh"
+      - "scripts/validate-live-cluster.sh"
+      - "scripts/validate-live-workloads.sh"
+      - "scripts/validate-nomad.sh"
+      - "scripts/validate-shell.sh"
+      - "scripts/validate-skills.sh"
+      - "scripts/validate-terraform.sh"
+      - "scripts/validate-terragrunt.sh"
+      - "scripts/validate.sh"
+      - ".github/actions/setup-infrastructure/**"
       - ".github/workflows/deploy.yml"
+      - ".github/workflows/validate.yml"
 
 permissions: {}
 
-jobs:
-  checks:
-    uses: ./.github/workflows/terragrunt-checks.yml
-    with:
-      working_dir: IaC/production/homelab
-    permissions:
-      contents: read
+concurrency:
+  group: homelab-deploy
+  cancel-in-progress: false
 
+jobs:
   deploy:
-    needs: [checks]
-    uses: ./.github/workflows/terragrunt-run.yml
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-      pull-requests: write
-    with:
-      working_dir: IaC/production/homelab
-      command: "run --all --non-interactive -- apply"
-      tg_comment: "1"
-    secrets:
-      aws_role_arn: arn:aws:iam::716182248480:role/Github-TF-State
-      tailscale_auth_key: ${{ secrets.TS_AUTH_KEY }}
-      kube_config: ${{ secrets.KUBE_CONFIG }}
-      gh_token: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      TG_TF_PATH: tofu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+
+      - name: Setup infrastructure access
+        uses: ./.github/actions/setup-infrastructure
+        with:
+          aws-region: us-east-1
+          tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+
+      - name: Deploy homelab stack
+        shell: bash
+        run: ./scripts/deploy-live.sh --skip-bootstrap

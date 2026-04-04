@@ -1,0 +1,36 @@
+- name: Remove stale HashiCorp apt repo file before package refresh
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/hashicorp.list
+    state: absent
+
+- name: Remove stale HashiCorp apt key path before package refresh
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/hashicorp.gpg
+    state: absent
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - acl
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+      - jq
+      - nfs-common
+      - unzip
+      - containernetworking-plugins
+    state: present
+    update_cache: true
+
+- name: Ensure data directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ consul_data_dir }}"
+    - "{{ nomad_data_dir }}"
+    - /etc/consul.d
+    - /etc/nomad.d
+    - /opt/cni/bin
