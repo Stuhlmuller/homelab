@@ -63,6 +63,7 @@ jobs:
         uses: ./.github/actions/setup-infrastructure
         with:
           aws-region: us-east-1
+          connectivity-probe-address: 10.1.0.200
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
 
       - name: Run Terragrunt plan

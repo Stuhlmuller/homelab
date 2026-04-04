@@ -58,3 +58,6 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("aws-actions/configure-aws-credentials@", plan)
         self.assertIn("aws-actions/configure-aws-credentials@", deploy)
         self.assertIn("aws ssm get-parameter", action)
+        self.assertIn("tailscale set --accept-routes=true", action)
+        self.assertIn("connectivity-probe-address: 10.1.0.200", plan)
+        self.assertIn("connectivity-probe-address: 10.1.0.200", deploy)

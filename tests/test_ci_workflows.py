@@ -36,6 +36,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("if: always() && github.event.pull_request.head.repo.full_name == github.repository", content)
         self.assertIn("vars.AWS_ROLE_TO_ASSUME_HOMELAB != ''", content)
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
+        self.assertIn("connectivity-probe-address: 10.1.0.200", content)
         self.assertIn("Render skipped plan summary when repo variables are missing", content)
         self.assertIn("--status skipped", content)
 
@@ -49,6 +50,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('GITHUB_STEP_SUMMARY', content)
         self.assertIn("Install Ansible controller dependencies", content)
         self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
+        self.assertIn("connectivity-probe-address: 10.1.0.200", content)
         self.assertIn("./scripts/deploy-live.sh --skip-bootstrap", content)
         self.assertIn("aws-actions/configure-aws-credentials@", content)
         self.assertLess(

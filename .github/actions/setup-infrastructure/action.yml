@@ -8,6 +8,14 @@ inputs:
   tailscale-auth-key-parameter:
     description: "AWS SSM parameter name that stores the Tailscale auth key"
     required: true
+  connectivity-probe-address:
+    description: "Optional private address to probe after accepting Tailscale subnet routes"
+    required: false
+    default: ""
+  connectivity-timeout-seconds:
+    description: "Maximum number of seconds to wait for the connectivity probe"
+    required: false
+    default: "180"
 
 runs:
   using: "composite"
@@ -34,3 +42,28 @@ runs:
         authkey: ${{ steps.tailscale-auth-key.outputs.authkey }}
         tags: tag:ci
         statedir: /tmp/tailscale-state/
+
+    - name: Accept Tailscale subnet routes
+      shell: bash
+      run: sudo tailscale set --accept-routes=true
+
+    - name: Wait for Tailscale subnet reachability
+      if: inputs.connectivity-probe-address != ''
+      env:
+        CONNECTIVITY_PROBE_ADDRESS: ${{ inputs.connectivity-probe-address }}
+        CONNECTIVITY_TIMEOUT_SECONDS: ${{ inputs.connectivity-timeout-seconds }}
+      shell: bash
+      run: |
+        deadline=$((SECONDS + CONNECTIVITY_TIMEOUT_SECONDS))
+
+        while ((SECONDS < deadline)); do
+          if ping -c 1 -W 1 "${CONNECTIVITY_PROBE_ADDRESS}" >/dev/null 2>&1; then
+            echo "verified Tailscale subnet reachability to ${CONNECTIVITY_PROBE_ADDRESS}"
+            exit 0
+          fi
+
+          sleep 5
+        done
+
+        echo "::error::Timed out waiting for Tailscale subnet reachability to ${CONNECTIVITY_PROBE_ADDRESS}"
+        exit 1
