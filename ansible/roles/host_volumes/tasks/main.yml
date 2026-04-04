@@ -1,0 +1,19 @@
+- name: Ensure Nomad host volume directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ nomad_host_volumes }}"
+  when: item.path != "/var/run/docker.sock"
+
+- name: Ensure CSI directory exists
+  ansible.builtin.file:
+    path: "{{ nomad_data_dir }}/client/csi"
+    state: directory
+    mode: "0755"
+
+- name: Ensure Traefik state directory exists
+  ansible.builtin.file:
+    path: "{{ nomad_data_dir }}/volumes/traefik"
+    state: directory
+    mode: "0755"

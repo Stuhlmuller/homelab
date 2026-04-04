@@ -1,3 +1,6 @@
 [tools]
-terragrunt = "0.98.0"
+consul = "1.19.0"
+nomad = "1.11.3"
 opentofu = "1.11.4"
+python = "3.12"
+terragrunt = "0.98.0"

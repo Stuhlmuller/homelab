@@ -1,0 +1,11 @@
+- name: Bootstrap Nomad homelab servers
+  hosts: nomad_servers
+  become: true
+  roles:
+    - role: common
+    - role: hashicorp_repo
+    - role: docker
+    - role: consul
+    - role: nomad
+    - role: host_volumes
+    - role: tailscale

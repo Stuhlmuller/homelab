@@ -1,0 +1,20 @@
+- name: Install Consul
+  ansible.builtin.apt:
+    name: consul
+    state: present
+    update_cache: true
+  notify: restart consul
+
+- name: Render Consul configuration
+  ansible.builtin.template:
+    src: consul.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+    mode: "0644"
+    validate: consul validate %s
+  notify: restart consul
+
+- name: Ensure Consul service is enabled
+  ansible.builtin.service:
+    name: consul
+    enabled: true
+    state: started

@@ -1,0 +1,20 @@
+- name: Install Nomad
+  ansible.builtin.apt:
+    name: nomad
+    state: present
+    update_cache: true
+  notify: restart nomad
+
+- name: Render Nomad configuration
+  ansible.builtin.template:
+    src: nomad.hcl.j2
+    dest: /etc/nomad.d/nomad.hcl
+    mode: "0644"
+    validate: nomad config validate %s
+  notify: restart nomad
+
+- name: Ensure Nomad service is enabled
+  ansible.builtin.service:
+    name: nomad
+    enabled: true
+    state: started

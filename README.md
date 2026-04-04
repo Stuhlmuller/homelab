@@ -1,216 +1,167 @@
-# Homelab Infrastructure as Code (IaC) 🏡💻
+# Homelab Monorepo
 
-Welcome to the **Homelab Infrastructure as Code (IaC)** repository! This
-project is designed to manage and deploy a Kubernetes-based homelab environment
-using Terraform, Terragrunt, Helm, and Kubernetes. 🚀
+This repository manages a Debian-based Nomad homelab running on three Zima
+boards:
 
-[![Super-Linter](https://github.com/Stuhlmuller/homelab/actions/workflows/required/Stuhlmuller/workflows/.github/workflows/lint.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
+- `zimaboard-0` at `10.1.0.200`
+- `zimaboard-1` at `10.1.0.201`
+- `zimaboard-2` at `10.1.0.202`
 
-## Hardware 🖥️
+It is organized as a monorepo for the full lifecycle:
 
-- **Control Plane Node:** Acer N4640G running Talos as the Kubernetes control plane
-- **Worker Nodes:** Two ZimaBoard 832 (with a third to be added soon)
+- `ansible/` bootstraps the hosts, installs Docker, Consul, Nomad, and
+  Tailscale, and renders the base configuration.
+- `terraform/` contains the Terragrunt/OpenTofu live stack that registers Nomad
+  jobs, variables, and CSI volumes.
+- `nomad/` contains the source jobspecs that run workloads behind Traefik.
+- `scripts/` contains validation and operator workflows.
+- `.codex/skills/` contains project-local Codex skills that wrap the validated
+  live-operations scripts.
+- `tests/` contains repository-level regression checks that run without
+  requiring a live cluster.
+- `docs/` contains architecture notes and deployment runbooks.
 
-## Table of Contents 📚
+## Layout
 
-- [Overview](#overview)
-- [Hardware](#hardware)
-- [Features](#features)
-- [Folder Structure](#folder-structure)
-- [Getting Started](#getting-started)
-- [Tools and Technologies](#tools-and-technologies)
-- [Modules](#modules)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Overview 🌟
-
-This repository provides a modular and reusable setup for managing a
-Kubernetes-based homelab. It leverages the power of Terraform and Terragrunt
-to define infrastructure as code, making it easy to deploy, manage, and scale
-your homelab environment. 🛠️
-
-## Features ✨
-
-- **Kubernetes Management**: Deploy and manage Kubernetes resources with ease.
-- **Helm Integration**: Use Helm charts for application deployment.
-- **Modular Design**: Reusable modules for common components like Longhorn,
-  MetalLB, Traefik, cert-manager, monitoring, Tailscale, Technitium, and more.
-- **Terragrunt**: Simplify Terraform configurations and manage remote state.
-- **AWS S3 Backend**: Store Terraform state securely in an S3 bucket.
-- **Pre-commit Hooks**: Ensure code quality with pre-commit checks for
-  Terraform and YAML files.
-- **ArgoCD Integration**: Seamlessly manage GitOps workflows for continuous
-  deployment.
-- **Certificate Management**: Automated issuance and renewal of TLS
-  certificates with cert-manager.
-- **Monitoring Stack**: Comprehensive monitoring and alerting setup with
-  Prometheus, Grafana, and Loki.
-
-## Folder Structure 🗂️
-
-```
-IaC/
-├── common.yml                # Common configuration variables
-├── root.hcl                  # Root Terragrunt configuration
-├── _envcommon/               # Shared environment configurations
-│   ├── providers/            # Provider configurations (Helm, Kubernetes, etc.)
-│   ├── locks/                # Terraform lock files for modules
-│   ├── argocd.hcl            # ArgoCD module configuration
-│   ├── cert-manager.hcl      # cert-manager module configuration
-│   ├── longhorn.hcl          # Longhorn module configuration
-│   ├── metallb.hcl           # MetalLB module configuration
-│   ├── monitoring.hcl        # Monitoring module configuration
-│   ├── open-webui.hcl        # Open WebUI module configuration
-│   ├── tailscale.hcl         # Tailscale module configuration
-│   ├── technitium.hcl        # Technitium DNS module configuration
-│   └── traefik.hcl           # Traefik module configuration
-├── modules/                  # Terraform modules for various components
-│   ├── argocd/               # ArgoCD module
-│   ├── cert-manager/         # cert-manager module
-│   ├── longhorn/             # Longhorn module
-│   ├── metallb/              # MetalLB module
-│   ├── monitoring/           # Monitoring module
-│   ├── open-webui/           # Open WebUI module
-│   ├── tailscale/            # Tailscale module
-│   ├── technitium/           # Technitium DNS module
-│   └── traefik/              # Traefik module
-└── production/               # Production environment configurations
-    ├── account.hcl           # Account-specific variables
-    ├── homelab/              # Homelab-specific configurations
-        ├── region.hcl        # Region-specific variables
-        ├── argocd/           # ArgoCD deployment
-        ├── cert-manager/     # cert-manager deployment
-        ├── longhorn/         # Longhorn deployment
-        ├── metallb/          # MetalLB deployment
-        ├── monitoring/       # Monitoring deployment
-        ├── open-webui/       # Open WebUI deployment
-        ├── tailscale/        # Tailscale deployment
-        ├── technitium/       # Technitium DNS deployment
-        └── traefik/          # Traefik deployment
-proxmox-config/               # Proxmox-specific configurations
-tailscale/                    # Tailscale connector YAML
-technitium-dns/               # Technitium DNS Helm chart
-cert-manager/                 # cert-manager manifests
-home-assistant/               # Home Assistant module
-media-services/               # Media services module (Plex, Jellyfin, etc.)
-external-secrets/             # External Secrets Operator module
-descheduler/                  # Kubernetes Descheduler module
+```text
+homelab/
+├── .codex/
+│   └── skills/
+├── AGENTS.md
+├── Makefile
+├── ansible/
+│   ├── inventories/production/
+│   ├── playbooks/
+│   └── roles/
+├── docs/
+│   ├── architecture.md
+│   └── runbooks/
+├── nomad/
+│   └── jobs/
+├── scripts/
+├── terraform/
+│   ├── live/homelab/
+│   └── root.hcl
+└── tests/
 ```
 
-## Getting Started 🚀
+## Current stack
 
-### Prerequisites 🛠️
+- Nomad and Consul run as server+client on each node.
+- Traefik terminates HTTPS and discovers services from Consul tags.
+- Shared persistent storage is delivered through the NFS CSI plugin and the
+  `shared-data` volume.
+- Tailscale is managed as host software so the entire LAN remains reachable over
+  the tailnet.
+- `zimaboard-0` advertises the `10.1.0.0/24` subnet into Tailscale; the Debian
+  hosts themselves do not accept tailnet routes during bootstrap.
+- Traefik is pinned to `nomad-0` so `80` and `443` stay stable while the
+  three-node control plane is degraded.
+- All in-repo OpenTofu modules use enforced KMS-backed state and plan
+  encryption.
+- Secret values live in AWS SSM Parameter Store and are synced into Nomad
+  variables at apply time.
+- Runtime workloads consume secret files or `_FILE` paths instead of injecting
+  secret values directly into task environments.
 
-Ensure you have the following tools installed:
+## Validation
 
-- [Terraform](https://www.terraform.io/)
-- [Terragrunt](https://terragrunt.gruntwork.io/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/)
-- [Helm](https://helm.sh/)
-- [AWS CLI](https://aws.amazon.com/cli/)
+Run these checks before planning or applying:
 
-### Steps 📝
+```bash
+make validate
+```
 
-1. Clone the repository:
+That target runs:
+
+- repository unit tests
+- Nomad jobspec validation
+- Terragrunt HCL formatting checks
+- OpenTofu module validation
+- Ansible layout checks
+- project-local skill metadata validation
+
+## Project-local skills
+
+Operational shell entry points are also wrapped as project-local skills under
+`.codex/skills/` so future Codex runs can discover and reuse the same codified
+workflow:
+
+- `survey-homelab` for read-only cluster inspection
+- `validate-homelab` for local and live validation gates
+- `bootstrap-homelab` for rolling Ansible bootstrap and Tailscale repair
+- `deploy-homelab` for end-to-end live rollout orchestration
+- `unlock-opentofu-state` for stale Terragrunt/OpenTofu lock recovery
+
+## Bootstrap flow
+
+1. Review and update `ansible/inventories/production/group_vars/all.yml`.
+2. Bootstrap the Debian hosts:
 
    ```bash
-   git clone https://github.com/your-username/homelab.git
-   cd homelab
+   pipx inject ansible boto3 botocore
+   ansible-playbook -i ansible/inventories/production/hosts.yml ansible/playbooks/bootstrap.yml
    ```
 
-1. Initialize Terragrunt:
+3. Create or update the required AWS SSM parameters before planning:
+   - `/homelab/dokploy/postgres_password`
+   - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/traefik/cf_dns_api_token`
+   - `/homelab/tailscale/auth_key`
+   Ensure `TG_KMS_KEY_ID` points at the OpenTofu encryption key if you are not
+   using the default homelab KMS key.
+4. Plan the Nomad infrastructure:
 
    ```bash
-   terragrunt init
+   terragrunt run --all --working-dir terraform/live/homelab plan
    ```
 
-1. Plan and apply changes:
+5. Apply once the plan is clean.
 
-   ```bash
-   terragrunt plan
-   terragrunt apply
-   ```
+GitHub Actions expects non-secret repo variables for
+`AWS_ROLE_TO_ASSUME_HOMELAB` and `TAILSCALE_AUTH_KEY_SSM_PARAMETER`, then
+reads the actual Tailscale auth key from AWS SSM at runtime. Same-repo pull
+requests that touch the live stack run a full Terragrunt plan and refresh a
+managed section in the PR description with the latest summary and workflow-run
+link. Fork pull requests only run the non-privileged validation workflow.
 
-1. Access your Kubernetes cluster and deployed applications! 🎉
+The Ansible bootstrap also reads the Tailscale auth key from AWS SSM at runtime
+through the local `aws` CLI, so the workstation running Ansible needs an active
+AWS session.
 
-## Tools and Technologies 🛠️
+## Live operations
 
-This project uses the following tools and technologies:
+Codified live checks and deployment entry points:
 
-- **Terraform**: Infrastructure as Code (IaC) tool for managing cloud resources.
-- **Terragrunt**: Wrapper for Terraform to simplify configurations.
-- **Helm**: Kubernetes package manager for deploying applications.
-- **Kubernetes**: Container orchestration platform.
-- **AWS S3**: Remote state storage for Terraform.
+- `make validate` validates the repository and script syntax locally.
+- `make validate-ssm` validates AWS auth and required SSM parameters.
+- `make validate-live-cluster` validates host reachability and Nomad/Consul health.
+- `make validate-live-workloads` validates Nomad jobs, Nomad variables, Tailscale,
+  Traefik, Dokploy, and Paperclip after deployment.
+- `make deploy-live` runs the local validators, live preflight checks, rolling
+  bootstrap, OpenTofu plan/apply, and live smoke checks.
+- The `Homelab Deploy` workflow runs `./scripts/deploy-live.sh --skip-bootstrap`,
+  so CI applies Terragrunt with the same strict live gates but never bootstraps
+  hosts automatically.
 
-## Modules 📦
+When a node is intentionally unavailable and you still need a quorum-safe
+rollout to the healthy servers, use:
 
-### ArgoCD 🎯
+```bash
+ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
+```
 
-- Deploy and manage GitOps workflows.
+## Notes from the latest survey
 
-### cert-manager 🔒
+As of April 4, 2026:
 
-- Automated management and issuance of TLS certificates for Kubernetes.
+- `10.1.0.200` and `10.1.0.202` were reachable over SSH and healthy in Nomad and
+  Consul.
+- `10.1.0.201` did not respond to ping or SSH and was absent from both cluster
+  membership views.
+- Tailscale was not running on the reachable nodes.
+- The current cluster is effectively operating with two live servers, so do not
+  re-bootstrap the control plane until `10.1.0.201` is back.
 
-### Longhorn 🐂
-
-- Distributed block storage for Kubernetes.
-
-### MetalLB 🌐
-
-- Load balancer for bare-metal Kubernetes clusters.
-
-### Monitoring 📈
-
-- Monitoring stack for observability (Prometheus, Grafana, etc.).
-
-### Open WebUI 🌐
-
-- Web-based user interface for managing applications.
-
-### Tailscale 🦎
-
-- Zero-config VPN for secure networking between nodes and remote access.
-
-### Technitium DNS 🧩
-
-- Self-hosted DNS server for your homelab.
-
-### Traefik 🚦
-
-- Reverse proxy and load balancer for Kubernetes.
-
-### Home Assistant 🏠
-
-- Home automation platform to control smart home devices.
-
-### Media Services 🎥
-
-- Deploy and manage media services like Plex and Jellyfin.
-
-### External Secrets 🔑
-
-- Integrate external secret management systems with Kubernetes.
-
-### Descheduler 🔄
-
-- Kubernetes Descheduler for rescheduling pods based on custom policies.
-
-## Contributing 🤝
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository.
-1. Create a new branch for your feature or bugfix.
-1. Submit a pull request with a detailed description of your changes.
-
-## License 📜
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE)
-file for details.
-
----
-
-Happy Homelabbing! 🏡💻
+See [docs/runbooks/bootstrap.md](/Users/themanofrod/github-repositories/homelab/docs/runbooks/bootstrap.md)
+for the expected bring-up sequence.
