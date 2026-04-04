@@ -13,6 +13,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("push:", content)
         self.assertIn("Run validation harness", content)
         self.assertIn("make validate", content)
+        self.assertIn("Install Ansible controller dependencies", content)
+        self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
         self.assertIn("Run PR-focused pre-commit checks", content)
         self.assertIn("checkov_diff", content)
         self.assertIn("checkov_secrets", content)

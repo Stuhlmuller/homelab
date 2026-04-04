@@ -23,6 +23,10 @@ jobs:
       - name: Setup mise
         uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
 
+      - name: Install Ansible controller dependencies
+        shell: bash
+        run: python -m pip install --upgrade pip ansible boto3 botocore
+
       - name: Run validation harness
         shell: bash
         run: make validate
