@@ -47,10 +47,16 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("AWS_ROLE_TO_ASSUME_HOMELAB", content)
         self.assertIn("TAILSCALE_AUTH_KEY_SSM_PARAMETER", content)
         self.assertIn('GITHUB_STEP_SUMMARY', content)
+        self.assertIn("Install Ansible controller dependencies", content)
+        self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
         self.assertIn("./scripts/deploy-live.sh --skip-bootstrap", content)
         self.assertIn("aws-actions/configure-aws-credentials@", content)
         self.assertLess(
             content.index("Validate deploy configuration"),
+            content.index("Install Ansible controller dependencies"),
+        )
+        self.assertLess(
+            content.index("Install Ansible controller dependencies"),
             content.index("Configure AWS credentials"),
         )
 
