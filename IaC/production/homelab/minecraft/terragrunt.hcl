@@ -1,1 +1,0 @@
-../../../_envcommon/minecraft.hcl

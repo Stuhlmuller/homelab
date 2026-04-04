@@ -1,0 +1,6 @@
+{
+    "recommendations": [
+        "hashicorp.hcl",
+        "opentofu.vscode-opentofu"
+    ]
+}

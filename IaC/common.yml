@@ -1,6 +1,0 @@
-project_name: Homelab
-default_tags:
-  ManualBuild: true
-  ManualTag: true
-  Repo: rstuhlmuller/homelab
-  Owner: rstuhlmuller

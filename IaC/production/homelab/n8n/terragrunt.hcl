@@ -1,1 +1,0 @@
-../../../_envcommon/n8n.hcl

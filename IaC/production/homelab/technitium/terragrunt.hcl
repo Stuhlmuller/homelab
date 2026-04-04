@@ -1,1 +1,0 @@
-../../../_envcommon/technitium.hcl

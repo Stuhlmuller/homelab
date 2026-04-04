@@ -1,1 +1,0 @@
-../../../_envcommon/metallb.hcl
