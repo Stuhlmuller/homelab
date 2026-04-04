@@ -32,6 +32,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.repo.full_name == github.repository", content)
         self.assertIn("github.event.pull_request.head.repo.full_name != github.repository", content)
         self.assertIn("if: always() && github.event.pull_request.head.repo.full_name == github.repository", content)
+        self.assertIn("vars.AWS_ROLE_TO_ASSUME_HOMELAB != ''", content)
+        self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
+        self.assertIn("Render skipped plan summary when repo variables are missing", content)
+        self.assertIn("--status skipped", content)
 
     def test_deploy_workflow_uses_safe_wrapper(self) -> None:
         content = (ROOT / ".github/workflows/deploy.yml").read_text()

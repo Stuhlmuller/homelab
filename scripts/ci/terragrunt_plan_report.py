@@ -54,30 +54,34 @@ def parse_plan_stats(log_text: str) -> dict[str, object]:
 
 def build_plan_section(
     *,
-    log_text: str,
-    exit_code: int,
+    status: str,
     working_dir: str,
     run_url: str,
     artifact_name: str,
     commit_sha: str,
+    log_text: str = "",
+    exit_code: int = 0,
+    summary_lines: list[str] | None = None,
 ) -> str:
-    status = "success" if exit_code == 0 else "failed"
+    rendered_summary_lines = list(summary_lines or [])
     stats = parse_plan_stats(log_text)
     totals = stats["totals"]
-    summary_lines = []
 
-    if stats["plan_blocks"]:
-        summary_lines.append(
-            f"- Aggregated {stats['plan_blocks']} Terraform plan summaries: "
-            f"{totals['add']} to add, {totals['change']} to change, {totals['destroy']} to destroy."
-        )
-    if stats["no_change_blocks"]:
-        summary_lines.append(f"- {stats['no_change_blocks']} unit(s) reported no changes.")
-    if not summary_lines:
-        if exit_code == 0:
-            summary_lines.append("- Plan completed successfully, but no Terraform summary line was detected in the captured log.")
-        else:
-            summary_lines.append("- Plan failed before Terraform emitted a standard summary line.")
+    if not rendered_summary_lines:
+        if stats["plan_blocks"]:
+            rendered_summary_lines.append(
+                f"- Aggregated {stats['plan_blocks']} Terraform plan summaries: "
+                f"{totals['add']} to add, {totals['change']} to change, {totals['destroy']} to destroy."
+            )
+        if stats["no_change_blocks"]:
+            rendered_summary_lines.append(f"- {stats['no_change_blocks']} unit(s) reported no changes.")
+        if not rendered_summary_lines:
+            if status == "success":
+                rendered_summary_lines.append("- Plan completed successfully, but no Terraform summary line was detected in the captured log.")
+            elif status == "skipped":
+                rendered_summary_lines.append("- Plan was skipped.")
+            else:
+                rendered_summary_lines.append("- Plan failed before Terraform emitted a standard summary line.")
 
     section_lines = [
         START_MARKER,
@@ -91,11 +95,11 @@ def build_plan_section(
         "",
         "### Summary",
         "",
-        *summary_lines,
+        *rendered_summary_lines,
     ]
 
     error_lines = list(stats["error_lines"])
-    if exit_code != 0 and error_lines:
+    if status == "failed" and exit_code != 0 and error_lines:
         excerpt = "\n".join(error_lines[:10])
         section_lines.extend(
             [
@@ -155,12 +159,28 @@ def github_api_request(*, method: str, url: str, token: str, payload: dict[str, 
 def render_command(args: argparse.Namespace) -> int:
     log_text = Path(args.log_file).read_text() if Path(args.log_file).exists() else ""
     section = build_plan_section(
+        status="success" if args.exit_code == 0 else "failed",
         log_text=log_text,
         exit_code=args.exit_code,
         working_dir=args.working_dir,
         run_url=args.run_url,
         artifact_name=args.artifact_name,
         commit_sha=args.commit_sha,
+    )
+    output_path = Path(args.output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(section)
+    return 0
+
+
+def render_static_command(args: argparse.Namespace) -> int:
+    section = build_plan_section(
+        status=args.status,
+        working_dir=args.working_dir,
+        run_url=args.run_url,
+        artifact_name=args.artifact_name,
+        commit_sha=args.commit_sha,
+        summary_lines=args.summary_line,
     )
     output_path = Path(args.output_file)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,6 +232,16 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("--commit-sha", required=True)
     render.add_argument("--output-file", required=True)
     render.set_defaults(func=render_command)
+
+    render_static = subparsers.add_parser("render-static")
+    render_static.add_argument("--status", choices=("success", "failed", "skipped"), required=True)
+    render_static.add_argument("--working-dir", required=True)
+    render_static.add_argument("--run-url", required=True)
+    render_static.add_argument("--artifact-name", required=True)
+    render_static.add_argument("--commit-sha", required=True)
+    render_static.add_argument("--summary-line", action="append", required=True)
+    render_static.add_argument("--output-file", required=True)
+    render_static.set_defaults(func=render_static_command)
 
     update_pr_body = subparsers.add_parser("update-pr-body")
     update_pr_body.add_argument("--repo", required=True)

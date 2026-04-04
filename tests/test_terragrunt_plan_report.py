@@ -57,6 +57,7 @@ class TerragruntPlanReportTests(unittest.TestCase):
 
     def test_build_plan_section_includes_failure_excerpt(self) -> None:
         section = MODULE.build_plan_section(
+            status="failed",
             log_text="Error: failure\nexit status 1\n",
             exit_code=1,
             working_dir="terraform/live/homelab",
@@ -69,6 +70,20 @@ class TerragruntPlanReportTests(unittest.TestCase):
         self.assertIn("`failed`", section)
         self.assertIn("Relevant errors", section)
         self.assertIn("artifact-name", section)
+
+    def test_build_plan_section_supports_static_skipped_summary(self) -> None:
+        section = MODULE.build_plan_section(
+            status="skipped",
+            working_dir="terraform/live/homelab",
+            run_url="https://example.invalid/run",
+            artifact_name="artifact-name",
+            commit_sha="1234567890abcdef",
+            summary_lines=["- Skipped because required repo variables are missing."],
+        )
+
+        self.assertIn("`skipped`", section)
+        self.assertIn("Skipped because required repo variables are missing.", section)
+        self.assertNotIn("Relevant errors", section)
 
 
 if __name__ == "__main__":
