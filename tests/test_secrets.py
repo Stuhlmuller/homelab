@@ -62,5 +62,5 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("connectivity-probe-address: 10.1.0.200", plan)
         self.assertIn("connectivity-probe-address: 10.1.0.200", deploy)
         self.assertIn("ping: ${{ inputs.tailscale-ping-hosts }}", action)
-        self.assertIn("tailscale-ping-hosts: homelab-vpn", plan)
-        self.assertIn("tailscale-ping-hosts: homelab-vpn", deploy)
+        self.assertIn("tailscale-ping-hosts: homelab-vpn-1", plan)
+        self.assertIn("tailscale-ping-hosts: homelab-vpn-1", deploy)

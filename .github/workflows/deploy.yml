@@ -91,7 +91,7 @@ jobs:
         with:
           aws-region: us-east-1
           connectivity-probe-address: 10.1.0.200
-          tailscale-ping-hosts: homelab-vpn
+          tailscale-ping-hosts: homelab-vpn-1
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
 
       - name: Deploy homelab stack
