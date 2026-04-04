@@ -62,9 +62,9 @@ job "paperclip" {
 
       template {
         data        = <<-EOT
-          {{ with nomadVar "nomad/jobs/paperclip/config" }}
-          {{ .postgres_password }}
-          {{ end }}
+          {{- with nomadVar "nomad/jobs/paperclip/config" -}}
+          {{ .postgres_password | trimSpace }}
+          {{- end -}}
         EOT
         destination = "secrets/postgres_password"
         change_mode = "restart"
@@ -104,8 +104,8 @@ job "paperclip" {
         data        = <<-EOT
           {{ with nomadVar "nomad/jobs/paperclip/config" }}
           BETTER_AUTH_SECRET="{{ .better_auth_secret }}"
-          PAPERCLIP_AGENT_JWT_SECRET="{{ .better_auth_secret }}"
-          DATABASE_URL="postgres://paperclip:{{ .postgres_password }}@127.0.0.1:5432/paperclip"
+          PAPERCLIP_AGENT_JWT_SECRET="{{ .paperclip_agent_jwt_secret }}"
+          DATABASE_URL="postgres://paperclip:{{ .postgres_password | trimSpace }}@127.0.0.1:5432/paperclip"
           PAPERCLIP_DEPLOYMENT_MODE="{{ .deployment_mode }}"
           PAPERCLIP_DEPLOYMENT_EXPOSURE="{{ .deployment_exposure }}"
           PAPERCLIP_PUBLIC_URL="{{ .public_url }}"
