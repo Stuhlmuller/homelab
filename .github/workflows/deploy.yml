@@ -49,6 +49,33 @@ jobs:
       - name: Setup mise
         uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
 
+      - name: Validate deploy configuration
+        shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+        run: |
+          missing=()
+
+          [[ -n "$AWS_ROLE_TO_ASSUME_HOMELAB" ]] || missing+=("AWS_ROLE_TO_ASSUME_HOMELAB")
+          [[ -n "$TAILSCALE_AUTH_KEY_SSM_PARAMETER" ]] || missing+=("TAILSCALE_AUTH_KEY_SSM_PARAMETER")
+
+          if ((${#missing[@]})); then
+            {
+              echo "### Homelab Deploy blocked"
+              echo
+              echo "Missing repository Actions variables:"
+              for var in "${missing[@]}"; do
+                echo "- \`$var\`"
+              done
+              echo
+              echo "Add them in Settings -> Secrets and variables -> Actions -> Variables, then re-run this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo "::error::Missing repository Actions variables: ${missing[*]}"
+            exit 1
+          fi
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:

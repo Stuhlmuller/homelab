@@ -43,8 +43,16 @@ class WorkflowTests(unittest.TestCase):
         content = (ROOT / ".github/workflows/deploy.yml").read_text()
         self.assertIn('name: "Homelab Deploy"', content)
         self.assertIn("concurrency:", content)
+        self.assertIn("Validate deploy configuration", content)
+        self.assertIn("AWS_ROLE_TO_ASSUME_HOMELAB", content)
+        self.assertIn("TAILSCALE_AUTH_KEY_SSM_PARAMETER", content)
+        self.assertIn('GITHUB_STEP_SUMMARY', content)
         self.assertIn("./scripts/deploy-live.sh --skip-bootstrap", content)
         self.assertIn("aws-actions/configure-aws-credentials@", content)
+        self.assertLess(
+            content.index("Validate deploy configuration"),
+            content.index("Configure AWS credentials"),
+        )
 
 
 if __name__ == "__main__":
