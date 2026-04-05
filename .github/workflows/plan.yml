@@ -54,6 +54,11 @@ jobs:
         shell: bash
         run: mkdir -p artifacts
 
+      - name: Skip privileged access on fork pull requests
+        if: github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: echo "Skipping AWS credentials, infrastructure access, and the live Terragrunt plan for fork pull requests."
+
       - name: Configure AWS credentials
         if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
         uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
@@ -130,11 +135,6 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --pr-number "${PR_NUMBER}" \
             --summary-file "${PLAN_SUMMARY}"
-
-      - name: Skip live Terragrunt plan on fork pull requests
-        if: github.event.pull_request.head.repo.full_name != github.repository
-        shell: bash
-        run: echo "Skipping the privileged Terragrunt plan for fork pull requests."
 
       - name: Fail when plan fails
         if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '') && steps.terragrunt_plan.outputs.exit_code != '0'

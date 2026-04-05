@@ -44,8 +44,17 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("NOMAD_ADDR: http://100.94.104.7:4646", content)
         self.assertIn("-- -refresh=false", content)
         self.assertNotIn('connectivity-probe-port: "4646"', content)
+        self.assertIn("Skip privileged access on fork pull requests", content)
+        self.assertIn(
+            "Skipping AWS credentials, infrastructure access, and the live Terragrunt plan for fork pull requests.",
+            content,
+        )
         self.assertIn("Render skipped plan summary when repo configuration is missing", content)
         self.assertIn("--status skipped", content)
+        self.assertLess(
+            content.index("Skip privileged access on fork pull requests"),
+            content.index("Configure AWS credentials"),
+        )
 
     def test_deploy_workflow_uses_safe_wrapper(self) -> None:
         content = (ROOT / ".github/workflows/deploy.yml").read_text()
