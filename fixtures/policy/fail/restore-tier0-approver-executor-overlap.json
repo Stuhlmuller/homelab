@@ -1,0 +1,27 @@
+{
+  "request_id": "restore-2026-04-05-002",
+  "tier": "tier-0",
+  "requester_principal": "alice.requester",
+  "executor_principal": "shared.operator",
+  "grant_ttl_minutes": 20,
+  "role_bindings": [
+    {
+      "principal": "karen.keyadmin",
+      "roles": ["key_admin"]
+    },
+    {
+      "principal": "ben.backup",
+      "roles": ["backup_operator"]
+    },
+    {
+      "principal": "shared.operator",
+      "roles": ["restore_approver", "restore_executor", "security_officer", "platform_owner"]
+    }
+  ],
+  "approvers": [
+    {
+      "principal": "shared.operator",
+      "roles": ["restore_approver", "security_officer", "platform_owner"]
+    }
+  ]
+}

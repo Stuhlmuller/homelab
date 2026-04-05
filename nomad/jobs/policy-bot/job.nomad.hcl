@@ -1,3 +1,8 @@
+variable "policy_bot_nomad_node_name" {
+  type    = string
+  default = "nomad-primary"
+}
+
 job "policy-bot" {
   datacenters = ["homelab"]
   type        = "service"
@@ -7,7 +12,7 @@ job "policy-bot" {
 
     constraint {
       attribute = "${node.unique.name}"
-      value     = "nomad-0"
+      value     = var.policy_bot_nomad_node_name
     }
 
     network {
@@ -44,7 +49,7 @@ job "policy-bot" {
 
       template {
         data        = <<-EOT
-          {{ with nomadVar "nomad/jobs/policy-bot/config" }}
+          {{ with nomadVar "nomad/jobs/policy-bot" }}
           server:
             address: "0.0.0.0"
             port: 8080

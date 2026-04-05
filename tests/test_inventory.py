@@ -8,16 +8,16 @@ GROUP_VARS = ROOT / "ansible" / "inventories" / "production" / "group_vars" / "a
 
 
 class InventoryTests(unittest.TestCase):
-    def test_inventory_declares_three_zimaboards(self) -> None:
+    def test_inventory_declares_all_servers(self) -> None:
         content = INVENTORY.read_text()
-        for name in ["zimaboard-0", "zimaboard-1", "zimaboard-2"]:
+        for name in ["acer", "zimaboard-0", "zimaboard-1", "zimaboard-2"]:
             self.assertIn(name, content)
 
     def test_inventory_declares_expected_ips(self) -> None:
         content = INVENTORY.read_text()
-        for ip in ["10.1.0.200", "10.1.0.201", "10.1.0.202"]:
+        for ip in ["10.1.0.199", "10.1.0.200", "10.1.0.201", "10.1.0.202"]:
             self.assertIn(ip, content)
-        for tailscale_ip in ["100.94.104.7", "100.102.247.126", "100.78.60.65"]:
+        for tailscale_ip in ["100.119.126.81", "100.94.104.7", "100.102.247.126", "100.78.60.65"]:
             self.assertIn(tailscale_ip, content)
 
     def test_group_vars_match_bootstrap_expectation(self) -> None:
@@ -25,11 +25,13 @@ class InventoryTests(unittest.TestCase):
         self.assertIn("homelab_bootstrap_expect: 3", content)
         self.assertIn('consul_bootstrap_expect: "{{ homelab_bootstrap_expect }}"', content)
         self.assertIn('nomad_bootstrap_expect: "{{ homelab_bootstrap_expect }}"', content)
+        self.assertIn("- 10.1.0.199", content)
         self.assertIn("- 10.1.0.201", content)
 
     def test_inventory_declares_an_ingress_node(self) -> None:
         content = INVENTORY.read_text()
         self.assertIn("nomad_node_class: ingress", content)
+        self.assertIn("nomad_node_name: nomad-primary", content)
         self.assertIn("tailscale_funnel_mounts:", content)
         self.assertIn("path: /api/github/auth", content)
         self.assertIn("path: /api/github/hook", content)

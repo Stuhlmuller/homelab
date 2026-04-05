@@ -1,8 +1,9 @@
 # Homelab Monorepo
 
 This repository manages a Debian-based Nomad homelab running on three Zima
-boards:
+boards plus one Acer control-plane node:
 
+- `acer` at `10.1.0.199`
 - `zimaboard-0` at `10.1.0.200`
 - `zimaboard-1` at `10.1.0.201`
 - `zimaboard-2` at `10.1.0.202`
@@ -53,10 +54,14 @@ homelab/
   `shared-data` volume.
 - Tailscale is managed as host software so the entire LAN remains reachable over
   the tailnet.
-- `zimaboard-0` advertises the `10.1.0.0/24` subnet into Tailscale; the Debian
-  hosts themselves do not accept tailnet routes during bootstrap.
-- Traefik is pinned to `nomad-0` so `80` and `443` stay stable while the
-  three-node control plane is degraded.
+- `acer` is the primary Nomad and HTTP ingress node on the LAN.
+- `zimaboard-0` continues to advertise the `10.1.0.0/24` subnet into
+  Tailscale until the new primary has completed first-time tailnet enrollment;
+  the Debian hosts themselves do not accept tailnet routes during bootstrap.
+- Traefik is pinned to `nomad-primary` so `80` and `443` stay stable on the
+  designated ingress node.
+- Traefik also publishes the Nomad and Consul UIs at
+  `nomad.stinkyboi.com` and `consul.stinkyboi.com`.
 - All in-repo OpenTofu modules use enforced KMS-backed state and plan
   encryption.
 - Secret values live in AWS SSM Parameter Store and are synced into Nomad
@@ -106,6 +111,7 @@ workflow:
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/paperclip/postgres_password`
    - `/homelab/policy-bot/github_app_integration_id`
    - `/homelab/policy-bot/github_app_private_key`
    - `/homelab/policy-bot/github_app_webhook_secret`
@@ -163,7 +169,7 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 ## Policy Bot
 
 `policy-bot` uses Tailscale Funnel only for these public endpoints on
-`https://traefik.tail67beb.ts.net`:
+`https://acer.tail67beb.ts.net`:
 
 - `/api/github/auth`
 - `/api/github/hook`
@@ -173,11 +179,11 @@ generated credentials in AWS SSM Parameter Store using the names above. In the
 GitHub App settings, use these URLs:
 
 - User authorization callback URL:
-  `https://traefik.tail67beb.ts.net/api/github/auth`
+  `https://acer.tail67beb.ts.net/api/github/auth`
 - Webhook URL:
-  `https://traefik.tail67beb.ts.net/api/github/hook`
+  `https://acer.tail67beb.ts.net/api/github/hook`
 
-The Funnel is reconciled on `zimaboard-0` and proxies only those two paths to
+The Funnel is reconciled on `acer` and proxies only those two paths to
 `http://127.0.0.1:18080`. The root path is intentionally not published through
 Funnel. If the ingress node's MagicDNS hostname changes, update
 [terragrunt.hcl](/Users/themanofrod/.codex/worktrees/f11b/homelab/terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl)
@@ -196,14 +202,16 @@ upstream project along with these subscribed events:
 
 ## Notes from the latest survey
 
-As of April 4, 2026:
+As of April 5, 2026:
 
-- `10.1.0.200`, `10.1.0.201`, and `10.1.0.202` were reachable and responded to
-  the read-only survey checks.
-- `nomad`, `consul`, `docker`, and `tailscaled` all reported `active` on each
-  node.
-- Consul membership showed all three servers alive in the `homelab`
-  datacenter.
+- `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202` were reachable
+  over SSH and reported `nomad`, `consul`, `docker`, and `tailscaled` as
+  `active`.
+- `acer` joined the control plane as `consul-primary` and `nomad-primary`, and
+  Traefik now serves the public ingress ports from `10.1.0.199`.
+- Dokploy health checks passed through the new ingress node. `paperclip` still
+  needs follow-up because its embedded PostgreSQL initialization failed during
+  rollout.
 
 See [docs/runbooks/bootstrap.md](/Users/themanofrod/github-repositories/homelab/docs/runbooks/bootstrap.md)
 for the expected bring-up sequence.

@@ -1,3 +1,8 @@
+variable "ingress_nomad_node_name" {
+  type    = string
+  default = "nomad-primary"
+}
+
 job "traefik" {
   datacenters = ["homelab"]
   type        = "service"
@@ -7,7 +12,7 @@ job "traefik" {
 
     constraint {
       attribute = "${node.unique.name}"
-      value     = "nomad-0"
+      value     = var.ingress_nomad_node_name
     }
 
     network {
@@ -71,6 +76,7 @@ job "traefik" {
 
         volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml",
+          "local/dynamic.toml:/etc/traefik/dynamic.toml",
         ]
 
         args = ["--configFile=/etc/traefik/traefik.toml"]
@@ -78,9 +84,9 @@ job "traefik" {
 
       template {
         data        = <<-EOT
-          {{ with nomadVar "nomad/jobs/traefik/cf_dns_api_token" }}
-          {{ .cf_dns_api_token }}
-          {{ end }}
+          {{- with nomadVar "nomad/jobs/traefik/cf_dns_api_token" -}}
+          {{- .cf_dns_api_token.Value | trimSpace -}}
+          {{- end -}}
         EOT
         destination = "secrets/cf_dns_api_token"
         change_mode = "restart"
@@ -123,6 +129,10 @@ job "traefik" {
     address = "127.0.0.1:8500"
     scheme  = "http"
 
+[providers.file]
+  filename = "/etc/traefik/dynamic.toml"
+  watch    = true
+
 [log]
   level = "INFO"
 
@@ -138,6 +148,58 @@ job "traefik" {
     resolvers        = ["1.1.1.1:53", "8.8.8.8:53"]
 EOF
         destination = "local/traefik.toml"
+      }
+
+      template {
+        data        = <<-EOF
+[http.routers]
+  [http.routers.nomad]
+    rule        = "Host(`nomad.stinkyboi.com`)"
+    entryPoints = ["websecure"]
+    service     = "nomad-ui"
+    [http.routers.nomad.tls]
+      certResolver = "letsencrypt"
+
+  [http.routers.consul]
+    rule        = "Host(`consul.stinkyboi.com`)"
+    entryPoints = ["websecure"]
+    service     = "consul-ui"
+    [http.routers.consul.tls]
+      certResolver = "letsencrypt"
+
+[http.services]
+  [http.services.nomad-ui.loadBalancer]
+    passHostHeader = true
+    [http.services.nomad-ui.loadBalancer.healthCheck]
+      path     = "/v1/status/leader"
+      interval = "10s"
+      timeout  = "2s"
+    [[http.services.nomad-ui.loadBalancer.servers]]
+      url = "http://10.1.0.199:4646"
+    [[http.services.nomad-ui.loadBalancer.servers]]
+      url = "http://10.1.0.200:4646"
+    [[http.services.nomad-ui.loadBalancer.servers]]
+      url = "http://10.1.0.201:4646"
+    [[http.services.nomad-ui.loadBalancer.servers]]
+      url = "http://10.1.0.202:4646"
+
+  [http.services.consul-ui.loadBalancer]
+    passHostHeader = true
+    [http.services.consul-ui.loadBalancer.healthCheck]
+      path     = "/v1/status/leader"
+      interval = "10s"
+      timeout  = "2s"
+    [[http.services.consul-ui.loadBalancer.servers]]
+      url = "http://10.1.0.199:8500"
+    [[http.services.consul-ui.loadBalancer.servers]]
+      url = "http://10.1.0.200:8500"
+    [[http.services.consul-ui.loadBalancer.servers]]
+      url = "http://10.1.0.201:8500"
+    [[http.services.consul-ui.loadBalancer.servers]]
+      url = "http://10.1.0.202:8500"
+EOF
+        destination = "local/dynamic.toml"
+        change_mode = "restart"
       }
 
       volume_mount {

@@ -7,9 +7,9 @@ include "root" {
 }
 
 inputs = {
-  path = "nomad/jobs/policy-bot/config"
+  path = "nomad/jobs/policy-bot"
   items = {
-    public_url = "https://traefik.tail67beb.ts.net"
+    public_url = "https://acer.tail67beb.ts.net"
   }
   ssm_parameters = {
     github_app_integration_id  = "/homelab/policy-bot/github_app_integration_id"

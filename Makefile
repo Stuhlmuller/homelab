@@ -2,7 +2,7 @@ SHELL := /bin/bash
 TG_TF_PATH ?= tofu
 ANSIBLE_PLAYBOOK ?= /Users/themanofrod/.local/pipx/venvs/ansible/bin/ansible-playbook
 
-.PHONY: lint test validate survey format format-check validate-terraform validate-nomad validate-structure validate-skills ansible-syntax bootstrap reconcile-tailscale bootstrap-rolling plan apply validate-live validate-ssm validate-kms validate-live-cluster validate-live-workloads unlock-state deploy-live
+.PHONY: lint test validate survey format format-check validate-terraform validate-nomad validate-structure validate-policy validate-skills ansible-syntax bootstrap reconcile-tailscale bootstrap-rolling plan apply validate-live validate-ssm validate-kms validate-live-cluster validate-live-workloads unlock-state deploy-live
 
 lint: format-check validate-terraform validate-nomad validate-structure ansible-syntax
 
@@ -31,8 +31,12 @@ validate-nomad:
 
 validate-structure:
 	python3 -m unittest discover -s tests -p 'test_*.py'
+	python3 scripts/run_policy_fixtures.py
 	./scripts/validate-skills.sh
 	./scripts/validate-ansible-layout.sh
+
+validate-policy:
+	python3 scripts/run_policy_fixtures.py
 
 validate-skills:
 	./scripts/validate-skills.sh

@@ -15,5 +15,6 @@ inputs = {
   }
   ssm_parameters = {
     better_auth_secret = "/homelab/paperclip/better_auth_secret"
+    postgres_password  = "/homelab/paperclip/postgres_password"
   }
 }

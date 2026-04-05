@@ -1,0 +1,34 @@
+{
+  "policy_version": "2026-04-05",
+  "restore_decryption": {
+    "required_functional_roles": [
+      "key_admin",
+      "backup_operator",
+      "restore_approver",
+      "restore_executor"
+    ],
+    "mutually_exclusive_roles": [
+      [
+        "restore_approver",
+        "restore_executor"
+      ]
+    ],
+    "tiers": {
+      "tier-0": {
+        "required_approver_roles": [
+          "security_officer",
+          "platform_owner"
+        ],
+        "max_grant_ttl_minutes": 30,
+        "require_distinct_requester_approver_executor": true
+      },
+      "tier-1": {
+        "required_approver_roles": [
+          "platform_owner"
+        ],
+        "max_grant_ttl_minutes": 120,
+        "require_distinct_requester_approver_executor": true
+      }
+    }
+  }
+}

@@ -32,6 +32,7 @@ client {
   enabled           = true
   network_interface = "{{ nomad_network_interface }}"
   node_class        = "{{ nomad_node_class }}"
+  cni_path          = "{{ nomad_cni_path }}"
 
   servers = [{% for member in nomad_retry_join %}"{{ member }}:4647"{% if not loop.last %}, {% endif %}{% endfor %}]
 

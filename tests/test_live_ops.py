@@ -75,6 +75,8 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("POLICY_BOT_FUNNEL_AUTH_PATH", content)
         self.assertIn("POLICY_BOT_FUNNEL_HOOK_PATH", content)
         self.assertIn("|-- / proxy", content)
+        self.assertIn("nomad.stinkyboi.com", content)
+        self.assertIn("consul.stinkyboi.com", content)
 
     def test_live_cluster_validation_prefers_ssh_when_ping_is_filtered(self) -> None:
         content = (ROOT / "scripts/validate-live-cluster.sh").read_text()
