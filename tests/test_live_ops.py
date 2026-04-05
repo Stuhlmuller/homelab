@@ -68,8 +68,13 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn('tailscale_status_file="$(mktemp)"', content)
         self.assertIn('if isinstance(payload, list):', content)
         self.assertIn('running allocations', content)
+        self.assertIn("nomad var get -item public_url", content)
+        self.assertIn("tailscale funnel status", content)
         self.assertIn("paperclip.stinkyboi.com", content)
-        self.assertIn("policy-bot.stinkyboi.com", content)
+        self.assertIn("POLICY_BOT_LOCAL_TARGET", content)
+        self.assertIn("POLICY_BOT_FUNNEL_AUTH_PATH", content)
+        self.assertIn("POLICY_BOT_FUNNEL_HOOK_PATH", content)
+        self.assertIn("|-- / proxy", content)
         self.assertIn("nomad.stinkyboi.com", content)
         self.assertIn("consul.stinkyboi.com", content)
 
@@ -85,6 +90,14 @@ class LiveOpsTests(unittest.TestCase):
         content = (ROOT / "scripts/validate-live-workloads.sh").read_text()
         self.assertIn('USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"', content)
         self.assertIn("tailscale_ip", content)
+
+    def test_tailscale_role_can_reconcile_funnel(self) -> None:
+        content = (ROOT / "ansible" / "roles" / "tailscale" / "tasks" / "main.yml").read_text()
+        self.assertIn("tailscale funnel status", content)
+        self.assertIn("tailscale_funnel_mounts", content)
+        self.assertIn("--set-path=", content)
+        self.assertIn("--bg", content)
+        self.assertIn("--yes", content)
 
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()
