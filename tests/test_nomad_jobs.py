@@ -52,3 +52,15 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn("uid         = 1000", content)
         self.assertIn("gid         = 1000", content)
         self.assertIn('BETTER_AUTH_SECRET="{{ .better_auth_secret }}"', content)
+
+    def test_policy_bot_job_routes_through_traefik_with_file_backed_config(self) -> None:
+        content = (ROOT / "nomad" / "jobs" / "policy-bot" / "job.nomad.hcl").read_text()
+        self.assertIn("palantirtechnologies/policy-bot:1.41.1", content)
+        self.assertIn("traefik.http.routers.policy-bot.rule", content)
+        self.assertIn("traefik.http.routers.policy-bot.entrypoints=websecure", content)
+        self.assertIn('mode = "bridge"', content)
+        self.assertIn("nomad/jobs/policy-bot/config", content)
+        self.assertIn('destination = "secrets/policy-bot.yml"', content)
+        self.assertIn('"${NOMAD_SECRETS_DIR}/policy-bot.yml"', content)
+        self.assertIn('path     = "/api/health"', content)
+        self.assertIn("github_app_private_key", content)

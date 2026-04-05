@@ -27,6 +27,7 @@ class LiveOpsTests(unittest.TestCase):
         traefik = (ROOT / "terraform/live/homelab/jobs/traefik/terragrunt.hcl").read_text()
         dokploy = (ROOT / "terraform/live/homelab/jobs/dokploy/terragrunt.hcl").read_text()
         paperclip = (ROOT / "terraform/live/homelab/jobs/paperclip/terragrunt.hcl").read_text()
+        policy_bot = (ROOT / "terraform/live/homelab/jobs/policy-bot/terragrunt.hcl").read_text()
 
         self.assertIn("../../jobs/nfs-csi-plugin", shared_data)
         self.assertIn("../../variables/traefik/cf_dns_api_token", traefik)
@@ -35,6 +36,7 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("../../volumes/shared-data", dokploy)
         self.assertIn("../../variables/paperclip/config", paperclip)
         self.assertIn("../../volumes/shared-data", paperclip)
+        self.assertIn("../../variables/policy-bot/config", policy_bot)
 
     def test_makefile_exposes_live_targets(self) -> None:
         content = (ROOT / "Makefile").read_text()
@@ -67,6 +69,7 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn('if isinstance(payload, list):', content)
         self.assertIn('running allocations', content)
         self.assertIn("paperclip.stinkyboi.com", content)
+        self.assertIn("policy-bot.stinkyboi.com", content)
 
     def test_live_cluster_validation_prefers_ssh_when_ping_is_filtered(self) -> None:
         content = (ROOT / "scripts/validate-live-cluster.sh").read_text()
