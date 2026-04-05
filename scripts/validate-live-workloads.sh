@@ -4,6 +4,9 @@ set -euo pipefail
 SSH_TIMEOUT_SECONDS="${SSH_TIMEOUT_SECONDS:-5}"
 INGRESS_IP="${INGRESS_IP:-10.1.0.200}"
 NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-10.1.0.200}"
+POLICY_BOT_LOCAL_TARGET="${POLICY_BOT_LOCAL_TARGET:-http://127.0.0.1:18080}"
+POLICY_BOT_FUNNEL_AUTH_PATH="${POLICY_BOT_FUNNEL_AUTH_PATH:-/api/github/auth}"
+POLICY_BOT_FUNNEL_HOOK_PATH="${POLICY_BOT_FUNNEL_HOOK_PATH:-/api/github/hook}"
 USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"
 INVENTORY_FILE="ansible/inventories/production/hosts.yml"
 
@@ -60,6 +63,17 @@ for path in \
     exit 1
   }
 done
+
+policy_bot_public_url="$(
+  ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${NOMAD_HTTP_IP}" \
+    'nomad var get -item public_url nomad/jobs/policy-bot/config'
+)"
+policy_bot_public_url="${policy_bot_public_url%/}"
+
+if [[ -z "${policy_bot_public_url}" ]]; then
+  echo "policy-bot public_url is missing from Nomad variables" >&2
+  exit 1
+fi
 
 inventory_ips=()
 while IFS= read -r ip; do
@@ -154,7 +168,29 @@ curl --fail --silent --show-error \
   "https://paperclip.stinkyboi.com/api/health" >/dev/null
 echo "validated Paperclip HTTPS health endpoint on ${INGRESS_IP}"
 
-curl --fail --silent --show-error \
-  --resolve "policy-bot.stinkyboi.com:443:${INGRESS_IP}" \
-  "https://policy-bot.stinkyboi.com/api/health" >/dev/null
-echo "validated Policy Bot HTTPS health endpoint on ${INGRESS_IP}"
+policy_bot_funnel_status="$(
+  ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${INGRESS_IP}" \
+    'tailscale funnel status || true'
+)"
+
+for path in "${POLICY_BOT_FUNNEL_AUTH_PATH}" "${POLICY_BOT_FUNNEL_HOOK_PATH}"; do
+  grep -Fq "${path} proxy ${POLICY_BOT_LOCAL_TARGET}" <<<"${policy_bot_funnel_status}" || {
+    echo "policy-bot Funnel path is not configured on ${INGRESS_IP}: ${path} -> ${POLICY_BOT_LOCAL_TARGET}" >&2
+    printf '%s\n' "${policy_bot_funnel_status}" >&2
+    exit 1
+  }
+done
+echo "validated Policy Bot Funnel paths on ${INGRESS_IP}"
+
+if grep -Fq "|-- / proxy ${POLICY_BOT_LOCAL_TARGET}" <<<"${policy_bot_funnel_status}"; then
+  echo "policy-bot root path is unexpectedly public through Funnel on ${INGRESS_IP}" >&2
+  printf '%s\n' "${policy_bot_funnel_status}" >&2
+  exit 1
+fi
+echo "validated Policy Bot root path is not public through Funnel on ${INGRESS_IP}"
+
+ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${INGRESS_IP}" \
+  "curl --fail --silent --show-error ${POLICY_BOT_LOCAL_TARGET}/api/health" >/dev/null
+echo "validated Policy Bot local health endpoint on ${INGRESS_IP}"
+
+echo "validated Policy Bot public base URL at ${policy_bot_public_url}"

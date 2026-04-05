@@ -5,25 +5,23 @@ job "policy-bot" {
   group "policy-bot" {
     count = 1
 
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "nomad-0"
+    }
+
     network {
       mode = "bridge"
 
       port "http" {
-        to = 8080
+        static = 18080
+        to     = 8080
       }
     }
 
     service {
       name = "policy-bot"
       port = "http"
-
-      tags = [
-        "traefik.enable=true",
-        "traefik.http.routers.policy-bot.rule=Host(`policy-bot.stinkyboi.com`)",
-        "traefik.http.routers.policy-bot.entrypoints=websecure",
-        "traefik.http.routers.policy-bot.tls=true",
-        "traefik.http.routers.policy-bot.tls.certresolver=letsencrypt",
-      ]
 
       check {
         name     = "policy-bot-health"

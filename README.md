@@ -162,16 +162,26 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 
 ## Policy Bot
 
-`policy-bot` is deployed behind Traefik at `https://policy-bot.stinkyboi.com`.
+`policy-bot` uses Tailscale Funnel only for these public endpoints on
+`https://traefik.tail67beb.ts.net`:
+
+- `/api/github/auth`
+- `/api/github/hook`
 
 Before the Nomad job can start successfully, create a GitHub App and store the
 generated credentials in AWS SSM Parameter Store using the names above. In the
 GitHub App settings, use these URLs:
 
 - User authorization callback URL:
-  `https://policy-bot.stinkyboi.com/api/github/auth`
+  `https://traefik.tail67beb.ts.net/api/github/auth`
 - Webhook URL:
-  `https://policy-bot.stinkyboi.com/api/github/hook`
+  `https://traefik.tail67beb.ts.net/api/github/hook`
+
+The Funnel is reconciled on `zimaboard-0` and proxies only those two paths to
+`http://127.0.0.1:18080`. The root path is intentionally not published through
+Funnel. If the ingress node's MagicDNS hostname changes, update
+[terragrunt.hcl](/Users/themanofrod/.codex/worktrees/f11b/homelab/terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl)
+and the GitHub App URLs together before redeploying.
 
 The app also needs the repository and organization permissions documented in the
 upstream project along with these subscribed events:

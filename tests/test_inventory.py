@@ -30,6 +30,10 @@ class InventoryTests(unittest.TestCase):
     def test_inventory_declares_an_ingress_node(self) -> None:
         content = INVENTORY.read_text()
         self.assertIn("nomad_node_class: ingress", content)
+        self.assertIn("tailscale_funnel_mounts:", content)
+        self.assertIn("path: /api/github/auth", content)
+        self.assertIn("path: /api/github/hook", content)
+        self.assertIn("target: http://127.0.0.1:18080", content)
         self.assertIn("tailscale_advertise_routes:", content)
         self.assertIn("10.1.0.0/24", content)
 

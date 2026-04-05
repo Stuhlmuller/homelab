@@ -9,7 +9,7 @@ include "root" {
 inputs = {
   path = "nomad/jobs/policy-bot/config"
   items = {
-    public_url = "https://policy-bot.stinkyboi.com"
+    public_url = "https://traefik.tail67beb.ts.net"
   }
   ssm_parameters = {
     github_app_integration_id  = "/homelab/policy-bot/github_app_integration_id"
