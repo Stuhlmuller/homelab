@@ -2,11 +2,11 @@ name: "Setup Infrastructure"
 description: "Common setup for homelab workflows"
 
 inputs:
-  aws-region:
-    description: "AWS region used to fetch SSM parameters"
+  oauth-client-id:
+    description: "Tailscale OAuth client ID for the GitHub Action ephemeral node"
     required: true
-  tailscale-auth-key-parameter:
-    description: "AWS SSM parameter name that stores the Tailscale auth key"
+  oauth-secret:
+    description: "Tailscale OAuth client secret for the GitHub Action ephemeral node"
     required: true
   connectivity-probe-address:
     description: "Optional private address to probe after accepting Tailscale subnet routes"
@@ -20,26 +20,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Fetch Tailscale auth key from AWS SSM
-      id: tailscale-auth-key
-      env:
-        AWS_REGION: ${{ inputs.aws-region }}
-        TAILSCALE_AUTH_KEY_PARAMETER: ${{ inputs.tailscale-auth-key-parameter }}
-      shell: bash
-      run: |
-        authkey="$(aws ssm get-parameter \
-          --name "${TAILSCALE_AUTH_KEY_PARAMETER}" \
-          --with-decryption \
-          --region "${AWS_REGION}" \
-          --query 'Parameter.Value' \
-          --output text)"
-        echo "::add-mask::${authkey}"
-        echo "authkey=${authkey}" >> "${GITHUB_OUTPUT}"
-
     - name: Tailscale
       uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
       with:
-        authkey: ${{ steps.tailscale-auth-key.outputs.authkey }}
+        oauth-client-id: ${{ inputs.oauth-client-id }}
+        oauth-secret: ${{ inputs.oauth-secret }}
         tags: tag:ci
         statedir: /tmp/tailscale-state/
 

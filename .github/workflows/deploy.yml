@@ -53,26 +53,28 @@ jobs:
         shell: bash
         env:
           AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
-          TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
         run: |
           missing=()
 
           [[ -n "$AWS_ROLE_TO_ASSUME_HOMELAB" ]] || missing+=("AWS_ROLE_TO_ASSUME_HOMELAB")
-          [[ -n "$TAILSCALE_AUTH_KEY_SSM_PARAMETER" ]] || missing+=("TAILSCALE_AUTH_KEY_SSM_PARAMETER")
+          [[ -n "$TS_OAUTH_CLIENT_ID" ]] || missing+=("TS_OAUTH_CLIENT_ID")
+          [[ -n "$TS_OAUTH_SECRET" ]] || missing+=("TS_OAUTH_SECRET")
 
           if ((${#missing[@]})); then
             {
               echo "### Homelab Deploy blocked"
               echo
-              echo "Missing repository Actions variables:"
+              echo "Missing repository Actions configuration:"
               for var in "${missing[@]}"; do
                 echo "- \`$var\`"
               done
               echo
-              echo "Add them in Settings -> Secrets and variables -> Actions -> Variables, then re-run this workflow."
+              echo "Add the variable or secrets in Settings -> Secrets and variables -> Actions, then re-run this workflow."
             } >> "$GITHUB_STEP_SUMMARY"
 
-            echo "::error::Missing repository Actions variables: ${missing[*]}"
+            echo "::error::Missing repository Actions configuration: ${missing[*]}"
             exit 1
           fi
 
@@ -89,9 +91,9 @@ jobs:
       - name: Setup infrastructure access
         uses: ./.github/actions/setup-infrastructure
         with:
-          aws-region: us-east-1
           connectivity-probe-address: 10.1.0.200
-          tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 
       - name: Deploy homelab stack
         shell: bash

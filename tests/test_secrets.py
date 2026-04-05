@@ -46,18 +46,22 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("/homelab/paperclip/better_auth_secret", content)
         self.assertNotIn("/homelab/traefik/ts_authkey", content)
 
-    def test_github_workflows_fetch_tailscale_auth_key_from_ssm(self) -> None:
+    def test_github_workflows_use_tailscale_oauth_client(self) -> None:
         plan = (ROOT / ".github/workflows/plan.yml").read_text()
         deploy = (ROOT / ".github/workflows/deploy.yml").read_text()
         action = (ROOT / ".github/actions/setup-infrastructure/action.yml").read_text()
 
         self.assertNotIn("secrets.TS_AUTH_KEY", plan)
         self.assertNotIn("secrets.TS_AUTH_KEY", deploy)
-        self.assertIn("TAILSCALE_AUTH_KEY_SSM_PARAMETER", plan)
-        self.assertIn("TAILSCALE_AUTH_KEY_SSM_PARAMETER", deploy)
+        self.assertIn("secrets.TS_OAUTH_CLIENT_ID", plan)
+        self.assertIn("secrets.TS_OAUTH_SECRET", plan)
+        self.assertIn("secrets.TS_OAUTH_CLIENT_ID", deploy)
+        self.assertIn("secrets.TS_OAUTH_SECRET", deploy)
         self.assertIn("aws-actions/configure-aws-credentials@", plan)
         self.assertIn("aws-actions/configure-aws-credentials@", deploy)
-        self.assertIn("aws ssm get-parameter", action)
+        self.assertIn("oauth-client-id:", action)
+        self.assertIn("oauth-secret:", action)
+        self.assertNotIn("aws ssm get-parameter", action)
         self.assertIn("tailscale set --accept-routes=true", action)
         self.assertIn("connectivity-probe-address: 10.1.0.200", plan)
         self.assertIn("connectivity-probe-address: 10.1.0.200", deploy)

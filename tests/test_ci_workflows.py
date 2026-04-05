@@ -35,9 +35,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.repo.full_name != github.repository", content)
         self.assertIn("if: always() && github.event.pull_request.head.repo.full_name == github.repository", content)
         self.assertIn("vars.AWS_ROLE_TO_ASSUME_HOMELAB != ''", content)
-        self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
+        self.assertIn("secrets.TS_OAUTH_CLIENT_ID != ''", content)
+        self.assertIn("secrets.TS_OAUTH_SECRET != ''", content)
         self.assertIn("connectivity-probe-address: 10.1.0.200", content)
-        self.assertIn("Render skipped plan summary when repo variables are missing", content)
+        self.assertIn("Render skipped plan summary when repo configuration is missing", content)
         self.assertIn("--status skipped", content)
 
     def test_deploy_workflow_uses_safe_wrapper(self) -> None:
@@ -46,7 +47,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("concurrency:", content)
         self.assertIn("Validate deploy configuration", content)
         self.assertIn("AWS_ROLE_TO_ASSUME_HOMELAB", content)
-        self.assertIn("TAILSCALE_AUTH_KEY_SSM_PARAMETER", content)
+        self.assertIn("TS_OAUTH_CLIENT_ID", content)
+        self.assertIn("TS_OAUTH_SECRET", content)
         self.assertIn('GITHUB_STEP_SUMMARY', content)
         self.assertIn("Install Ansible controller dependencies", content)
         self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
