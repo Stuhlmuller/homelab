@@ -54,22 +54,24 @@ jobs:
         run: mkdir -p artifacts
 
       - name: Configure AWS credentials
-        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != ''
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
         uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
 
       - name: Setup infrastructure access
-        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != ''
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
         uses: ./.github/actions/setup-infrastructure
         with:
+          aws-region: us-east-1
           connectivity-probe-address: 10.1.0.200
+          tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TS_OAUTH_SECRET }}
 
       - name: Run Terragrunt plan
-        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != ''
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
         id: terragrunt_plan
         shell: bash
         run: |
@@ -81,7 +83,7 @@ jobs:
           echo "exit_code=${exit_code}" >> "${GITHUB_OUTPUT}"
 
       - name: Render plan summary
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != ''
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
         shell: bash
         env:
           PLAN_EXIT_CODE: ${{ steps.terragrunt_plan.outputs.exit_code || '1' }}
@@ -96,7 +98,7 @@ jobs:
             --output-file "${PLAN_SUMMARY}"
 
       - name: Render skipped plan summary when repo configuration is missing
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository && (vars.AWS_ROLE_TO_ASSUME_HOMELAB == '' || env.TS_OAUTH_CLIENT_ID == '' || env.TS_OAUTH_SECRET == '')
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository && (vars.AWS_ROLE_TO_ASSUME_HOMELAB == '' || ((env.TS_OAUTH_CLIENT_ID == '' || env.TS_OAUTH_SECRET == '') && vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER == ''))
         shell: bash
         run: |
           python3 scripts/ci/terragrunt_plan_report.py render-static \
@@ -106,11 +108,11 @@ jobs:
             --artifact-name "${ARTIFACT_NAME}" \
             --commit-sha "${GITHUB_SHA}" \
             --summary-line "Terragrunt plan skipped because the repository is missing required GitHub Actions configuration." \
-            --summary-line "Configure the \`AWS_ROLE_TO_ASSUME_HOMELAB\` variable and the \`TS_OAUTH_CLIENT_ID\` and \`TS_OAUTH_SECRET\` secrets to enable trusted-branch plans on pull requests." \
+            --summary-line "Configure the \`AWS_ROLE_TO_ASSUME_HOMELAB\` variable plus either the \`TS_OAUTH_CLIENT_ID\` and \`TS_OAUTH_SECRET\` secrets or the \`TAILSCALE_AUTH_KEY_SSM_PARAMETER\` variable to enable trusted-branch plans on pull requests." \
             --output-file "${PLAN_SUMMARY}"
 
       - name: Upload plan artifact
-        if: always() && github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != ''
+        if: always() && github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
@@ -135,6 +137,6 @@ jobs:
         run: echo "Skipping the privileged Terragrunt plan for fork pull requests."
 
       - name: Fail when plan fails
-        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '' && steps.terragrunt_plan.outputs.exit_code != '0'
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '') && steps.terragrunt_plan.outputs.exit_code != '0'
         shell: bash
         run: exit 1

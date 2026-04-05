@@ -118,8 +118,10 @@ workflow:
 5. Apply once the plan is clean.
 
 GitHub Actions expects the `AWS_ROLE_TO_ASSUME_HOMELAB` repo variable plus the
-`TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET` repo secrets for the Tailscale
-GitHub Action OAuth client. Same-repo pull
+`TS_OAUTH_CLIENT_ID` and `TS_OAUTH_SECRET` repo secrets for the preferred
+Tailscale GitHub Action OAuth client. Until those secrets are added, the
+workflows can still fall back to the legacy `TAILSCALE_AUTH_KEY_SSM_PARAMETER`
+repo variable. Same-repo pull
 requests that touch the live stack run a full Terragrunt plan and refresh a
 managed section in the PR description with the latest summary and workflow-run
 link. Fork pull requests only run the non-privileged validation workflow.

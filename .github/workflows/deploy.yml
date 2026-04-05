@@ -53,14 +53,27 @@ jobs:
         shell: bash
         env:
           AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
         run: |
           missing=()
+          has_oauth=0
+          has_authkey=0
 
           [[ -n "$AWS_ROLE_TO_ASSUME_HOMELAB" ]] || missing+=("AWS_ROLE_TO_ASSUME_HOMELAB")
-          [[ -n "$TS_OAUTH_CLIENT_ID" ]] || missing+=("TS_OAUTH_CLIENT_ID")
-          [[ -n "$TS_OAUTH_SECRET" ]] || missing+=("TS_OAUTH_SECRET")
+
+          if [[ -n "$TS_OAUTH_CLIENT_ID" && -n "$TS_OAUTH_SECRET" ]]; then
+            has_oauth=1
+          fi
+
+          if [[ -n "$TAILSCALE_AUTH_KEY_SSM_PARAMETER" ]]; then
+            has_authkey=1
+          fi
+
+          if (( ! has_oauth && ! has_authkey )); then
+            missing+=("TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET or TAILSCALE_AUTH_KEY_SSM_PARAMETER")
+          fi
 
           if ((${#missing[@]})); then
             {
@@ -91,7 +104,9 @@ jobs:
       - name: Setup infrastructure access
         uses: ./.github/actions/setup-infrastructure
         with:
+          aws-region: us-east-1
           connectivity-probe-address: 10.1.0.200
+          tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 
