@@ -75,7 +75,7 @@ PY
 INGRESS_IP="${INGRESS_IP:-$(resolve_ingress_endpoint)}"
 NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-${INGRESS_IP}}"
 
-for job in nfs-csi-plugin traefik dokploy paperclip; do
+for job in nfs-csi-plugin traefik dokploy paperclip policy-bot; do
   job_status="$(remote_nomad_command "${NOMAD_HTTP_IP}" "nomad job status -json ${job}")"
   job_status_file="$(mktemp)"
   printf '%s' "${job_status}" >"${job_status_file}"
@@ -115,6 +115,7 @@ done
 nomad_variables="$(remote_nomad_command "${NOMAD_HTTP_IP}" 'nomad var list')"
 for path in \
   "nomad/jobs/dokploy/config" \
+  "nomad/jobs/policy-bot/config" \
   "nomad/jobs/paperclip/config" \
   "nomad/jobs/traefik/cf_dns_api_token"; do
   grep -q "${path}" <<<"${nomad_variables}" || {
@@ -215,3 +216,8 @@ curl --fail --silent --show-error \
   --resolve "paperclip.stinkyboi.com:443:${INGRESS_IP}" \
   "https://paperclip.stinkyboi.com/api/health" >/dev/null
 echo "validated Paperclip HTTPS health endpoint on ${INGRESS_IP}"
+
+curl --fail --silent --show-error \
+  --resolve "policy-bot.stinkyboi.com:443:${INGRESS_IP}" \
+  "https://policy-bot.stinkyboi.com/api/health" >/dev/null
+echo "validated Policy Bot HTTPS health endpoint on ${INGRESS_IP}"

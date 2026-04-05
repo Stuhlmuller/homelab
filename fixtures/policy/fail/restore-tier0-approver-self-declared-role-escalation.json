@@ -1,0 +1,31 @@
+{
+  "request_id": "restore-2026-04-05-007",
+  "tier": "tier-0",
+  "requester_principal": "alice.requester",
+  "executor_principal": "eve.executor",
+  "grant_ttl_minutes": 20,
+  "role_bindings": [
+    {
+      "principal": "karen.keyadmin",
+      "roles": ["key_admin"]
+    },
+    {
+      "principal": "ben.backup",
+      "roles": ["backup_operator"]
+    },
+    {
+      "principal": "sam.approver",
+      "roles": ["restore_approver"]
+    },
+    {
+      "principal": "eve.executor",
+      "roles": ["restore_executor"]
+    }
+  ],
+  "approvers": [
+    {
+      "principal": "sam.approver",
+      "roles": ["restore_approver", "security_officer", "platform_owner"]
+    }
+  ]
+}

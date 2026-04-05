@@ -36,6 +36,7 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 ```
 
 Do not deploy Nomad jobs until quorum and host reachability are stable. As of
-April 5, 2026, `10.1.0.199` is reachable over SSH as `acer`, but it still
-needs first-time Tailscale enrollment and privileged bootstrap access before it
-can join the control plane as the primary server.
+April 5, 2026, `10.1.0.199` has joined the control plane as `acer` /
+`nomad-primary`. For future fresh-node rebuilds, complete `tailscale up`
+manually before rerunning bootstrap because the playbook only reapplies
+Tailscale settings after a reusable node key already exists.
