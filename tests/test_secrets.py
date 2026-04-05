@@ -75,4 +75,6 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("tailscale set --accept-routes=true", action)
         self.assertNotIn("connectivity-probe-address: 100.94.104.7", plan)
         self.assertIn("-refresh=false", plan)
-        self.assertIn("connectivity-probe-address: 100.94.104.7", deploy)
+        self.assertIn("connectivity-probe-address: 10.1.0.200", deploy)
+        self.assertIn("NOMAD_ADDR: http://10.1.0.200:4646", deploy)
+        self.assertNotIn('USE_TAILSCALE_ENDPOINTS: "1"', deploy)
