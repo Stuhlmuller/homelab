@@ -42,6 +42,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
         self.assertIn("connectivity-probe-address: 10.1.0.200", content)
+        self.assertIn('connectivity-probe-port: "4646"', content)
         self.assertIn("Render skipped plan summary when repo configuration is missing", content)
         self.assertIn("--status skipped", content)
 
@@ -58,6 +59,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("Install Ansible controller dependencies", content)
         self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
         self.assertIn("connectivity-probe-address: 10.1.0.200", content)
+        self.assertIn('connectivity-probe-port: "22"', content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
         self.assertIn("./scripts/deploy-live.sh --skip-bootstrap", content)
         self.assertIn("aws-actions/configure-aws-credentials@", content)

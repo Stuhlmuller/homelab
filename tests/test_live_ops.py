@@ -68,6 +68,12 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn('running allocations', content)
         self.assertIn("paperclip.stinkyboi.com", content)
 
+    def test_live_cluster_validation_prefers_ssh_when_ping_is_filtered(self) -> None:
+        content = (ROOT / "scripts/validate-live-cluster.sh").read_text()
+        self.assertIn("ping failed; continuing with SSH validation", content)
+        self.assertIn("host is reachable over SSH and core services are active", content)
+        self.assertIn("ssh -o BatchMode=yes", content)
+
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()
         self.assertNotIn("run --all --graph", content)

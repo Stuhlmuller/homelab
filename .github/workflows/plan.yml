@@ -66,6 +66,7 @@ jobs:
         with:
           aws-region: us-east-1
           connectivity-probe-address: 10.1.0.200
+          connectivity-probe-port: "4646"
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TS_OAUTH_SECRET }}

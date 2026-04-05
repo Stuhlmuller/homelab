@@ -44,10 +44,10 @@ for record in "${inventory_hosts[@]}"; do
 
   echo "checking ${name} (${ip})"
 
+  ping_ok=1
   if ! ping -c 1 -W "${PING_TIMEOUT_SECONDS}" "${ip}" >/dev/null 2>&1; then
-    echo "  ping failed"
-    failed_hosts+=("${name}:${ip}:ping")
-    continue
+    echo "  ping failed; continuing with SSH validation"
+    ping_ok=0
   fi
 
   if ! ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${ip}" \
@@ -57,7 +57,11 @@ for record in "${inventory_hosts[@]}"; do
     continue
   fi
 
-  echo "  host is reachable and core services are active"
+  if [[ "${ping_ok}" == "1" ]]; then
+    echo "  host is reachable and core services are active"
+  else
+    echo "  host is reachable over SSH and core services are active"
+  fi
   reachable_hosts+=("${name}:${ip}")
 done
 

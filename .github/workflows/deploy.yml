@@ -106,10 +106,13 @@ jobs:
         with:
           aws-region: us-east-1
           connectivity-probe-address: 10.1.0.200
+          connectivity-probe-port: "22"
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 
       - name: Deploy homelab stack
         shell: bash
+        env:
+          NOMAD_ADDR: http://10.1.0.200:4646
         run: ./scripts/deploy-live.sh --skip-bootstrap
