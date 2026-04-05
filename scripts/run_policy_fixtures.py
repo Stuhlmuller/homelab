@@ -17,6 +17,7 @@ def run_fixture(path: Path) -> tuple[int, str]:
         capture_output=True,
         text=True,
         check=False,
+        cwd=ROOT,
     )
     output = (proc.stdout + proc.stderr).strip()
     return proc.returncode, output

@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-POLICY_PATH = Path("policies/restore_decryption_policy.json")
+ROOT = Path(__file__).resolve().parent.parent
+POLICY_PATH = ROOT / "policies" / "restore_decryption_policy.json"
 
 
 class ValidationError(Exception):
@@ -74,15 +75,15 @@ def validate_request(request: dict[str, Any], policy: dict[str, Any]) -> None:
     if requester is None or executor_principal is None:
         raise ValidationError("requester_principal and executor_principal are required")
 
-    if not isinstance(grant_ttl, int):
+    if not isinstance(grant_ttl, int) or isinstance(grant_ttl, bool):
         raise ValidationError("grant_ttl_minutes must be an integer")
 
     _validate_role_coverage(policy, role_bindings)
     _validate_mutual_exclusion(policy, role_bindings)
 
-    if grant_ttl > tier_policy["max_grant_ttl_minutes"]:
+    if grant_ttl < 1 or grant_ttl > tier_policy["max_grant_ttl_minutes"]:
         raise ValidationError(
-            f"grant TTL {grant_ttl}m exceeds {tier} limit {tier_policy['max_grant_ttl_minutes']}m"
+            f"grant TTL {grant_ttl}m must be between 1 and {tier_policy['max_grant_ttl_minutes']}m for {tier}"
         )
 
     executor_roles = _roles_for(executor_principal, role_bindings)
