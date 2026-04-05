@@ -1,5 +1,5 @@
 terraform {
-  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/nomad-job?ref=0.1.0"
+  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/nomad-job?ref=0.2.0"
 }
 
 include "root" {
