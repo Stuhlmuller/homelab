@@ -1,0 +1,88 @@
+name: "Validate"
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install Ansible controller dependencies
+        shell: bash
+        run: python -m pip install --upgrade pip ansible boto3 botocore
+
+      - name: Run validation harness
+        shell: bash
+        run: make validate
+
+  pr-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Install pre-commit
+        shell: bash
+        run: python -m pip install --upgrade pip pre-commit
+
+      - name: Run PR-focused pre-commit checks
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python -m pre_commit run check-yaml --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
+          python -m pre_commit run codespell --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
+          python -m pre_commit run checkov_diff --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
+          python -m pre_commit run checkov_secrets --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
+          python -m pre_commit run zizmor --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
+
+      - name: Install actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="1.7.9"
+          arch="$(uname -m)"
+          case "${arch}" in
+            x86_64) archive_arch="amd64" ;;
+            aarch64|arm64) archive_arch="arm64" ;;
+            *)
+              echo "unsupported architecture: ${arch}" >&2
+              exit 1
+              ;;
+          esac
+          archive="actionlint_${version}_linux_${archive_arch}.tar.gz"
+          curl --fail --location --silent --show-error \
+            --output "${archive}" \
+            "https://github.com/rhysd/actionlint/releases/download/v${version}/${archive}"
+          tar -xzf "${archive}" actionlint
+
+      - name: Lint GitHub Actions
+        shell: bash
+        run: ./actionlint

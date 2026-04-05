@@ -1,0 +1,5 @@
+- name: Reconcile Tailscale on homelab servers
+  hosts: nomad_servers
+  become: true
+  roles:
+    - role: tailscale

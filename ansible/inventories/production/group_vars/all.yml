@@ -1,0 +1,41 @@
+homelab_domain: stinkyboi.com
+homelab_bootstrap_expect: 3
+ingress_nomad_node_name: nomad-0
+consul_datacenter: homelab
+consul_bootstrap_expect: "{{ homelab_bootstrap_expect }}"
+consul_retry_join:
+  - 10.1.0.200
+  - 10.1.0.201
+  - 10.1.0.202
+nomad_datacenter: homelab
+nomad_region: global
+nomad_bootstrap_expect: "{{ homelab_bootstrap_expect }}"
+nomad_retry_join: "{{ consul_retry_join }}"
+nomad_bind_addr: 0.0.0.0
+nomad_data_dir: /opt/nomad
+consul_data_dir: /opt/consul
+nomad_network_interface: "{{ ansible_default_ipv4.interface | default('eth0') }}"
+nomad_node_class: worker
+nfs_server: 10.1.0.2
+nfs_share: /data
+traefik_acme_email: rodman@stuhlmuller.net
+aws_region: us-east-1
+tailscale_enabled: true
+tailscale_accept_routes: false
+tailscale_advertise_routes: []
+tailscale_args:
+  - --ssh
+docker_apt_release: bookworm
+nomad_host_volumes:
+  - name: docker-sock
+    path: /var/run/docker.sock
+    read_only: false
+  - name: dockploy_data
+    path: /opt/nomad/volumes/dokploy
+    read_only: false
+  - name: postgres_data
+    path: /opt/nomad/volumes/postgres
+    read_only: false
+  - name: tailscale_data
+    path: /var/lib/tailscale
+    read_only: false

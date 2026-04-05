@@ -1,0 +1,33 @@
+---
+- name: Create apt keyring directory
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install HashiCorp archive key
+  ansible.builtin.get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /tmp/hashicorp-archive-keyring.asc
+    mode: "0644"
+
+- name: Dearmor HashiCorp archive key
+  ansible.builtin.command:
+    cmd: gpg --dearmor --yes --output /usr/share/keyrings/hashicorp-archive-keyring.gpg /tmp/hashicorp-archive-keyring.asc
+  changed_when: true
+
+- name: Configure HashiCorp apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/hashicorp.list
+    mode: "0644"
+    content: |
+      deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main
+
+- name: Remove legacy HashiCorp apt key path if present
+  ansible.builtin.file:
+    path: /etc/apt/keyrings/hashicorp.gpg
+    state: absent
+
+- name: Refresh apt cache after HashiCorp repository changes
+  ansible.builtin.apt:
+    update_cache: true

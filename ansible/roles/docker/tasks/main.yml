@@ -1,0 +1,41 @@
+- name: Ensure Docker apt keyring directory exists
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Install Docker archive key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /tmp/docker-archive-keyring.asc
+    mode: "0644"
+
+- name: Dearmor Docker archive key
+  ansible.builtin.command:
+    cmd: gpg --dearmor --yes --output /usr/share/keyrings/docker-archive-keyring.gpg /tmp/docker-archive-keyring.asc
+  changed_when: true
+
+- name: Configure Docker apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.list
+    mode: "0644"
+    content: |
+      deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian {{ docker_apt_release }} stable
+
+- name: Install Docker engine
+  ansible.builtin.apt:
+    name:
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-ce
+      - docker-ce-cli
+      - docker-compose-plugin
+    state: present
+    update_cache: true
+  notify: restart docker
+
+- name: Ensure Docker service is enabled
+  ansible.builtin.service:
+    name: docker
+    enabled: true
+    state: started

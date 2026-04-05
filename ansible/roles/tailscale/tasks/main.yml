@@ -1,0 +1,83 @@
+- name: Install Tailscale apt signing key
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
+  when: tailscale_enabled
+
+- name: Add Tailscale apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian {{ ansible_distribution_release }} main"
+    filename: tailscale
+    state: present
+  when: tailscale_enabled
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+    update_cache: true
+  when: tailscale_enabled
+  notify: restart tailscaled
+
+- name: Ensure tailscaled service is enabled
+  ansible.builtin.service:
+    name: tailscaled
+    enabled: true
+    state: started
+  when: tailscale_enabled
+
+- name: Read Tailscale status
+  ansible.builtin.command: tailscale status --json
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+  when: tailscale_enabled
+
+- name: Parse Tailscale status payload when available
+  ansible.builtin.set_fact:
+    tailscale_status_payload: "{{ tailscale_status.stdout | from_json }}"
+  when:
+    - tailscale_enabled
+    - tailscale_status.rc == 0
+    - tailscale_status.stdout | default('') | length > 0
+
+- name: Build Tailscale up arguments
+  ansible.builtin.set_fact:
+    tailscale_up_argv: >-
+      {{
+        ['tailscale', 'up', '--reset']
+        + (tailscale_accept_routes | default(false) | bool | ternary(['--accept-routes'], []))
+        + (
+          (tailscale_advertise_routes | default([]) | length > 0)
+          | ternary(
+            ['--advertise-routes=' ~ (tailscale_advertise_routes | join(','))],
+            []
+          )
+        )
+        + tailscale_args
+      }}
+  no_log: true
+  when:
+    - tailscale_enabled
+    - tailscale_status_payload.HaveNodeKey | default(false) | bool
+
+- name: Fail when Tailscale needs first-time enrollment
+  ansible.builtin.fail:
+    msg: >-
+      Tailscale is installed but this node does not have a reusable node key.
+      Complete `tailscale up` manually on the host, then rerun the bootstrap or
+      reconciliation playbook.
+  when:
+    - tailscale_enabled
+    - not (tailscale_status_payload.HaveNodeKey | default(false) | bool)
+    - tailscale_status.rc != 0 or (tailscale_status_payload.BackendState | default('')) != 'Running'
+
+- name: Reconcile Tailscale when a reusable node key is available
+  ansible.builtin.command:
+    argv: "{{ tailscale_up_argv }}"
+  no_log: true
+  when:
+    - tailscale_enabled
+    - tailscale_up_argv is defined
+    - tailscale_status.rc != 0 or '"BackendState":"Running"' not in tailscale_status.stdout

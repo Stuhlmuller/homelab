@@ -1,43 +1,129 @@
 name: "Setup Infrastructure"
-description: "Common setup for Terragrunt workflows - AWS, Tailscale, and kubeconfig"
+description: "Common setup for homelab workflows"
 
 inputs:
-  aws-role-arn:
-    description: "AWS IAM role ARN to assume"
-    required: true
   aws-region:
-    description: "AWS region"
+    description: "AWS region used to fetch the legacy Tailscale auth key from SSM"
     required: false
-    default: "us-west-2"
-  tailscale-auth-key:
-    description: "Tailscale auth key"
-    required: true
-  kube-config:
-    description: "Kubeconfig content"
-    required: true
+    default: "us-east-1"
+  tailscale-auth-key-parameter:
+    description: "Optional AWS SSM parameter name that stores the legacy Tailscale auth key"
+    required: false
+    default: ""
+  oauth-client-id:
+    description: "Tailscale OAuth client ID for the GitHub Action ephemeral node"
+    required: false
+    default: ""
+  oauth-secret:
+    description: "Tailscale OAuth client secret for the GitHub Action ephemeral node"
+    required: false
+    default: ""
+  connectivity-probe-address:
+    description: "Optional private address to probe after accepting Tailscale subnet routes"
+    required: false
+    default: ""
+  connectivity-probe-port:
+    description: "Optional TCP port to probe instead of ICMP ping"
+    required: false
+    default: ""
+  connectivity-timeout-seconds:
+    description: "Maximum number of seconds to wait for the connectivity probe"
+    required: false
+    default: "180"
 
 runs:
   using: "composite"
   steps:
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
-      with:
-        aws-region: ${{ inputs.aws-region }}
-        role-to-assume: ${{ inputs.aws-role-arn }}
-        role-session-name: github-actions-session
+    - name: Select Tailscale authentication mode
+      id: auth-mode
+      shell: bash
+      env:
+        OAUTH_CLIENT_ID: ${{ inputs.oauth-client-id }}
+        OAUTH_SECRET: ${{ inputs.oauth-secret }}
+        TAILSCALE_AUTH_KEY_PARAMETER: ${{ inputs.tailscale-auth-key-parameter }}
+      run: |
+        if [[ -n "${OAUTH_CLIENT_ID}" && -n "${OAUTH_SECRET}" ]]; then
+          echo "mode=oauth" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
 
-    - name: Tailscale
+        if [[ -n "${TAILSCALE_AUTH_KEY_PARAMETER}" ]]; then
+          echo "mode=authkey" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        echo "::error::Configure either the Tailscale OAuth client inputs or tailscale-auth-key-parameter."
+        exit 1
+
+    - name: Fetch legacy Tailscale auth key from AWS SSM
+      if: steps.auth-mode.outputs.mode == 'authkey'
+      id: tailscale-auth-key
+      env:
+        AWS_REGION: ${{ inputs.aws-region }}
+        TAILSCALE_AUTH_KEY_PARAMETER: ${{ inputs.tailscale-auth-key-parameter }}
+      shell: bash
+      run: |
+        authkey="$(aws ssm get-parameter \
+          --name "${TAILSCALE_AUTH_KEY_PARAMETER}" \
+          --with-decryption \
+          --region "${AWS_REGION}" \
+          --query 'Parameter.Value' \
+          --output text)"
+        echo "::add-mask::${authkey}"
+        echo "authkey=${authkey}" >> "${GITHUB_OUTPUT}"
+
+    - name: Tailscale with OAuth client
+      if: steps.auth-mode.outputs.mode == 'oauth'
       uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
       with:
-        authkey: ${{ inputs.tailscale-auth-key }}
+        oauth-client-id: ${{ inputs.oauth-client-id }}
+        oauth-secret: ${{ inputs.oauth-secret }}
         tags: tag:ci
         statedir: /tmp/tailscale-state/
 
-    - name: Setup kubeconfig
+    - name: Tailscale with legacy auth key
+      if: steps.auth-mode.outputs.mode == 'authkey'
+      uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
+      with:
+        authkey: ${{ steps.tailscale-auth-key.outputs.authkey }}
+        tags: tag:ci
+        statedir: /tmp/tailscale-state/
+
+    - name: Accept Tailscale subnet routes
+      shell: bash
+      run: sudo tailscale set --accept-routes=true
+
+    - name: Wait for Tailscale subnet reachability
+      if: inputs.connectivity-probe-address != ''
+      env:
+        CONNECTIVITY_PROBE_ADDRESS: ${{ inputs.connectivity-probe-address }}
+        CONNECTIVITY_PROBE_PORT: ${{ inputs.connectivity-probe-port }}
+        CONNECTIVITY_TIMEOUT_SECONDS: ${{ inputs.connectivity-timeout-seconds }}
       shell: bash
       run: |
-        mkdir -p $HOME/.kube
-        echo "${INPUTS_KUBE_CONFIG}" > $HOME/.kube/config
-        chmod 600 $HOME/.kube/config
-      env:
-        INPUTS_KUBE_CONFIG: ${{ inputs.kube-config }}
+        deadline=$((SECONDS + CONNECTIVITY_TIMEOUT_SECONDS))
+
+        while ((SECONDS < deadline)); do
+          if [[ -n "${CONNECTIVITY_PROBE_PORT}" ]]; then
+            if python3 -c 'import socket, sys; socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=1).close()' \
+              "${CONNECTIVITY_PROBE_ADDRESS}" "${CONNECTIVITY_PROBE_PORT}"
+            then
+              echo "verified TCP reachability to ${CONNECTIVITY_PROBE_ADDRESS}:${CONNECTIVITY_PROBE_PORT}"
+              exit 0
+            fi
+          else
+            if ping -c 1 -W 1 "${CONNECTIVITY_PROBE_ADDRESS}" >/dev/null 2>&1; then
+              echo "verified Tailscale subnet reachability to ${CONNECTIVITY_PROBE_ADDRESS}"
+              exit 0
+            fi
+          fi
+
+          sleep 5
+        done
+
+        if [[ -n "${CONNECTIVITY_PROBE_PORT}" ]]; then
+          echo "::error::Timed out waiting for TCP reachability to ${CONNECTIVITY_PROBE_ADDRESS}:${CONNECTIVITY_PROBE_PORT}"
+        else
+          echo "::error::Timed out waiting for Tailscale subnet reachability to ${CONNECTIVITY_PROBE_ADDRESS}"
+        fi
+        exit 1

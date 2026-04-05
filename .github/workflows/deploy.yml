@@ -1,37 +1,121 @@
-name: "Terragrunt Deploy"
+name: "Homelab Deploy"
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - "IaC/**"
+      - "nomad/**"
+      - "terraform/**"
+      - "root.hcl"
+      - "mise.toml"
+      - "scripts/deploy-live.sh"
+      - "scripts/validate-ansible-layout.sh"
+      - "scripts/validate-ansible.sh"
+      - "scripts/validate-aws-kms.sh"
+      - "scripts/validate-aws-ssm.sh"
+      - "scripts/validate-live-cluster.sh"
+      - "scripts/validate-live-workloads.sh"
+      - "scripts/validate-nomad.sh"
+      - "scripts/validate-shell.sh"
+      - "scripts/validate-skills.sh"
+      - "scripts/validate-terraform.sh"
+      - "scripts/validate-terragrunt.sh"
+      - "scripts/validate.sh"
+      - ".github/actions/setup-infrastructure/**"
       - ".github/workflows/deploy.yml"
+      - ".github/workflows/validate.yml"
 
 permissions: {}
 
-jobs:
-  checks:
-    uses: ./.github/workflows/terragrunt-checks.yml
-    with:
-      working_dir: IaC/production/homelab
-    permissions:
-      contents: read
+concurrency:
+  group: homelab-deploy
+  cancel-in-progress: false
 
+jobs:
   deploy:
-    needs: [checks]
-    uses: ./.github/workflows/terragrunt-run.yml
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-      pull-requests: write
-    with:
-      working_dir: IaC/production/homelab
-      command: "run --all --non-interactive -- apply"
-      tg_comment: "1"
-    secrets:
-      aws_role_arn: arn:aws:iam::716182248480:role/Github-TF-State
-      tailscale_auth_key: ${{ secrets.TS_AUTH_KEY }}
-      kube_config: ${{ secrets.KUBE_CONFIG }}
-      gh_token: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      TG_TF_PATH: tofu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup mise
+        uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - name: Validate deploy configuration
+        shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+        run: |
+          missing=()
+          has_oauth=0
+          has_authkey=0
+
+          [[ -n "$AWS_ROLE_TO_ASSUME_HOMELAB" ]] || missing+=("AWS_ROLE_TO_ASSUME_HOMELAB")
+
+          if [[ -n "$TS_OAUTH_CLIENT_ID" && -n "$TS_OAUTH_SECRET" ]]; then
+            has_oauth=1
+          fi
+
+          if [[ -n "$TAILSCALE_AUTH_KEY_SSM_PARAMETER" ]]; then
+            has_authkey=1
+          fi
+
+          if (( ! has_oauth && ! has_authkey )); then
+            missing+=("TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET or TAILSCALE_AUTH_KEY_SSM_PARAMETER")
+          fi
+
+          if ((${#missing[@]})); then
+            {
+              echo "### Homelab Deploy blocked"
+              echo
+              echo "Missing repository Actions configuration:"
+              for var in "${missing[@]}"; do
+                echo "- \`$var\`"
+              done
+              echo
+              echo "Add the variable or secrets in Settings -> Secrets and variables -> Actions, then re-run this workflow."
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo "::error::Missing repository Actions configuration: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Install Ansible controller dependencies
+        shell: bash
+        run: python -m pip install --upgrade pip ansible boto3 botocore
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+
+      - name: Setup infrastructure access
+        uses: ./.github/actions/setup-infrastructure
+        with:
+          aws-region: us-east-1
+          connectivity-probe-address: 100.94.104.7
+          connectivity-probe-port: "22"
+          tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+
+      - name: Deploy homelab stack
+        shell: bash
+        env:
+          INGRESS_IP: 100.94.104.7
+          NOMAD_ADDR: http://100.94.104.7:4646
+          NOMAD_HTTP_IP: 100.94.104.7
+          USE_TAILSCALE_ENDPOINTS: "1"
+        run: ./scripts/deploy-live.sh --skip-bootstrap

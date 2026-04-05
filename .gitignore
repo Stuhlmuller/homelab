@@ -38,7 +38,14 @@ terraform.rc
 
 .terragrunt-cache/
 .DS_Store
+.pytest_cache/
+__pycache__/
+*.pyc
+plan.out
 
+# Python bytecode
+__pycache__/
+*.py[cod]
 
 #Ignore vscode AI rules
 .github/copilot-instructions.md
