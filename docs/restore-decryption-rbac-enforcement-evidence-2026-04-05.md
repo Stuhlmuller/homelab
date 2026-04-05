@@ -14,12 +14,16 @@ Implements policy-as-code guardrails for [HOM-107](/HOM/issues/HOM-107):
 - `scripts/preflight_policy_guardrails.py`
 - `scripts/run_policy_fixtures.py`
 - `fixtures/policy/pass/restore-tier0-dual-control-valid.json`
+- `fixtures/policy/pass/restore-tier1-valid.json`
 - `fixtures/policy/fail/restore-tier0-approver-executor-overlap.json`
+- `fixtures/policy/fail/restore-tier0-approver-self-declared-role-escalation.json`
+- `fixtures/policy/fail/restore-tier0-grant-ttl-boolean.json`
+- `fixtures/policy/fail/restore-tier0-grant-ttl-zero.json`
 - `fixtures/policy/fail/restore-tier0-missing-security-approval.json`
 - `fixtures/policy/fail/restore-tier1-grant-ttl-exceeds-limit.json`
 
 ## Validation
 - `python3 scripts/run_policy_fixtures.py`
-- `python3 -m unittest discover -s tests -p 'test_restore_policy.py'`
+- `python3 -m unittest discover -s tests -p 'test_*.py'`
 
 Both commands pass in the implementation workspace.

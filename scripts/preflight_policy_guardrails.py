@@ -100,9 +100,17 @@ def validate_request(request: dict[str, Any], policy: dict[str, Any]) -> None:
             raise ValidationError("approver principal is required")
         approver_principals.add(principal)
 
-        roles = set(approver.get("roles", []))
-        approver_roles_flat.update(roles)
-        if "restore_approver" not in roles:
+        bound_roles = _roles_for(principal, role_bindings)
+        claimed_roles = set(approver.get("roles", []))
+        unbound_roles = sorted(claimed_roles - bound_roles)
+        if unbound_roles:
+            raise ValidationError(
+                f"approver '{principal}' claims roles not in role_bindings: "
+                + ", ".join(unbound_roles)
+            )
+
+        approver_roles_flat.update(bound_roles)
+        if "restore_approver" not in bound_roles:
             raise ValidationError(
                 f"approver '{principal}' is missing required role 'restore_approver'"
             )
