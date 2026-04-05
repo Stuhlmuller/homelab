@@ -113,6 +113,14 @@ runs:
       if: steps.auth-mode.outputs.mode == 'authkey-parameter'
       uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
       with:
+        authkey: ${{ steps.tailscale-auth-key-direct.outputs.authkey }}
+        tags: tag:ci
+        statedir: /tmp/tailscale-state/
+
+    - name: Tailscale with auth key from AWS SSM
+      if: steps.auth-mode.outputs.mode == 'authkey-parameter'
+      uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
+      with:
         authkey: ${{ steps.tailscale-auth-key-ssm.outputs.authkey }}
         tags: tag:ci
         statedir: /tmp/tailscale-state/
