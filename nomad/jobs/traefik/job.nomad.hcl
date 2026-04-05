@@ -1,3 +1,8 @@
+variable "ingress_nomad_node_name" {
+  type    = string
+  default = "nomad-primary"
+}
+
 job "traefik" {
   datacenters = ["homelab"]
   type        = "service"
@@ -7,7 +12,7 @@ job "traefik" {
 
     constraint {
       attribute = "${node.unique.name}"
-      value     = "nomad-0"
+      value     = var.ingress_nomad_node_name
     }
 
     network {

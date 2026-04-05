@@ -1,9 +1,10 @@
 homelab_domain: stinkyboi.com
 homelab_bootstrap_expect: 3
-ingress_nomad_node_name: nomad-0
+ingress_nomad_node_name: nomad-primary
 consul_datacenter: homelab
 consul_bootstrap_expect: "{{ homelab_bootstrap_expect }}"
 consul_retry_join:
+  - 10.1.0.199
   - 10.1.0.200
   - 10.1.0.201
   - 10.1.0.202

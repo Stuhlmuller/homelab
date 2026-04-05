@@ -2,8 +2,6 @@
 set -euo pipefail
 
 SSH_TIMEOUT_SECONDS="${SSH_TIMEOUT_SECONDS:-5}"
-INGRESS_IP="${INGRESS_IP:-10.1.0.200}"
-NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-10.1.0.200}"
 USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"
 INVENTORY_FILE="ansible/inventories/production/hosts.yml"
 
@@ -12,8 +10,73 @@ if [[ ! -f "${INVENTORY_FILE}" ]]; then
   exit 1
 fi
 
+remote_nomad_command() {
+  local host="$1"
+  local command="$2"
+
+  if [[ -n "${NOMAD_TOKEN:-}" ]]; then
+    ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${host}" \
+      "NOMAD_TOKEN='${NOMAD_TOKEN}' ${command}"
+  else
+    ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${host}" \
+      "${command}"
+  fi
+}
+
+resolve_ingress_endpoint() {
+  python3 - "${USE_TAILSCALE_ENDPOINTS}" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+use_tailscale = sys.argv[1] == "1"
+content = Path("ansible/inventories/production/hosts.yml").read_text().splitlines()
+current_host = None
+current_ip = None
+current_tailscale_ip = None
+current_node_class = None
+
+for line in content:
+    host_match = re.match(r"^\s{8}([a-zA-Z0-9-]+):\s*$", line)
+    if host_match:
+        if current_host and current_ip and current_node_class == "ingress":
+            endpoint = current_tailscale_ip if use_tailscale and current_tailscale_ip else current_ip
+            print(endpoint)
+            raise SystemExit(0)
+        current_host = host_match.group(1)
+        current_ip = None
+        current_tailscale_ip = None
+        current_node_class = None
+        continue
+
+    ip_match = re.match(r"^\s{10}ansible_host:\s*([0-9.]+)\s*$", line)
+    if ip_match and current_host:
+        current_ip = ip_match.group(1)
+        continue
+
+    tailscale_match = re.match(r"^\s{10}tailscale_ip:\s*([0-9.]+)\s*$", line)
+    if tailscale_match and current_host:
+        current_tailscale_ip = tailscale_match.group(1)
+        continue
+
+    node_class_match = re.match(r"^\s{10}nomad_node_class:\s*([a-zA-Z0-9_-]+)\s*$", line)
+    if node_class_match and current_host:
+        current_node_class = node_class_match.group(1)
+
+if current_host and current_ip and current_node_class == "ingress":
+    endpoint = current_tailscale_ip if use_tailscale and current_tailscale_ip else current_ip
+    print(endpoint)
+    raise SystemExit(0)
+
+raise SystemExit("failed to resolve ingress endpoint from inventory")
+PY
+}
+
+INGRESS_IP="${INGRESS_IP:-$(resolve_ingress_endpoint)}"
+NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-${INGRESS_IP}}"
+
 for job in nfs-csi-plugin traefik dokploy paperclip policy-bot; do
-  job_status="$(ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${NOMAD_HTTP_IP}" "nomad job status -json ${job}")"
+  job_status="$(remote_nomad_command "${NOMAD_HTTP_IP}" "nomad job status -json ${job}")"
   job_status_file="$(mktemp)"
   printf '%s' "${job_status}" >"${job_status_file}"
   python3 - "${job}" "${job_status_file}" <<'PY'
@@ -49,7 +112,7 @@ PY
   rm -f "${job_status_file}"
 done
 
-nomad_variables="$(ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${NOMAD_HTTP_IP}" 'nomad var list')"
+nomad_variables="$(remote_nomad_command "${NOMAD_HTTP_IP}" 'nomad var list')"
 for path in \
   "nomad/jobs/dokploy/config" \
   "nomad/jobs/policy-bot/config" \
