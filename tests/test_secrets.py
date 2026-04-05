@@ -67,5 +67,6 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("mode=oauth", action)
         self.assertIn("mode=authkey", action)
         self.assertIn("tailscale set --accept-routes=true", action)
-        self.assertIn("connectivity-probe-address: 100.94.104.7", plan)
+        self.assertNotIn("connectivity-probe-address: 100.94.104.7", plan)
+        self.assertIn("-refresh=false", plan)
         self.assertIn("connectivity-probe-address: 100.94.104.7", deploy)

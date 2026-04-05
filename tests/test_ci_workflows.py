@@ -41,9 +41,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("env.TS_OAUTH_SECRET != ''", content)
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
-        self.assertIn("connectivity-probe-address: 100.94.104.7", content)
-        self.assertIn('connectivity-probe-port: "4646"', content)
         self.assertIn("NOMAD_ADDR: http://100.94.104.7:4646", content)
+        self.assertIn("-- -refresh=false", content)
+        self.assertNotIn('connectivity-probe-port: "4646"', content)
         self.assertIn("Render skipped plan summary when repo configuration is missing", content)
         self.assertIn("--status skipped", content)
 

@@ -66,8 +66,6 @@ jobs:
         uses: ./.github/actions/setup-infrastructure
         with:
           aws-region: us-east-1
-          connectivity-probe-address: 100.94.104.7
-          connectivity-probe-port: "4646"
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TS_OAUTH_SECRET }}
@@ -79,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
           set +e
-          terragrunt run --all --tf-path "${TG_TF_PATH}" plan --working-dir "${WORKING_DIR}" 2>&1 | tee "${PLAN_LOG}"
+          terragrunt run --all --tf-path "${TG_TF_PATH}" plan --working-dir "${WORKING_DIR}" -- -refresh=false 2>&1 | tee "${PLAN_LOG}"
           exit_code="${PIPESTATUS[0]}"
           set -e
           echo "exit_code=${exit_code}" >> "${GITHUB_OUTPUT}"
