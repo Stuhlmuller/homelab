@@ -1,8 +1,9 @@
 # Homelab Monorepo
 
 This repository manages a Debian-based Nomad homelab running on three Zima
-boards:
+boards plus one Acer control-plane node:
 
+- `acer` at `10.1.0.199`
 - `zimaboard-0` at `10.1.0.200`
 - `zimaboard-1` at `10.1.0.201`
 - `zimaboard-2` at `10.1.0.202`
@@ -53,10 +54,12 @@ homelab/
   `shared-data` volume.
 - Tailscale is managed as host software so the entire LAN remains reachable over
   the tailnet.
-- `zimaboard-0` advertises the `10.1.0.0/24` subnet into Tailscale; the Debian
-  hosts themselves do not accept tailnet routes during bootstrap.
-- Traefik is pinned to `nomad-0` so `80` and `443` stay stable while the
-  three-node control plane is degraded.
+- `acer` is the primary Nomad and HTTP ingress node on the LAN.
+- `zimaboard-0` continues to advertise the `10.1.0.0/24` subnet into
+  Tailscale until the new primary has completed first-time tailnet enrollment;
+  the Debian hosts themselves do not accept tailnet routes during bootstrap.
+- Traefik is pinned to `nomad-primary` so `80` and `443` stay stable on the
+  designated ingress node.
 - All in-repo OpenTofu modules use enforced KMS-backed state and plan
   encryption.
 - Secret values live in AWS SSM Parameter Store and are synced into Nomad
@@ -155,15 +158,14 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 
 ## Notes from the latest survey
 
-As of April 4, 2026:
+As of April 5, 2026:
 
-- `10.1.0.200` and `10.1.0.202` were reachable over SSH and healthy in Nomad and
-  Consul.
-- `10.1.0.201` did not respond to ping or SSH and was absent from both cluster
-  membership views.
-- Tailscale was not running on the reachable nodes.
-- The current cluster is effectively operating with two live servers, so do not
-  re-bootstrap the control plane until `10.1.0.201` is back.
+- `10.1.0.200`, `10.1.0.201`, and `10.1.0.202` were reachable over SSH and
+  healthy in Nomad and Consul.
+- `10.1.0.199` was reachable over SSH as `acer`, but Nomad, Consul, Docker,
+  and Tailscale were still inactive there.
+- `10.1.0.199` also lacks a first-time Tailscale enrollment, so complete
+  `tailscale up` on that host before running the rolling bootstrap.
 
 See [docs/runbooks/bootstrap.md](/Users/themanofrod/github-repositories/homelab/docs/runbooks/bootstrap.md)
 for the expected bring-up sequence.

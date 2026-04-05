@@ -105,7 +105,7 @@ jobs:
         uses: ./.github/actions/setup-infrastructure
         with:
           aws-region: us-east-1
-          connectivity-probe-address: 100.94.104.7
+          connectivity-probe-address: 100.119.126.81
           connectivity-probe-port: "22"
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -114,8 +114,8 @@ jobs:
       - name: Deploy homelab stack
         shell: bash
         env:
-          INGRESS_IP: 100.94.104.7
-          NOMAD_ADDR: http://100.94.104.7:4646
-          NOMAD_HTTP_IP: 100.94.104.7
+          INGRESS_IP: 100.119.126.81
+          NOMAD_ADDR: http://100.119.126.81:4646
+          NOMAD_HTTP_IP: 100.119.126.81
           USE_TAILSCALE_ENDPOINTS: "1"
         run: ./scripts/deploy-live.sh --skip-bootstrap

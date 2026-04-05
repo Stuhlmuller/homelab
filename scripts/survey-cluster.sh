@@ -1,7 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-hosts=(10.1.0.200 10.1.0.201 10.1.0.202)
+hosts=()
+while IFS= read -r host; do
+  hosts+=("${host}")
+done < <(
+  python3 <<'PY'
+from pathlib import Path
+import re
+
+content = Path("ansible/inventories/production/hosts.yml").read_text().splitlines()
+
+for line in content:
+    ip_match = re.match(r"^\s{10}ansible_host:\s*([0-9.]+)\s*$", line)
+    if ip_match:
+        print(ip_match.group(1))
+PY
+)
 
 for host in "${hosts[@]}"; do
   echo "=== ${host} ==="
