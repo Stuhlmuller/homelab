@@ -61,7 +61,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
-        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
+        uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
