@@ -31,6 +31,8 @@ Each node is expected to run:
   storage so the active Traefik allocation can move without losing state.
 - Tailscale provides private access to the cluster.
 - `acer` is the primary LAN-side Nomad and HTTP ingress node.
+- Traefik also exposes the Nomad and Consul server APIs over HTTPS at
+  `nomad.stinkyboi.com` and `consul.stinkyboi.com`.
 - `zimaboard-0` remains the intended subnet router for `10.1.0.0/24` until the
   primary server completes first-time Tailscale enrollment and route approval.
 

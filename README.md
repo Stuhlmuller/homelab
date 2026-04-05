@@ -60,6 +60,8 @@ homelab/
   the Debian hosts themselves do not accept tailnet routes during bootstrap.
 - Traefik is pinned to `nomad-primary` so `80` and `443` stay stable on the
   designated ingress node.
+- Traefik also publishes the Nomad and Consul UIs at
+  `nomad.stinkyboi.com` and `consul.stinkyboi.com`.
 - All in-repo OpenTofu modules use enforced KMS-backed state and plan
   encryption.
 - Secret values live in AWS SSM Parameter Store and are synced into Nomad
@@ -109,6 +111,7 @@ workflow:
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/paperclip/postgres_password`
    - `/homelab/policy-bot/github_app_integration_id`
    - `/homelab/policy-bot/github_app_private_key`
    - `/homelab/policy-bot/github_app_webhook_secret`

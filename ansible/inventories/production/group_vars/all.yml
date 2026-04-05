@@ -14,6 +14,7 @@ nomad_bootstrap_expect: "{{ homelab_bootstrap_expect }}"
 nomad_retry_join: "{{ consul_retry_join }}"
 nomad_bind_addr: 0.0.0.0
 nomad_data_dir: /opt/nomad
+nomad_cni_path: /opt/cni/bin:/usr/lib/cni
 consul_data_dir: /opt/consul
 nomad_network_interface: "{{ ansible_default_ipv4.interface | default('eth0') }}"
 nomad_node_class: worker

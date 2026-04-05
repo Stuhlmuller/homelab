@@ -7,7 +7,7 @@ include "root" {
 }
 
 inputs = {
-  path = "nomad/jobs/policy-bot/config"
+  path = "nomad/jobs/policy-bot"
   items = {
     public_url = "https://policy-bot.stinkyboi.com"
   }
