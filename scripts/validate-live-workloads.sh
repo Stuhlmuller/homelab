@@ -4,6 +4,7 @@ set -euo pipefail
 SSH_TIMEOUT_SECONDS="${SSH_TIMEOUT_SECONDS:-5}"
 INGRESS_IP="${INGRESS_IP:-10.1.0.200}"
 NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-10.1.0.200}"
+USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"
 INVENTORY_FILE="ansible/inventories/production/hosts.yml"
 
 if [[ ! -f "${INVENTORY_FILE}" ]]; then
@@ -63,16 +64,40 @@ inventory_ips=()
 while IFS= read -r ip; do
   inventory_ips+=("${ip}")
 done < <(
-  python3 - <<'PY'
+  python3 - "${USE_TAILSCALE_ENDPOINTS}" <<'PY'
 from pathlib import Path
 import re
+import sys
 
+use_tailscale = sys.argv[1] == "1"
 content = Path("ansible/inventories/production/hosts.yml").read_text().splitlines()
+current_host = None
+current_ip = None
+current_tailscale_ip = None
 
 for line in content:
+    host_match = re.match(r"^\s{8}([a-zA-Z0-9-]+):\s*$", line)
+    if host_match:
+        if current_host and current_ip:
+            endpoint = current_tailscale_ip if use_tailscale and current_tailscale_ip else current_ip
+            print(endpoint)
+        current_host = host_match.group(1)
+        current_ip = None
+        current_tailscale_ip = None
+        continue
+
     ip_match = re.match(r"^\s{10}ansible_host:\s*([0-9.]+)\s*$", line)
-    if ip_match:
-        print(ip_match.group(1))
+    if ip_match and current_host:
+        current_ip = ip_match.group(1)
+        continue
+
+    tailscale_match = re.match(r"^\s{10}tailscale_ip:\s*([0-9.]+)\s*$", line)
+    if tailscale_match and current_host:
+        current_tailscale_ip = tailscale_match.group(1)
+
+if current_host and current_ip:
+    endpoint = current_tailscale_ip if use_tailscale and current_tailscale_ip else current_ip
+    print(endpoint)
 PY
 )
 

@@ -70,9 +70,16 @@ class LiveOpsTests(unittest.TestCase):
 
     def test_live_cluster_validation_prefers_ssh_when_ping_is_filtered(self) -> None:
         content = (ROOT / "scripts/validate-live-cluster.sh").read_text()
+        self.assertIn('USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"', content)
         self.assertIn("ping failed; continuing with SSH validation", content)
         self.assertIn("host is reachable over SSH and core services are active", content)
+        self.assertIn("tailscale_ip", content)
         self.assertIn("ssh -o BatchMode=yes", content)
+
+    def test_live_workload_validation_can_use_tailscale_endpoints(self) -> None:
+        content = (ROOT / "scripts/validate-live-workloads.sh").read_text()
+        self.assertIn('USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"', content)
+        self.assertIn("tailscale_ip", content)
 
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()
