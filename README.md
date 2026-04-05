@@ -107,7 +107,6 @@ workflow:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
    - `/homelab/traefik/cf_dns_api_token`
-   - `/homelab/tailscale/auth_key`
    Ensure `TG_KMS_KEY_ID` points at the OpenTofu encryption key if you are not
    using the default homelab KMS key.
 4. Plan the Nomad infrastructure:
@@ -125,9 +124,10 @@ requests that touch the live stack run a full Terragrunt plan and refresh a
 managed section in the PR description with the latest summary and workflow-run
 link. Fork pull requests only run the non-privileged validation workflow.
 
-The Ansible bootstrap also reads the Tailscale auth key from AWS SSM at runtime
-through the local `aws` CLI, so the workstation running Ansible needs an active
-AWS session.
+The Ansible bootstrap no longer enrolls fresh Tailscale nodes from AWS SSM.
+It will reapply Tailscale settings only when the host already has a reusable
+node key. If a host has never joined the tailnet before, complete
+`tailscale up` on that host manually before rerunning bootstrap.
 
 ## Live operations
 

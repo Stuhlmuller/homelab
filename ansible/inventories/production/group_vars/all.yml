@@ -21,7 +21,6 @@ nfs_share: /data
 traefik_acme_email: rodman@stuhlmuller.net
 aws_region: us-east-1
 tailscale_enabled: true
-tailscale_auth_ssm_parameter: /homelab/tailscale/auth_key
 tailscale_accept_routes: false
 tailscale_advertise_routes: []
 tailscale_args:

@@ -21,22 +21,20 @@ class SecretManagementTests(unittest.TestCase):
             self.assertNotIn("replace-me", content, unit.name)
             self.assertNotIn("dokploy_secure_password", content, unit.name)
 
-    def test_tailscale_bootstrap_reads_auth_key_from_ssm(self) -> None:
+    def test_tailscale_bootstrap_requires_existing_node_state(self) -> None:
         inventory = (
             ROOT / "ansible/inventories/production/group_vars/all.yml"
         ).read_text()
         role = (ROOT / "ansible/roles/tailscale/tasks/main.yml").read_text()
 
-        self.assertIn("tailscale_auth_ssm_parameter:", inventory)
+        self.assertNotIn("tailscale_auth_ssm_parameter:", inventory)
         self.assertNotIn("tailscale_auth_key:", inventory)
-        self.assertIn("aws", role)
-        self.assertIn("get-parameter", role)
-        self.assertIn("become: false", role)
+        self.assertNotIn("get-parameter", role)
+        self.assertNotIn("--authkey=", role)
         self.assertIn("'tailscale', 'up', '--reset'", role)
         self.assertIn("HaveNodeKey", role)
-        self.assertIn("NeedsLogin", role)
-        self.assertIn("tailscale_requires_authkey", role)
-        self.assertIn("tailscale_auth_key_value", role)
+        self.assertIn("Complete `tailscale up` manually on the host", role)
+        self.assertIn("reusable node key", role)
         self.assertIn("tailscale_up_argv", role)
 
     def test_readme_documents_ssm_secret_sources(self) -> None:
@@ -44,6 +42,7 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("AWS SSM Parameter Store", content)
         self.assertIn("/homelab/dokploy/postgres_password", content)
         self.assertIn("/homelab/paperclip/better_auth_secret", content)
+        self.assertNotIn("/homelab/tailscale/auth_key", content)
         self.assertNotIn("/homelab/traefik/ts_authkey", content)
 
     def test_github_workflows_use_tailscale_oauth_client(self) -> None:

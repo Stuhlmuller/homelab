@@ -42,63 +42,11 @@
     - tailscale_status.rc == 0
     - tailscale_status.stdout | default('') | length > 0
 
-- name: Resolve Tailscale auth key from AWS SSM Parameter Store
-  ansible.builtin.command:
-    argv:
-      - aws
-      - ssm
-      - get-parameter
-      - --region
-      - "{{ aws_region }}"
-      - --name
-      - "{{ tailscale_auth_ssm_parameter }}"
-      - --with-decryption
-      - --query
-      - Parameter.Value
-      - --output
-      - text
-  become: false
-  delegate_to: localhost
-  register: tailscale_auth_key_lookup
-  changed_when: false
-  no_log: true
-  when:
-    - tailscale_enabled
-    - tailscale_auth_ssm_parameter | default('') | length > 0
-
-- name: Store resolved Tailscale auth key
-  ansible.builtin.set_fact:
-    tailscale_auth_key_value: "{{ tailscale_auth_key_lookup.stdout }}"
-  no_log: true
-  when:
-    - tailscale_enabled
-    - tailscale_auth_ssm_parameter | default('') | length > 0
-
-- name: Determine whether Tailscale requires reauthentication
-  ansible.builtin.set_fact:
-    tailscale_requires_authkey: >-
-      {{
-        (tailscale_auth_key_value | default('') | length > 0)
-        and (
-          not (tailscale_status_payload.HaveNodeKey | default(false) | bool)
-          or (tailscale_status_payload.BackendState | default('')) in ['NeedsLogin', 'NeedsMachineAuth']
-          or (
-            (
-              (tailscale_status_payload.Health | default([]) | join(' ') | lower)
-              | regex_search('locked out|needs login|logged out')
-            ) is not none
-          )
-        )
-      }}
-  no_log: true
-  when: tailscale_enabled
-
 - name: Build Tailscale up arguments
   ansible.builtin.set_fact:
     tailscale_up_argv: >-
       {{
         ['tailscale', 'up', '--reset']
-        + (tailscale_requires_authkey | default(false) | bool | ternary(['--authkey=' ~ tailscale_auth_key_value], []))
         + (tailscale_accept_routes | default(false) | bool | ternary(['--accept-routes'], []))
         + (
           (tailscale_advertise_routes | default([]) | length > 0)
@@ -112,9 +60,20 @@
   no_log: true
   when:
     - tailscale_enabled
-    - (tailscale_status_payload.HaveNodeKey | default(false) | bool) or (tailscale_auth_key_value | default('') | length > 0)
+    - tailscale_status_payload.HaveNodeKey | default(false) | bool
 
-- name: Join the tailnet when an auth key is available
+- name: Fail when Tailscale needs first-time enrollment
+  ansible.builtin.fail:
+    msg: >-
+      Tailscale is installed but this node does not have a reusable node key.
+      Complete `tailscale up` manually on the host, then rerun the bootstrap or
+      reconciliation playbook.
+  when:
+    - tailscale_enabled
+    - not (tailscale_status_payload.HaveNodeKey | default(false) | bool)
+    - tailscale_status.rc != 0 or (tailscale_status_payload.BackendState | default('')) != 'Running'
+
+- name: Reconcile Tailscale when a reusable node key is available
   ansible.builtin.command:
     argv: "{{ tailscale_up_argv }}"
   no_log: true

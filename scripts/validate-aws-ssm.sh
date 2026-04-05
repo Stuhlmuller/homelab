@@ -8,7 +8,6 @@ required_parameters=(
   "/homelab/dokploy/postgres_password"
   "/homelab/paperclip/better_auth_secret"
   "/homelab/traefik/cf_dns_api_token"
-  "/homelab/tailscale/auth_key"
 )
 
 if ! command -v aws >/dev/null 2>&1; then
