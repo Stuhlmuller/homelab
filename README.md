@@ -106,6 +106,12 @@ workflow:
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/policy-bot/github_app_integration_id`
+   - `/homelab/policy-bot/github_app_private_key`
+   - `/homelab/policy-bot/github_app_webhook_secret`
+   - `/homelab/policy-bot/github_oauth_client_id`
+   - `/homelab/policy-bot/github_oauth_client_secret`
+   - `/homelab/policy-bot/sessions_key`
    - `/homelab/traefik/cf_dns_api_token`
    Ensure `TG_KMS_KEY_ID` points at the OpenTofu encryption key if you are not
    using the default homelab KMS key.
@@ -139,7 +145,7 @@ Codified live checks and deployment entry points:
 - `make validate-ssm` validates AWS auth and required SSM parameters.
 - `make validate-live-cluster` validates host reachability and Nomad/Consul health.
 - `make validate-live-workloads` validates Nomad jobs, Nomad variables, Tailscale,
-  Traefik, Dokploy, and Paperclip after deployment.
+  Traefik, Dokploy, Paperclip, and Policy Bot after deployment.
 - `make deploy-live` runs the local validators, live preflight checks, rolling
   bootstrap, OpenTofu plan/apply, and live smoke checks.
 - The `Homelab Deploy` workflow runs `./scripts/deploy-live.sh --skip-bootstrap`,
@@ -153,17 +159,40 @@ rollout to the healthy servers, use:
 ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 ```
 
+## Policy Bot
+
+`policy-bot` is deployed behind Traefik at `https://policy-bot.stinkyboi.com`.
+
+Before the Nomad job can start successfully, create a GitHub App and store the
+generated credentials in AWS SSM Parameter Store using the names above. In the
+GitHub App settings, use these URLs:
+
+- User authorization callback URL:
+  `https://policy-bot.stinkyboi.com/api/github/auth`
+- Webhook URL:
+  `https://policy-bot.stinkyboi.com/api/github/hook`
+
+The app also needs the repository and organization permissions documented in the
+upstream project along with these subscribed events:
+
+- `check_run`
+- `issue_comment`
+- `merge_group`
+- `pull_request`
+- `pull_request_review`
+- `status`
+- `workflow_run`
+
 ## Notes from the latest survey
 
 As of April 4, 2026:
 
-- `10.1.0.200` and `10.1.0.202` were reachable over SSH and healthy in Nomad and
-  Consul.
-- `10.1.0.201` did not respond to ping or SSH and was absent from both cluster
-  membership views.
-- Tailscale was not running on the reachable nodes.
-- The current cluster is effectively operating with two live servers, so do not
-  re-bootstrap the control plane until `10.1.0.201` is back.
+- `10.1.0.200`, `10.1.0.201`, and `10.1.0.202` were reachable and responded to
+  the read-only survey checks.
+- `nomad`, `consul`, `docker`, and `tailscaled` all reported `active` on each
+  node.
+- Consul membership showed all three servers alive in the `homelab`
+  datacenter.
 
 See [docs/runbooks/bootstrap.md](/Users/themanofrod/github-repositories/homelab/docs/runbooks/bootstrap.md)
 for the expected bring-up sequence.
