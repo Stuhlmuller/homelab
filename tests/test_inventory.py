@@ -17,6 +17,8 @@ class InventoryTests(unittest.TestCase):
         content = INVENTORY.read_text()
         for ip in ["10.1.0.200", "10.1.0.201", "10.1.0.202"]:
             self.assertIn(ip, content)
+        for tailscale_ip in ["100.94.104.7", "100.102.247.126", "100.78.60.65"]:
+            self.assertIn(tailscale_ip, content)
 
     def test_group_vars_match_bootstrap_expectation(self) -> None:
         content = GROUP_VARS.read_text()

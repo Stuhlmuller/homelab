@@ -4,6 +4,7 @@ set -euo pipefail
 ALLOW_DEGRADED_CLUSTER="${ALLOW_DEGRADED_CLUSTER:-0}"
 PING_TIMEOUT_SECONDS="${PING_TIMEOUT_SECONDS:-1}"
 SSH_TIMEOUT_SECONDS="${SSH_TIMEOUT_SECONDS:-5}"
+USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"
 INVENTORY_FILE="ansible/inventories/production/hosts.yml"
 
 if [[ ! -f "${INVENTORY_FILE}" ]]; then
@@ -15,23 +16,40 @@ inventory_hosts=()
 while IFS= read -r record; do
   inventory_hosts+=("${record}")
 done < <(
-  python3 - <<'PY'
+  python3 - "${USE_TAILSCALE_ENDPOINTS}" <<'PY'
 from pathlib import Path
 import re
+import sys
 
+use_tailscale = sys.argv[1] == "1"
 content = Path("ansible/inventories/production/hosts.yml").read_text().splitlines()
 current_host = None
+current_ip = None
+current_tailscale_ip = None
 
 for line in content:
     host_match = re.match(r"^\s{8}([a-zA-Z0-9-]+):\s*$", line)
     if host_match:
+        if current_host and current_ip:
+            endpoint = current_tailscale_ip if use_tailscale and current_tailscale_ip else current_ip
+            print(f"{current_host} {endpoint}")
         current_host = host_match.group(1)
+        current_ip = None
+        current_tailscale_ip = None
         continue
 
     ip_match = re.match(r"^\s{10}ansible_host:\s*([0-9.]+)\s*$", line)
     if ip_match and current_host:
-        print(f"{current_host} {ip_match.group(1)}")
-        current_host = None
+        current_ip = ip_match.group(1)
+        continue
+
+    tailscale_match = re.match(r"^\s{10}tailscale_ip:\s*([0-9.]+)\s*$", line)
+    if tailscale_match and current_host:
+        current_tailscale_ip = tailscale_match.group(1)
+
+if current_host and current_ip:
+    endpoint = current_tailscale_ip if use_tailscale and current_tailscale_ip else current_ip
+    print(f"{current_host} {endpoint}")
 PY
 )
 
@@ -44,10 +62,10 @@ for record in "${inventory_hosts[@]}"; do
 
   echo "checking ${name} (${ip})"
 
+  ping_ok=1
   if ! ping -c 1 -W "${PING_TIMEOUT_SECONDS}" "${ip}" >/dev/null 2>&1; then
-    echo "  ping failed"
-    failed_hosts+=("${name}:${ip}:ping")
-    continue
+    echo "  ping failed; continuing with SSH validation"
+    ping_ok=0
   fi
 
   if ! ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${ip}" \
@@ -57,7 +75,11 @@ for record in "${inventory_hosts[@]}"; do
     continue
   fi
 
-  echo "  host is reachable and core services are active"
+  if [[ "${ping_ok}" == "1" ]]; then
+    echo "  host is reachable and core services are active"
+  else
+    echo "  host is reachable over SSH and core services are active"
+  fi
   reachable_hosts+=("${name}:${ip}")
 done
 
