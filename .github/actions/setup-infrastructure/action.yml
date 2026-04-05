@@ -14,14 +14,6 @@ inputs:
     description: "Optional AWS SSM parameter name that stores a Tailscale auth key"
     required: false
     default: ""
-  oauth-client-id:
-    description: "Tailscale OAuth client ID for the GitHub Action ephemeral node"
-    required: false
-    default: ""
-  oauth-secret:
-    description: "Tailscale OAuth client secret for the GitHub Action ephemeral node"
-    required: false
-    default: ""
   connectivity-probe-address:
     description: "Optional private address to probe after accepting Tailscale subnet routes"
     required: false
@@ -38,12 +30,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Select Tailscale authentication mode
+    - name: Select Tailscale auth key source
       id: auth-mode
       shell: bash
       env:
-        OAUTH_CLIENT_ID: ${{ inputs.oauth-client-id }}
-        OAUTH_SECRET: ${{ inputs.oauth-secret }}
         TAILSCALE_AUTH_KEY: ${{ inputs.tailscale-auth-key }}
         TAILSCALE_AUTH_KEY_PARAMETER: ${{ inputs.tailscale-auth-key-parameter }}
       run: |
@@ -52,17 +42,12 @@ runs:
           exit 0
         fi
 
-        if [[ -n "${OAUTH_CLIENT_ID}" && -n "${OAUTH_SECRET}" ]]; then
-          echo "mode=oauth" >> "${GITHUB_OUTPUT}"
-          exit 0
-        fi
-
         if [[ -n "${TAILSCALE_AUTH_KEY_PARAMETER}" ]]; then
           echo "mode=authkey-parameter" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
-        echo "::error::Configure either the Tailscale OAuth client inputs, tailscale-auth-key, or tailscale-auth-key-parameter."
+        echo "::error::Configure either tailscale-auth-key or tailscale-auth-key-parameter."
         exit 1
 
     - name: Use provided Tailscale auth key
@@ -92,15 +77,6 @@ runs:
         echo "::add-mask::${authkey}"
         echo "authkey=${authkey}" >> "${GITHUB_OUTPUT}"
 
-    - name: Tailscale with OAuth client
-      if: steps.auth-mode.outputs.mode == 'oauth'
-      uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4
-      with:
-        oauth-client-id: ${{ inputs.oauth-client-id }}
-        oauth-secret: ${{ inputs.oauth-secret }}
-        tags: tag:ci
-        statedir: /tmp/tailscale-state/
-
     - name: Tailscale with provided auth key
       if: steps.auth-mode.outputs.mode == 'authkey'
       uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4
@@ -111,7 +87,7 @@ runs:
 
     - name: Tailscale with auth key from AWS SSM
       if: steps.auth-mode.outputs.mode == 'authkey-parameter'
-      uses: tailscale/github-action@53acf823325fe9ca47f4cdaa951f90b4b0de5bb9 # v4
+      uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8 # v4
       with:
         authkey: ${{ steps.tailscale-auth-key-ssm.outputs.authkey }}
         tags: tag:ci
