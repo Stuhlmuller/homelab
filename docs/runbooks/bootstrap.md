@@ -5,7 +5,8 @@
 3. Confirm the AWS SSM parameters exist for the current environment, including
    the Nomad job secrets used by Terragrunt:
    `/homelab/dokploy/postgres_password`,
-   `/homelab/paperclip/better_auth_secret`, and
+   `/homelab/paperclip/better_auth_secret`,
+   `/homelab/paperclip/postgres_password`, and
    `/homelab/traefik/cf_dns_api_token`.
 4. Install the required Ansible collections:
    `ansible-galaxy collection install -r ansible/collections/requirements.yml`

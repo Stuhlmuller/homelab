@@ -46,7 +46,7 @@ job "policy-bot" {
 
       template {
         data        = <<-EOT
-          {{ with nomadVar "nomad/jobs/policy-bot/config" }}
+          {{ with nomadVar "nomad/jobs/policy-bot" }}
           server:
             address: "0.0.0.0"
             port: 8080

@@ -7,6 +7,7 @@ AWS_PROFILE_HINT="${AWS_PROFILE:-default}"
 required_parameters=(
   "/homelab/dokploy/postgres_password"
   "/homelab/paperclip/better_auth_secret"
+  "/homelab/paperclip/postgres_password"
   "/homelab/policy-bot/github_app_integration_id"
   "/homelab/policy-bot/github_app_private_key"
   "/homelab/policy-bot/github_app_webhook_secret"

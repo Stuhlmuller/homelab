@@ -115,7 +115,7 @@ done
 nomad_variables="$(remote_nomad_command "${NOMAD_HTTP_IP}" 'nomad var list')"
 for path in \
   "nomad/jobs/dokploy/config" \
-  "nomad/jobs/policy-bot/config" \
+  "nomad/jobs/policy-bot" \
   "nomad/jobs/paperclip/config" \
   "nomad/jobs/traefik/cf_dns_api_token"; do
   grep -q "${path}" <<<"${nomad_variables}" || {
@@ -221,3 +221,13 @@ curl --fail --silent --show-error \
   --resolve "policy-bot.stinkyboi.com:443:${INGRESS_IP}" \
   "https://policy-bot.stinkyboi.com/api/health" >/dev/null
 echo "validated Policy Bot HTTPS health endpoint on ${INGRESS_IP}"
+
+curl --fail --silent --show-error \
+  --resolve "nomad.stinkyboi.com:443:${INGRESS_IP}" \
+  "https://nomad.stinkyboi.com/v1/status/leader" >/dev/null
+echo "validated Nomad HTTPS route on ${INGRESS_IP}"
+
+curl --fail --silent --show-error \
+  --resolve "consul.stinkyboi.com:443:${INGRESS_IP}" \
+  "https://consul.stinkyboi.com/v1/status/leader" >/dev/null
+echo "validated Consul HTTPS route on ${INGRESS_IP}"

@@ -70,6 +70,8 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn('running allocations', content)
         self.assertIn("paperclip.stinkyboi.com", content)
         self.assertIn("policy-bot.stinkyboi.com", content)
+        self.assertIn("nomad.stinkyboi.com", content)
+        self.assertIn("consul.stinkyboi.com", content)
 
     def test_live_cluster_validation_prefers_ssh_when_ping_is_filtered(self) -> None:
         content = (ROOT / "scripts/validate-live-cluster.sh").read_text()
