@@ -91,14 +91,9 @@ policy:
             - default-approval
         - default-approval
 
-  # Disapproval settings
-  disapproval:
-    requires:
-      organizations:
-        - "your-org"  # Update this to your GitHub organization if applicable
-    options:
-      methods:
-        comments:
-          - "do not merge"
-          - "dnm"
-          - "❌"
+  # Disapproval can be added later if needed
+  # disapproval:
+  #   options:
+  #     methods:
+  #       - "do not merge"
+  #       - "dnm"
