@@ -1,0 +1,104 @@
+# Policy-bot configuration for homelab infrastructure
+# https://github.com/palantir/policy-bot
+
+# Approval rules define conditions and requirements for PR approval
+approval_rules:
+  # Require approval for infrastructure changes
+  - name: infrastructure-approval
+    description: Infrastructure changes (Terraform, Nomad, Ansible) require approval
+    if:
+      changed_files:
+        paths:
+          - "^terraform/.*"
+          - "^nomad/.*"
+          - "^ansible/.*"
+    requires:
+      count: 1
+      permissions:
+        - write
+    options:
+      invalidate_on_push: true
+      request_review:
+        enabled: true
+
+  # Require approval for CI/CD pipeline changes
+  - name: cicd-approval
+    description: CI/CD pipeline changes require careful review
+    if:
+      changed_files:
+        paths:
+          - "^\\.github/workflows/.*"
+          - "^\\.pre-commit.*"
+          - "^scripts/.*"
+    requires:
+      count: 1
+      permissions:
+        - write
+    options:
+      invalidate_on_push: true
+
+  # Documentation changes can be auto-approved
+  - name: docs-changes
+    description: Documentation-only changes are auto-approved
+    if:
+      only_changed_files:
+        paths:
+          - ".*\\.md$"
+          - "^docs/.*"
+    requires:
+      count: 0
+
+  # Renovate dependency updates need approval
+  - name: renovate-updates
+    description: Renovate dependency updates require approval
+    if:
+      has_author_in:
+        users:
+          - "renovate[bot]"
+    requires:
+      count: 1
+      permissions:
+        - write
+    options:
+      allow_contributor: true
+      methods:
+        comments:
+          - "lgtm"
+          - "approved"
+          - ":+1:"
+          - "👍"
+
+  # Default approval rule for all other changes
+  - name: default-approval
+    description: All other changes require one approval
+    requires:
+      count: 1
+      permissions:
+        - write
+
+# Policy combines approval rules and defines overall PR approval logic
+policy:
+  approval:
+    - or:
+        - docs-changes
+        - and:
+            - infrastructure-approval
+            - or:
+                - renovate-updates
+                - default-approval
+        - and:
+            - cicd-approval
+            - default-approval
+        - default-approval
+
+  # Disapproval settings
+  disapproval:
+    requires:
+      organizations:
+        - "your-org"  # Update this to your GitHub organization if applicable
+    options:
+      methods:
+        comments:
+          - "do not merge"
+          - "dnm"
+          - "❌"
