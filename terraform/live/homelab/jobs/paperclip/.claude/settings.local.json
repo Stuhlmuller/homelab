@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(terragrunt plan:*)",
+      "Bash(nomad job status:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)"
+    ]
+  }
+}
