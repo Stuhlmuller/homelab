@@ -10,7 +10,7 @@ if [[ ! -x "${ANSIBLE_PLAYBOOK_BIN}" ]]; then
   exit 1
 fi
 
-hosts=(zimaboard-1 zimaboard-2 zimaboard-0)
+hosts=(zimaboard-1 zimaboard-2 zimaboard-0 acer)
 
 run_cluster_validation() {
   local attempt

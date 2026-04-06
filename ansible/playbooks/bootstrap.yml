@@ -6,6 +6,6 @@
     - role: hashicorp_repo
     - role: docker
     - role: consul
-    - role: nomad
     - role: host_volumes
+    - role: nomad
     - role: tailscale

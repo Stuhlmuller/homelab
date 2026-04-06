@@ -5,7 +5,7 @@
     "ghcr.io/devcontainers-extra/features/argo-cd": {},
     "ghcr.io/devcontainers/features/aws-cli": {},
     "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.12"
+      "version": "3.14"
     },
     "ghcr.io/devcontainers/features/terraform:1": {
       "terragrunt": "latest",

@@ -5,7 +5,8 @@
 3. Confirm the AWS SSM parameters exist for the current environment, including
    the Nomad job secrets used by Terragrunt:
    `/homelab/dokploy/postgres_password`,
-   `/homelab/paperclip/better_auth_secret`, and
+   `/homelab/paperclip/better_auth_secret`,
+   `/homelab/paperclip/postgres_password`, and
    `/homelab/traefik/cf_dns_api_token`.
 4. Install the required Ansible collections:
    `ansible-galaxy collection install -r ansible/collections/requirements.yml`
@@ -36,5 +37,7 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 ```
 
 Do not deploy Nomad jobs until quorum and host reachability are stable. As of
-April 4, 2026, `10.1.0.201` is still down, so a full control-plane bootstrap is
-blocked until that node returns.
+April 5, 2026, `10.1.0.199` has joined the control plane as `acer` /
+`nomad-primary`. For future fresh-node rebuilds, complete `tailscale up`
+manually before rerunning bootstrap because the playbook only reapplies
+Tailscale settings after a reusable node key already exists.

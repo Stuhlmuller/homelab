@@ -13,6 +13,7 @@ class AnsibleTemplateTests(unittest.TestCase):
         self.assertIn("server_join", content)
         self.assertIn("retry_join", content)
         self.assertIn('node_class        = "{{ nomad_node_class }}"', content)
+        self.assertIn('cni_path          = "{{ nomad_cni_path }}"', content)
 
     def test_consul_template_keeps_retry_join(self) -> None:
         content = (

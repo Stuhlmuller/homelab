@@ -2,6 +2,7 @@
 
 ## Nodes
 
+- `acer` (`10.1.0.199`)
 - `zimaboard-0` (`10.1.0.200`)
 - `zimaboard-1` (`10.1.0.201`)
 - `zimaboard-2` (`10.1.0.202`)
@@ -29,8 +30,11 @@ Each node is expected to run:
 - TLS certificates are obtained through ACME DNS-01 and stored on shared NFS
   storage so the active Traefik allocation can move without losing state.
 - Tailscale provides private access to the cluster.
-- `zimaboard-0` is the intended subnet router for `10.1.0.0/24`, subject to
-  tailnet route approval.
+- `acer` is the primary LAN-side Nomad and HTTP ingress node.
+- Traefik also exposes the Nomad and Consul server APIs over HTTPS at
+  `nomad.stinkyboi.com` and `consul.stinkyboi.com`.
+- `zimaboard-0` remains the intended subnet router for `10.1.0.0/24` until the
+  primary server completes first-time Tailscale enrollment and route approval.
 
 ## Storage
 
