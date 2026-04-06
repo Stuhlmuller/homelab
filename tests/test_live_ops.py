@@ -92,6 +92,14 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn('USE_TAILSCALE_ENDPOINTS="${USE_TAILSCALE_ENDPOINTS:-0}"', content)
         self.assertIn("tailscale_ip", content)
 
+    def test_tailscale_role_can_reconcile_funnel(self) -> None:
+        content = (ROOT / "ansible" / "roles" / "tailscale" / "tasks" / "main.yml").read_text()
+        self.assertIn("tailscale funnel status", content)
+        self.assertIn("tailscale_funnel_mounts", content)
+        self.assertIn("--set-path=", content)
+        self.assertIn("--bg", content)
+        self.assertIn("--yes", content)
+
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()
         self.assertNotIn("run --all --graph", content)

@@ -111,6 +111,7 @@ workflow:
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/paperclip/openrouter_api_key`
    - `/homelab/paperclip/postgres_password`
    - `/homelab/policy-bot/github_app_integration_id`
    - `/homelab/policy-bot/github_app_private_key`
@@ -183,6 +184,10 @@ GitHub App settings, use these URLs:
   `https://policy-bot.stinkyboi.com/api/github/auth`
 - Webhook URL:
   `https://policy-bot.stinkyboi.com/api/github/hook`
+
+If the ingress hostname changes, update
+[terragrunt.hcl](/paperclip/instances/default/projects/b8fb2ae2-3438-4684-a280-29433f75dab0/f85626fa-7e0f-4539-83cf-7d409ba3269e/homelab/terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl)
+and the GitHub App URLs together before redeploying.
 
 Traefik intentionally does not publish the root path for `policy-bot`, so the
 web UI stays unrouted from the public internet while the GitHub callback and
