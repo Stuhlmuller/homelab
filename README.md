@@ -106,6 +106,7 @@ workflow:
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/paperclip/openrouter_api_key`
    - `/homelab/traefik/cf_dns_api_token`
    Ensure `TG_KMS_KEY_ID` points at the OpenTofu encryption key if you are not
    using the default homelab KMS key.

@@ -42,6 +42,7 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("AWS SSM Parameter Store", content)
         self.assertIn("/homelab/dokploy/postgres_password", content)
         self.assertIn("/homelab/paperclip/better_auth_secret", content)
+        self.assertIn("/homelab/paperclip/openrouter_api_key", content)
         self.assertNotIn("/homelab/tailscale/auth_key", content)
         self.assertNotIn("/homelab/traefik/ts_authkey", content)
 

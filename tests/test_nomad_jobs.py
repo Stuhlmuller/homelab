@@ -52,3 +52,6 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn("uid         = 1000", content)
         self.assertIn("gid         = 1000", content)
         self.assertIn('BETTER_AUTH_SECRET="{{ .better_auth_secret }}"', content)
+        self.assertIn(
+            'OPENROUTER_API_KEY="{{ .openrouter_api_key | trimSpace }}"', content
+        )

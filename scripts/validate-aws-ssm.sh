@@ -7,6 +7,7 @@ AWS_PROFILE_HINT="${AWS_PROFILE:-default}"
 required_parameters=(
   "/homelab/dokploy/postgres_password"
   "/homelab/paperclip/better_auth_secret"
+  "/homelab/paperclip/openrouter_api_key"
   "/homelab/traefik/cf_dns_api_token"
 )
 

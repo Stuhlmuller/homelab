@@ -64,6 +64,7 @@ job "paperclip" {
         data        = <<-EOT
           {{ with nomadVar "nomad/jobs/paperclip/config" }}
           BETTER_AUTH_SECRET="{{ .better_auth_secret }}"
+          OPENROUTER_API_KEY="{{ .openrouter_api_key | trimSpace }}"
           PAPERCLIP_DEPLOYMENT_MODE="{{ .deployment_mode }}"
           PAPERCLIP_DEPLOYMENT_EXPOSURE="{{ .deployment_exposure }}"
           PAPERCLIP_PUBLIC_URL="{{ .public_url }}"
