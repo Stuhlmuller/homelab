@@ -169,8 +169,9 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 
 ## Policy Bot
 
-`policy-bot` uses Tailscale Funnel only for these public endpoints on
-`https://acer.tail67beb.ts.net`:
+`policy-bot` stays on the public Traefik ingress at
+`https://policy-bot.stinkyboi.com`, but only these two paths are routed
+publicly:
 
 - `/api/github/auth`
 - `/api/github/hook`
@@ -180,15 +181,17 @@ generated credentials in AWS SSM Parameter Store using the names above. In the
 GitHub App settings, use these URLs:
 
 - User authorization callback URL:
-  `https://acer.tail67beb.ts.net/api/github/auth`
+  `https://policy-bot.stinkyboi.com/api/github/auth`
 - Webhook URL:
-  `https://acer.tail67beb.ts.net/api/github/hook`
+  `https://policy-bot.stinkyboi.com/api/github/hook`
 
-The Funnel is reconciled on `acer` and proxies only those two paths to
-`http://127.0.0.1:18080`. The root path is intentionally not published through
-Funnel. If the ingress node's MagicDNS hostname changes, update
-[terragrunt.hcl](/Users/themanofrod/.codex/worktrees/f11b/homelab/terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl)
+If the ingress hostname changes, update
+[terragrunt.hcl](/paperclip/instances/default/projects/b8fb2ae2-3438-4684-a280-29433f75dab0/f85626fa-7e0f-4539-83cf-7d409ba3269e/homelab/terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl)
 and the GitHub App URLs together before redeploying.
+
+Traefik intentionally does not publish the root path for `policy-bot`, so the
+web UI stays unrouted from the public internet while the GitHub callback and
+webhook endpoints remain reachable.
 
 The app also needs the repository and organization permissions documented in the
 upstream project along with these subscribed events:

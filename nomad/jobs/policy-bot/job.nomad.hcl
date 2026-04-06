@@ -27,7 +27,13 @@ job "policy-bot" {
     service {
       name = "policy-bot"
       port = "http"
-
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.policy-bot.rule=Host(`policy-bot.stinkyboi.com`) && (Path(`/api/github/auth`) || Path(`/api/github/hook`))",
+        "traefik.http.routers.policy-bot.entrypoints=websecure",
+        "traefik.http.routers.policy-bot.tls=true",
+        "traefik.http.routers.policy-bot.tls.certresolver=letsencrypt",
+      ]
       check {
         name     = "policy-bot-health"
         type     = "http"

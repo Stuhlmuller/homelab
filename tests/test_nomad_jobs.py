@@ -66,12 +66,17 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn('OPENROUTER_API_KEY="{{ .openrouter_api_key.Value }}"', content)
         self.assertIn('Host = ["paperclip.stinkyboi.com"]', content)
 
-    def test_policy_bot_job_uses_tailscale_funnel_with_file_backed_config(self) -> None:
+    def test_policy_bot_job_routes_only_github_endpoints_through_traefik(self) -> None:
         content = (ROOT / "nomad" / "jobs" / "policy-bot" / "job.nomad.hcl").read_text()
         self.assertIn("palantirtechnologies/policy-bot:1.41.1", content)
         self.assertIn('default = "nomad-primary"', content)
         self.assertIn('attribute = "${node.unique.name}"', content)
         self.assertIn("value     = var.policy_bot_nomad_node_name", content)
+        self.assertIn("traefik.http.routers.policy-bot.rule", content)
+        self.assertIn("Host(`policy-bot.stinkyboi.com`)", content)
+        self.assertIn("Path(`/api/github/auth`)", content)
+        self.assertIn("Path(`/api/github/hook`)", content)
+        self.assertIn("traefik.http.routers.policy-bot.entrypoints=websecure", content)
         self.assertIn('mode = "bridge"', content)
         self.assertIn("static = 18080", content)
         self.assertIn("nomad/jobs/policy-bot", content)
@@ -79,4 +84,3 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn('"${NOMAD_SECRETS_DIR}/policy-bot.yml"', content)
         self.assertIn('path     = "/api/health"', content)
         self.assertIn("github_app_private_key", content)
-        self.assertNotIn("traefik.http.routers.policy-bot.rule", content)
