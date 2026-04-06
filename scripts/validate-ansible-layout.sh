@@ -17,6 +17,7 @@ for file in "${required_files[@]}"; do
   }
 done
 
+grep -q '10.1.0.199' ansible/inventories/production/hosts.yml
 grep -q '10.1.0.200' ansible/inventories/production/hosts.yml
 grep -q '10.1.0.201' ansible/inventories/production/hosts.yml
 grep -q '10.1.0.202' ansible/inventories/production/hosts.yml

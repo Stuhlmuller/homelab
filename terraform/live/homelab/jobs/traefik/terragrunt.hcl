@@ -15,4 +15,7 @@ dependencies {
 
 inputs = {
   jobspec_file = "${dirname(find_in_parent_folders("root.hcl"))}/../nomad/jobs/traefik/job.nomad.hcl"
+  hcl2_vars = {
+    ingress_nomad_node_name = "nomad-primary"
+  }
 }

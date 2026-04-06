@@ -47,6 +47,20 @@ class TerraformTests(unittest.TestCase):
             ).is_file()
         )
 
+    def test_policy_bot_variable_unit_exists(self) -> None:
+        self.assertTrue(
+            (
+                ROOT
+                / "terraform"
+                / "live"
+                / "homelab"
+                / "variables"
+                / "policy-bot"
+                / "config"
+                / "terragrunt.hcl"
+            ).is_file()
+        )
+
     def test_root_passes_kms_key_id(self) -> None:
         content = (ROOT / "terraform" / "root.hcl").read_text()
         self.assertIn('get_env("TG_KMS_KEY_ID"', content)

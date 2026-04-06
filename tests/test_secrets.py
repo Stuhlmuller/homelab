@@ -13,6 +13,8 @@ class SecretManagementTests(unittest.TestCase):
             ROOT
             / "terraform/live/homelab/variables/paperclip/config/terragrunt.hcl",
             ROOT
+            / "terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl",
+            ROOT
             / "terraform/live/homelab/variables/traefik/cf_dns_api_token/terragrunt.hcl",
         ]
         for unit in secret_units:
@@ -42,6 +44,10 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("AWS SSM Parameter Store", content)
         self.assertIn("/homelab/dokploy/postgres_password", content)
         self.assertIn("/homelab/paperclip/better_auth_secret", content)
+        self.assertIn("/homelab/paperclip/openrouter_api_key", content)
+        self.assertIn("/homelab/paperclip/postgres_password", content)
+        self.assertIn("/homelab/policy-bot/github_app_integration_id", content)
+        self.assertIn("/homelab/policy-bot/github_app_private_key", content)
         self.assertNotIn("/homelab/tailscale/auth_key", content)
         self.assertNotIn("/homelab/traefik/ts_authkey", content)
 
@@ -50,8 +56,8 @@ class SecretManagementTests(unittest.TestCase):
         deploy = (ROOT / ".github/workflows/deploy.yml").read_text()
         action = (ROOT / ".github/actions/setup-infrastructure/action.yml").read_text()
 
-        self.assertNotIn("secrets.TS_AUTH_KEY", plan)
-        self.assertNotIn("secrets.TS_AUTH_KEY", deploy)
+        self.assertIn("secrets.TS_AUTH_KEY", plan)
+        self.assertIn("secrets.TS_AUTH_KEY", deploy)
         self.assertIn("secrets.TS_OAUTH_CLIENT_ID", plan)
         self.assertIn("secrets.TS_OAUTH_SECRET", plan)
         self.assertIn("secrets.TS_OAUTH_CLIENT_ID", deploy)
@@ -60,13 +66,17 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER", deploy)
         self.assertIn("aws-actions/configure-aws-credentials@", plan)
         self.assertIn("aws-actions/configure-aws-credentials@", deploy)
+        self.assertIn("tailscale-auth-key:", action)
         self.assertIn("oauth-client-id:", action)
         self.assertIn("oauth-secret:", action)
         self.assertIn("tailscale-auth-key-parameter:", action)
         self.assertIn("aws ssm get-parameter", action)
         self.assertIn("mode=oauth", action)
         self.assertIn("mode=authkey", action)
+        self.assertIn("mode=authkey-parameter", action)
         self.assertIn("tailscale set --accept-routes=true", action)
-        self.assertNotIn("connectivity-probe-address: 100.94.104.7", plan)
+        self.assertNotIn("connectivity-probe-address: 100.119.126.81", plan)
         self.assertIn("-refresh=false", plan)
-        self.assertIn("connectivity-probe-address: 100.94.104.7", deploy)
+        self.assertIn("connectivity-probe-address: 100.119.126.81", deploy)
+        self.assertIn("NOMAD_ADDR: http://100.119.126.81:4646", deploy)
+        self.assertIn('USE_TAILSCALE_ENDPOINTS: "1"', deploy)

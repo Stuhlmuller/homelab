@@ -1,9 +1,19 @@
+variable "paperclip_nomad_node_name" {
+  type    = string
+  default = "nomad-primary"
+}
+
 job "paperclip" {
   datacenters = ["homelab"]
   type        = "service"
 
   group "paperclip" {
     count = 1
+
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = var.paperclip_nomad_node_name
+    }
 
     network {
       mode = "bridge"
@@ -45,6 +55,50 @@ job "paperclip" {
         port     = "http"
         interval = "30s"
         timeout  = "10s"
+
+        header {
+          Host = ["paperclip.stinkyboi.com"]
+        }
+      }
+    }
+
+    task "postgres-db" {
+      driver = "docker"
+      user   = "65534"
+
+      config {
+        image = "postgres:17-alpine"
+      }
+
+      template {
+        data        = <<-EOT
+          {{- with nomadVar "nomad/jobs/paperclip/config" -}}
+          {{ .postgres_password.Value | trimSpace }}
+          {{- end -}}
+        EOT
+        destination = "secrets/postgres_password"
+        change_mode = "restart"
+        uid         = 65534
+        gid         = 65534
+        perms       = "0400"
+      }
+
+      env {
+        POSTGRES_DB            = "paperclip"
+        POSTGRES_PASSWORD_FILE = "${NOMAD_SECRETS_DIR}/postgres_password"
+        POSTGRES_USER          = "paperclip"
+        PGDATA                 = "/var/lib/postgresql/data/paperclip-pgdata"
+      }
+
+      volume_mount {
+        volume      = "shared-data"
+        destination = "/var/lib/postgresql/data"
+        read_only   = false
+      }
+
+      resources {
+        cpu    = 500
+        memory = 512
       }
     }
 
@@ -54,30 +108,26 @@ job "paperclip" {
       config {
         image = "ghcr.io/paperclipai/paperclip:latest"
         ports = ["http"]
-
-        volumes = [
-          "local/paperclip-config:/paperclip-config",
-        ]
       }
 
       template {
         data        = <<-EOT
           {{ with nomadVar "nomad/jobs/paperclip/config" }}
-          BETTER_AUTH_SECRET="{{ .better_auth_secret }}"
-          PAPERCLIP_DEPLOYMENT_MODE="{{ .deployment_mode }}"
-          PAPERCLIP_DEPLOYMENT_EXPOSURE="{{ .deployment_exposure }}"
-          PAPERCLIP_PUBLIC_URL="{{ .public_url }}"
+          BETTER_AUTH_SECRET="{{ .better_auth_secret.Value }}"
+          OPENROUTER_API_KEY="{{ .openrouter_api_key.Value }}"
+          DATABASE_URL="postgres://paperclip:{{ .postgres_password.Value | trimSpace }}@127.0.0.1:5432/paperclip"
+          PAPERCLIP_DEPLOYMENT_MODE="{{ .deployment_mode.Value }}"
+          PAPERCLIP_DEPLOYMENT_EXPOSURE="{{ .deployment_exposure.Value }}"
+          PAPERCLIP_PUBLIC_URL="{{ .public_url.Value }}"
           {{ end }}
         EOT
-        destination = "local/paperclip-config/.env"
+        destination = "secrets/paperclip-runtime.env"
         change_mode = "restart"
-        uid         = 1000
-        gid         = 1000
-        perms       = "0400"
+        env         = true
       }
 
       env {
-        PAPERCLIP_CONFIG = "/paperclip-config/config.json"
+        PAPERCLIP_CONFIG = "/paperclip/instances/default/config.json"
         PAPERCLIP_HOME   = "/paperclip"
       }
 

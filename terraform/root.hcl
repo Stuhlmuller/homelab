@@ -1,6 +1,6 @@
 locals {
   project_name   = "homelab"
-  nomad_addr     = get_env("NOMAD_ADDR", "http://10.1.0.200:4646")
+  nomad_addr     = get_env("NOMAD_ADDR", "http://10.1.0.199:4646")
   kms_key_id     = get_env("TG_KMS_KEY_ID", "alias/homelab-opentofu")
   state_bucket   = get_env("TG_STATE_BUCKET", "rstuhlmuller-aws-s3-use1-datalake")
   state_key_root = get_env("TG_STATE_KEY_ROOT", "homelab")

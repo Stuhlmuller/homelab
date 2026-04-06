@@ -53,7 +53,7 @@ if current_host and current_ip:
 PY
 )
 
-reachable_hosts=()
+healthy_hosts=()
 failed_hosts=()
 
 for record in "${inventory_hosts[@]}"; do
@@ -80,11 +80,35 @@ for record in "${inventory_hosts[@]}"; do
   else
     echo "  host is reachable over SSH and core services are active"
   fi
-  reachable_hosts+=("${name}:${ip}")
+
+  if ! ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT_SECONDS}" "${ip}" \
+    'python3 - <<'"'"'PY'"'"'
+import json
+import urllib.request
+
+for health_type in ("server", "client"):
+    with urllib.request.urlopen(
+        f"http://127.0.0.1:4646/v1/agent/health?type={health_type}",
+        timeout=5,
+    ) as response:
+        payload = json.load(response)
+
+    status = payload.get(health_type, {})
+    if not status.get("ok"):
+        raise SystemExit(
+            f"nomad {health_type} health is not ok: {status.get('message', 'unknown')}"
+        )
+PY'; then
+    echo "  Nomad API health check failed"
+    failed_hosts+=("${name}:${ip}:nomad-api")
+    continue
+  fi
+
+  healthy_hosts+=("${name}:${ip}")
 done
 
-if [[ "${#reachable_hosts[@]}" -eq 0 ]]; then
-  echo "no reachable hosts were found" >&2
+if [[ "${#healthy_hosts[@]}" -eq 0 ]]; then
+  echo "no healthy hosts were found" >&2
   exit 1
 fi
 
@@ -94,7 +118,7 @@ if [[ "${#failed_hosts[@]}" -gt 0 && "${ALLOW_DEGRADED_CLUSTER}" != "1" ]]; then
   exit 1
 fi
 
-controller_ip="${reachable_hosts[0]#*:}"
+controller_ip="${healthy_hosts[0]#*:}"
 
 run_remote_check() {
   local description="$1"
@@ -114,27 +138,29 @@ run_remote_check() {
   printf '%s' "${output}"
 }
 
-nomad_members="$(run_remote_check "Nomad server membership" 'nomad server members -json')"
-nomad_nodes="$(run_remote_check "Nomad node status" 'nomad node status -json')"
+nomad_members="$(run_remote_check "Nomad server membership" 'curl --silent --show-error http://127.0.0.1:4646/v1/agent/members')"
 consul_members="$(run_remote_check "Consul members" 'consul members')"
 
 nomad_members_file="$(mktemp)"
-nomad_nodes_file="$(mktemp)"
 consul_members_file="$(mktemp)"
-trap 'rm -f "${nomad_members_file}" "${nomad_nodes_file}" "${consul_members_file}"' EXIT
+healthy_hosts_file="$(mktemp)"
+trap 'rm -f "${nomad_members_file}" "${consul_members_file}" "${healthy_hosts_file}"' EXIT
 
 printf '%s' "${nomad_members}" >"${nomad_members_file}"
-printf '%s' "${nomad_nodes}" >"${nomad_nodes_file}"
 printf '%s' "${consul_members}" >"${consul_members_file}"
+printf '%s\n' "${healthy_hosts[@]}" >"${healthy_hosts_file}"
 
-python3 - "${ALLOW_DEGRADED_CLUSTER}" "${nomad_members_file}" "${nomad_nodes_file}" "${consul_members_file}" <<'PY'
+python3 - "${ALLOW_DEGRADED_CLUSTER}" "${nomad_members_file}" "${healthy_hosts_file}" "${consul_members_file}" <<'PY'
 import json
 from pathlib import Path
 import sys
 
 allow_degraded = sys.argv[1] == "1"
-nomad_members = json.loads(Path(sys.argv[2]).read_text())
-nomad_nodes = json.loads(Path(sys.argv[3]).read_text())
+nomad_members_payload = json.loads(Path(sys.argv[2]).read_text())
+healthy_hosts = [
+    line for line in Path(sys.argv[3]).read_text().splitlines()
+    if line.strip()
+]
 consul_member_lines = [
     line for line in Path(sys.argv[4]).read_text().splitlines()
     if line.strip()
@@ -142,8 +168,9 @@ consul_member_lines = [
 if consul_member_lines and consul_member_lines[0].startswith("Node"):
     consul_member_lines = consul_member_lines[1:]
 
+nomad_members = nomad_members_payload.get("Members", [])
 alive_nomad = [member for member in nomad_members if member.get("Status") == "alive"]
-ready_nodes = [node for node in nomad_nodes if node.get("Status") == "ready"]
+ready_nodes = healthy_hosts
 alive_consul = []
 for line in consul_member_lines:
     columns = line.split()
@@ -151,13 +178,13 @@ for line in consul_member_lines:
         alive_consul.append(line)
 
 print(f"Nomad servers alive: {len(alive_nomad)}/{len(nomad_members)}")
-print(f"Nomad nodes ready: {len(ready_nodes)}/{len(nomad_nodes)}")
+print(f"Nomad nodes ready: {len(ready_nodes)}/{len(healthy_hosts)}")
 print(f"Consul servers alive: {len(alive_consul)}/{len(consul_member_lines)}")
 
 if allow_degraded:
     if len(alive_nomad) < 2 or len(ready_nodes) < 2 or len(alive_consul) < 2:
         raise SystemExit("degraded cluster validation failed; quorum is not healthy enough")
 else:
-    if len(alive_nomad) != len(nomad_members) or len(ready_nodes) != len(nomad_nodes) or len(alive_consul) != len(consul_member_lines):
+    if len(alive_nomad) != len(nomad_members) or len(ready_nodes) != len(healthy_hosts) or len(alive_consul) != len(consul_member_lines):
         raise SystemExit("strict cluster validation failed; at least one member is down")
 PY

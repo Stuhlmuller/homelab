@@ -10,9 +10,9 @@ class RepositoryLayoutTests(unittest.TestCase):
         for name in ("ansible", "docs", "nomad", "scripts", "terraform", "tests"):
             self.assertTrue((ROOT / name).exists(), name)
 
-    def test_inventory_contains_all_three_nodes(self) -> None:
+    def test_inventory_contains_all_servers(self) -> None:
         content = (ROOT / "ansible/inventories/production/hosts.yml").read_text()
-        for host in ("10.1.0.200", "10.1.0.201", "10.1.0.202"):
+        for host in ("10.1.0.199", "10.1.0.200", "10.1.0.201", "10.1.0.202"):
             self.assertIn(host, content)
 
     def test_nomad_jobs_have_matching_terragrunt_units(self) -> None:
@@ -30,8 +30,12 @@ class RepositoryLayoutTests(unittest.TestCase):
 
     def test_terraform_root_references_nomad_provider(self) -> None:
         content = (ROOT / "terraform/root.hcl").read_text()
-        self.assertIn('get_env("NOMAD_ADDR", "http://10.1.0.200:4646")', content)
+        self.assertIn('get_env("NOMAD_ADDR", "http://10.1.0.199:4646")', content)
         self.assertIn('address = "${local.nomad_addr}"', content)
+
+    def test_bootstrap_playbook_creates_host_volumes_before_starting_nomad(self) -> None:
+        content = (ROOT / "ansible/playbooks/bootstrap.yml").read_text()
+        self.assertLess(content.index("- role: host_volumes"), content.index("- role: nomad"))
 
     def test_readme_references_monorepo_layout(self) -> None:
         content = (ROOT / "README.md").read_text()

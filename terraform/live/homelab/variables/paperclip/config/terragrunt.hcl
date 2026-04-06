@@ -15,5 +15,7 @@ inputs = {
   }
   ssm_parameters = {
     better_auth_secret = "/homelab/paperclip/better_auth_secret"
+    openrouter_api_key = "/homelab/paperclip/openrouter_api_key"
+    postgres_password  = "/homelab/paperclip/postgres_password"
   }
 }
