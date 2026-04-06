@@ -138,8 +138,8 @@ job "paperclip" {
       }
 
       resources {
-        cpu    = 2000
-        memory = 4096
+        cpu    = 1000
+        memory = 1024
       }
     }
   }
