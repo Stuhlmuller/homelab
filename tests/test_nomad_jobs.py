@@ -63,6 +63,7 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn('PAPERCLIP_CONFIG = "/paperclip/instances/default/config.json"', content)
         self.assertIn('PAPERCLIP_HOME   = "/paperclip"', content)
         self.assertIn('BETTER_AUTH_SECRET="{{ .better_auth_secret.Value }}"', content)
+        self.assertIn('OPENROUTER_API_KEY="{{ .openrouter_api_key.Value }}"', content)
         self.assertIn('Host = ["paperclip.stinkyboi.com"]', content)
 
     def test_policy_bot_job_uses_tailscale_funnel_with_file_backed_config(self) -> None:

@@ -111,6 +111,7 @@ workflow:
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
    - `/homelab/paperclip/better_auth_secret`
+   - `/homelab/paperclip/openrouter_api_key`
    - `/homelab/paperclip/postgres_password`
    - `/homelab/policy-bot/github_app_integration_id`
    - `/homelab/policy-bot/github_app_private_key`
