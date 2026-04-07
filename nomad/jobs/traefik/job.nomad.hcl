@@ -29,6 +29,10 @@ job "traefik" {
       port "admin" {
         static = 8080
       }
+
+      port "funnel" {
+        static = 18080
+      }
     }
 
     volume "shared-data" {
@@ -114,6 +118,9 @@ job "traefik" {
     [entryPoints.websecure.http.tls]
       certResolver = "letsencrypt"
 
+  [entryPoints.funnel]
+    address = ":18080"
+
 [api]
   dashboard = true
   insecure  = false
@@ -159,6 +166,11 @@ EOF
     service     = "nomad-ui"
     [http.routers.nomad.tls]
       certResolver = "letsencrypt"
+
+  [http.routers.policy-bot-funnel]
+    rule        = "Host(`acer.tail67beb.ts.net`) && PathPrefix(`/api/github`)"
+    entryPoints = ["funnel"]
+    service     = "policy-bot@consulcatalog"
 
   [http.routers.consul]
     rule        = "Host(`consul.stinkyboi.com`)"
