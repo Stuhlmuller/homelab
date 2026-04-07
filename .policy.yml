@@ -61,12 +61,6 @@ approval_rules:
         - write
     options:
       allow_contributor: true
-      methods:
-        comments:
-          - "lgtm"
-          - "approved"
-          - ":+1:"
-          - "👍"
 
   # Default approval rule for all other changes
   - name: default-approval
