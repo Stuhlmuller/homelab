@@ -103,7 +103,7 @@
     tailscale_funnel_current_paths: >-
       {{
         (tailscale_funnel_status.stdout | default(''))
-        | regex_findall('\\|--\\s+([^\\s]+)\\s+proxy')
+        | regex_findall('\|--\s+([^\s]+)\s+proxy')
         | list
         | sort
       }}
@@ -164,7 +164,7 @@
     tailscale_funnel_current_paths_after: >-
       {{
         (tailscale_funnel_status_after.stdout | default(''))
-        | regex_findall('\\|--\\s+([^\\s]+)\\s+proxy')
+        | regex_findall('\|--\s+([^\s]+)\s+proxy')
         | list
         | sort
       }}
