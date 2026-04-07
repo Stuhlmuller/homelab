@@ -168,7 +168,7 @@ EOF
       certResolver = "letsencrypt"
 
   [http.routers.policy-bot-funnel]
-    rule        = "Host(`acer.tail67beb.ts.net`) && (PathPrefix(`/auth`) || PathPrefix(`/hook`))"
+    rule        = "Host(`acer.tail67beb.ts.net`) && PathPrefix(`/api/github`)"
     entryPoints = ["funnel"]
     service     = "policy-bot@consulcatalog"
 
