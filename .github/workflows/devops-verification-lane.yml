@@ -1,0 +1,69 @@
+name: "DevOps Verification Lane"
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  verify-devops-lane:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-1
+      TG_KMS_KEY_ID: alias/homelab-opentofu
+      TG_TF_PATH: tofu
+      WORKING_DIR: terraform/live/homelab
+      NOMAD_ADDR: http://100.94.104.7:4646
+      TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+      TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        with:
+          persist-credentials: false
+
+      - name: Assert repository configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}" ]]; then
+            echo "::error::Missing required Actions variable AWS_ROLE_TO_ASSUME_HOMELAB."
+            exit 1
+          fi
+
+          if [[ ( -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ) && -z "${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}" ]]; then
+            echo "::error::Configure Tailscale OAuth secrets (TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET) or TAILSCALE_AUTH_KEY_SSM_PARAMETER."
+            exit 1
+          fi
+
+      - name: Install unzip
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes unzip
+
+      - name: Setup mise
+        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+
+      - name: Setup infrastructure access
+        uses: ./.github/actions/setup-infrastructure
+        with:
+          aws-region: us-east-1
+          tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
+          oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ env.TS_OAUTH_SECRET }}
+          connectivity-probe-address: 10.1.0.200
+
+      - name: Run DevOps verification checks
+        shell: bash
+        run: ./scripts/ci/devops-verification-lane.sh
