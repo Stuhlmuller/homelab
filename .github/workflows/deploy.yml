@@ -106,18 +106,28 @@ jobs:
         uses: ./.github/actions/setup-infrastructure
         with:
           aws-region: us-east-1
-          connectivity-probe-address: 100.94.104.7
+          connectivity-probe-address: 10.1.0.200
           connectivity-probe-port: "4646"
           tailscale-auth-key: ${{ secrets.TS_AUTH_KEY }}
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 
+      - name: Upload Tailscale access proof artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: tailscale-access-proof-${{ github.run_id }}
+          path: |
+            artifacts/tailscale-acl-simulator-proof.json
+            artifacts/tailscale-route-export-proof.json
+            artifacts/tailscale-status.json
+          if-no-files-found: error
+
       - name: Deploy homelab stack
         shell: bash
         env:
-          INGRESS_IP: 100.94.104.7
-          NOMAD_ADDR: http://100.94.104.7:4646
-          NOMAD_HTTP_IP: 100.94.104.7
+          INGRESS_IP: 10.1.0.200
+          NOMAD_ADDR: http://10.1.0.200:4646
+          NOMAD_HTTP_IP: 10.1.0.200
           USE_TAILSCALE_ENDPOINTS: "1"
         run: ./scripts/deploy-live.sh --skip-bootstrap
