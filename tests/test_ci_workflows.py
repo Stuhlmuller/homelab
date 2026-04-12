@@ -73,7 +73,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("Install Ansible controller dependencies", content)
         self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
         self.assertIn("connectivity-probe-address: 100.94.104.7", content)
-        self.assertIn('connectivity-probe-port: "22"', content)
+        self.assertIn('connectivity-probe-port: "4646"', content)
         self.assertIn("tailscale-auth-key: ${{ secrets.TS_AUTH_KEY }}", content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
         self.assertIn("INGRESS_IP: 100.94.104.7", content)
