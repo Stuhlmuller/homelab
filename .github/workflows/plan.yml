@@ -83,7 +83,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          terragrunt run --all --tf-path "${TG_TF_PATH}" init --working-dir "${WORKING_DIR}" -- -backend=false -input=false
           set +e
           terragrunt run --all --tf-path "${TG_TF_PATH}" plan --working-dir "${WORKING_DIR}" -- -refresh=false -lock=false -input=false -no-color 2>&1 | tee "${PLAN_LOG}"
           exit_code="${PIPESTATUS[0]}"
