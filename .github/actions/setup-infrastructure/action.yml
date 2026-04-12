@@ -121,6 +121,48 @@ runs:
       shell: bash
       run: sudo tailscale set --accept-routes=true
 
+    - name: Capture pre-probe tailnet diagnostics
+      if: inputs.connectivity-probe-address != ''
+      env:
+        CONNECTIVITY_PROBE_ADDRESS: ${{ inputs.connectivity-probe-address }}
+        CONNECTIVITY_PROBE_PORT: ${{ inputs.connectivity-probe-port }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p artifacts
+
+        tailscale status --json > artifacts/tailscale-status.json || true
+        ip route show > artifacts/ip-route.txt || true
+        tailscale ping -c 3 "${CONNECTIVITY_PROBE_ADDRESS}" > artifacts/tailscale-ping.txt 2>&1 || true
+
+        python3 - <<'PY' > artifacts/tcp-probe-summary.md
+import json
+import os
+import socket
+import time
+
+address = os.environ["CONNECTIVITY_PROBE_ADDRESS"]
+port_text = os.environ.get("CONNECTIVITY_PROBE_PORT", "")
+ports = [int(port_text)] if port_text else [22, 4646]
+
+print("## Pre-Probe TCP Snapshot")
+print("")
+print(f"- target: `{address}`")
+print("")
+for port in ports:
+    started = time.time()
+    ok = True
+    err = ""
+    try:
+        socket.create_connection((address, port), timeout=1).close()
+    except Exception as exc:
+        ok = False
+        err = str(exc)
+    elapsed_ms = int((time.time() - started) * 1000)
+    status = "open" if ok else "timeout_or_blocked"
+    print(f"- `{address}:{port}` -> `{status}` ({elapsed_ms} ms){' - ' + err if err else ''}")
+PY
+
     - name: Wait for Tailscale subnet reachability
       if: inputs.connectivity-probe-address != ''
       env:
