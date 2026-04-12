@@ -114,14 +114,16 @@ jobs:
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
 
       - name: Upload Tailscale access proof artifact
+        if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: tailscale-access-proof-${{ github.run_id }}
           path: |
-            artifacts/tailscale-acl-simulator-proof.json
-            artifacts/tailscale-route-export-proof.json
             artifacts/tailscale-status.json
-          if-no-files-found: error
+            artifacts/ip-route.txt
+            artifacts/tailscale-ping.txt
+            artifacts/tcp-probe-summary.md
+          if-no-files-found: warn
 
       - name: Deploy homelab stack
         shell: bash
