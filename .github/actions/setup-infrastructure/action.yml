@@ -47,13 +47,13 @@ runs:
         TAILSCALE_AUTH_KEY: ${{ inputs.tailscale-auth-key }}
         TAILSCALE_AUTH_KEY_PARAMETER: ${{ inputs.tailscale-auth-key-parameter }}
       run: |
-        if [[ -n "${TAILSCALE_AUTH_KEY}" ]]; then
-          echo "mode=authkey" >> "${GITHUB_OUTPUT}"
+        if [[ -n "${OAUTH_CLIENT_ID}" && -n "${OAUTH_SECRET}" ]]; then
+          echo "mode=oauth" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
-        if [[ -n "${OAUTH_CLIENT_ID}" && -n "${OAUTH_SECRET}" ]]; then
-          echo "mode=oauth" >> "${GITHUB_OUTPUT}"
+        if [[ -n "${TAILSCALE_AUTH_KEY}" ]]; then
+          echo "mode=authkey" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
