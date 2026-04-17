@@ -52,13 +52,14 @@ runs:
           exit 0
         fi
 
-        if [[ -n "${OAUTH_CLIENT_ID}" && -n "${OAUTH_SECRET}" ]]; then
-          echo "mode=oauth" >> "${GITHUB_OUTPUT}"
+        # Under Tailnet Lock, prefer preapproved auth-key sources over OAuth joins.
+        if [[ -n "${TAILSCALE_AUTH_KEY_PARAMETER}" ]]; then
+          echo "mode=authkey-parameter" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
-        if [[ -n "${TAILSCALE_AUTH_KEY_PARAMETER}" ]]; then
-          echo "mode=authkey-parameter" >> "${GITHUB_OUTPUT}"
+        if [[ -n "${OAUTH_CLIENT_ID}" && -n "${OAUTH_SECRET}" ]]; then
+          echo "mode=oauth" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
