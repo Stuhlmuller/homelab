@@ -96,6 +96,14 @@ jobs:
         shell: bash
         run: python -m pip install --upgrade pip ansible boto3 botocore
 
+      - name: Resolve Nomad ingress endpoint
+        id: resolve_nomad_endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          nomad_ip="$(python3 scripts/ci/resolve_nomad_ingress_tailscale.py)"
+          echo "nomad_ip=${nomad_ip}" >> "${GITHUB_OUTPUT}"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6
         with:
@@ -106,8 +114,8 @@ jobs:
         uses: ./.github/actions/setup-infrastructure
         with:
           aws-region: us-east-1
-          connectivity-probe-address: 100.119.126.81
-          connectivity-probe-port: "22"
+          connectivity-probe-address: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}
+          connectivity-probe-port: "4646"
           tailscale-auth-key: ${{ secrets.TS_AUTH_KEY }}
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
@@ -128,8 +136,8 @@ jobs:
       - name: Deploy homelab stack
         shell: bash
         env:
-          INGRESS_IP: 100.119.126.81
-          NOMAD_ADDR: http://100.119.126.81:4646
-          NOMAD_HTTP_IP: 100.119.126.81
+          INGRESS_IP: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}
+          NOMAD_ADDR: http://${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}:4646
+          NOMAD_HTTP_IP: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}
           USE_TAILSCALE_ENDPOINTS: "1"
         run: ./scripts/deploy-live.sh --skip-bootstrap

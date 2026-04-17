@@ -40,7 +40,6 @@ jobs:
       TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
       TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
       TG_TF_PATH: tofu
-      NOMAD_ADDR: http://100.119.126.81:4646
       WORKING_DIR: terraform/live/homelab
     steps:
       - name: Checkout
@@ -54,6 +53,15 @@ jobs:
       - name: Initialize plan artifacts
         shell: bash
         run: mkdir -p artifacts
+
+      - name: Resolve Nomad ingress endpoint
+        id: resolve_nomad_endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          nomad_ip="$(python3 scripts/ci/resolve_nomad_ingress_tailscale.py)"
+          echo "nomad_ip=${nomad_ip}" >> "${GITHUB_OUTPUT}"
+          echo "NOMAD_ADDR=http://${nomad_ip}:4646" >> "${GITHUB_ENV}"
 
       - name: Skip privileged access on fork pull requests
         if: github.event.pull_request.head.repo.full_name != github.repository
@@ -76,8 +84,8 @@ jobs:
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TS_OAUTH_SECRET }}
-          connectivity-probe-address: 100.119.126.81
-          connectivity-probe-port: "22"
+          connectivity-probe-address: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}
+          connectivity-probe-port: "4646"
 
       - name: Run Terragrunt plan
         if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || env.TS_AUTH_KEY != '' || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
