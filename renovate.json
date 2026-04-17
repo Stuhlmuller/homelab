@@ -1,5 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "packageRules": [
+    {
+      "description": "Temporarily block hashicorp/nomad 2.6.0 due to upstream schema mismatch (hashicorp/terraform-provider-nomad#609, fix in #608 pending release)",
+      "matchManagers": ["terraform"],
+      "matchPackageNames": ["hashicorp/nomad"],
+      "allowedVersions": "<2.6.0"
+    }
+  ],
   "lockFileMaintenance": {
     "enabled": true
   }
