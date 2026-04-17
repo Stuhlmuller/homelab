@@ -44,10 +44,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
         self.assertIn("tailscale-auth-key: ${{ env.TS_AUTH_KEY }}", content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
-        self.assertIn("NOMAD_ADDR: http://100.119.126.81:4646", content)
+        self.assertIn("NOMAD_ADDR: http://100.94.104.7:4646", content)
         self.assertIn("-- -refresh=false", content)
-        self.assertIn("connectivity-probe-address: 100.119.126.81", content)
-        self.assertIn('connectivity-probe-port: "4646"', content)
+        self.assertIn("connectivity-probe-address: 100.94.104.7", content)
+        self.assertIn('connectivity-probe-port: "22"', content)
         self.assertIn("Skip privileged access on fork pull requests", content)
         self.assertIn(
             "Skipping AWS credentials, infrastructure access, and the live Terragrunt plan for fork pull requests.",
