@@ -174,21 +174,7 @@ runs:
         deadline=$((SECONDS + CONNECTIVITY_TIMEOUT_SECONDS))
 
         while ((SECONDS < deadline)); do
-          if tailscale status --json 2>/dev/null | python3 - <<'PY'
-        import json
-        import sys
-
-        try:
-            payload = json.load(sys.stdin)
-        except Exception:
-            raise SystemExit(1)
-
-        for item in payload.get("Health", []):
-            if "locked out" in item.lower():
-                raise SystemExit(0)
-
-        raise SystemExit(1)
-        PY
+          if tailscale status --json 2>/dev/null | python3 -c 'import json, sys; payload = json.load(sys.stdin); sys.exit(0 if any("locked out" in str(item).lower() for item in payload.get("Health", [])) else 1)'
           then
             echo "::error::Tailscale reports this CI node is locked out (Tailnet Lock). Sign the node key or provide a preapproved auth key."
             exit 1
