@@ -40,7 +40,7 @@ jobs:
       TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
       TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
       TG_TF_PATH: tofu
-      NOMAD_ADDR: http://10.1.0.200:4646
+      NOMAD_ADDR: http://100.94.104.7:4646
       WORKING_DIR: terraform/live/homelab
     steps:
       - name: Checkout
@@ -76,8 +76,8 @@ jobs:
           tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
           oauth-client-id: ${{ env.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ env.TS_OAUTH_SECRET }}
-          connectivity-probe-address: 10.1.0.200
-          connectivity-probe-port: "4646"
+          connectivity-probe-address: 100.94.104.7
+          connectivity-probe-port: "22"
 
       - name: Run Terragrunt plan
         if: github.event.pull_request.head.repo.full_name == github.repository && vars.AWS_ROLE_TO_ASSUME_HOMELAB != '' && ((env.TS_OAUTH_CLIENT_ID != '' && env.TS_OAUTH_SECRET != '') || env.TS_AUTH_KEY != '' || vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != '')
