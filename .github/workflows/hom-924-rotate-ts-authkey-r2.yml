@@ -1,0 +1,123 @@
+name: "HOM-924 Rotate Tailscale Auth Key R2"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/hom-924-rotate-ts-authkey-r2.yml"
+
+permissions: {}
+
+concurrency:
+  group: hom-924-ts-authkey-rotation-r2
+  cancel-in-progress: false
+
+jobs:
+  rotate-and-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-1
+      AUTH_KEY_PARAMETER: /homelab/tailscale/auth_key
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+
+      - name: Mint reusable preauthorized Tailscale auth key
+        id: mint
+        shell: bash
+        env:
+          TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TAILSCALE_API_KEY: ${{ secrets.TAILSCALE_API_KEY }}
+          TS_API_KEY: ${{ secrets.TS_API_KEY }}
+        run: |
+          set -euo pipefail
+          payload='{"capabilities":{"devices":{"create":{"reusable":true,"ephemeral":false,"preauthorized":true,"tags":["tag:ci"]}}},"expirySeconds":2592000,"description":"HOM-924 CI auth key rotation R2"}'
+          response_file="$(mktemp)"
+          status_code=""
+
+          if [[ -n "${TAILSCALE_API_KEY}" || -n "${TS_API_KEY}" ]]; then
+            api_key="${TAILSCALE_API_KEY:-${TS_API_KEY:-}}"
+            status_code="$(curl -sS -o "${response_file}" -w "%{http_code}" -u "${api_key}:" -H "Content-Type: application/json" https://api.tailscale.com/api/v2/tailnet/-/keys -d "${payload}")"
+          fi
+
+          if [[ "${status_code}" != "200" ]]; then
+            if [[ -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ]]; then
+              echo "::error::No mint credential available."
+              [[ -n "${status_code}" ]] && cat "${response_file}"
+              exit 1
+            fi
+            status_code="$(curl -sS -o "${response_file}" -w "%{http_code}" -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_SECRET}" -H "Content-Type: application/json" https://api.tailscale.com/api/v2/tailnet/-/keys -d "${payload}")"
+          fi
+
+          if [[ "${status_code}" != "200" ]]; then
+            echo "::error::Failed to mint Tailscale auth key (HTTP ${status_code})."
+            cat "${response_file}"
+            exit 1
+          fi
+
+          key="$(jq -r '.key // empty' "${response_file}")"
+          key_id="$(jq -r '.id // empty' "${response_file}")"
+          [[ -n "${key}" ]] || { echo "::error::No key in response"; cat "${response_file}"; exit 1; }
+          [[ "${key}" == tskey-auth-* ]] || { echo "::error::Minted key format unexpected"; exit 1; }
+
+          echo "::add-mask::${key}"
+          echo "auth_key=${key}" >> "${GITHUB_OUTPUT}"
+          echo "key_id=${key_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Update SSM parameter
+        id: ssm
+        shell: bash
+        env:
+          AUTH_KEY: ${{ steps.mint.outputs.auth_key }}
+        run: |
+          set -euo pipefail
+          version="$(aws ssm put-parameter --name "${AUTH_KEY_PARAMETER}" --type SecureString --overwrite --value "${AUTH_KEY}" --region "${AWS_REGION}" --query 'Version' --output text)"
+          echo "parameter_version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate fallback login via authkey parameter mode
+        uses: ./.github/actions/setup-infrastructure
+        with:
+          aws-region: us-east-1
+          connectivity-probe-address: 100.94.104.7
+          connectivity-probe-port: "22"
+          tailscale-auth-key-parameter: /homelab/tailscale/auth_key
+
+      - name: Upload fallback validation artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: hom-924-fallback-validation-r2-${{ github.run_id }}
+          path: |
+            artifacts/tailscale-status.json
+            artifacts/ip-route.txt
+            artifacts/tailscale-ping.txt
+            artifacts/tcp-probe-summary.md
+          if-no-files-found: warn
+
+      - name: Write run metadata
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### HOM-924 rotation evidence r2"
+            echo
+            echo "- minted_key_id: \`${{ steps.mint.outputs.key_id }}\`"
+            echo "- auth_key_parameter: \`${AUTH_KEY_PARAMETER}\`"
+            echo "- parameter_version: \`${{ steps.ssm.outputs.parameter_version }}\`"
+            echo "- run_id: \`${GITHUB_RUN_ID}\`"
+            echo "- run_attempt: \`${GITHUB_RUN_ATTEMPT}\`"
+            echo "- timestamp_utc: \`$(date -u +%Y-%m-%dT%H:%M:%SZ)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
