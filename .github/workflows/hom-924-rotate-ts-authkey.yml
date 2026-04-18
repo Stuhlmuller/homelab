@@ -40,20 +40,40 @@ jobs:
         env:
           TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
+          TAILSCALE_API_KEY: ${{ secrets.TAILSCALE_API_KEY }}
+          TS_API_KEY: ${{ secrets.TS_API_KEY }}
         run: |
           set -euo pipefail
 
-          if [[ -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ]]; then
-            echo "::error::Missing TS_OAUTH_CLIENT_ID/TS_OAUTH_SECRET repository secrets."
-            exit 1
-          fi
+          payload='{"capabilities":{"devices":{"create":{"reusable":true,"ephemeral":false,"preauthorized":true,"tags":["tag:ci"]}}},"expirySeconds":2592000,"description":"HOM-924 CI auth key rotation"}'
 
           response_file="$(mktemp)"
-          status_code="$(curl -sS -o "${response_file}" -w "%{http_code}" \
-            -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_SECRET}" \
-            -H "Content-Type: application/json" \
-            https://api.tailscale.com/api/v2/tailnet/-/keys \
-            -d '{"capabilities":{"devices":{"create":{"reusable":true,"ephemeral":false,"preauthorized":true,"tags":["tag:ci"]}}},"expirySeconds":2592000,"description":"HOM-924 CI auth key rotation"}')"
+          status_code=""
+
+          if [[ -n "${TAILSCALE_API_KEY}" || -n "${TS_API_KEY}" ]]; then
+            api_key="${TAILSCALE_API_KEY:-${TS_API_KEY:-}}"
+            echo "attempting mint with admin API key secret"
+            status_code="$(curl -sS -o "${response_file}" -w "%{http_code}" \
+              -u "${api_key}:" \
+              -H "Content-Type: application/json" \
+              https://api.tailscale.com/api/v2/tailnet/-/keys \
+              -d "${payload}")"
+          fi
+
+          if [[ "${status_code}" != "200" ]]; then
+            if [[ -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ]]; then
+              echo "::error::No mint credential available (need TAILSCALE_API_KEY/TS_API_KEY or TS_OAUTH_CLIENT_ID/TS_OAUTH_SECRET)."
+              [[ -n "${status_code}" ]] && cat "${response_file}"
+              exit 1
+            fi
+
+            echo "falling back to oauth client credential mint"
+            status_code="$(curl -sS -o "${response_file}" -w "%{http_code}" \
+              -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_SECRET}" \
+              -H "Content-Type: application/json" \
+              https://api.tailscale.com/api/v2/tailnet/-/keys \
+              -d "${payload}")"
+          fi
 
           if [[ "${status_code}" != "200" ]]; then
             echo "::error::Failed to mint Tailscale auth key (HTTP ${status_code})."
