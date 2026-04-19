@@ -41,9 +41,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("env.TS_OAUTH_SECRET != ''", content)
         self.assertIn("vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER != ''", content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
-        self.assertIn("NOMAD_ADDR: http://100.94.104.7:4646", content)
+        self.assertIn("NOMAD_ADDR: http://10.1.0.199:4646", content)
         self.assertIn("-- -refresh=false", content)
-        self.assertNotIn('connectivity-probe-port: "4646"', content)
+        self.assertIn("connectivity-probe-address: 10.1.0.199", content)
+        self.assertIn('connectivity-probe-port: "22"', content)
         self.assertIn("Skip privileged access on fork pull requests", content)
         self.assertIn(
             "Skipping AWS credentials, infrastructure access, and the live Terragrunt plan for fork pull requests.",
@@ -68,11 +69,11 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('GITHUB_STEP_SUMMARY', content)
         self.assertIn("Install Ansible controller dependencies", content)
         self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
-        self.assertIn("connectivity-probe-address: 100.94.104.7", content)
+        self.assertIn("connectivity-probe-address: 10.1.0.199", content)
         self.assertIn('connectivity-probe-port: "22"', content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
-        self.assertIn("INGRESS_IP: 100.94.104.7", content)
-        self.assertIn("NOMAD_ADDR: http://100.94.104.7:4646", content)
+        self.assertIn("INGRESS_IP: 10.1.0.199", content)
+        self.assertIn("NOMAD_ADDR: http://10.1.0.199:4646", content)
         self.assertIn('USE_TAILSCALE_ENDPOINTS: "1"', content)
         self.assertIn("./scripts/deploy-live.sh --skip-bootstrap", content)
         self.assertIn("aws-actions/configure-aws-credentials@", content)
@@ -84,6 +85,18 @@ class WorkflowTests(unittest.TestCase):
             content.index("Install Ansible controller dependencies"),
             content.index("Configure AWS credentials"),
         )
+
+    def test_backup_verify_workflow_exports_evidence_artifact(self) -> None:
+        content = (ROOT / ".github/workflows/backup-verify.yml").read_text()
+        self.assertIn('name: "Backup Verify"', content)
+        self.assertIn("schedule:", content)
+        self.assertIn('cron: "35 5 * * *"', content)
+        self.assertIn("Setup infrastructure access", content)
+        self.assertIn("./scripts/verify-backup-runtime-clone-restore.sh", content)
+        self.assertIn("Upload backup verification evidence", content)
+        self.assertIn("actions/upload-artifact@", content)
+        self.assertIn("backup-verify-evidence", content)
+        self.assertIn("dr/reporting/evidence/backup-verify-runtime-clone-restore-*", content)
 
 
 if __name__ == "__main__":
