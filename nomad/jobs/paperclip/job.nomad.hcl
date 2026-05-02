@@ -114,7 +114,8 @@ job "paperclip" {
         data        = <<-EOT
           {{ with nomadVar "nomad/jobs/paperclip/config" }}
           BETTER_AUTH_SECRET="{{ .better_auth_secret.Value }}"
-          OPENROUTER_API_KEY="{{ .openrouter_api_key.Value }}"
+          OPENAI_API_KEY="{{ .openai_api_key.Value | trimSpace }}"
+          OPENROUTER_API_KEY="{{ .openrouter_api_key.Value | trimSpace }}"
           DATABASE_URL="postgres://paperclip:{{ .postgres_password.Value | trimSpace }}@127.0.0.1:5432/paperclip"
           PAPERCLIP_DEPLOYMENT_MODE="{{ .deployment_mode.Value }}"
           PAPERCLIP_DEPLOYMENT_EXPOSURE="{{ .deployment_exposure.Value }}"
@@ -127,6 +128,8 @@ job "paperclip" {
       }
 
       env {
+        HOST             = "0.0.0.0"
+        PORT             = "3100"
         PAPERCLIP_CONFIG = "/paperclip/instances/default/config.json"
         PAPERCLIP_HOME   = "/paperclip"
       }
