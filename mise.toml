@@ -1,5 +1,5 @@
 [tools]
-consul = "1.22.6"
+consul = "1.22.7"
 nomad = "1.11.3"
 opentofu = "1.11.6"
 python = "3.14.4"
