@@ -13,6 +13,8 @@ jobs:
       id-token: write
     env:
       AWS_REGION: us-east-1
+      AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+      TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
       TG_KMS_KEY_ID: alias/homelab-opentofu
       TG_TF_PATH: tofu
       WORKING_DIR: terraform/live/homelab
@@ -29,12 +31,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}" ]]; then
+          if [[ -z "${AWS_ROLE_TO_ASSUME_HOMELAB}" ]]; then
             echo "::error::Missing required Actions variable AWS_ROLE_TO_ASSUME_HOMELAB."
             exit 1
           fi
 
-          if [[ ( -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ) && -z "${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}" ]]; then
+          if [[ ( -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ) && -z "${TAILSCALE_AUTH_KEY_SSM_PARAMETER}" ]]; then
             echo "::error::Configure Tailscale OAuth secrets (TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET) or TAILSCALE_AUTH_KEY_SSM_PARAMETER."
             exit 1
           fi
@@ -50,7 +52,7 @@ jobs:
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
