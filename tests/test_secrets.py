@@ -11,6 +11,8 @@ class SecretManagementTests(unittest.TestCase):
             ROOT
             / "terraform/live/homelab/variables/dokploy/config/terragrunt.hcl",
             ROOT
+            / "terraform/live/homelab/variables/fleetdm/config/terragrunt.hcl",
+            ROOT
             / "terraform/live/homelab/variables/paperclip/config/terragrunt.hcl",
             ROOT
             / "terraform/live/homelab/variables/policy-bot/config/terragrunt.hcl",
@@ -43,6 +45,9 @@ class SecretManagementTests(unittest.TestCase):
         content = (ROOT / "README.md").read_text()
         self.assertIn("AWS SSM Parameter Store", content)
         self.assertIn("/homelab/dokploy/postgres_password", content)
+        self.assertIn("/homelab/fleetdm/mysql_password", content)
+        self.assertIn("/homelab/fleetdm/mysql_root_password", content)
+        self.assertIn("/homelab/fleetdm/server_private_key", content)
         self.assertIn("/homelab/paperclip/better_auth_secret", content)
         self.assertIn("/homelab/paperclip/openrouter_api_key", content)
         self.assertIn("/homelab/paperclip/postgres_password", content)

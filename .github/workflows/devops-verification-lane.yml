@@ -27,14 +27,17 @@ jobs:
 
       - name: Assert repository configuration
         shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
         run: |
           set -euo pipefail
-          if [[ -z "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}" ]]; then
+          if [[ -z "${AWS_ROLE_TO_ASSUME_HOMELAB}" ]]; then
             echo "::error::Missing required Actions variable AWS_ROLE_TO_ASSUME_HOMELAB."
             exit 1
           fi
 
-          if [[ ( -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ) && -z "${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}" ]]; then
+          if [[ ( -z "${TS_OAUTH_CLIENT_ID}" || -z "${TS_OAUTH_SECRET}" ) && -z "${TAILSCALE_AUTH_KEY_SSM_PARAMETER}" ]]; then
             echo "::error::Configure Tailscale OAuth secrets (TS_OAUTH_CLIENT_ID + TS_OAUTH_SECRET) or TAILSCALE_AUTH_KEY_SSM_PARAMETER."
             exit 1
           fi

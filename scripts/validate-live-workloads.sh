@@ -26,6 +26,34 @@ remote_nomad_command() {
   fi
 }
 
+parse_url_host_port() {
+  local url="$1"
+
+  python3 - "${url}" <<'PY'
+from urllib.parse import urlsplit
+import sys
+
+url = sys.argv[1].rstrip("/")
+parts = urlsplit(url)
+host = parts.hostname or ""
+port = parts.port
+
+if not host:
+    raise SystemExit(f"failed to parse host from URL: {url}")
+
+if port is None:
+    if parts.scheme == "https":
+        port = 443
+    elif parts.scheme == "http":
+        port = 80
+    else:
+        raise SystemExit(f"failed to infer port from URL: {url}")
+
+print(host)
+print(port)
+PY
+}
+
 resolve_ingress_endpoint() {
   python3 - "${USE_TAILSCALE_ENDPOINTS}" <<'PY'
 from pathlib import Path
@@ -78,7 +106,7 @@ PY
 INGRESS_IP="${INGRESS_IP:-$(resolve_ingress_endpoint)}"
 NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-${INGRESS_IP}}"
 
-for job in nfs-csi-plugin traefik dokploy paperclip policy-bot; do
+for job in nfs-csi-plugin traefik dokploy fleetdm paperclip policy-bot; do
   job_status="$(remote_nomad_command "${NOMAD_HTTP_IP}" "nomad job status -json ${job}")"
   job_status_file="$(mktemp)"
   printf '%s' "${job_status}" >"${job_status_file}"
@@ -118,6 +146,7 @@ done
 nomad_variables="$(remote_nomad_command "${NOMAD_HTTP_IP}" 'nomad var list')"
 for path in \
   "nomad/jobs/dokploy/config" \
+  "nomad/jobs/fleetdm/config" \
   "nomad/jobs/policy-bot" \
   "nomad/jobs/paperclip/config" \
   "nomad/jobs/traefik/cf_dns_api_token"; do
@@ -127,15 +156,29 @@ for path in \
   }
 done
 
+fleetdm_public_url="$(remote_nomad_command "${NOMAD_HTTP_IP}" 'nomad var get -item public_url nomad/jobs/fleetdm/config')"
+fleetdm_public_url="${fleetdm_public_url%/}"
+
+if [[ -z "${fleetdm_public_url}" ]]; then
+  echo "fleetdm public_url is missing from Nomad variables" >&2
+  exit 1
+fi
+
+fleetdm_endpoint="$(parse_url_host_port "${fleetdm_public_url}")"
+fleetdm_host="${fleetdm_endpoint%%$'\n'*}"
+fleetdm_port="${fleetdm_endpoint#*$'\n'}"
+
 policy_bot_public_url="$(remote_nomad_command "${NOMAD_HTTP_IP}" 'nomad var get -item public_url nomad/jobs/policy-bot')"
 policy_bot_public_url="${policy_bot_public_url%/}"
-policy_bot_host="${policy_bot_public_url#https://}"
-policy_bot_host="${policy_bot_host%%/*}"
 
 if [[ -z "${policy_bot_public_url}" ]]; then
   echo "policy-bot public_url is missing from Nomad variables" >&2
   exit 1
 fi
+
+policy_bot_endpoint="$(parse_url_host_port "${policy_bot_public_url}")"
+policy_bot_host="${policy_bot_endpoint%%$'\n'*}"
+policy_bot_port="${policy_bot_endpoint#*$'\n'}"
 
 inventory_ips=()
 while IFS= read -r ip; do
@@ -226,13 +269,18 @@ curl --fail --silent --show-error \
 echo "validated Dokploy HTTPS health endpoint on ${INGRESS_IP}"
 
 curl --fail --silent --show-error \
+  --resolve "${fleetdm_host}:${fleetdm_port}:${INGRESS_IP}" \
+  "${fleetdm_public_url}/healthz" >/dev/null
+echo "validated FleetDM HTTPS health endpoint on ${INGRESS_IP}"
+
+curl --fail --silent --show-error \
   --resolve "paperclip.stinkyboi.com:443:${INGRESS_IP}" \
   "https://paperclip.stinkyboi.com/api/health" >/dev/null
 echo "validated Paperclip HTTPS health endpoint on ${INGRESS_IP}"
 
 policy_bot_auth_status="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-    --resolve "${policy_bot_host}:443:${INGRESS_IP}" \
+    --resolve "${policy_bot_host}:${policy_bot_port}:${INGRESS_IP}" \
     "${policy_bot_public_url}/api/github/auth" || true
 )"
 
@@ -249,7 +297,7 @@ policy_bot_hook_status="$(
     --request POST \
     --header 'Content-Type: application/json' \
     --data '{}' \
-    --resolve "${policy_bot_host}:443:${INGRESS_IP}" \
+    --resolve "${policy_bot_host}:${policy_bot_port}:${INGRESS_IP}" \
     "${policy_bot_public_url}/api/github/hook" || true
 )"
 
@@ -263,7 +311,7 @@ echo "validated Policy Bot webhook route on ${INGRESS_IP} (HTTP ${policy_bot_hoo
 
 policy_bot_root_status="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-    --resolve "${policy_bot_host}:443:${INGRESS_IP}" \
+    --resolve "${policy_bot_host}:${policy_bot_port}:${INGRESS_IP}" \
     "${policy_bot_public_url}/" || true
 )"
 
