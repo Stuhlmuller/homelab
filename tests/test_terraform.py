@@ -47,6 +47,20 @@ class TerraformTests(unittest.TestCase):
             ).is_file()
         )
 
+    def test_fleetdm_variable_unit_exists(self) -> None:
+        self.assertTrue(
+            (
+                ROOT
+                / "terraform"
+                / "live"
+                / "homelab"
+                / "variables"
+                / "fleetdm"
+                / "config"
+                / "terragrunt.hcl"
+            ).is_file()
+        )
+
     def test_policy_bot_variable_unit_exists(self) -> None:
         self.assertTrue(
             (

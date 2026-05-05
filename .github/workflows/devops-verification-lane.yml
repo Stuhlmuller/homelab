@@ -29,6 +29,9 @@ jobs:
 
       - name: Assert repository configuration
         shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME_HOMELAB: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          TAILSCALE_AUTH_KEY_SSM_PARAMETER: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}
         run: |
           set -euo pipefail
           if [[ -z "${AWS_ROLE_TO_ASSUME_HOMELAB}" ]]; then

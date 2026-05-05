@@ -7,6 +7,9 @@ AWS_PROFILE_HINT="${AWS_PROFILE:-default}"
 # AWS get-parameters accepts at most 10 names per request.
 required_parameters=(
   "/homelab/dokploy/postgres_password"
+  "/homelab/fleetdm/mysql_password"
+  "/homelab/fleetdm/mysql_root_password"
+  "/homelab/fleetdm/server_private_key"
   "/homelab/paperclip/better_auth_secret"
   "/homelab/paperclip/openrouter_api_key"
   "/homelab/paperclip/postgres_password"

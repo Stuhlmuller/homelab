@@ -52,6 +52,9 @@ homelab/
 - Traefik terminates HTTPS and discovers services from Consul tags.
 - Shared persistent storage is delivered through the NFS CSI plugin and the
   `shared-data` volume.
+- FleetDM runs as a single Nomad service on `nomad-primary` with node-local
+  persistent state under the `fleetdm_data` host volume and public HTTPS at
+  `fleet.stinkyboi.com`.
 - Tailscale is managed as host software so the entire LAN remains reachable over
   the tailnet.
 - `acer` is the primary Nomad and HTTP ingress node on the LAN.
@@ -110,6 +113,9 @@ workflow:
 
 3. Create or update the required AWS SSM parameters before planning:
    - `/homelab/dokploy/postgres_password`
+   - `/homelab/fleetdm/mysql_password`
+   - `/homelab/fleetdm/mysql_root_password`
+   - `/homelab/fleetdm/server_private_key`
    - `/homelab/paperclip/better_auth_secret`
    - `/homelab/paperclip/openrouter_api_key`
    - `/homelab/paperclip/postgres_password`
@@ -153,7 +159,7 @@ Codified live checks and deployment entry points:
 - `make validate-ssm` validates AWS auth and required SSM parameters.
 - `make validate-live-cluster` validates host reachability and Nomad/Consul health.
 - `make validate-live-workloads` validates Nomad jobs, Nomad variables, Tailscale,
-  Traefik, Dokploy, Paperclip, and Policy Bot after deployment.
+  Traefik, Dokploy, FleetDM, Paperclip, and Policy Bot after deployment.
 - `make deploy-live` runs the local validators, live preflight checks, rolling
   bootstrap, OpenTofu plan/apply, and live smoke checks.
 - The `Homelab Deploy` workflow runs `./scripts/deploy-live.sh --skip-bootstrap`,
@@ -219,3 +225,13 @@ As of April 5, 2026:
 
 See [docs/runbooks/bootstrap.md](/Users/themanofrod/github-repositories/homelab/docs/runbooks/bootstrap.md)
 for the expected bring-up sequence.
+
+## FleetDM
+
+FleetDM is routed publicly at `https://fleet.stinkyboi.com` through Traefik,
+with TLS terminated at the ingress and Fleet listening on HTTP inside the Nomad
+allocation. The Nomad job keeps MySQL, Redis, and Fleet co-located on
+`nomad-primary` and stores their state in the `fleetdm_data` host volume.
+
+Before the job can start, create the FleetDM SSM parameters listed above.
+Generate `/homelab/fleetdm/server_private_key` with `openssl rand -base64 32`.

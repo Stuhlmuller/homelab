@@ -35,6 +35,9 @@ nomad_host_volumes:
   - name: dockploy_data
     path: /opt/nomad/volumes/dokploy
     read_only: false
+  - name: fleetdm_data
+    path: /opt/nomad/volumes/fleetdm
+    read_only: false
   - name: postgres_data
     path: /opt/nomad/volumes/postgres
     read_only: false

@@ -26,7 +26,11 @@ if ! "${ANSIBLE_PYTHON_BIN}" -c 'import boto3, botocore' >/dev/null 2>&1; then
   exit 1
 fi
 
+ANSIBLE_LOCAL_TMP_DIR="${ANSIBLE_LOCAL_TEMP:-/private/tmp/homelab-ansible-local}"
+mkdir -p "${ANSIBLE_LOCAL_TMP_DIR}"
+
 ANSIBLE_CONFIG=ansible/ansible.cfg \
+ANSIBLE_LOCAL_TEMP="${ANSIBLE_LOCAL_TMP_DIR}" \
 "${ANSIBLE_PLAYBOOK_BIN}" \
   -i ansible/inventories/production/hosts.yml \
   ansible/playbooks/bootstrap.yml \
