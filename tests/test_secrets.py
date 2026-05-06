@@ -56,6 +56,12 @@ class SecretManagementTests(unittest.TestCase):
         self.assertNotIn("/homelab/tailscale/auth_key", content)
         self.assertNotIn("/homelab/traefik/ts_authkey", content)
 
+    def test_validate_aws_ssm_checks_paperclip_github_token(self) -> None:
+        content = (ROOT / "scripts/validate-aws-ssm.sh").read_text()
+        self.assertIn("/homelab/fleetdm/mysql_password", content)
+        self.assertIn("/homelab/fleetdm/mysql_root_password", content)
+        self.assertIn("/homelab/fleetdm/server_private_key", content)
+        self.assertIn("/homelab/paperclip/github_token", content)
     def test_github_workflows_prefer_tailscale_oauth_and_support_authkey_fallback(self) -> None:
         plan = (ROOT / ".github/workflows/plan.yml").read_text()
         deploy = (ROOT / ".github/workflows/deploy.yml").read_text()
