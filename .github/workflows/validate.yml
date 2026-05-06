@@ -77,6 +77,10 @@ jobs:
           python3 -m pre_commit run checkov_secrets --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
           python3 -m pre_commit run zizmor --from-ref "${BASE_SHA}" --to-ref "${HEAD_SHA}"
 
+      - name: Enforce PR completion gate
+        shell: bash
+        run: python3 scripts/ci/enforce_completion_gate.py
+
       - name: Install actionlint
         shell: bash
         run: |
