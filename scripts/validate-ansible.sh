@@ -27,7 +27,16 @@ if ! "${ANSIBLE_PYTHON_BIN}" -c 'import boto3, botocore' >/dev/null 2>&1; then
 fi
 
 ANSIBLE_LOCAL_TMP_DIR="${ANSIBLE_LOCAL_TEMP:-/private/tmp/homelab-ansible-local}"
-mkdir -p "${ANSIBLE_LOCAL_TMP_DIR}"
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  # Prevent macOS-style temp paths (for example /private/...) from breaking
+  # Linux GitHub runners.
+  ANSIBLE_LOCAL_TMP_DIR="/tmp/homelab-ansible-local"
+fi
+
+if ! mkdir -p "${ANSIBLE_LOCAL_TMP_DIR}" >/dev/null 2>&1; then
+  ANSIBLE_LOCAL_TMP_DIR="/tmp/homelab-ansible-local"
+  mkdir -p "${ANSIBLE_LOCAL_TMP_DIR}"
+fi
 
 ANSIBLE_CONFIG=ansible/ansible.cfg \
 ANSIBLE_LOCAL_TEMP="${ANSIBLE_LOCAL_TMP_DIR}" \
