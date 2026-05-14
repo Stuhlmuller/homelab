@@ -37,9 +37,11 @@ class InventoryTests(unittest.TestCase):
         self.assertIn("target: http://127.0.0.1:18080", content)
         self.assertIn("tailscale_advertise_routes:", content)
         self.assertIn("10.1.0.0/24", content)
+        self.assertIn("tailscale_advertise_exit_node: true", content)
 
     def test_group_vars_do_not_accept_tailscale_routes_by_default(self) -> None:
         content = GROUP_VARS.read_text()
         self.assertIn("tailscale_accept_routes: false", content)
+        self.assertIn("tailscale_advertise_exit_node: false", content)
         self.assertNotIn("  - --accept-routes", content)
         self.assertNotIn("--advertise-tags=tag:homelab", content)

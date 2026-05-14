@@ -61,6 +61,11 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("import boto3, botocore", content)
         self.assertIn("repository validation", content)
 
+    def test_ansible_collections_include_posix_for_sysctl(self) -> None:
+        content = (ROOT / "ansible" / "collections" / "requirements.yml").read_text()
+        self.assertIn("amazon.aws", content)
+        self.assertIn("ansible.posix", content)
+
     def test_live_workload_validation_checks_tailscale_backend_state(self) -> None:
         content = (ROOT / "scripts/validate-live-workloads.sh").read_text()
         self.assertIn('tailscale status --json', content)
@@ -107,6 +112,14 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("--set-path=", content)
         self.assertIn("--bg", content)
         self.assertIn("--yes", content)
+
+    def test_tailscale_role_can_advertise_exit_node(self) -> None:
+        content = (ROOT / "ansible" / "roles" / "tailscale" / "tasks" / "main.yml").read_text()
+        self.assertIn("tailscale_advertise_exit_node", content)
+        self.assertIn("--advertise-exit-node", content)
+        self.assertIn("net.ipv4.ip_forward", content)
+        self.assertIn("net.ipv6.conf.all.forwarding", content)
+        self.assertNotIn('"BackendState":"Running"', content)
 
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()
