@@ -104,9 +104,6 @@
   when:
     - tailscale_enabled
     - tailscale_up_argv is defined
-    - tailscale_status.rc != 0 or '"BackendState":"Running"' not in tailscale_status.stdout
-      or tailscale_advertise_exit_node | default(false) | bool
-      or (tailscale_advertise_routes | default([]) | length > 0)
 
 - name: Read Tailscale Funnel status when configured
   ansible.builtin.command: tailscale funnel status

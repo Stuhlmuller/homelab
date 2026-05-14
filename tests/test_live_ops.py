@@ -119,6 +119,7 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("--advertise-exit-node", content)
         self.assertIn("net.ipv4.ip_forward", content)
         self.assertIn("net.ipv6.conf.all.forwarding", content)
+        self.assertNotIn('"BackendState":"Running"', content)
 
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()
