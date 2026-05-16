@@ -2,5 +2,5 @@
 consul = "1.22.6"
 nomad = "2.0.1"
 opentofu = "1.11.6"
-python = "3.14.4"
+python = "3.14.5"
 terragrunt = "1.0.4"
