@@ -27,6 +27,7 @@ class LiveOpsTests(unittest.TestCase):
         traefik = (ROOT / "terraform/live/homelab/jobs/traefik/terragrunt.hcl").read_text()
         dokploy = (ROOT / "terraform/live/homelab/jobs/dokploy/terragrunt.hcl").read_text()
         fleetdm = (ROOT / "terraform/live/homelab/jobs/fleetdm/terragrunt.hcl").read_text()
+        openclaw = (ROOT / "terraform/live/homelab/jobs/openclaw/terragrunt.hcl").read_text()
         paperclip = (ROOT / "terraform/live/homelab/jobs/paperclip/terragrunt.hcl").read_text()
         policy_bot = (ROOT / "terraform/live/homelab/jobs/policy-bot/terragrunt.hcl").read_text()
 
@@ -36,6 +37,7 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("../../variables/dokploy/config", dokploy)
         self.assertIn("../../volumes/shared-data", dokploy)
         self.assertIn("../../variables/fleetdm/config", fleetdm)
+        self.assertIn("../../volumes/shared-data", openclaw)
         self.assertIn("../../variables/paperclip/config", paperclip)
         self.assertIn("../../volumes/shared-data", paperclip)
         self.assertIn("../../variables/policy-bot/config", policy_bot)
@@ -60,6 +62,11 @@ class LiveOpsTests(unittest.TestCase):
         content = (ROOT / "scripts/validate-ansible.sh").read_text()
         self.assertIn("import boto3, botocore", content)
         self.assertIn("repository validation", content)
+
+    def test_ansible_collections_include_posix_for_sysctl(self) -> None:
+        content = (ROOT / "ansible" / "collections" / "requirements.yml").read_text()
+        self.assertIn("amazon.aws", content)
+        self.assertIn("ansible.posix", content)
 
     def test_live_workload_validation_checks_tailscale_backend_state(self) -> None:
         content = (ROOT / "scripts/validate-live-workloads.sh").read_text()
@@ -107,6 +114,14 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("--set-path=", content)
         self.assertIn("--bg", content)
         self.assertIn("--yes", content)
+
+    def test_tailscale_role_can_advertise_exit_node(self) -> None:
+        content = (ROOT / "ansible" / "roles" / "tailscale" / "tasks" / "main.yml").read_text()
+        self.assertIn("tailscale_advertise_exit_node", content)
+        self.assertIn("--advertise-exit-node", content)
+        self.assertIn("net.ipv4.ip_forward", content)
+        self.assertIn("net.ipv6.conf.all.forwarding", content)
+        self.assertNotIn('"BackendState":"Running"', content)
 
     def test_deploy_script_does_not_mix_terragrunt_all_with_graph(self) -> None:
         content = (ROOT / "scripts/deploy-live.sh").read_text()

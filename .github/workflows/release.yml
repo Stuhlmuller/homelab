@@ -18,4 +18,4 @@ permissions:
 
 jobs:
   release:
-    uses: Stuhlmuller/workflows/.github/workflows/release.yml@74b5e31d5e16c52d9ee79eaf44f580135065beda # main
+    uses: Stuhlmuller/workflows/.github/workflows/release.yml@9de6d6310256cd5ff99d29bca00ce4e5201671c0 # main

@@ -17,8 +17,13 @@ inputs = {
   jobspec_file     = "${dirname(find_in_parent_folders("root.hcl"))}/../nomad/jobs/openclaw/job.nomad.hcl"
   purge_on_destroy = true
   rerun_if_dead    = true
+
   timeouts = {
     create = "25m"
     update = "25m"
+  }
+
+  hcl2_vars = {
+    openclaw_nomad_node_name = "nomad-primary"
   }
 }
