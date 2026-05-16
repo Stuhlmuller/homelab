@@ -66,6 +66,17 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn('OPENROUTER_API_KEY="{{ .openrouter_api_key.Value | trimSpace }}"', content)
         self.assertIn('Host = ["paperclip.stinkyboi.com"]', content)
 
+    def test_openclaw_persists_mutable_config_on_shared_storage(self) -> None:
+        content = (ROOT / "nomad" / "jobs" / "openclaw" / "job.nomad.hcl").read_text()
+        self.assertIn("ghcr.io/openclaw/openclaw:2026.4.15", content)
+        self.assertIn("traefik.http.routers.openclaw.rule", content)
+        self.assertIn('OPENCLAW_CONFIG_PATH = "/data/openclaw/config/openclaw.json"', content)
+        self.assertIn('OPENCLAW_STATE_DIR   = "/data/openclaw/state"', content)
+        self.assertIn("openclaw.bootstrap.json", content)
+        self.assertIn("if [ ! -s /data/openclaw/config/openclaw.json ]; then cp", content)
+        self.assertIn("chmod 0600 /data/openclaw/config/openclaw.json", content)
+        self.assertNotIn('OPENCLAW_CONFIG_PATH = "${NOMAD_SECRETS_DIR}/openclaw.json"', content)
+
     def test_policy_bot_job_routes_only_github_endpoints_through_traefik(self) -> None:
         content = (ROOT / "nomad" / "jobs" / "policy-bot" / "job.nomad.hcl").read_text()
         self.assertIn("palantirtechnologies/policy-bot:1.41.1", content)

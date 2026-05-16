@@ -27,6 +27,7 @@ class LiveOpsTests(unittest.TestCase):
         traefik = (ROOT / "terraform/live/homelab/jobs/traefik/terragrunt.hcl").read_text()
         dokploy = (ROOT / "terraform/live/homelab/jobs/dokploy/terragrunt.hcl").read_text()
         fleetdm = (ROOT / "terraform/live/homelab/jobs/fleetdm/terragrunt.hcl").read_text()
+        openclaw = (ROOT / "terraform/live/homelab/jobs/openclaw/terragrunt.hcl").read_text()
         paperclip = (ROOT / "terraform/live/homelab/jobs/paperclip/terragrunt.hcl").read_text()
         policy_bot = (ROOT / "terraform/live/homelab/jobs/policy-bot/terragrunt.hcl").read_text()
 
@@ -36,6 +37,7 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("../../variables/dokploy/config", dokploy)
         self.assertIn("../../volumes/shared-data", dokploy)
         self.assertIn("../../variables/fleetdm/config", fleetdm)
+        self.assertIn("../../volumes/shared-data", openclaw)
         self.assertIn("../../variables/paperclip/config", paperclip)
         self.assertIn("../../volumes/shared-data", paperclip)
         self.assertIn("../../variables/policy-bot/config", policy_bot)
