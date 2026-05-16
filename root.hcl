@@ -1,5 +1,6 @@
 locals {
   project_name = "homelab"
+  kms_key_id   = get_env("TG_KMS_KEY_ID", "alias/homelab-opentofu")
   default_tags = {
     ManualBuild = false
     ManualTags  = false
@@ -49,5 +50,5 @@ catalog {
 inputs = {
   project_name = local.project_name
   tags         = local.default_tags
-  kms_key_id   = "959539ca-5646-435c-8ae4-aec13b0f0607" # tofu-encryption-key
+  kms_key_id   = local.kms_key_id
 }
