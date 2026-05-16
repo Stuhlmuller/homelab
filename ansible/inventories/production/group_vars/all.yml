@@ -25,6 +25,7 @@ aws_region: us-east-1
 tailscale_enabled: true
 tailscale_accept_routes: false
 tailscale_advertise_routes: []
+tailscale_advertise_exit_node: false
 tailscale_args:
   - --ssh
 docker_apt_release: bookworm

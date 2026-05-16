@@ -59,8 +59,9 @@ homelab/
   the tailnet.
 - `acer` is the primary Nomad and HTTP ingress node on the LAN.
 - `zimaboard-0` continues to advertise the `10.1.0.0/24` subnet into
-  Tailscale until the new primary has completed first-time tailnet enrollment;
-  the Debian hosts themselves do not accept tailnet routes during bootstrap.
+  Tailscale and is the declared Tailscale exit node until the new primary has
+  completed first-time tailnet enrollment; the Debian hosts themselves do not
+  accept tailnet routes during bootstrap.
 - Traefik is pinned to `nomad-primary` so `80` and `443` stay stable on the
   designated ingress node.
 - Traefik also publishes the Nomad and Consul UIs at
