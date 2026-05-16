@@ -12,19 +12,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("pull_request:", content)
         self.assertIn("push:", content)
         self.assertIn("Run validation harness", content)
-        self.assertIn("make validate", content)
-        self.assertIn("Install Ansible controller dependencies", content)
-        self.assertIn("python3 -m pip install --upgrade \\", content)
-        self.assertIn('"pip==${PIP_VERSION}"', content)
-        self.assertIn('"ansible==${ANSIBLE_VERSION}"', content)
-        self.assertIn('"boto3==${BOTO3_VERSION}"', content)
-        self.assertIn('"botocore==${BOTOCORE_VERSION}"', content)
+        self.assertIn("Install Nix", content)
+        self.assertIn("nix run .#validate", content)
+        self.assertIn("nix develop .# --command python3 scripts/ci/enforce_completion_gate.py", content)
         self.assertIn("Run PR-focused pre-commit checks", content)
         self.assertIn("checkov_diff", content)
         self.assertIn("checkov_secrets", content)
         self.assertIn("zizmor", content)
         self.assertIn("Lint GitHub Actions", content)
-        self.assertIn("./actionlint", content)
+        self.assertIn("nix develop .# --command actionlint", content)
 
     def test_plan_workflow_uses_single_required_job_for_all_prs(self) -> None:
         content = (ROOT / ".github/workflows/plan.yml").read_text()
@@ -50,7 +46,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("tailscale-auth-key: ${{ env.TS_AUTH_KEY }}", content)
         self.assertIn("tailscale-auth-key-parameter: ${{ vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER }}", content)
         self.assertIn("Resolve Nomad ingress endpoint", content)
-        self.assertIn("python3 scripts/ci/resolve_nomad_ingress_tailscale.py", content)
+        self.assertIn("nix develop .# --command python3 scripts/ci/resolve_nomad_ingress_tailscale.py", content)
         self.assertIn("NOMAD_ADDR=http://${nomad_ip}:4646", content)
         self.assertIn("-- -input=false", content)
         self.assertNotIn("-backend=false", content)
@@ -81,10 +77,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("TS_OAUTH_CLIENT_ID", content)
         self.assertIn("TS_OAUTH_SECRET", content)
         self.assertIn('GITHUB_STEP_SUMMARY', content)
-        self.assertIn("Install Ansible controller dependencies", content)
-        self.assertIn("python -m pip install --upgrade pip ansible boto3 botocore", content)
+        self.assertIn("Install Nix", content)
         self.assertIn("Resolve Nomad ingress endpoint", content)
-        self.assertIn("python3 scripts/ci/resolve_nomad_ingress_tailscale.py", content)
+        self.assertIn("nix develop .# --command python3 scripts/ci/resolve_nomad_ingress_tailscale.py", content)
         self.assertIn("connectivity-probe-address: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}", content)
         self.assertIn('connectivity-probe-port: "4646"', content)
         self.assertIn("tailscale-auth-key: ${{ secrets.TS_AUTH_KEY }}", content)
@@ -97,10 +92,10 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("aws-actions/configure-aws-credentials@", content)
         self.assertLess(
             content.index("Validate deploy configuration"),
-            content.index("Install Ansible controller dependencies"),
+            content.index("Resolve Nomad ingress endpoint"),
         )
         self.assertLess(
-            content.index("Install Ansible controller dependencies"),
+            content.index("Install Nix"),
             content.index("Configure AWS credentials"),
         )
 

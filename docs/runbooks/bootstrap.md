@@ -14,8 +14,8 @@
    `pipx inject ansible boto3 botocore`
 6. Ensure the local AWS CLI session is valid:
    `aws sts get-caller-identity`
-7. Run `make ansible-syntax`.
-8. Run `make bootstrap`.
+7. Run `nix run .#ansible-syntax`.
+8. Run `nix run .#bootstrap`.
    If a host has never joined the tailnet before, complete `tailscale up`
    manually on that host first. The bootstrap playbook now only reapplies
    Tailscale settings when a reusable node key already exists.

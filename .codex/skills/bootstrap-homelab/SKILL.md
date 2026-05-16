@@ -24,7 +24,7 @@ The script already bootstraps in the safe order `zimaboard-1`, `zimaboard-2`, th
 For Tailscale-only repair, use the dedicated playbook instead of a full bootstrap:
 
 ```bash
-make reconcile-tailscale
+nix run .#reconcile-tailscale
 ```
 
 That expands to `ansible/playbooks/reconcile-tailscale.yml` with the production inventory.

@@ -13,10 +13,10 @@ Use the repo helper so the unit path and lock ID stay explicit.
 ./scripts/unlock-terragrunt-unit.sh <terragrunt-unit-path> <lock-id>
 ```
 
-Or through `make`:
+Or through the flake app:
 
 ```bash
-make unlock-state UNIT=terraform/live/homelab/jobs/dokploy LOCK_ID=<lock-id>
+nix run .#unlock-state -- terraform/live/homelab/jobs/dokploy <lock-id>
 ```
 
 ## Guardrails

@@ -10,7 +10,7 @@ SCRIPT = ROOT / "scripts/ci/enforce_completion_gate.py"
 
 CHECKLIST_BODY = "\n".join(
     [
-        "- [x] I ran repository validation (`make validate`) after my final code edits.",
+            "- [x] I ran repository validation (`nix run .#validate`) after my final code edits.",
         "- [x] I committed and pushed the final implementation changes for this issue.",
         "- [x] I understand this work is only complete after this PR is merged into `main`.",
     ]

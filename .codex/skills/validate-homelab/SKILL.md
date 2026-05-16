@@ -10,7 +10,7 @@ Use the repo's validation entry points in order. Do not replace them with one-of
 ## Repository-first validation
 
 ```bash
-make validate
+nix run .#validate
 ```
 
 Stop here if local validation fails.

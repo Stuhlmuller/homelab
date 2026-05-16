@@ -14,7 +14,7 @@ This repository is structured so automated contributors can work safely:
 ## Safety rules
 
 - Treat `10.1.0.201` as degraded until a fresh survey proves otherwise.
-- Do not change live host state without running `make validate` first.
+- Do not change live host state without running `nix run .#validate` first.
 - Prefer read-only SSH inspection before changing bootstrap assumptions.
 - Keep Traefik as the only public entry point for HTTP services.
 - Store certificates on shared storage so a Traefik reschedule does not lose
@@ -28,16 +28,16 @@ This repository is structured so automated contributors can work safely:
 ## Default workflow
 
 1. Run `./scripts/survey-cluster.sh`.
-2. Run `make validate`.
+2. Run `nix run .#validate`.
 3. Update Ansible or Nomad source files.
-4. Re-run `make validate`.
-5. Run `make validate-ssm` and `make validate-live-cluster` before touching the cluster.
+4. Re-run `nix run .#validate`.
+5. Run `nix run .#validate-ssm` and `nix run .#validate-live-cluster` before touching the cluster.
 6. Use `./scripts/deploy-live.sh` for full live rollout orchestration.
 
 ## Project-local skills
 
 - `survey-homelab` maps to `./scripts/survey-cluster.sh`.
-- `validate-homelab` maps to `make validate` and the live validation scripts.
-- `bootstrap-homelab` maps to `./scripts/bootstrap-rolling.sh` and `make reconcile-tailscale`.
+- `validate-homelab` maps to `nix run .#validate` and the live validation scripts.
+- `bootstrap-homelab` maps to `./scripts/bootstrap-rolling.sh` and `nix run .#reconcile-tailscale`.
 - `deploy-homelab` maps to `./scripts/deploy-live.sh`.
 - `unlock-opentofu-state` maps to `./scripts/unlock-terragrunt-unit.sh`.

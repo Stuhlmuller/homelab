@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 REQUIRED_AUTHOR_ITEMS = (
-    "I ran repository validation (`make validate`) after my final code edits.",
+    "I ran repository validation (`nix run .#validate`) after my final code edits.",
     "I committed and pushed the final implementation changes for this issue.",
     "I understand this work is only complete after this PR is merged into `main`.",
 )

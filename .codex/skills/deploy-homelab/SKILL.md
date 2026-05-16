@@ -20,7 +20,7 @@ Use the repo's deployment harness. It already sequences validation, bootstrap, O
 
 ## What this runs
 
-- `make validate`
+- `./scripts/validate.sh`
 - `./scripts/validate-aws-ssm.sh`
 - `./scripts/validate-aws-kms.sh`
 - `./scripts/validate-live-cluster.sh`
