@@ -89,7 +89,7 @@ class SecretManagementTests(unittest.TestCase):
         self.assertIn("resolve_nomad_endpoint", plan)
         self.assertIn("resolve_nomad_endpoint", deploy)
         self.assertIn("connectivity-probe-address: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}", plan)
-        self.assertIn("-refresh=false", plan)
+        self.assertNotIn("-refresh=false", plan)
         self.assertIn("connectivity-probe-address: ${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}", deploy)
         self.assertIn("NOMAD_ADDR: http://${{ steps.resolve_nomad_endpoint.outputs.nomad_ip }}:4646", deploy)
         self.assertIn('USE_TAILSCALE_ENDPOINTS: "1"', deploy)
