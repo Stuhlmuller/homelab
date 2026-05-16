@@ -42,18 +42,18 @@ class LiveOpsTests(unittest.TestCase):
         self.assertIn("../../volumes/shared-data", paperclip)
         self.assertIn("../../variables/policy-bot/config", policy_bot)
 
-    def test_makefile_exposes_live_targets(self) -> None:
-        content = (ROOT / "Makefile").read_text()
+    def test_flake_exposes_live_apps(self) -> None:
+        content = (ROOT / "flake.nix").read_text()
         for target in [
-            "bootstrap-rolling:",
-            "reconcile-tailscale:",
-            "validate-ssm:",
-            "validate-kms:",
-            "validate-live-cluster:",
-            "validate-live-workloads:",
-            "validate-live:",
-            "unlock-state:",
-            "deploy-live:",
+            "bootstrap-rolling =",
+            "reconcile-tailscale =",
+            "validate-ssm =",
+            "validate-kms =",
+            "validate-live-cluster =",
+            "validate-live-workloads =",
+            "validate-live =",
+            "unlock-state =",
+            "deploy-live =",
         ]:
             self.assertIn(target, content)
         self.assertNotIn("run --all --graph", content)

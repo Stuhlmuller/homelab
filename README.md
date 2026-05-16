@@ -29,7 +29,7 @@ homelab/
 ├── .codex/
 │   └── skills/
 ├── AGENTS.md
-├── Makefile
+├── flake.nix
 ├── ansible/
 │   ├── inventories/production/
 │   ├── playbooks/
@@ -78,7 +78,7 @@ homelab/
 Run these checks before planning or applying:
 
 ```bash
-make validate
+nix run .#validate
 ```
 
 That target runs:
@@ -156,12 +156,12 @@ node key. If a host has never joined the tailnet before, complete
 
 Codified live checks and deployment entry points:
 
-- `make validate` validates the repository and script syntax locally.
-- `make validate-ssm` validates AWS auth and required SSM parameters.
-- `make validate-live-cluster` validates host reachability and Nomad/Consul health.
-- `make validate-live-workloads` validates Nomad jobs, Nomad variables, Tailscale,
+- `nix run .#validate` validates the repository and script syntax locally.
+- `nix run .#validate-ssm` validates AWS auth and required SSM parameters.
+- `nix run .#validate-live-cluster` validates host reachability and Nomad/Consul health.
+- `nix run .#validate-live-workloads` validates Nomad jobs, Nomad variables, Tailscale,
   Traefik, Dokploy, FleetDM, Paperclip, and Policy Bot after deployment.
-- `make deploy-live` runs the local validators, live preflight checks, rolling
+- `nix run .#deploy-live` runs the local validators, live preflight checks, rolling
   bootstrap, OpenTofu plan/apply, and live smoke checks.
 - The `Homelab Deploy` workflow runs `./scripts/deploy-live.sh --skip-bootstrap`,
   so CI applies Terragrunt with the same strict live gates but never bootstraps

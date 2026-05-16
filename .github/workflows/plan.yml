@@ -8,7 +8,8 @@ on:
       - "nomad/**"
       - "terraform/**"
       - "root.hcl"
-      - "mise.toml"
+      - "flake.nix"
+      - "flake.lock"
       - "scripts/deploy-live.sh"
       - "scripts/validate-aws-kms.sh"
       - "scripts/validate-aws-ssm.sh"
@@ -48,8 +49,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup mise
-        uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
 
       - name: Initialize plan artifacts
         shell: bash
@@ -60,7 +61,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          nomad_ip="$(python3 scripts/ci/resolve_nomad_ingress_tailscale.py)"
+          nomad_ip="$(nix develop .# --command python3 scripts/ci/resolve_nomad_ingress_tailscale.py)"
           echo "nomad_ip=${nomad_ip}" >> "${GITHUB_OUTPUT}"
           echo "NOMAD_ADDR=http://${nomad_ip}:4646" >> "${GITHUB_ENV}"
 
@@ -94,9 +95,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          terragrunt run --all --tf-path "${TG_TF_PATH}" init --working-dir "${WORKING_DIR}" -- -input=false
+          nix develop .# --command terragrunt run --all --tf-path "${TG_TF_PATH}" init --working-dir "${WORKING_DIR}" -- -input=false
           set +e
-          terragrunt run --all --tf-path "${TG_TF_PATH}" plan --working-dir "${WORKING_DIR}" -- -refresh=false -lock=false -input=false -no-color 2>&1 | tee "${PLAN_LOG}"
+          nix develop .# --command terragrunt run --all --tf-path "${TG_TF_PATH}" plan --working-dir "${WORKING_DIR}" -- -refresh=false -lock=false -input=false -no-color 2>&1 | tee "${PLAN_LOG}"
           exit_code="${PIPESTATUS[0]}"
           set -e
           echo "exit_code=${exit_code}" >> "${GITHUB_OUTPUT}"
@@ -107,7 +108,7 @@ jobs:
         env:
           PLAN_EXIT_CODE: ${{ steps.terragrunt_plan.outputs.exit_code || '1' }}
         run: |
-          python3 scripts/ci/terragrunt_plan_report.py render \
+          nix develop .# --command python3 scripts/ci/terragrunt_plan_report.py render \
             --log-file "${PLAN_LOG}" \
             --exit-code "${PLAN_EXIT_CODE}" \
             --working-dir "${WORKING_DIR}" \
@@ -120,7 +121,7 @@ jobs:
         if: always() && github.event.pull_request.head.repo.full_name == github.repository && (vars.AWS_ROLE_TO_ASSUME_HOMELAB == '' || ((env.TS_OAUTH_CLIENT_ID == '' || env.TS_OAUTH_SECRET == '') && env.TS_AUTH_KEY == '' && vars.TAILSCALE_AUTH_KEY_SSM_PARAMETER == ''))
         shell: bash
         run: |
-          python3 scripts/ci/terragrunt_plan_report.py render-static \
+          nix develop .# --command python3 scripts/ci/terragrunt_plan_report.py render-static \
             --status skipped \
             --working-dir "${WORKING_DIR}" \
             --run-url "${RUN_URL}" \
@@ -145,7 +146,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          python3 scripts/ci/terragrunt_plan_report.py update-pr-body \
+          nix develop .# --command python3 scripts/ci/terragrunt_plan_report.py update-pr-body \
             --repo "${GITHUB_REPOSITORY}" \
             --pr-number "${PR_NUMBER}" \
             --summary-file "${PLAN_SUMMARY}"

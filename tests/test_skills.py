@@ -30,7 +30,7 @@ class SkillTests(unittest.TestCase):
         expectations = {
             "survey-homelab": ["./scripts/survey-cluster.sh"],
             "validate-homelab": [
-                "make validate",
+                "nix run .#validate",
                 "./scripts/validate-aws-ssm.sh",
                 "./scripts/validate-aws-kms.sh",
                 "./scripts/validate-live-cluster.sh",
@@ -38,7 +38,7 @@ class SkillTests(unittest.TestCase):
             ],
             "bootstrap-homelab": [
                 "./scripts/bootstrap-rolling.sh",
-                "make reconcile-tailscale",
+                "nix run .#reconcile-tailscale",
                 "ansible/playbooks/reconcile-tailscale.yml",
             ],
             "deploy-homelab": [
@@ -48,7 +48,7 @@ class SkillTests(unittest.TestCase):
             ],
             "unlock-opentofu-state": [
                 "./scripts/unlock-terragrunt-unit.sh",
-                "make unlock-state",
+                "nix run .#unlock-state",
             ],
         }
 
@@ -68,11 +68,11 @@ class SkillTests(unittest.TestCase):
 
     def test_skill_validator_is_wired_into_repo_validation(self) -> None:
         validate_script = (ROOT / "scripts/validate.sh").read_text()
-        makefile = (ROOT / "Makefile").read_text()
+        flake = (ROOT / "flake.nix").read_text()
 
         self.assertIn("./scripts/validate-skills.sh", validate_script)
-        self.assertIn("validate-skills:", makefile)
-        self.assertIn("./scripts/validate-skills.sh", makefile)
+        self.assertIn("validate-skills =", flake)
+        self.assertIn("./scripts/validate-skills.sh", flake)
 
 
 if __name__ == "__main__":

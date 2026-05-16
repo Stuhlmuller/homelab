@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-make validate
+./scripts/validate.sh
 ./scripts/validate-aws-ssm.sh
 ./scripts/validate-aws-kms.sh
 ALLOW_DEGRADED_CLUSTER="${ALLOW_DEGRADED_CLUSTER}" ./scripts/validate-live-cluster.sh
