@@ -75,6 +75,38 @@ class TerraformTests(unittest.TestCase):
             ).is_file()
         )
 
+    def test_openclaw_live_units_exist_and_use_ssm_backed_discord_token(self) -> None:
+        job_unit = (
+            ROOT
+            / "terraform"
+            / "live"
+            / "homelab"
+            / "jobs"
+            / "openclaw"
+            / "terragrunt.hcl"
+        )
+        variable_unit = (
+            ROOT
+            / "terraform"
+            / "live"
+            / "homelab"
+            / "variables"
+            / "openclaw"
+            / "discord"
+            / "terragrunt.hcl"
+        )
+        self.assertTrue(job_unit.is_file())
+        self.assertTrue(variable_unit.is_file())
+
+        job_content = job_unit.read_text()
+        self.assertIn("../../variables/openclaw/discord", job_content)
+        self.assertIn("../../volumes/shared-data", job_content)
+        self.assertIn("/../nomad/jobs/openclaw/job.nomad.hcl", job_content)
+
+        variable_content = variable_unit.read_text()
+        self.assertIn('path = "nomad/jobs/openclaw/discord"', variable_content)
+        self.assertIn('bot_token = "/homelab/openclaw/discord_bot_token"', variable_content)
+
     def test_root_passes_kms_key_id(self) -> None:
         content = (ROOT / "terraform" / "root.hcl").read_text()
         self.assertIn('get_env("TG_KMS_KEY_ID"', content)

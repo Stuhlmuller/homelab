@@ -61,6 +61,7 @@ job "openclaw" {
     task "openclaw-init" {
       driver = "docker"
       user   = "1000"
+
       lifecycle {
         hook = "prestart"
       }
@@ -68,10 +69,7 @@ job "openclaw" {
       config {
         image   = "ghcr.io/openclaw/openclaw:2026.4.15"
         command = "sh"
-        args = [
-          "-c",
-          "mkdir -p /data/openclaw/config /data/openclaw/state /data/openclaw/workspace",
-        ]
+        args    = ["-c", "mkdir -p /data/openclaw/config /data/openclaw/state /data/openclaw/workspace /data/openclaw/codex-cli /data/openclaw/home; if [ -s /data/openclaw/config/openclaw.json ]; then node -e 'const fs=require(\"fs\"); const p=\"/data/openclaw/config/openclaw.json\"; const cfg=Function(\"return (\"+fs.readFileSync(p,\"utf8\")+\")\")(); const ref=\"codex/gpt-5.4\"; cfg.agents ??= {}; cfg.agents.defaults ??= {}; cfg.agents.defaults.model ??= {}; cfg.agents.defaults.model.primary = ref; cfg.agents.defaults.contextTokens = 160000; cfg.agents.defaults.contextLimits = { ...(cfg.agents.defaults.contextLimits || {}), memoryGetMaxChars: 12000, memoryGetDefaultLines: 200, toolResultMaxChars: 16000, postCompactionMaxChars: 6000 }; cfg.agents.defaults.compaction = { ...(cfg.agents.defaults.compaction || {}), mode: \"safeguard\", reserveTokens: 24000, keepRecentTokens: 32000, reserveTokensFloor: 16000, maxHistoryShare: 0.7, recentTurnsPreserve: 4, postIndexSync: \"async\", memoryFlush: { ...(((cfg.agents.defaults.compaction || {}).memoryFlush) || {}), enabled: true, softThresholdTokens: 16000, forceFlushTranscriptBytes: \"1mb\" } }; if (cfg.agents.defaults.models) { delete cfg.agents.defaults.models[\"openai-codex/gpt-5.4\"]; delete cfg.agents.defaults.models[ref]; if (Object.keys(cfg.agents.defaults.models).length === 0) delete cfg.agents.defaults.models; } cfg.channels ??= {}; cfg.channels.discord ??= {}; cfg.channels.discord.heartbeat ??= {}; cfg.channels.discord.heartbeat.showAlerts = false; fs.writeFileSync(p, JSON.stringify(cfg, null, 2));'; fi; if [ ! -x /data/openclaw/codex-cli/node_modules/.bin/codex ] || [ ! -x /data/openclaw/codex-cli/node_modules/.bin/obsidian ]; then npm install --prefix /data/openclaw/codex-cli @openai/codex@0.130.0 obsidian-cli@0.5.1; fi"]
       }
 
       volume_mount {
@@ -82,7 +80,7 @@ job "openclaw" {
 
       resources {
         cpu    = 100
-        memory = 128
+        memory = 1024
       }
     }
 
@@ -92,12 +90,9 @@ job "openclaw" {
 
       config {
         image   = "ghcr.io/openclaw/openclaw:2026.4.15"
+        ports   = ["http"]
         command = "sh"
-        args = [
-          "-c",
-          "if [ ! -s /data/openclaw/config/openclaw.json ]; then cp ${NOMAD_SECRETS_DIR}/openclaw.bootstrap.json /data/openclaw/config/openclaw.json; fi; chmod 0600 /data/openclaw/config/openclaw.json; exec node dist/index.js gateway --port 18789",
-        ]
-        ports = ["http"]
+        args    = ["-c", "if [ ! -s /data/openclaw/config/openclaw.json ]; then cp ${NOMAD_SECRETS_DIR}/openclaw.bootstrap.json /data/openclaw/config/openclaw.json; fi; chmod 0600 /data/openclaw/config/openclaw.json; openclaw models status >/tmp/openclaw-models-status.log 2>&1 || true; exec node dist/index.js gateway --port 18789"]
       }
 
       template {
@@ -117,14 +112,55 @@ job "openclaw" {
             },
             agents: {
               defaults: {
+                model: {
+                  primary: "codex/gpt-5.4",
+                },
+                contextTokens: 160000,
+                contextLimits: {
+                  memoryGetMaxChars: 12000,
+                  memoryGetDefaultLines: 200,
+                  toolResultMaxChars: 16000,
+                  postCompactionMaxChars: 6000,
+                },
+                compaction: {
+                  mode: "safeguard",
+                  reserveTokens: 24000,
+                  keepRecentTokens: 32000,
+                  reserveTokensFloor: 16000,
+                  maxHistoryShare: 0.7,
+                  recentTurnsPreserve: 4,
+                  postIndexSync: "async",
+                  memoryFlush: {
+                    enabled: true,
+                    softThresholdTokens: 16000,
+                    forceFlushTranscriptBytes: "1mb",
+                  },
+                },
                 workspace: "/data/openclaw/workspace",
+              },
+            },
+            plugins: {
+              load: {
+                paths: ["/app/dist/extensions/discord"],
+              },
+            },
+            channels: {
+              discord: {
+                enabled: true,
+                dmPolicy: "pairing",
+                allowFrom: [],
+                activity: "OpenClaw",
+                status: "online",
+                heartbeat: {
+                  showAlerts: false,
+                },
               },
             },
             session: {
               dmScope: "per-channel-peer",
             },
           }
-        {{- end -}}
+          {{- end -}}
         EOT
         destination = "secrets/openclaw.bootstrap.json"
         change_mode = "restart"
@@ -133,9 +169,23 @@ job "openclaw" {
         perms       = "0400"
       }
 
+      template {
+        data        = <<-EOT
+          {{- with nomadVar "nomad/jobs/openclaw/discord" -}}
+          DISCORD_BOT_TOKEN="{{ .bot_token.Value | trimSpace }}"
+          {{- end -}}
+        EOT
+        destination = "secrets/openclaw-runtime.env"
+        change_mode = "restart"
+        env         = true
+      }
+
       env {
-        OPENCLAW_CONFIG_PATH = "/data/openclaw/config/openclaw.json"
-        OPENCLAW_STATE_DIR   = "/data/openclaw/state"
+        HOME                   = "/data/openclaw/home"
+        OPENCLAW_AGENT_RUNTIME = "codex"
+        OPENCLAW_CONFIG_PATH   = "/data/openclaw/config/openclaw.json"
+        OPENCLAW_STATE_DIR     = "/data/openclaw/state"
+        PATH                   = "/data/openclaw/codex-cli/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
       }
 
       volume_mount {
