@@ -309,6 +309,20 @@ case "${policy_bot_hook_status}" in
 esac
 echo "validated Policy Bot webhook route on ${INGRESS_IP} (HTTP ${policy_bot_hook_status})"
 
+policy_bot_details_status="$(
+  curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --resolve "${policy_bot_host}:${policy_bot_port}:${INGRESS_IP}" \
+    "${policy_bot_public_url}/details/example/example/1" || true
+)"
+
+case "${policy_bot_details_status}" in
+  000|404|502|503|504)
+    echo "policy-bot details route is unavailable on ${INGRESS_IP}: HTTP ${policy_bot_details_status}" >&2
+    exit 1
+    ;;
+esac
+echo "validated Policy Bot details route on ${INGRESS_IP} (HTTP ${policy_bot_details_status})"
+
 policy_bot_root_status="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     --resolve "${policy_bot_host}:${policy_bot_port}:${INGRESS_IP}" \

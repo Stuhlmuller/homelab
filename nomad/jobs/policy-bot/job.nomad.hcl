@@ -29,7 +29,7 @@ job "policy-bot" {
       port = "http"
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.policy-bot.rule=Host(`policy-bot.stinkyboi.com`) && (Path(`/api/github/auth`) || Path(`/api/github/hook`))",
+        "traefik.http.routers.policy-bot.rule=Host(`policy-bot.stinkyboi.com`) && (Path(`/api/github/auth`) || Path(`/api/github/hook`) || PathPrefix(`/details`) || PathPrefix(`/static`))",
         "traefik.http.routers.policy-bot.entrypoints=websecure",
         "traefik.http.routers.policy-bot.tls=true",
         "traefik.http.routers.policy-bot.tls.certresolver=letsencrypt",

@@ -108,7 +108,7 @@ class NomadJobTests(unittest.TestCase):
         self.assertNotIn("NVIDIA_API_KEY", content)
         self.assertNotIn("ghcr.io/nvidia/nemoclaw", content)
 
-    def test_policy_bot_job_routes_only_github_endpoints_through_traefik(self) -> None:
+    def test_policy_bot_job_routes_public_callbacks_and_details_ui_through_traefik(self) -> None:
         content = (ROOT / "nomad" / "jobs" / "policy-bot" / "job.nomad.hcl").read_text()
         self.assertIn("palantirtechnologies/policy-bot:1.41.1", content)
         self.assertIn('default = "nomad-primary"', content)
@@ -118,6 +118,8 @@ class NomadJobTests(unittest.TestCase):
         self.assertIn("Host(`policy-bot.stinkyboi.com`)", content)
         self.assertIn("Path(`/api/github/auth`)", content)
         self.assertIn("Path(`/api/github/hook`)", content)
+        self.assertIn("PathPrefix(`/details`)", content)
+        self.assertIn("PathPrefix(`/static`)", content)
         self.assertIn("traefik.http.routers.policy-bot.entrypoints=websecure", content)
         self.assertIn('mode = "bridge"', content)
         self.assertIn("static = 18080", content)
