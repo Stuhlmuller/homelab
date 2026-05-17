@@ -107,6 +107,24 @@ class TerraformTests(unittest.TestCase):
         self.assertIn('path = "nomad/jobs/openclaw/discord"', variable_content)
         self.assertIn('bot_token = "/homelab/openclaw/discord_bot_token"', variable_content)
 
+    def test_hivemind_live_unit_exists_and_uses_shared_data(self) -> None:
+        job_unit = (
+            ROOT
+            / "terraform"
+            / "live"
+            / "homelab"
+            / "jobs"
+            / "hivemind"
+            / "terragrunt.hcl"
+        )
+        self.assertTrue(job_unit.is_file())
+
+        job_content = job_unit.read_text()
+        self.assertIn("../../volumes/shared-data", job_content)
+        self.assertIn("/../nomad/jobs/hivemind/job.nomad.hcl", job_content)
+        self.assertIn('create = "15m"', job_content)
+        self.assertIn('update = "15m"', job_content)
+
     def test_root_passes_kms_key_id(self) -> None:
         content = (ROOT / "terraform" / "root.hcl").read_text()
         self.assertIn('get_env("TG_KMS_KEY_ID"', content)
