@@ -106,7 +106,7 @@ PY
 INGRESS_IP="${INGRESS_IP:-$(resolve_ingress_endpoint)}"
 NOMAD_HTTP_IP="${NOMAD_HTTP_IP:-${INGRESS_IP}}"
 
-for job in nfs-csi-plugin traefik dokploy fleetdm paperclip policy-bot; do
+for job in nfs-csi-plugin traefik dokploy fleetdm hivemind paperclip policy-bot; do
   job_status="$(remote_nomad_command "${NOMAD_HTTP_IP}" "nomad job status -json ${job}")"
   job_status_file="$(mktemp)"
   printf '%s' "${job_status}" >"${job_status_file}"
@@ -277,6 +277,11 @@ curl --fail --silent --show-error \
   --resolve "paperclip.stinkyboi.com:443:${INGRESS_IP}" \
   "https://paperclip.stinkyboi.com/api/health" >/dev/null
 echo "validated Paperclip HTTPS health endpoint on ${INGRESS_IP}"
+
+curl --fail --silent --show-error \
+  --resolve "hivemind.stinkyboi.com:443:${INGRESS_IP}" \
+  "https://hivemind.stinkyboi.com/health" >/dev/null
+echo "validated Hivemind HTTPS health endpoint on ${INGRESS_IP}"
 
 policy_bot_auth_status="$(
   curl --silent --show-error --output /dev/null --write-out '%{http_code}' \

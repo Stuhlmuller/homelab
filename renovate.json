@@ -1,6 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [":automergeAll"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^nomad/jobs/hivemind/job\\.nomad\\.hcl$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>\\S+) packageName=(?<packageName>\\S+) currentValue=(?<currentValue>\\S+)\\s+default\\s+=\\s+\"(?<currentDigest>[a-f0-9]{40})\""
+      ]
+    }
+  ],
   "lockFileMaintenance": {
     "enabled": true
   }

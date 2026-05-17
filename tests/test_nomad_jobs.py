@@ -108,6 +108,27 @@ class NomadJobTests(unittest.TestCase):
         self.assertNotIn("NVIDIA_API_KEY", content)
         self.assertNotIn("ghcr.io/nvidia/nemoclaw", content)
 
+    def test_hivemind_job_routes_through_traefik_and_tracks_main(self) -> None:
+        content = (ROOT / "nomad" / "jobs" / "hivemind" / "job.nomad.hcl").read_text()
+        self.assertIn('job "hivemind"', content)
+        self.assertIn('default = "nomad-primary"', content)
+        self.assertIn('attribute = "${node.unique.name}"', content)
+        self.assertIn("value     = var.hivemind_nomad_node_name", content)
+        self.assertIn("renovate: datasource=git-refs", content)
+        self.assertIn("packageName=https://github.com/Stuhlmuller/hivemind", content)
+        self.assertIn("Stuhlmuller/hivemind/archive/${var.hivemind_source_ref}.zip", content)
+        self.assertIn('image      = "python:3.12-slim"', content)
+        self.assertIn("force_pull = true", content)
+        self.assertIn("traefik.http.routers.hivemind.rule", content)
+        self.assertIn("Host(`hivemind.stinkyboi.com`)", content)
+        self.assertIn("traefik.http.routers.hivemind.entrypoints=websecure", content)
+        self.assertIn('mode = "bridge"', content)
+        self.assertIn('path     = "/health"', content)
+        self.assertIn('Host = ["hivemind.stinkyboi.com"]', content)
+        self.assertIn('HIVEMIND_DB_PATH    = "/data/hivemind/hivemind.db"', content)
+        self.assertIn('HIVEMIND_SCHEDULER  = "true"', content)
+        self.assertIn('destination = "/data"', content)
+
     def test_policy_bot_job_routes_only_github_endpoints_through_traefik(self) -> None:
         content = (ROOT / "nomad" / "jobs" / "policy-bot" / "job.nomad.hcl").read_text()
         self.assertIn("palantirtechnologies/policy-bot:1.41.1", content)
