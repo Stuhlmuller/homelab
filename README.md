@@ -177,11 +177,13 @@ ALLOW_DEGRADED_CLUSTER=1 ./scripts/deploy-live.sh
 ## Policy Bot
 
 `policy-bot` stays on the public Traefik ingress at
-`https://policy-bot.stinkyboi.com`, but only these two paths are routed
+`https://policy-bot.stinkyboi.com`, but only these paths are routed
 publicly:
 
 - `/api/github/auth`
 - `/api/github/hook`
+- `/details/*`
+- `/static/*`
 
 Before the Nomad job can start successfully, create a GitHub App and store the
 generated credentials in AWS SSM Parameter Store using the names above. In the
@@ -197,8 +199,10 @@ If the ingress hostname changes, update
 and the GitHub App URLs together before redeploying.
 
 Traefik intentionally does not publish the root path for `policy-bot`, so the
-web UI stays unrouted from the public internet while the GitHub callback and
-webhook endpoints remain reachable.
+homepage stays unrouted from the public internet while the GitHub callback,
+webhook, and pull request details UI remain reachable. The current
+`policy-bot` build redirects unauthenticated details requests through
+`/api/github/auth`, so there is no separate public `/login` route to expose.
 
 The app also needs the repository and organization permissions documented in the
 upstream project along with these subscribed events:
