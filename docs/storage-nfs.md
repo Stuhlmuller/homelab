@@ -50,12 +50,16 @@ Exports list on 10.1.0.2:
 /homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
 
-## Default StorageClass Desired State
+## GitOps Desired State
+
+`IaC/live/argocd-apps/platform-storage/terragrunt.hcl` registers the parent
+`platform-storage` Application through the Terragrunt catalog. That parent
+points at `clusters/homelab/platform/storage` and auto-syncs by default.
 
 `clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml`
 creates a child Argo CD Application for the upstream
 `nfs-subdir-external-provisioner` Helm chart. The child Application creates the
-default StorageClass used by stateful app values in this branch.
+default StorageClass used by stateful workloads.
 
 Important settings:
 
@@ -66,7 +70,7 @@ Important settings:
 | `nfs.server` | `10.1.0.2` | QNAP NAS address |
 | `nfs.path` | `/homelab` | Export path verified with `showmount` |
 | `nfs.mountOptions` | `nfsvers=3` | Matches the enabled QNAP NFS service |
-| StorageClass | `nfs-default` | Existing stateful app values already reference this name |
+| StorageClass | `nfs-default` | Stable class name for homelab PVCs |
 | `defaultClass` | `true` | Allows ordinary PVCs to bind without per-app overrides |
 | `provisionerName` | `k8s-sigs.io/qnap-nfs` | Stable provisioner identity |
 | `accessModes` | `ReadWriteMany` | NFS can support multi-node mounts |
@@ -82,13 +86,19 @@ provisioner Application is healthy before relying on stateful workload PVCs.
 Before applying the app registrations, render the desired state:
 
 ```sh
+kubectl kustomize clusters/homelab/argocd/self-management
+```
+
+Render the storage desired state:
+
+```sh
 kubectl kustomize clusters/homelab/platform/storage
 ```
 
 After syncing `platform-storage`, verify the child app and StorageClass:
 
 ```sh
-kubectl -n argocd get application nfs-subdir-external-provisioner
+kubectl -n argocd get application platform-storage nfs-subdir-external-provisioner
 kubectl -n storage get deploy,pod
 kubectl get storageclass nfs-default
 ```
@@ -141,3 +151,8 @@ app has acceptable backup and restore coverage.
 - Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
   Grafana, Deluge, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines each explicitly
   depend on `IaC/live/argocd-apps/platform-storage`.
+- The live `nfs-subdir-external-provisioner` Application was verified healthy
+  on 2026-05-24.
+- A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,
+  mounted it into a pod, wrote `smoke.txt`, read it back, and then removed the
+  temporary PVC, pod, and smoke-test StorageClass.

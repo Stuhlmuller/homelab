@@ -4,7 +4,8 @@ controllers:
       app:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: latest
+          tag: "2026.3.1"
+          digest: sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d
         env:
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
         envFrom:
@@ -24,4 +25,3 @@ persistence:
     accessMode: ReadWriteOnce
     globalMounts:
       - path: /data
-

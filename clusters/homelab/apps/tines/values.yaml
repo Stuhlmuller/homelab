@@ -1,10 +1,12 @@
 controllers:
   tines:
+    replicas: 0
     containers:
       app:
         image:
           repository: ghcr.io/tines/self-hosted
-          tag: latest
+          # Private licensed image tag must be pinned before scaling above zero.
+          tag: pinned-version-required
         envFrom:
           - secretRef:
               name: tines-secrets
@@ -22,4 +24,3 @@ persistence:
     accessMode: ReadWriteOnce
     globalMounts:
       - path: /data
-
