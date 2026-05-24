@@ -318,10 +318,10 @@ terragrunt apply
 Use `docs/argocd-bootstrap.md` for the full runbook, validation sequence,
 handoff rules, rollback path, and recovery notes. The initial bootstrap installs
 Argo CD in the `argocd` namespace, keeps the service internal, and creates the
-`argocd-self-management` Application in manual validation mode. Argo CD SAML SSO
-is configured through bundled Dex and reads its SSO settings from an
-External Secrets Operator-managed Kubernetes Secret backed by AWS Systems
-Manager Parameter Store paths under `/homelab/argocd/saml`.
+`argocd-self-management` Application in manual validation mode. Argo CD SSO is
+configured through bundled Dex with an upstream OIDC connector. The connector
+reads its settings from an External Secrets Operator-managed Kubernetes Secret
+backed by AWS Systems Manager Parameter Store paths under `/homelab/argocd/oidc`.
 
 Quick recovery summary:
 

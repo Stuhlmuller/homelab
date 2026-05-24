@@ -14,3 +14,10 @@ Enable automated prune and self-heal only by editing repository desired state,
 reviewing the change, and applying it through the documented workflow. Do not
 patch the live Application as the permanent fix for source path, revision, or
 sync policy changes.
+
+This path also owns the External Secrets Operator resources that create the
+`argocd-oidc-sso` Kubernetes Secret from AWS Systems Manager Parameter Store.
+Keep those resources here instead of the Terragrunt bootstrap Helm values so a
+fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
+`oidc-external-secret.yaml` only after External Secrets Operator is installed
+and allowed to read `/homelab/argocd/oidc/*` parameters in `us-east-1`.
