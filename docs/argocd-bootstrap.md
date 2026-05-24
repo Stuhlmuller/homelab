@@ -26,8 +26,8 @@ OpenID Connect connector. The connector references a Kubernetes Secret named
 `app.kubernetes.io/part-of: argocd` so Argo CD can resolve `$argocd-oidc-sso:*`
 references from `argocd-cm`.
 
-The External Secrets Operator `SecretStore` and `ExternalSecret` that create
-`argocd-oidc-sso` from AWS Systems Manager Parameter Store live under
+The External Secrets Operator `ExternalSecret` that creates `argocd-oidc-sso`
+from the shared `aws-ssm` ClusterSecretStore live under
 `clusters/homelab/argocd/self-management`. They are intentionally outside the
 initial Terragrunt Helm bootstrap so a fresh cluster can install Argo CD before
 External Secrets CRDs exist. Install External Secrets Operator and give it
@@ -108,7 +108,6 @@ After External Secrets Operator is installed and the self-management path is
 synced, verify the OIDC secret bridge:
 
 ```sh
-kubectl -n argocd get secretstores.external-secrets.io argocd-ssm
 kubectl -n argocd get externalsecrets.external-secrets.io argocd-oidc-sso
 kubectl -n argocd get secret argocd-oidc-sso
 ```

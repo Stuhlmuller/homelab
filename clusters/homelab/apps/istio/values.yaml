@@ -5,7 +5,10 @@ pilot:
   replicaCount: 1
 meshConfig:
   accessLogFile: /dev/stdout
+service:
+  annotations:
+    tailscale.com/hostname: homelab-istio
+  loadBalancerClass: tailscale
 gateways:
   istio-ingressgateway:
     enabled: true
-

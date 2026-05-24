@@ -7,9 +7,9 @@ enabled.
 ## Initial DNS Assumption
 
 The repository expects one initial DNS or tailnet naming setup that covers all
-internal app routes, such as a wildcard record for `*.apps.tailnet.example` or
-an equivalent Tailscale-native naming pattern. This feature does not add or edit
-public DNS records after that initial setup.
+internal app routes. For this homelab, `*.stinkyboi.com` must resolve to the
+Tailscale-exposed Istio ingress address from tailnet clients. This feature does
+not add or edit public DNS records after that initial setup.
 
 Because no DNS provider resources are added in this repository, external DNS
 infrastructure is unaffected by this change. If DNS becomes repo-managed later,
@@ -17,18 +17,20 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 
 ## First-Rollout Route Inventory
 
-| App | Host placeholder | Public Funnel |
+| App | HTTPS host | Public Funnel |
 |-----|------------------|---------------|
-| grafana | `grafana.apps.tailnet.example` | disabled |
-| deluge | `deluge.apps.tailnet.example` | disabled |
-| radarr | `radarr.apps.tailnet.example` | disabled |
-| sonarr | `sonarr.apps.tailnet.example` | disabled |
-| litellm | `litellm.apps.tailnet.example` | disabled |
-| openclaw | `openclaw.apps.tailnet.example` | disabled |
-| tines | `tines.apps.tailnet.example` | disabled |
+| prometheus | `https://prometheus.stinkyboi.com` | disabled |
+| grafana | `https://grafana.stinkyboi.com` | disabled |
+| deluge | `https://deluge.stinkyboi.com` | disabled |
+| radarr | `https://radarr.stinkyboi.com` | disabled |
+| sonarr | `https://sonarr.stinkyboi.com` | disabled |
+| litellm | `https://litellm.stinkyboi.com` | disabled |
+| openclaw | `https://openclaw.stinkyboi.com` | disabled |
+| tines | `https://tines.stinkyboi.com` | disabled |
 
-The placeholder domain is intentionally public-safe. Replace it through the
-initial DNS/tailnet configuration before live rollout.
+Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
+`istio-system`. The first rollout uses the existing self-signed homelab issuer;
+replace the issuer through desired state before relying on browser-trusted TLS.
 
 Validation on 2026-05-24 found no enabled first-rollout Funnel routes. The
 Istio gateway and every VirtualService route manifest are annotated with

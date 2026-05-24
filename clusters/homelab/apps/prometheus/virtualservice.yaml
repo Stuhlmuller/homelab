@@ -1,18 +1,18 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: deluge-tailnet
-  namespace: media
+  name: prometheus-tailnet
+  namespace: monitoring
   annotations:
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
-    - deluge.stinkyboi.com
+    - prometheus.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:
     - route:
         - destination:
-            host: deluge.media.svc.cluster.local
+            host: prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local
             port:
-              number: 8112
+              number: 9090

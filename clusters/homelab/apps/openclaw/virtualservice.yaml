@@ -7,7 +7,7 @@ metadata:
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
-    - openclaw.apps.tailnet.example
+    - openclaw.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:
@@ -16,4 +16,3 @@ spec:
             host: openclaw.ai.svc.cluster.local
             port:
               number: 8080
-

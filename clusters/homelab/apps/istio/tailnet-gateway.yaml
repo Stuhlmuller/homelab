@@ -14,5 +14,15 @@ spec:
         name: http
         protocol: HTTP
       hosts:
-        - "*.apps.tailnet.example"
-
+        - "*.stinkyboi.com"
+      tls:
+        httpsRedirect: true
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      hosts:
+        - "*.stinkyboi.com"
+      tls:
+        mode: SIMPLE
+        credentialName: stinkyboi-com-tls
