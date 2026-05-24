@@ -1,23 +1,20 @@
 <!--
 Sync Impact Report
-Version change: unratified template -> 1.0.0
+Version change: 1.0.0 -> 1.1.0
 Modified principles:
-- TEMPLATE PRINCIPLE_1_NAME -> I. Repository Source of Truth
-- TEMPLATE PRINCIPLE_2_NAME -> II. OpenTofu and Terragrunt by Default
-- TEMPLATE PRINCIPLE_3_NAME -> III. GitOps Kubernetes Delivery
-- TEMPLATE PRINCIPLE_4_NAME -> IV. Secret Safety and Production Guardrails
-- TEMPLATE PRINCIPLE_5_NAME -> V. Modular, Teachable, Rebuildable Design
+- II. OpenTofu and Terragrunt by Default (explicit committed-input rule added)
+- IV. Secret Safety and Production Guardrails -> IV. Secret Safety and CI/CD Secret Injection
 Added sections:
-- Infrastructure Constraints
-- Change Workflow and Review
+- None
 Removed sections:
-- Placeholder template comments and example-only placeholder sections
+- None
 Templates requiring updates:
 - ✅ updated: .specify/templates/plan-template.md
 - ✅ updated: .specify/templates/spec-template.md
 - ✅ updated: .specify/templates/tasks-template.md
 - ✅ updated: AGENTS.md
 - ✅ updated: ONBOARDING.md
+- ✅ updated: IaC/root.hcl
 - ✅ not present: .specify/templates/commands/*.md
 Follow-up TODOs:
 - None
@@ -50,6 +47,10 @@ one documented `terragrunt apply` command.
 Modules MUST expose short, typed configuration surfaces instead of copy-pasted
 resource blocks. Repeated infrastructure patterns MUST move behind reusable
 modules or Terragrunt includes before additional instances are added.
+Operator-selected inputs MUST live in committed Terragrunt/OpenTofu code,
+checked-in non-secret configuration, or documented repository data files.
+Environment variables MUST NOT be used as infrastructure inputs outside CI/CD
+pipeline wiring.
 
 Rationale: Terragrunt gives the project one repeatable apply surface, while
 OpenTofu modules keep infrastructure understandable and rebuildable.
@@ -70,13 +71,22 @@ be backfilled into repository code before it is considered complete.
 Rationale: Kubernetes behavior must be reviewable before rollout and convergent
 after rollout.
 
-### IV. Secret Safety and Production Guardrails
+### IV. Secret Safety and CI/CD Secret Injection
 
 Secrets, kubeconfigs with private credentials, Talos secrets, age keys, tokens,
 private SSH keys, private hostnames not intended for public disclosure, and raw
 certificate material MUST NOT be committed. Public code MAY contain secret
 references, encrypted or sealed secret manifests, ExternalSecret names, and
 non-secret defaults when they are safe for a public repository.
+
+Environment variables MUST NOT be used as general-purpose inputs for local
+operator workflows, Terragrunt stacks, OpenTofu modules, Helm values,
+Kustomize overlays, Talos config, or application configuration. Environment
+variables MAY be used by CI/CD pipelines only as execution plumbing for
+credentials, provider authentication, or secret injection. When a secret is
+required, the CI/CD pipeline MUST inject it into the tool, controller, or
+external secret system that needs it; the repository MUST retain only the
+safe reference, template, encrypted value, or documented contract.
 
 Live Talos and Kubernetes operations MUST be treated as production changes.
 Validation appropriate to the change, such as `talosctl validate`, OpenTofu or
@@ -109,6 +119,12 @@ Terragrunt roots, includes, dependency wiring, generated provider/backend
 configuration, and module inputs MUST be committed and documented well enough
 for a new operator to run the declared apply path from a clean checkout.
 
+Configuration inputs MUST be explicit in repository-owned code or data. The
+project MUST NOT use `get_env`, `TF_VAR_*`, shell-exported values, or process
+environment lookups to change desired state during normal operator workflows.
+CI/CD MAY set environment variables only for credentials and secret injection,
+and those values MUST NOT become the durable desired-state interface.
+
 The intended steady-state bootstrap path is one documented `terragrunt apply`
 command for the full project after public prerequisites, provider credentials,
 and intentionally external secret material are available. Any temporary staged
@@ -131,8 +147,9 @@ read-only inspection.
 
 Before implementation, the Constitution Check MUST confirm source-of-truth,
 Terragrunt/OpenTofu applicability, GitOps delivery, secret safety, modularity,
-validation, and rollback documentation. After design, the same check MUST be
-re-run against the concrete file paths and commands chosen by the plan.
+committed input sources, CI/CD-only secret injection, validation, and rollback
+documentation. After design, the same check MUST be re-run against the
+concrete file paths and commands chosen by the plan.
 
 Pull requests are the normal unit of change. Reviews MUST verify that permanent
 behavior is captured in code, relevant docs are updated, validation output is
@@ -161,4 +178,4 @@ that violates a MUST-level rule cannot proceed until the plan is changed, the
 constitution is amended, or a documented break-glass exception is approved and
 backfilled into code.
 
-**Version**: 1.0.0 | **Ratified**: 2026-05-24 | **Last Amended**: 2026-05-24
+**Version**: 1.1.0 | **Ratified**: 2026-05-24 | **Last Amended**: 2026-05-24

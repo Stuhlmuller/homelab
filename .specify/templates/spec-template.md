@@ -110,6 +110,9 @@
   ingress, backup, restore, or rollback behavior are affected.
 - **IAC-005**: Requirements MUST avoid permanent manual live-state changes; any
   break-glass behavior MUST include the repository backfill requirement.
+- **IAC-006**: Requirements MUST define desired-state inputs as committed
+  non-secret code or data. Environment variables MUST be limited to CI/CD
+  credential or secret injection and MUST NOT be used as normal operator inputs.
 
 ### Key Entities *(include if feature involves data)*
 

@@ -8,7 +8,7 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification. Validation tasks for Terragrunt/OpenTofu, Talos, Helm, Kustomize, Argo CD, or Kubernetes dry runs are REQUIRED when those systems are affected.
+**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification. Validation tasks for Terragrunt/OpenTofu, Talos, Helm, Kustomize, Argo CD, Kubernetes dry runs, and input/secret handling are REQUIRED when those systems are affected.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
@@ -20,7 +20,7 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Terragrunt/OpenTofu**: `root.hcl`, `**/terragrunt.hcl`, `modules/**`, `*.tf`
+- **Terragrunt/OpenTofu**: `IaC/root.hcl`, `IaC/**/terragrunt.hcl`, `modules/**`, `*.tf`
 - **Talos**: `.talos/**`
 - **Kubernetes/GitOps**: `clusters/**`, `apps/**`, `charts/**`, `**/kustomization.yaml`, `**/values.yaml`
 - **Documentation**: `ONBOARDING.md`, `docs/**`, `AGENTS.md`
@@ -65,11 +65,11 @@ description: "Task list template for feature implementation"
 Examples of foundational tasks (adjust based on your project):
 
 - [ ] T004 Define or update Terragrunt/OpenTofu module boundaries and inputs
-- [ ] T005 [P] Configure backend, provider, and dependency wiring without committing secrets
+- [ ] T005 [P] Configure backend, provider, and dependency wiring without committing secrets or using operator environment variables as inputs
 - [ ] T006 [P] Define Argo CD, Helm, Kustomize, or manifest ownership for Kubernetes resources
 - [ ] T007 Create shared values, overlays, or templates that all stories depend on
 - [ ] T008 Document validation, rollback, and operator verification commands
-- [ ] T009 Setup environment configuration and secret reference management
+- [ ] T009 Define committed non-secret inputs and CI/CD-only secret injection contracts
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -170,6 +170,7 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] TXXX Run `kubectl diff`, server-side dry run, or documented Argo CD preview when cluster access is required
 - [ ] TXXX Run `talosctl validate --mode metal --strict` for affected Talos configs
 - [ ] TXXX Confirm no raw secrets, private kubeconfigs, tokens, keys, or certificate material are committed
+- [ ] TXXX Confirm no `get_env`, `TF_VAR_*`, shell-exported values, or process environment lookups are used as normal desired-state inputs
 - [ ] TXXX Verify documentation includes apply, validation, rollback, and storage/backup implications
 
 ---

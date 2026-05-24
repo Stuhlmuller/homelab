@@ -56,6 +56,13 @@ or repository-owned manifests. The Talos commands in this guide apply
 repo-authored machine configuration; they are not a substitute for capturing
 lasting configuration in git.
 
+Desired-state inputs must be committed as non-secret code or repository data.
+Do not use environment variables as normal operator inputs for Terragrunt,
+OpenTofu, Helm, Kustomize, Talos config, or application configuration.
+Environment variables are reserved for CI/CD credential plumbing and secret
+injection. If a secret is required, inject it in the CI/CD pipeline and keep
+only safe references, encrypted values, templates, or contracts in git.
+
 ## Required Control-Plane Config
 
 The control-plane config must preserve the same cluster secrets as the worker
@@ -232,6 +239,32 @@ nix run .#validate
 
 For infrastructure-as-code changes, also run the applicable Terragrunt/OpenTofu
 formatting and planning commands from the documented stack root before apply.
+
+## Argo CD Bootstrap
+
+Argo CD is bootstrapped through one Terragrunt stack:
+
+```sh
+cd IaC/bootstrap/argocd
+terragrunt apply
+```
+
+Use `docs/argocd-bootstrap.md` for the full runbook, validation sequence,
+handoff rules, rollback path, and recovery notes. The initial bootstrap installs
+Argo CD in the `argocd` namespace, keeps the service internal, and creates the
+`argocd-self-management` Application in manual validation mode.
+
+Quick recovery summary:
+
+- Missing CRDs: fix the Helm release before retrying Application registration.
+- Bad repo path or target revision: correct repository desired state and
+  reapply the same Terragrunt stack.
+- Missing credentials: inject them through CI/CD or an external secret path; do
+  not commit tokens or kubeconfigs.
+- Partial install: capture read-only state, fix or revert repository code, and
+  reapply the reviewed state.
+- Break-glass live changes are incomplete until the final state is backfilled
+  into this repository.
 
 Then validate the Talos config that will be applied:
 

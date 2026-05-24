@@ -1,5 +1,10 @@
 locals {
-  project_name = "homelab"
+  project_name           = "homelab"
+  aws_region             = "us-east-1"
+  kms_key_id             = "alias/homelab-opentofu"
+  kms_region             = local.aws_region
+  kms_key_spec           = "AES_256"
+  kubernetes_config_path = "~/.kube/config"
   default_tags = {
     ManualBuild = false
     ManualTags  = false
@@ -15,6 +20,22 @@ terraform {
   }
 }
 
+generate "providers" {
+  path      = "providers.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+provider "kubernetes" {
+  config_path = pathexpand("${local.kubernetes_config_path}")
+}
+
+provider "helm" {
+  kubernetes = {
+    config_path = pathexpand("${local.kubernetes_config_path}")
+  }
+}
+EOF
+}
+
 remote_state {
   backend = "s3"
   generate = {
@@ -24,8 +45,9 @@ remote_state {
   config = {
     bucket       = "rstuhlmuller-aws-s3-use1-datalake"
     key          = "IaC/${lower(local.project_name)}/${path_relative_to_include()}/terraform.tfstate"
-    region       = "us-east-1"
+    region       = local.aws_region
     encrypt      = true
+    kms_key_id   = local.kms_key_id
     use_lockfile = true
   }
 }
@@ -37,7 +59,11 @@ catalog {
 }
 
 inputs = {
-  project_name = local.project_name
-  tags         = local.default_tags
-  kms_key_id   = local.kms_key_id
+  project_name           = local.project_name
+  tags                   = local.default_tags
+  aws_region             = local.aws_region
+  kms_key_id             = local.kms_key_id
+  kms_region             = local.kms_region
+  kms_key_spec           = local.kms_key_spec
+  kubernetes_config_path = local.kubernetes_config_path
 }

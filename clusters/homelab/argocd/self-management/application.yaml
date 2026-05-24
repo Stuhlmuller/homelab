@@ -1,0 +1,38 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-self-management
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-self-management
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/managed-by: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+  annotations:
+    homelab.stuhlmuller.dev/bootstrap-owner: terragrunt
+    homelab.stuhlmuller.dev/catalog-ref: "0.3.0"
+    homelab.stuhlmuller.dev/handoff-mode: initial-validation
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Stuhlmuller/homelab.git
+    path: clusters/homelab/argocd/self-management
+    targetRevision: 001-bootstrap-argocd-terragrunt
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+
+# Post-validation automation example:
+# spec:
+#   syncPolicy:
+#     automated:
+#       prune: true
+#       selfHeal: true
+#     syncOptions:
+#       - CreateNamespace=true
+#       - ApplyOutOfSyncOnly=true
