@@ -1,0 +1,14 @@
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
+metadata:
+  name: homelab-exit-node
+  labels:
+    app.kubernetes.io/name: homelab-exit-node
+    app.kubernetes.io/part-of: tailscale
+    homelab.stuhlmuller.dev/role: exit-node
+spec:
+  hostname: homelab-exit-node
+  tags:
+    - tag:k8s
+  replicas: 1
+  exitNode: true
