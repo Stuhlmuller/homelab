@@ -15,6 +15,13 @@ reviewing the change, and applying it through the documented workflow. Do not
 patch the live Application as the permanent fix for source path, revision, or
 sync policy changes.
 
+This path also owns the External Secrets Operator resources that create the
+`argocd-oidc-sso` Kubernetes Secret from AWS Systems Manager Parameter Store.
+Keep those resources here instead of the Terragrunt bootstrap Helm values so a
+fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
+`oidc-external-secret.yaml` only after External Secrets Operator is installed
+and allowed to read `/homelab/argocd/oidc/*` parameters in `us-east-1`.
+
 `platform-storage-application.yaml` registers the QNAP-backed NFS storage
 integration as a child Application. It is intentionally manual-sync so the NFS
 export and PVC write validation can be confirmed before stateful workloads use
