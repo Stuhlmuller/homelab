@@ -63,6 +63,10 @@ inputs = {
   ]
 
   sync_policy = {
+    automated = {
+      prune     = true
+      self_heal = true
+    }
     sync_options = [
       "CreateNamespace=true",
       "ServerSideApply=true"
@@ -80,7 +84,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "manual until LiteLLM and NFS backup coverage are ready"
+      value = "automated; verify LiteLLM and NFS backup coverage before relying on runtime state"
     }
   ]
 }

@@ -1,0 +1,43 @@
+---
+crds:
+  install: true
+  keep: true
+
+createClusterRoles: true
+
+config:
+  argocd.namespace: argocd
+  watch.namespaces: argocd
+  interval: 10m
+  log.level: info
+  kube.events: true
+  max_concurrent_apps: "5"
+  max_concurrent_reconciles: "2"
+  git.user: homelab-argocd-image-updater
+  git.email: homelab-argocd-image-updater@example.invalid
+  git.commit-sign-off: false
+  registries:
+    - name: GitHub Container Registry
+      api_url: https://ghcr.io
+      prefix: ghcr.io
+      ping: true
+    - name: Quay
+      api_url: https://quay.io
+      prefix: quay.io
+      ping: false
+    - name: LinuxServer
+      api_url: https://lscr.io
+      prefix: lscr.io
+      ping: false
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    memory: 256Mi

@@ -18,6 +18,8 @@ The unit MUST:
 - Set deterministic `sources` using chart versions, Git revisions, or
   repo-owned values paths.
 - Set sync policy and namespace creation behavior explicitly.
+- Enable automated prune and self-heal by default unless a future exception is
+  documented beside the app.
 - Declare all ordering requirements with Terragrunt `dependencies`.
 - Include app `info` entries or adjacent docs for storage, route, secret, and
   rollback expectations.
@@ -103,6 +105,7 @@ Every dependency in this table MUST be represented in Terragrunt:
 | Application | Required Dependencies |
 |-------------|-----------------------|
 | platform-storage | existing NFS provisioner prerequisite |
+| argocd-image-updater | Argo CD bootstrap |
 | external-secrets | none beyond Argo CD bootstrap |
 | cert-manager | external-secrets |
 | istio | cert-manager |
@@ -140,6 +143,25 @@ Each secret reference MUST identify:
 - AWS SSM parameter path.
 - Runtime Kubernetes Secret name.
 - Purpose of the secret.
+
+## Image Update Contract
+
+Argo CD Image Updater MUST be installed as an Argo CD-managed Application using
+the Terragrunt catalog module.
+
+Default behavior:
+
+- Watch Applications in the `argocd` namespace.
+- Select only Applications labeled
+  `homelab.stuhlmuller.dev/image-updater=enabled`.
+- Read image configuration from `argocd-image-updater.argoproj.io/*`
+  annotations on the selected Application.
+- Use `argocd` write-back unless a future Git write-back credential contract is
+  added.
+
+Application opt-in MUST document the image list, update strategy, and Helm or
+Kustomize target keys. Git credentials, registry credentials, webhook secrets,
+and private tokens MUST use ExternalSecret-backed runtime material.
 
 ## Ingress Contract
 

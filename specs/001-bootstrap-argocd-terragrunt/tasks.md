@@ -86,8 +86,8 @@
 
 ### Implementation for User Story 2
 
-- [X] T028 [US2] Define first-handoff sync policy as manual validation mode in `IaC/bootstrap/argocd/terragrunt.hcl`
-- [X] T029 [US2] Add post-validation automated prune/self-heal desired-state example in `clusters/homelab/argocd/self-management/application.yaml`
+- [X] T028 [US2] Define self-management sync policy handoff rules in `IaC/bootstrap/argocd/terragrunt.hcl`
+- [X] T029 [US2] Add automated prune/self-heal desired state in `clusters/homelab/argocd/self-management/application.yaml`
 - [X] T030 [US2] Document the transition from first-sync validation to automated reconciliation in `docs/argocd-bootstrap.md`
 - [X] T031 [US2] Document the Argo CD ownership boundary after handoff in `clusters/homelab/argocd/self-management/README.md`
 - [X] T032 [US2] Add drift and reconciliation expectations for Argo CD-owned resources in `docs/argocd-bootstrap.md`

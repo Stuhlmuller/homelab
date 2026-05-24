@@ -5,7 +5,7 @@ applications with Argo CD. Each child directory owns exactly one Argo CD
 Application and sources the `argocd-application` module from the configured
 Terragrunt catalog.
 
-The 13 requested apps are registered here along with one supporting
+The 14 requested apps are registered here along with one supporting
 `platform-storage` Application for the QNAP NFS provisioner and default
 StorageClass desired state. `platform-storage` is not one of the requested apps;
 it exists so Kubernetes storage changes are still delivered through Argo CD.
@@ -16,8 +16,8 @@ it exists so Kubernetes storage changes are still delivered through Argo CD.
 - Include `IaC/root.hcl` from every unit.
 - Source the catalog module from the pinned Terragrunt catalog commit.
 - Declare every upstream relationship with a `dependencies` block.
-- Use `sync_policy.automated` only when the app is safe to reconcile without an
-  unmet external prerequisite.
+- Use `sync_policy.automated` with prune and self-heal by default. Any future
+  exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under
   `clusters/homelab/apps/<app>/` or `clusters/homelab/platform/storage/`.
 

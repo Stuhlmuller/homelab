@@ -11,7 +11,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 13 requested Argo CD Applications plus `platform-storage` are
+Expected result: 14 requested Argo CD Applications plus `platform-storage` are
 planned, and every upstream relationship appears in a Terragrunt `dependencies`
 block.
 
@@ -53,12 +53,21 @@ argocd app get external-secrets
 argocd app get cert-manager
 argocd app get istio
 argocd app get tailscale
+argocd app get argocd-image-updater
 argocd app get platform-storage
 ```
 
-Stateful apps must not be synced until `platform-storage` is synced, the
-`nfs-default` StorageClass is verified, and `docs/storage-nfs.md` records backup
-coverage.
+For image automation, confirm the controller and selector CR exist before
+adding opt-in labels to any workload Application:
+
+```sh
+kubectl -n argocd get deploy argocd-image-updater-controller
+kubectl -n argocd get imageupdater homelab-annotation-opt-in
+```
+
+Stateful apps auto-sync by default, but they must not be considered ready until
+`platform-storage` is synced, the `nfs-default` StorageClass is verified, and
+`docs/storage-nfs.md` records backup coverage.
 
 ## Current Validation Record
 
@@ -66,17 +75,20 @@ coverage.
   allow-listed to the four Talos node IPs.
 - Read-only `kubectl get storageclass` returned no resources before the QNAP
   NFS provisioner desired state was added.
-- Stateful rollout is blocked until `platform-storage` is synced and a PVC
+- Stateful readiness is blocked until `platform-storage` is synced and a PVC
   write/delete/recreate test passes.
-- `terragrunt hcl fmt` passed on 2026-05-24.
-- `terragrunt run --all plan -no-color` from `IaC/live/argocd-apps`
-  succeeded for all 14 units and planned one Argo CD Application create per
-  unit.
+- `terragrunt hcl fmt --check` passed on 2026-05-24.
+- Focused `terragrunt --log-disable plan -no-color` passed for
+  `IaC/live/argocd-apps/argocd-image-updater` with `1 to add, 0 to change,
+  0 to destroy`.
 - `kubectl kustomize` passed for every app overlay under
-  `clusters/homelab/apps` and for `clusters/homelab/platform/storage`.
-- Repository secret scan found no raw secret material. The only matches were
-  the LiteLLM `os.environ/OPENAI_API_KEY` placeholder and the documented scan
-  command itself.
+  `clusters/homelab/apps`, for `clusters/homelab/argocd/self-management`, and
+  for `clusters/homelab/platform/storage`.
+- `helm template` passed for `argocd-image-updater` chart `1.2.2` with
+  `clusters/homelab/apps/argocd-image-updater/values.yaml`.
+- Repository secret scan found no raw secret material. Matches were expected
+  ExternalSecret names, AWS SSM paths, documentation references, and existing
+  placeholder environment variable names.
 - First-rollout Funnel review found no enabled public Funnel paths; route
   manifests use `homelab.rst.io/public-funnel: "false"`.
 - The PR-readiness checklist was incomplete when implementation began; the
@@ -93,6 +105,7 @@ coverage.
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |
 | Missing AWS SSM parameter | Create the parameter outside the repo, then re-sync the owning ExternalSecret. |
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
-| NFS provisioner missing | Sync only `platform-storage`; keep stateful apps paused until PVC validation passes. |
+| NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
 | Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
+| Image updater misconfiguration | Remove the opt-in label or annotations from the affected Application, then fix the repository desired state. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

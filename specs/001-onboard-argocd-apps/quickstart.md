@@ -6,7 +6,7 @@ repository root.
 
 ## 1. Review Scope
 
-Confirm the feature includes the 13 requested Argo CD Applications plus the
+Confirm the feature includes the 14 requested Argo CD Applications plus the
 supporting platform storage registration:
 
 ```sh
@@ -16,6 +16,7 @@ find IaC/live/argocd-apps -mindepth 1 -maxdepth 1 -type d | sort
 Expected app directories:
 
 ```text
+argocd-image-updater
 cert-manager
 deluge
 descheduler
@@ -60,7 +61,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 13 requested Argo CD Application registrations plus the
+Expected result: 14 requested Argo CD Application registrations plus the
 supporting `platform-storage` registration are planned, and each unit with
 upstream requirements lists explicit Terragrunt dependencies.
 
@@ -143,6 +144,7 @@ Check Argo CD sync and health:
 ```sh
 argocd app list
 argocd app get platform-storage
+argocd app get argocd-image-updater
 argocd app get external-secrets
 argocd app get cert-manager
 argocd app get istio
@@ -158,7 +160,7 @@ argocd app get openclaw
 argocd app get tines
 ```
 
-Expected result: all 13 requested applications plus the supporting
+Expected result: all 14 requested applications plus the supporting
 platform-storage registration reach the documented sync and health expectation
 within 30 minutes, or each exception is recorded with an operator action and
 rollback decision.
@@ -167,19 +169,20 @@ rollback decision.
 
 Rollback dependent services before shared foundations:
 
-1. OpenClaw
-2. Tines
-3. Radarr and Sonarr
-4. LiteLLM
-5. Deluge
-6. Grafana
-7. Descheduler
-8. Prometheus
-9. platform-storage
-10. Tailscale
-11. Istio
-12. cert-manager
-13. external-secrets
+1. argocd-image-updater
+2. OpenClaw
+3. Tines
+4. Radarr and Sonarr
+5. LiteLLM
+6. Deluge
+7. Grafana
+8. Descheduler
+9. Prometheus
+10. platform-storage
+11. Tailscale
+12. Istio
+13. cert-manager
+14. external-secrets
 
 Before deleting or disabling any stateful application, follow its workload
 profile and preserve or snapshot persistent data according to the documented

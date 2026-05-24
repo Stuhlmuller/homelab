@@ -73,13 +73,13 @@ Important settings:
 | `reclaimPolicy` | `Retain` | Protects workload data from accidental PVC deletion |
 | `allowVolumeExpansion` | `true` | Allows planned PVC growth |
 
-The parent `platform-storage` Application remains a manual rollout gate. Sync it
-only after the QNAP export is visible, then let the child provisioner Application
-auto-sync.
+The parent `platform-storage` Application auto-syncs by default. Treat it as a
+readiness gate anyway: verify the QNAP export is visible and the child
+provisioner Application is healthy before relying on stateful workload PVCs.
 
 ## Validation
 
-Before syncing `platform-storage`, render the desired state:
+Before applying the app registrations, render the desired state:
 
 ```sh
 kubectl kustomize clusters/homelab/platform/storage
@@ -95,7 +95,7 @@ kubectl get storageclass nfs-default
 
 Create a temporary PVC and pod that writes a file, delete the pod, recreate it
 on another node if possible, and confirm the file is still present before
-syncing stateful workloads.
+depending on stateful workloads.
 
 Example PVC:
 
@@ -117,9 +117,9 @@ spec:
 
 ## Backup Coverage
 
-NFS backup coverage is a hard rollout gate. Persistent apps are registered but
-must remain manual-sync until each app has acceptable backup and restore
-coverage.
+NFS backup coverage is a hard readiness gate. Persistent apps are registered
+with automated sync, but they must not be treated as production-ready until each
+app has acceptable backup and restore coverage.
 
 | App | Data classes | StorageClass | Backup expectation | Restore expectation | Rollback data behavior |
 |-----|--------------|--------------|--------------------|---------------------|------------------------|

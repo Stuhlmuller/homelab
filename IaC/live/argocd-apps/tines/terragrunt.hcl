@@ -62,6 +62,10 @@ inputs = {
   ]
 
   sync_policy = {
+    automated = {
+      prune     = true
+      self_heal = true
+    }
     sync_options = [
       "CreateNamespace=true",
       "ServerSideApply=true"
@@ -79,7 +83,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "manual until NFS backup coverage and Tines runtime artifacts are confirmed"
+      value = "automated; verify NFS backup coverage and Tines runtime artifacts before relying on automation history"
     }
   ]
 }

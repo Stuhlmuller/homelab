@@ -12,7 +12,7 @@ metadata:
   annotations:
     homelab.stuhlmuller.dev/bootstrap-owner: terragrunt
     homelab.stuhlmuller.dev/catalog-ref: "0.3.0"
-    homelab.stuhlmuller.dev/handoff-mode: initial-validation
+    homelab.stuhlmuller.dev/handoff-mode: automated
 spec:
   project: default
   source:
@@ -23,16 +23,9 @@ spec:
     server: https://kubernetes.default.svc
     namespace: argocd
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ApplyOutOfSyncOnly=true
-
-# Post-validation automation example:
-# spec:
-#   syncPolicy:
-#     automated:
-#       prune: true
-#       selfHeal: true
-#     syncOptions:
-#       - CreateNamespace=true
-#       - ApplyOutOfSyncOnly=true

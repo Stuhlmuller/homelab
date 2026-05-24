@@ -59,6 +59,8 @@ Validation rules:
 - `dependencies_block` must be present for all apps with upstream requirements.
 - `source_module` must come from the configured Terragrunt catalog.
 - `sources` must point to deterministic versions or repo-owned paths.
+- `sync_policy` must enable automated prune and self-heal by default unless a
+  future exception is explicitly documented.
 - `info` must identify storage, ingress, and rollback docs.
 
 ### DependencyEdge
@@ -116,9 +118,10 @@ Fields:
 
 Validation rules:
 
-- Stateful applications must define backup and restore behavior before rollout.
-- Stateful applications must not roll out until NFS backup coverage is
-  documented for their persistent data.
+- Stateful applications must define backup and restore behavior before they are
+  considered ready.
+- Stateful applications must not be considered ready until NFS backup coverage
+  is documented for their persistent data.
 - Rollback must not delete persistent volumes unless the operator explicitly
   chooses data removal.
 
@@ -167,10 +170,33 @@ Validation rules:
 - Tailnet routes must depend on Istio and Tailscale readiness.
 - Future public paths must name owner, path, purpose, and rollback.
 
+### ImageUpdatePolicy
+
+Represents Argo CD Image Updater automation.
+
+Fields:
+
+- `application`: owning Argo CD Application.
+- `controller`: `argocd-image-updater`.
+- `selection_model`: opt-in label and annotation selector.
+- `write_back_method`: default `argocd` unless a future credential-backed Git
+  write-back contract is added.
+- `registry_refs`: public registry endpoints or ExternalSecret-backed private
+  registry credentials.
+
+Validation rules:
+
+- The controller must be installed through an Argo CD Application registered by
+  Terragrunt.
+- Applications must not be updated unless they carry the opt-in label and image
+  annotations.
+- Git write-back credentials must not be committed.
+
 ## Application Matrix
 
 | App | Namespace | Category | Dependencies | Storage | Ingress | Secret Model |
 |-----|-----------|----------|--------------|---------|---------|--------------|
+| argocd-image-updater | argocd | platform | Argo CD bootstrap | none | none | no Git write credentials by default |
 | external-secrets | external-secrets | platform | Argo CD bootstrap | none | none | AWS access references only |
 | cert-manager | cert-manager | platform | external-secrets | controller-runtime only | none | issuer/provider refs if needed |
 | istio | istio-system | platform | cert-manager | none | tailnet route target | cert refs if needed |

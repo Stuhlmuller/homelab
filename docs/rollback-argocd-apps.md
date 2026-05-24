@@ -7,19 +7,20 @@ handling is clear.
 
 ## Order
 
-1. OpenClaw
-2. Tines
-3. Radarr and Sonarr
-4. LiteLLM
-5. Deluge
-6. Grafana
-7. Descheduler
-8. Prometheus
-9. platform-storage
-10. Tailscale
-11. Istio
-12. cert-manager
-13. external-secrets
+1. argocd-image-updater
+2. OpenClaw
+3. Tines
+4. Radarr and Sonarr
+5. LiteLLM
+6. Deluge
+7. Grafana
+8. Descheduler
+9. Prometheus
+10. platform-storage
+11. Tailscale
+12. Istio
+13. cert-manager
+14. external-secrets
 
 ## Persistent Data
 

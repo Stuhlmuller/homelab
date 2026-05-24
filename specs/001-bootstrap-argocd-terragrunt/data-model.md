@@ -19,7 +19,7 @@ CD bootstrap.
 - `desired_state_path`: repository path containing Argo CD steady-state config
 - `self_management_application_manifest`: repo-owned manifest path applied by
   the Terragrunt `after_hook`
-- `handoff_mode_annotation`: `initial-validation` or `automated`
+- `handoff_mode_annotation`: `automated`
 - `chart_version`: pinned chart version, initially `9.5.15`
 - `source_repo_url`: `https://github.com/Stuhlmuller/homelab.git`
 - `source_path`: `clusters/homelab/argocd/self-management`
@@ -31,8 +31,8 @@ CD bootstrap.
 - `argocd_namespace` MUST be non-empty and hyphenated if changed.
 - `kms_key_id` MUST NOT be read from environment variables.
 - Repository credentials MUST NOT be committed.
-- The handoff-mode annotation MUST start as `initial-validation` for first
-  bootstrap.
+- The handoff-mode annotation MUST be `automated` after the source path has
+  been validated in repository desired state.
 
 **State Transitions**
 

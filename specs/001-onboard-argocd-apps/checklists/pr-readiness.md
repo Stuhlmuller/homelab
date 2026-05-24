@@ -8,21 +8,21 @@
 
 ## Scope Completeness
 
-- [ ] CHK001 Are all 13 requested applications consistently enumerated across the spec, plan, data model, contracts, and quickstart? [Consistency, Spec §FR-001, Plan §Summary, Data Model §Application Matrix, Contract §Dependency Contract, Quickstart §1]
+- [ ] CHK001 Are all 14 requested applications consistently enumerated across the spec, plan, data model, contracts, and quickstart? [Consistency, Spec §FR-001, Plan §Summary, Data Model §Application Matrix, Contract §Dependency Contract, Quickstart §1]
 - [ ] CHK002 Are the post-clarification NFS StorageClass requirements reflected in all first-class requirement sources, not only in the spec? [Consistency, Spec §FR-016-FR-021, Plan §Technical Context, Data Model §StatefulWorkloadProfile, Contract §Storage Contract, Quickstart §6]
 - [ ] CHK003 Are first-rollout exclusions explicitly documented, including no Tailscale Funnel paths and no NFS provisioner ownership? [Completeness, Spec §FR-018, Spec §FR-022, Spec §SC-012]
 
 ## Dependency And Ordering Quality
 
 - [ ] CHK004 Are all app dependency edges specified unambiguously and consistently between the spec and contract, including Tailscale before tailnet reachability and LiteLLM before OpenClaw? [Consistency, Spec §FR-004-FR-010, Contract §Dependency Contract]
-- [ ] CHK005 Is the Argo CD bootstrap prerequisite defined clearly enough to distinguish pre-existing bootstrap state from the 13 app onboarding scope? [Clarity, Spec §Assumptions, Data Model §Application Matrix]
+- [ ] CHK005 Is the Argo CD bootstrap prerequisite defined clearly enough to distinguish pre-existing bootstrap state from the 14 app onboarding scope? [Clarity, Spec §Assumptions, Data Model §Application Matrix]
 - [ ] CHK006 Are requirements defined for what happens when a required upstream app is absent, unhealthy, or cannot be registered without creating circular dependencies? [Coverage, Spec §Edge Cases, Spec §FR-004-FR-010]
 
 ## Storage And Backup Quality
 
 - [ ] CHK007 Are the requirements clear that the existing NFS provisioner must be discovered by read-only inspection before the default StorageClass desired state is committed? [Clarity, Spec §FR-018-FR-020, Spec §SC-007]
 - [ ] CHK008 Are unsafe public-repository values for NFS provisioner details defined with enough specificity to guide placeholder or safe-reference decisions? [Clarity, Spec §FR-020, Spec §Edge Cases]
-- [ ] CHK009 Are NFS backup coverage and restore expectations required before stateful app rollout in both requirements and success criteria? [Completeness, Spec §FR-021, Spec §SC-008]
+- [ ] CHK009 Are NFS backup coverage and restore expectations required before stateful app readiness in both requirements and success criteria? [Completeness, Spec §FR-021, Spec §SC-008]
 - [ ] CHK010 Are stateful workload profiles required for every stateful app named in the plan, including Prometheus, Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM? [Coverage, Spec §FR-015, Plan §Technical Context, Quickstart §6]
 
 ## Secret Safety Quality

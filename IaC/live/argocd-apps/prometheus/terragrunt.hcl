@@ -59,6 +59,10 @@ inputs = {
   ]
 
   sync_policy = {
+    automated = {
+      prune     = true
+      self_heal = true
+    }
     sync_options = [
       "CreateNamespace=true",
       "ServerSideApply=true"
@@ -76,7 +80,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "manual until NFS backup coverage is documented"
+      value = "automated; verify NFS backup coverage before relying on retained metrics"
     },
     {
       name  = "storage"

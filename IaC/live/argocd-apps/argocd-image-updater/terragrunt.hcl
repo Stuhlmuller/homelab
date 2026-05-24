@@ -7,14 +7,7 @@ terraform {
 }
 
 dependencies {
-  paths = [
-    "../external-secrets",
-    "../cert-manager",
-    "../istio",
-    "../tailscale",
-    "../prometheus",
-    "../platform-storage"
-  ]
+  paths = []
 }
 
 locals {
@@ -24,7 +17,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "grafana"
+    name      = "argocd-image-updater"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -36,17 +29,17 @@ inputs = {
 
   destination = {
     server    = "https://kubernetes.default.svc"
-    namespace = "monitoring"
+    namespace = "argocd"
   }
 
   sources = [
     {
-      repo_url        = "https://grafana.github.io/helm-charts"
-      chart           = "grafana"
-      target_revision = "10.5.15"
+      repo_url        = "https://argoproj.github.io/argo-helm"
+      chart           = "argocd-image-updater"
+      target_revision = "1.2.2"
       helm = {
-        release_name = "grafana"
-        value_files  = ["$values/clusters/homelab/apps/grafana/values.yaml"]
+        release_name = "argocd-image-updater"
+        value_files  = ["$values/clusters/homelab/apps/argocd-image-updater/values.yaml"]
       }
     },
     {
@@ -57,7 +50,7 @@ inputs = {
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      path            = "clusters/homelab/apps/grafana"
+      path            = "clusters/homelab/apps/argocd-image-updater"
       kustomize       = {}
     }
   ]
@@ -83,12 +76,8 @@ inputs = {
 
   info = [
     {
-      name  = "rollout"
-      value = "automated; verify Prometheus and NFS backup coverage before relying on dashboards"
-    },
-    {
-      name  = "ingress"
-      value = "docs/networking-tailnet-ingress.md"
+      name  = "image-updates"
+      value = "docs/argocd-image-updater.md"
     }
   ]
 }

@@ -131,7 +131,7 @@
 ### Implementation for User Story 3
 
 - [X] T072 [P] [US3] Add pre-mutation Terragrunt plan, Helm or Kustomize render, and Kubernetes dry-run guidance in `docs/validation-runbook.md`
-- [X] T073 [P] [US3] Add dependency-aware rollback order for all 13 requested apps and platform-storage in `docs/rollback-argocd-apps.md`
+- [X] T073 [P] [US3] Add dependency-aware rollback order for all 14 requested apps and platform-storage in `docs/rollback-argocd-apps.md`
 - [X] T074 [P] [US3] Add per-stateful-app restore instructions and data-preservation warnings in `docs/storage-nfs.md`
 - [X] T075 [P] [US3] Add the future Tailscale Funnel webhook exception template with owner, path, purpose, validation, and rollback fields in `docs/networking-tailnet-ingress.md`
 - [X] T076 [P] [US3] Update the learner-facing onboarding guide to link app, storage, ingress, validation, and rollback docs in `ONBOARDING.md`
@@ -154,6 +154,19 @@
 - [X] T084 [P] Verify every persistent app Terragrunt unit depends on `IaC/live/argocd-apps/platform-storage/terragrunt.hcl` and record the result in `docs/storage-nfs.md`
 - [X] T085 Run the quickstart pre-rollout workflow and record any unavailable live-cluster validation with reasons in `docs/validation-runbook.md`
 - [X] T086 Review the PR readiness checklist and record unresolved checklist items or waivers in `docs/validation-runbook.md`
+
+---
+
+## Phase 7: Follow-Up Automation Defaults
+
+**Purpose**: Enable default Argo CD automation and add safe opt-in image update
+automation.
+
+- [X] T087 Add automated prune and self-heal to every app Terragrunt sync policy in `IaC/live/argocd-apps/**/terragrunt.hcl`
+- [X] T088 Create the Argo CD Image Updater Terragrunt registration in `IaC/live/argocd-apps/argocd-image-updater/terragrunt.hcl`
+- [X] T089 Create Argo CD Image Updater values and opt-in selector CR in `clusters/homelab/apps/argocd-image-updater/`
+- [X] T090 Enable automated prune and self-heal on the self-management Application in `clusters/homelab/argocd/self-management/application.yaml`
+- [X] T091 Update app inventory, storage readiness, validation, rollback, and bootstrap docs for autosync defaults
 
 ---
 
@@ -213,7 +226,7 @@ Task: "Create Tines Helm values with default NFS StorageClass persistence for au
 
 ```text
 Task: "Add pre-mutation Terragrunt plan, Helm or Kustomize render, and Kubernetes dry-run guidance in docs/validation-runbook.md"
-Task: "Add dependency-aware rollback order for all 13 requested apps and platform-storage in docs/rollback-argocd-apps.md"
+Task: "Add dependency-aware rollback order for all 14 requested apps and platform-storage in docs/rollback-argocd-apps.md"
 Task: "Add per-stateful-app restore instructions and data-preservation warnings in docs/storage-nfs.md"
 Task: "Add the future Tailscale Funnel webhook exception template with owner, path, purpose, validation, and rollback fields in docs/networking-tailnet-ingress.md"
 ```

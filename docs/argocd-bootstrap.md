@@ -71,21 +71,15 @@ Expected result within 10 minutes:
 
 ## First Handoff
 
-The first handoff is intentionally manual. Confirm the Application source path,
-target revision, and rendered manifests before enabling automated
-reconciliation.
+The self-management Application now enables automated prune and self-heal from
+repository desired state by default. Before applying bootstrap changes, confirm
+the Application source path, target revision, and rendered manifests in
+`clusters/homelab/argocd/self-management/application.yaml`.
 
-After validation, update repository desired state in both places:
-
-- Add `automated.prune` and `automated.selfHeal` to the inline
-  `values[0].extraObjects[0].spec.syncPolicy` object in
-  `IaC/bootstrap/argocd/terragrunt.hcl`.
-- Uncomment or add the Application `syncPolicy.automated` block in
-  `clusters/homelab/argocd/self-management/application.yaml`.
-
-Use `prune: true` and `selfHeal: true` only after the source path has been
-verified. Argo CD owns steady-state configuration under
-`clusters/homelab/argocd/self-management` after the handoff.
+After bootstrap, Argo CD owns steady-state configuration under
+`clusters/homelab/argocd/self-management`. Keep automation changes in this
+repository; do not patch the live Application as the permanent fix for source
+path, revision, or sync policy changes.
 
 ## Drift And Reconciliation
 
@@ -167,7 +161,8 @@ Validation results are recorded during implementation:
 - Post-apply Kubernetes verification: `argocd` namespace is active, Argo CD pods
   are running, `applications.argoproj.io` exists, and
   `argocd-self-management` is healthy. The self-management Application tracks
-  remote revision `main`; sync remains `Unknown` until `main` contains
+  remote revision `main` with automated prune and self-heal enabled; sync may
+  remain `Unknown` until `main` contains
   `clusters/homelab/argocd/self-management`.
 - Secret/input scan: passed for raw secret patterns and forbidden desired-state
   environment input patterns across the bootstrap stack and self-management

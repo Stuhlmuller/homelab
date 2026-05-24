@@ -42,6 +42,10 @@ inputs = {
   ]
 
   sync_policy = {
+    automated = {
+      prune     = true
+      self_heal = true
+    }
     sync_options = [
       "CreateNamespace=false"
     ]
@@ -58,7 +62,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "manual until existing NFS provisioner and backup coverage are documented"
+      value = "automated; verify existing NFS provisioner and backup coverage before relying on PVCs"
     },
     {
       name  = "storage"
@@ -66,4 +70,3 @@ inputs = {
     }
   ]
 }
-

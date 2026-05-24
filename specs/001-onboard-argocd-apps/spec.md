@@ -3,7 +3,7 @@
 **Feature Branch**: `001-onboard-argocd-apps`
 **Created**: 2026-05-24
 **Status**: Draft
-**Input**: User description: "Onboard Istio, external-secrets, certificates-manager, grafana, prometheus, openclaw, tines, radarr, sonarr, deluge. All should be onboarded using argocd, and added to argocd using modules from the terragrunt catalog. dependencies must be explicitly stated in the terragrunt. Plan input also adds descheduler, tailscale, and litellm to Argo CD onboarding."
+**Input**: User description: "Onboard Istio, external-secrets, certificates-manager, grafana, prometheus, openclaw, tines, radarr, sonarr, deluge. All should be onboarded using argocd, and added to argocd using modules from the terragrunt catalog. dependencies must be explicitly stated in the terragrunt. Plan input also adds descheduler, tailscale, and litellm to Argo CD onboarding. Follow-up input enables autosync by default and adds Argo CD Image Updater."
 
 ## Clarifications
 
@@ -17,7 +17,9 @@
 - Q: Which persistent storage class should stateful apps use? → A: Add an NFS-backed StorageClass and make it the default.
 - Q: Should this feature install the NFS provisioner or use an existing one? → A: Use the existing NFS provisioner and add the default StorageClass only.
 - Q: How should the implementation determine the existing NFS provisioner details? → A: Use read-only cluster inspection, then commit the observed provisioner details into desired state.
-- Q: What backup readiness is required before stateful apps roll out? → A: Require documented NFS backup coverage before stateful app rollout.
+- Q: What backup readiness is required before stateful apps are considered ready? → A: Require documented NFS backup coverage before relying on stateful app data.
+- Q: What sync policy should Argo CD applications use by default? → A: Enable automated prune and self-heal by default; readiness gates remain documented operational checks.
+- Q: How should image updates be automated? → A: Install Argo CD Image Updater through Argo CD and keep updates opt-in through Application labels and annotations.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -28,9 +30,9 @@ Argo CD from repository-owned desired state so the cluster can be rebuilt and
 reviewed without manual application creation.
 
 **Why this priority**: Istio, external secrets, certificate management,
-Prometheus, Grafana, descheduler, and Tailscale are shared foundations for
+Prometheus, Grafana, descheduler, Tailscale, and Argo CD Image Updater are shared foundations for
 traffic, credentials, certificates, visibility, scheduling hygiene, ingress,
-reachability, and later application delivery.
+reachability, image maintenance, and later application delivery.
 
 **Independent Test**: Review the planned repository state and confirm that each
 platform add-on has an Argo CD registration, a declared owning path, and an
@@ -41,7 +43,8 @@ explicit dependency relationship before rollout.
 1. **Given** a clean checkout and the documented homelab prerequisites, **When**
    an operator reviews the app onboarding plan, **Then** Istio,
    external-secrets, certificates-manager, prometheus, grafana, descheduler,
-   and tailscale are all present as Argo CD managed applications.
+   tailscale, and argocd-image-updater are all present as Argo CD managed
+   applications.
 2. **Given** the platform add-on registrations, **When** their Terragrunt
    entries are reviewed, **Then** dependencies are stated explicitly so
    consumers cannot be introduced before required secret, certificate,
@@ -134,6 +137,8 @@ without applying live changes and confirm it covers every onboarded app.
 - An app already exists in the cluster outside Argo CD ownership.
 - A live rollout leaves one application unhealthy while its dependencies remain
   healthy.
+- Argo CD Image Updater is enabled for an application without the required
+  image annotations or without a documented write-back method.
 
 ## Requirements *(mandatory)*
 
@@ -141,7 +146,8 @@ without applying live changes and confirm it covers every onboarded app.
 
 - **FR-001**: The onboarding MUST include exactly these requested applications:
   Istio, external-secrets, certificates-manager, grafana, prometheus, openclaw,
-  tines, radarr, sonarr, deluge, descheduler, tailscale, and litellm.
+  tines, radarr, sonarr, deluge, descheduler, tailscale, litellm, and
+  argocd-image-updater.
 - **FR-002**: Each requested application MUST be represented as an Argo CD
   managed application with a stable application name, target namespace, owning
   repository path, and non-secret inputs sufficient for review.
@@ -150,7 +156,7 @@ without applying live changes and confirm it covers every onboarded app.
 - **FR-003a**: Supporting Kubernetes platform desired state required by the
   requested applications, including the default NFS StorageClass, MAY be
   registered as a supporting Argo CD Application and MUST NOT be counted as one
-  of the 13 requested applications.
+  of the 14 requested applications.
 - **FR-004**: Each Terragrunt application entry MUST state its dependencies
   explicitly; implicit ordering based on file names, directory order, or manual
   operator memory is not acceptable.
@@ -198,9 +204,9 @@ without applying live changes and confirm it covers every onboarded app.
 - **FR-020**: Observed NFS provisioner details MUST be committed only when safe
   for the public repository; unsafe private values must be replaced with
   documented placeholders or safe references before review.
-- **FR-021**: Stateful applications MUST NOT roll out until NFS backup coverage
-  is documented for the default StorageClass and mapped to each stateful
-  workload's restore expectations.
+- **FR-021**: Stateful applications MUST NOT be considered production-ready
+  until NFS backup coverage is documented for the default StorageClass and
+  mapped to each stateful workload's restore expectations.
 - **FR-022**: Each requested application MUST be tailnet-only in the first
   rollout, with zero public Tailscale Funnel paths enabled.
 - **FR-023**: Future public reachability MUST be allowed only through Tailscale
@@ -211,6 +217,12 @@ without applying live changes and confirm it covers every onboarded app.
   review, and Argo CD health or sync expectations.
 - **FR-025**: The onboarding MUST include rollback guidance that preserves the
   dependency order and calls out persistent data implications.
+- **FR-026**: Argo CD Application registrations MUST enable automated prune and
+  self-heal by default unless a future exception is explicitly documented in the
+  app registration and operations runbook.
+- **FR-027**: Argo CD Image Updater MUST be installed through an Argo CD
+  Application registered by Terragrunt, and image automation MUST require
+  explicit per-Application opt-in labels and annotations.
 
 ### Infrastructure and Delivery Requirements *(mandatory for homelab changes)*
 
@@ -259,10 +271,10 @@ without applying live changes and confirm it covers every onboarded app.
 
 ### Measurable Outcomes
 
-- **SC-001**: A reviewer can identify all 13 requested applications and their
+- **SC-001**: A reviewer can identify all 14 requested applications and their
   owning desired-state paths in under 5 minutes from the feature documentation
   and Terragrunt entries.
-- **SC-002**: Pre-rollout review shows 13 requested Argo CD application
+- **SC-002**: Pre-rollout review shows 14 requested Argo CD application
   registrations plus any explicitly named supporting Argo CD registrations, and
   zero undeclared dependency relationships among them.
 - **SC-003**: Secret scanning and repository review find zero committed tokens,
@@ -279,13 +291,13 @@ without applying live changes and confirm it covers every onboarded app.
 - **SC-007**: StorageClass review includes read-only inspection evidence for
   the existing NFS provisioner and zero unsafe private provisioner values
   committed to the public repository.
-- **SC-008**: Before any stateful application rolls out, NFS backup coverage is
-  documented and every stateful workload profile maps its persistent data to a
-  restore expectation.
-- **SC-009**: After rollout, all 13 requested applications reach the documented
+- **SC-008**: Before any stateful application is considered ready, NFS backup
+  coverage is documented and every stateful workload profile maps its
+  persistent data to a restore expectation.
+- **SC-009**: After rollout, all 14 requested applications reach the documented
   Argo CD sync and health expectation within 30 minutes, or any exception is
   recorded with an operator action and rollback decision.
-- **SC-010**: Rollback documentation covers all 13 requested applications and
+- **SC-010**: Rollback documentation covers all 14 requested applications and
   preserves dependency order so dependent services are handled before shared
   foundations are removed or disabled.
 - **SC-011**: After initial DNS setup, onboarding a new tailnet-only app route
@@ -316,9 +328,9 @@ without applying live changes and confirm it covers every onboarded app.
 - NFS storage is the persistent storage foundation for this onboarding. An NFS
   provisioner already exists outside this feature's ownership and must be
   discovered through read-only inspection and referenced by the default
-  Kubernetes StorageClass before stateful applications are rolled out.
+  Kubernetes StorageClass before stateful applications are considered ready.
 - NFS backup coverage exists or will be documented as a prerequisite before
-  stateful applications are rolled out.
+  stateful applications are considered ready.
 - Runtime credentials for OpenClaw, Tines, Grafana, Radarr, Sonarr, Deluge,
   LiteLLM, Tailscale, and any integration endpoints are supplied through
   approved secret-management paths rather than committed plaintext.

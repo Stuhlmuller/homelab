@@ -318,7 +318,8 @@ terragrunt apply
 Use `docs/argocd-bootstrap.md` for the full runbook, validation sequence,
 handoff rules, rollback path, and recovery notes. The initial bootstrap installs
 Argo CD in the `argocd` namespace, keeps the service internal, and creates the
-`argocd-self-management` Application in manual validation mode.
+`argocd-self-management` Application with repository-defined automated prune
+and self-heal.
 
 Quick recovery summary:
 
@@ -350,8 +351,9 @@ syncing or rolling back application desired state:
   and failure handling.
 - `docs/rollback-argocd-apps.md`: dependency-aware rollback order.
 
-Stateful apps must not be synced until the NFS provisioner exists and NFS
-backup coverage is documented in `docs/storage-nfs.md`.
+Stateful apps auto-sync by default, but they must not be considered ready until
+the NFS provisioner exists and NFS backup coverage is documented in
+`docs/storage-nfs.md`.
 
 Then validate the Talos config that will be applied:
 

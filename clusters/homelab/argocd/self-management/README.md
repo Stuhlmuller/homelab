@@ -7,10 +7,9 @@ Terragrunt owns only the first seed:
 
 - Install the Argo CD Helm release.
 - Create the `argocd-self-management` Application.
-- Leave the first handoff in manual validation mode.
+- Hand off to repository-defined automated prune and self-heal.
 
-After the first sync is verified, Argo CD owns changes under this directory.
-Enable automated prune and self-heal only by editing repository desired state,
-reviewing the change, and applying it through the documented workflow. Do not
-patch the live Application as the permanent fix for source path, revision, or
-sync policy changes.
+Argo CD owns changes under this directory after bootstrap. Automated prune and
+self-heal are part of the repository desired state, so changes to the source
+path, revision, or sync policy must still be reviewed in git instead of patched
+as permanent live mutations.

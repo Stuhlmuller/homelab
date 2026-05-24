@@ -62,6 +62,10 @@ inputs = {
   ]
 
   sync_policy = {
+    automated = {
+      prune     = true
+      self_heal = true
+    }
     sync_options = [
       "CreateNamespace=true",
       "ServerSideApply=true"
@@ -79,7 +83,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "manual until provider secrets and NFS backup coverage are ready"
+      value = "automated; verify provider secrets and NFS backup coverage before exposing the gateway"
     }
   ]
 }
