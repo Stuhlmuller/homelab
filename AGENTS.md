@@ -1,43 +1,131 @@
 # Agent Harness
 
-This repository is structured so automated contributors can work safely:
+This public repository is the control surface for a Kubernetes homelab running
+on Talos Linux. It has two goals:
 
-- `ansible/` owns host bootstrap and base operating system configuration.
-- `terraform/live/homelab/` owns declarative deployment into Nomad through
-  Terragrunt/OpenTofu.
-- `nomad/jobs/` owns the source jobspecs.
-- `.codex/skills/` owns project-local Codex skills that wrap the validated
-  operator workflows.
-- `scripts/validate.sh` is the default pre-deployment gate.
-- `scripts/survey-cluster.sh` is the default read-only cluster inspection tool.
+- Operate the homelab through repeatable code changes, PRs, and agent-assisted
+  maintenance.
+- Teach the system as it evolves so readers can learn how to start, operate,
+  and upgrade their own homelab.
+
+Agents should treat the repo as both production infrastructure and educational
+material. A good change should be safe to apply, easy to review, and useful to
+someone learning the pattern for the first time.
+
+## Repository intent
+
+- Prefer declarative, reproducible configuration over manual cluster mutation.
+- Keep Talos, Kubernetes, networking, storage, and secret-management decisions
+  documented near the code that implements them.
+- Make PRs the normal unit of change for cluster setup, maintenance, upgrades,
+  and documentation.
+- Include the "why" when changing architecture, workflows, or operational
+  assumptions.
+- Keep examples copyable, but clearly mark values that are specific to this
+  homelab.
+
+## Expected ownership
+
+The exact tree may change as the homelab grows. Preserve these ownership
+boundaries when adding or moving files:
+
+- `.talos/` owns Talos machine config, patches, generated-safe templates, and
+  Talos client configuration references.
+- Kubernetes app and cluster directories own manifests, Helm values, Kustomize
+  overlays, GitOps resources, and namespace-scoped configuration.
+- Infrastructure-as-code directories own cloud or external dependencies such as
+  DNS, object storage, IAM, and state backends.
+- `docs/` and top-level guides own learner-facing explanations, walkthroughs,
+  diagrams, and runbooks.
+- `scripts/` owns repeatable operator commands and validation helpers.
+- `.codex/skills/` owns project-local Codex skills that wrap validated
+  workflows.
+
+Do not reintroduce Nomad, Ansible, or host-bootstrap assumptions unless the code
+base intentionally adopts them again and the documentation explains why.
 
 ## Safety rules
 
-- Treat `10.1.0.201` as degraded until a fresh survey proves otherwise.
-- Do not change live host state without running `nix run .#validate` first.
-- Prefer read-only SSH inspection before changing bootstrap assumptions.
-- Keep Traefik as the only public entry point for HTTP services.
-- Store certificates on shared storage so a Traefik reschedule does not lose
-  ACME state.
-- Keep OpenTofu state and plan encryption enabled for every in-repo module.
-- Keep secret values in AWS SSM Parameter Store; only commit SSM parameter names
-  and non-secret defaults to git.
-- Prefer file-backed runtime secrets such as `_FILE` paths over direct task
-  environment injection.
+- This is a public repository. Never commit secrets, kubeconfigs with private
+  credentials, Talos secrets, age keys, tokens, private SSH keys, private
+  hostnames that should not be public, or raw certificate material.
+- Commit secret references, sealed/encrypted secret manifests, external-secret
+  names, and non-secret defaults only when they are safe for a public repo.
+- Treat live Talos and Kubernetes operations as production changes, even though
+  this is a homelab.
+- Do not change live cluster state until the relevant validation commands have
+  passed or you have recorded why they are unavailable.
+- Prefer read-only inspection before changing bootstrap, networking, storage,
+  or upgrade assumptions.
+- Use `--insecure` with `talosctl` only for nodes that are known to be in Talos
+  maintenance mode before machine config has been applied.
+- After Talos machine config is applied, use authenticated Talos access through
+  the configured Talos client config.
+- Keep Kubernetes ingress explicit and documented. Public HTTP entry points
+  should be intentional, reviewed, and routed through the chosen ingress
+  controller.
+- Keep persistent storage, backup, and restore implications documented for any
+  stateful workload.
+- Prefer file-backed or controller-managed runtime secrets over direct
+  environment-variable injection.
 
-## Default workflow
+## Default agent workflow
 
-1. Run `./scripts/survey-cluster.sh`.
-2. Run `nix run .#validate`.
-3. Update Ansible or Nomad source files.
-4. Re-run `nix run .#validate`.
-5. Run `nix run .#validate-ssm` and `nix run .#validate-live-cluster` before touching the cluster.
-6. Use `./scripts/deploy-live.sh` for full live rollout orchestration.
+1. Read the relevant docs and code before changing behavior.
+2. Inspect current state with read-only commands when the task depends on live
+   cluster reality.
+3. Run the repo validation gate when available, such as `nix run .#validate` or
+   the documented replacement.
+4. Make the smallest code and documentation change that solves the request.
+5. Re-run relevant validation.
+6. For live rollout work, run any documented live-cluster validation before
+   applying changes.
+7. Summarize what changed, what was validated, and any remaining operational
+   risk.
 
-## Project-local skills
+If a checkout is intentionally incomplete and expected scripts or Nix targets
+are missing, say that clearly in the PR or final response and use the next best
+specific validation available, such as `talosctl validate`, `kubectl diff`,
+`helm template`, or `kustomize build`.
 
-- `survey-homelab` maps to `./scripts/survey-cluster.sh`.
-- `validate-homelab` maps to `nix run .#validate` and the live validation scripts.
-- `bootstrap-homelab` maps to `./scripts/bootstrap-rolling.sh` and `nix run .#reconcile-tailscale`.
-- `deploy-homelab` maps to `./scripts/deploy-live.sh`.
-- `unlock-opentofu-state` maps to `./scripts/unlock-terragrunt-unit.sh`.
+## Documentation standards
+
+- Write for a reader who is technical but may be new to Talos, Kubernetes, or
+  homelab operations.
+- Keep operational runbooks concrete: include commands, expected outputs, and
+  failure modes when useful.
+- Separate public teaching values from private local values. Use placeholders
+  for anything that should not be copied directly.
+- When adding automation, document what it changes, how to verify it, and how
+  to roll it back.
+- Prefer diagrams and short explanations for architecture changes, but keep the
+  source of truth in code.
+
+## Kubernetes and Talos conventions
+
+- Use hyphenated Kubernetes object and node names.
+- Keep Talos machine config changes patch-oriented when only one node differs
+  from the shared baseline.
+- Validate Talos configs with `talosctl validate --mode metal --strict` before
+  applying them.
+- Use `kubectl diff`, server-side dry runs, Helm rendering, or Kustomize builds
+  before applying Kubernetes changes when those tools match the change.
+- Do not hand-edit live resources to make a permanent change. Capture the
+  desired state in git and apply through the documented workflow.
+- When upgrading Talos, Kubernetes, CNI, CSI, ingress, or cert-manager, include
+  version notes and rollback considerations.
+
+## Current cluster notes
+
+Known details from the existing onboarding guide:
+
+- Talos control plane endpoint: `10.1.0.199`
+- Kubernetes API endpoint: `https://10.1.0.199:6443`
+- Talos config reference: `.talos/talosconfig`
+- Base worker config reference: `.talos/worker.yaml`
+- Worker nodes use hyphenated names such as `zimaboard-0`, `zimaboard-1`, and
+  `zimaboard-2`.
+
+Refresh these notes whenever the cluster topology changes. If they conflict
+with a newer runbook or live read-only inspection, update the docs in the same
+PR as the operational change.

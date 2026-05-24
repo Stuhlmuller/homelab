@@ -32,26 +32,3 @@ repos:
     rev: v1.22.0
     hooks:
       - id: zizmor
-
-  - repo: local
-    hooks:
-      - id: validate-nomad
-        name: validate-nomad
-        entry: ./scripts/validate-nomad.sh
-        language: system
-        pass_filenames: false
-      - id: validate-terraform
-        name: validate-terraform
-        entry: ./scripts/validate-terraform.sh
-        language: system
-        pass_filenames: false
-      - id: validate-ansible
-        name: validate-ansible
-        entry: ./scripts/validate-ansible.sh
-        language: system
-        pass_filenames: false
-      - id: repo-tests
-        name: repo-tests
-        entry: python3 -m unittest discover -s tests -p test_*.py
-        language: system
-        pass_filenames: false
