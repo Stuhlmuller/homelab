@@ -1,0 +1,102 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  source = "../../modules/aws-ssm-parameters"
+}
+
+generate "aws_provider" {
+  path      = "aws-provider.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+provider "aws" {
+  region = "us-east-1"
+}
+EOF
+}
+
+locals {
+  placeholder = "REPLACE_ME"
+}
+
+inputs = {
+  parameters = {
+    "/homelab/argocd/oidc/url" = {
+      description   = "Argo CD browser-facing base URL registered with the IdP."
+      initial_value = local.placeholder
+    }
+    "/homelab/argocd/oidc/issuer" = {
+      description   = "Argo CD OIDC issuer URL used for provider discovery."
+      initial_value = local.placeholder
+    }
+    "/homelab/argocd/oidc/client-id" = {
+      description   = "Argo CD OIDC client ID issued by the IdP."
+      initial_value = local.placeholder
+    }
+    "/homelab/argocd/oidc/client-secret" = {
+      description   = "Argo CD OIDC client secret."
+      initial_value = local.placeholder
+    }
+    "/homelab/tailscale/oauth-client-id" = {
+      description   = "Tailscale Kubernetes operator OAuth client ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/tailscale/oauth-client-secret" = {
+      description   = "Tailscale Kubernetes operator OAuth client secret."
+      initial_value = local.placeholder
+    }
+    "/homelab/grafana/admin-user" = {
+      description   = "Grafana admin username."
+      initial_value = local.placeholder
+    }
+    "/homelab/grafana/admin-password" = {
+      description   = "Grafana admin password."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/web-password" = {
+      description   = "Deluge web UI password."
+      initial_value = local.placeholder
+    }
+    "/homelab/radarr/api-key" = {
+      description   = "Radarr application API key."
+      initial_value = local.placeholder
+    }
+    "/homelab/radarr/deluge-api-key" = {
+      description   = "Radarr Deluge download client API key."
+      initial_value = local.placeholder
+    }
+    "/homelab/sonarr/api-key" = {
+      description   = "Sonarr application API key."
+      initial_value = local.placeholder
+    }
+    "/homelab/sonarr/deluge-api-key" = {
+      description   = "Sonarr Deluge download client API key."
+      initial_value = local.placeholder
+    }
+    "/homelab/litellm/master-key" = {
+      description   = "LiteLLM master key."
+      initial_value = local.placeholder
+    }
+    "/homelab/litellm/openai-api-key" = {
+      description   = "LiteLLM OpenAI provider API key."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/app-secret" = {
+      description   = "OpenClaw application secret."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/litellm-token" = {
+      description   = "OpenClaw token for LiteLLM access."
+      initial_value = local.placeholder
+    }
+    "/homelab/tines/app-secret" = {
+      description   = "Tines application secret."
+      initial_value = local.placeholder
+    }
+    "/homelab/tines/admin-password" = {
+      description   = "Tines admin password."
+      initial_value = local.placeholder
+    }
+  }
+}

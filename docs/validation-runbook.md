@@ -7,6 +7,8 @@ the PR.
 
 ```sh
 terragrunt hcl fmt
+cd IaC/live/aws-ssm-parameters
+terragrunt plan
 cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
