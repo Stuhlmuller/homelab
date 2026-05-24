@@ -1,7 +1,9 @@
 admin:
   existingSecret: grafana-admin
-  userKey: admin-user
-  passwordKey: admin-password
+  userKey: username
+  passwordKey: password
+initChownData:
+  enabled: false
 persistence:
   enabled: true
   storageClassName: nfs-default
@@ -17,4 +19,3 @@ datasources:
         access: proxy
         url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
         isDefault: true
-

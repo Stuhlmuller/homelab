@@ -93,10 +93,18 @@ Stateful apps auto-sync by default, but they must not be considered ready until
   placeholder environment variable names.
 - First-rollout Funnel review found no enabled public Funnel paths; route
   manifests use `homelab.rst.io/public-funnel: "false"`.
+- First live rollout on 2026-05-24 applied AWS SSM Parameter Store placeholders
+  through `IaC/live/aws-ssm-parameters` and registered Argo CD Applications
+  through `IaC/live/argocd-apps`.
+- The `monitoring` namespace intentionally enforces the `privileged` Pod
+  Security level because `kube-prometheus-stack` node-exporter uses host
+  namespaces, hostPath mounts, and host port `9100`.
+- Grafana disables the chart `initChownData` job because the QNAP NFS-backed
+  volume rejects root `chown`; the NFS provisioner-created directory permissions
+  are used instead.
 - The PR-readiness checklist was incomplete when implementation began; the
   operator explicitly waived the checklist gate to continue, and this runbook
   records the resulting validation evidence.
-- No live mutation was performed.
 
 ## Failure Modes
 
