@@ -102,6 +102,17 @@ inputs = {
     }
   }
 
+  ignore_differences = [
+    {
+      group = "admissionregistration.k8s.io"
+      kind  = "ValidatingWebhookConfiguration"
+      jq_path_expressions = [
+        ".webhooks[]?.clientConfig.caBundle",
+        ".webhooks[]?.failurePolicy"
+      ]
+    }
+  ]
+
   info = [
     {
       name  = "ingress"
