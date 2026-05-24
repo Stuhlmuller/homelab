@@ -1,6 +1,5 @@
 locals {
   project_name = "homelab"
-  kms_key_id   = get_env("TG_KMS_KEY_ID", "alias/homelab-opentofu")
   default_tags = {
     ManualBuild = false
     ManualTags  = false
@@ -14,16 +13,6 @@ terraform {
     commands  = ["plan"]
     arguments = ["-out", "plan.out"]
   }
-}
-
-generate "nomad_provider" {
-  path      = "nomad_provider.tf"
-  if_exists = "overwrite"
-  contents  = <<EOF
-provider "nomad" {
-  address = "http://10.1.0.200:4646"
-}
-EOF
 }
 
 remote_state {

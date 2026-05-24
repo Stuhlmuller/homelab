@@ -15,6 +15,12 @@ someone learning the pattern for the first time.
 ## Repository intent
 
 - Prefer declarative, reproducible configuration over manual cluster mutation.
+- Use OpenTofu modules orchestrated by Terragrunt for infrastructure as code,
+  and preserve a documented path that can stand the project up from scratch with
+  one `terragrunt apply` command after public prerequisites and external secret
+  material are available.
+- Deliver Kubernetes runtime changes through Argo CD, Helm, Kustomize,
+  repository-owned manifests, or another declared code path in this repository.
 - Keep Talos, Kubernetes, networking, storage, and secret-management decisions
   documented near the code that implements them.
 - Make PRs the normal unit of change for cluster setup, maintenance, upgrades,
@@ -33,8 +39,9 @@ boundaries when adding or moving files:
   Talos client configuration references.
 - Kubernetes app and cluster directories own manifests, Helm values, Kustomize
   overlays, GitOps resources, and namespace-scoped configuration.
-- Infrastructure-as-code directories own cloud or external dependencies such as
-  DNS, object storage, IAM, and state backends.
+- Infrastructure-as-code directories own OpenTofu modules, Terragrunt stacks,
+  Terragrunt includes, generated backend/provider configuration, and cloud or
+  external dependencies such as DNS, object storage, IAM, and state backends.
 - `docs/` and top-level guides own learner-facing explanations, walkthroughs,
   diagrams, and runbooks.
 - `scripts/` owns repeatable operator commands and validation helpers.
@@ -53,6 +60,9 @@ base intentionally adopts them again and the documentation explains why.
   names, and non-secret defaults only when they are safe for a public repo.
 - Treat live Talos and Kubernetes operations as production changes, even though
   this is a homelab.
+- Do not make permanent manual infrastructure or cluster changes. Capture the
+  desired state in this repository and apply it through Terragrunt, Argo CD,
+  Helm, Kustomize, Talos config, or another documented code path.
 - Do not change live cluster state until the relevant validation commands have
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,
@@ -100,6 +110,18 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   to roll it back.
 - Prefer diagrams and short explanations for architecture changes, but keep the
   source of truth in code.
+
+## Infrastructure-as-code conventions
+
+- Use OpenTofu for infrastructure modules and Terragrunt for stack orchestration.
+- Keep module inputs small, typed, and readable. If adding another similar
+  resource requires copying a large block, introduce or extend a module first.
+- Keep the steady-state bootstrap path compatible with one documented
+  `terragrunt apply` command from the chosen root. If a temporary staged
+  bootstrap is unavoidable, document why and what follow-up restores the single
+  apply path.
+- Run Terragrunt/OpenTofu formatting and planning for affected stacks before
+  applying infrastructure changes, or record why those checks were unavailable.
 
 ## Kubernetes and Talos conventions
 

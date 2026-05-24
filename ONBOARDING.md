@@ -43,6 +43,19 @@ authenticated Talos API calls through `.talos/talosconfig`.
 The old `10.1.0.216` control-plane address is stale. Do not use it as the
 canonical Kubernetes API endpoint or Talos endpoint for new work.
 
+## Repository Source of Truth
+
+Permanent homelab changes are made through code in this repository. External
+infrastructure must be modeled as OpenTofu modules orchestrated by
+Terragrunt, with a documented path that can rebuild the project from scratch
+with one `terragrunt apply` command after required credentials and deliberately
+external secret material are available.
+
+Kubernetes runtime changes must be delivered through Argo CD, Helm, Kustomize,
+or repository-owned manifests. The Talos commands in this guide apply
+repo-authored machine configuration; they are not a substitute for capturing
+lasting configuration in git.
+
 ## Required Control-Plane Config
 
 The control-plane config must preserve the same cluster secrets as the worker
@@ -216,6 +229,9 @@ Before changing live node state, run the project gates when available:
 ./scripts/survey-cluster.sh
 nix run .#validate
 ```
+
+For infrastructure-as-code changes, also run the applicable Terragrunt/OpenTofu
+formatting and planning commands from the documented stack root before apply.
 
 Then validate the Talos config that will be applied:
 
