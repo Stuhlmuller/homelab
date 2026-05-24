@@ -1,0 +1,57 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nfs-subdir-external-provisioner
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: nfs-subdir-external-provisioner
+    app.kubernetes.io/part-of: platform-storage
+    app.kubernetes.io/managed-by: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+  annotations:
+    homelab.stuhlmuller.dev/storage-backend: qnap-nfs
+    homelab.stuhlmuller.dev/qnap-export: 10.1.0.2:/homelab
+spec:
+  project: default
+  source:
+    repoURL: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+    chart: nfs-subdir-external-provisioner
+    targetRevision: 4.0.18
+    helm:
+      releaseName: nfs-subdir-external-provisioner
+      values: |
+        nfs:
+          server: 10.1.0.2
+          path: /homelab
+          mountOptions:
+            - nfsvers=3
+          reclaimPolicy: Retain
+
+        storageClass:
+          create: true
+          name: nfs-default
+          provisionerName: k8s-sigs.io/qnap-nfs
+          defaultClass: true
+          allowVolumeExpansion: true
+          reclaimPolicy: Retain
+          archiveOnDelete: true
+          accessModes: ReadWriteMany
+          volumeBindingMode: Immediate
+
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

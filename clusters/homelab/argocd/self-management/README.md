@@ -14,3 +14,8 @@ Enable automated prune and self-heal only by editing repository desired state,
 reviewing the change, and applying it through the documented workflow. Do not
 patch the live Application as the permanent fix for source path, revision, or
 sync policy changes.
+
+`platform-storage-application.yaml` registers the QNAP-backed NFS storage
+integration as a child Application. It is intentionally manual-sync so the NFS
+export and PVC write validation can be confirmed before stateful workloads use
+the default `nfs-default` StorageClass.
