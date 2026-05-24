@@ -15,6 +15,12 @@ someone learning the pattern for the first time.
 ## Repository intent
 
 - Prefer declarative, reproducible configuration over manual cluster mutation.
+- Use OpenTofu modules orchestrated by Terragrunt for infrastructure as code,
+  and preserve a documented path that can stand the project up from scratch with
+  one `terragrunt apply` command after public prerequisites and external secret
+  material are available.
+- Deliver Kubernetes runtime changes through Argo CD, Helm, Kustomize,
+  repository-owned manifests, or another declared code path in this repository.
 - Keep Talos, Kubernetes, networking, storage, and secret-management decisions
   documented near the code that implements them.
 - Make PRs the normal unit of change for cluster setup, maintenance, upgrades,
@@ -33,8 +39,9 @@ boundaries when adding or moving files:
   Talos client configuration references.
 - Kubernetes app and cluster directories own manifests, Helm values, Kustomize
   overlays, GitOps resources, and namespace-scoped configuration.
-- Infrastructure-as-code directories own cloud or external dependencies such as
-  DNS, object storage, IAM, and state backends.
+- Infrastructure-as-code directories own OpenTofu modules, Terragrunt stacks,
+  Terragrunt includes, generated backend/provider configuration, and cloud or
+  external dependencies such as DNS, object storage, IAM, and state backends.
 - `docs/` and top-level guides own learner-facing explanations, walkthroughs,
   diagrams, and runbooks.
 - `scripts/` owns repeatable operator commands and validation helpers.
@@ -51,8 +58,17 @@ base intentionally adopts them again and the documentation explains why.
   hostnames that should not be public, or raw certificate material.
 - Commit secret references, sealed/encrypted secret manifests, external-secret
   names, and non-secret defaults only when they are safe for a public repo.
+- Do not use environment variables as normal inputs for Terragrunt, OpenTofu,
+  Helm, Kustomize, Talos config, application config, or local operator
+  workflows. Desired-state inputs must be committed as non-secret code or data.
+- Use environment variables only inside CI/CD pipelines for credentials or
+  secret injection. If a secret is required, inject it in the CI/CD pipeline and
+  keep only safe references, templates, encrypted values, or contracts in git.
 - Treat live Talos and Kubernetes operations as production changes, even though
   this is a homelab.
+- Do not make permanent manual infrastructure or cluster changes. Capture the
+  desired state in this repository and apply it through Terragrunt, Argo CD,
+  Helm, Kustomize, Talos config, or another documented code path.
 - Do not change live cluster state until the relevant validation commands have
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,
@@ -101,6 +117,21 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
 - Prefer diagrams and short explanations for architecture changes, but keep the
   source of truth in code.
 
+## Infrastructure-as-code conventions
+
+- Use OpenTofu for infrastructure modules and Terragrunt for stack orchestration.
+- Keep module inputs small, typed, and readable. If adding another similar
+  resource requires copying a large block, introduce or extend a module first.
+- Keep module and stack inputs explicit in repository-owned code or data. Do
+  not use `get_env`, `TF_VAR_*`, shell-exported values, or process environment
+  lookups to change desired state outside CI/CD credential or secret injection.
+- Keep the steady-state bootstrap path compatible with one documented
+  `terragrunt apply` command from the chosen root. If a temporary staged
+  bootstrap is unavoidable, document why and what follow-up restores the single
+  apply path.
+- Run Terragrunt/OpenTofu formatting and planning for affected stacks before
+  applying infrastructure changes, or record why those checks were unavailable.
+
 ## Kubernetes and Talos conventions
 
 - Use hyphenated Kubernetes object and node names.
@@ -112,6 +143,10 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   before applying Kubernetes changes when those tools match the change.
 - Do not hand-edit live resources to make a permanent change. Capture the
   desired state in git and apply through the documented workflow.
+- For Argo CD Applications or other Git-backed chart/manifest references that
+  point at this repository, set the remote target revision to the default branch
+  `main` unless the change explicitly documents a temporary non-default branch
+  for testing or recovery.
 - When upgrading Talos, Kubernetes, CNI, CSI, ingress, or cert-manager, include
   version notes and rollback considerations.
 
@@ -130,3 +165,10 @@ Known details from the existing onboarding guide:
 Refresh these notes whenever the cluster topology changes. If they conflict
 with a newer runbook or live read-only inspection, update the docs in the same
 PR as the operational change.
+
+## Active Technologies
+- HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD (001-bootstrap-argocd-terragrunt)
+- S3 remote state from `IaC/root.hcl`; no workload persistent storage introduced by this feature (001-bootstrap-argocd-terragrunt)
+
+## Recent Changes
+- 001-bootstrap-argocd-terragrunt: Added HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD

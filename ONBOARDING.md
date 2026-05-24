@@ -45,6 +45,26 @@ authenticated Talos API calls through `.talos/talosconfig`.
 The old `10.1.0.216` control-plane address is stale. Do not use it as the
 canonical Kubernetes API endpoint or Talos endpoint for new work.
 
+## Repository Source of Truth
+
+Permanent homelab changes are made through code in this repository. External
+infrastructure must be modeled as OpenTofu modules orchestrated by
+Terragrunt, with a documented path that can rebuild the project from scratch
+with one `terragrunt apply` command after required credentials and deliberately
+external secret material are available.
+
+Kubernetes runtime changes must be delivered through Argo CD, Helm, Kustomize,
+or repository-owned manifests. The Talos commands in this guide apply
+repo-authored machine configuration; they are not a substitute for capturing
+lasting configuration in git.
+
+Desired-state inputs must be committed as non-secret code or repository data.
+Do not use environment variables as normal operator inputs for Terragrunt,
+OpenTofu, Helm, Kustomize, Talos config, or application configuration.
+Environment variables are reserved for CI/CD credential plumbing and secret
+injection. If a secret is required, inject it in the CI/CD pipeline and keep
+only safe references, encrypted values, templates, or contracts in git.
+
 ## Persistent Storage
 
 Shared persistent storage for Kubernetes workloads is provided by a QNAP NAS on
@@ -269,12 +289,48 @@ talosctl machineconfig patch .talos/worker.yaml \
 
 ## Safety Gates
 
-Before changing live node state, run the project gates when available:
+Before changing live node state, run the repository checks that are available in
+this checkout:
 
 ```sh
-./scripts/survey-cluster.sh
-nix run .#validate
+nix flake check
 ```
+
+This flake currently provides the operator development shell and flake
+evaluation check; it does not define a `validate` app. Pair the repository check
+with the nearest validation for the files being changed:
+
+- Talos machine config: `talosctl validate --mode metal --strict`.
+- Kubernetes or Argo CD desired state: `kubectl kustomize`, `kubectl diff`, or a
+  server-side dry run before apply.
+- Terragrunt/OpenTofu: `terragrunt hcl fmt --check`, OpenTofu validation, and a
+  reviewed `terragrunt plan` from the documented stack root before apply.
+
+## Argo CD Bootstrap
+
+Argo CD is bootstrapped through one Terragrunt stack:
+
+```sh
+cd IaC/bootstrap/argocd
+terragrunt apply
+```
+
+Use `docs/argocd-bootstrap.md` for the full runbook, validation sequence,
+handoff rules, rollback path, and recovery notes. The initial bootstrap installs
+Argo CD in the `argocd` namespace, keeps the service internal, and creates the
+`argocd-self-management` Application in manual validation mode.
+
+Quick recovery summary:
+
+- Missing CRDs: fix the Helm release before retrying Application registration.
+- Bad repo path or target revision: correct repository desired state and
+  reapply the same Terragrunt stack.
+- Missing credentials: inject them through CI/CD or an external secret path; do
+  not commit tokens or kubeconfigs.
+- Partial install: capture read-only state, fix or revert repository code, and
+  reapply the reviewed state.
+- Break-glass live changes are incomplete until the final state is backfilled
+  into this repository.
 
 Then validate the Talos config that will be applied:
 
@@ -283,9 +339,9 @@ talosctl validate --config .talos/worker.yaml --mode metal --strict
 talosctl validate --config /private/tmp/worker-zimaboard-2.yaml --mode metal --strict
 ```
 
-If this checkout is incomplete and the project gates are unavailable, record
-that fact before proceeding. During this onboarding, the stripped checkout was
-missing both `flake.nix` and `scripts/survey-cluster.sh`, so Talos validation and
+If this checkout is incomplete or a legacy validation helper is unavailable,
+record that fact before proceeding. During early onboarding, a stripped checkout
+was missing the project flake and live survey helper, so Talos validation and
 read-only node inspection were used as the live safeguards.
 
 ## Maintenance-Mode Inspection
