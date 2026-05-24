@@ -11,10 +11,40 @@ repository-owned Terragrunt stack at `IaC/bootstrap/argocd`.
   committed provider path `~/.kube/config`.
 - External credentials for S3 remote state and KMS encryption are available as
   credential material; they are not desired-state inputs.
+- External Secrets Operator is installed before enabling SAML SSO, and its AWS
+  provider can read Systems Manager Parameter Store in `us-east-1` without
+  committing AWS access keys to this repository.
 - The default branch `main` contains the Argo CD desired-state path before
   expecting the self-management Application to sync.
 - No raw repository token, kubeconfig, Talos secret, private key, or certificate
   material is committed.
+- AWS Parameter Store contains the SAML SSO contract described below before
+  expecting Dex login to succeed.
+
+## SAML SSO Secret Contract
+
+Argo CD uses the bundled Dex server for SSO. The bootstrap Helm values create an
+External Secrets Operator `SecretStore` named `argocd-ssm` and an
+`ExternalSecret` named `argocd-saml-sso` in the `argocd` namespace. The resulting
+Kubernetes Secret must keep the label
+`app.kubernetes.io/part-of: argocd` so Argo CD can resolve `$argocd-saml-sso:*`
+references from `argocd-cm`.
+
+Create these AWS Systems Manager Parameter Store entries before rollout:
+
+| Parameter | Secret key | Expected value |
+| --- | --- | --- |
+| `/homelab/argocd/saml/url` | `url` | Browser-facing Argo CD base URL registered with the SAML IdP. |
+| `/homelab/argocd/saml/sso-url` | `ssoURL` | SAML IdP HTTP POST SSO URL. |
+| `/homelab/argocd/saml/ca-data` | `caData` | Base64-encoded PEM CA/signing certificate data for Dex. |
+| `/homelab/argocd/saml/callback-url` | `callback` | Dex callback URL, normally `<url>/api/dex/callback`. |
+| `/homelab/argocd/saml/client-id` | `clientID` | SAML SP entity ID/client ID used as Dex `entityIssuer`. |
+| `/homelab/argocd/saml/client-secret` | `clientSecret` | IdP client secret stored outside git. Dex SAML does not consume this field directly. |
+
+Store `/homelab/argocd/saml/client-secret` as a SecureString. The other values
+may be String or SecureString depending on local policy. This change does not
+create an ingress or DNS record; the `url` and callback values must match a
+reviewed, reachable Argo CD endpoint.
 
 ## Validate Before Apply
 
@@ -35,6 +65,9 @@ Expected plan:
 
 - Installs or updates the `argocd` Helm release only through Terragrunt.
 - Keeps the Argo CD service internal with `ClusterIP`.
+- Configures Dex with a SAML connector and Argo CD RBAC defaults.
+- Creates the `argocd-saml-sso` ExternalSecret and the
+  `argocd-ssm` SecretStore without embedding secret values.
 - Applies `argocd-self-management` with the Terragrunt `after_hook` only after
   `applications.argoproj.io` is established.
 - Uses the Terragrunt catalog `helm-release` module pinned to `0.3.0`.
@@ -59,6 +92,9 @@ kubectl get namespace argocd
 kubectl -n argocd get pods
 kubectl -n argocd get applications.argoproj.io argocd-self-management
 kubectl -n argocd describe applications.argoproj.io argocd-self-management
+kubectl -n argocd get secretstores.external-secrets.io argocd-ssm
+kubectl -n argocd get externalsecrets.external-secrets.io argocd-saml-sso
+kubectl -n argocd get secret argocd-saml-sso
 ```
 
 Expected result within 10 minutes:
@@ -66,6 +102,8 @@ Expected result within 10 minutes:
 - The `argocd` namespace exists.
 - Argo CD pods are running or progressing normally.
 - `argocd-self-management` exists in the `argocd` namespace.
+- `argocd-saml-sso` reports as synced and creates a Kubernetes Secret labeled
+  as part of Argo CD.
 - The Application source points at
   `clusters/homelab/argocd/self-management` in this repository.
 
@@ -116,6 +154,19 @@ Missing credentials:
 2. Do not commit tokens, deploy keys, or private kubeconfigs.
 3. Commit only safe references, encrypted manifests, or contracts.
 
+SAML login fails:
+
+1. Inspect `kubectl -n argocd describe externalsecret argocd-saml-sso`.
+2. Confirm the External Secrets Operator controller can read AWS Parameter Store
+   in `us-east-1`.
+3. Confirm the `argocd-saml-sso` Kubernetes Secret exists and has the
+   `app.kubernetes.io/part-of: argocd` label.
+4. Confirm the IdP app has the same entity/client ID and callback URL as the
+   Parameter Store values.
+5. Inspect `kubectl -n argocd logs deploy/argocd-dex-server` for SAML
+   validation errors. Do not paste raw assertion, token, or secret values into
+   the repository.
+
 Partial install:
 
 1. Capture `kubectl -n argocd get all` and Helm release status.
@@ -139,10 +190,10 @@ Break-glass live change:
 ## Storage And Backup Impact
 
 This feature introduces no workload persistent volumes. Durable state is limited
-to S3 OpenTofu state and Kubernetes objects in the `argocd` namespace. Back up
-the remote state bucket according to the existing infrastructure policy and keep
-Argo CD runtime state recoverable from this repository plus external secret
-material.
+to S3 OpenTofu state, Kubernetes objects in the `argocd` namespace, and AWS
+Parameter Store values under `/homelab/argocd/saml`. Back up the remote state
+bucket according to the existing infrastructure policy and keep Argo CD runtime
+state recoverable from this repository plus external secret material.
 
 ## Validation Log
 
@@ -172,3 +223,9 @@ Validation results are recorded during implementation:
 - Secret/input scan: passed for raw secret patterns and forbidden desired-state
   environment input patterns across the bootstrap stack and self-management
   files.
+- SAML SSO update validation: `terragrunt hcl fmt --check`, `terragrunt
+  validate -no-color`, `terragrunt plan -no-color`, `kubectl kustomize
+  clusters/homelab/argocd/self-management`, `helm template` with the evaluated
+  Terragrunt values, `nix flake check`, and `git diff --check` passed. The plan
+  updates the existing `argocd` Helm release in place with `0 to add, 1 to
+  change, 0 to destroy`.

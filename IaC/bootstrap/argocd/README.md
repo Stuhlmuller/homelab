@@ -14,6 +14,23 @@ The stack installs Argo CD into the `argocd` namespace with the pinned
 CD Application CRD and applies the repo-owned `argocd-self-management`
 manifest.
 
+The Helm values also configure Argo CD SSO through the bundled Dex server with
+a SAML connector. The SAML connector reads its provider-specific values through
+the Argo CD secret reference syntax from a Kubernetes Secret named
+`argocd-saml-sso`. That Secret is created by External Secrets Operator from AWS
+Systems Manager Parameter Store through the `argocd-ssm` `SecretStore`.
+
+Required Parameter Store paths:
+
+| Path | Kubernetes key | Purpose |
+| --- | --- | --- |
+| `/homelab/argocd/saml/url` | `url` | Browser-facing Argo CD base URL registered with the IdP. |
+| `/homelab/argocd/saml/sso-url` | `ssoURL` | SAML IdP HTTP POST SSO URL. |
+| `/homelab/argocd/saml/ca-data` | `caData` | Base64-encoded PEM CA/signing certificate data for Dex SAML validation. |
+| `/homelab/argocd/saml/callback-url` | `callback` | Dex callback URL, normally `<url>/api/dex/callback`. |
+| `/homelab/argocd/saml/client-id` | `clientID` | SAML SP entity ID/client ID used as Dex `entityIssuer`. |
+| `/homelab/argocd/saml/client-secret` | `clientSecret` | IdP-issued client secret kept out of git. Dex SAML does not consume this field directly. |
+
 The `terraform.source` value points directly at the Terragrunt catalog
 `helm-release` module pinned to version `0.3.0`. There are no repository-local
 OpenTofu modules in this bootstrap stack.
@@ -22,4 +39,5 @@ All desired-state inputs here are committed non-secret values. Do not add
 `get_env`, `TF_VAR_*`, shell-exported values, raw kubeconfigs, repository
 tokens, private keys, or certificate material to this stack. CI/CD may inject
 credentials at runtime; the desired state must remain visible in this file or
-the module defaults it calls.
+the module defaults it calls. Keep SAML client secrets and IdP certificate
+material in AWS Parameter Store, not in this repository or Helm values.
