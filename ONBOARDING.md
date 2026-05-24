@@ -31,6 +31,8 @@ as `zimaboard_1`; underscores are not valid Kubernetes node hostnames.
 - Control-plane config: `.talos/controlplane.yaml`
 - Base worker config: `.talos/worker.yaml`
 - Worker install disk: `/dev/mmcblk0`
+- Persistent storage NAS: QNAP at `10.1.0.2`
+- Persistent storage NFS share: `homelab`
 - USB install media appears as `/dev/sda` and must not remain the system disk.
 - Worker NICs are expected to look like:
   - `enp2s0`: linked and active
@@ -62,6 +64,63 @@ OpenTofu, Helm, Kustomize, Talos config, or application configuration.
 Environment variables are reserved for CI/CD credential plumbing and secret
 injection. If a secret is required, inject it in the CI/CD pipeline and keep
 only safe references, encrypted values, templates, or contracts in git.
+
+## Persistent Storage
+
+Shared persistent storage for Kubernetes workloads is provided by a QNAP NAS on
+the homelab LAN.
+
+| System | Address | Protocol | Share | Intended use |
+| --- | --- | --- | --- | --- |
+| QNAP NAS | `10.1.0.2` | NFS | `homelab` | Backing storage for Kubernetes persistent volumes |
+
+The NAS share is the cluster-level durable storage target. It is separate from
+Talos node persistence: each node should still boot from and keep Talos state on
+its internal system disk, while workload data that must survive pod rescheduling
+or node replacement should use the QNAP-backed storage class once that class is
+defined in Kubernetes.
+
+NAS-side expectations:
+
+- NFS service is enabled on the QNAP.
+- A shared folder or export named `homelab` exists.
+- The export allows read/write access from the Talos node addresses
+  `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`, or from the
+  narrower trusted node subnet if the node list changes.
+- Access controls, UID/GID ownership, and squash behavior are documented beside
+  any workload that depends on a specific filesystem identity.
+
+Kubernetes storage integration should be declared in git rather than configured
+by hand in the cluster. When a CSI driver, external provisioner, or static
+`PersistentVolume` is added, use these source values:
+
+```yaml
+server: 10.1.0.2
+share: homelab
+```
+
+Record the exact QNAP NFS export path in the storage manifest when it is wired
+into Kubernetes. Many examples use paths like `10.1.0.2:/homelab`, but QNAP can
+show a device-specific export path in its UI. Prefer the path reported by the
+NAS over an assumed path.
+
+Operator workstation checks:
+
+```sh
+showmount -e 10.1.0.2
+```
+
+Expected evidence:
+
+```text
+Export list for 10.1.0.2:
+<qnap-export-path-for-homelab>  <allowed-clients>
+```
+
+Before making the QNAP-backed storage class the default, verify that a test PVC
+can be created, written, deleted, and recreated with the expected reclaim
+policy. Document backup and restore expectations before placing important
+stateful workloads on this storage.
 
 ## Required Control-Plane Config
 

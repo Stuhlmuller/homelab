@@ -160,6 +160,7 @@ Known details from the existing onboarding guide:
 - Base worker config reference: `.talos/worker.yaml`
 - Worker nodes use hyphenated names such as `zimaboard-0`, `zimaboard-1`, and
   `zimaboard-2`.
+- Persistent storage NAS: QNAP NFS share `homelab` at `10.1.0.2`.
 
 Refresh these notes whenever the cluster topology changes. If they conflict
 with a newer runbook or live read-only inspection, update the docs in the same
