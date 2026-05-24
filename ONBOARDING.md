@@ -31,6 +31,8 @@ as `zimaboard_1`; underscores are not valid Kubernetes node hostnames.
 - Control-plane config: `.talos/controlplane.yaml`
 - Base worker config: `.talos/worker.yaml`
 - Worker install disk: `/dev/mmcblk0`
+- Persistent storage NAS: QNAP at `10.1.0.2`
+- Persistent storage NFS share: `homelab`
 - USB install media appears as `/dev/sda` and must not remain the system disk.
 - Worker NICs are expected to look like:
   - `enp2s0`: linked and active
@@ -55,6 +57,70 @@ Kubernetes runtime changes must be delivered through Argo CD, Helm, Kustomize,
 or repository-owned manifests. The Talos commands in this guide apply
 repo-authored machine configuration; they are not a substitute for capturing
 lasting configuration in git.
+
+Desired-state inputs must be committed as non-secret code or repository data.
+Do not use environment variables as normal operator inputs for Terragrunt,
+OpenTofu, Helm, Kustomize, Talos config, or application configuration.
+Environment variables are reserved for CI/CD credential plumbing and secret
+injection. If a secret is required, inject it in the CI/CD pipeline and keep
+only safe references, encrypted values, templates, or contracts in git.
+
+## Persistent Storage
+
+Shared persistent storage for Kubernetes workloads is provided by a QNAP NAS on
+the homelab LAN.
+
+| System | Address | Protocol | Share | Intended use |
+| --- | --- | --- | --- | --- |
+| QNAP NAS | `10.1.0.2` | NFS | `homelab` | Backing storage for Kubernetes persistent volumes |
+
+The NAS share is the cluster-level durable storage target. It is separate from
+Talos node persistence: each node should still boot from and keep Talos state on
+its internal system disk, while workload data that must survive pod rescheduling
+or node replacement should use the QNAP-backed storage class once that class is
+defined in Kubernetes.
+
+NAS-side expectations:
+
+- NFS service is enabled on the QNAP.
+- A shared folder or export named `homelab` exists.
+- The export allows read/write access from the Talos node addresses
+  `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`, or from the
+  narrower trusted node subnet if the node list changes.
+- Access controls, UID/GID ownership, and squash behavior are documented beside
+  any workload that depends on a specific filesystem identity.
+
+Kubernetes storage integration should be declared in git rather than configured
+by hand in the cluster. When a CSI driver, external provisioner, or static
+`PersistentVolume` is added, use these source values:
+
+```yaml
+server: 10.1.0.2
+share: homelab
+```
+
+Record the exact QNAP NFS export path in the storage manifest when it is wired
+into Kubernetes. Many examples use paths like `10.1.0.2:/homelab`, but QNAP can
+show a device-specific export path in its UI. Prefer the path reported by the
+NAS over an assumed path.
+
+Operator workstation checks:
+
+```sh
+showmount -e 10.1.0.2
+```
+
+Expected evidence:
+
+```text
+Export list for 10.1.0.2:
+<qnap-export-path-for-homelab>  <allowed-clients>
+```
+
+Before making the QNAP-backed storage class the default, verify that a test PVC
+can be created, written, deleted, and recreated with the expected reclaim
+policy. Document backup and restore expectations before placing important
+stateful workloads on this storage.
 
 ## Required Control-Plane Config
 
@@ -223,19 +289,52 @@ talosctl machineconfig patch .talos/worker.yaml \
 
 ## Safety Gates
 
-Before changing live node state, run the project gates when available:
+Before changing live node state, run the repository checks that are available in
+this checkout:
 
 ```sh
-./scripts/survey-cluster.sh
-nix run .#validate
+nix flake check
 ```
 
-For infrastructure-as-code changes, also run the applicable Terragrunt/OpenTofu
-formatting and planning commands from the documented stack root before apply.
+This flake currently provides the operator development shell and flake
+evaluation check; it does not define a `validate` app. Pair the repository check
+with the nearest validation for the files being changed:
+
+- Talos machine config: `talosctl validate --mode metal --strict`.
+- Kubernetes or Argo CD desired state: `kubectl kustomize`, `kubectl diff`, or a
+  server-side dry run before apply.
+- Terragrunt/OpenTofu: `terragrunt hcl fmt --check`, OpenTofu validation, and a
+  reviewed `terragrunt plan` from the documented stack root before apply.
+
+## Argo CD Bootstrap
+
+Argo CD is bootstrapped through one Terragrunt stack:
+
+```sh
+cd IaC/bootstrap/argocd
+terragrunt apply
+```
+
+Use `docs/argocd-bootstrap.md` for the full runbook, validation sequence,
+handoff rules, rollback path, and recovery notes. The initial bootstrap installs
+Argo CD in the `argocd` namespace, keeps the service internal, and creates the
+`argocd-self-management` Application in manual validation mode.
+
+Quick recovery summary:
+
+- Missing CRDs: fix the Helm release before retrying Application registration.
+- Bad repo path or target revision: correct repository desired state and
+  reapply the same Terragrunt stack.
+- Missing credentials: inject them through CI/CD or an external secret path; do
+  not commit tokens or kubeconfigs.
+- Partial install: capture read-only state, fix or revert repository code, and
+  reapply the reviewed state.
+- Break-glass live changes are incomplete until the final state is backfilled
+  into this repository.
 
 ## Argo CD Application Onboarding
 
-Application delivery is now modeled through Terragrunt-registered Argo CD
+Application delivery is modeled through Terragrunt-registered Argo CD
 Applications under `IaC/live/argocd-apps/`. Start with these runbooks before
 syncing or rolling back application desired state:
 
@@ -261,9 +360,9 @@ talosctl validate --config .talos/worker.yaml --mode metal --strict
 talosctl validate --config /private/tmp/worker-zimaboard-2.yaml --mode metal --strict
 ```
 
-If this checkout is incomplete and the project gates are unavailable, record
-that fact before proceeding. During this onboarding, the stripped checkout was
-missing both `flake.nix` and `scripts/survey-cluster.sh`, so Talos validation and
+If this checkout is incomplete or a legacy validation helper is unavailable,
+record that fact before proceeding. During early onboarding, a stripped checkout
+was missing the project flake and live survey helper, so Talos validation and
 read-only node inspection were used as the live safeguards.
 
 ## Maintenance-Mode Inspection

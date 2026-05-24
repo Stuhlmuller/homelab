@@ -1,17 +1,14 @@
 image:
-  repository: ghcr.io/berriai/litellm
-  tag: main-stable
-envFrom:
-  - secretRef:
-      name: litellm-provider-keys
+  repository: ghcr.io/berriai/litellm-database
+  tag: ""
+environmentSecrets:
+  - litellm-provider-keys
 service:
   type: ClusterIP
   port: 4000
-persistence:
-  enabled: true
-  storageClass: nfs-default
-  size: 10Gi
-config:
+masterkeySecretName: litellm-provider-keys
+masterkeySecretKey: LITELLM_MASTER_KEY
+proxy_config:
   general_settings:
     master_key: os.environ/LITELLM_MASTER_KEY
   model_list:
@@ -19,4 +16,7 @@ config:
       litellm_params:
         model: openai/gpt-4.1-mini
         api_key: os.environ/OPENAI_API_KEY
-
+db:
+  deployStandalone: false
+migrationJob:
+  enabled: false

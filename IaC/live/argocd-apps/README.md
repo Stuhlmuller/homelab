@@ -6,9 +6,9 @@ Application and sources the `argocd-application` module from the configured
 Terragrunt catalog.
 
 The 13 requested apps are registered here along with one supporting
-`platform-storage` Application for the default NFS StorageClass desired state.
-`platform-storage` is not one of the requested apps; it exists so Kubernetes
-storage changes are still delivered through Argo CD.
+`platform-storage` Application for the QNAP NFS provisioner and default
+StorageClass desired state. `platform-storage` is not one of the requested apps;
+it exists so Kubernetes storage changes are still delivered through Argo CD.
 
 ## Conventions
 
@@ -27,4 +27,3 @@ Terragrunt dependencies guarantee registration order only. Operational
 readiness still requires Argo CD sync and health checks, documented in
 `docs/validation-runbook.md`, before dependent apps are considered ready for
 rollout.
-

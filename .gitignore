@@ -52,6 +52,14 @@ secrets/
 *.key
 *.crt
 
+# Kubernetes and local cluster credentials
+*.secret.yaml
+secrets/
+.kube/
+kubeconfig*
+*.key
+*.crt
+
 # Python bytecode
 __pycache__/
 *.py[cod]

@@ -1,54 +1,125 @@
 # NFS Storage
 
-Stateful apps use a default NFS-backed StorageClass named `nfs-default` unless
-an app-specific exception is documented here.
+Stateful apps use a default QNAP-backed NFS StorageClass named `nfs-default`
+unless an app-specific exception is documented here.
 
-## Read-Only Inspection
+## NAS Configuration
 
-Read-only inspection was attempted on 2026-05-24:
+| Setting | Value |
+| --- | --- |
+| NAS | QNAP TS-451+ |
+| NAS address | `10.1.0.2` |
+| QTS version at setup | `5.2.9.3451` |
+| Storage pool | `Storage Pool 1` |
+| Pool layout | RAID 5 across four 2 TB disks |
+| Snapshot reserve | 10% |
+| Kubernetes volume | `Homelab (System)` |
+| Kubernetes shared folder | `homelab` |
+| NFS export path | `/homelab` |
+
+NFS is enabled from QTS at Control Panel > Network & File Services >
+Win/Mac/NFS/WebDAV > NFS Service. The current NAS configuration enables
+NFSv2/NFSv3, and Kubernetes mounts the export with `nfsvers=3`.
+
+The `homelab` shared folder grants NFS read/write access only to the Talos node
+addresses:
+
+| Node | Address | Access |
+| --- | --- | --- |
+| `acer` | `10.1.0.199` | read/write |
+| `zimaboard-0` | `10.1.0.200` | read/write |
+| `zimaboard-1` | `10.1.0.201` | read/write |
+| `zimaboard-2` | `10.1.0.202` | read/write |
+
+The QNAP NFS rules use `sys` security and squash all users to the NAS `guest`
+identity. This keeps client-side UIDs from becoming trusted NAS identities and
+works with the provisioner-created per-PVC directories. If a workload needs a
+specific POSIX owner or mode, document that beside the workload before changing
+the NAS export behavior.
+
+Verify the export path and allow-list from an operator workstation:
 
 ```sh
-kubectl get storageclass -o yaml
-kubectl get storageclass
-kubectl get deployments -A
-kubectl get pods -A
-kubectl get csidrivers
+showmount -e 10.1.0.2
 ```
 
-Observed result:
+Expected result:
 
-- No StorageClass resources were present.
-- No CSI drivers were present.
-- No NFS provisioner deployment or pod was present.
-- Argo CD and core Kubernetes components were present.
-
-This means the required existing NFS provisioner is not currently available in
-the inspected cluster. Stateful rollout is blocked until an NFS provisioner
-exists and this document is updated with the public-safe provisioner name and
-parameters.
+```text
+Exports list on 10.1.0.2:
+/homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
+```
 
 ## Default StorageClass Desired State
 
-`clusters/homelab/platform/storage/default-nfs-storageclass.yaml` contains the
-intended default StorageClass shape using the common `nfs.csi.k8s.io`
-provisioner and public-safe placeholder server/share values. The support
-Application `platform-storage` is registered without auto-sync because applying
-the StorageClass before the provisioner exists would create a misleading
-default.
+`clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml`
+creates a child Argo CD Application for the upstream
+`nfs-subdir-external-provisioner` Helm chart. The child Application creates the
+default StorageClass used by stateful app values in this branch.
 
-Before live rollout:
+Important settings:
 
-1. Install or identify the existing NFS provisioner outside this feature.
-2. Replace placeholder server/share values with public-safe values or safe
-   references.
-3. Confirm NFS backup coverage for every persistent data class below.
-4. Sync `platform-storage`.
-5. Sync stateful applications only after PVC provisioning is verified.
+| Setting | Value | Reason |
+| --- | --- | --- |
+| Helm chart | `nfs-subdir-external-provisioner` `4.0.18` | Dynamic subdirectory provisioning on the QNAP export |
+| Namespace | `storage` | Keeps storage controller resources out of app namespaces |
+| `nfs.server` | `10.1.0.2` | QNAP NAS address |
+| `nfs.path` | `/homelab` | Export path verified with `showmount` |
+| `nfs.mountOptions` | `nfsvers=3` | Matches the enabled QNAP NFS service |
+| StorageClass | `nfs-default` | Existing stateful app values already reference this name |
+| `defaultClass` | `true` | Allows ordinary PVCs to bind without per-app overrides |
+| `provisionerName` | `k8s-sigs.io/qnap-nfs` | Stable provisioner identity |
+| `accessModes` | `ReadWriteMany` | NFS can support multi-node mounts |
+| `reclaimPolicy` | `Retain` | Protects workload data from accidental PVC deletion |
+| `allowVolumeExpansion` | `true` | Allows planned PVC growth |
+
+The parent `platform-storage` Application remains a manual rollout gate. Sync it
+only after the QNAP export is visible, then let the child provisioner Application
+auto-sync.
+
+## Validation
+
+Before syncing `platform-storage`, render the desired state:
+
+```sh
+kubectl kustomize clusters/homelab/platform/storage
+```
+
+After syncing `platform-storage`, verify the child app and StorageClass:
+
+```sh
+kubectl -n argocd get application nfs-subdir-external-provisioner
+kubectl -n storage get deploy,pod
+kubectl get storageclass nfs-default
+```
+
+Create a temporary PVC and pod that writes a file, delete the pod, recreate it
+on another node if possible, and confirm the file is still present before
+syncing stateful workloads.
+
+Example PVC:
+
+```yaml
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: example-nfs-default
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 10Gi
+```
 
 ## Backup Coverage
 
-NFS backup coverage is a hard rollout gate. Until the provisioner and backup
-job are documented, persistent apps are registered but not auto-synced.
+NFS backup coverage is a hard rollout gate. Persistent apps are registered but
+must remain manual-sync until each app has acceptable backup and restore
+coverage.
 
 | App | Data classes | StorageClass | Backup expectation | Restore expectation | Rollback data behavior |
 |-----|--------------|--------------|--------------------|---------------------|------------------------|
@@ -63,9 +134,10 @@ job are documented, persistent apps are registered but not auto-synced.
 
 ## Validation Notes
 
-`kubectl get storageclass` currently reports no resources. This is safe for
-repository work but blocks live stateful rollout.
-
-Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
-Grafana, Deluge, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines each explicitly
-depend on `IaC/live/argocd-apps/platform-storage`.
+- Read-only `showmount -e 10.1.0.2` verified `/homelab` is exported only to
+  `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`.
+- Read-only `kubectl get storageclass` reported no resources before this
+  storage integration was added.
+- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
+  Grafana, Deluge, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines each explicitly
+  depend on `IaC/live/argocd-apps/platform-storage`.

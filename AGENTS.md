@@ -58,6 +58,12 @@ base intentionally adopts them again and the documentation explains why.
   hostnames that should not be public, or raw certificate material.
 - Commit secret references, sealed/encrypted secret manifests, external-secret
   names, and non-secret defaults only when they are safe for a public repo.
+- Do not use environment variables as normal inputs for Terragrunt, OpenTofu,
+  Helm, Kustomize, Talos config, application config, or local operator
+  workflows. Desired-state inputs must be committed as non-secret code or data.
+- Use environment variables only inside CI/CD pipelines for credentials or
+  secret injection. If a secret is required, inject it in the CI/CD pipeline and
+  keep only safe references, templates, encrypted values, or contracts in git.
 - Treat live Talos and Kubernetes operations as production changes, even though
   this is a homelab.
 - Do not make permanent manual infrastructure or cluster changes. Capture the
@@ -116,6 +122,9 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
 - Use OpenTofu for infrastructure modules and Terragrunt for stack orchestration.
 - Keep module inputs small, typed, and readable. If adding another similar
   resource requires copying a large block, introduce or extend a module first.
+- Keep module and stack inputs explicit in repository-owned code or data. Do
+  not use `get_env`, `TF_VAR_*`, shell-exported values, or process environment
+  lookups to change desired state outside CI/CD credential or secret injection.
 - Keep the steady-state bootstrap path compatible with one documented
   `terragrunt apply` command from the chosen root. If a temporary staged
   bootstrap is unavoidable, document why and what follow-up restores the single
@@ -134,6 +143,10 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   before applying Kubernetes changes when those tools match the change.
 - Do not hand-edit live resources to make a permanent change. Capture the
   desired state in git and apply through the documented workflow.
+- For Argo CD Applications or other Git-backed chart/manifest references that
+  point at this repository, set the remote target revision to the default branch
+  `main` unless the change explicitly documents a temporary non-default branch
+  for testing or recovery.
 - When upgrading Talos, Kubernetes, CNI, CSI, ingress, or cert-manager, include
   version notes and rollback considerations.
 
@@ -147,6 +160,7 @@ Known details from the existing onboarding guide:
 - Base worker config reference: `.talos/worker.yaml`
 - Worker nodes use hyphenated names such as `zimaboard-0`, `zimaboard-1`, and
   `zimaboard-2`.
+- Persistent storage NAS: QNAP NFS share `homelab` at `10.1.0.2`.
 
 Refresh these notes whenever the cluster topology changes. If they conflict
 with a newer runbook or live read-only inspection, update the docs in the same
@@ -155,6 +169,9 @@ PR as the operational change.
 ## Active Technologies
 - HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + Terragrunt catalog modules `argocd-application` and, only when exact CRD control is required, `argocd-application-manifest`; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets (001-onboard-argocd-apps)
 - Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects (001-onboard-argocd-apps)
+- HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD (001-bootstrap-argocd-terragrunt)
+- S3 remote state from `IaC/root.hcl`; no workload persistent storage introduced by this feature (001-bootstrap-argocd-terragrunt)
 
 ## Recent Changes
 - 001-onboard-argocd-apps: Added HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + Terragrunt catalog modules `argocd-application` and, only when exact CRD control is required, `argocd-application-manifest`; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
+- 001-bootstrap-argocd-terragrunt: Added HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD

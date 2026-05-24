@@ -53,6 +53,7 @@ inputs = {
       repo_url        = local.repo_url
       target_revision = local.target_revision
       ref             = "values"
+      path            = ""
     },
     {
       repo_url        = local.repo_url
@@ -84,4 +85,3 @@ inputs = {
     }
   ]
 }
-

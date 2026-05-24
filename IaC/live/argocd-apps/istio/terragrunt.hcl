@@ -38,8 +38,9 @@ inputs = {
       chart           = "base"
       target_revision = "1.27.3"
       helm = {
-        release_name = "istio-base"
-        value_files  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+        release_name           = "istio-base"
+        skip_schema_validation = true
+        value_files            = ["$values/clusters/homelab/apps/istio/values.yaml"]
       }
     },
     {
@@ -47,8 +48,9 @@ inputs = {
       chart           = "istiod"
       target_revision = "1.27.3"
       helm = {
-        release_name = "istiod"
-        value_files  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+        release_name           = "istiod"
+        skip_schema_validation = true
+        value_files            = ["$values/clusters/homelab/apps/istio/values.yaml"]
       }
     },
     {
@@ -56,14 +58,16 @@ inputs = {
       chart           = "gateway"
       target_revision = "1.27.3"
       helm = {
-        release_name = "istio-ingressgateway"
-        value_files  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+        release_name           = "istio-ingressgateway"
+        skip_schema_validation = true
+        value_files            = ["$values/clusters/homelab/apps/istio/values.yaml"]
       }
     },
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
       ref             = "values"
+      path            = ""
     },
     {
       repo_url        = local.repo_url
@@ -99,4 +103,3 @@ inputs = {
     }
   ]
 }
-

@@ -51,14 +51,18 @@ argocd app get tailscale
 argocd app get platform-storage
 ```
 
-Stateful apps must not be synced until `docs/storage-nfs.md` records a real NFS
-provisioner and backup coverage.
+Stateful apps must not be synced until `platform-storage` is synced, the
+`nfs-default` StorageClass is verified, and `docs/storage-nfs.md` records backup
+coverage.
 
 ## Current Validation Record
 
-- Read-only `kubectl get storageclass` returned no resources.
-- Read-only deployment, pod, and CSI driver discovery found no NFS provisioner.
-- Stateful rollout is blocked until the NFS prerequisite exists.
+- Read-only `showmount -e 10.1.0.2` verified the QNAP `/homelab` export is
+  allow-listed to the four Talos node IPs.
+- Read-only `kubectl get storageclass` returned no resources before the QNAP
+  NFS provisioner desired state was added.
+- Stateful rollout is blocked until `platform-storage` is synced and a PVC
+  write/delete/recreate test passes.
 - `terragrunt hcl fmt` passed on 2026-05-24.
 - `terragrunt run --all plan -no-color` from `IaC/live/argocd-apps`
   succeeded for all 14 units and planned one Argo CD Application create per
@@ -84,6 +88,6 @@ provisioner and backup coverage.
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |
 | Missing AWS SSM parameter | Create the parameter outside the repo, then re-sync the owning ExternalSecret. |
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
-| NFS provisioner missing | Do not sync `platform-storage` or stateful apps. |
+| NFS provisioner missing | Sync only `platform-storage`; keep stateful apps paused until PVC validation passes. |
 | Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

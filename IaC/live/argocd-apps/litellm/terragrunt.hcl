@@ -40,9 +40,9 @@ inputs = {
 
   sources = [
     {
-      repo_url        = "https://helm.litellm.ai"
+      repo_url        = "ghcr.io/berriai"
       chart           = "litellm-helm"
-      target_revision = "1.83.3-stable"
+      target_revision = "0.1.832"
       helm = {
         release_name = "litellm"
         value_files  = ["$values/clusters/homelab/apps/litellm/values.yaml"]
@@ -52,6 +52,7 @@ inputs = {
       repo_url        = local.repo_url
       target_revision = local.target_revision
       ref             = "values"
+      path            = ""
     },
     {
       repo_url        = local.repo_url
@@ -83,4 +84,3 @@ inputs = {
     }
   ]
 }
-

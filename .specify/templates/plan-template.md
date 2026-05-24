@@ -26,6 +26,7 @@
 **Infrastructure Entry Point**: [Terragrunt stack/path, Argo CD app path, Helm chart, Kustomize overlay, Talos config, or N/A]
 **Delivery Mechanism**: [Terragrunt/OpenTofu, Argo CD, Helm, Kustomize, raw manifests, Talos config, or NEEDS CLARIFICATION]
 **Secrets Model**: [ExternalSecret/SOPS/sealed secret/reference-only/no secrets, or NEEDS CLARIFICATION]
+**Input Model**: [Committed non-secret config/data files; CI/CD-injected secrets only; no operator environment variables, or NEEDS CLARIFICATION]
 **Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
 **Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
 **Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
@@ -44,6 +45,9 @@
   Kustomize, raw manifests, or another declared repo-owned GitOps path.
 - **Secret Safety**: No raw secrets, private credentials, Talos secrets,
   kubeconfigs, tokens, or certificate material are introduced.
+- **Input and Secret Injection**: Desired-state inputs are committed as
+  non-secret code or data; environment variables are used only by CI/CD for
+  credentials or secret injection, never as normal operator inputs.
 - **Modularity**: Repeated patterns are templatized behind modules, includes,
   values, overlays, or short configuration lists.
 - **Validation**: The plan names the relevant validation commands, such as
@@ -78,7 +82,7 @@ specs/[###-feature]/
 # Replace with the concrete paths touched by this feature and remove unused
 # examples before finalizing the plan.
 .talos/                         # Talos configs, patches, and generated-safe references
-root.hcl or live/**/terragrunt.hcl
+IaC/root.hcl or IaC/**/terragrunt.hcl
 modules/**                      # OpenTofu modules when reusable infrastructure is added
 clusters/**                     # Cluster-level GitOps resources
 apps/**                         # Application manifests, values, or overlays

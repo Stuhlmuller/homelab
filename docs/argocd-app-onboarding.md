@@ -1,14 +1,15 @@
 # Argo CD App Onboarding
 
 This feature registers 13 requested homelab applications plus one supporting
-`platform-storage` Application. The support app owns the default NFS
-StorageClass desired state and is not counted as a requested workload.
+`platform-storage` Application. The support app owns the QNAP-backed NFS
+provisioner and default StorageClass desired state and is not counted as a
+requested workload.
 
 ## Applications
 
 | App | Kind | Namespace | GitOps path | Terragrunt path | Auto-sync | Dependencies |
 |-----|------|-----------|-------------|-----------------|-----------|--------------|
-| platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | No | Existing NFS provisioner prerequisite |
+| platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | No | QNAP NFS export validation |
 | external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | Argo CD bootstrap |
 | cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
 | istio | requested | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | Yes | cert-manager |
@@ -34,8 +35,9 @@ available for a dependent app only after:
 3. Argo CD reports the upstream app `Healthy`, or an exception is recorded in
    `docs/validation-runbook.md`.
 
-Stateful apps remain manual-sync until `docs/storage-nfs.md` records an
-available NFS provisioner and backup coverage.
+Stateful apps remain manual-sync until `platform-storage` is synced, the
+`nfs-default` StorageClass is verified, and `docs/storage-nfs.md` records backup
+coverage.
 
 ## Sync And Health Exception Record
 
@@ -49,4 +51,3 @@ Operator action:
 Rollback decision:
 Follow-up issue or PR:
 ```
-
