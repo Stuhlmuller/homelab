@@ -23,7 +23,7 @@ CD bootstrap.
 - `chart_version`: pinned chart version, initially `9.5.15`
 - `source_repo_url`: `https://github.com/Stuhlmuller/homelab.git`
 - `source_path`: `clusters/homelab/argocd/self-management`
-- `target_revision`: `001-bootstrap-argocd-terragrunt`
+- `target_revision`: `main`
 
 **Validation Rules**
 

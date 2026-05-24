@@ -12,9 +12,8 @@ written as the target runbook shape for implementation.
 3. Confirm authenticated Kubernetes access to the homelab cluster.
 4. Confirm external provider credentials are available without committing them.
 5. Confirm no desired-state input depends on local environment variables.
-6. Confirm the target revision
-   `001-bootstrap-argocd-terragrunt` is available to Argo CD before expecting
-   the self-management Application to sync from Git.
+6. Confirm the default branch `main` contains the Argo CD desired-state path
+   before expecting the self-management Application to sync from Git.
 
 ## Validate Before Apply
 

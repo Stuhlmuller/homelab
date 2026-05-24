@@ -18,7 +18,7 @@ spec:
   source:
     repoURL: https://github.com/Stuhlmuller/homelab.git
     path: clusters/homelab/argocd/self-management
-    targetRevision: 001-bootstrap-argocd-terragrunt
+    targetRevision: main
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

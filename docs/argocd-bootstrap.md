@@ -5,14 +5,14 @@ repository-owned Terragrunt stack at `IaC/bootstrap/argocd`.
 
 ## Preconditions
 
-- Work from this repository on branch `001-bootstrap-argocd-terragrunt`.
+- Work from this repository after the reviewed Argo CD bootstrap desired state
+  is available on the default branch `main`.
 - The local or CI/CD runtime has authenticated access to Kubernetes through the
   committed provider path `~/.kube/config`.
 - External credentials for S3 remote state and KMS encryption are available as
   credential material; they are not desired-state inputs.
-- The source branch or target revision named in
-  `IaC/bootstrap/argocd/terragrunt.hcl` is available to Argo CD before expecting
-  the self-management Application to sync.
+- The default branch `main` contains the Argo CD desired-state path before
+  expecting the self-management Application to sync.
 - No raw repository token, kubeconfig, Talos secret, private key, or certificate
   material is committed.
 
@@ -166,8 +166,9 @@ Validation results are recorded during implementation:
   apply, which matched a clean bootstrap target.
 - Post-apply Kubernetes verification: `argocd` namespace is active, Argo CD pods
   are running, `applications.argoproj.io` exists, and
-  `argocd-self-management` is healthy. Sync status is `Unknown` until
-  `001-bootstrap-argocd-terragrunt` is available in the remote repository.
+  `argocd-self-management` is healthy. The self-management Application tracks
+  remote revision `main`; sync remains `Unknown` until `main` contains
+  `clusters/homelab/argocd/self-management`.
 - Secret/input scan: passed for raw secret patterns and forbidden desired-state
   environment input patterns across the bootstrap stack and self-management
   files.

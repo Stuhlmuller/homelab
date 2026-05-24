@@ -143,6 +143,10 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   before applying Kubernetes changes when those tools match the change.
 - Do not hand-edit live resources to make a permanent change. Capture the
   desired state in git and apply through the documented workflow.
+- For Argo CD Applications or other Git-backed chart/manifest references that
+  point at this repository, set the remote target revision to the default branch
+  `main` unless the change explicitly documents a temporary non-default branch
+  for testing or recovery.
 - When upgrading Talos, Kubernetes, CNI, CSI, ingress, or cert-manager, include
   version notes and rollback considerations.
 
