@@ -1,0 +1,27 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-storage
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: platform-storage
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/managed-by: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+  annotations:
+    homelab.stuhlmuller.dev/storage-backend: qnap-nfs
+    homelab.stuhlmuller.dev/rollout-gate: manual-sync
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Stuhlmuller/homelab.git
+    path: clusters/homelab/platform/storage
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true

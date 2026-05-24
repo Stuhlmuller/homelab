@@ -21,3 +21,8 @@ Keep those resources here instead of the Terragrunt bootstrap Helm values so a
 fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
 `oidc-external-secret.yaml` only after External Secrets Operator is installed
 and allowed to read `/homelab/argocd/oidc/*` parameters in `us-east-1`.
+
+`platform-storage-application.yaml` registers the QNAP-backed NFS storage
+integration as a child Application. It is intentionally manual-sync so the NFS
+export and PVC write validation can be confirmed before stateful workloads use
+the default `nfs-default` StorageClass.

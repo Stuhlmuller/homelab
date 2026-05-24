@@ -68,41 +68,42 @@ only safe references, encrypted values, templates, or contracts in git.
 ## Persistent Storage
 
 Shared persistent storage for Kubernetes workloads is provided by a QNAP NAS on
-the homelab LAN.
+the homelab LAN. The detailed setup and validation runbook lives in
+`docs/storage-nfs.md`.
 
 | System | Address | Protocol | Share | Intended use |
 | --- | --- | --- | --- | --- |
-| QNAP NAS | `10.1.0.2` | NFS | `homelab` | Backing storage for Kubernetes persistent volumes |
+| QNAP NAS | `10.1.0.2` | NFS | `/homelab` | Backing storage for Kubernetes persistent volumes |
 
 The NAS share is the cluster-level durable storage target. It is separate from
 Talos node persistence: each node should still boot from and keep Talos state on
 its internal system disk, while workload data that must survive pod rescheduling
-or node replacement should use the QNAP-backed storage class once that class is
-defined in Kubernetes.
+or node replacement should use the QNAP-backed `nfs-default` StorageClass.
 
 NAS-side expectations:
 
 - NFS service is enabled on the QNAP.
-- A shared folder or export named `homelab` exists.
+- A shared folder named `homelab` is exported as `/homelab`.
 - The export allows read/write access from the Talos node addresses
   `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`, or from the
   narrower trusted node subnet if the node list changes.
+- The export uses `sys` security and squashes all users to the NAS `guest`
+  identity.
 - Access controls, UID/GID ownership, and squash behavior are documented beside
   any workload that depends on a specific filesystem identity.
 
-Kubernetes storage integration should be declared in git rather than configured
-by hand in the cluster. When a CSI driver, external provisioner, or static
-`PersistentVolume` is added, use these source values:
+Kubernetes storage integration is declared in git rather than configured by hand
+in the cluster. The self-management Argo CD path registers a manual
+`platform-storage` Application, and that parent creates the
+`nfs-subdir-external-provisioner` child Application:
 
 ```yaml
 server: 10.1.0.2
-share: homelab
+path: /homelab
+storageClass: nfs-default
+mountOptions:
+  - nfsvers=3
 ```
-
-Record the exact QNAP NFS export path in the storage manifest when it is wired
-into Kubernetes. Many examples use paths like `10.1.0.2:/homelab`, but QNAP can
-show a device-specific export path in its UI. Prefer the path reported by the
-NAS over an assumed path.
 
 Operator workstation checks:
 
@@ -113,14 +114,14 @@ showmount -e 10.1.0.2
 Expected evidence:
 
 ```text
-Export list for 10.1.0.2:
-<qnap-export-path-for-homelab>  <allowed-clients>
+Exports list on 10.1.0.2:
+/homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
 
-Before making the QNAP-backed storage class the default, verify that a test PVC
-can be created, written, deleted, and recreated with the expected reclaim
-policy. Document backup and restore expectations before placing important
-stateful workloads on this storage.
+Before syncing stateful workloads, verify that a test PVC can be created,
+written, deleted, and recreated with the expected reclaim policy. Document
+backup and restore expectations before placing important stateful workloads on
+this storage.
 
 ## Required Control-Plane Config
 
