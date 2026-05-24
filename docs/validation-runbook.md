@@ -18,8 +18,13 @@ block.
 Render or dry-run GitOps sources:
 
 ```sh
-kubectl kustomize clusters/homelab/platform/storage
-find clusters/homelab/apps -name kustomization.yaml -print -exec dirname {} \;
+for overlay in clusters/homelab/platform/storage clusters/homelab/apps/*; do
+  test -f "$overlay/kustomization.yaml" || continue
+  echo "rendering $overlay"
+  if ! kubectl kustomize "$overlay" >/dev/null; then
+    exit 1
+  fi
+done
 ```
 
 When cluster access is available:
