@@ -66,9 +66,16 @@ base intentionally adopts them again and the documentation explains why.
   keep only safe references, templates, encrypted values, or contracts in git.
 - Treat live Talos and Kubernetes operations as production changes, even though
   this is a homelab.
-- Do not make permanent manual infrastructure or cluster changes. Capture the
-  desired state in this repository and apply it through Terragrunt, Argo CD,
-  Helm, Kustomize, Talos config, or another documented code path.
+- Never make manual infrastructure, cloud, Talos, Kubernetes, Argo CD, or
+  secret-manager changes to fix live state. All desired-state changes must be
+  represented in repository-owned code first and then applied through the
+  declared code path, such as Terragrunt, Argo CD, Helm, Kustomize, Talos
+  config, or a repo-owned script.
+- Do not use ad hoc live mutation commands such as `kubectl apply`,
+  `kubectl patch`, `kubectl delete`, `kubectl annotate`, `talosctl apply-config`,
+  cloud-provider CLIs, or provider web consoles to repair drift or unblock a
+  rollout. If the required change cannot be expressed in this repository, stop
+  and add or request the missing code path before changing live state.
 - Do not change live cluster state until the relevant validation commands have
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,
@@ -141,8 +148,9 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   applying them.
 - Use `kubectl diff`, server-side dry runs, Helm rendering, or Kustomize builds
   before applying Kubernetes changes when those tools match the change.
-- Do not hand-edit live resources to make a permanent change. Capture the
-  desired state in git and apply through the documented workflow.
+- Do not hand-edit, patch, delete, restart, annotate, or otherwise mutate live
+  resources to make a change. Capture the desired state in git and apply through
+  the documented workflow.
 - For Argo CD Applications or other Git-backed chart/manifest references that
   point at this repository, set the remote target revision to the default branch
   `main` unless the change explicitly documents a temporary non-default branch
