@@ -96,9 +96,9 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 - First live rollout on 2026-05-24 applied AWS SSM Parameter Store placeholders
   through `IaC/live/aws-ssm-parameters` and registered Argo CD Applications
   through `IaC/live/argocd-apps`.
-- The `monitoring` namespace intentionally enforces the `privileged` Pod
-  Security level because `kube-prometheus-stack` node-exporter uses host
-  namespaces, hostPath mounts, and host port `9100`.
+- Prometheus disables the `kube-prometheus-stack` node-exporter subchart during
+  this rollout because the cluster's baseline Pod Security policy rejects its
+  host namespaces, hostPath mounts, and host port `9100`.
 - Grafana disables the chart `initChownData` job because the QNAP NFS-backed
   volume rejects root `chown`; the NFS provisioner-created directory permissions
   are used instead.

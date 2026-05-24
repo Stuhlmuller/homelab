@@ -1,5 +1,7 @@
 grafana:
   enabled: false
+nodeExporter:
+  enabled: false
 prometheus:
   prometheusSpec:
     retention: 15d
@@ -24,4 +26,3 @@ alertmanager:
           resources:
             requests:
               storage: 10Gi
-
