@@ -10,5 +10,4 @@ spec:
   hostname: homelab-exit-node
   tags:
     - tag:k8s
-  replicas: 1
   exitNode: true
