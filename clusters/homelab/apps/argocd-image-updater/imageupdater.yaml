@@ -1,0 +1,23 @@
+---
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: homelab-annotation-opt-in
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  commonUpdateSettings:
+    updateStrategy: semver
+    ignoreTags:
+      - latest
+      - main
+      - dev
+  writeBackConfig:
+    method: argocd
+  applicationRefs:
+    - namePattern: "*"
+      labelSelectors:
+        matchLabels:
+          homelab.stuhlmuller.dev/image-updater: enabled
+      useAnnotations: true

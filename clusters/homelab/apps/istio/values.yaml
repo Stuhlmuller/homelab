@@ -1,0 +1,11 @@
+global:
+  logging:
+    level: default:info
+pilot:
+  replicaCount: 1
+meshConfig:
+  accessLogFile: /dev/stdout
+gateways:
+  istio-ingressgateway:
+    enabled: true
+

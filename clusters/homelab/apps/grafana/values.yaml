@@ -1,0 +1,20 @@
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+persistence:
+  enabled: true
+  storageClassName: nfs-default
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
+        isDefault: true
+

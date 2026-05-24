@@ -31,8 +31,8 @@ The External Secrets Operator `SecretStore` and `ExternalSecret` that create
 `clusters/homelab/argocd/self-management`. They are intentionally outside the
 initial Terragrunt Helm bootstrap so a fresh cluster can install Argo CD before
 External Secrets CRDs exist. Install External Secrets Operator and give it
-read-only Parameter Store access before syncing the self-management path that
-contains `oidc-external-secret.yaml`.
+read-only Parameter Store access before expecting the automated
+self-management sync to make `oidc-external-secret.yaml` healthy.
 
 Create these AWS Systems Manager Parameter Store entries before rollout:
 
@@ -120,18 +120,20 @@ Expected OIDC result:
 
 ## First Handoff
 
-The first handoff is intentionally manual. Confirm the Application source path,
-target revision, and rendered manifests before enabling automated
-reconciliation.
+The self-management Application now enables automated prune and self-heal from
+repository desired state by default. Before applying bootstrap changes, confirm
+the Application source path, target revision, and rendered manifests in
+`clusters/homelab/argocd/self-management/application.yaml`.
 
-After validation, update repository desired state:
+After bootstrap, Argo CD owns steady-state configuration under
+`clusters/homelab/argocd/self-management`. Keep automation changes in this
+repository; do not patch the live Application as the permanent fix for source
+path, revision, or sync policy changes.
 
-- Uncomment or add the Application `syncPolicy.automated` block in
-  `clusters/homelab/argocd/self-management/application.yaml`.
-
-Use `prune: true` and `selfHeal: true` only after the source path has been
-verified. Argo CD owns steady-state configuration under
-`clusters/homelab/argocd/self-management` after the handoff.
+The OIDC ExternalSecret resources in the self-management path require External
+Secrets Operator CRDs and AWS SSM access. Automated sync may retry those
+resources until External Secrets Operator is installed by the app onboarding
+stack.
 
 ## Drift And Reconciliation
 
@@ -226,7 +228,8 @@ Validation results are recorded during implementation:
 - Post-apply Kubernetes verification: `argocd` namespace is active, Argo CD pods
   are running, `applications.argoproj.io` exists, and
   `argocd-self-management` is healthy. The self-management Application tracks
-  remote revision `main`; sync remains `Unknown` until `main` contains
+  remote revision `main` with automated prune and self-heal enabled; sync may
+  remain `Unknown` until `main` contains
   `clusters/homelab/argocd/self-management`.
 - Secret/input scan: passed for raw secret patterns and forbidden desired-state
   environment input patterns across the bootstrap stack and self-management

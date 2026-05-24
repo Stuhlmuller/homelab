@@ -42,6 +42,15 @@ terraform.rc
 __pycache__/
 *.pyc
 plan.out
+*.log
+.env
+.env.*
+.kube/
+kubeconfig*
+*.secret.yaml
+secrets/
+*.key
+*.crt
 
 # Kubernetes and local cluster credentials
 *.secret.yaml

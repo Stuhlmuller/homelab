@@ -93,9 +93,10 @@ NAS-side expectations:
   any workload that depends on a specific filesystem identity.
 
 Kubernetes storage integration is declared in git rather than configured by hand
-in the cluster. The self-management Argo CD path registers a manual
-`platform-storage` Application, and that parent creates the
-`nfs-subdir-external-provisioner` child Application:
+in the cluster. The Terragrunt app registration at
+`IaC/live/argocd-apps/platform-storage` creates the `platform-storage`
+Application, and that parent creates the `nfs-subdir-external-provisioner`
+child Application:
 
 ```yaml
 server: 10.1.0.2
@@ -118,7 +119,7 @@ Exports list on 10.1.0.2:
 /homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
 
-Before syncing stateful workloads, verify that a test PVC can be created,
+Before depending on stateful workloads, verify that a test PVC can be created,
 written, deleted, and recreated with the expected reclaim policy. Document
 backup and restore expectations before placing important stateful workloads on
 this storage.
@@ -319,10 +320,11 @@ terragrunt apply
 Use `docs/argocd-bootstrap.md` for the full runbook, validation sequence,
 handoff rules, rollback path, and recovery notes. The initial bootstrap installs
 Argo CD in the `argocd` namespace, keeps the service internal, and creates the
-`argocd-self-management` Application in manual validation mode. Argo CD SSO is
-configured through bundled Dex with an upstream OIDC connector. The connector
-reads its settings from an External Secrets Operator-managed Kubernetes Secret
-backed by AWS Systems Manager Parameter Store paths under `/homelab/argocd/oidc`.
+`argocd-self-management` Application with repository-defined automated prune
+and self-heal. Argo CD SSO is configured through bundled Dex with an upstream
+OIDC connector. The connector reads its settings from an External Secrets
+Operator-managed Kubernetes Secret backed by AWS Systems Manager Parameter
+Store paths under `/homelab/argocd/oidc`.
 
 Quick recovery summary:
 
@@ -335,6 +337,28 @@ Quick recovery summary:
   reapply the reviewed state.
 - Break-glass live changes are incomplete until the final state is backfilled
   into this repository.
+
+## Argo CD Application Onboarding
+
+Application delivery is modeled through Terragrunt-registered Argo CD
+Applications under `IaC/live/argocd-apps/`. Start with these runbooks before
+reconciling or rolling back application desired state:
+
+- `docs/argocd-app-onboarding.md`: app inventory, owning paths, dependency
+  readiness, and sync/health exception format.
+- `docs/storage-nfs.md`: default NFS StorageClass prerequisite, backup gate,
+  restore expectations, and current rollout blocker.
+- `docs/networking-tailnet-ingress.md`: Istio reverse proxy, Tailscale tailnet
+  reachability, no first-rollout Funnel paths, and DNS assumptions.
+- `docs/secrets-aws-ssm.md`: AWS SSM Parameter Store references and External
+  Secrets rules.
+- `docs/validation-runbook.md`: pre-mutation checks, Argo CD readiness checks,
+  and failure handling.
+- `docs/rollback-argocd-apps.md`: dependency-aware rollback order.
+
+Stateful apps auto-sync by default, but they must not be considered ready until
+the NFS provisioner exists and NFS backup coverage is documented in
+`docs/storage-nfs.md`.
 
 Then validate the Talos config that will be applied:
 

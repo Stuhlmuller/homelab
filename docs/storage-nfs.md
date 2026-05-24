@@ -52,9 +52,9 @@ Exports list on 10.1.0.2:
 
 ## GitOps Desired State
 
-`clusters/homelab/argocd/self-management/platform-storage-application.yaml`
-registers the parent `platform-storage` Application. That parent points at
-`clusters/homelab/platform/storage` and remains a manual rollout gate.
+`IaC/live/argocd-apps/platform-storage/terragrunt.hcl` registers the parent
+`platform-storage` Application through the Terragrunt catalog. That parent
+points at `clusters/homelab/platform/storage` and auto-syncs by default.
 
 `clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml`
 creates a child Argo CD Application for the upstream
@@ -77,18 +77,19 @@ Important settings:
 | `reclaimPolicy` | `Retain` | Protects workload data from accidental PVC deletion |
 | `allowVolumeExpansion` | `true` | Allows planned PVC growth |
 
-Sync `platform-storage` only after the QNAP export is visible, then let the
-child provisioner Application auto-sync.
+The parent `platform-storage` Application auto-syncs by default. Treat it as a
+readiness gate anyway: verify the QNAP export is visible and the child
+provisioner Application is healthy before relying on stateful workload PVCs.
 
 ## Validation
 
-Before syncing `argocd-self-management`, render the self-management app tree:
+Before applying the app registrations, render the desired state:
 
 ```sh
 kubectl kustomize clusters/homelab/argocd/self-management
 ```
 
-Before syncing `platform-storage`, render the storage desired state:
+Render the storage desired state:
 
 ```sh
 kubectl kustomize clusters/homelab/platform/storage
@@ -104,7 +105,7 @@ kubectl get storageclass nfs-default
 
 Create a temporary PVC and pod that writes a file, delete the pod, recreate it
 on another node if possible, and confirm the file is still present before
-syncing stateful workloads.
+depending on stateful workloads.
 
 Example PVC:
 
@@ -126,8 +127,9 @@ spec:
 
 ## Backup Coverage
 
-NFS backup coverage is a hard rollout gate. Persistent apps should remain
-manual-sync until each app has acceptable backup and restore coverage.
+NFS backup coverage is a hard readiness gate. Persistent apps are registered
+with automated sync, but they must not be treated as production-ready until each
+app has acceptable backup and restore coverage.
 
 | App | Data classes | StorageClass | Backup expectation | Restore expectation | Rollback data behavior |
 |-----|--------------|--------------|--------------------|---------------------|------------------------|
@@ -144,6 +146,11 @@ manual-sync until each app has acceptable backup and restore coverage.
 
 - Read-only `showmount -e 10.1.0.2` verified `/homelab` is exported only to
   `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`.
+- Read-only `kubectl get storageclass` reported no resources before this
+  storage integration was added.
+- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
+  Grafana, Deluge, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines each explicitly
+  depend on `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

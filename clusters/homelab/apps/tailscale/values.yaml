@@ -1,0 +1,10 @@
+operatorConfig:
+  hostname: homelab-tailscale-operator
+  defaultTags:
+    - tag:k8s
+oauth:
+  existingSecret: operator-oauth
+proxyConfig:
+  defaultTags:
+    - tag:k8s
+
