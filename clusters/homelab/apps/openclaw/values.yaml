@@ -1,0 +1,27 @@
+controllers:
+  openclaw:
+    containers:
+      app:
+        image:
+          repository: ghcr.io/openclaw/openclaw
+          tag: latest
+        env:
+          LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
+        envFrom:
+          - secretRef:
+              name: openclaw-secrets
+service:
+  app:
+    controller: openclaw
+    ports:
+      http:
+        port: 8080
+persistence:
+  config:
+    enabled: true
+    storageClass: nfs-default
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /data
+

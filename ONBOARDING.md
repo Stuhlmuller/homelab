@@ -233,6 +233,27 @@ nix run .#validate
 For infrastructure-as-code changes, also run the applicable Terragrunt/OpenTofu
 formatting and planning commands from the documented stack root before apply.
 
+## Argo CD Application Onboarding
+
+Application delivery is now modeled through Terragrunt-registered Argo CD
+Applications under `IaC/live/argocd-apps/`. Start with these runbooks before
+syncing or rolling back application desired state:
+
+- `docs/argocd-app-onboarding.md`: app inventory, owning paths, dependency
+  readiness, and sync/health exception format.
+- `docs/storage-nfs.md`: default NFS StorageClass prerequisite, backup gate,
+  restore expectations, and current rollout blocker.
+- `docs/networking-tailnet-ingress.md`: Istio reverse proxy, Tailscale tailnet
+  reachability, no first-rollout Funnel paths, and DNS assumptions.
+- `docs/secrets-aws-ssm.md`: AWS SSM Parameter Store references and External
+  Secrets rules.
+- `docs/validation-runbook.md`: pre-mutation checks, Argo CD readiness checks,
+  and failure handling.
+- `docs/rollback-argocd-apps.md`: dependency-aware rollback order.
+
+Stateful apps must not be synced until the NFS provisioner exists and NFS
+backup coverage is documented in `docs/storage-nfs.md`.
+
 Then validate the Talos config that will be applied:
 
 ```sh

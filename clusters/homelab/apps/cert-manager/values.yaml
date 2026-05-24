@@ -1,0 +1,9 @@
+installCRDs: true
+replicaCount: 1
+webhook:
+  replicaCount: 1
+cainjector:
+  replicaCount: 1
+startupapicheck:
+  enabled: true
+

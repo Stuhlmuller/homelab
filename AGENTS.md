@@ -151,3 +151,10 @@ Known details from the existing onboarding guide:
 Refresh these notes whenever the cluster topology changes. If they conflict
 with a newer runbook or live read-only inspection, update the docs in the same
 PR as the operational change.
+
+## Active Technologies
+- HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + Terragrunt catalog modules `argocd-application` and, only when exact CRD control is required, `argocd-application-manifest`; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets (001-onboard-argocd-apps)
+- Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects (001-onboard-argocd-apps)
+
+## Recent Changes
+- 001-onboard-argocd-apps: Added HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + Terragrunt catalog modules `argocd-application` and, only when exact CRD control is required, `argocd-application-manifest`; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets

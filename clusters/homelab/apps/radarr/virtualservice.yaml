@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: radarr-tailnet
+  namespace: media
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - radarr.apps.tailnet.example
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: radarr.media.svc.cluster.local
+            port:
+              number: 7878
+

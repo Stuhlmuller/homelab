@@ -1,0 +1,19 @@
+kind: Deployment
+deschedulerPolicy:
+  profiles:
+    - name: conservative
+      pluginConfig:
+        - name: DefaultEvictor
+          args:
+            evictSystemCriticalPods: false
+            ignorePvcPods: true
+            minReplicas: 2
+      plugins:
+        balance:
+          enabled:
+            - LowNodeUtilization
+        deschedule:
+          enabled:
+            - RemovePodsViolatingInterPodAntiAffinity
+schedule: "*/30 * * * *"
+

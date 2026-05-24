@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: litellm-tailnet
+  namespace: ai
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - litellm.apps.tailnet.example
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: litellm.ai.svc.cluster.local
+            port:
+              number: 4000
+

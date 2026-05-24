@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: deluge-tailnet
+  namespace: media
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - deluge.apps.tailnet.example
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: deluge.media.svc.cluster.local
+            port:
+              number: 8112
+

@@ -1,5 +1,7 @@
 locals {
   project_name = "homelab"
+  kms_key_id   = "alias/homelab-opentofu"
+  kms_region   = "us-east-1"
   default_tags = {
     ManualBuild = false
     ManualTags  = false
@@ -40,4 +42,5 @@ inputs = {
   project_name = local.project_name
   tags         = local.default_tags
   kms_key_id   = local.kms_key_id
+  kms_region   = local.kms_region
 }

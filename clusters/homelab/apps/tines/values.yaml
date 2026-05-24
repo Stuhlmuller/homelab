@@ -1,0 +1,25 @@
+controllers:
+  tines:
+    containers:
+      app:
+        image:
+          repository: ghcr.io/tines/self-hosted
+          tag: latest
+        envFrom:
+          - secretRef:
+              name: tines-secrets
+service:
+  app:
+    controller: tines
+    ports:
+      http:
+        port: 8080
+persistence:
+  data:
+    enabled: true
+    storageClass: nfs-default
+    size: 20Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /data
+
