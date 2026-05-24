@@ -289,15 +289,22 @@ talosctl machineconfig patch .talos/worker.yaml \
 
 ## Safety Gates
 
-Before changing live node state, run the project gates when available:
+Before changing live node state, run the repository checks that are available in
+this checkout:
 
 ```sh
-./scripts/survey-cluster.sh
-nix run .#validate
+nix flake check
 ```
 
-For infrastructure-as-code changes, also run the applicable Terragrunt/OpenTofu
-formatting and planning commands from the documented stack root before apply.
+This flake currently provides the operator development shell and flake
+evaluation check; it does not define a `validate` app. Pair the repository check
+with the nearest validation for the files being changed:
+
+- Talos machine config: `talosctl validate --mode metal --strict`.
+- Kubernetes or Argo CD desired state: `kubectl kustomize`, `kubectl diff`, or a
+  server-side dry run before apply.
+- Terragrunt/OpenTofu: `terragrunt hcl fmt --check`, OpenTofu validation, and a
+  reviewed `terragrunt plan` from the documented stack root before apply.
 
 ## Argo CD Bootstrap
 
@@ -332,9 +339,9 @@ talosctl validate --config .talos/worker.yaml --mode metal --strict
 talosctl validate --config /private/tmp/worker-zimaboard-2.yaml --mode metal --strict
 ```
 
-If this checkout is incomplete and the project gates are unavailable, record
-that fact before proceeding. During this onboarding, the stripped checkout was
-missing both `flake.nix` and `scripts/survey-cluster.sh`, so Talos validation and
+If this checkout is incomplete or a legacy validation helper is unavailable,
+record that fact before proceeding. During early onboarding, a stripped checkout
+was missing the project flake and live survey helper, so Talos validation and
 read-only node inspection were used as the live safeguards.
 
 ## Maintenance-Mode Inspection
