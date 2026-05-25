@@ -84,7 +84,7 @@ controllers:
       app:
         image:
           repository: lscr.io/linuxserver/deluge
-          tag: 2.1.1
+          tag: 2.1.1@sha256:9de4b097e0cb5dceb5ef0aaa4deb2565101c65e7d06770a59151770750a54858
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
