@@ -68,20 +68,6 @@ controllers:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
-        lifecycle:
-          postStart:
-            exec:
-              command:
-                - /bin/sh
-                - -ec
-                - |
-                  for attempt in $(seq 1 60); do
-                    if timeout 5s deluge-console -c /config "config --set random_port false; config --set listen_ports (5983, 5983)"; then
-                      exit 0
-                    fi
-                    sleep 2
-                  done
-                  exit 1
 service:
   app:
     controller: deluge
