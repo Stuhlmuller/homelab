@@ -3,7 +3,7 @@
 **Feature Branch**: `001-onboard-argocd-apps`
 **Created**: 2026-05-24
 **Status**: Draft
-**Input**: User description: "Onboard Istio, external-secrets, certificates-manager, grafana, prometheus, openclaw, tines, radarr, sonarr, deluge. All should be onboarded using argocd, and added to argocd using modules from the terragrunt catalog. dependencies must be explicitly stated in the terragrunt. Plan input also adds descheduler, tailscale, and litellm to Argo CD onboarding. Follow-up input enables autosync by default and adds Argo CD Image Updater. Later follow-up input adds Prowlarr to the media stack."
+**Input**: User description: "Onboard Istio, external-secrets, certificates-manager, grafana, prometheus, openclaw, n8n, radarr, sonarr, deluge. All should be onboarded using argocd, and added to argocd using modules from the terragrunt catalog. dependencies must be explicitly stated in the terragrunt. Plan input also adds descheduler, tailscale, and litellm to Argo CD onboarding. Follow-up input enables autosync by default and adds Argo CD Image Updater. Later follow-up input adds Prowlarr to the media stack."
 
 ## Clarifications
 
@@ -55,7 +55,7 @@ explicit dependency relationship before rollout.
 
 ### User Story 2 - Register homelab services consistently (Priority: P2)
 
-As the homelab operator, I want OpenClaw, Tines, Prowlarr, Radarr, Sonarr,
+As the homelab operator, I want OpenClaw, n8n, Prowlarr, Radarr, Sonarr,
 Deluge, and LiteLLM registered through the same Argo CD and Terragrunt catalog
 pattern so services use one reviewable delivery model.
 
@@ -69,7 +69,7 @@ non-secret configuration inputs, and documented runtime implications.
 **Acceptance Scenarios**:
 
 1. **Given** the platform add-ons are represented in desired state, **When** the
-   service app registrations are reviewed, **Then** OpenClaw, Tines, Prowlarr,
+   service app registrations are reviewed, **Then** OpenClaw, n8n, Prowlarr,
    Radarr, Sonarr, Deluge, and LiteLLM are all represented as Argo CD managed
    applications.
 2. **Given** a service requires credentials, persistent data, tailnet ingress,
@@ -146,7 +146,7 @@ without applying live changes and confirm it covers every onboarded app.
 
 - **FR-001**: The onboarding MUST include exactly these requested applications:
   Istio, external-secrets, certificates-manager, grafana, prometheus, openclaw,
-  tines, prowlarr, radarr, sonarr, deluge, descheduler, tailscale, litellm, and
+  n8n, prowlarr, radarr, sonarr, deluge, descheduler, tailscale, litellm, and
   argocd-image-updater.
 - **FR-002**: Each requested application MUST be represented as an Argo CD
   managed application with a stable application name, target namespace, owning
@@ -332,6 +332,6 @@ without applying live changes and confirm it covers every onboarded app.
   Kubernetes StorageClass before stateful applications are considered ready.
 - NFS backup coverage exists or will be documented as a prerequisite before
   stateful applications are considered ready.
-- Runtime credentials for OpenClaw, Tines, Grafana, Prowlarr, Radarr, Sonarr,
+- Runtime credentials for OpenClaw, n8n, Grafana, Prowlarr, Radarr, Sonarr,
   Deluge, LiteLLM, Tailscale, and any integration endpoints are supplied through
   approved secret-management paths rather than committed plaintext.

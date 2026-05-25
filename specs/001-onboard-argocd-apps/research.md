@@ -63,7 +63,7 @@ accidental implicit ordering by directory names or manual operator memory.
 | sonarr | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
 | litellm | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
-| tines | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| n8n | external-secrets, cert-manager, istio, tailscale, platform-storage |
 
 **Rationale**: Secret and certificate controllers are foundations. Istio must
 exist before routes are considered enabled. Tailscale depends on secret material
@@ -129,7 +129,7 @@ public-safe provisioner details, and require documented NFS backup coverage
 before stateful apps roll out.
 
 Require a stateful workload profile for each app before rollout. Prometheus,
-Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM must
+Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM must
 document persistent data, backup coverage, restore behavior, and rollback data
 handling.
 Platform controllers document whether they are stateless or rely only on

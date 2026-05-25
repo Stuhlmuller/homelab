@@ -23,9 +23,8 @@ locals {
 
 inputs = {
   metadata = {
-    name       = "tines"
-    namespace  = "argocd"
-    finalizers = ["resources-finalizer.argocd.argoproj.io"]
+    name      = "n8n"
+    namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
       "app.kubernetes.io/part-of"    = "homelab"
@@ -45,8 +44,8 @@ inputs = {
       chart           = "app-template"
       target_revision = "4.4.0"
       helm = {
-        release_name = "tines"
-        value_files  = ["$values/clusters/homelab/apps/tines/values.yaml"]
+        release_name = "n8n"
+        value_files  = ["$values/clusters/homelab/apps/n8n/values.yaml"]
       }
     },
     {
@@ -60,7 +59,7 @@ inputs = {
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      path            = "clusters/homelab/apps/tines"
+      path            = "clusters/homelab/apps/n8n"
       kustomize       = {}
     }
   ]
@@ -87,7 +86,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "automated; verify NFS backup coverage and Tines runtime artifacts before relying on automation history"
+      value = "automated; update the n8n encryption key before storing real credentials and verify NFS backup coverage before relying on automation history"
     }
   ]
 }

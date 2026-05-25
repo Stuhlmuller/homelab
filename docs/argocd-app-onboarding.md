@@ -24,7 +24,7 @@ requested workload.
 | sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
-| tines | requested | `automation` | `clusters/homelab/apps/tines` | `IaC/live/argocd-apps/tines` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 
 ## Dependency Readiness
 

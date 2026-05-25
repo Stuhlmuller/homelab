@@ -83,7 +83,7 @@
 
 ## Phase 4: User Story 2 - Register Homelab Services Consistently (Priority: P2)
 
-**Goal**: Register Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines using the same Argo CD and Terragrunt catalog pattern, with safe secret references, default NFS storage, and tailnet-only routes.
+**Goal**: Register Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, and n8n using the same Argo CD and Terragrunt catalog pattern, with safe secret references, default NFS storage, and tailnet-only routes.
 
 **Independent Test**: Review only the Phase 4 files after Phase 2 and confirm the seven service apps have stable identities, non-secret configuration, explicit dependencies, stateful workload profiles, and no public Tailscale Funnel paths.
 
@@ -109,10 +109,10 @@
 - [X] T061 [P] [US2] Create OpenClaw ExternalSecret references for app and model integration secrets in `clusters/homelab/apps/openclaw/externalsecret.yaml`
 - [X] T062 [P] [US2] Create the OpenClaw tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/openclaw/virtualservice.yaml`
 - [X] T063 [US2] Create the OpenClaw Argo CD Terragrunt unit depending on external-secrets, cert-manager, Istio, Tailscale, LiteLLM, and platform-storage in `IaC/live/argocd-apps/openclaw/terragrunt.hcl`
-- [X] T064 [P] [US2] Create Tines Helm values with default NFS StorageClass persistence for automation state in `clusters/homelab/apps/tines/values.yaml`
-- [X] T065 [P] [US2] Create Tines ExternalSecret references for app, auth, and integration credentials in `clusters/homelab/apps/tines/externalsecret.yaml`
-- [X] T066 [P] [US2] Create the Tines tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/tines/virtualservice.yaml`
-- [X] T067 [US2] Create the Tines Argo CD Terragrunt unit depending on external-secrets, cert-manager, Istio, Tailscale, and platform-storage in `IaC/live/argocd-apps/tines/terragrunt.hcl`
+- [X] T064 [P] [US2] Create n8n Helm values with default NFS StorageClass persistence for automation state in `clusters/homelab/apps/n8n/values.yaml`
+- [X] T065 [P] [US2] Create n8n ExternalSecret reference for the instance encryption key in `clusters/homelab/apps/n8n/externalsecret.yaml`
+- [X] T066 [P] [US2] Create the n8n tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/n8n/virtualservice.yaml`
+- [X] T067 [US2] Create the n8n Argo CD Terragrunt unit depending on external-secrets, cert-manager, Istio, Tailscale, and platform-storage in `IaC/live/argocd-apps/n8n/terragrunt.hcl`
 - [X] T068 [US2] Add service app stateful workload profiles and restore expectations in `docs/storage-nfs.md`
 - [X] T069 [US2] Add service app tailnet route inventory and zero-Funnel confirmation in `docs/networking-tailnet-ingress.md`
 - [X] T070 [US2] Add service app AWS SSM parameter-name inventory with no secret values in `docs/secrets-aws-ssm.md`
@@ -233,7 +233,7 @@ Task: "Create Prowlarr Helm values with default NFS StorageClass persistence for
 Task: "Create Radarr Helm values with default NFS StorageClass persistence and Deluge/Prowlarr integration placeholders in clusters/homelab/apps/radarr/values.yaml"
 Task: "Create Sonarr Helm values with default NFS StorageClass persistence and Deluge/Prowlarr integration placeholders in clusters/homelab/apps/sonarr/values.yaml"
 Task: "Create LiteLLM Helm values with AWS SSM provider placeholders and default NFS StorageClass persistence when state is enabled in clusters/homelab/apps/litellm/values.yaml"
-Task: "Create Tines Helm values with default NFS StorageClass persistence for automation state in clusters/homelab/apps/tines/values.yaml"
+Task: "Create n8n Helm values with default NFS StorageClass persistence for automation state in clusters/homelab/apps/n8n/values.yaml"
 ```
 
 ### User Story 3

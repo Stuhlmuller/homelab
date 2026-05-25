@@ -1,18 +1,18 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: tines-tailnet
+  name: n8n-tailnet
   namespace: automation
   annotations:
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
-    - tines.stinkyboi.com
+    - n8n.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:
     - route:
         - destination:
-            host: tines.automation.svc.cluster.local
+            host: n8n.automation.svc.cluster.local
             port:
-              number: 8080
+              number: 5678
