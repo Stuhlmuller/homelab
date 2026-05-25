@@ -1,0 +1,4 @@
+interface:
+  display_name: "Terragrunt Workflows"
+  short_description: "Use Terragrunt stacks and catalogs"
+  default_prompt: "Use $terragrunt-workflows to add or validate a Terragrunt stack/module/catalog change."
