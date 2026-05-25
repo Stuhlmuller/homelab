@@ -1,3 +1,4 @@
+profile: ambient
 global:
   logging:
     level: default:info

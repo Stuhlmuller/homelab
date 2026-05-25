@@ -1,5 +1,9 @@
+serviceAccount:
+  deluge: {}
 controllers:
   deluge:
+    serviceAccount:
+      identifier: deluge
     strategy: RollingUpdate
     rollingUpdate:
       unavailable: 0

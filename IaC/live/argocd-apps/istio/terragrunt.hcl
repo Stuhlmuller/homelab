@@ -55,6 +55,26 @@ inputs = {
     },
     {
       repo_url        = "https://istio-release.storage.googleapis.com/charts"
+      chart           = "cni"
+      target_revision = "1.27.3"
+      helm = {
+        release_name           = "istio-cni"
+        skip_schema_validation = true
+        value_files            = ["$values/clusters/homelab/apps/istio/values.yaml"]
+      }
+    },
+    {
+      repo_url        = "https://istio-release.storage.googleapis.com/charts"
+      chart           = "ztunnel"
+      target_revision = "1.27.3"
+      helm = {
+        release_name           = "ztunnel"
+        skip_schema_validation = true
+        value_files            = ["$values/clusters/homelab/apps/istio/values.yaml"]
+      }
+    },
+    {
+      repo_url        = "https://istio-release.storage.googleapis.com/charts"
       chart           = "gateway"
       target_revision = "1.27.3"
       helm = {

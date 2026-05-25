@@ -1,5 +1,9 @@
+serviceAccount:
+  radarr: {}
 controllers:
   radarr:
+    serviceAccount:
+      identifier: radarr
     containers:
       app:
         image:

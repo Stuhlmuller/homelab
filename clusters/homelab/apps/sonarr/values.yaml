@@ -1,5 +1,9 @@
+serviceAccount:
+  sonarr: {}
 controllers:
   sonarr:
+    serviceAccount:
+      identifier: sonarr
     containers:
       app:
         image:

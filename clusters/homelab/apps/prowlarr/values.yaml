@@ -1,5 +1,9 @@
+serviceAccount:
+  prowlarr: {}
 controllers:
   prowlarr:
+    serviceAccount:
+      identifier: prowlarr
     containers:
       app:
         image:
