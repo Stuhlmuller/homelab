@@ -61,6 +61,7 @@ stack because Terraform manages the Kubernetes Secret.
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
+| deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token` |
 | tines | `tines-secrets` | `tines-secrets` | `/homelab/tines/app-secret`, `/homelab/tines/admin-password` |
 
@@ -70,6 +71,7 @@ token itself in git. The cert-manager ExternalSecret refreshes this value every
 five minutes so DNS-01 token rotations converge quickly without hand-editing the
 Kubernetes Secret.
 
-Deluge, Prowlarr, Radarr, and Sonarr do not store their application passwords
-or API keys in SSM. Their configuration lives on the persistent `/config`
-volumes and is managed through each app after first login.
+Deluge stores only VPN WireGuard material in SSM. Deluge, Prowlarr, Radarr, and
+Sonarr do not store their application passwords or API keys in SSM. Their
+configuration lives on the persistent `/config` volumes and is managed through
+each app after first login.

@@ -86,6 +86,18 @@ inputs = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder
     }
+    "/homelab/deluge/vpn/wireguard-private-key" = {
+      description   = "Deluge AirVPN WireGuard private key."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/wireguard-preshared-key" = {
+      description   = "Deluge AirVPN WireGuard pre-shared key."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/wireguard-addresses" = {
+      description   = "Deluge AirVPN WireGuard interface address CIDR."
+      initial_value = local.placeholder
+    }
     "/homelab/openclaw/app-secret" = {
       description   = "OpenClaw application secret."
       initial_value = local.placeholder
