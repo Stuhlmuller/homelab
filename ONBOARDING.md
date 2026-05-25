@@ -45,6 +45,13 @@ authenticated Talos API calls through `.talos/talosconfig`.
 The old `10.1.0.216` control-plane address is stale. Do not use it as the
 canonical Kubernetes API endpoint or Talos endpoint for new work.
 
+The parent audit found that live Kubernetes service-account issuer discovery
+still reports `https://10.1.0.216:6443`. Treat that as control-plane machine
+configuration drift, not as a new endpoint. Use
+`docs/talos-control-plane-maintenance.md` and the repository-owned patch at
+`.talos/patches/controlplane-service-account-issuer.yaml` to align the issuer
+with `https://10.1.0.199:6443` through the desired Talos config path.
+
 ## Repository Source of Truth
 
 Permanent homelab changes are made through code in this repository. External
@@ -154,6 +161,8 @@ cluster:
   apiServer:
     certSANs:
       - 10.1.0.199
+    extraArgs:
+      service-account-issuer: https://10.1.0.199:6443
 ```
 
 Before applying, replace `ACTIVE_NIC` and `CONTROL_PLANE_INTERNAL_DISK` with the
@@ -164,6 +173,7 @@ If the control-plane IP changes, update all of these together:
 
 - `cluster.controlPlane.endpoint`
 - `cluster.apiServer.certSANs`
+- `cluster.apiServer.extraArgs.service-account-issuer`
 - `.talos/talosconfig` endpoints and nodes
 - local kubeconfig server URL
 - worker configs that point at the control-plane endpoint

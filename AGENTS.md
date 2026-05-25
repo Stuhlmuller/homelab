@@ -169,6 +169,10 @@ Known details from the existing onboarding guide:
 - Worker nodes use hyphenated names such as `zimaboard-0`, `zimaboard-1`, and
   `zimaboard-2`.
 - Persistent storage NAS: QNAP NFS share `homelab` at `10.1.0.2`.
+- The old control-plane address `10.1.0.216` is stale. If it appears in
+  kubeconfig, Talos config, Kubernetes service-account issuer discovery, or
+  OIDC-related troubleshooting, fix the repository-owned desired state so it
+  points at `https://10.1.0.199:6443`.
 
 Refresh these notes whenever the cluster topology changes. If they conflict
 with a newer runbook or live read-only inspection, update the docs in the same
