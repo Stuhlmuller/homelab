@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/berriai/litellm-database
-  tag: ""
+  tag: "@sha256:cdb39b2c0010140763c2ea6b57b7b6b4131c4cfa4984c0b969f7025563d167ef"
 environmentSecrets:
   - litellm-provider-keys
 service:
