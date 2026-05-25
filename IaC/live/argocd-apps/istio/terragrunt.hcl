@@ -126,6 +126,15 @@ inputs = {
         ".webhooks[]?.clientConfig.caBundle",
         ".webhooks[]?.failurePolicy"
       ]
+    },
+    {
+      group     = "apps"
+      kind      = "DaemonSet"
+      name      = "ztunnel"
+      namespace = "istio-system"
+      json_pointers = [
+        "/metadata/annotations/deprecated.daemonset.template.generation",
+      ]
     }
   ]
 
