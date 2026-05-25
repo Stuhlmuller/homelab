@@ -63,6 +63,19 @@ inputs = {
     }
   }
 
+  ignore_differences = [
+    {
+      group     = "apps"
+      kind      = "StatefulSet"
+      name      = "media-postgres"
+      namespace = "media"
+      json_pointers = [
+        "/metadata/annotations",
+        "/spec/volumeClaimTemplates"
+      ]
+    }
+  ]
+
   info = [
     {
       name  = "rollout"

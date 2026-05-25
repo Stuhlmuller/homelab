@@ -16,8 +16,8 @@ Current enforced controls are therefore:
 
 - tailnet-only Istio ingress routes reviewed in
   `docs/networking-tailnet-ingress.md`;
-- workload-scoped Istio policy where ambient mesh covers the workload, such as
-  Deluge's `PeerAuthentication` and `AuthorizationPolicy`;
+- workload-scoped Istio policy only where the namespace is explicitly
+  mesh-enrolled and the gateway path is proven to keep working;
 - namespace Pod Security labels that are explicit in repo-owned namespace
   manifests.
 

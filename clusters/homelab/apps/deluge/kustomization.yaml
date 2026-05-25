@@ -3,5 +3,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret.yaml
-  - mesh-policy.yaml
   - virtualservice.yaml

@@ -72,27 +72,16 @@ same restored config volume at the same time.
 
 ## Mesh Policy
 
-The `media` namespace is enrolled in Istio ambient mode. Ambient is used instead
-of sidecar injection so Deluge's Gluetun-managed Pod network namespace does not
-also receive an Envoy sidecar. Istio ambient DNS capture is disabled in the
-Istio CNI values so Gluetun keeps control of its VPN startup and DNS checks.
-Deluge also opts its outbound traffic out of ztunnel capture with
-`traffic.sidecar.istio.io/excludeOutboundIPRanges`; inbound traffic remains
-ambient-managed so the workload policy can still control who reaches the Deluge
-web/API port.
+The `media` namespace is intentionally not enrolled in Istio ambient mode while
+the operator web UIs are exposed through the shared tailnet ingress gateway.
+The tailnet gateway must be able to proxy to Deluge, Radarr, Sonarr, and
+Prowlarr services without ambient HBONE resets, and the Deluge Pod cannot use
+sidecar injection because Gluetun owns the VPN network setup.
 
-Deluge has a workload-scoped `PeerAuthentication` that requires STRICT mTLS and
-an `AuthorizationPolicy` that allows only these media automation identities to
-reach Deluge's web/API port `8112`:
-
-- `media/radarr`
-- `media/sonarr`
-- `media/prowlarr`
-
-The Deluge tailnet `VirtualService` remains declared for reviewability, but this
-policy intentionally does not allow the Istio ingress gateway identity. Add that
-principal in the same policy only if operator UI access to Deluge is deliberately
-restored.
+Keep media UI access on the Istio reverse proxy ingress path with
+`public-funnel=false` Tailscale annotations. Reintroduce ambient mesh only with a
+repo-owned waypoint or equivalent gateway policy that preserves HTTPS access to
+the `*.stinkyboi.com` operator addresses.
 
 ## Verification
 
@@ -103,13 +92,10 @@ kubectl -n media get externalsecret deluge-vpn
 kubectl -n media get secret deluge-vpn
 kubectl -n media get pod -l app.kubernetes.io/name=deluge
 kubectl -n media logs deploy/deluge -c gluetun
-kubectl -n media get peerauthentication deluge-strict-mtls
-kubectl -n media get authorizationpolicy deluge-allow-media-clients
 ```
 
 The ExternalSecret should be ready, the `deluge-vpn` Secret should exist, the
-Pod should be ready, the mesh policy objects should exist, and Gluetun logs
-should show a healthy WireGuard session.
+Pod should be ready, and Gluetun logs should show a healthy WireGuard session.
 This command should return success only while the VPN is healthy:
 
 ```sh

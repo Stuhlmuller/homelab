@@ -21,36 +21,63 @@ controllers:
           - -u
           - -c
           - |
-            import socket
-            import threading
+            import asyncio
+            import contextlib
 
-            listen = ("0.0.0.0", 8080)
-            target = ("127.0.0.1", 18789)
+            LISTEN_HOST = "0.0.0.0"
+            LISTEN_PORT = 8080
+            TARGET_HOST = "127.0.0.1"
+            TARGET_PORT = 18789
 
-            def pipe(source, destination):
+            async def pipe(reader, writer):
                 try:
-                    while True:
-                        data = source.recv(65536)
-                        if not data:
-                            return
-                        destination.sendall(data)
+                    while data := await reader.read(65536):
+                        writer.write(data)
+                        await writer.drain()
+                except (BrokenPipeError, ConnectionError):
+                    pass
                 finally:
-                    source.close()
-                    destination.close()
+                    with contextlib.suppress(Exception):
+                        writer.write_eof()
+                    writer.close()
+                    with contextlib.suppress(Exception):
+                        await writer.wait_closed()
 
-            def handle(client):
-                upstream = socket.create_connection(target, timeout=10)
-                threading.Thread(target=pipe, args=(client, upstream), daemon=True).start()
-                pipe(upstream, client)
+            async def handle(client_reader, client_writer):
+                peer = client_writer.get_extra_info("peername")
+                try:
+                    upstream_reader, upstream_writer = await asyncio.open_connection(
+                        TARGET_HOST,
+                        TARGET_PORT,
+                    )
+                except OSError as exc:
+                    print(f"failed to connect upstream for {peer}: {exc}", flush=True)
+                    client_writer.close()
+                    with contextlib.suppress(Exception):
+                        await client_writer.wait_closed()
+                    return
 
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                server.bind(listen)
-                server.listen(128)
-                print(f"proxying {listen[0]}:{listen[1]} to {target[0]}:{target[1]}", flush=True)
-                while True:
-                    client, _ = server.accept()
-                    threading.Thread(target=handle, args=(client,), daemon=True).start()
+                await asyncio.gather(
+                    pipe(client_reader, upstream_writer),
+                    pipe(upstream_reader, client_writer),
+                    return_exceptions=True,
+                )
+
+            async def main():
+                server = await asyncio.start_server(
+                    handle,
+                    LISTEN_HOST,
+                    LISTEN_PORT,
+                    backlog=256,
+                )
+                print(
+                    f"proxying {LISTEN_HOST}:{LISTEN_PORT} to {TARGET_HOST}:{TARGET_PORT}",
+                    flush=True,
+                )
+                async with server:
+                    await server.serve_forever()
+
+            asyncio.run(main())
         probes:
           readiness:
             enabled: true
