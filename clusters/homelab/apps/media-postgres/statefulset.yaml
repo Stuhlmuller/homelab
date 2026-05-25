@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/part-of: homelab-media
 spec:
   serviceName: media-postgres
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: media-postgres
