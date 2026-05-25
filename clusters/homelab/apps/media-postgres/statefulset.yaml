@@ -4,16 +4,18 @@ metadata:
   name: media-postgres
   namespace: media
   annotations:
-    checkov.io/skip1: CKV_K8S_40=The official PostgreSQL image uses UID 999; the pod remains non-root with no privilege escalation.
+    checkov.io/skip1: CKV_K8S_40=The data-permissions init container briefly runs as root to hand NFS PVC ownership to PostgreSQL; the database container runs as UID 999.
     checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
     checkov.io/skip3: CKV_K8S_43=Image tags are pinned for GitOps review; digest pinning is tracked separately for homelab images.
     checkov.io/skip4: CKV2_K8S_6=media-postgres is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+    checkov.io/skip5: CKV_K8S_37=The data-permissions init container needs CHOWN/FOWNER to repair NFS PVC ownership before PostgreSQL starts.
+    checkov.io/skip6: CKV_K8S_25=The data-permissions init container adds only CHOWN/FOWNER for NFS PVC ownership repair before the non-root database container starts.
   labels:
     app.kubernetes.io/name: media-postgres
     app.kubernetes.io/part-of: homelab-media
 spec:
   serviceName: media-postgres
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: media-postgres
@@ -33,6 +35,37 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       initContainers:
+        - name: data-permissions
+          image: postgres:14.23-bookworm
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              mkdir -p /var/lib/postgresql/data/pgdata
+              chown -R 999:999 /var/lib/postgresql/data/pgdata
+              chmod 700 /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - FOWNER
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
         - name: require-real-password
           image: postgres:14.23-bookworm
           imagePullPolicy: Always

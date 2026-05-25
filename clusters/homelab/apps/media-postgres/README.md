@@ -22,8 +22,10 @@ first initialization. This is intentional here because the Servarr Prowlarr
 PostgreSQL guide states that Prowlarr housekeeping needs a superuser for vacuum
 work. Revisit this before adding unrelated apps to this database instance.
 
-`PGDATA` points at a `pgdata` subdirectory inside the PVC so PostgreSQL owns the
-actual database directory even when the NFS provisioner creates the mount root.
+`PGDATA` points at a `pgdata` subdirectory inside the PVC. A small
+`data-permissions` init container creates that directory and hands ownership to
+UID/GID 999 before PostgreSQL starts, which keeps the database process non-root
+while still working with the NFS provisioner.
 
 ## Databases
 
