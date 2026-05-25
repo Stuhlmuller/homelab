@@ -44,6 +44,11 @@ persistence:
 datasources:
   datasources.yaml:
     apiVersion: 1
+    deleteDatasources:
+      - name: Prometheus
+        orgId: 1
+      - name: Alertmanager
+        orgId: 1
     datasources:
       - name: Alertmanager
         uid: alertmanager
