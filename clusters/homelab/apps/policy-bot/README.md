@@ -4,6 +4,13 @@ Policy Bot runs as the homelab GitHub App policy evaluator. It has no persistent
 volume; all runtime credentials come from AWS SSM Parameter Store through
 External Secrets and are rendered into `/secrets/policy-bot.yml`.
 
+The Deployment is intentionally suspended with `replicas: 0` until the
+GitHub-App-owned SSM placeholders are replaced. This avoids a noisy crashloop
+from a rendered placeholder config while keeping the Service, Funnel route, and
+GitOps registration reviewable in code. After the GitHub App ID, private key,
+OAuth client ID, and OAuth client secret are populated in SSM, scale the
+Deployment to `replicas: 1` in this file path and let Argo CD roll it out.
+
 ## Routes
 
 - Tailnet operator UI and OAuth callback:

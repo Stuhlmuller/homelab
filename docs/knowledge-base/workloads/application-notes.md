@@ -87,8 +87,11 @@ backups.
 ## n8n
 
 n8n persists `/home/node/.n8n` on NFS. Its stable encryption key comes from
-`/homelab/n8n/encryption-key`; keep it stable for the life of the instance so
-saved credentials can be decrypted after restarts or restores.
+`/homelab/n8n/encryption-key` only on first boot. The pod receives it as
+`N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports `N8N_ENCRYPTION_KEY` only when the
+persisted `/home/node/.n8n/config` file is absent, so restored or existing PVCs
+continue using their persisted instance key. Do not rotate the SSM value as a
+shortcut for changing an existing n8n instance key.
 
 ## Policy Bot
 
@@ -102,6 +105,11 @@ https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
 
 Root routes stay unrouted. The public route depends on Tailscale Funnel for
 `tag:k8s` and Policy Bot's own webhook HMAC validation.
+
+The Deployment is scaled to zero until the GitHub App ID, private key, OAuth
+client ID, and OAuth client secret placeholders are replaced in SSM. This keeps
+placeholder config from causing a crashloop while the route and secret contract
+remain reviewable in git.
 
 ## Prometheus
 
