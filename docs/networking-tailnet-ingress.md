@@ -30,8 +30,12 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | tines | `https://tines.stinkyboi.com` | disabled |
 
 Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
-`istio-system`. The first rollout uses the existing self-signed homelab issuer;
-replace the issuer through desired state before relying on browser-trusted TLS.
+`istio-system`. cert-manager requests this wildcard certificate through the
+`letsencrypt-cloudflare` ClusterIssuer, which uses DNS-01 challenges for
+`stinkyboi.com` and reads its Cloudflare token from the External Secrets-managed
+`cloudflare-api-token` Secret in the `cert-manager` namespace. The
+`homelab-selfsigned` issuer remains available only as a local fallback and is
+not referenced by the ingress wildcard certificate.
 
 Validation on 2026-05-24 found no enabled first-rollout Funnel routes. The
 Istio gateway and every VirtualService route manifest are annotated with
