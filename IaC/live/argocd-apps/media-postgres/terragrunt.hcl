@@ -65,11 +65,14 @@ inputs = {
 
   ignore_differences = [
     {
-      group         = "apps"
-      kind          = "StatefulSet"
-      name          = "media-postgres"
-      namespace     = "media"
-      json_pointers = ["/spec/volumeClaimTemplates"]
+      group     = "apps"
+      kind      = "StatefulSet"
+      name      = "media-postgres"
+      namespace = "media"
+      json_pointers = [
+        "/metadata/annotations",
+        "/spec/volumeClaimTemplates"
+      ]
     }
   ]
 

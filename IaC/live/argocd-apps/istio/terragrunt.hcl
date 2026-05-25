@@ -134,11 +134,26 @@ inputs = {
       namespace = "istio-system"
       json_pointers = [
         "/metadata/annotations",
+        "/spec/revisionHistoryLimit",
         "/spec/template/metadata/annotations",
+        "/spec/template/spec/dnsPolicy",
+        "/spec/template/spec/restartPolicy",
+        "/spec/template/spec/schedulerName",
+        "/spec/template/spec/securityContext",
+        "/spec/template/spec/serviceAccount",
       ]
       jq_path_expressions = [
-        ".spec.template.spec.containers[] | select(.name == \"istio-proxy\").env[] | select(.valueFrom.fieldRef != null).valueFrom.fieldRef.apiVersion",
-        ".spec.template.spec.containers[] | select(.name == \"istio-proxy\").env[] | select(.valueFrom.resourceFieldRef != null).valueFrom.resourceFieldRef.divisor",
+        ".spec.template.spec.containers[]?.env[]?.valueFrom.fieldRef.apiVersion",
+        ".spec.template.spec.containers[]?.env[]?.valueFrom.resourceFieldRef.divisor",
+        ".spec.template.spec.containers[]?.imagePullPolicy",
+        ".spec.template.spec.containers[]?.readinessProbe.failureThreshold",
+        ".spec.template.spec.containers[]?.readinessProbe.periodSeconds",
+        ".spec.template.spec.containers[]?.readinessProbe.successThreshold",
+        ".spec.template.spec.containers[]?.readinessProbe.timeoutSeconds",
+        ".spec.template.spec.containers[]?.terminationMessagePath",
+        ".spec.template.spec.containers[]?.terminationMessagePolicy",
+        ".spec.template.spec.volumes[]?.configMap.defaultMode",
+        ".spec.template.spec.volumes[]?.projected.defaultMode",
       ]
     }
   ]
