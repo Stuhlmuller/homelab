@@ -29,6 +29,11 @@ to the `homelab-ssm-parameter-readers` IAM group. The group's
 `homelab-ssm-parameter-reader` policy lets External Secrets read those
 parameters and call `kms:Decrypt`.
 
+The `aws-ssm` ClusterSecretStore is constrained to namespaces with
+repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
+`media`, `monitoring`, and `tailscale`. Add a namespace to that allow-list in
+the same PR that adds its first ExternalSecret.
+
 ## External Secrets AWS Auth Bootstrap
 
 External Secrets cannot read Parameter Store until the cluster has the
