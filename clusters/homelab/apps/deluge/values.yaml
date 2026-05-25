@@ -79,8 +79,12 @@ controllers:
           - -ec
           - |
             rm -f /tmp/deluge-port-configured
+            expected="listen_ports: (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
             for attempt in $(seq 1 120); do
-              if timeout 10s deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"; then
+              timeout 10s deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})" || true
+              listen_ports="$(timeout 10s deluge-console -c /config "config listen_ports" 2>&1 || true)"
+              printf "%s\n" "$listen_ports"
+              if printf "%s\n" "$listen_ports" | grep -F "$expected" >/dev/null; then
                 touch /tmp/deluge-port-configured
                 exec tail -f /dev/null
               fi
