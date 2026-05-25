@@ -2,10 +2,25 @@ grafana:
   enabled: false
 nodeExporter:
   enabled: false
+defaultRules:
+  rules:
+    kubeControllerManager: false
+    kubeProxy: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+  disabled:
+    Watchdog: true
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeScheduler:
+  enabled: false
 prometheus:
   prometheusSpec:
     retention: 15d
     serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector:
       matchNames:
         - monitoring

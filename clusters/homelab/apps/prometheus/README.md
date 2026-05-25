@@ -10,6 +10,28 @@ without spoofing the Prometheus Helm release label.
   metrics.
 - Rollback: preserve PVCs unless the operator accepts metrics loss.
 
+## Talos Component Metrics
+
+The kube-prometheus-stack defaults for kube-controller-manager, kube-scheduler,
+and kube-proxy are disabled for this cluster. Read-only inspection on
+2026-05-24 showed those Talos-managed components were healthy, but their
+metrics listeners were bound to loopback or otherwise unavailable on the node
+IPs that kube-prometheus-stack targets. Leaving the defaults enabled created
+permanent `TargetDown`, `KubeProxyInstanceUnreachable`,
+`KubeSchedulerInstanceUnreachable`, and
+`KubeControllerManagerInstanceUnreachable` alerts without a repo-owned Talos
+metrics exposure path.
+
+Before re-enabling those chart sections or default rule groups, add the matching
+Talos machine-config patches in `.talos/`, validate them with
+`talosctl validate --mode metal --strict`, apply them through the documented
+Talos workflow, and confirm the relevant Prometheus targets are `up`.
+
+The default `Watchdog` alert is also disabled until this homelab has an
+external dead-man's-switch receiver. Without that receiver, `Watchdog` is
+expected to remain permanently firing in the UI but does not prove anything
+actionable.
+
 ## Ingress
 
 Prometheus is intentionally not exposed through the tailnet ingress gateway.
