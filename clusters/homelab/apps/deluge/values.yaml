@@ -4,6 +4,9 @@ controllers:
   deluge:
     serviceAccount:
       identifier: deluge
+    pod:
+      annotations:
+        homelab.rst.io/ambient-dns-capture: "disabled"
     strategy: RollingUpdate
     rollingUpdate:
       unavailable: 0
