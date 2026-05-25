@@ -8,8 +8,11 @@ tag.
 
 Before enabling runtime use:
 
-- Replace `pinned-version-required` with the licensed, immutable Tines image tag.
-- Update `/homelab/tines/registry-username` and
-  `/homelab/tines/registry-password` in AWS SSM Parameter Store so the
-  `tines-registry` image pull secret can pull the licensed image.
+- Replace `ghcr.io/tines/self-hosted:pinned-version-required` with the
+  licensed registry path and immutable Tines image tag, or with a reviewed
+  private mirror path.
+- Update `/homelab/tines/registry-dockerconfigjson` in AWS SSM Parameter Store
+  with the full Docker `config.json` for the registry or mirror. This keeps the
+  pull secret registry-agnostic instead of assuming GitHub Container Registry
+  username/password fields.
 - Confirm NFS backup coverage for automation history and runtime state.
