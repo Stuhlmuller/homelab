@@ -10,6 +10,14 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-25 - Enable Policy Bot replica
+
+- Changed Policy Bot from a credential-gated suspended Deployment to one desired
+  replica after the GitHub App SSM placeholders were replaced and the rendered
+  private key validated.
+- Updated the Policy Bot runbook and knowledge-base notes so future credential
+  rebuilds scale the app back to zero in git before reintroducing placeholders.
+
 ### 2026-05-25 - Add OpenClaw Discord and Codex setup notes
 
 - Added `/homelab/openclaw/discord-bot-token` to the SSM contract and

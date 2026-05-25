@@ -48,8 +48,8 @@ outside git.
   `DISCORD_BOT_TOKEN` for startup Discord channel registration. ChatGPT Pro or
   Codex OAuth credentials are interactive user credentials stored on the
   OpenClaw PVC, not SSM parameters.
-- Policy Bot remains scaled to zero until its GitHub-App-owned SSM placeholders
-  are replaced. Its SSM contract is summarized in
+- Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
+  replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
 - Hummingbot is an in-flight app addition in the current working tree. Its SSM
   contract is summarized in [[runbooks/secrets-aws-ssm]] and

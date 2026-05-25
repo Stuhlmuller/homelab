@@ -41,7 +41,7 @@ Freqtrade desired-state files are deleted in the working tree. Recheck
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, Discord channel config, and Codex OAuth credentials on PVC | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, and instance settings; SSM key bootstraps fresh PVCs only | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | suspended at zero replicas until GitHub App SSM placeholders are replaced; stateless once enabled | external-secrets, cert-manager, istio, tailscale |
+| `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
 | `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | persistent CLI bot config, logs, scripts, controllers, and encrypted connector state | external-secrets, platform-storage |
 
 ## Mesh Policy Summary

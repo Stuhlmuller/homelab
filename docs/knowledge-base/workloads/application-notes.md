@@ -115,10 +115,9 @@ https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
 Root routes stay unrouted. The public route depends on Tailscale Funnel for
 `tag:k8s` and Policy Bot's own webhook HMAC validation.
 
-The Deployment is scaled to zero until the GitHub App ID, private key, OAuth
-client ID, and OAuth client secret placeholders are replaced in SSM. This keeps
-placeholder config from causing a crashloop while the route and secret contract
-remain reviewable in git.
+The Deployment runs one replica after the GitHub App ID, private key, OAuth
+client ID, and OAuth client secret placeholders are replaced in SSM. Scale it
+back to zero in git before reintroducing placeholder config.
 
 ## Prometheus
 

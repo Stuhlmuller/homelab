@@ -5,12 +5,12 @@ metadata:
   namespace: automation
   annotations:
     checkov.io/skip1: CKV2_K8S_6=policy-bot is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
-    homelab.stuhlmuller.dev/suspended: "populate GitHub App SSM parameters before scaling to 1"
+    homelab.stuhlmuller.dev/replicas: "GitHub App SSM parameters populated; keep at least one policy-bot instance online"
   labels:
     app.kubernetes.io/name: policy-bot
     app.kubernetes.io/part-of: homelab-automation
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: policy-bot
