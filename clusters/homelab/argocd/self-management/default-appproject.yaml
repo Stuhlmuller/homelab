@@ -1,0 +1,13 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: default
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Disabled default project. Use the repository-managed homelab AppProject.
+  sourceRepos: []
+  destinations: []
+  clusterResourceWhitelist: []

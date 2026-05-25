@@ -105,6 +105,7 @@ Expected result within 10 minutes:
 - `argocd-self-management` exists in the `argocd` namespace.
 - The `homelab` AppProject exists and no workload Application needs the live
   `default` project.
+- The `default` AppProject has no source repositories or destinations.
 - The Application source points at
   `clusters/homelab/argocd/self-management` in this repository.
 
