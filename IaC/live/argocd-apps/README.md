@@ -2,8 +2,8 @@
 
 This directory is the Terragrunt entry point for registering homelab
 applications with Argo CD. Each child directory owns exactly one Argo CD
-Application and sources the `argocd-application` module from the configured
-Terragrunt catalog.
+Application and sources the repository-local
+`IaC/modules/argocd-application-kubernetes` module.
 
 The 14 requested apps are registered here along with one supporting
 `platform-storage` Application for the QNAP NFS provisioner and default
@@ -14,7 +14,8 @@ it exists so Kubernetes storage changes are still delivered through Argo CD.
 
 - Use one `IaC/live/argocd-apps/<app>/terragrunt.hcl` file per Application.
 - Include `IaC/root.hcl` from every unit.
-- Source the catalog module from the pinned Terragrunt catalog commit.
+- Source the local Kubernetes-backed Application module. Do not require a
+  locally authenticated Argo CD API provider for routine app registration.
 - Declare every upstream relationship with a `dependencies` block.
 - Use `sync_policy.automated` with prune and self-heal by default. Any future
   exception must be documented beside the app registration.

@@ -40,6 +40,14 @@ Stateful apps auto-sync by default, but they are not considered operationally
 ready until `platform-storage` is synced, the `nfs-default` StorageClass is
 verified, and `docs/storage-nfs.md` records backup coverage.
 
+## Registration Provider
+
+Terragrunt registers Applications through the repository-local
+`IaC/modules/argocd-application-kubernetes` module. The module writes Argo CD
+`Application` CRDs through the Kubernetes provider, so routine registration does
+not require an exposed Argo CD API endpoint, an auth token in operator
+environment variables, or a manual local `argocd login`.
+
 ## Sync And Health Exception Record
 
 Use this format for every exception:

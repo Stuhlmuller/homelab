@@ -110,7 +110,7 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 
 | Failure | Operator response |
 |---------|-------------------|
-| Missing catalog module | Stop, switch only that app to documented `argocd-application-manifest` fallback or update the catalog in a separate PR. |
+| Missing Application module | Stop, fix the local `IaC/modules/argocd-application-kubernetes` module or explicitly document a temporary catalog fallback before applying. |
 | Dependency cycle | Stop, remove the cycle from Terragrunt dependencies before applying. |
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |
 | Missing AWS SSM parameter | Create the parameter outside the repo, then re-sync the owning ExternalSecret. |
