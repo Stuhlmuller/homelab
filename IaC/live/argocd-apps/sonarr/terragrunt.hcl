@@ -12,7 +12,6 @@ terraform {
 
 dependencies {
   paths = [
-    "../external-secrets",
     "../cert-manager",
     "../istio",
     "../tailscale",

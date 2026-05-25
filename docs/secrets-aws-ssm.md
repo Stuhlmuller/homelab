@@ -50,9 +50,10 @@ stack because Terraform manages the Kubernetes Secret.
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
-| deluge | `deluge-auth` | `deluge-auth` | `/homelab/deluge/web-password` |
-| radarr | `radarr-auth` | `radarr-auth` | `/homelab/radarr/api-key`, `/homelab/radarr/deluge-api-key` |
-| sonarr | `sonarr-auth` | `sonarr-auth` | `/homelab/sonarr/api-key`, `/homelab/sonarr/deluge-api-key` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token` |
 | tines | `tines-secrets` | `tines-secrets` | `/homelab/tines/app-secret`, `/homelab/tines/admin-password` |
+
+Deluge, Radarr, and Sonarr do not store their application passwords or API keys
+in SSM. Their configuration lives on the persistent `/config` volumes and is
+managed through each app after first login.

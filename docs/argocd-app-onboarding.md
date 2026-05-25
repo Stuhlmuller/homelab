@@ -18,9 +18,9 @@ requested workload.
 | prometheus | requested | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | Yes | external-secrets, platform-storage |
 | grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | descheduler | requested | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | Yes | prometheus |
-| deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage |
-| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage |
+| deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | cert-manager, istio, tailscale, platform-storage |
+| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | cert-manager, istio, tailscale, deluge, platform-storage |
+| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, tailscale, deluge, platform-storage |
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | tines | requested | `automation` | `clusters/homelab/apps/tines` | `IaC/live/argocd-apps/tines` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |

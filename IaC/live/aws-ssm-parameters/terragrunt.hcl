@@ -62,26 +62,6 @@ inputs = {
       description   = "Grafana admin password."
       initial_value = local.placeholder
     }
-    "/homelab/deluge/web-password" = {
-      description   = "Deluge web UI password."
-      initial_value = local.placeholder
-    }
-    "/homelab/radarr/api-key" = {
-      description   = "Radarr application API key."
-      initial_value = local.placeholder
-    }
-    "/homelab/radarr/deluge-api-key" = {
-      description   = "Radarr Deluge download client API key."
-      initial_value = local.placeholder
-    }
-    "/homelab/sonarr/api-key" = {
-      description   = "Sonarr application API key."
-      initial_value = local.placeholder
-    }
-    "/homelab/sonarr/deluge-api-key" = {
-      description   = "Sonarr Deluge download client API key."
-      initial_value = local.placeholder
-    }
     "/homelab/litellm/master-key" = {
       description   = "LiteLLM master key."
       initial_value = local.placeholder
