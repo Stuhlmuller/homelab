@@ -18,8 +18,10 @@ run the static checks only.
   `pull_request_target`.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
-- GitHub token permissions default to none. Jobs opt in to `contents: read`,
-  and only the live Terragrunt jobs request `id-token: write`.
+- GitHub token permissions default to none. Jobs opt in to `contents: read`;
+  live Terragrunt jobs request `id-token: write`; and the trusted PR plan job
+  requests `pull-requests: write` only so it can refresh the managed plan
+  section in the PR description after a successful plan.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Tailscale access uses an auth key because this tailnet has tailnet lock
@@ -40,7 +42,10 @@ run the static checks only.
   narrower `10.1.0.199/32` route for the Kubernetes API; prefer that route once
   it is approved in the tailnet.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
-  include sensitive state context.
+  include sensitive state context. Trusted same-repository PR plans render the
+  saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
+  the managed `<!-- terragrunt-plan:start -->` section in the PR description
+  after every successful plan.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`
@@ -202,6 +207,10 @@ The PR plan script intentionally skips the privileged SSM declaration and
 Kubernetes secret materialization stacks. To review those locally, assume the
 production apply role, install the kubeconfig, and run a focused
 `terragrunt plan` from the stack directory.
+
+Set `TERRAGRUNT_PLAN_MARKDOWN=/path/to/terragrunt-plan.md` when running the PR
+plan script locally if you want the same rendered `plan.out` markdown that the
+workflow writes into pull request descriptions.
 
 Only run apply after the same validation has passed and the change has been
 reviewed:

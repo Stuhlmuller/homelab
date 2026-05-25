@@ -27,6 +27,9 @@ Source: `docs/ci-cd.md`
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`.
 - Plans are not uploaded as artifacts because they may include sensitive state.
+  Trusted same-repo PR plans render saved `plan.out` files with
+  `terragrunt show -no-color plan.out` and replace the managed plan section in
+  the PR description after each successful plan run.
 - Automatic PR plans skip `IaC/live/aws-ssm-parameters` because it refreshes
   managed KMS, IAM, and SSM resources that require the protected apply role.
   They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
@@ -64,3 +67,6 @@ nix develop --command bash scripts/ci/terragrunt-apply.sh
 
 Run apply only after the same checks have passed and the change has been
 reviewed.
+
+Set `TERRAGRUNT_PLAN_MARKDOWN` locally to write the same rendered plan markdown
+that the GitHub workflow places in the pull request body.

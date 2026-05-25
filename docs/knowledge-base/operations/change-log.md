@@ -10,6 +10,16 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-25 - Publish Terragrunt plan output to PR descriptions
+
+- Rendered saved `plan.out` files from the trusted PR Terragrunt plan workflow
+  into a managed pull request description section.
+- Added a PR body updater that replaces the existing managed section after
+  each successful plan so the description follows the latest plan output.
+- Documented the new `pull-requests: write` permission on the trusted plan job
+  and the local `TERRAGRUNT_PLAN_MARKDOWN` output path for reviewing rendered
+  plans.
+
 ### 2026-05-25 - Stabilize firing workload alerts
 
 - Suspended Policy Bot at zero replicas until its GitHub-App-owned SSM
