@@ -108,14 +108,21 @@ After External Secrets Operator is installed and the self-management path is
 synced, verify the OIDC secret bridge:
 
 ```sh
+kubectl describe clustersecretstore aws-ssm
 kubectl -n argocd get externalsecrets.external-secrets.io argocd-oidc-sso
 kubectl -n argocd get secret argocd-oidc-sso
 ```
 
 Expected OIDC result:
 
-- `argocd-oidc-sso` reports as synced.
+- `aws-ssm` reports as ready.
+- `argocd-oidc-sso` reports as ready.
 - The generated Kubernetes Secret is labeled as part of Argo CD.
+
+If `argocd-oidc-sso` reports `ClusterSecretStore "aws-ssm" is not ready`, wait
+for the `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` stack to
+create the `external-secrets/aws-ssm-auth` Secret. The ExternalSecret refreshes
+every 5 minutes after that provider dependency is ready.
 
 ## First Handoff
 

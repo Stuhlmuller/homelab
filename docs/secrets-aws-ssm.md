@@ -24,6 +24,10 @@ The Parameter Store entries in this table are managed by Terragrunt at
 `IaC/live/aws-ssm-parameters`. Terragrunt creates each value as a
 `SecureString` placeholder and ignores later value changes so operators can
 replace `REPLACE_ME` directly in AWS without committing secret material.
+The same stack also attaches the existing `external-secrets_aws-ssm-auth` user
+to the `homelab-ssm-parameter-readers` IAM group. The group's
+`homelab-ssm-parameter-reader` policy lets External Secrets read those
+parameters and call `kms:Decrypt`.
 
 ## External Secrets AWS Auth Bootstrap
 
@@ -38,7 +42,9 @@ Bootstrap order:
 2. Replace `/homelab/external-secrets/aws-ssm/access-key-id` and
    `/homelab/external-secrets/aws-ssm/secret-access-key` with an IAM access key
    that can read `/homelab/*` Parameter Store values in `us-west-2` and decrypt
-   the configured KMS key.
+   the configured KMS key. The repository-managed
+   `homelab-ssm-parameter-reader` IAM policy grants those permissions through
+   the `homelab-ssm-parameter-readers` IAM group.
 3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
 The Kubernetes Secret stack refuses to apply while either SSM value is empty or

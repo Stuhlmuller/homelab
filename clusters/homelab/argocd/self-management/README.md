@@ -20,3 +20,5 @@ Keep those resources here instead of the Terragrunt bootstrap Helm values so a
 fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
 `oidc-external-secret.yaml` only after External Secrets Operator is installed
 and allowed to read `/homelab/argocd/oidc/*` parameters in `us-west-2`.
+The ExternalSecret refreshes every 5 minutes so bootstrap recovery is picked up
+soon after the shared `aws-ssm` ClusterSecretStore becomes ready.
