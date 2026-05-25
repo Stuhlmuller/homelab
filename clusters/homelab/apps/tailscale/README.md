@@ -14,6 +14,23 @@ the application Services remain reachable only through the tailnet.
 SSM Parameter Store. The Tailscale OAuth client must have the `Devices Core`,
 `Auth Keys`, and `Services` write scopes and must use `tag:k8s-operator`.
 
+## Pod Security
+
+`namespace.yaml` labels the `tailscale` namespace for privileged Pod Security
+admission. The upstream operator creates privileged proxy Pods for connector and
+load-balancer devices so they can configure packet forwarding and Tailscale
+networking. Without this label, the cluster's baseline Pod Security policy
+rejects the operator-managed proxy Pods before they can start.
+
+## Version
+
+`IaC/live/argocd-apps/tailscale/terragrunt.hcl` pins the upstream
+`tailscale-operator` Helm chart. Version `1.98.3` is the first rollout target
+after the Tailscale admin console reported a known vulnerability on the older
+operator-managed devices. If the upgrade regresses operator login, connector
+readiness, or proxy Pod startup, roll back by reverting the chart
+`target_revision` to `1.84.3` and syncing the Argo CD Application.
+
 ## Homelab Exit Node
 
 `exit-node-connector.yaml` creates a cluster-scoped Tailscale `Connector` named

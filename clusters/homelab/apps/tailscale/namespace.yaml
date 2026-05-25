@@ -3,6 +3,11 @@ kind: Namespace
 metadata:
   name: tailscale
   labels:
-    pod-security.kubernetes.io/audit: privileged
+    app.kubernetes.io/name: tailscale
+    app.kubernetes.io/part-of: homelab
     pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/audit-version: latest
     pod-security.kubernetes.io/warn: privileged
+    pod-security.kubernetes.io/warn-version: latest

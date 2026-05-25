@@ -43,7 +43,7 @@ inputs = {
     {
       repo_url        = "https://pkgs.tailscale.com/helmcharts"
       chart           = "tailscale-operator"
-      target_revision = "1.84.3"
+      target_revision = "1.98.3"
       helm = {
         release_name = "tailscale-operator"
         value_files  = ["$values/clusters/homelab/apps/tailscale/values.yaml"]
