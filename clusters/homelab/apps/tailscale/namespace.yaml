@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: tailscale
+  annotations:
+    homelab.rst.io/privileged-namespace-justification: Tailscale operator proxy Pods require privileged network access.
   labels:
     app.kubernetes.io/name: tailscale
     app.kubernetes.io/part-of: homelab

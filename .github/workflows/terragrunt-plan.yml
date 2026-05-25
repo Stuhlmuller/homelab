@@ -1,0 +1,121 @@
+name: Terragrunt Plan
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths:
+      - ".github/workflows/**"
+      - ".checkov.yaml"
+      - "IaC/**"
+      - "clusters/**"
+      - "docs/**"
+      - "flake.lock"
+      - "flake.nix"
+      - "policy/**"
+      - "scripts/**"
+
+permissions: {}
+
+concurrency:
+  group: terragrunt-plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  KUBE_API_SERVER: 10.1.0.199
+  TAILSCALE_VERSION: 1.98.3
+
+jobs:
+  static-policy:
+    name: Static Policy And Security Checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check Out Repository
+        # actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: nix develop --command bash scripts/ci/static-checks.sh
+
+  terragrunt-plan:
+    name: Terragrunt Plan
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    needs:
+      - static-policy
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-plan
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 60
+    steps:
+      - name: Check Out Repository
+        # actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure AWS Credentials
+        # aws-actions/configure-aws-credentials@v6.1.1
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+          role-session-name: homelab-terragrunt-plan-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Connect To Tailnet
+        # tailscale/github-action@v4
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8
+        with:
+          authkey: ${{ secrets.TS_AUTH_KEY }}
+          tags: tag:github-actions-terragrunt-plan
+          version: ${{ env.TAILSCALE_VERSION }}
+
+      - name: Accept Tailnet Subnet Routes
+        run: sudo tailscale set --accept-routes=true
+
+      - name: Install Kubeconfig
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+        run: bash scripts/ci/install-kubeconfig.sh
+
+      - name: Verify Kubernetes API Reachability
+        run: kubectl --request-timeout=15s version
+
+      - name: Run Terragrunt Plan
+        run: nix develop --command bash scripts/ci/terragrunt-plan.sh
+
+  fork-plan-skipped:
+    name: Terragrunt Plan Skipped For Fork
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    needs:
+      - static-policy
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Explain Skip
+        run: echo "Live Terragrunt plan is skipped for forked pull requests because it requires AWS, Tailscale, and Kubernetes secrets."

@@ -3,10 +3,16 @@
 Run these checks before any live mutation. Record output or a short summary in
 the PR.
 
+GitHub Actions now runs the same validation path for pull requests and
+post-merge applies. See `docs/ci-cd.md` for required GitHub environment
+secrets, Tailscale identity setup, and AWS OIDC role boundaries.
+
 ## Pre-Mutation Checks
 
 ```sh
 terragrunt hcl fmt
+terragrunt hcl validate
+nix develop --command bash scripts/ci/static-checks.sh
 cd IaC/live/aws-ssm-parameters
 terragrunt plan
 cd IaC/live/argocd-apps

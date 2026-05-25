@@ -1,0 +1,8 @@
+quiet: true
+compact: true
+download-external-modules: false
+skip-path:
+  - .git
+  - .terragrunt-cache
+  - "**/.terragrunt-cache/**"
+  - "**/plan.out"
