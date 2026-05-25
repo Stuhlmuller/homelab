@@ -14,7 +14,7 @@ metadata:
     homelab.stuhlmuller.dev/catalog-ref: "0.3.0"
     homelab.stuhlmuller.dev/handoff-mode: automated
 spec:
-  project: homelab
+  project: default
   source:
     repoURL: https://github.com/Stuhlmuller/homelab.git
     path: clusters/homelab/argocd/self-management
