@@ -20,8 +20,9 @@ Parameter Store:
 Use only the IPv4 CIDR in `WIREGUARD_ADDRESSES` unless the cluster and Pod
 network are intentionally configured for IPv6. The ExternalSecret template
 extracts the first IPv4 CIDR from the SSM value before writing the Kubernetes
-Secret so AirVPN-provided IPv6 addresses do not make Gluetun configure IPv6
-routing in this IPv4-only cluster.
+Secret, and `values.yaml` pins `WIREGUARD_ALLOWED_IPS` to `0.0.0.0/0`, so
+AirVPN-provided IPv6 values do not make Gluetun configure IPv6 routing in this
+IPv4-only cluster.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
@@ -74,6 +75,10 @@ The `media` namespace is enrolled in Istio ambient mode. Ambient is used instead
 of sidecar injection so Deluge's Gluetun-managed Pod network namespace does not
 also receive an Envoy sidecar. Istio ambient DNS capture is disabled in the
 Istio CNI values so Gluetun keeps control of its VPN startup and DNS checks.
+Deluge also opts its outbound traffic out of ztunnel capture with
+`traffic.sidecar.istio.io/excludeOutboundIPRanges`; inbound traffic remains
+ambient-managed so the workload policy can still control who reaches the Deluge
+web/API port.
 
 Deluge has a workload-scoped `PeerAuthentication` that requires STRICT mTLS and
 an `AuthorizationPolicy` that allows only these media automation identities to

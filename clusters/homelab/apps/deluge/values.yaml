@@ -6,8 +6,11 @@ controllers:
       identifier: deluge
     pod:
       annotations:
+        ambient.istio.io/dns-capture: "false"
         homelab.rst.io/ambient-dns-capture: "disabled"
+        homelab.rst.io/ambient-egress-capture: "disabled"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
+        traffic.sidecar.istio.io/excludeOutboundIPRanges: "0.0.0.0/0,::/0"
     strategy: RollingUpdate
     rollingUpdate:
       unavailable: 0
@@ -35,6 +38,7 @@ controllers:
           TZ: America/Los_Angeles
           VPN_SERVICE_PROVIDER: airvpn
           VPN_TYPE: wireguard
+          WIREGUARD_ALLOWED_IPS: "0.0.0.0/0"
           FIREWALL: "on"
           FIREWALL_INPUT_PORTS: "8112"
           FIREWALL_VPN_INPUT_PORTS: &delugeIncomingPort "5983"
