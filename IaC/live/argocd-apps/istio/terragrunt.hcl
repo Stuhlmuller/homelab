@@ -134,6 +134,7 @@ inputs = {
       namespace = "istio-system"
       json_pointers = [
         "/metadata/annotations",
+        "/spec/template/metadata/annotations",
       ]
     }
   ]

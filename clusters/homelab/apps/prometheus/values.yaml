@@ -7,8 +7,8 @@ prometheus:
     retention: 15d
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorNamespaceSelector:
-      matchNames:
-        - monitoring
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
     storageSpec:
       volumeClaimTemplate:
         spec:
