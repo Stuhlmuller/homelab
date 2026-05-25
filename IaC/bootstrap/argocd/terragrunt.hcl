@@ -3,6 +3,7 @@ include "root" {
 }
 
 locals {
+  self_management_appproject_manifest  = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/appproject.yaml"
   self_management_application_manifest = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/application.yaml"
   oidc_sso_secret_name                 = "argocd-oidc-sso"
   oidc_sso_admin_group                 = "argocd-admins"
@@ -16,7 +17,7 @@ terraform {
     execute = [
       "sh",
       "-c",
-      "kubectl wait --for=condition=Established crd/applications.argoproj.io --timeout=180s && kubectl apply -f '${local.self_management_application_manifest}'",
+      "kubectl wait --for=condition=Established crd/applications.argoproj.io --timeout=180s && kubectl apply -f '${local.self_management_appproject_manifest}' && kubectl apply -f '${local.self_management_application_manifest}'",
     ]
   }
 }
