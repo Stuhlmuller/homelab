@@ -1,9 +1,10 @@
 locals {
-  project_name           = "homelab"
-  aws_region             = "us-west-2"
-  state_region           = "us-east-1"
-  kms_key_id             = "alias/homelab-opentofu"
-  kms_region             = local.aws_region
+  project_name = "homelab"
+  aws_region   = "us-west-2"
+  state_region = "us-east-1"
+  kms_key_id   = "alias/homelab-opentofu"
+  # Existing OpenTofu state encryption follows the current S3 backend region.
+  kms_region             = local.state_region
   kms_key_spec           = "AES_256"
   kubernetes_config_path = "~/.kube/config"
   default_tags = {
