@@ -10,6 +10,7 @@ controllers:
           - openclaw
           - gateway
           - run
+          - --allow-unconfigured
           - --bind
           - lan
           - --port
