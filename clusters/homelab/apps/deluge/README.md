@@ -69,7 +69,8 @@ sidecar is stuck terminating; steady state still converges back to one Pod.
 
 The `media` namespace is enrolled in Istio ambient mode. Ambient is used instead
 of sidecar injection so Deluge's Gluetun-managed Pod network namespace does not
-also receive an Envoy sidecar.
+also receive an Envoy sidecar. Istio ambient DNS capture is disabled in the
+Istio CNI values so Gluetun keeps control of its VPN startup and DNS checks.
 
 Deluge has a workload-scoped `PeerAuthentication` that requires STRICT mTLS and
 an `AuthorizationPolicy` that allows only these media automation identities to

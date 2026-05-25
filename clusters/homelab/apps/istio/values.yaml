@@ -1,4 +1,7 @@
 profile: ambient
+cni:
+  ambient:
+    dnsCapture: false
 global:
   logging:
     level: default:info
