@@ -58,10 +58,6 @@ inputs = {
       description   = "AWS secret access key used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder
     }
-    "/homelab/cert-manager/cloudflare-api-token" = {
-      description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
-      initial_value = local.placeholder
-    }
     "/homelab/tailscale/oauth-client-id" = {
       description   = "Tailscale Kubernetes operator OAuth client ID."
       initial_value = local.placeholder
