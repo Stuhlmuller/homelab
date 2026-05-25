@@ -136,6 +136,10 @@ inputs = {
         "/metadata/annotations",
         "/spec/template/metadata/annotations",
       ]
+      jq_path_expressions = [
+        ".spec.template.spec.containers[] | select(.name == \"istio-proxy\").env[] | select(.valueFrom.fieldRef != null).valueFrom.fieldRef.apiVersion",
+        ".spec.template.spec.containers[] | select(.name == \"istio-proxy\").env[] | select(.valueFrom.resourceFieldRef != null).valueFrom.resourceFieldRef.divisor",
+      ]
     }
   ]
 
