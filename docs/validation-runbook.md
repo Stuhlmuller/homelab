@@ -13,9 +13,9 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 15 requested Argo CD Applications plus `platform-storage` are
-planned, and every upstream relationship appears in a Terragrunt `dependencies`
-block.
+Expected result: 15 requested Argo CD Applications plus the support
+Applications `platform-storage` and `media-postgres` are planned, and every
+upstream relationship appears in a Terragrunt `dependencies` block.
 
 Render or dry-run GitOps sources:
 
@@ -71,6 +71,15 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
 `docs/storage-nfs.md` records backup coverage.
 
+Sonarr, Radarr, and Prowlarr must also wait for `media-postgres` to sync and
+become healthy. Verify the ExternalSecrets, StatefulSet, PVC, and logical
+databases documented in `clusters/homelab/apps/media-postgres/README.md`
+before treating those apps as migrated to PostgreSQL. For each app, also verify
+the persistent `/config/config.xml` contains the Servarr-documented
+`PostgresUser`, `PostgresPassword`, `PostgresPort`, `PostgresHost`,
+`PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
+migration.
+
 ## Current Validation Record
 
 - Read-only `showmount -e 10.1.0.2` verified the QNAP `/homelab` export is
@@ -123,6 +132,7 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 | Missing AWS SSM parameter | Create the parameter outside the repo, then re-sync the owning ExternalSecret. |
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
+| Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
 | Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
 | Image updater misconfiguration | Remove the opt-in label or annotations from the affected Application, then fix the repository desired state. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

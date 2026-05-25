@@ -8,12 +8,7 @@ terraform {
 
 dependencies {
   paths = [
-    "../cert-manager",
-    "../istio",
-    "../tailscale",
-    "../deluge",
-    "../media-postgres",
-    "../prowlarr",
+    "../external-secrets",
     "../platform-storage"
   ]
 }
@@ -25,7 +20,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "sonarr"
+    name      = "media-postgres"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -42,26 +37,9 @@ inputs = {
 
   sources = [
     {
-      repo_url        = "https://bjw-s-labs.github.io/helm-charts"
-      chart           = "app-template"
-      target_revision = "4.4.0"
-      helm = {
-        release_name = "sonarr"
-        value_files  = ["$values/clusters/homelab/apps/sonarr/values.yaml"]
-      }
-    },
-    {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/sonarr"
+      path            = "clusters/homelab/apps/media-postgres"
       kustomize       = {}
     }
   ]
@@ -88,7 +66,11 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
+      value = "automated; replace the SSM password placeholder and verify PostgreSQL readiness before syncing media apps"
+    },
+    {
+      name  = "storage"
+      value = "docs/storage-nfs.md"
     }
   ]
 }

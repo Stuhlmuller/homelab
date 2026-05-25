@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: media-postgres
+  namespace: media
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The official PostgreSQL image uses UID 999; the pod remains non-root with no privilege escalation.
+    checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
+    checkov.io/skip3: CKV_K8S_43=Image tags are pinned for GitOps review; digest pinning is tracked separately for homelab images.
+  labels:
+    app.kubernetes.io/name: media-postgres
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  serviceName: media-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: media-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media-postgres
+        app.kubernetes.io/part-of: homelab-media
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 999
+        runAsNonRoot: true
+        runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: require-real-password
+          image: postgres:14.23-bookworm
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              password="$(cat /run/secrets/media-postgres/POSTGRES_PASSWORD)"
+              test -n "$password"
+              test "$password" != "REPLACE_ME"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/media-postgres
+              readOnly: true
+      containers:
+        - name: postgres
+          image: postgres:14.23-bookworm
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER_FILE
+              value: /run/secrets/media-postgres/POSTGRES_USER
+            - name: POSTGRES_DB_FILE
+              value: /run/secrets/media-postgres/POSTGRES_DB
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/media-postgres/POSTGRES_PASSWORD
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - media_apps
+                - -d
+                - media_apps
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - media_apps
+                - -d
+                - media_apps
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/media-postgres
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: auth
+          secret:
+            secretName: media-postgres-auth
+        - name: initdb
+          configMap:
+            name: media-postgres-initdb
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: media-postgres
+          app.kubernetes.io/part-of: homelab-media
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-default
+        resources:
+          requests:
+            storage: 20Gi

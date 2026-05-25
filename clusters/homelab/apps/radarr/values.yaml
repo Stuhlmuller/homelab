@@ -4,6 +4,75 @@ controllers:
   radarr:
     serviceAccount:
       identifier: radarr
+    initContainers:
+      configure-postgres:
+        image:
+          repository: lscr.io/linuxserver/radarr
+          tag: 5.27.5
+        envFrom:
+          - secretRef:
+              name: media-postgres-arr-env
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            config=/config/config.xml
+            tmp="$(mktemp)"
+
+            xml_escape() {
+              printf '%s' "$1" \
+                | sed \
+                  -e 's/&/\&amp;/g' \
+                  -e 's/</\&lt;/g' \
+                  -e 's/>/\&gt;/g' \
+                  -e 's/"/\&quot;/g' \
+                  -e "s/'/\&apos;/g"
+            }
+
+            set_config_tag() {
+              tag="$1"
+              value="$(xml_escape "$2")"
+              awk -v tag="$tag" -v value="$value" '
+                BEGIN { found = 0 }
+                $0 ~ "<" tag ">" {
+                  print "  <" tag ">" value "</" tag ">"
+                  found = 1
+                  next
+                }
+                $0 ~ "</Config>" && found == 0 {
+                  print "  <" tag ">" value "</" tag ">"
+                  found = 1
+                }
+                { print }
+              ' "$config" > "$tmp"
+              cat "$tmp" > "$config"
+            }
+
+            : "${RADARR_POSTGRES_HOST:?}"
+            : "${RADARR_POSTGRES_PORT:?}"
+            : "${RADARR_POSTGRES_USER:?}"
+            : "${RADARR_POSTGRES_PASSWORD:?}"
+            : "${RADARR_POSTGRES_MAIN_DB:?}"
+            : "${RADARR_POSTGRES_LOG_DB:?}"
+
+            if [ ! -s "$config" ]; then
+              printf '<Config>\n</Config>\n' > "$config"
+            fi
+
+            if ! grep -q '</Config>' "$config"; then
+              echo "Radarr config.xml is missing a closing </Config> tag" >&2
+              exit 1
+            fi
+
+            set_config_tag PostgresUser "$RADARR_POSTGRES_USER"
+            set_config_tag PostgresPassword "$RADARR_POSTGRES_PASSWORD"
+            set_config_tag PostgresPort "$RADARR_POSTGRES_PORT"
+            set_config_tag PostgresHost "$RADARR_POSTGRES_HOST"
+            set_config_tag PostgresMainDb "$RADARR_POSTGRES_MAIN_DB"
+            set_config_tag PostgresLogDb "$RADARR_POSTGRES_LOG_DB"
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
     containers:
       app:
         image:
@@ -26,18 +95,26 @@ persistence:
     storageClass: nfs-default
     size: 10Gi
     accessMode: ReadWriteOnce
-    globalMounts:
-      - path: /config
+    advancedMounts:
+      radarr:
+        app:
+          - path: /config
+        configure-postgres:
+          - path: /config
   media:
     enabled: true
     storageClass: nfs-default
     size: 500Gi
     accessMode: ReadWriteMany
-    globalMounts:
-      - path: /movies
+    advancedMounts:
+      radarr:
+        app:
+          - path: /movies
   downloads:
     enabled: true
     type: persistentVolumeClaim
     existingClaim: deluge-downloads
-    globalMounts:
-      - path: /downloads
+    advancedMounts:
+      radarr:
+        app:
+          - path: /downloads

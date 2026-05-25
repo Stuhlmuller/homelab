@@ -4,6 +4,75 @@ controllers:
   sonarr:
     serviceAccount:
       identifier: sonarr
+    initContainers:
+      configure-postgres:
+        image:
+          repository: lscr.io/linuxserver/sonarr
+          tag: 4.0.15
+        envFrom:
+          - secretRef:
+              name: media-postgres-arr-env
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            config=/config/config.xml
+            tmp="$(mktemp)"
+
+            xml_escape() {
+              printf '%s' "$1" \
+                | sed \
+                  -e 's/&/\&amp;/g' \
+                  -e 's/</\&lt;/g' \
+                  -e 's/>/\&gt;/g' \
+                  -e 's/"/\&quot;/g' \
+                  -e "s/'/\&apos;/g"
+            }
+
+            set_config_tag() {
+              tag="$1"
+              value="$(xml_escape "$2")"
+              awk -v tag="$tag" -v value="$value" '
+                BEGIN { found = 0 }
+                $0 ~ "<" tag ">" {
+                  print "  <" tag ">" value "</" tag ">"
+                  found = 1
+                  next
+                }
+                $0 ~ "</Config>" && found == 0 {
+                  print "  <" tag ">" value "</" tag ">"
+                  found = 1
+                }
+                { print }
+              ' "$config" > "$tmp"
+              cat "$tmp" > "$config"
+            }
+
+            : "${SONARR_POSTGRES_HOST:?}"
+            : "${SONARR_POSTGRES_PORT:?}"
+            : "${SONARR_POSTGRES_USER:?}"
+            : "${SONARR_POSTGRES_PASSWORD:?}"
+            : "${SONARR_POSTGRES_MAIN_DB:?}"
+            : "${SONARR_POSTGRES_LOG_DB:?}"
+
+            if [ ! -s "$config" ]; then
+              printf '<Config>\n</Config>\n' > "$config"
+            fi
+
+            if ! grep -q '</Config>' "$config"; then
+              echo "Sonarr config.xml is missing a closing </Config> tag" >&2
+              exit 1
+            fi
+
+            set_config_tag PostgresUser "$SONARR_POSTGRES_USER"
+            set_config_tag PostgresPassword "$SONARR_POSTGRES_PASSWORD"
+            set_config_tag PostgresPort "$SONARR_POSTGRES_PORT"
+            set_config_tag PostgresHost "$SONARR_POSTGRES_HOST"
+            set_config_tag PostgresMainDb "$SONARR_POSTGRES_MAIN_DB"
+            set_config_tag PostgresLogDb "$SONARR_POSTGRES_LOG_DB"
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
     containers:
       app:
         image:
@@ -26,18 +95,26 @@ persistence:
     storageClass: nfs-default
     size: 10Gi
     accessMode: ReadWriteOnce
-    globalMounts:
-      - path: /config
+    advancedMounts:
+      sonarr:
+        app:
+          - path: /config
+        configure-postgres:
+          - path: /config
   media:
     enabled: true
     storageClass: nfs-default
     size: 500Gi
     accessMode: ReadWriteMany
-    globalMounts:
-      - path: /tv
+    advancedMounts:
+      sonarr:
+        app:
+          - path: /tv
   downloads:
     enabled: true
     type: persistentVolumeClaim
     existingClaim: deluge-downloads
-    globalMounts:
-      - path: /downloads
+    advancedMounts:
+      sonarr:
+        app:
+          - path: /downloads

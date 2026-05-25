@@ -4,6 +4,75 @@ controllers:
   prowlarr:
     serviceAccount:
       identifier: prowlarr
+    initContainers:
+      configure-postgres:
+        image:
+          repository: lscr.io/linuxserver/prowlarr
+          tag: 2.3.5
+        envFrom:
+          - secretRef:
+              name: media-postgres-arr-env
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            config=/config/config.xml
+            tmp="$(mktemp)"
+
+            xml_escape() {
+              printf '%s' "$1" \
+                | sed \
+                  -e 's/&/\&amp;/g' \
+                  -e 's/</\&lt;/g' \
+                  -e 's/>/\&gt;/g' \
+                  -e 's/"/\&quot;/g' \
+                  -e "s/'/\&apos;/g"
+            }
+
+            set_config_tag() {
+              tag="$1"
+              value="$(xml_escape "$2")"
+              awk -v tag="$tag" -v value="$value" '
+                BEGIN { found = 0 }
+                $0 ~ "<" tag ">" {
+                  print "  <" tag ">" value "</" tag ">"
+                  found = 1
+                  next
+                }
+                $0 ~ "</Config>" && found == 0 {
+                  print "  <" tag ">" value "</" tag ">"
+                  found = 1
+                }
+                { print }
+              ' "$config" > "$tmp"
+              cat "$tmp" > "$config"
+            }
+
+            : "${PROWLARR_POSTGRES_HOST:?}"
+            : "${PROWLARR_POSTGRES_PORT:?}"
+            : "${PROWLARR_POSTGRES_USER:?}"
+            : "${PROWLARR_POSTGRES_PASSWORD:?}"
+            : "${PROWLARR_POSTGRES_MAIN_DB:?}"
+            : "${PROWLARR_POSTGRES_LOG_DB:?}"
+
+            if [ ! -s "$config" ]; then
+              printf '<Config>\n</Config>\n' > "$config"
+            fi
+
+            if ! grep -q '</Config>' "$config"; then
+              echo "Prowlarr config.xml is missing a closing </Config> tag" >&2
+              exit 1
+            fi
+
+            set_config_tag PostgresUser "$PROWLARR_POSTGRES_USER"
+            set_config_tag PostgresPassword "$PROWLARR_POSTGRES_PASSWORD"
+            set_config_tag PostgresPort "$PROWLARR_POSTGRES_PORT"
+            set_config_tag PostgresHost "$PROWLARR_POSTGRES_HOST"
+            set_config_tag PostgresMainDb "$PROWLARR_POSTGRES_MAIN_DB"
+            set_config_tag PostgresLogDb "$PROWLARR_POSTGRES_LOG_DB"
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
     containers:
       app:
         image:
@@ -25,5 +94,9 @@ persistence:
     storageClass: nfs-default
     size: 5Gi
     accessMode: ReadWriteOnce
-    globalMounts:
-      - path: /config
+    advancedMounts:
+      prowlarr:
+        app:
+          - path: /config
+        configure-postgres:
+          - path: /config

@@ -62,6 +62,7 @@ stack because Terraform manages the Kubernetes Secret.
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
+| media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
 
@@ -71,10 +72,13 @@ token itself in git. The cert-manager ExternalSecret refreshes this value every
 five minutes so DNS-01 token rotations converge quickly without hand-editing the
 Kubernetes Secret.
 
-Deluge stores only VPN WireGuard material in SSM. Deluge, Prowlarr, Radarr, and
-Sonarr do not store their application passwords or API keys in SSM. Their
-configuration lives on the persistent `/config` volumes and is managed through
-each app after first login.
+Deluge stores only VPN WireGuard material in SSM. Sonarr, Radarr, and Prowlarr
+store only their PostgreSQL password contract in SSM through
+`media-postgres-arr-env`. Each app writes that value into the
+upstream-supported `config.xml` PostgreSQL fields during pod startup;
+application passwords, API keys, indexers, and app integrations still live on
+the persistent `/config` volumes and are managed through each app after first
+login.
 
 n8n stores only its instance encryption key in SSM. Workflows, users, saved
 credential metadata, and app configuration persist on the `/home/node/.n8n`

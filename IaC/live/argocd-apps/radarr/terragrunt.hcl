@@ -12,6 +12,7 @@ dependencies {
     "../istio",
     "../tailscale",
     "../deluge",
+    "../media-postgres",
     "../prowlarr",
     "../platform-storage"
   ]

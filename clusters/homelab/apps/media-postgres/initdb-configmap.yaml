@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: media-postgres-initdb
+  namespace: media
+data:
+  00-create-arr-databases.sql: |
+    \set ON_ERROR_STOP on
+
+    SELECT 'CREATE DATABASE "sonarr-main" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sonarr-main')\gexec
+    SELECT 'CREATE DATABASE "sonarr-log" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sonarr-log')\gexec
+
+    SELECT 'CREATE DATABASE "radarr-main" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'radarr-main')\gexec
+    SELECT 'CREATE DATABASE "radarr-log" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'radarr-log')\gexec
+
+    SELECT 'CREATE DATABASE "prowlarr-main" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'prowlarr-main')\gexec
+    SELECT 'CREATE DATABASE "prowlarr-log" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'prowlarr-log')\gexec

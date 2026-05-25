@@ -90,6 +90,10 @@ inputs = {
       description   = "Deluge AirVPN WireGuard interface address CIDR."
       initial_value = local.placeholder
     }
+    "/homelab/media-postgres/app-password" = {
+      description   = "Shared PostgreSQL password for Sonarr, Radarr, and Prowlarr."
+      initial_value = local.placeholder
+    }
     "/homelab/openclaw/app-secret" = {
       description   = "OpenClaw application secret."
       initial_value = local.placeholder
