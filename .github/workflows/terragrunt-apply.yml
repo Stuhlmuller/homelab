@@ -23,7 +23,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  AWS_TERRAGRUNT_APPLY_ROLE_ARN: arn:aws:iam::716182248480:role/Github-Actions-IDP
   AWS_REGION: us-east-1
   KUBE_API_SERVER: 10.1.0.199
   TAILSCALE_EXIT_NODE: homelab-exit-node
@@ -62,6 +61,10 @@ jobs:
       contents: read
       id-token: write
     timeout-minutes: 90
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID }}
     steps:
       - name: Check Out Repository
         # actions/checkout@v5
@@ -75,6 +78,15 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify Production Apply Inputs
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_TERRAGRUNT_APPLY_ROLE_ARN }}
+        run: |
+          test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_TERRAGRUNT_APPLY_ROLE_ARN must be set on homelab-production."; exit 1; }
+          test -n "${ARM_CLIENT_ID}" || { echo "AZUREAD_CLIENT_ID must be set on homelab-production."; exit 1; }
+          test -n "${ARM_CLIENT_SECRET}" || { echo "AZUREAD_CLIENT_SECRET must be set on homelab-production."; exit 1; }
+          test -n "${ARM_TENANT_ID}" || { echo "AZUREAD_TENANT_ID must be set on homelab-production."; exit 1; }
+
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
@@ -82,7 +94,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
           role-session-name: homelab-terragrunt-apply-${{ github.run_id }}
-          role-to-assume: ${{ env.AWS_TERRAGRUNT_APPLY_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_TERRAGRUNT_APPLY_ROLE_ARN }}
           unset-current-credentials: true
 
       - name: Connect To Tailnet

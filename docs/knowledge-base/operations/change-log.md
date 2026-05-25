@@ -10,6 +10,26 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-25 - Stabilize firing workload alerts
+
+- Suspended Policy Bot at zero replicas until its GitHub-App-owned SSM
+  placeholders are replaced, preventing placeholder config from crashlooping.
+- Changed n8n to use the SSM encryption key only for first-boot bootstrap and
+  preserve the persisted PVC settings key on existing or restored instances.
+- Updated workload and secret-contract notes so future alert repairs do not
+  rotate persisted app keys or start apps with placeholder credentials.
+
+### 2026-05-25 - Harden Terragrunt CI plan/apply phases
+
+- Updated the Terragrunt PR plan workflow to skip privileged SSM declaration
+  and Kubernetes secret materialization stacks, then run Argo CD Application
+  registration plans serially with source refresh.
+- Updated the protected apply workflow to use an environment-provided AWS apply
+  role, expose Microsoft Entra provider credentials for Grafana SSO, and apply
+  live Terragrunt phases explicitly instead of one parallel `IaC/live` sweep.
+- Documented the OpenTofu state KMS permissions required by the production apply
+  role and the split between automatic PR plans and protected apply checks.
+
 ### 2026-05-25 - Grafana Discord alert routing
 
 - Populated the Grafana Discord webhook SSM parameter outside git and recorded

@@ -50,7 +50,7 @@ Implicit stack validation:
 
 ```sh
 cd IaC/live/argocd-apps
-terragrunt run --all plan -no-color
+terragrunt run --all --parallelism 1 --source-update plan -no-color
 ```
 
 ## Live Rollout Rule

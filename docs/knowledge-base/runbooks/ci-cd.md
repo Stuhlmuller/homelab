@@ -11,7 +11,9 @@ Source: `docs/ci-cd.md`
   live Terragrunt plan.
 - `Terragrunt Apply` runs after merge to `main` and through
   `workflow_dispatch`. It repeats static checks, joins the tailnet, and applies
-  the live Terragrunt stack.
+  the live Terragrunt phases in order: Argo CD bootstrap, SSM parameter
+  declarations, Entra application registrations, Argo CD Application
+  registrations, and Kubernetes secret materialization.
 - Forked PRs never receive AWS, Tailscale, or Kubernetes secrets.
 
 ## Security Model
@@ -25,8 +27,10 @@ Source: `docs/ci-cd.md`
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`.
 - Plans are not uploaded as artifacts because they may include sensitive state.
-- Automatic PR plans skip `IaC/live/kubernetes-secrets`; protected apply runs
-  the full `IaC/live` stack.
+- Automatic PR plans skip `IaC/live/aws-ssm-parameters` because it refreshes
+  managed KMS, IAM, and SSM resources that require the protected apply role.
+  They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
+  stacks after review.
 
 ## Environments
 
@@ -35,7 +39,10 @@ Source: `docs/ci-cd.md`
   `main`.
 
 Both need `TS_AUTH_KEY` and `KUBE_CONFIG_B64`. AWS role values are documented in
-the source runbook.
+the source runbook. `homelab-production` also needs
+`AWS_TERRAGRUNT_APPLY_ROLE_ARN`, `AZUREAD_CLIENT_ID`, `AZUREAD_TENANT_ID`, and
+`AZUREAD_CLIENT_SECRET`; the apply role must include OpenTofu state KMS access
+to `alias/homelab-opentofu` in `us-east-1`.
 
 ## Tailscale CI Route
 
