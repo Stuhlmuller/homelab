@@ -13,3 +13,6 @@ spec:
   tags:
     - tag:k8s
   exitNode: true
+  subnetRouter:
+    advertiseRoutes:
+      - 10.1.0.199/32

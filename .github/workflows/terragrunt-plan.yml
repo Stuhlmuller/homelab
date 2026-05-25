@@ -27,6 +27,7 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER: 10.1.0.199
+  TAILSCALE_EXIT_NODE: homelab-exit-node
   TAILSCALE_VERSION: 1.98.3
 
 jobs:
@@ -97,13 +98,18 @@ jobs:
       - name: Accept Tailnet Subnet Routes
         run: sudo tailscale set --accept-routes=true
 
+      - name: Select Homelab Exit Node
+        run: sudo tailscale set --exit-node="${TAILSCALE_EXIT_NODE}"
+
       - name: Install Kubeconfig
         env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
         run: bash scripts/ci/install-kubeconfig.sh
 
       - name: Verify Kubernetes API Reachability
-        run: kubectl --request-timeout=15s version
+        run: |
+          ip route get "${KUBE_API_SERVER}"
+          kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
         run: nix develop --command bash scripts/ci/terragrunt-plan.sh
