@@ -1,5 +1,60 @@
 controllers:
   deluge:
+    initContainers:
+      gluetun:
+        image:
+          repository: ghcr.io/qdm12/gluetun
+          tag: v3.41.1
+        restartPolicy: Always
+        env:
+          TZ: America/Los_Angeles
+          VPN_SERVICE_PROVIDER: airvpn
+          VPN_TYPE: wireguard
+          FIREWALL: "on"
+          FIREWALL_INPUT_PORTS: "8112"
+          FIREWALL_VPN_INPUT_PORTS: "5983"
+          HEALTH_RESTART_VPN: "on"
+        envFrom:
+          - secretRef:
+              name: deluge-vpn
+        securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /gluetun-entrypoint
+                  - healthcheck
+              failureThreshold: 36
+              periodSeconds: 5
+              timeoutSeconds: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /gluetun-entrypoint
+                  - healthcheck
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /gluetun-entrypoint
+                  - healthcheck
+              failureThreshold: 3
+              periodSeconds: 30
+              timeoutSeconds: 5
     containers:
       app:
         image:
@@ -9,27 +64,51 @@ controllers:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  for attempt in $(seq 1 60); do
+                    if deluge-console -c /config "config --set random_port false; config --set listen_ports (5983, 5983)"; then
+                      exit 0
+                    fi
+                    sleep 2
+                  done
+                  exit 1
 service:
   app:
     controller: deluge
     ports:
       http:
         port: 8112
-      bittorrent:
-        port: 6881
 persistence:
   config:
     enabled: true
     storageClass: nfs-default
     size: 5Gi
     accessMode: ReadWriteOnce
-    globalMounts:
-      - path: /config
+    advancedMounts:
+      deluge:
+        app:
+          - path: /config
   downloads:
     enabled: true
     storageClass: nfs-default
     size: 200Gi
     accessMode: ReadWriteMany
-    globalMounts:
-      - path: /downloads
-
+    advancedMounts:
+      deluge:
+        app:
+          - path: /downloads
+  tun:
+    enabled: true
+    type: hostPath
+    hostPath: /dev/net/tun
+    hostPathType: CharDevice
+    advancedMounts:
+      deluge:
+        gluetun:
+          - path: /dev/net/tun
