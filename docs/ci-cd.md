@@ -28,6 +28,9 @@ run the static checks only.
   for tailnet lock, and scoped to the CI tags documented below.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`.
+- The workflow does not use the Tailscale action's built-in `ping` input for
+  subnet-routed cluster addresses. Kubernetes reachability is verified with
+  `kubectl --request-timeout=15s version` after kubeconfig installation.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context.
 - Automatic PR plans intentionally skip `IaC/live/kubernetes-secrets` because

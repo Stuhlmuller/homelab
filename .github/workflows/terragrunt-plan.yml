@@ -91,7 +91,6 @@ jobs:
         uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8
         with:
           authkey: ${{ secrets.TS_AUTH_KEY }}
-          ping: ${{ env.KUBE_API_SERVER }}
           tags: tag:github-actions-terragrunt-plan
           version: ${{ env.TAILSCALE_VERSION }}
 
