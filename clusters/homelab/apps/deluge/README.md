@@ -25,12 +25,14 @@ AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
 value. The app container runs a startup hook that applies:
 
 ```sh
-deluge-console -c /config "config --set random_port false; config --set listen_ports (5983, 5983)"
+timeout 5s deluge-console -c /config "config --set random_port false; config --set listen_ports (5983, 5983)"
 ```
 
-The hook retries while Deluge starts. If it cannot connect to Deluge and apply
-the port configuration, Kubernetes restarts the app container instead of leaving
-the Pod ready with an unknown listening port.
+The hook retries while Deluge starts, and each console attempt is bounded so a
+single connection attempt cannot keep the container in `PodInitializing`
+forever. If it cannot connect to Deluge and apply the port configuration,
+Kubernetes restarts the app container instead of leaving the Pod ready with an
+unknown listening port.
 
 ## Pod Security
 
