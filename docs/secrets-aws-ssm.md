@@ -60,7 +60,9 @@ stack because Terraform manages the Kubernetes Secret.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
-token itself in git.
+token itself in git. The cert-manager ExternalSecret refreshes this value every
+five minutes so DNS-01 token rotations converge quickly without hand-editing the
+Kubernetes Secret.
 
 Deluge, Radarr, and Sonarr do not store their application passwords or API keys
 in SSM. Their configuration lives on the persistent `/config` volumes and is
