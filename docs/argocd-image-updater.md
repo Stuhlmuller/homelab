@@ -4,53 +4,79 @@ Argo CD Image Updater is installed as an Argo CD-managed Application from
 `IaC/live/argocd-apps/argocd-image-updater`. It uses the upstream Helm chart
 `argocd-image-updater` version `1.2.2` and runs in the `argocd` namespace.
 
-The default policy is opt-in. The `homelab-annotation-opt-in` `ImageUpdater`
-resource selects Applications in the `argocd` namespace only when they have:
+The `homelab-managed-images` `ImageUpdater` resource in
+`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` manages every
+container image that this repository declares directly in workload Helm values
+or raw manifests:
 
-- Label: `homelab.stuhlmuller.dev/image-updater=enabled`
-- Annotations: `argocd-image-updater.argoproj.io/*` image configuration
+- `deluge`: BusyBox, Gluetun, and Deluge containers.
+- `hummingbot`: bootstrap and app containers.
+- `litellm`: LiteLLM database container.
+- `media-postgres`: PostgreSQL StatefulSet image.
+- `n8n`: n8n app container.
+- `openclaw`: bootstrap, app, and proxy containers.
+- `policy-bot`: Policy Bot Deployment image.
+- `prowlarr`, `radarr`, and `sonarr`: PostgreSQL bootstrap and app containers.
 
-The default write-back method is `argocd`, so this change does not commit Git
-write credentials or create public webhooks. If a future app needs Git
-write-back, add an ExternalSecret-backed credential contract first and document
-the write-back target.
+Images owned only by upstream Helm chart defaults continue to move with chart
+version updates. Add explicit values and an `ImageUpdater` `applicationRefs`
+entry before treating a chart-default image as independently managed.
 
-Example opt-in shape for a future non-digest-pinned Application:
+## Write-back
 
-```hcl
-metadata = {
-  annotations = {
-    "argocd-image-updater.argoproj.io/image-list"          = "app=ghcr.io/example/app:1.x"
-    "argocd-image-updater.argoproj.io/app.update-strategy" = "semver"
-  }
-  labels = {
-    "homelab.stuhlmuller.dev/image-updater" = "enabled"
-  }
-}
-```
+Image Updater uses Git write-back with GitHub pull-request mode. It does not
+patch Argo CD Applications in place as the steady-state path. For each update it
+pushes an `image-updater-*` branch and opens a pull request against `main`, so
+the normal review, CI, and Argo CD reconciliation path still applies.
 
-Helm-backed Applications usually also need per-image annotations that identify
-the chart values keys for the repository and tag. Keep those annotations beside
-the Application registration so image automation remains reviewable. Most
-homelab workloads should not use this shape until they have the digest-preserving
-Git update path described below.
+The write-back credential is the Kubernetes Secret
+`argocd/argocd-image-updater-git`, created by the ExternalSecret at
+`clusters/homelab/apps/argocd-image-updater/externalsecret.yaml`.
 
-## Digest-pinned workloads
+Required AWS SSM Parameter Store values:
 
-No workloads currently opt in to Image Updater. Cluster desired state pins
-container images as `tag@sha256:digest`, and `scripts/ci/static-checks.sh`
-fails when committed cluster manifests or Helm values contain tag-only images.
+| Parameter | Secret key | Purpose |
+| --- | --- | --- |
+| `/homelab/argocd-image-updater/github-app/id` | `githubAppID` | GitHub App ID |
+| `/homelab/argocd-image-updater/github-app/installation-id` | `githubAppInstallationID` | GitHub App installation ID for this repository or owner |
+| `/homelab/argocd-image-updater/github-app/private-key` | `githubAppPrivateKey` | GitHub App private key |
 
-Do not opt a digest-pinned workload into the default `argocd` write-back path.
-That path stores Argo CD parameter overrides outside git and can replace a
-reviewed `tag@sha256:digest` value with a tag-only runtime override. Add a
-Git-reviewed update path that preserves tag-and-digest pins before enabling
-automatic image updates for an application.
+The GitHub App must be installed on `Stuhlmuller/homelab` with repository
+contents write access and pull-request write access. Store the private key as a
+SecureString outside git.
 
-Verification:
+## Update policy
+
+The global policy uses semantic-version updates and ignores `latest`, `main`,
+and `dev` tags. Images whose upstream tags are not plain semver use
+per-image `newest-build` rules with regular-expression allow lists.
+
+Image Updater writes to the source paths that Argo CD already renders:
+
+- Helm values files use `helmvalues:/clusters/homelab/apps/<app>/values.yaml`.
+- Raw-manifest apps use `kustomization:/clusters/homelab/apps/<app>`.
+
+Because these paths are explicitly managed by Image Updater and reviewed through
+pull requests, `scripts/ci/static-checks.sh` allows tag-only image fields inside
+those write-back targets. Unmanaged image fields still must be pinned as
+`tag@sha256:digest`.
+
+## Verification
 
 ```sh
 kubectl -n argocd get deploy argocd-image-updater-controller
-kubectl -n argocd get imageupdater homelab-annotation-opt-in
+kubectl -n argocd get externalsecret argocd-image-updater-git
+kubectl -n argocd get secret argocd-image-updater-git
+kubectl -n argocd get imageupdater homelab-managed-images
 kubectl -n argocd logs deploy/argocd-image-updater-controller
 ```
+
+Expected result:
+
+- The controller Deployment is available.
+- `argocd-image-updater-git` is synced from AWS SSM and contains the GitHub App
+  credential keys.
+- `homelab-managed-images` reports reconciliation status for the managed
+  Applications.
+- New image versions create GitHub pull requests rather than live-only Argo CD
+  parameter overrides.

@@ -4,6 +4,9 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    pod:
+      annotations:
+        homelab.rst.io/openclaw-discord-bot-token-ssm-version: "1"
     initContainers:
       bootstrap-config:
         image:
@@ -12,6 +15,9 @@ controllers:
         env:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
+        envFrom:
+          - secretRef:
+              name: openclaw-secrets
         command:
           - /bin/sh
           - -ec
@@ -24,6 +30,17 @@ controllers:
             openclaw config set --strict-json \
               gateway.controlUi.allowedOrigins \
               '["https://openclaw.stinkyboi.com"]'
+
+            if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
+              echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
+            elif openclaw channels list --json --no-usage | grep -q '"homelab-discord"'; then
+              echo "Discord channel homelab-discord already configured; skipping bootstrap"
+            else
+              openclaw channels add \
+                --channel discord \
+                --name homelab-discord \
+                --use-env
+            fi
     containers:
       app:
         image:

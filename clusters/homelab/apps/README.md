@@ -17,6 +17,10 @@ Raw manifests are wired through each app's Argo CD multi-source configuration.
 No file in this tree may contain secret values, private keys, raw certificate
 material, private kubeconfigs, or private hostnames.
 
+Repo-declared workload images that should move automatically must also be listed
+in `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`; Image Updater
+opens pull requests for those values instead of relying on live-only overrides.
+
 Most first-rollout routes are tailnet-only. Public Tailscale Funnel routes must
 stay limited to reviewed webhook exceptions such as Policy Bot's
 `/api/github/hook` route, and every exception must be documented in

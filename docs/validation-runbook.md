@@ -68,11 +68,12 @@ argocd app get platform-storage
 ```
 
 For image automation, confirm the controller and selector CR exist before
-adding opt-in labels to any workload Application:
+relying on update pull requests:
 
 ```sh
 kubectl -n argocd get deploy argocd-image-updater-controller
-kubectl -n argocd get imageupdater homelab-annotation-opt-in
+kubectl -n argocd get externalsecret argocd-image-updater-git
+kubectl -n argocd get imageupdater homelab-managed-images
 ```
 
 For Policy Bot, verify the app stays narrow before registering the GitHub App
@@ -164,5 +165,5 @@ migration.
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
 | Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
 | Policy Bot webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `policy-bot-hook-funnel` Ingress and the operator-managed proxy Pod; do not expose additional Policy Bot routes. |
-| Image updater misconfiguration | Remove the opt-in label or annotations from the affected Application, then fix the repository desired state. |
+| Image updater misconfiguration | Remove the affected `applicationRefs` image entry or write-back target from `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`, then fix the repository desired state. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

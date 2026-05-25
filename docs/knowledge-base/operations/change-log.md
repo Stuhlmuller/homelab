@@ -10,6 +10,16 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-25 - Add OpenClaw Discord and Codex setup notes
+
+- Added `/homelab/openclaw/discord-bot-token` to the SSM contract and
+  `openclaw-secrets` so OpenClaw can receive `DISCORD_BOT_TOKEN`.
+- Changed OpenClaw startup bootstrap to register the Discord channel from the
+  environment when the SSM value has been replaced.
+- Documented that ChatGPT Pro access should be configured through interactive
+  OpenAI Codex OAuth on the OpenClaw PVC, not through committed API keys or SSM
+  values.
+
 ### 2026-05-25 - Publish Terragrunt plan output to PR descriptions
 
 - Rendered saved `plan.out` files from the trusted PR Terragrunt plan workflow
@@ -20,12 +30,25 @@ Use [[templates/knowledge-update]] for new entries.
   and the local `TERRAGRUNT_PLAN_MARKDOWN` output path for reviewing rendered
   plans.
 
+### 2026-05-25 - Enable Image Updater pull requests
+
+- Replaced the annotation opt-in ImageUpdater policy with a managed-image
+  policy for every image declared directly in workload values or raw manifests.
+- Added the `argocd-image-updater-git` ExternalSecret and SSM parameter
+  contract for GitHub App credentials used by Git write-back pull requests.
+- Updated validation and static checks so ImageUpdater-managed write-back
+  targets may move tags through PRs while unmanaged image fields remain
+  digest-pinned.
+
 ### 2026-05-25 - Stabilize firing workload alerts
 
 - Suspended Policy Bot at zero replicas until its GitHub-App-owned SSM
   placeholders are replaced, preventing placeholder config from crashlooping.
 - Changed n8n to use the SSM encryption key only for first-boot bootstrap and
   preserve the persisted PVC settings key on existing or restored instances.
+- Tightened the static image digest gate so Argo Image Updater
+  `manifestTargets` paths named `tag` are not treated as runnable container
+  image tags.
 - Updated workload and secret-contract notes so future alert repairs do not
   rotate persisted app keys or start apps with placeholder credentials.
 

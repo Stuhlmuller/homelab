@@ -26,7 +26,7 @@ Freqtrade desired-state files are deleted in the working tree. Recheck
 
 | App | Namespace | GitOps path | Terragrunt path | State | Depends on |
 | --- | --- | --- | --- | --- | --- |
-| `argocd-image-updater` | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | controller state only | Argo CD bootstrap |
+| `argocd-image-updater` | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | controller state and GitHub App PR credential | external-secrets |
 | `external-secrets` | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | controller state only | platform-dns |
 | `cert-manager` | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | controller-managed certificates | external-secrets |
 | `istio` | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | controller state only | cert-manager |
@@ -39,7 +39,7 @@ Freqtrade desired-state files are deleted in the working tree. Recheck
 | `radarr` | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | persistent config, media refs, and PostgreSQL databases | cert-manager, istio, tailscale, deluge, media-postgres, prowlarr, platform-storage |
 | `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config, media refs, and PostgreSQL databases | cert-manager, istio, tailscale, deluge, media-postgres, prowlarr, platform-storage |
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
+| `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, Discord channel config, and Codex OAuth credentials on PVC | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, and instance settings; SSM key bootstraps fresh PVCs only | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | suspended at zero replicas until GitHub App SSM placeholders are replaced; stateless once enabled | external-secrets, cert-manager, istio, tailscale |
 | `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | persistent CLI bot config, logs, scripts, controllers, and encrypted connector state | external-secrets, platform-storage |

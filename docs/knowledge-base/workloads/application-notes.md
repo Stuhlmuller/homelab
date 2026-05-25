@@ -35,10 +35,10 @@ has passed.
 
 ## Argo CD Image Updater
 
-The cluster-local `ImageUpdater` selector is opt-in. Applications must carry
-the `homelab.stuhlmuller.dev/image-updater=enabled` label plus image updater
-annotations. Digest-pinned workloads need a digest-preserving Git path before
-automation.
+The cluster-local `homelab-managed-images` ImageUpdater manages repo-declared
+workload images from a central CR and opens GitHub pull requests through Git
+write-back. The `argocd-image-updater-git` ExternalSecret must resolve before
+updates can be pushed.
 
 ## Deluge
 
@@ -66,6 +66,15 @@ kubectl -n finance attach -it deploy/hummingbot -c app
 Do not add exchange API credentials, live-trading autostart, or strategy config
 until a separate PR documents backtest and paper-trading evidence and disables
 withdrawal access at the exchange.
+
+## OpenClaw
+
+OpenClaw persists runtime state on `/data/openclaw`. The startup bootstrap
+keeps the tailnet Control UI origin allow-list in config and registers the
+Discord channel account from `DISCORD_BOT_TOKEN` when
+`/homelab/openclaw/discord-bot-token` has been replaced in SSM. ChatGPT Pro
+access uses interactive OpenAI Codex OAuth stored on the PVC; do not model that
+as an SSM secret or committed API key.
 
 ## Media PostgreSQL
 

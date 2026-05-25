@@ -8,7 +8,7 @@ createClusterRoles: true
 config:
   argocd.namespace: argocd
   watch.namespaces: argocd
-  interval: 10m
+  interval: 12h
   log.level: info
   kube.events: true
   max_concurrent_apps: "5"
@@ -16,7 +16,19 @@ config:
   git.user: homelab-argocd-image-updater
   git.email: homelab-argocd-image-updater@example.invalid
   git.commit-sign-off: false
+  git.commit-message-template: |
+    chore: update images for {{ .AppName }}
+
+    {{ range .AppChanges -}}
+    Updates {{ .Image }} from {{ .OldTag }} to {{ .NewTag }}.
+    {{ end -}}
   registries:
+    - name: Docker Hub
+      api_url: https://registry-1.docker.io
+      prefix: docker.io
+      default: true
+      defaultns: library
+      ping: true
     - name: GitHub Container Registry
       api_url: https://ghcr.io
       prefix: ghcr.io
@@ -28,6 +40,10 @@ config:
     - name: LinuxServer
       api_url: https://lscr.io
       prefix: lscr.io
+      ping: false
+    - name: n8n
+      api_url: https://docker.n8n.io
+      prefix: docker.n8n.io
       ping: false
 
 metrics:

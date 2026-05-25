@@ -14,7 +14,7 @@ counted as requested workloads.
 | platform-dns | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Yes, no prune | Argo CD bootstrap |
 | platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | Yes | QNAP NFS export validation |
 | media-postgres | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | Yes | external-secrets, platform-storage |
-| argocd-image-updater | requested | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | Yes | Argo CD bootstrap |
+| argocd-image-updater | requested | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | Yes | external-secrets |
 | external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | platform-dns |
 | cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
 | istio | requested | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | Yes | cert-manager |
@@ -60,6 +60,13 @@ Terragrunt registers Applications through the repository-local
 `Application` CRDs through the Kubernetes provider, so routine registration does
 not require an exposed Argo CD API endpoint, an auth token in operator
 environment variables, or a manual local `argocd login`.
+
+## Image Updates
+
+Repo-declared workload images are managed by Argo CD Image Updater through
+`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`. Image updates
+use Git write-back pull requests against `main`; do not add live-only Argo CD
+parameter overrides for image drift.
 
 ## Sync And Health Exception Record
 

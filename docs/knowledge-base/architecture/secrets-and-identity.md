@@ -27,6 +27,10 @@ outside git.
 
 ## Identity Notes
 
+- Argo CD Image Updater uses the `argocd-image-updater-git` ExternalSecret for
+  GitHub App credentials that open image update pull requests through Git
+  write-back. Its SSM contract is summarized in
+  [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
 - Grafana Discord alerting uses the `grafana-discord-webhook` ExternalSecret
@@ -40,6 +44,10 @@ outside git.
   ExternalSecret and target Secret `cloudflare-api-token`.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
+- OpenClaw uses `/homelab/openclaw/discord-bot-token` as
+  `DISCORD_BOT_TOKEN` for startup Discord channel registration. ChatGPT Pro or
+  Codex OAuth credentials are interactive user credentials stored on the
+  OpenClaw PVC, not SSM parameters.
 - Policy Bot remains scaled to zero until its GitHub-App-owned SSM placeholders
   are replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].

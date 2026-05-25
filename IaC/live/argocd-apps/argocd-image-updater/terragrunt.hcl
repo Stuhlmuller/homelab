@@ -7,7 +7,7 @@ terraform {
 }
 
 dependencies {
-  paths = []
+  paths = ["../external-secrets"]
 }
 
 locals {

@@ -69,6 +69,7 @@ stack because Terraform manages the Kubernetes Secret.
 | App | ExternalSecret | Target Secret | SSM parameters |
 |-----|----------------|---------------|----------------|
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
+| argocd-image-updater | `argocd-image-updater-git` | `argocd-image-updater-git` | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
@@ -79,7 +80,7 @@ stack because Terraform manages the Kubernetes Secret.
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
-| openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token` |
+| openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 | hummingbot | `hummingbot-config` | `hummingbot-config` | `/homelab/hummingbot/config-password` |
@@ -98,11 +99,26 @@ Terragrunt-generated internal values:
 `/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
 until a repository-managed LiteLLM virtual-key workflow exists.
 
+OpenClaw reads `/homelab/openclaw/discord-bot-token` as
+`DISCORD_BOT_TOKEN`. Replace the placeholder directly in SSM before relying on
+Discord, then bump
+`homelab.rst.io/openclaw-discord-bot-token-ssm-version` in
+`clusters/homelab/apps/openclaw/values.yaml` to the resulting SSM parameter
+version so GitOps rolls OpenClaw and the startup bootstrap registers the
+Discord channel. ChatGPT Pro or Codex OAuth credentials are not SSM values; they
+are created interactively and persist on the OpenClaw PVC.
+
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
 token itself in git. The cert-manager ExternalSecret refreshes this value every
 five minutes so DNS-01 token rotations converge quickly without hand-editing the
 Kubernetes Secret.
+
+Argo CD Image Updater stores its GitHub App write-back credential in
+`argocd-image-updater-git`. Replace the GitHub App ID, installation ID, and
+private key placeholders in SSM before relying on automated image update pull
+requests. The GitHub App needs repository contents write access and pull-request
+write access for `Stuhlmuller/homelab`; the private key must stay outside git.
 
 ## Microsoft Entra SSO Bootstrap
 
