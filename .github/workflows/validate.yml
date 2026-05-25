@@ -1,0 +1,52 @@
+---
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+
+      - name: Check flake
+        run: nix flake check --no-build --all-systems
+
+      - name: Check HCL formatting
+        run: nix develop --command terragrunt hcl fmt --check
+
+      - name: Validate Terragrunt HCL
+        run: nix develop --command terragrunt hcl validate
+
+      - name: Check OpenTofu formatting
+        run: nix develop --command tofu fmt -check -recursive IaC
+
+      - name: Render Kustomize sources
+        run: |
+          for overlay in clusters/homelab/platform/storage clusters/homelab/argocd/self-management clusters/homelab/apps/*; do
+            test -f "$overlay/kustomization.yaml" || continue
+            echo "rendering $overlay"
+            nix develop --command kubectl kustomize "$overlay" >/dev/null
+          done
+
+      - name: Check whitespace
+        run: git diff --check
+
+      - name: Secret reference review
+        run: |
+          matches="$(rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" clusters IaC docs || true)"
+          printf "%s\n" "$matches"
+          ! printf "%s\n" "$matches" | rg -i -- "-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|-----BEGIN CERTIFICATE-----|AKIA[0-9A-Z]{16}|ghp_[0-9A-Za-z_]{36}"
