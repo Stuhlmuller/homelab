@@ -35,6 +35,14 @@ helm template <release> <chart> -f clusters/homelab/apps/<app>/values.yaml
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
+For Image Updater changes, also render the controller overlay and confirm the
+managed write-back targets stay intentional:
+
+```sh
+kubectl kustomize clusters/homelab/apps/argocd-image-updater
+rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-image-updater/imageupdater.yaml
+```
+
 ## Terragrunt Checks
 
 Focused unit validation:
@@ -50,7 +58,7 @@ Implicit stack validation:
 
 ```sh
 cd IaC/live/argocd-apps
-terragrunt run --all plan -no-color
+terragrunt run --all --parallelism 1 --source-update plan -no-color
 ```
 
 ## Live Rollout Rule

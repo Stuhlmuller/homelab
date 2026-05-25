@@ -10,25 +10,47 @@ the `argocd` namespace.
 
 ## Policy
 
-Image updates are opt-in only. An Application must carry:
+`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` owns the
+`homelab-managed-images` `ImageUpdater` resource. It manages every image this
+repo declares directly in workload Helm values or raw manifests:
 
-- Label: `homelab.stuhlmuller.dev/image-updater=enabled`
-- Image annotations under `argocd-image-updater.argoproj.io/*`
+- Deluge, Hummingbot, LiteLLM, Media Postgres, n8n, OpenClaw, Policy Bot,
+  Prowlarr, Radarr, and Sonarr.
+- Chart-default images remain tied to chart version updates until the repo adds
+  explicit values plus an `ImageUpdater` entry for them.
 
-The default write-back method is `argocd`, not Git. Do not opt digest-pinned
-workloads into the default write-back path because it can create runtime
-parameter overrides outside git and replace reviewed `tag@sha256:digest`
-values with tag-only values.
+Image Updater uses Git write-back with GitHub pull-request mode, not live-only
+Argo CD parameter overrides. The write-back credential is the
+`argocd-image-updater-git` ExternalSecret in the `argocd` namespace.
+
+## Secret Contract
+
+Required AWS SSM parameters:
+
+- `/homelab/argocd-image-updater/github-app/id`
+- `/homelab/argocd-image-updater/github-app/installation-id`
+- `/homelab/argocd-image-updater/github-app/private-key`
+
+The GitHub App needs repository contents write access and pull-request write
+access for `Stuhlmuller/homelab`.
 
 ## Gate
 
-No workloads currently opt in. Before enabling app automation, add a
-Git-reviewed update path that preserves tag-and-digest pins.
+`scripts/ci/static-checks.sh` still requires unmanaged image fields to be pinned
+as `tag@sha256:digest`. Tag-only image fields are allowed only inside
+ImageUpdater write-back targets listed in `homelab-managed-images`.
 
-Verify controller and selector:
+Verify controller, credential, and selector:
 
 ```sh
 kubectl -n argocd get deploy argocd-image-updater-controller
-kubectl -n argocd get imageupdater homelab-annotation-opt-in
+kubectl -n argocd get externalsecret argocd-image-updater-git
+kubectl -n argocd get imageupdater homelab-managed-images
 kubectl -n argocd logs deploy/argocd-image-updater-controller
 ```
+
+## Related Notes
+
+- [[../architecture/gitops-flow]]
+- [[../architecture/secrets-and-identity]]
+- [[../workloads/inventory]]

@@ -17,6 +17,10 @@ OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
 that point back at repository-owned manifests, Helm values, or Kustomize
 overlays.
 
+Argo CD Image Updater follows the same review path for repo-declared workload
+images: it writes changes to GitHub pull requests instead of keeping live-only
+Argo CD parameter overrides as steady state.
+
 ## Important Paths
 
 | Concern | Path |

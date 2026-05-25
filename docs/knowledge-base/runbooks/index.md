@@ -29,7 +29,7 @@ what to read, what facts matter, and what must be updated with future changes.
 - [[rollback]] records dependency-aware app rollback order.
 - [[talos-control-plane-maintenance]] records issuer drift repair and upgrade
   gates.
-- [[image-automation]] records the opt-in Argo CD Image Updater policy.
+- [[image-automation]] records the Argo CD Image Updater pull-request policy.
 
 ## Supporting Maps
 

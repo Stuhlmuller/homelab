@@ -27,6 +27,9 @@ workloads; they exist so dependency state is still delivered through Argo CD.
   exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under
   `clusters/homelab/apps/<app>/` or `clusters/homelab/platform/<service>/`.
+- Add repo-declared workload images to
+  `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` when they
+  should be kept current by Image Updater pull requests.
 
 ## Readiness Semantics
 

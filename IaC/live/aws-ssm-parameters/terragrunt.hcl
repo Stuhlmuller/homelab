@@ -49,6 +49,18 @@ inputs = {
       description   = "Argo CD OIDC client secret."
       initial_value = local.placeholder
     }
+    "/homelab/argocd-image-updater/github-app/id" = {
+      description   = "GitHub App ID used by Argo CD Image Updater to open image update pull requests."
+      initial_value = local.placeholder
+    }
+    "/homelab/argocd-image-updater/github-app/installation-id" = {
+      description   = "GitHub App installation ID used by Argo CD Image Updater to open image update pull requests."
+      initial_value = local.placeholder
+    }
+    "/homelab/argocd-image-updater/github-app/private-key" = {
+      description   = "GitHub App private key used by Argo CD Image Updater to open image update pull requests."
+      initial_value = local.placeholder
+    }
     "/homelab/cert-manager/cloudflare-api-token" = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder
@@ -127,6 +139,10 @@ inputs = {
       generated = {
         source_parameter = "/homelab/litellm/master-key"
       }
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/discord-bot-token" = {
+      description   = "OpenClaw Discord bot token used to configure the Discord channel account at startup."
       initial_value = local.placeholder
     }
     "/homelab/n8n/encryption-key" = {

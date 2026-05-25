@@ -63,6 +63,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: write
     timeout-minutes: 60
     steps:
       - name: Check Out Repository
@@ -112,7 +113,16 @@ jobs:
           kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
+        env:
+          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: nix develop --command bash scripts/ci/terragrunt-plan.sh
+
+      - name: Update PR Description With Plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
+        run: bash scripts/ci/update-pr-plan-description.sh
 
   fork-plan-skipped:
     name: Terragrunt Plan Skipped For Fork

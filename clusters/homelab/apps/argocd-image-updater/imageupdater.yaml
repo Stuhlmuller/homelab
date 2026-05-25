@@ -2,7 +2,7 @@
 apiVersion: argocd-image-updater.argoproj.io/v1alpha1
 kind: ImageUpdater
 metadata:
-  name: homelab-annotation-opt-in
+  name: homelab-managed-images
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "1"
@@ -13,11 +13,238 @@ spec:
       - latest
       - main
       - dev
-  writeBackConfig:
-    method: argocd
   applicationRefs:
-    - namePattern: "*"
-      labelSelectors:
-        matchLabels:
-          homelab.stuhlmuller.dev/image-updater: enabled
-      useAnnotations: true
+    - namePattern: deluge
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/deluge/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: downloadDirs
+          imageName: busybox:1.x
+          manifestTargets:
+            helm:
+              name: controllers.deluge.initContainers.download-dirs.image.repository
+              tag: controllers.deluge.initContainers.download-dirs.image.tag
+        - alias: gluetun
+          imageName: ghcr.io/qdm12/gluetun:v3.x
+          manifestTargets:
+            helm:
+              name: controllers.deluge.initContainers.gluetun.image.repository
+              tag: controllers.deluge.initContainers.gluetun.image.tag
+        - alias: delugeApp
+          imageName: lscr.io/linuxserver/deluge:2.x
+          manifestTargets:
+            helm:
+              name: controllers.deluge.containers.app.image.repository
+              tag: controllers.deluge.containers.app.image.tag
+        - alias: delugePortConfig
+          imageName: lscr.io/linuxserver/deluge:2.x
+          manifestTargets:
+            helm:
+              name: controllers.deluge.containers.port-config.image.repository
+              tag: controllers.deluge.containers.port-config.image.tag
+    - namePattern: hummingbot
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/hummingbot/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: hummingbotBootstrap
+          imageName: hummingbot/hummingbot
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^version-[0-9]+\.[0-9]+\.[0-9]+$
+          manifestTargets:
+            helm:
+              name: controllers.hummingbot.initContainers.bootstrap-password.image.repository
+              tag: controllers.hummingbot.initContainers.bootstrap-password.image.tag
+        - alias: hummingbotApp
+          imageName: hummingbot/hummingbot
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^version-[0-9]+\.[0-9]+\.[0-9]+$
+          manifestTargets:
+            helm:
+              name: controllers.hummingbot.containers.app.image.repository
+              tag: controllers.hummingbot.containers.app.image.tag
+    - namePattern: litellm
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/litellm/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: litellm
+          imageName: ghcr.io/berriai/litellm-database
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^main-v[0-9]+\.[0-9]+\.[0-9]+-stable$
+          manifestTargets:
+            helm:
+              name: image.repository
+              tag: image.tag
+    - namePattern: media-postgres
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: kustomization:/clusters/homelab/apps/media-postgres
+          pullRequest:
+            github: {}
+      images:
+        - alias: postgres
+          imageName: postgres
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^14\.[0-9]+-bookworm$
+          manifestTargets:
+            kustomize:
+              name: postgres
+    - namePattern: n8n
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/n8n/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: n8n
+          imageName: docker.n8n.io/n8nio/n8n:2.x
+          manifestTargets:
+            helm:
+              name: controllers.n8n.containers.app.image.repository
+              tag: controllers.n8n.containers.app.image.tag
+    - namePattern: openclaw
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/openclaw/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: openclawBootstrap
+          imageName: ghcr.io/openclaw/openclaw:2026.x
+          manifestTargets:
+            helm:
+              name: controllers.openclaw.initContainers.bootstrap-config.image.repository
+              tag: controllers.openclaw.initContainers.bootstrap-config.image.tag
+        - alias: openclawApp
+          imageName: ghcr.io/openclaw/openclaw:2026.x
+          manifestTargets:
+            helm:
+              name: controllers.openclaw.containers.app.image.repository
+              tag: controllers.openclaw.containers.app.image.tag
+        - alias: openclawProxy
+          imageName: ghcr.io/openclaw/openclaw:2026.x
+          manifestTargets:
+            helm:
+              name: controllers.openclaw.containers.proxy.image.repository
+              tag: controllers.openclaw.containers.proxy.image.tag
+    - namePattern: policy-bot
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: kustomization:/clusters/homelab/apps/policy-bot
+          pullRequest:
+            github: {}
+      images:
+        - alias: policybot
+          imageName: palantirtechnologies/policy-bot:1.x
+          manifestTargets:
+            kustomize:
+              name: palantirtechnologies/policy-bot
+    - namePattern: prowlarr
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/prowlarr/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: prowlarrPostgresConfig
+          imageName: lscr.io/linuxserver/prowlarr:2.x
+          manifestTargets:
+            helm:
+              name: controllers.prowlarr.initContainers.configure-postgres.image.repository
+              tag: controllers.prowlarr.initContainers.configure-postgres.image.tag
+        - alias: prowlarrApp
+          imageName: lscr.io/linuxserver/prowlarr:2.x
+          manifestTargets:
+            helm:
+              name: controllers.prowlarr.containers.app.image.repository
+              tag: controllers.prowlarr.containers.app.image.tag
+    - namePattern: radarr
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/radarr/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: radarrPostgresConfig
+          imageName: lscr.io/linuxserver/radarr:5.x
+          manifestTargets:
+            helm:
+              name: controllers.radarr.initContainers.configure-postgres.image.repository
+              tag: controllers.radarr.initContainers.configure-postgres.image.tag
+        - alias: radarrApp
+          imageName: lscr.io/linuxserver/radarr:5.x
+          manifestTargets:
+            helm:
+              name: controllers.radarr.containers.app.image.repository
+              tag: controllers.radarr.containers.app.image.tag
+    - namePattern: sonarr
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/sonarr/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: sonarrPostgresConfig
+          imageName: lscr.io/linuxserver/sonarr:4.x
+          manifestTargets:
+            helm:
+              name: controllers.sonarr.initContainers.configure-postgres.image.repository
+              tag: controllers.sonarr.initContainers.configure-postgres.image.tag
+        - alias: sonarrApp
+          imageName: lscr.io/linuxserver/sonarr:4.x
+          manifestTargets:
+            helm:
+              name: controllers.sonarr.containers.app.image.repository
+              tag: controllers.sonarr.containers.app.image.tag

@@ -37,6 +37,9 @@ Freqtrade desired-state files, so reconcile source docs before publishing.
 - Declare upstream relationships with `dependencies`.
 - Use automated sync with prune and self-heal by default; document exceptions.
 - Keep non-secret values and raw manifests under repo-owned app/platform paths.
+- Manage repo-declared workload image updates through
+  `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`, which opens
+  GitHub pull requests through Git write-back.
 
 ## Readiness Semantics
 

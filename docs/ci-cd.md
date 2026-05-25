@@ -18,8 +18,10 @@ run the static checks only.
   `pull_request_target`.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
-- GitHub token permissions default to none. Jobs opt in to `contents: read`,
-  and only the live Terragrunt jobs request `id-token: write`.
+- GitHub token permissions default to none. Jobs opt in to `contents: read`;
+  live Terragrunt jobs request `id-token: write`; and the trusted PR plan job
+  requests `pull-requests: write` only so it can refresh the managed plan
+  section in the PR description after a successful plan.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Tailscale access uses an auth key because this tailnet has tailnet lock
@@ -40,10 +42,18 @@ run the static checks only.
   narrower `10.1.0.199/32` route for the Kubernetes API; prefer that route once
   it is approved in the tailnet.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
-  include sensitive state context.
-- Automatic PR plans intentionally skip `IaC/live/kubernetes-secrets` because
-  that unit reads decrypted AWS SSM parameters. The protected post-merge apply
-  runs the full `IaC/live` stack.
+  include sensitive state context. Trusted same-repository PR plans render the
+  saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
+  the managed `<!-- terragrunt-plan:start -->` section in the PR description
+  after every successful plan.
+- Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
+  that unit refreshes managed KMS, IAM, and SSM resources that require the
+  protected production apply role. They also skip `IaC/live/kubernetes-secrets`
+  because that unit reads decrypted AWS SSM parameters.
+- The protected post-merge apply runs the production phases explicitly:
+  bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
+  registrations, apply Argo CD Application registrations serially, and finally
+  materialize Kubernetes Secrets from SSM.
 
 References:
 
@@ -63,21 +73,25 @@ Create two GitHub environments:
 - `homelab-production`: used by post-merge applies. Require reviewers and limit
   deployment branches to `main`.
 
-Add these secrets to both environments. Repository-level secrets also work, but
-environment secrets are preferred so production credentials can have approval
-rules and tighter rotation:
+Add `TS_AUTH_KEY` and `KUBE_CONFIG_B64` to both environments. Add
+`AZUREAD_CLIENT_SECRET` to `homelab-production`. Repository-level secrets also
+work, but environment secrets are preferred so production credentials can have
+approval rules and tighter rotation:
 
-| Secret | Purpose |
-|--------|---------|
-| `TS_AUTH_KEY` | Tailscale auth key allowed by tailnet lock and scoped to the CI runner tags. |
-| `KUBE_CONFIG_B64` | Base64-encoded kubeconfig for the homelab cluster. |
+| Secret | Environment | Purpose |
+|--------|-------------|---------|
+| `TS_AUTH_KEY` | both | Tailscale auth key allowed by tailnet lock and scoped to the CI runner tags. |
+| `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
+| `AZUREAD_CLIENT_SECRET` | `homelab-production` | Microsoft Entra application secret used by the AzureAD provider during production applies. |
 
 Add these environment variables:
 
 | Variable | Environment | Purpose |
 |----------|-------------|---------|
 | `AWS_ROLE_TO_ASSUME_HOMELAB` | repository or `homelab-plan` | AWS role used by PR plans. |
-| `AWS_TERRAGRUNT_APPLY_ROLE_ARN` | workflow env | Pinned to `arn:aws:iam::716182248480:role/Github-Actions-IDP` for post-merge applies. |
+| `AWS_TERRAGRUNT_APPLY_ROLE_ARN` | `homelab-production` | AWS role used by protected post-merge applies. |
+| `AZUREAD_CLIENT_ID` | `homelab-production` | Microsoft Entra application client ID used by the AzureAD provider. |
+| `AZUREAD_TENANT_ID` | `homelab-production` | Microsoft Entra tenant ID used by the AzureAD provider. |
 
 ## Tailscale Setup
 
@@ -162,9 +176,23 @@ only for this repository and the expected environment subject:
 
 Use `repo:Stuhlmuller/homelab:environment:homelab-plan` for the plan role.
 The plan role should have the narrowest read access that lets OpenTofu refresh
-state and create state lock files. The apply workflow assumes
-`arn:aws:iam::716182248480:role/Github-Actions-IDP`; that role needs the write
-permissions for the resources represented under `IaC/`.
+state and create state lock files for the bootstrap and Argo CD Application
+registration stacks. It does not need to refresh the SSM declaration stack.
+
+Set `AWS_TERRAGRUNT_APPLY_ROLE_ARN` in `homelab-production` to the role used by
+the protected apply workflow. That role needs the write permissions for the
+resources represented under `IaC/`, including S3 state lock writes and OpenTofu
+state encryption access to `alias/homelab-opentofu` in the state region
+(`us-east-1`). Required state-key permissions include `kms:Decrypt`,
+`kms:DescribeKey`, `kms:Encrypt`, `kms:GenerateDataKey`, and
+`kms:ReEncrypt*`. It also needs the IAM, KMS, and SSM permissions required by
+`IaC/live/aws-ssm-parameters` and the AWS SSM writes generated by
+`IaC/live/azuread-applications/grafana`.
+
+The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
+`ARM_TENANT_ID` environment variables mapped from the protected GitHub
+environment values above. Keep those credentials scoped to the Grafana Entra
+application workflow.
 
 ## Local Equivalents
 
@@ -174,6 +202,15 @@ Run the same checks locally through the Nix shell:
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
 ```
+
+The PR plan script intentionally skips the privileged SSM declaration and
+Kubernetes secret materialization stacks. To review those locally, assume the
+production apply role, install the kubeconfig, and run a focused
+`terragrunt plan` from the stack directory.
+
+Set `TERRAGRUNT_PLAN_MARKDOWN=/path/to/terragrunt-plan.md` when running the PR
+plan script locally if you want the same rendered `plan.out` markdown that the
+workflow writes into pull request descriptions.
 
 Only run apply after the same validation has passed and the change has been
 reviewed:

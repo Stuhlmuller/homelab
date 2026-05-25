@@ -38,12 +38,46 @@ tag_only_images="$(
   {
     rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
     rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
-  } | rg -v '@sha256:' || true
+  } \
+    | rg -v '@sha256:' \
+    | rg -v 'clusters/homelab/apps/argocd-image-updater/imageupdater\.yaml:[0-9]+:\s+tag:\s+.*image\.tag$' \
+    || true
 )"
 
+image_updater_targets=()
+if [[ -f clusters/homelab/apps/argocd-image-updater/imageupdater.yaml ]]; then
+  while IFS= read -r target; do
+    image_updater_targets+=("$target")
+  done < <(
+    {
+      rg -o 'writeBackTarget:\s*"?(helmvalues|kustomization):/[^"[:space:]]+"?' \
+        clusters/homelab/apps/argocd-image-updater/imageupdater.yaml || true
+    } | sed -E 's#writeBackTarget:[[:space:]]*"?(helmvalues|kustomization):/([^"[:space:]]+)"?#\2#'
+  )
+fi
+
+unmanaged_tag_only_images=""
 if [[ -n "$tag_only_images" ]]; then
-  echo "Container images in cluster desired state must be pinned as tag@sha256:digest:" >&2
-  printf '%s\n' "$tag_only_images" >&2
+  while IFS= read -r image_line; do
+    image_file="${image_line%%:*}"
+    image_updater_managed=false
+
+    for target in "${image_updater_targets[@]}"; do
+      if [[ "$image_file" == "$target" || "$image_file" == "$target"/* ]]; then
+        image_updater_managed=true
+        break
+      fi
+    done
+
+    if [[ "$image_updater_managed" == false ]]; then
+      unmanaged_tag_only_images+="${image_line}"$'\n'
+    fi
+  done <<<"$tag_only_images"
+fi
+
+if [[ -n "$unmanaged_tag_only_images" ]]; then
+  echo "Container images outside Argo CD Image Updater write-back targets must be pinned as tag@sha256:digest:" >&2
+  printf '%s\n' "$unmanaged_tag_only_images" >&2
   exit 1
 fi
 echo "::endgroup::"
