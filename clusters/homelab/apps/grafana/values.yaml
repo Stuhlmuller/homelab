@@ -18,6 +18,15 @@ datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
+      - name: Alertmanager
+        uid: alertmanager
+        type: alertmanager
+        access: proxy
+        url: http://prometheus-kube-prometheus-alertmanager.monitoring:9093
+        editable: false
+        jsonData:
+          implementation: prometheus
+          handleGrafanaManagedAlerts: false
       - name: Prometheus
         uid: prometheus
         type: prometheus
@@ -29,15 +38,6 @@ datasources:
           httpMethod: POST
           timeInterval: 30s
           alertmanagerUid: alertmanager
-      - name: Alertmanager
-        uid: alertmanager
-        type: alertmanager
-        access: proxy
-        url: http://prometheus-kube-prometheus-alertmanager.monitoring:9093
-        editable: false
-        jsonData:
-          implementation: prometheus
-          handleGrafanaManagedAlerts: false
 dashboardProviders:
   dashboardproviders.yaml:
     apiVersion: 1
