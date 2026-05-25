@@ -55,10 +55,7 @@ locals {
     server    = try(var.destination.server, null)
   }
 
-  computed_fields = distinct(concat(
-    var.computed_fields == null ? [] : var.computed_fields,
-    try(var.destination.name, null) == null ? ["spec.destination.name"] : []
-  ))
+  computed_fields = var.computed_fields == null ? [] : var.computed_fields
 
   sources = [
     for source in var.sources : merge(
