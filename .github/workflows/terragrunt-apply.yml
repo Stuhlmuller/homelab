@@ -88,10 +88,12 @@ jobs:
         # tailscale/github-action@v4
         uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8
         with:
-          args: --accept-routes=true
           authkey: ${{ secrets.TS_AUTH_KEY }}
           tags: tag:github-actions-terragrunt-apply
           version: ${{ env.TAILSCALE_VERSION }}
+
+      - name: Accept Tailnet Subnet Routes
+        run: sudo tailscale set --accept-routes=true
 
       - name: Install Kubeconfig
         env:
