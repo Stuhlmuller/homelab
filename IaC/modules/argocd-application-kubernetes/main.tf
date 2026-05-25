@@ -50,11 +50,11 @@ locals {
     length(try(var.metadata.labels, {})) > 0 ? { labels = var.metadata.labels } : {}
   )
 
-  destination = {
-    name      = try(var.destination.name, null)
-    namespace = try(var.destination.namespace, null)
-    server    = try(var.destination.server, null)
-  }
+  destination = merge(
+    try(var.destination.name, null) != null ? { name = var.destination.name } : {},
+    try(var.destination.namespace, null) != null ? { namespace = var.destination.namespace } : {},
+    try(var.destination.server, null) != null ? { server = var.destination.server } : {}
+  )
 
   computed_fields = var.computed_fields == null ? [] : var.computed_fields
 
