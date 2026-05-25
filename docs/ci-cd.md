@@ -31,6 +31,8 @@ run the static checks only.
 - The workflow does not use the Tailscale action's built-in `ping` input for
   subnet-routed cluster addresses. Kubernetes reachability is verified with
   `kubectl --request-timeout=15s version` after kubeconfig installation.
+- The Tailscale client starts with `--accept-routes=true` so it can use the
+  subnet route to the Kubernetes API endpoint.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context.
 - Automatic PR plans intentionally skip `IaC/live/kubernetes-secrets` because
