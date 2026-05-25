@@ -65,7 +65,7 @@ Add these environment variables:
 
 | Variable | Environment | Purpose |
 |----------|-------------|---------|
-| `AWS_TERRAGRUNT_PLAN_ROLE_ARN` | `homelab-plan` | AWS role used by PR plans. |
+| `AWS_ROLE_TO_ASSUME_HOMELAB` | repository or `homelab-plan` | AWS role used by PR plans. |
 | `AWS_TERRAGRUNT_APPLY_ROLE_ARN` | workflow env | Pinned to `arn:aws:iam::716182248480:role/Github-Actions-IDP` for post-merge applies. |
 
 ## Tailscale Setup

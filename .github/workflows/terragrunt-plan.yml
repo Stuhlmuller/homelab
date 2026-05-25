@@ -83,7 +83,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
           role-session-name: homelab-terragrunt-plan-${{ github.run_id }}
-          role-to-assume: ${{ vars.AWS_TERRAGRUNT_PLAN_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
       - name: Connect To Tailnet
