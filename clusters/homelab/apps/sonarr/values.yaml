@@ -17,7 +17,7 @@ controllers:
           - -ec
           - |
             config=/config/config.xml
-            tmp="$(mktemp)"
+            tmp="$(mktemp /tmp/sonarr-config.XXXXXXXXXX)"
 
             xml_escape() {
               printf '%s' "$1" \
