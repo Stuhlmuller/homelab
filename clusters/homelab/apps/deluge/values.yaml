@@ -7,6 +7,7 @@ controllers:
     pod:
       annotations:
         homelab.rst.io/ambient-dns-capture: "disabled"
+        homelab.rst.io/wireguard-address-mode: "ipv4-only"
     strategy: RollingUpdate
     rollingUpdate:
       unavailable: 0

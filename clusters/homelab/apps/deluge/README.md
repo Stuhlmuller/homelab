@@ -18,7 +18,10 @@ Parameter Store:
 | `/homelab/deluge/vpn/wireguard-addresses` | interface `Address` |
 
 Use only the IPv4 CIDR in `WIREGUARD_ADDRESSES` unless the cluster and Pod
-network are intentionally configured for IPv6.
+network are intentionally configured for IPv6. The ExternalSecret template
+extracts the first IPv4 CIDR from the SSM value before writing the Kubernetes
+Secret so AirVPN-provided IPv6 addresses do not make Gluetun configure IPv6
+routing in this IPv4-only cluster.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
