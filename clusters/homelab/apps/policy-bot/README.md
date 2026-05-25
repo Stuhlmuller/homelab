@@ -4,12 +4,11 @@ Policy Bot runs as the homelab GitHub App policy evaluator. It has no persistent
 volume; all runtime credentials come from AWS SSM Parameter Store through
 External Secrets and are rendered into `/secrets/policy-bot.yml`.
 
-The Deployment is intentionally suspended with `replicas: 0` until the
-GitHub-App-owned SSM placeholders are replaced. This avoids a noisy crashloop
-from a rendered placeholder config while keeping the Service, Funnel route, and
-GitOps registration reviewable in code. After the GitHub App ID, private key,
-OAuth client ID, and OAuth client secret are populated in SSM, scale the
-Deployment to `replicas: 1` in this file path and let Argo CD roll it out.
+The Deployment runs one replica after the GitHub-App-owned SSM placeholders are
+replaced. Keep `replicas: 1` or higher so the policy evaluator and webhook
+receiver stay online. If credentials need to be revoked or rebuilt, scale this
+file path back to `replicas: 0` in git before Argo CD rolls out placeholder
+config.
 
 ## Routes
 
@@ -61,14 +60,15 @@ webhook settings before expecting deliveries to validate.
 
 ```sh
 kubectl kustomize clusters/homelab/apps/policy-bot
-kubectl -n automation get deploy,svc,ingress,externalsecret policy-bot policy-bot-hook-funnel policy-bot-config
+kubectl -n automation get deploy,pod,svc,ingress,externalsecret policy-bot policy-bot-hook-funnel policy-bot-config
 kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=policy-bot-hook-funnel
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
 curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
 ```
 
-Expected route behavior: the details URL redirects to `/api/github/auth`, the
-public hook returns `400` for an unsigned empty request, and
+Expected workload behavior: the Deployment has one available replica. Expected
+route behavior: the details URL redirects to `/api/github/auth`, the public hook
+returns `400` for an unsigned empty request, and
 `https://policy-bot-hook.<tailnet-name>.ts.net/` is not routed.
 
 ## Rollback

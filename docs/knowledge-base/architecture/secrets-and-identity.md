@@ -40,8 +40,8 @@ outside git.
   ExternalSecret and target Secret `cloudflare-api-token`.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
-- Policy Bot remains scaled to zero until its GitHub-App-owned SSM placeholders
-  are replaced. Its SSM contract is summarized in
+- Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
+  replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
 - Hummingbot is an in-flight app addition in the current working tree. Its SSM
   contract is summarized in [[runbooks/secrets-aws-ssm]] and
