@@ -33,7 +33,7 @@ inputs = {
     }
   }
 
-  project = "default"
+  project = "homelab"
 
   destination = {
     server    = "https://kubernetes.default.svc"

@@ -13,7 +13,7 @@ metadata:
     homelab.stuhlmuller.dev/storage-backend: qnap-nfs
     homelab.stuhlmuller.dev/qnap-export: 10.1.0.2:/homelab
 spec:
-  project: default
+  project: homelab
   source:
     repoURL: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
     chart: nfs-subdir-external-provisioner

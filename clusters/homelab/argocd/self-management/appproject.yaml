@@ -1,0 +1,81 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Homelab GitOps applications managed from the public repository.
+  sourceRepos:
+    - https://github.com/Stuhlmuller/homelab.git
+    - https://argoproj.github.io/argo-helm
+    - https://bjw-s-labs.github.io/helm-charts
+    - https://charts.external-secrets.io
+    - https://charts.jetstack.io
+    - https://grafana.github.io/helm-charts
+    - https://istio-release.storage.googleapis.com/charts
+    - https://kubernetes-sigs.github.io/descheduler
+    - https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+    - https://pkgs.tailscale.com/helmcharts
+    - https://prometheus-community.github.io/helm-charts
+    - ghcr.io/berriai
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: ai
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: automation
+    - server: https://kubernetes.default.svc
+      namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
+    - server: https://kubernetes.default.svc
+      namespace: istio-system
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: media
+    - server: https://kubernetes.default.svc
+      namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: storage
+    - server: https://kubernetes.default.svc
+      namespace: tailscale
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: ""
+      kind: PersistentVolume
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    - group: apiregistration.k8s.io
+      kind: APIService
+    - group: cert-manager.io
+      kind: ClusterIssuer
+    - group: external-secrets.io
+      kind: ClusterExternalSecret
+    - group: external-secrets.io
+      kind: ClusterSecretStore
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass
+    - group: networking.k8s.io
+      kind: IngressClass
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    - group: scheduling.k8s.io
+      kind: PriorityClass
+    - group: storage.k8s.io
+      kind: CSIDriver
+    - group: storage.k8s.io
+      kind: StorageClass
+    - group: tailscale.com
+      kind: ProxyClass

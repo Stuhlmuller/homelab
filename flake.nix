@@ -31,6 +31,7 @@
               awscli2
               kubectl
               opentofu
+              ripgrep
               talosctl
               terragrunt
             ];
