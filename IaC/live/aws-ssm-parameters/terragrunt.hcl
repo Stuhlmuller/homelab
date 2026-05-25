@@ -106,5 +106,13 @@ inputs = {
       description   = "Tines admin password."
       initial_value = local.placeholder
     }
+    "/homelab/tines/registry-username" = {
+      description   = "Username for pulling the licensed Tines self-hosted image."
+      initial_value = local.placeholder
+    }
+    "/homelab/tines/registry-password" = {
+      description   = "Password or token for pulling the licensed Tines self-hosted image."
+      initial_value = local.placeholder
+    }
   }
 }

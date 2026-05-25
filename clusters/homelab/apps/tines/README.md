@@ -9,5 +9,7 @@ tag.
 Before enabling runtime use:
 
 - Replace `pinned-version-required` with the licensed, immutable Tines image tag.
-- Add any required image pull secret through External Secrets.
+- Update `/homelab/tines/registry-username` and
+  `/homelab/tines/registry-password` in AWS SSM Parameter Store so the
+  `tines-registry` image pull secret can pull the licensed image.
 - Confirm NFS backup coverage for automation history and runtime state.
