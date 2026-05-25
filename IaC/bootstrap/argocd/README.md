@@ -15,9 +15,10 @@ CD Application CRD and applies the repo-owned `argocd-self-management`
 manifest.
 
 The Helm values also configure Argo CD SSO through the bundled Dex server with
-an OpenID Connect connector. The connector reads its provider-specific values
-through the Argo CD secret reference syntax from a Kubernetes Secret named
-`argocd-oidc-sso`.
+an OpenID Connect connector. The browser-facing Argo CD URL is committed here
+as non-secret desired state; the connector reads its provider-specific secret
+values through the Argo CD secret reference syntax from a Kubernetes Secret
+named `argocd-oidc-sso`.
 
 External Secrets Operator resources for creating `argocd-oidc-sso` from AWS
 Systems Manager Parameter Store live in the Argo CD self-management path at
@@ -29,14 +30,13 @@ Required Parameter Store paths:
 
 | Path | Kubernetes key | Purpose |
 | --- | --- | --- |
-| `/homelab/argocd/oidc/url` | `url` | Browser-facing Argo CD base URL registered with the IdP. |
 | `/homelab/argocd/oidc/issuer` | `issuer` | OIDC issuer URL used for provider discovery. |
 | `/homelab/argocd/oidc/client-id` | `clientID` | OIDC client ID issued by the IdP. |
 | `/homelab/argocd/oidc/client-secret` | `clientSecret` | OIDC client secret kept out of git. |
 
-Register `<url>/api/dex/callback` as the IdP callback URL. Argo CD derives the
-Dex connector callback from its configured `url`; do not store a separate
-callback value in git or Parameter Store.
+Register `https://argocd.stinkyboi.com/api/dex/callback` as the IdP callback
+URL. Argo CD derives the Dex connector callback from its configured `url`; do
+not store a separate callback value in git or Parameter Store.
 
 The `terraform.source` value points directly at the Terragrunt catalog
 `helm-release` module pinned to version `0.3.0`. There are no repository-local

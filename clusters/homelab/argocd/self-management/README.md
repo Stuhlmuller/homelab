@@ -19,6 +19,8 @@ This path also owns the External Secrets Operator resources that create the
 Keep those resources here instead of the Terragrunt bootstrap Helm values so a
 fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
 `oidc-external-secret.yaml` only after External Secrets Operator is installed
-and allowed to read `/homelab/argocd/oidc/*` parameters in `us-west-2`.
+and allowed to read the Argo CD OIDC issuer, client ID, and client secret
+parameters in `us-west-2`. The browser-facing Argo CD URL is non-secret
+desired state in the bootstrap Terragrunt values, not an SSM parameter.
 The ExternalSecret refreshes every 5 minutes so bootstrap recovery is picked up
 soon after the shared `aws-ssm` ClusterSecretStore becomes ready.

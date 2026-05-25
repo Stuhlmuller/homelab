@@ -30,10 +30,6 @@ inputs = {
   ]
 
   parameters = {
-    "/homelab/argocd/oidc/url" = {
-      description   = "Argo CD browser-facing base URL registered with the IdP."
-      initial_value = local.placeholder
-    }
     "/homelab/argocd/oidc/issuer" = {
       description   = "Argo CD OIDC issuer URL used for provider discovery."
       initial_value = local.placeholder

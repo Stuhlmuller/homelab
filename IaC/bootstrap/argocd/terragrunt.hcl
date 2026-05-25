@@ -33,7 +33,7 @@ inputs = {
     yamlencode({
       configs = {
         cm = {
-          url          = format("$%s:url", local.oidc_sso_secret_name)
+          url          = "https://argocd.stinkyboi.com"
           "dex.config" = <<-EOT
             connectors:
               - type: oidc
