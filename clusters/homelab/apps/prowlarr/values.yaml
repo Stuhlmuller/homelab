@@ -4,6 +4,9 @@ controllers:
   prowlarr:
     serviceAccount:
       identifier: prowlarr
+    pod:
+      annotations:
+        homelab.rst.io/mesh-mode: "tailnet-ingress"
     initContainers:
       configure-postgres:
         image:
