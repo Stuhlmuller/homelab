@@ -32,6 +32,13 @@ The hook retries while Deluge starts. If it cannot connect to Deluge and apply
 the port configuration, Kubernetes restarts the app container instead of leaving
 the Pod ready with an unknown listening port.
 
+## Pod Security
+
+Gluetun needs `NET_ADMIN` and `/dev/net/tun` to create the WireGuard tunnel.
+The `media` namespace is labeled for privileged Pod Security admission by this
+app path so Kubernetes can admit the Deluge VPN Pod. Keep privileged workloads
+in this namespace limited to repo-reviewed media automation.
+
 ## Verification
 
 After SSM values are replaced and Argo CD syncs Deluge:
