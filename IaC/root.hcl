@@ -1,7 +1,6 @@
 locals {
   project_name           = "homelab"
   aws_region             = "us-west-2"
-  legacy_aws_region      = "us-east-1"
   state_region           = "us-east-1"
   kms_key_id             = "alias/homelab-opentofu"
   kms_region             = local.aws_region

@@ -1,11 +1,3 @@
-data "aws_ssm_parameter" "legacy" {
-  for_each = var.copy_initial_values_from_legacy_region ? var.parameters : {}
-
-  provider        = aws.legacy
-  name            = each.key
-  with_decryption = true
-}
-
 data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "kms" {
@@ -58,7 +50,7 @@ resource "aws_ssm_parameter" "this" {
   name        = each.key
   description = each.value.description
   type        = "SecureString"
-  value       = var.copy_initial_values_from_legacy_region ? data.aws_ssm_parameter.legacy[each.key].value : each.value.initial_value
+  value       = each.value.initial_value
   key_id      = local.effective_kms_key_id
   tier        = each.value.tier
   tags        = var.tags

@@ -3,10 +3,9 @@ include "root" {
 }
 
 locals {
-  root_config       = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  aws_region        = local.root_config.locals.aws_region
-  legacy_aws_region = local.root_config.locals.legacy_aws_region
-  placeholder       = "REPLACE_ME"
+  root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region  = local.root_config.locals.aws_region
+  placeholder = "REPLACE_ME"
 }
 
 terraform {
@@ -20,18 +19,12 @@ generate "aws_provider" {
 provider "aws" {
   region = "${local.aws_region}"
 }
-
-provider "aws" {
-  alias  = "legacy"
-  region = "${local.legacy_aws_region}"
-}
 EOF
 }
 
 inputs = {
-  aws_region                             = local.aws_region
-  create_kms_key                         = true
-  copy_initial_values_from_legacy_region = true
+  aws_region     = local.aws_region
+  create_kms_key = true
 
   parameters = {
     "/homelab/argocd/oidc/url" = {

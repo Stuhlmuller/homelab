@@ -29,12 +29,6 @@ variable "kms_key_description" {
   default     = "Homelab OpenTofu-managed SSM Parameter Store key."
 }
 
-variable "copy_initial_values_from_legacy_region" {
-  description = "One-time migration switch that seeds the destination parameters from the legacy AWS provider alias."
-  type        = bool
-  default     = false
-}
-
 variable "tags" {
   description = "Tags applied to every SSM parameter."
   type        = map(string)
