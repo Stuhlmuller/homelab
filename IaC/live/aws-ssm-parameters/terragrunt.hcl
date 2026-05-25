@@ -6,6 +6,15 @@ locals {
   root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   aws_region  = local.root_config.locals.aws_region
   placeholder = "REPLACE_ME"
+  tines_registry_dockerconfigjson_placeholder = jsonencode({
+    auths = {
+      "registry.example.invalid" = {
+        username = local.placeholder
+        password = local.placeholder
+        auth     = base64encode("${local.placeholder}:${local.placeholder}")
+      }
+    }
+  })
 }
 
 terraform {
@@ -105,6 +114,10 @@ inputs = {
     "/homelab/tines/admin-password" = {
       description   = "Tines admin password."
       initial_value = local.placeholder
+    }
+    "/homelab/tines/registry-dockerconfigjson" = {
+      description   = "Docker config.json used by the tines-registry image pull secret."
+      initial_value = local.tines_registry_dockerconfigjson_placeholder
     }
   }
 }

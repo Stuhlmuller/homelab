@@ -1,3 +1,6 @@
+defaultPodOptions:
+  imagePullSecrets:
+    - name: tines-registry
 controllers:
   tines:
     replicas: 0
