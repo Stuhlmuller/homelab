@@ -7,6 +7,7 @@ metadata:
     checkov.io/skip1: CKV_K8S_40=The official PostgreSQL image uses UID 999; the pod remains non-root with no privilege escalation.
     checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
     checkov.io/skip3: CKV_K8S_43=Image tags are pinned for GitOps review; digest pinning is tracked separately for homelab images.
+    checkov.io/skip4: CKV2_K8S_6=media-postgres is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
   labels:
     app.kubernetes.io/name: media-postgres
     app.kubernetes.io/part-of: homelab-media
@@ -40,8 +41,14 @@ spec:
             - -ec
             - |
               password="$(cat /run/secrets/media-postgres/POSTGRES_PASSWORD)"
-              test -n "$password"
-              test "$password" != "REPLACE_ME"
+              if [ -z "$password" ]; then
+                echo "media-postgres password is empty; update /homelab/media-postgres/app-password in SSM" >&2
+                exit 1
+              fi
+              if [ "$password" = "REPLACE_ME" ]; then
+                echo "media-postgres password still uses the REPLACE_ME placeholder in SSM" >&2
+                exit 1
+              fi
           resources:
             requests:
               cpu: 10m
