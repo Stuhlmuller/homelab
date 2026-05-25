@@ -5,6 +5,10 @@ nodeExporter:
 prometheus:
   prometheusSpec:
     retention: 15d
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector:
+      matchNames:
+        - monitoring
     storageSpec:
       volumeClaimTemplate:
         spec:

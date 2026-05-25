@@ -1,6 +1,9 @@
 # Prometheus Storage Profile
 
 Prometheus persists metrics and Alertmanager state on `nfs-default`.
+Prometheus also discovers repo-owned ServiceMonitor objects in the `monitoring`
+namespace so independent Applications, such as Grafana, can expose metrics
+without spoofing the Prometheus Helm release label.
 
 - Backup: covered by the NFS backup gate in `docs/storage-nfs.md`.
 - Restore: restore Prometheus and Alertmanager PVCs before relying on retained

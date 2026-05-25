@@ -1,6 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: monitoring
 resources:
   - externalsecret.yaml
   - virtualservice.yaml
-
+configMapGenerator:
+  - name: grafana-dashboard-homelab-overview
+    files:
+      - homelab-overview.json=dashboards/homelab-overview.json
+    options:
+      labels:
+        app.kubernetes.io/name: grafana
+        app.kubernetes.io/part-of: homelab
+        grafana_dashboard: "1"
+generatorOptions:
+  disableNameSuffixHash: true

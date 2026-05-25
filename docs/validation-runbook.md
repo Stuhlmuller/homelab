@@ -113,6 +113,10 @@ migration.
 - Grafana disables the chart `initChownData` job because the QNAP NFS-backed
   volume rejects root `chown`; the NFS provisioner-created directory permissions
   are used instead.
+- Grafana dashboards, Prometheus and Alertmanager datasources, Grafana metrics
+  scraping, and Grafana-managed alert rules are now provisioned from
+  `clusters/homelab/apps/grafana`. Validate the kustomize output and Helm chart
+  render before relying on those dashboards or alert rules.
 - The PR-readiness checklist was incomplete when implementation began; the
   operator explicitly waived the checklist gate to continue, and this runbook
   records the resulting validation evidence.

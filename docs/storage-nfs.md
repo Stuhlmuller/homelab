@@ -134,7 +134,7 @@ app has acceptable backup and restore coverage.
 | App | Data classes | StorageClass | Backup expectation | Restore expectation | Rollback data behavior |
 |-----|--------------|--------------|--------------------|---------------------|------------------------|
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
-| grafana | dashboards, config | `nfs-default` | NFS backup plus dashboard export when possible | Restore PVC and re-sync dashboards | Preserve PVC |
+| grafana | dashboards, config | `nfs-default` | NFS backup plus repo-owned dashboard and alerting config in `clusters/homelab/apps/grafana` | Restore PVC and re-sync Grafana desired state | Preserve PVC |
 | deluge | config, shared downloads | `nfs-default` | NFS backup for config and shared download paths | Restore config/download PVCs before app sync | Preserve PVCs |
 | media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | `nfs-default` | NFS backup plus `pg_dump` logical dumps before upgrades | Restore PostgreSQL PVC or logical dumps before media app sync | Preserve PVC unless intentionally rebuilding from dumps |
 | prowlarr | config, indexer refs, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases before app sync and re-test app integrations | Preserve PVCs |
