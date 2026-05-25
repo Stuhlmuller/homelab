@@ -3,6 +3,11 @@
 This path owns the repo-managed Tailscale operator support resources that are
 applied alongside the upstream `tailscale-operator` Helm chart.
 
+`namespace.yaml` owns the Pod Security labels for the `tailscale` namespace.
+The operator-managed proxy Pods require privileged mode for kernel networking,
+so this namespace intentionally uses privileged Pod Security enforcement while
+the application Services remain reachable only through the tailnet.
+
 ## Runtime Secret
 
 `externalsecret.yaml` creates the `operator-oauth` Kubernetes Secret from AWS
