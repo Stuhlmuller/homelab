@@ -70,8 +70,9 @@ Expected plan:
 - Configures Dex with an OIDC connector and Argo CD RBAC defaults.
 - Does not render `SecretStore` or `ExternalSecret` resources in the Terragrunt
   bootstrap Helm release.
-- Applies `argocd-self-management` with the Terragrunt `after_hook` only after
-  `applications.argoproj.io` is established.
+- Applies the `homelab` AppProject and `argocd-self-management` Application
+  with the Terragrunt `after_hook` only after `applications.argoproj.io` and
+  `appprojects.argoproj.io` are established.
 - Uses the Terragrunt catalog `helm-release` module pinned to `0.3.0`.
 - Shows no raw secrets, kubeconfigs, tokens, keys, or certificate material.
 
@@ -84,8 +85,9 @@ terragrunt apply
 
 This is the one-command durable bootstrap path. From a clean cluster, Helm
 installs Argo CD and its CRDs first. The Terragrunt `after_hook` then waits for
-`applications.argoproj.io` and applies the self-management Application manifest
-from this repository.
+`applications.argoproj.io` and `appprojects.argoproj.io`, applies the
+repo-owned `homelab` AppProject, and applies the self-management Application
+manifest from this repository.
 
 ## Verify Healthy State
 
@@ -101,6 +103,8 @@ Expected result within 10 minutes:
 - The `argocd` namespace exists.
 - Argo CD pods are running or progressing normally.
 - `argocd-self-management` exists in the `argocd` namespace.
+- The `homelab` AppProject exists and no workload Application needs the live
+  `default` project.
 - The Application source points at
   `clusters/homelab/argocd/self-management` in this repository.
 

@@ -18,6 +18,10 @@ delivered through Argo CD.
 - Include `IaC/root.hcl` from every unit.
 - Source the local Kubernetes-backed Application module. Do not require a
   locally authenticated Argo CD API provider for routine app registration.
+- Register Applications in the `homelab` AppProject. If an app needs a new
+  chart repository, destination namespace, or cluster-scoped kind, update
+  `clusters/homelab/argocd/self-management/appproject.yaml` before applying
+  the Application.
 - Declare every upstream relationship with a `dependencies` block.
 - Use `sync_policy.automated` with prune and self-heal by default. Any future
   exception must be documented beside the app registration.
