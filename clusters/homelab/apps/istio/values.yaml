@@ -7,6 +7,7 @@ meshConfig:
   accessLogFile: /dev/stdout
 service:
   annotations:
+    homelab.rst.io/pod-security: tailscale-proxy-requires-privileged
     tailscale.com/hostname: homelab-istio
   loadBalancerClass: tailscale
 gateways:

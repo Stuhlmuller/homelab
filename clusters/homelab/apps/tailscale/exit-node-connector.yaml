@@ -2,6 +2,8 @@ apiVersion: tailscale.com/v1alpha1
 kind: Connector
 metadata:
   name: homelab-exit-node
+  annotations:
+    homelab.rst.io/pod-security: tailscale-proxy-requires-privileged
   labels:
     app.kubernetes.io/name: homelab-exit-node
     app.kubernetes.io/part-of: tailscale
