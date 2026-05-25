@@ -16,7 +16,7 @@ controllers:
           VPN_TYPE: wireguard
           FIREWALL: "on"
           FIREWALL_INPUT_PORTS: "8112"
-          FIREWALL_VPN_INPUT_PORTS: "5983"
+          FIREWALL_VPN_INPUT_PORTS: &delugeIncomingPort "5983"
           HEALTH_RESTART_VPN: "on"
         envFrom:
           - secretRef:
@@ -68,6 +68,42 @@ controllers:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
+      port-config:
+        image:
+          repository: lscr.io/linuxserver/deluge
+          tag: 2.1.1
+        env:
+          DELUGE_INCOMING_PORT: *delugeIncomingPort
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            rm -f /tmp/deluge-port-configured
+            for attempt in $(seq 1 120); do
+              if timeout 10s deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"; then
+                touch /tmp/deluge-port-configured
+                exec tail -f /dev/null
+              fi
+              sleep 2
+            done
+            echo "failed to configure Deluge listen port ${DELUGE_INCOMING_PORT}" >&2
+            exit 1
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -ec
+                  - test -f /tmp/deluge-port-configured
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 5
 service:
   app:
     controller: deluge
@@ -83,6 +119,8 @@ persistence:
     advancedMounts:
       deluge:
         app:
+          - path: /config
+        port-config:
           - path: /config
   downloads:
     enabled: true

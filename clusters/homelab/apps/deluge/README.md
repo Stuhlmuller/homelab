@@ -22,8 +22,18 @@ network are intentionally configured for IPv6.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
-value in the Deluge UI. The setting is stored on the retained Deluge config PVC,
-so it should persist across Pod restarts without being copied into SSM.
+value. Configure it in `values.yaml` through `FIREWALL_VPN_INPUT_PORTS` and the
+shared `DELUGE_INCOMING_PORT` value. A `port-config` sidecar shares the Deluge
+config volume and applies:
+
+```sh
+deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+```
+
+The sidecar retries while Deluge starts. If it cannot connect to Deluge and
+apply the port configuration, the sidecar stays unready instead of killing the
+main app container during startup. The Pod becomes ready only after Gluetun is
+healthy and the incoming port has been applied.
 
 ## Pod Security
 
