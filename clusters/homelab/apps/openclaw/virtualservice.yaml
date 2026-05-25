@@ -16,3 +16,7 @@ spec:
             host: openclaw.ai.svc.cluster.local
             port:
               number: 8080
+      retries:
+        attempts: 3
+        perTryTimeout: 5s
+        retryOn: connect-failure,refused-stream,reset,5xx
