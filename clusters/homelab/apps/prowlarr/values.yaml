@@ -11,7 +11,7 @@ controllers:
       configure-postgres:
         image:
           repository: lscr.io/linuxserver/prowlarr
-          tag: 2.3.5
+          tag: 2.3.5@sha256:c9fe528f34b1fd3715438b6f6d6991d64e2965f2c055db36398bc66a0e7eab01
         envFrom:
           - secretRef:
               name: media-postgres-arr-env
@@ -80,7 +80,7 @@ controllers:
       app:
         image:
           repository: lscr.io/linuxserver/prowlarr
-          tag: 2.3.5
+          tag: 2.3.5@sha256:c9fe528f34b1fd3715438b6f6d6991d64e2965f2c055db36398bc66a0e7eab01
         env:
           TZ: America/Los_Angeles
           PUID: "1000"

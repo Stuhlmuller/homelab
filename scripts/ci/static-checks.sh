@@ -18,7 +18,10 @@ done < <(
 echo "::endgroup::"
 
 echo "::group::Conftest policies"
-mapfile -t yaml_files < <(
+yaml_files=()
+while IFS= read -r yaml_file; do
+  yaml_files+=("$yaml_file")
+done < <(
   find .github clusters \
     \( -name '*.yaml' -o -name '*.yml' \) \
     -not -path './.terragrunt-cache/*' \
@@ -27,6 +30,21 @@ mapfile -t yaml_files < <(
 
 if ((${#yaml_files[@]} > 0)); then
   conftest test --policy policy --output github "${yaml_files[@]}"
+fi
+echo "::endgroup::"
+
+echo "::group::Image digest pins"
+tag_only_images="$(
+  {
+    rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
+    rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
+  } | rg -v '@sha256:' || true
+)"
+
+if [[ -n "$tag_only_images" ]]; then
+  echo "Container images in cluster desired state must be pinned as tag@sha256:digest:" >&2
+  printf '%s\n' "$tag_only_images" >&2
+  exit 1
 fi
 echo "::endgroup::"
 

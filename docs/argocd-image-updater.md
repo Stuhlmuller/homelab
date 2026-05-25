@@ -15,7 +15,7 @@ write credentials or create public webhooks. If a future app needs Git
 write-back, add an ExternalSecret-backed credential contract first and document
 the write-back target.
 
-Example opt-in shape for a future Application:
+Example opt-in shape for a future non-digest-pinned Application:
 
 ```hcl
 metadata = {
@@ -31,7 +31,21 @@ metadata = {
 
 Helm-backed Applications usually also need per-image annotations that identify
 the chart values keys for the repository and tag. Keep those annotations beside
-the Application registration so image automation remains reviewable.
+the Application registration so image automation remains reviewable. Most
+homelab workloads should not use this shape until they have the digest-preserving
+Git update path described below.
+
+## Digest-pinned workloads
+
+No workloads currently opt in to Image Updater. Cluster desired state pins
+container images as `tag@sha256:digest`, and `scripts/ci/static-checks.sh`
+fails when committed cluster manifests or Helm values contain tag-only images.
+
+Do not opt a digest-pinned workload into the default `argocd` write-back path.
+That path stores Argo CD parameter overrides outside git and can replace a
+reviewed `tag@sha256:digest` value with a tag-only runtime override. Add a
+Git-reviewed update path that preserves tag-and-digest pins before enabling
+automatic image updates for an application.
 
 Verification:
 

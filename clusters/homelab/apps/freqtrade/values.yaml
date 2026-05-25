@@ -9,7 +9,7 @@ controllers:
       app:
         image:
           repository: freqtradeorg/freqtrade
-          tag: "2026.4"
+          tag: "2026.4@sha256:345ebbb4bd8934d31771f71f45112bf82695e7460361115f539c4a65062b833b"
         command:
           - freqtrade
         args:

@@ -26,8 +26,9 @@ Secrets. Do not commit it to this repository.
 
 ## Migration Notes
 
-The Servarr guide requires Radarr `v4.1.0.6133` or newer. This deployment uses
-`lscr.io/linuxserver/radarr:5.27.5`, which satisfies that version floor.
+The Servarr guide requires Radarr `v4.1.0.6133` or newer. The Git baseline pins
+the `lscr.io/linuxserver/radarr` `5.27.5` release with a digest, which satisfies
+that version floor while keeping the deployed image immutable and reviewable.
 
 Radarr does not create its PostgreSQL databases and does not back them up. The
 `media-postgres` init script creates `radarr-main` and `radarr-log`; backup and

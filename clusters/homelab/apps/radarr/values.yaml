@@ -11,7 +11,7 @@ controllers:
       configure-postgres:
         image:
           repository: lscr.io/linuxserver/radarr
-          tag: 5.27.5
+          tag: 5.27.5@sha256:af03fa6a993ee7efb65f6121ebd8c89de4a47aa1181cec03832e292a1446111f
         envFrom:
           - secretRef:
               name: media-postgres-arr-env

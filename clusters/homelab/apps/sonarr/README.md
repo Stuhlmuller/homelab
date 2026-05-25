@@ -26,8 +26,9 @@ Secrets. Do not commit it to this repository.
 
 ## Migration Notes
 
-The Servarr guide requires Sonarr `v4.0.0.615` or newer. This deployment uses
-`lscr.io/linuxserver/sonarr:4.0.15`, which satisfies that version floor.
+The Servarr guide requires Sonarr `v4.0.0.615` or newer. The Git baseline pins
+the `lscr.io/linuxserver/sonarr` `4.0.15` release with a digest, which satisfies
+that version floor while keeping the deployed image immutable and reviewable.
 
 Sonarr does not create its PostgreSQL databases and does not back them up. The
 `media-postgres` init script creates `sonarr-main` and `sonarr-log`; backup and

@@ -34,7 +34,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: require-real-password
-          image: postgres:14.23-bookworm
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
           imagePullPolicy: Always
           command:
             - /bin/sh
@@ -67,7 +67,7 @@ spec:
               readOnly: true
       containers:
         - name: postgres
-          image: postgres:14.23-bookworm
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
           imagePullPolicy: Always
           env:
             - name: POSTGRES_USER_FILE
