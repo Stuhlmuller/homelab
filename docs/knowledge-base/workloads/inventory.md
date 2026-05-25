@@ -6,6 +6,14 @@ This inventory summarizes the current application and platform ownership map.
 Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt
 units as the source of truth when they disagree with this note.
 
+## Import Note
+
+This note reflects the current working tree at import time. Several app changes
+are in flight: Policy Bot and Hummingbot desired-state paths exist, while the
+Freqtrade desired-state files are deleted in the working tree. Recheck
+`clusters/homelab/apps`, `IaC/live/argocd-apps`, and
+`docs/argocd-app-onboarding.md` before applying or publishing the branch.
+
 ## Platform And Support Applications
 
 | App | Kind | Namespace | GitOps path | Terragrunt path | Depends on |
@@ -33,7 +41,14 @@ units as the source of truth when they disagree with this note.
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows and credential metadata | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| `freqtrade` | `finance` | `clusters/homelab/apps/freqtrade` | `IaC/live/argocd-apps/freqtrade` | persistent dry-run history, logs, and market data | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless; credentials from SSM | external-secrets, cert-manager, istio, tailscale |
+| `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | persistent CLI bot config, logs, scripts, controllers, and encrypted connector state | external-secrets, platform-storage |
+
+## In-Flight Or Historical Rows
+
+- `freqtrade` appears in older onboarding material, but its app and Terragrunt
+  files are deleted in the current working tree. Treat it as removed or
+  superseded by Hummingbot only after the owning PR reconciles the source docs.
 
 ## Update Checklist
 

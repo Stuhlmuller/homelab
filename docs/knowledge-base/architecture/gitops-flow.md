@@ -29,6 +29,9 @@ overlays.
 | Platform desired state | `clusters/homelab/platform/<service>` |
 | Self-management app source | `clusters/homelab/argocd/self-management` |
 
+See [[runbooks/argocd-bootstrap]], [[runbooks/argocd-app-onboarding]], and
+[[runbooks/validation]] for the Obsidian runbook summaries.
+
 ## Registration Pattern
 
 Argo CD Applications are registered through the repository-local

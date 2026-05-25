@@ -19,6 +19,11 @@ in the same change.
 - [[architecture/storage-and-state]] tracks durable state and backup gates.
 - [[architecture/secrets-and-identity]] records secret and identity boundaries.
 - [[workloads/inventory]] lists app ownership, paths, dependencies, and state.
+- [[workloads/application-notes]] collects app-specific operational notes from
+  workload READMEs.
+- [[runbooks/index]] maps the top-level onboarding and operations runbooks into
+  vault notes.
+- [[source-map]] lists the source docs and repo paths imported into the vault.
 - [[patterns/new-application]] is the checklist for adding a new workload.
 - [[patterns/new-platform-service]] is the checklist for shared platform
   services.
@@ -40,6 +45,8 @@ For every substantive change, update the smallest useful set of notes:
    topology assumption, secret contract, or storage requirement.
 5. Mark unverified or environment-specific facts explicitly instead of writing
    them as general guidance.
+6. When pulling source docs into Obsidian, keep source paths visible so readers
+   can jump back to the canonical file before changing desired state.
 
 ## Public-Repo Boundary
 

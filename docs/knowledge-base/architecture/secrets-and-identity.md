@@ -33,6 +33,9 @@ outside git.
   target Secret `operator-oauth`.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
+- Policy Bot and Hummingbot are in-flight app additions in the current working
+  tree. Their SSM contracts are summarized in [[runbooks/secrets-aws-ssm]] and
+  [[workloads/application-notes]].
 
 ## Source Files
 

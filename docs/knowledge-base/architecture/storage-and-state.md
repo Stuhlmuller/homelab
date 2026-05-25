@@ -32,7 +32,8 @@ ready, but they must not be treated as production-ready until:
 ## Stateful Apps
 
 The current stateful set includes Prometheus, Grafana, Deluge, media-postgres,
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and Freqtrade. See
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and Hummingbot in the current
+working tree. Freqtrade appears only in older or in-flight docs. See
 [[workloads/inventory]] for ownership and dependency notes.
 
 ## Source Files
