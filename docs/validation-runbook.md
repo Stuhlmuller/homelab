@@ -102,6 +102,8 @@ migration.
   placeholder environment variable names.
 - First-rollout Funnel review found no enabled public Funnel paths; route
   manifests use `homelab.rst.io/public-funnel: "false"`.
+- Prometheus direct tailnet ingress is intentionally absent from desired state;
+  Grafana is the reviewed operator-facing metrics UI.
 - First live rollout on 2026-05-24 applied AWS SSM Parameter Store placeholders
   through `IaC/live/aws-ssm-parameters` and registered Argo CD Applications
   through `IaC/live/argocd-apps`.

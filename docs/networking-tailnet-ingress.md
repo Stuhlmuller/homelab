@@ -20,7 +20,6 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | App | HTTPS host | Public Funnel |
 |-----|------------------|---------------|
 | argocd | `https://argocd.stinkyboi.com` | disabled |
-| prometheus | `https://prometheus.stinkyboi.com` | disabled |
 | grafana | `https://grafana.stinkyboi.com` | disabled |
 | deluge | `https://deluge.stinkyboi.com` | disabled |
 | prowlarr | `https://prowlarr.stinkyboi.com` | disabled |
@@ -41,6 +40,10 @@ not referenced by the ingress wildcard certificate.
 Validation on 2026-05-24 found no enabled first-rollout Funnel routes. The
 Istio gateway and every VirtualService route manifest are annotated with
 `homelab.rst.io/public-funnel: "false"`.
+
+Prometheus is intentionally absent from the tailnet route inventory. Grafana is
+the reviewed metrics UI, and direct Prometheus ingress must not be restored
+without a documented authentication plan and rollback path.
 
 ## Homelab VPN Exit Node
 
