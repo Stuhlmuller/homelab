@@ -20,6 +20,12 @@ variable "parameter_reader_iam_user_names" {
   default     = []
 }
 
+variable "additional_parameter_reader_names" {
+  description = "Additional SSM Parameter Store names that reader IAM users should be allowed to read even when this module does not create them."
+  type        = set(string)
+  default     = []
+}
+
 variable "aws_region" {
   description = "AWS region where SSM parameters and their KMS key are managed."
   type        = string

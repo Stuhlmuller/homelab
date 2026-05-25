@@ -4,17 +4,45 @@ Grafana is managed as an Argo CD multi-source Application. The Helm chart
 installs Grafana, while this directory owns the safe runtime configuration that
 should be reviewed in git.
 
+## Microsoft Entra SSO
+
+Grafana uses the built-in `auth.azuread` provider for SSO. The Helm values set
+the public `root_url`, enable PKCE, and mount the `grafana-azuread-sso`
+Kubernetes Secret at `/etc/secrets/grafana-azuread-sso`; `grafana.ini` reads
+the OAuth client ID, client secret, authorization URL, token URL, and allowed
+tenant from those files.
+
+The Entra application registration is managed by
+`IaC/live/azuread-applications/grafana` with the Terragrunt catalog
+`azuread-application` module pinned to `0.4.0`. That unit registers these
+redirect URIs:
+
+- `https://grafana.stinkyboi.com/`
+- `https://grafana.stinkyboi.com/login/azuread`
+
+The same unit writes the `/homelab/grafana/azuread/*` SecureString parameters
+consumed by the `grafana-azuread-sso` ExternalSecret. The client ID comes from
+the managed Entra application, the client secret comes from the generated
+one-year application password, and the tenant-specific authorization values
+come from the active AzureAD client configuration.
+
+Grafana maps the Entra app role value `GrafanaAdmin` to the Grafana `Admin`
+role, maps `Editor` to `Editor`, and assigns `Viewer` when neither role is
+present. Local admin login remains available through `grafana-admin`.
+
 ## Code-Owned Configuration
 
 - `values.yaml` provisions the Prometheus and Alertmanager datasources with
   stable UIDs, enables a `ServiceMonitor` for Grafana metrics, mounts
-  dashboards, and provisions Grafana-managed alerting resources.
+  dashboards, configures Microsoft Entra SSO, and provisions Grafana-managed
+  alerting resources.
 - `dashboards/homelab-overview.json` is the default Homelab overview dashboard.
   Kustomize packages it into the stable
   `grafana-dashboard-homelab-overview` ConfigMap, which the Helm chart mounts
   through the `homelab` dashboard provider.
-- `externalsecret.yaml` references the Grafana admin username and password in
-  AWS SSM Parameter Store. No secret values belong in this directory.
+- `externalsecret.yaml` references the Grafana admin username, admin password,
+  and Entra SSO values in AWS SSM Parameter Store. No secret values belong in
+  this directory.
 
 ## Alerts
 
@@ -54,14 +82,16 @@ After Argo CD syncs, verify the monitoring wiring:
 
 ```sh
 kubectl -n monitoring get servicemonitor grafana
+kubectl -n monitoring get externalsecret grafana-azuread-sso
+kubectl -n monitoring get secret grafana-azuread-sso
 kubectl -n monitoring get configmap grafana-dashboard-homelab-overview
 kubectl -n monitoring get pods -l app.kubernetes.io/name=grafana
 ```
 
 In Grafana, check that the `Prometheus` datasource is default, the
 `Alertmanager` datasource is healthy, the `Homelab Overview` dashboard appears
-under the `Homelab` folder, and the three `homelab-*` alert rules are present
-under Grafana Alerting.
+under the `Homelab` folder, the `Entra ID` login path works, and the three
+`homelab-*` alert rules are present under Grafana Alerting.
 
 ## Rollback
 
