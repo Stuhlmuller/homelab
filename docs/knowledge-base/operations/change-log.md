@@ -22,7 +22,7 @@ Use [[templates/knowledge-update]] for new entries.
 
 - Added `/homelab/openclaw/discord-bot-token` to the SSM contract and
   `openclaw-secrets` so OpenClaw can receive `DISCORD_BOT_TOKEN`.
-- Changed OpenClaw startup bootstrap to register the Discord channel from the
+- Changed OpenClaw startup bootstrap to let OpenClaw enable Discord from the
   environment when the SSM value has been replaced.
 - Documented that ChatGPT Pro access should be configured through interactive
   OpenAI Codex OAuth on the OpenClaw PVC, not through committed API keys or SSM

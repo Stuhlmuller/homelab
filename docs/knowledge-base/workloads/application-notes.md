@@ -70,11 +70,11 @@ withdrawal access at the exchange.
 ## OpenClaw
 
 OpenClaw persists runtime state on `/data/openclaw`. The startup bootstrap
-keeps the tailnet Control UI origin allow-list in config and registers the
-Discord channel account from `DISCORD_BOT_TOKEN` when
-`/homelab/openclaw/discord-bot-token` has been replaced in SSM. ChatGPT Pro
-access uses interactive OpenAI Codex OAuth stored on the PVC; do not model that
-as an SSM secret or committed API key.
+keeps the tailnet Control UI origin allow-list in config. When
+`/homelab/openclaw/discord-bot-token` has been replaced in SSM, OpenClaw enables
+Discord from `DISCORD_BOT_TOKEN` during startup. ChatGPT Pro access uses
+interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
+secret or committed API key.
 
 ## Media PostgreSQL
 

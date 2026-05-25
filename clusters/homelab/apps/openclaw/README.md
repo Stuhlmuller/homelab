@@ -11,16 +11,12 @@ The `openclaw-secrets` ExternalSecret reads the Discord bot token from
 `DISCORD_BOT_TOKEN`.
 
 On pod startup, the `bootstrap-config` init container keeps the Control UI
-origin allow-list current and runs:
+origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, OpenClaw's
+startup doctor enables Discord from the environment automatically.
 
-```sh
-openclaw channels add --channel discord --name homelab-discord --use-env
-```
-
-The command is skipped when the SSM value is still `REPLACE_ME`, so the app can
-start before the real Discord bot token exists. It is also skipped when
-`homelab-discord` is already present, which keeps pod restarts idempotent.
-After replacing the SSM value, bump
+Discord bootstrap is skipped when the SSM value is still `REPLACE_ME`, so the
+app can start before the real Discord bot token exists. After replacing the SSM
+value, bump
 `homelab.rst.io/openclaw-discord-bot-token-ssm-version` in `values.yaml` to the
 resulting SSM parameter version so Argo CD rolls the pod and the startup
 bootstrap re-runs.

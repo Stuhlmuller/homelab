@@ -104,9 +104,9 @@ OpenClaw reads `/homelab/openclaw/discord-bot-token` as
 Discord, then bump
 `homelab.rst.io/openclaw-discord-bot-token-ssm-version` in
 `clusters/homelab/apps/openclaw/values.yaml` to the resulting SSM parameter
-version so GitOps rolls OpenClaw and the startup bootstrap registers the
-Discord channel. ChatGPT Pro or Codex OAuth credentials are not SSM values; they
-are created interactively and persist on the OpenClaw PVC.
+version so GitOps rolls OpenClaw. OpenClaw enables Discord from
+`DISCORD_BOT_TOKEN` during startup. ChatGPT Pro or Codex OAuth credentials are
+not SSM values; they are created interactively and persist on the OpenClaw PVC.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
