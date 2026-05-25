@@ -6,20 +6,67 @@ controllers:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.3.1"
           digest: sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d
-        command:
-          - openclaw
-          - gateway
-          - run
-          - --allow-unconfigured
-          - --bind
-          - lan
-          - --port
-          - "8080"
         env:
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
         envFrom:
           - secretRef:
               name: openclaw-secrets
+      proxy:
+        image:
+          repository: ghcr.io/openclaw/openclaw
+          tag: "2026.3.1"
+          digest: sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d
+        command:
+          - python3
+          - -u
+          - -c
+          - |
+            import socket
+            import threading
+
+            listen = ("0.0.0.0", 8080)
+            target = ("127.0.0.1", 18789)
+
+            def pipe(source, destination):
+                try:
+                    while True:
+                        data = source.recv(65536)
+                        if not data:
+                            return
+                        destination.sendall(data)
+                finally:
+                    source.close()
+                    destination.close()
+
+            def handle(client):
+                upstream = socket.create_connection(target, timeout=10)
+                threading.Thread(target=pipe, args=(client, upstream), daemon=True).start()
+                pipe(upstream, client)
+
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                server.bind(listen)
+                server.listen(128)
+                print(f"proxying {listen[0]}:{listen[1]} to {target[0]}:{target[1]}", flush=True)
+                while True:
+                    client, _ = server.accept()
+                    threading.Thread(target=handle, args=(client,), daemon=True).start()
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - python3
+                  - -c
+                  - |
+                    import socket
+                    with socket.create_connection(("127.0.0.1", 18789), timeout=2):
+                        pass
+              failureThreshold: 3
+              periodSeconds: 5
+              timeoutSeconds: 3
 service:
   app:
     controller: openclaw
