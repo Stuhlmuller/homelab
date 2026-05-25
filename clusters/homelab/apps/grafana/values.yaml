@@ -166,7 +166,6 @@ alerting:
             disableResolveMessage: false
             settings:
               use_discord_username: false
-            secure_settings:
               url: $DISCORD_WEBHOOK_URL
   policies.yaml:
     apiVersion: 1
