@@ -137,5 +137,30 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/freqtrade/api-password" = {
+      description = "Freqtrade FreqUI and REST API password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/freqtrade/jwt-secret-key" = {
+      description = "Freqtrade REST API JWT signing secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/freqtrade/ws-token" = {
+      description = "Freqtrade REST API websocket token."
+      generated = {
+        length  = 64
+        prefix  = "ws-"
+        special = false
+      }
+      initial_value = local.placeholder
+    }
   }
 }

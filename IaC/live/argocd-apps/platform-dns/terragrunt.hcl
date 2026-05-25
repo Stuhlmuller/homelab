@@ -7,7 +7,7 @@ terraform {
 }
 
 dependencies {
-  paths = ["../platform-dns"]
+  paths = []
 }
 
 locals {
@@ -17,7 +17,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "external-secrets"
+    name      = "platform-dns"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -29,43 +29,25 @@ inputs = {
 
   destination = {
     server    = "https://kubernetes.default.svc"
-    namespace = "external-secrets"
+    namespace = "kube-system"
   }
 
   sources = [
     {
-      repo_url        = "https://charts.external-secrets.io"
-      chart           = "external-secrets"
-      target_revision = "2.0.1"
-      helm = {
-        release_name = "external-secrets"
-        value_files  = ["$values/clusters/homelab/apps/external-secrets/values.yaml"]
-      }
-    },
-    {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/external-secrets"
+      path            = "clusters/homelab/platform/dns"
       kustomize       = {}
     }
   ]
 
   sync_policy = {
     automated = {
-      prune     = true
+      prune     = false
       self_heal = true
     }
     sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
+      "CreateNamespace=false"
     ]
     retry = {
       limit = "5"
@@ -79,8 +61,12 @@ inputs = {
 
   info = [
     {
-      name  = "secrets"
-      value = "docs/secrets-aws-ssm.md"
+      name  = "dns"
+      value = "clusters/homelab/platform/dns/README.md"
+    },
+    {
+      name  = "prune"
+      value = "disabled because this app adopts the bootstrap CoreDNS ConfigMap"
     }
   ]
 }

@@ -57,6 +57,7 @@ secrets/
 secrets/
 .kube/
 kubeconfig*
+.talos/talosconfig
 *.key
 *.crt
 

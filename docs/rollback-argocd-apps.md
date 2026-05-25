@@ -9,20 +9,22 @@ handling is clear.
 
 1. argocd-image-updater
 2. OpenClaw
-3. n8n
-4. Radarr and Sonarr
-5. Prowlarr
-6. media-postgres
-7. LiteLLM
-8. Deluge
-9. Grafana
-10. Descheduler
-11. Prometheus
-12. platform-storage
-13. Tailscale
-14. Istio
-15. cert-manager
-16. external-secrets
+3. Freqtrade
+4. n8n
+5. Radarr and Sonarr
+6. Prowlarr
+7. media-postgres
+8. LiteLLM
+9. Deluge
+10. Grafana
+11. Descheduler
+12. Prometheus
+13. platform-storage
+14. Tailscale
+15. Istio
+16. cert-manager
+17. external-secrets
+18. platform-dns
 
 ## Persistent Data
 

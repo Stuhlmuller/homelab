@@ -143,6 +143,7 @@ app has acceptable backup and restore coverage.
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |
 | openclaw | config, runtime state | `nfs-default` | NFS backup for runtime state | Restore PVC and verify LiteLLM connectivity | Preserve PVC |
 | n8n | workflows, SQLite data, credentials metadata, config | `nfs-default` | NFS backup plus workflow export when available | Restore PVC before app sync | Snapshot first, preserve PVC |
+| freqtrade | dry-run trade database, logs, downloaded market data | `nfs-default` | NFS backup for dry-run history before strategy changes | Restore PVC before comparing long-running strategy results | Preserve PVC unless intentionally resetting dry-run evidence |
 
 ## Validation Notes
 
@@ -151,8 +152,8 @@ app has acceptable backup and restore coverage.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
 - Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
-  Grafana, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, and n8n each
-  explicitly depend on `IaC/live/argocd-apps/platform-storage`.
+  Grafana, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and
+  Freqtrade each explicitly depend on `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

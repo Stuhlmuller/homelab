@@ -1,19 +1,21 @@
 # Argo CD App Onboarding
 
-This feature registers 15 requested homelab applications plus supporting
-Applications for shared platform dependencies. `platform-storage` owns the
-QNAP-backed NFS provisioner and default StorageClass desired state.
-`media-postgres` owns the shared PostgreSQL instance for Sonarr, Radarr, and
-Prowlarr. These support apps are not counted as requested workloads.
+This feature registers 16 requested homelab applications plus supporting
+Applications for shared platform dependencies. `platform-dns` owns CoreDNS
+resolver policy, `platform-storage` owns the QNAP-backed NFS provisioner and
+default StorageClass desired state, and `media-postgres` owns the shared
+PostgreSQL instance for Sonarr, Radarr, and Prowlarr. These support apps are not
+counted as requested workloads.
 
 ## Applications
 
 | App | Kind | Namespace | GitOps path | Terragrunt path | Auto-sync | Dependencies |
 |-----|------|-----------|-------------|-----------------|-----------|--------------|
+| platform-dns | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Yes, no prune | Argo CD bootstrap |
 | platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | Yes | QNAP NFS export validation |
 | media-postgres | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | Yes | external-secrets, platform-storage |
 | argocd-image-updater | requested | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | Yes | Argo CD bootstrap |
-| external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | Argo CD bootstrap |
+| external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | platform-dns |
 | cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
 | istio | requested | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | Yes | cert-manager |
 | tailscale | requested | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | Yes | external-secrets, istio |
@@ -27,6 +29,7 @@ Prowlarr. These support apps are not counted as requested workloads.
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| freqtrade | requested | `finance` | `clusters/homelab/apps/freqtrade` | `IaC/live/argocd-apps/freqtrade` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 
 ## Dependency Readiness
 

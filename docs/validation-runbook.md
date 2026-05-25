@@ -19,14 +19,15 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 15 requested Argo CD Applications plus the support
-Applications `platform-storage` and `media-postgres` are planned, and every
-upstream relationship appears in a Terragrunt `dependencies` block.
+Expected result: 16 requested Argo CD Applications plus the support
+Applications `platform-dns`, `platform-storage`, and `media-postgres` are
+planned, and every upstream relationship appears in a Terragrunt `dependencies`
+block.
 
 Render or dry-run GitOps sources:
 
 ```sh
-for overlay in clusters/homelab/platform/storage clusters/homelab/apps/*; do
+for overlay in clusters/homelab/platform/* clusters/homelab/apps/*; do
   test -f "$overlay/kustomization.yaml" || continue
   echo "rendering $overlay"
   if ! kubectl kustomize "$overlay" >/dev/null; then
@@ -38,7 +39,7 @@ done
 When cluster access is available:
 
 ```sh
-kubectl diff --server-side -k clusters/homelab/platform/storage
+kubectl diff --server-side -k clusters/homelab/platform/<service>
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
@@ -62,6 +63,7 @@ argocd app get cert-manager
 argocd app get istio
 argocd app get tailscale
 argocd app get argocd-image-updater
+argocd app get platform-dns
 argocd app get platform-storage
 ```
 
@@ -141,6 +143,7 @@ migration.
 | Missing Application module | Stop, fix the local `IaC/modules/argocd-application-kubernetes` module or explicitly document a temporary catalog fallback before applying. |
 | Dependency cycle | Stop, remove the cycle from Terragrunt dependencies before applying. |
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |
+| External DNS lookup failures from pods | Verify `platform-dns` is synced and CoreDNS forwards through `1.1.1.3` and `1.0.0.3`; do not manually patch the live CoreDNS `ConfigMap`. |
 | Missing AWS SSM parameter | Create the parameter outside the repo, then re-sync the owning ExternalSecret. |
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |

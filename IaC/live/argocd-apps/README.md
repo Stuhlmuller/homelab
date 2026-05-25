@@ -5,12 +5,12 @@ applications with Argo CD. Each child directory owns exactly one Argo CD
 Application and sources the repository-local
 `IaC/modules/argocd-application-kubernetes` module.
 
-The 15 requested apps are registered here along with supporting Applications
-for shared platform services. `platform-storage` owns the QNAP NFS provisioner
-and default StorageClass desired state. `media-postgres` owns the shared
-PostgreSQL instance for Sonarr, Radarr, and Prowlarr. These support apps are
-not counted as requested workloads; they exist so dependency state is still
-delivered through Argo CD.
+The 16 requested apps are registered here along with supporting Applications
+for shared platform services. `platform-dns` owns CoreDNS resolver policy,
+`platform-storage` owns the QNAP NFS provisioner and default StorageClass
+desired state, and `media-postgres` owns the shared PostgreSQL instance for
+Sonarr, Radarr, and Prowlarr. These support apps are not counted as requested
+workloads; they exist so dependency state is still delivered through Argo CD.
 
 ## Conventions
 
@@ -26,7 +26,7 @@ delivered through Argo CD.
 - Use `sync_policy.automated` with prune and self-heal by default. Any future
   exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under
-  `clusters/homelab/apps/<app>/` or `clusters/homelab/platform/storage/`.
+  `clusters/homelab/apps/<app>/` or `clusters/homelab/platform/<service>/`.
 
 ## Readiness Semantics
 

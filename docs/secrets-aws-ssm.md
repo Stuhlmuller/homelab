@@ -40,8 +40,8 @@ placeholder parameters and listed Entra-managed SSO parameters, and call
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`media`, `monitoring`, and `tailscale`. Add a namespace to that allow-list in
-the same PR that adds its first ExternalSecret.
+`finance`, `media`, `monitoring`, and `tailscale`. Add a namespace to that
+allow-list in the same PR that adds its first ExternalSecret.
 
 ## External Secrets AWS Auth Bootstrap
 
@@ -81,9 +81,13 @@ stack because Terraform manages the Kubernetes Secret.
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
+| freqtrade | `freqtrade-api` | `freqtrade-api` | `/homelab/freqtrade/api-password`, `/homelab/freqtrade/jwt-secret-key`, `/homelab/freqtrade/ws-token` |
 
 Terragrunt-generated internal values:
 
+- `/homelab/freqtrade/api-password`
+- `/homelab/freqtrade/jwt-secret-key`
+- `/homelab/freqtrade/ws-token`
 - `/homelab/litellm/master-key`
 - `/homelab/media-postgres/app-password`
 - `/homelab/n8n/encryption-key`
@@ -133,3 +137,9 @@ login.
 n8n stores only its Terragrunt-generated instance encryption key in SSM.
 Workflows, users, saved credential metadata, and app configuration persist on
 the `/home/node/.n8n` volume and are managed inside n8n after first login.
+
+Freqtrade stores only generated FreqUI/API authentication material in SSM while
+the app remains in dry-run mode. Exchange API credentials must not be added
+until a separate live-trading PR changes the repository-owned Freqtrade config,
+documents backtest and dry-run evidence, and confirms withdrawal access is
+disabled at the exchange.

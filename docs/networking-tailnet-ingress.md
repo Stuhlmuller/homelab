@@ -28,6 +28,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | litellm | `https://litellm.stinkyboi.com` | disabled |
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
 | n8n | `https://n8n.stinkyboi.com` | disabled |
+| freqtrade | `https://freqtrade.stinkyboi.com` | disabled |
 
 Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 `istio-system`. cert-manager requests this wildcard certificate through the
