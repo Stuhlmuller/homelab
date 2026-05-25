@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: policy-bot-tailnet
+  namespace: automation
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - policy-bot.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - match:
+        - uri:
+            exact: /api/github/auth
+        - uri:
+            prefix: /details
+        - uri:
+            prefix: /static
+      route:
+        - destination:
+            host: policy-bot.automation.svc.cluster.local
+            port:
+              number: 8080

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Homelab Knowledge Base"
+  short_description: "Read and update the Obsidian vault"
+  default_prompt: "Use $homelab-knowledge-base before and after a substantive homelab repo change."

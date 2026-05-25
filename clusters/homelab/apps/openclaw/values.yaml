@@ -1,12 +1,35 @@
 controllers:
   openclaw:
+    initContainers:
+      bootstrap-config:
+        image:
+          repository: ghcr.io/openclaw/openclaw
+          tag: "2026.3.1"
+          digest: sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d
+        env:
+          OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
+          OPENCLAW_STATE_DIR: /data/openclaw
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            mkdir -p "$(dirname "$OPENCLAW_CONFIG_PATH")"
+            if [ ! -s "$OPENCLAW_CONFIG_PATH" ]; then
+              printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
+            fi
+
+            openclaw config set --strict-json \
+              gateway.controlUi.allowedOrigins \
+              '["https://openclaw.stinkyboi.com"]'
     containers:
       app:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.3.1@sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d"
+          tag: "2026.3.1"
           digest: sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d
         env:
+          OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
+          OPENCLAW_STATE_DIR: /data/openclaw
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
         envFrom:
           - secretRef:
@@ -14,7 +37,7 @@ controllers:
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.3.1@sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d"
+          tag: "2026.3.1"
           digest: sha256:dcf11a3a97a9b0e42dd41fcd4891533e77ff72e7b0380c743177bfbfd6f38b2d
         command:
           - python3
@@ -106,5 +129,11 @@ persistence:
     storageClass: nfs-default
     size: 10Gi
     accessMode: ReadWriteOnce
-    globalMounts:
-      - path: /data
+    advancedMounts:
+      openclaw:
+        app:
+          - path: /data
+        bootstrap-config:
+          - path: /data
+        proxy:
+          - path: /data

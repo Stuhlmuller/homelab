@@ -72,6 +72,20 @@ Environment variables are reserved for CI/CD credential plumbing and secret
 injection. If a secret is required, inject it in the CI/CD pipeline and keep
 only safe references, encrypted values, templates, or contracts in git.
 
+## Knowledge Base
+
+The project knowledge base lives in `docs/knowledge-base`. Open that directory
+as an Obsidian vault when you want graph navigation, backlinks, and linked
+architecture notes. The notes are committed as plain Markdown so they remain
+reviewable in pull requests.
+
+Use the knowledge base for cross-cutting context that spans multiple runbooks or
+source directories: cluster topology, GitOps flow, workload inventory, storage
+and secret boundaries, validation gates, and patterns for adding new apps or
+platform services. It complements the repository source of truth; when a note
+disagrees with code, Terragrunt, Kubernetes manifests, or a detailed runbook,
+fix the source of truth first and update the note in the same change.
+
 ## Persistent Storage
 
 Shared persistent storage for Kubernetes workloads is provided by a QNAP NAS on

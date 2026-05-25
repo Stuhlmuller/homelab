@@ -8,23 +8,24 @@ handling is clear.
 ## Order
 
 1. argocd-image-updater
-2. OpenClaw
-3. Freqtrade
-4. n8n
-5. Radarr and Sonarr
-6. Prowlarr
-7. media-postgres
-8. LiteLLM
-9. Deluge
-10. Grafana
-11. Descheduler
-12. Prometheus
-13. platform-storage
-14. Tailscale
-15. Istio
-16. cert-manager
-17. external-secrets
-18. platform-dns
+2. Policy Bot
+3. OpenClaw
+4. Hummingbot
+5. n8n
+6. Radarr and Sonarr
+7. Prowlarr
+8. media-postgres
+9. LiteLLM
+10. Deluge
+11. Grafana
+12. Descheduler
+13. Prometheus
+14. platform-storage
+15. Tailscale
+16. Istio
+17. cert-manager
+18. external-secrets
+19. platform-dns
 
 ## Persistent Data
 
@@ -35,6 +36,10 @@ removing Application registration.
 For `media-postgres`, take PostgreSQL logical dumps before rollback whenever
 Sonarr, Radarr, or Prowlarr have already written data to PostgreSQL. Preserve
 the PostgreSQL PVC unless intentionally rebuilding the media apps from backups.
+
+Policy Bot is stateless. Roll back its public exposure by removing the
+`policy-bot-hook-funnel` Ingress first, then roll back the Deployment and
+ExternalSecret if the GitHub App should stop evaluating pull requests.
 
 ## Break-Glass
 

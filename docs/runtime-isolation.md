@@ -21,6 +21,11 @@ Current enforced controls are therefore:
 - namespace Pod Security labels that are explicit in repo-owned namespace
   manifests.
 
+Non-privileged runtime namespaces use the `baseline` Pod Security profile so
+new workloads cannot silently add privileged containers, host networking,
+hostPath mounts, or other host-level access. Move a namespace to `privileged`
+only with the documented justification and owner below.
+
 ## Privileged Workloads
 
 Privileged Pod Security admission must stay narrow and justified near the
@@ -31,6 +36,20 @@ workload that needs it.
 | `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` for WireGuard. | `clusters/homelab/apps/deluge/namespace.yaml` |
 | `istio-system` | Istio gateway and dataplane components need elevated networking permissions. | `clusters/homelab/apps/istio/namespace.yaml` |
 | `tailscale` | Tailscale operator proxy Pods need privileged networking for connector and load-balancer devices. | `clusters/homelab/apps/tailscale/namespace.yaml` |
+
+## Baseline Workloads
+
+These namespaces are explicitly kept at the Pod Security `baseline` profile:
+
+| Namespace | Desired-state owner |
+|-----------|---------------------|
+| `argocd` | `clusters/homelab/argocd/self-management/namespace.yaml` |
+| `cert-manager` | `clusters/homelab/apps/cert-manager/namespace.yaml` |
+| `external-secrets` | `clusters/homelab/apps/external-secrets/namespace.yaml` |
+| `ai` | `clusters/homelab/apps/litellm/namespace.yaml` |
+| `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
+| `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
+| `storage` | `clusters/homelab/platform/storage/namespace.yaml` |
 
 Do not broaden privileged admission for convenience. If another workload needs
 privileged mode, add the reason, owner, rollback note, and safer alternatives in

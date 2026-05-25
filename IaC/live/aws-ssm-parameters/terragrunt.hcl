@@ -137,27 +137,42 @@ inputs = {
       }
       initial_value = local.placeholder
     }
-    "/homelab/freqtrade/api-password" = {
-      description = "Freqtrade FreqUI and REST API password."
+    "/homelab/policy-bot/github-app/integration-id" = {
+      description   = "Policy Bot GitHub App integration ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/policy-bot/github-app/webhook-secret" = {
+      description = "Policy Bot GitHub App webhook HMAC secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/policy-bot/github-app/private-key" = {
+      description   = "Policy Bot GitHub App private key PEM."
+      initial_value = local.placeholder
+    }
+    "/homelab/policy-bot/oauth/client-id" = {
+      description   = "Policy Bot GitHub App OAuth client ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/policy-bot/oauth/client-secret" = {
+      description   = "Policy Bot GitHub App OAuth client secret."
+      initial_value = local.placeholder
+    }
+    "/homelab/policy-bot/sessions-key" = {
+      description = "Policy Bot session cookie signing key."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/hummingbot/config-password" = {
+      description = "Hummingbot client password used to encrypt local bot credentials."
       generated = {
         length  = 40
-        special = false
-      }
-      initial_value = local.placeholder
-    }
-    "/homelab/freqtrade/jwt-secret-key" = {
-      description = "Freqtrade REST API JWT signing secret."
-      generated = {
-        length  = 64
-        special = false
-      }
-      initial_value = local.placeholder
-    }
-    "/homelab/freqtrade/ws-token" = {
-      description = "Freqtrade REST API websocket token."
-      generated = {
-        length  = 64
-        prefix  = "ws-"
         special = false
       }
       initial_value = local.placeholder

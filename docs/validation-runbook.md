@@ -19,7 +19,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 16 requested Argo CD Applications plus the support
+Expected result: 17 requested Argo CD Applications plus the support
 Applications `platform-dns`, `platform-storage`, and `media-postgres` are
 planned, and every upstream relationship appears in a Terragrunt `dependencies`
 block.
@@ -74,6 +74,20 @@ adding opt-in labels to any workload Application:
 kubectl -n argocd get deploy argocd-image-updater-controller
 kubectl -n argocd get imageupdater homelab-annotation-opt-in
 ```
+
+For Policy Bot, verify the app stays narrow before registering the GitHub App
+webhook URL:
+
+```sh
+argocd app get policy-bot
+kubectl -n automation get deploy,svc,ingress,externalsecret policy-bot policy-bot-hook-funnel policy-bot-config
+kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=policy-bot-hook-funnel
+curl -I https://policy-bot.stinkyboi.com/details/example/example/1
+curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
+```
+
+Expected result: details redirect to `/api/github/auth`, the public hook returns
+`400` for an unsigned empty request, and the Funnel root is not routed.
 
 Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
@@ -149,5 +163,6 @@ migration.
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
 | Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
+| Policy Bot webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `policy-bot-hook-funnel` Ingress and the operator-managed proxy Pod; do not expose additional Policy Bot routes. |
 | Image updater misconfiguration | Remove the opt-in label or annotations from the affected Application, then fix the repository desired state. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

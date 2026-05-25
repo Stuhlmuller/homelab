@@ -1,6 +1,6 @@
 # Argo CD App Onboarding
 
-This feature registers 16 requested homelab applications plus supporting
+This feature registers 17 requested homelab applications plus supporting
 Applications for shared platform dependencies. `platform-dns` owns CoreDNS
 resolver policy, `platform-storage` owns the QNAP-backed NFS provisioner and
 default StorageClass desired state, and `media-postgres` owns the shared
@@ -29,7 +29,8 @@ counted as requested workloads.
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| freqtrade | requested | `finance` | `clusters/homelab/apps/freqtrade` | `IaC/live/argocd-apps/freqtrade` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| policy-bot | requested | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | Yes | external-secrets, cert-manager, istio, tailscale |
+| hummingbot | requested | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | Yes | external-secrets, platform-storage |
 
 ## Dependency Readiness
 

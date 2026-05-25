@@ -1,8 +1,9 @@
 # Tailnet Ingress
 
-Istio is the reverse proxy for this onboarding. Tailscale is the reachability
-layer. The first rollout is internal-only: no Tailscale Funnel routes are
-enabled.
+Istio is the reverse proxy for tailnet app access. Tailscale is the
+reachability layer. Most routes are internal-only; public Tailscale Funnel is
+reserved for reviewed webhook paths that must be reachable by external SaaS
+systems.
 
 ## Initial DNS Assumption
 
@@ -28,7 +29,8 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | litellm | `https://litellm.stinkyboi.com` | disabled |
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
 | n8n | `https://n8n.stinkyboi.com` | disabled |
-| freqtrade | `https://freqtrade.stinkyboi.com` | disabled |
+| policy-bot UI | `https://policy-bot.stinkyboi.com` | disabled |
+| policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
 
 Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 `istio-system`. cert-manager requests this wildcard certificate through the
@@ -38,13 +40,23 @@ Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 `homelab-selfsigned` issuer remains available only as a local fallback and is
 not referenced by the ingress wildcard certificate.
 
-Validation on 2026-05-24 found no enabled first-rollout Funnel routes. The
-Istio gateway and every VirtualService route manifest are annotated with
-`homelab.rst.io/public-funnel: "false"`.
+Validation on 2026-05-24 found no enabled first-rollout Funnel routes. Policy
+Bot adds the first reviewed Funnel exception for GitHub webhook delivery only.
+The `policy-bot-hook-funnel` Tailscale Ingress is annotated with
+`homelab.rst.io/public-funnel: "true"` and
+`homelab.rst.io/public-funnel-reviewed: "true"`; the Policy Bot UI
+VirtualService remains annotated with `homelab.rst.io/public-funnel: "false"`.
+Every other Istio gateway and VirtualService route manifest remains
+tailnet-only.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and direct Prometheus ingress must not be restored
 without a documented authentication plan and rollback path.
+
+Hummingbot is intentionally absent from the tailnet route inventory. It is an
+interactive CLI trading client with no HTTP Service or VirtualService in this
+rollout; operators attach with `kubectl` instead of exposing the bot over
+ingress.
 
 ## Homelab VPN Exit Node And API Route
 
@@ -80,6 +92,28 @@ Tailscale proxy Pod is running. Then select `homelab-exit-node` on a client and
 verify the public egress IP changes to the homelab network. Keep local-network
 access enabled on clients that still need nearby LAN access while using the exit
 node.
+
+## Policy Bot Webhook Funnel Exception
+
+Policy Bot must receive GitHub App webhook deliveries from outside the tailnet.
+The reviewed public route is:
+
+```text
+Owning application: policy-bot
+Public path: /api/github/hook
+Purpose: GitHub App webhook deliveries for pull request policy evaluation.
+Source system: GitHub App webhooks.
+Authentication or signature check: policy-bot validates the GitHub webhook HMAC
+secret from /homelab/policy-bot/github-app/webhook-secret.
+Tailscale Funnel hostname: policy-bot-hook.<tailnet-name>.ts.net
+Rollback command: revert clusters/homelab/apps/policy-bot/ingress-funnel.yaml
+or remove it from kustomization.yaml, then sync the policy-bot Application.
+Data exposed: webhook request body and headers sent by GitHub.
+```
+
+The Policy Bot details UI, static assets, and OAuth callback stay on
+`https://policy-bot.stinkyboi.com` through the tailnet-only Istio gateway. The
+root path stays unrouted.
 
 ## Future Funnel Webhook Exception Template
 

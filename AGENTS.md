@@ -44,8 +44,11 @@ boundaries when adding or moving files:
   external dependencies such as DNS, object storage, IAM, and state backends.
 - `docs/` and top-level guides own learner-facing explanations, walkthroughs,
   diagrams, and runbooks.
+- `docs/knowledge-base/` owns the Obsidian vault for cross-cutting homelab
+  context, architecture notes, inventories, build patterns, and durable
+  decisions that need to be referenced across future changes.
 - `scripts/` owns repeatable operator commands and validation helpers.
-- `.codex/skills/` owns project-local Codex skills that wrap validated
+- `.agents/skills/` owns project-local Codex skills that wrap validated
   workflows.
 
 Do not reintroduce Nomad, Ansible, or host-bootstrap assumptions unless the code
@@ -94,16 +97,21 @@ base intentionally adopts them again and the documentation explains why.
 
 ## Default agent workflow
 
-1. Read the relevant docs and code before changing behavior.
+1. Read the relevant docs, knowledge-base notes, and code before changing
+   behavior.
 2. Inspect current state with read-only commands when the task depends on live
    cluster reality.
 3. Run the repo validation gate when available, such as `nix run .#validate` or
    the documented replacement.
 4. Make the smallest code and documentation change that solves the request.
-5. Re-run relevant validation.
-6. For live rollout work, run any documented live-cluster validation before
+5. Update affected knowledge-base notes under `docs/knowledge-base/` when the
+   change creates, removes, renames, or materially changes an app, platform
+   dependency, workflow, topology assumption, secret contract, storage
+   requirement, validation gate, or build pattern.
+6. Re-run relevant validation.
+7. For live rollout work, run any documented live-cluster validation before
    applying changes.
-7. Summarize what changed, what was validated, and any remaining operational
+8. Summarize what changed, what was validated, and any remaining operational
    risk.
 
 If a checkout is intentionally incomplete and expected scripts or Nix targets
@@ -123,6 +131,9 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   to roll it back.
 - Prefer diagrams and short explanations for architecture changes, but keep the
   source of truth in code.
+- Use `docs/knowledge-base/` for Obsidian-linked context that spans multiple
+  runbooks or source directories. Keep notes concise, link to source files, and
+  update the vault in the same PR as the code or runbook change.
 
 ## Infrastructure-as-code conventions
 
@@ -179,11 +190,17 @@ with a newer runbook or live read-only inspection, update the docs in the same
 PR as the operational change.
 
 ## Active Technologies
+- Markdown Obsidian vault under `docs/knowledge-base` + project-local Codex
+  skill `homelab-knowledge-base` for cross-change architecture notes,
+  inventories, build patterns, and knowledge-base update workflow
 - HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets (001-onboard-argocd-apps)
 - Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects (001-onboard-argocd-apps)
 - HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD (001-bootstrap-argocd-terragrunt)
 - S3 remote state from `IaC/root.hcl`; no workload persistent storage introduced by this feature (001-bootstrap-argocd-terragrunt)
 
 ## Recent Changes
+- Added an Obsidian knowledge base under `docs/knowledge-base` and the
+  `homelab-knowledge-base` skill so agents read and update the vault while
+  building new homelab features.
 - 001-onboard-argocd-apps: Added HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
 - 001-bootstrap-argocd-terragrunt: Added HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD

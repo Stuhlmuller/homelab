@@ -7,15 +7,16 @@ description: Use Terragrunt safely in this homelab repository. Trigger when Code
 
 ## Overview
 
-Use this skill to keep Terragrunt changes declarative, reviewable, and aligned with this repo's public homelab conventions. Prefer repository-owned HCL and docs over live fixes, pin reusable sources, validate before mutation, and make the command scope obvious.
+Use this skill to keep Terragrunt changes declarative, reviewable, and aligned with this repo's public homelab conventions. Prefer repository-owned HCL and docs over live fixes, pin reusable sources, validate before mutation, make the command scope obvious, and keep the Obsidian knowledge base current.
 
 ## First Pass
 
 1. Read the nearby runbook and the target HCL before changing anything.
-2. Inspect `IaC/root.hcl` for shared locals, remote state, provider generation, and `catalog.urls`.
-3. Inspect peer units under the same stack root before inventing a new shape.
-4. Identify whether the request is about a reusable module, a Terragrunt unit, an implicit stack, an explicit stack, or catalog/scaffold usage.
-5. Choose read-only discovery and planning commands first. Do not apply, destroy, migrate backends, or mutate live infrastructure unless the user explicitly asks and the relevant validation has passed.
+2. For substantive work, read `docs/knowledge-base/00-home.md` and the relevant linked note before building new infrastructure behavior.
+3. Inspect `IaC/root.hcl` for shared locals, remote state, provider generation, and `catalog.urls`.
+4. Inspect peer units under the same stack root before inventing a new shape.
+5. Identify whether the request is about a reusable module, a Terragrunt unit, an implicit stack, an explicit stack, or catalog/scaffold usage.
+6. Choose read-only discovery and planning commands first. Do not apply, destroy, migrate backends, or mutate live infrastructure unless the user explicitly asks and the relevant validation has passed.
 
 Use these source docs when command behavior might have drifted:
 
@@ -42,6 +43,7 @@ Use these source docs when command behavior might have drifted:
 - Keep Git-backed Argo CD `target_revision` values on `main` unless a temporary non-default revision is explicitly documented.
 - Pin remote catalog module sources by tag or commit. Do not point production units at an unpinned branch.
 - Add or update docs when changing architecture, bootstrap flow, storage, secrets, networking, or operational assumptions.
+- Update `docs/knowledge-base` in the same change when Terragrunt work changes module ownership, bootstrap behavior, app registration patterns, dependency structure, validation gates, or platform/workload inventory.
 
 ## Catalog And Scaffold
 

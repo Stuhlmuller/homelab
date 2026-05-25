@@ -5,7 +5,7 @@ applications with Argo CD. Each child directory owns exactly one Argo CD
 Application and sources the repository-local
 `IaC/modules/argocd-application-kubernetes` module.
 
-The 16 requested apps are registered here along with supporting Applications
+The 17 requested apps are registered here along with supporting Applications
 for shared platform services. `platform-dns` owns CoreDNS resolver policy,
 `platform-storage` owns the QNAP NFS provisioner and default StorageClass
 desired state, and `media-postgres` owns the shared PostgreSQL instance for

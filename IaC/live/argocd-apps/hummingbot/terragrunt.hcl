@@ -9,9 +9,6 @@ terraform {
 dependencies {
   paths = [
     "../external-secrets",
-    "../cert-manager",
-    "../istio",
-    "../tailscale",
     "../platform-storage"
   ]
 }
@@ -23,7 +20,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "freqtrade"
+    name      = "hummingbot"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -44,8 +41,8 @@ inputs = {
       chart           = "app-template"
       target_revision = "4.4.0"
       helm = {
-        release_name = "freqtrade"
-        value_files  = ["$values/clusters/homelab/apps/freqtrade/values.yaml"]
+        release_name = "hummingbot"
+        value_files  = ["$values/clusters/homelab/apps/hummingbot/values.yaml"]
       }
     },
     {
@@ -59,7 +56,7 @@ inputs = {
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      path            = "clusters/homelab/apps/freqtrade"
+      path            = "clusters/homelab/apps/hummingbot"
       kustomize       = {}
     }
   ]
@@ -86,7 +83,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "automated dry-run only; live trading requires a separate PR with exchange credentials, backtest evidence, and rollback notes"
+      value = "manual Hummingbot client only; no exchange credentials or autostart strategy are committed"
     }
   ]
 }

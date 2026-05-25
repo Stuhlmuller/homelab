@@ -17,8 +17,9 @@ Raw manifests are wired through each app's Argo CD multi-source configuration.
 No file in this tree may contain secret values, private keys, raw certificate
 material, private kubeconfigs, or private hostnames.
 
-All first-rollout routes are tailnet-only. Public Tailscale Funnel routes are
-not enabled in this tree; future webhook exceptions must follow the template in
+Most first-rollout routes are tailnet-only. Public Tailscale Funnel routes must
+stay limited to reviewed webhook exceptions such as Policy Bot's
+`/api/github/hook` route, and every exception must be documented in
 `docs/networking-tailnet-ingress.md`.
 
 Do not add a route just because an upstream chart exposes a web UI. Prefer the
