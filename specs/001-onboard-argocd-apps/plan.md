@@ -5,10 +5,10 @@
 
 ## Summary
 
-Onboard 14 homelab applications into Argo CD through Terragrunt catalog modules:
+Onboard 15 homelab applications into Argo CD through Terragrunt catalog modules:
 Istio, external-secrets, certificates-manager, Grafana, Prometheus, OpenClaw,
-Tines, Radarr, Sonarr, Deluge, descheduler, Tailscale, LiteLLM, and Argo CD
-Image Updater. The
+Tines, Prowlarr, Radarr, Sonarr, Deluge, descheduler, Tailscale, LiteLLM, and
+Argo CD Image Updater. The
 implementation will create one Terragrunt unit per requested Argo CD
 Application plus one supporting `platform-storage` registration for the default
 StorageClass, source the `argocd-application` catalog module by default, wire
@@ -35,16 +35,16 @@ stateful applications roll out.
 
 **Language/Version**: HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state
 **Primary Dependencies**: Terragrunt catalog modules `argocd-application` and, only when exact CRD control is required, `argocd-application-manifest`; Argo CD; Argo CD Image Updater; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
-**Storage**: Default NFS-backed Kubernetes StorageClass using an existing provisioner discovered via read-only inspection; Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
+**Storage**: Default NFS-backed Kubernetes StorageClass using an existing provisioner discovered via read-only inspection; Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
 **Testing**: Terragrunt HCL formatting and planning; OpenTofu validation through Terragrunt; Helm rendering or Argo CD source rendering for each app; Kubernetes server-side dry-run or `kubectl diff` for repo-owned manifests; post-rollout Argo CD sync/health checks
 **Target Platform**: Talos Linux Kubernetes homelab cluster reachable at the documented Kubernetes API endpoint
 **Project Type**: Infrastructure-as-code and GitOps Kubernetes application onboarding
 **Infrastructure Entry Point**: `IaC/live/argocd-apps/**/terragrunt.hcl` with shared settings from `IaC/root.hcl`; repo-owned app values under `clusters/homelab/apps/**`; cluster storage desired state under `clusters/homelab/platform/storage/**` registered by `IaC/live/argocd-apps/platform-storage/terragrunt.hcl`
 **Delivery Mechanism**: Terragrunt/OpenTofu registers Argo CD Applications; Argo CD reconciles Helm/Kustomize/raw manifest app desired state
 **Secrets Model**: External Secrets reads runtime secret material from AWS SSM Parameter Store; public repository commits only ExternalSecret resources, parameter names/paths, and non-secret defaults
-**Performance Goals**: Argo CD reaches the documented sync/health expectation for all 14 applications within 30 minutes after rollout; reviewers can identify each app path and dependency edge in under 5 minutes
+**Performance Goals**: Argo CD reaches the documented sync/health expectation for all 15 applications within 30 minutes after rollout; reviewers can identify each app path and dependency edge in under 5 minutes
 **Constraints**: Zero committed secrets; zero public Tailscale Funnel paths in first rollout; no DNS record additions or edits after initial DNS setup; no manual Argo CD UI creation or one-off live Kubernetes edits; explicit Terragrunt dependencies for every app ordering relationship; automated prune and self-heal by default; no NFS provisioner ownership; stateful readiness blocked until NFS backup coverage is documented
-**Scale/Scope**: 14 requested Argo CD Applications plus one supporting storage Application registration for the default NFS StorageClass, supporting values, route manifests, secret references, storage notes, image update policy, validation, and rollback documentation
+**Scale/Scope**: 15 requested Argo CD Applications plus one supporting storage Application registration for the default NFS StorageClass, supporting values, route manifests, secret references, storage notes, image update policy, validation, and rollback documentation
 
 ## Constitution Check
 
@@ -99,6 +99,7 @@ IaC/live/argocd-apps/
 ├── grafana/terragrunt.hcl
 ├── descheduler/terragrunt.hcl
 ├── deluge/terragrunt.hcl
+├── prowlarr/terragrunt.hcl
 ├── radarr/terragrunt.hcl
 ├── sonarr/terragrunt.hcl
 ├── litellm/terragrunt.hcl
@@ -114,6 +115,7 @@ clusters/homelab/apps/
 ├── grafana/
 ├── descheduler/
 ├── deluge/
+├── prowlarr/
 ├── radarr/
 ├── sonarr/
 ├── litellm/

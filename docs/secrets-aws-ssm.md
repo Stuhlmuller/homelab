@@ -70,6 +70,6 @@ token itself in git. The cert-manager ExternalSecret refreshes this value every
 five minutes so DNS-01 token rotations converge quickly without hand-editing the
 Kubernetes Secret.
 
-Deluge, Radarr, and Sonarr do not store their application passwords or API keys
-in SSM. Their configuration lives on the persistent `/config` volumes and is
-managed through each app after first login.
+Deluge, Prowlarr, Radarr, and Sonarr do not store their application passwords
+or API keys in SSM. Their configuration lives on the persistent `/config`
+volumes and is managed through each app after first login.

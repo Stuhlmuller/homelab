@@ -57,9 +57,10 @@ accidental implicit ordering by directory names or manual operator memory.
 | prometheus | external-secrets, platform-storage |
 | grafana | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | descheduler | prometheus |
-| deluge | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| radarr | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage |
-| sonarr | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage |
+| deluge | cert-manager, istio, tailscale, platform-storage |
+| prowlarr | cert-manager, istio, tailscale, platform-storage |
+| radarr | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
+| sonarr | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
 | litellm | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | tines | external-secrets, cert-manager, istio, tailscale, platform-storage |
@@ -69,8 +70,8 @@ exist before routes are considered enabled. Tailscale depends on secret material
 and the Istio reverse-proxy target. The supporting `platform-storage`
 registration owns only the default NFS StorageClass and is a prerequisite for
 stateful workloads. Grafana depends on Prometheus. Radarr and Sonarr depend on
-Deluge when download-client integration is enabled. OpenClaw depends on LiteLLM
-as the model gateway.
+Deluge for download-client integration and Prowlarr for indexer integration.
+OpenClaw depends on LiteLLM as the model gateway.
 
 **Alternatives considered**:
 
@@ -128,8 +129,9 @@ public-safe provisioner details, and require documented NFS backup coverage
 before stateful apps roll out.
 
 Require a stateful workload profile for each app before rollout. Prometheus,
-Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM must document
-persistent data, backup coverage, restore behavior, and rollback data handling.
+Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM must
+document persistent data, backup coverage, restore behavior, and rollback data
+handling.
 Platform controllers document whether they are stateless or rely only on
 controller-managed runtime objects.
 

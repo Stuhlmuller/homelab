@@ -12,6 +12,7 @@ dependencies {
     "../istio",
     "../tailscale",
     "../deluge",
+    "../prowlarr",
     "../platform-storage"
   ]
 }
@@ -86,7 +87,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "automated; verify Deluge and NFS backup coverage before relying on media automation"
+      value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
     }
   ]
 }

@@ -11,16 +11,17 @@ handling is clear.
 2. OpenClaw
 3. Tines
 4. Radarr and Sonarr
-5. LiteLLM
-6. Deluge
-7. Grafana
-8. Descheduler
-9. Prometheus
-10. platform-storage
-11. Tailscale
-12. Istio
-13. cert-manager
-14. external-secrets
+5. Prowlarr
+6. LiteLLM
+7. Deluge
+8. Grafana
+9. Descheduler
+10. Prometheus
+11. platform-storage
+12. Tailscale
+13. Istio
+14. cert-manager
+15. external-secrets
 
 ## Persistent Data
 

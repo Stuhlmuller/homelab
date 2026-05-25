@@ -13,7 +13,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 14 requested Argo CD Applications plus `platform-storage` are
+Expected result: 15 requested Argo CD Applications plus `platform-storage` are
 planned, and every upstream relationship appears in a Terragrunt `dependencies`
 block.
 
@@ -105,6 +105,13 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 - The PR-readiness checklist was incomplete when implementation began; the
   operator explicitly waived the checklist gate to continue, and this runbook
   records the resulting validation evidence.
+- Prowlarr desired state was added on 2026-05-24. `terragrunt hcl fmt --check`,
+  `terragrunt hcl validate`, `kubectl kustomize clusters/homelab/apps/prowlarr`,
+  a full `kubectl kustomize` pass across app and storage overlays,
+  `git diff --check`, repository secret scanning, and
+  `nix flake check --no-build --all-systems` passed before live rollout.
+  Focused Prowlarr Terragrunt initialization and validation use the
+  repository-local `IaC/modules/argocd-application-kubernetes` module.
 
 ## Failure Modes
 

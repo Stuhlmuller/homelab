@@ -6,7 +6,7 @@ repository root.
 
 ## 1. Review Scope
 
-Confirm the feature includes the 14 requested Argo CD Applications plus the
+Confirm the feature includes the 15 requested Argo CD Applications plus the
 supporting platform storage registration:
 
 ```sh
@@ -27,6 +27,7 @@ litellm
 openclaw
 platform-storage
 prometheus
+prowlarr
 radarr
 sonarr
 tailscale
@@ -61,7 +62,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 14 requested Argo CD Application registrations plus the
+Expected result: 15 requested Argo CD Application registrations plus the
 supporting `platform-storage` registration are planned, and each unit with
 upstream requirements lists explicit Terragrunt dependencies.
 
@@ -121,9 +122,10 @@ Before rollout, inspect each stateful app profile in docs or app-local README:
 rg -n "Storage|Backup|Restore|Rollback" clusters/homelab/apps docs
 ```
 
-Expected result: Prometheus, Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw,
-and LiteLLM use the default NFS StorageClass unless an exception is documented,
-and each has explicit backup coverage, restore, and rollback decisions.
+Expected result: Prometheus, Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge,
+OpenClaw, and LiteLLM use the default NFS StorageClass unless an exception is
+documented, and each has explicit backup coverage, restore, and rollback
+decisions.
 
 ## 7. Roll Out Through Desired State
 
@@ -153,6 +155,7 @@ argocd app get prometheus
 argocd app get grafana
 argocd app get descheduler
 argocd app get deluge
+argocd app get prowlarr
 argocd app get radarr
 argocd app get sonarr
 argocd app get litellm
@@ -160,7 +163,7 @@ argocd app get openclaw
 argocd app get tines
 ```
 
-Expected result: all 14 requested applications plus the supporting
+Expected result: all 15 requested applications plus the supporting
 platform-storage registration reach the documented sync and health expectation
 within 30 minutes, or each exception is recorded with an operator action and
 rollback decision.
@@ -173,16 +176,17 @@ Rollback dependent services before shared foundations:
 2. OpenClaw
 3. Tines
 4. Radarr and Sonarr
-5. LiteLLM
-6. Deluge
-7. Grafana
-8. Descheduler
-9. Prometheus
-10. platform-storage
-11. Tailscale
-12. Istio
-13. cert-manager
-14. external-secrets
+5. Prowlarr
+6. LiteLLM
+7. Deluge
+8. Grafana
+9. Descheduler
+10. Prometheus
+11. platform-storage
+12. Tailscale
+13. Istio
+14. cert-manager
+15. external-secrets
 
 Before deleting or disabling any stateful application, follow its workload
 profile and preserve or snapshot persistent data according to the documented

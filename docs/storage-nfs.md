@@ -136,6 +136,7 @@ app has acceptable backup and restore coverage.
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus dashboard export when possible | Restore PVC and re-sync dashboards | Preserve PVC |
 | deluge | config, downloads | `nfs-default` | NFS backup for config and download paths | Restore config/download PVCs before app sync | Preserve PVCs |
+| prowlarr | indexer config, app integration refs | `nfs-default` | NFS backup for config and indexer integration state | Restore config PVC before app sync and re-test app integrations | Preserve PVC |
 | radarr | config, media refs | `nfs-default` | NFS backup for config and shared media references | Restore config PVC and verify media mount refs | Preserve PVC |
 | sonarr | config, media refs | `nfs-default` | NFS backup for config and shared media references | Restore config PVC and verify media mount refs | Preserve PVC |
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |
@@ -149,8 +150,8 @@ app has acceptable backup and restore coverage.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
 - Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
-  Grafana, Deluge, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines each explicitly
-  depend on `IaC/live/argocd-apps/platform-storage`.
+  Grafana, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines each
+  explicitly depend on `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

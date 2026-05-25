@@ -5,7 +5,7 @@ applications with Argo CD. Each child directory owns exactly one Argo CD
 Application and sources the repository-local
 `IaC/modules/argocd-application-kubernetes` module.
 
-The 14 requested apps are registered here along with one supporting
+The 15 requested apps are registered here along with one supporting
 `platform-storage` Application for the QNAP NFS provisioner and default
 StorageClass desired state. `platform-storage` is not one of the requested apps;
 it exists so Kubernetes storage changes are still delivered through Argo CD.

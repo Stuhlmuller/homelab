@@ -1,6 +1,6 @@
 # Argo CD App Onboarding
 
-This feature registers 14 requested homelab applications plus one supporting
+This feature registers 15 requested homelab applications plus one supporting
 `platform-storage` Application. The support app owns the QNAP-backed NFS
 provisioner and default StorageClass desired state and is not counted as a
 requested workload.
@@ -19,8 +19,9 @@ requested workload.
 | grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | descheduler | requested | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | Yes | prometheus |
 | deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | cert-manager, istio, tailscale, platform-storage |
-| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | cert-manager, istio, tailscale, deluge, platform-storage |
-| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, tailscale, deluge, platform-storage |
+| prowlarr | requested | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | Yes | cert-manager, istio, tailscale, platform-storage |
+| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
+| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | tines | requested | `automation` | `clusters/homelab/apps/tines` | `IaC/live/argocd-apps/tines` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |

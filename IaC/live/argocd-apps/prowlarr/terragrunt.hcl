@@ -11,8 +11,6 @@ dependencies {
     "../cert-manager",
     "../istio",
     "../tailscale",
-    "../deluge",
-    "../prowlarr",
     "../platform-storage"
   ]
 }
@@ -24,7 +22,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "radarr"
+    name      = "prowlarr"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -45,8 +43,8 @@ inputs = {
       chart           = "app-template"
       target_revision = "4.4.0"
       helm = {
-        release_name = "radarr"
-        value_files  = ["$values/clusters/homelab/apps/radarr/values.yaml"]
+        release_name = "prowlarr"
+        value_files  = ["$values/clusters/homelab/apps/prowlarr/values.yaml"]
       }
     },
     {
@@ -60,7 +58,7 @@ inputs = {
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      path            = "clusters/homelab/apps/radarr"
+      path            = "clusters/homelab/apps/prowlarr"
       kustomize       = {}
     }
   ]
@@ -87,7 +85,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
+      value = "automated; configure indexers and app integrations after first login, then verify NFS backup coverage"
     }
   ]
 }

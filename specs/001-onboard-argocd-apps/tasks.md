@@ -83,9 +83,9 @@
 
 ## Phase 4: User Story 2 - Register Homelab Services Consistently (Priority: P2)
 
-**Goal**: Register Deluge, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines using the same Argo CD and Terragrunt catalog pattern, with safe secret references, default NFS storage, and tailnet-only routes.
+**Goal**: Register Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, and Tines using the same Argo CD and Terragrunt catalog pattern, with safe secret references, default NFS storage, and tailnet-only routes.
 
-**Independent Test**: Review only the Phase 4 files after Phase 2 and confirm the six service apps have stable identities, non-secret configuration, explicit dependencies, stateful workload profiles, and no public Tailscale Funnel paths.
+**Independent Test**: Review only the Phase 4 files after Phase 2 and confirm the seven service apps have stable identities, non-secret configuration, explicit dependencies, stateful workload profiles, and no public Tailscale Funnel paths.
 
 ### Implementation for User Story 2
 
@@ -96,11 +96,11 @@
 - [X] T048 [P] [US2] Create Radarr Helm values with default NFS StorageClass persistence and Deluge integration placeholders in `clusters/homelab/apps/radarr/values.yaml`
 - [X] T049 [P] [US2] Create Radarr ExternalSecret references for app and download-client credentials in `clusters/homelab/apps/radarr/externalsecret.yaml`
 - [X] T050 [P] [US2] Create the Radarr tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/radarr/virtualservice.yaml`
-- [X] T051 [US2] Create the Radarr Argo CD Terragrunt unit depending on external-secrets, cert-manager, Istio, Tailscale, Deluge, and platform-storage in `IaC/live/argocd-apps/radarr/terragrunt.hcl`
+- [X] T051 [US2] Create the Radarr Argo CD Terragrunt unit depending on cert-manager, Istio, Tailscale, Deluge, Prowlarr, and platform-storage in `IaC/live/argocd-apps/radarr/terragrunt.hcl`
 - [X] T052 [P] [US2] Create Sonarr Helm values with default NFS StorageClass persistence and Deluge integration placeholders in `clusters/homelab/apps/sonarr/values.yaml`
 - [X] T053 [P] [US2] Create Sonarr ExternalSecret references for app and download-client credentials in `clusters/homelab/apps/sonarr/externalsecret.yaml`
 - [X] T054 [P] [US2] Create the Sonarr tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/sonarr/virtualservice.yaml`
-- [X] T055 [US2] Create the Sonarr Argo CD Terragrunt unit depending on external-secrets, cert-manager, Istio, Tailscale, Deluge, and platform-storage in `IaC/live/argocd-apps/sonarr/terragrunt.hcl`
+- [X] T055 [US2] Create the Sonarr Argo CD Terragrunt unit depending on cert-manager, Istio, Tailscale, Deluge, Prowlarr, and platform-storage in `IaC/live/argocd-apps/sonarr/terragrunt.hcl`
 - [X] T056 [P] [US2] Create LiteLLM Helm values with AWS SSM provider placeholders and default NFS StorageClass persistence when state is enabled in `clusters/homelab/apps/litellm/values.yaml`
 - [X] T057 [P] [US2] Create LiteLLM ExternalSecret references for model provider keys and routing secrets in `clusters/homelab/apps/litellm/externalsecret.yaml`
 - [X] T058 [P] [US2] Create the LiteLLM tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/litellm/virtualservice.yaml`
@@ -131,7 +131,7 @@
 ### Implementation for User Story 3
 
 - [X] T072 [P] [US3] Add pre-mutation Terragrunt plan, Helm or Kustomize render, and Kubernetes dry-run guidance in `docs/validation-runbook.md`
-- [X] T073 [P] [US3] Add dependency-aware rollback order for all 14 requested apps and platform-storage in `docs/rollback-argocd-apps.md`
+- [X] T073 [P] [US3] Add dependency-aware rollback order for all 15 requested apps and platform-storage in `docs/rollback-argocd-apps.md`
 - [X] T074 [P] [US3] Add per-stateful-app restore instructions and data-preservation warnings in `docs/storage-nfs.md`
 - [X] T075 [P] [US3] Add the future Tailscale Funnel webhook exception template with owner, path, purpose, validation, and rollback fields in `docs/networking-tailnet-ingress.md`
 - [X] T076 [P] [US3] Update the learner-facing onboarding guide to link app, storage, ingress, validation, and rollback docs in `ONBOARDING.md`
@@ -170,6 +170,19 @@ automation.
 
 ---
 
+## Phase 8: Prowlarr Media Follow-Up
+
+**Purpose**: Add Prowlarr as the media indexer manager while preserving the
+same Argo CD, Terragrunt, NFS, and tailnet-only rollout model.
+
+- [X] T092 Add Prowlarr app-template values with persistent `nfs-default` config storage in `clusters/homelab/apps/prowlarr/values.yaml`
+- [X] T093 Add the Prowlarr tailnet-only Istio route with Funnel disabled in `clusters/homelab/apps/prowlarr/virtualservice.yaml`
+- [X] T094 Add the Prowlarr Argo CD Terragrunt unit depending on cert-manager, Istio, Tailscale, and platform-storage in `IaC/live/argocd-apps/prowlarr/terragrunt.hcl`
+- [X] T095 Update Radarr and Sonarr Terragrunt dependencies so Prowlarr registration precedes their media automation rollout
+- [X] T096 Update app inventory, storage readiness, validation, ingress, secrets, rollback, and spec artifacts for the 15-app desired state
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -195,7 +208,7 @@ automation.
 - Persistent apps depend on `platform-storage`.
 - `grafana` depends on `prometheus`.
 - `descheduler` depends on `prometheus`.
-- `radarr` and `sonarr` depend on `deluge`.
+- `radarr` and `sonarr` depend on `deluge` and `prowlarr`.
 - `openclaw` depends on `litellm`.
 
 ---
@@ -216,8 +229,9 @@ Task: "Create Prometheus Helm values with default NFS StorageClass persistence i
 
 ```text
 Task: "Create Deluge Helm values with default NFS StorageClass persistence for config and downloads in clusters/homelab/apps/deluge/values.yaml"
-Task: "Create Radarr Helm values with default NFS StorageClass persistence and Deluge integration placeholders in clusters/homelab/apps/radarr/values.yaml"
-Task: "Create Sonarr Helm values with default NFS StorageClass persistence and Deluge integration placeholders in clusters/homelab/apps/sonarr/values.yaml"
+Task: "Create Prowlarr Helm values with default NFS StorageClass persistence for indexer and app integration config in clusters/homelab/apps/prowlarr/values.yaml"
+Task: "Create Radarr Helm values with default NFS StorageClass persistence and Deluge/Prowlarr integration placeholders in clusters/homelab/apps/radarr/values.yaml"
+Task: "Create Sonarr Helm values with default NFS StorageClass persistence and Deluge/Prowlarr integration placeholders in clusters/homelab/apps/sonarr/values.yaml"
 Task: "Create LiteLLM Helm values with AWS SSM provider placeholders and default NFS StorageClass persistence when state is enabled in clusters/homelab/apps/litellm/values.yaml"
 Task: "Create Tines Helm values with default NFS StorageClass persistence for automation state in clusters/homelab/apps/tines/values.yaml"
 ```
@@ -226,7 +240,7 @@ Task: "Create Tines Helm values with default NFS StorageClass persistence for au
 
 ```text
 Task: "Add pre-mutation Terragrunt plan, Helm or Kustomize render, and Kubernetes dry-run guidance in docs/validation-runbook.md"
-Task: "Add dependency-aware rollback order for all 14 requested apps and platform-storage in docs/rollback-argocd-apps.md"
+Task: "Add dependency-aware rollback order for all 15 requested apps and platform-storage in docs/rollback-argocd-apps.md"
 Task: "Add per-stateful-app restore instructions and data-preservation warnings in docs/storage-nfs.md"
 Task: "Add the future Tailscale Funnel webhook exception template with owner, path, purpose, validation, and rollback fields in docs/networking-tailnet-ingress.md"
 ```

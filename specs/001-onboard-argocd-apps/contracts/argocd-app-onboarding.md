@@ -113,9 +113,10 @@ Every dependency in this table MUST be represented in Terragrunt:
 | prometheus | external-secrets, platform-storage |
 | grafana | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | descheduler | prometheus |
-| deluge | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| radarr | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage |
-| sonarr | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage |
+| deluge | cert-manager, istio, tailscale, platform-storage |
+| prowlarr | cert-manager, istio, tailscale, platform-storage |
+| radarr | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
+| sonarr | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
 | litellm | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | tines | external-secrets, cert-manager, istio, tailscale, platform-storage |

@@ -79,7 +79,7 @@ Validation rules:
 
 - No dependency cycles.
 - No downstream app may rely on Tailscale, Istio, cert-manager, external-secrets,
-  Prometheus, Deluge, or LiteLLM without a matching edge.
+  Prometheus, Deluge, Prowlarr, or LiteLLM without a matching edge.
 
 ### RuntimeSecretReference
 
@@ -205,9 +205,10 @@ Validation rules:
 | prometheus | monitoring | observability | external-secrets, platform-storage | persistent metrics on default NFS StorageClass | tailnet-only | optional scrape/auth refs |
 | grafana | monitoring | observability | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage | persistent dashboards/config on default NFS StorageClass | tailnet-only | SSM-backed admin/auth refs |
 | descheduler | kube-system | scheduling | prometheus | none | none | none expected |
-| deluge | media | media | external-secrets, cert-manager, istio, tailscale, platform-storage | persistent config/downloads on default NFS StorageClass | tailnet-only | SSM-backed auth refs |
-| radarr | media | media | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage | persistent config/media refs on default NFS StorageClass | tailnet-only | SSM-backed app/download-client refs |
-| sonarr | media | media | external-secrets, cert-manager, istio, tailscale, deluge, platform-storage | persistent config/media refs on default NFS StorageClass | tailnet-only | SSM-backed app/download-client refs |
+| deluge | media | media | cert-manager, istio, tailscale, platform-storage | persistent config/downloads on default NFS StorageClass | tailnet-only | config PVC-managed app credentials |
+| prowlarr | media | media | cert-manager, istio, tailscale, platform-storage | persistent indexer and app integration config on default NFS StorageClass | tailnet-only | config PVC-managed app credentials |
+| radarr | media | media | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage | persistent config/media refs on default NFS StorageClass | tailnet-only | config PVC-managed app and integration credentials |
+| sonarr | media | media | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage | persistent config/media refs on default NFS StorageClass | tailnet-only | config PVC-managed app and integration credentials |
 | litellm | ai | AI gateway | external-secrets, cert-manager, istio, tailscale, platform-storage | persistent if configured with DB/config store on default NFS StorageClass | tailnet-only | SSM-backed model provider refs |
 | openclaw | ai | AI service | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage | persistent config/runtime state on default NFS StorageClass | tailnet-only | SSM-backed app/model refs |
 | tines | automation | automation | external-secrets, cert-manager, istio, tailscale, platform-storage | persistent automation state on default NFS StorageClass | tailnet-only | SSM-backed app/auth refs |

@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: prowlarr-tailnet
+  namespace: media
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - prowlarr.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: prowlarr.media.svc.cluster.local
+            port:
+              number: 9696

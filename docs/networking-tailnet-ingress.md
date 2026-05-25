@@ -23,6 +23,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | prometheus | `https://prometheus.stinkyboi.com` | disabled |
 | grafana | `https://grafana.stinkyboi.com` | disabled |
 | deluge | `https://deluge.stinkyboi.com` | disabled |
+| prowlarr | `https://prowlarr.stinkyboi.com` | disabled |
 | radarr | `https://radarr.stinkyboi.com` | disabled |
 | sonarr | `https://sonarr.stinkyboi.com` | disabled |
 | litellm | `https://litellm.stinkyboi.com` | disabled |

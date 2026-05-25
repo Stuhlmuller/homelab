@@ -176,7 +176,7 @@ PR as the operational change.
 
 ## Active Technologies
 - HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets (001-onboard-argocd-apps)
-- Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects (001-onboard-argocd-apps)
+- Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects (001-onboard-argocd-apps)
 - HCL for Terragrunt/OpenTofu, Kubernetes manifest schemas, Markdown runbooks + Terragrunt, OpenTofu, Helm provider, Kubernetes provider, Argo CD Helm chart, Argo CD Application CRD (001-bootstrap-argocd-terragrunt)
 - S3 remote state from `IaC/root.hcl`; no workload persistent storage introduced by this feature (001-bootstrap-argocd-terragrunt)
 
