@@ -133,7 +133,7 @@ inputs = {
       name      = "ztunnel"
       namespace = "istio-system"
       json_pointers = [
-        "/metadata/annotations/deprecated.daemonset.template.generation",
+        "/metadata/annotations",
       ]
     }
   ]
