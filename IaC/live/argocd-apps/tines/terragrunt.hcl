@@ -23,8 +23,9 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "tines"
-    namespace = "argocd"
+    name       = "tines"
+    namespace  = "argocd"
+    finalizers = ["resources-finalizer.argocd.argoproj.io"]
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
       "app.kubernetes.io/part-of"    = "homelab"

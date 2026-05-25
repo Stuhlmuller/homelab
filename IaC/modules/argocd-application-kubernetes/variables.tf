@@ -25,6 +25,7 @@ variable "metadata" {
   description = "Application Kubernetes metadata"
   type = object({
     annotations = optional(map(string), {})
+    finalizers  = optional(list(string), [])
     labels      = optional(map(string), {})
     name        = string
     namespace   = optional(string, "argocd")
