@@ -30,10 +30,11 @@ config volume and applies:
 deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
 ```
 
-The sidecar retries while Deluge starts. If it cannot connect to Deluge and
-apply the port configuration, the sidecar stays unready instead of killing the
-main app container during startup. The Pod becomes ready only after Gluetun is
-healthy and the incoming port has been applied.
+The sidecar retries while Deluge starts and verifies that Deluge reports the
+configured `listen_ports` value. If it cannot connect to Deluge and apply the
+port configuration, the sidecar stays unready instead of killing the main app
+container during startup. The Pod becomes ready only after Gluetun is healthy
+and the incoming port has been applied.
 
 ## Pod Security
 
