@@ -25,6 +25,9 @@ EOF
 inputs = {
   aws_region     = local.aws_region
   create_kms_key = true
+  parameter_reader_iam_user_names = [
+    "external-secrets_aws-ssm-auth",
+  ]
 
   parameters = {
     "/homelab/argocd/oidc/url" = {

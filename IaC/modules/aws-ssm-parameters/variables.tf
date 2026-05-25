@@ -7,6 +7,12 @@ variable "parameters" {
   }))
 }
 
+variable "parameter_reader_iam_user_names" {
+  description = "Existing IAM user names that should be allowed to read and decrypt the managed SSM parameters."
+  type        = set(string)
+  default     = []
+}
+
 variable "aws_region" {
   description = "AWS region where SSM parameters and their KMS key are managed."
   type        = string
