@@ -78,4 +78,6 @@ spec:
     - group: storage.k8s.io
       kind: StorageClass
     - group: tailscale.com
+      kind: Connector
+    - group: tailscale.com
       kind: ProxyClass
