@@ -64,7 +64,6 @@ datasources:
         jsonData:
           httpMethod: POST
           timeInterval: 30s
-          alertmanagerUid: alertmanager
 dashboardProviders:
   dashboardproviders.yaml:
     apiVersion: 1
