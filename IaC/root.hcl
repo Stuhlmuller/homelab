@@ -1,6 +1,7 @@
 locals {
   project_name           = "homelab"
-  aws_region             = "us-east-1"
+  aws_region             = "us-west-2"
+  state_region           = "us-east-1"
   kms_key_id             = "alias/homelab-opentofu"
   kms_region             = local.aws_region
   kms_key_spec           = "AES_256"
@@ -45,7 +46,7 @@ remote_state {
   config = {
     bucket       = "rstuhlmuller-aws-s3-use1-datalake"
     key          = "IaC/${lower(local.project_name)}/${path_relative_to_include()}/terraform.tfstate"
-    region       = local.aws_region
+    region       = local.state_region
     encrypt      = true
     kms_key_id   = local.kms_key_id
     use_lockfile = true

@@ -4,6 +4,8 @@ External Secrets uses AWS SSM Parameter Store for runtime secret material. This
 repository may commit parameter names and Kubernetes Secret target names, but it
 must not commit secret values.
 
+All homelab runtime secret parameters live in AWS region `us-west-2`.
+
 ## Placeholder Rules
 
 - Parameter paths use the copyable public prefix `/homelab/<app>/<name>`.
@@ -35,8 +37,8 @@ Bootstrap order:
 1. Apply `IaC/live/aws-ssm-parameters` to create the SSM placeholders.
 2. Replace `/homelab/external-secrets/aws-ssm/access-key-id` and
    `/homelab/external-secrets/aws-ssm/secret-access-key` with an IAM access key
-   that can read `/homelab/*` Parameter Store values and decrypt the configured
-   KMS key.
+   that can read `/homelab/*` Parameter Store values in `us-west-2` and decrypt
+   the configured KMS key.
 3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
 The Kubernetes Secret stack refuses to apply while either SSM value is empty or
@@ -49,6 +51,7 @@ stack because Terraform manages the Kubernetes Secret.
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/url`, `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
+| cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |

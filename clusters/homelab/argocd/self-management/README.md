@@ -19,4 +19,4 @@ This path also owns the External Secrets Operator resources that create the
 Keep those resources here instead of the Terragrunt bootstrap Helm values so a
 fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
 `oidc-external-secret.yaml` only after External Secrets Operator is installed
-and allowed to read `/homelab/argocd/oidc/*` parameters in `us-east-1`.
+and allowed to read `/homelab/argocd/oidc/*` parameters in `us-west-2`.

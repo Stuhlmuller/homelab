@@ -167,7 +167,7 @@ OIDC login fails:
 
 1. Inspect `kubectl -n argocd describe externalsecret argocd-oidc-sso`.
 2. Confirm the External Secrets Operator controller can read AWS Parameter Store
-   in `us-east-1`.
+   in `us-west-2`.
 3. Confirm the `argocd-oidc-sso` Kubernetes Secret exists and has the
    `app.kubernetes.io/part-of: argocd` label.
 4. Confirm the IdP app uses the same client ID as Parameter Store and has
