@@ -24,17 +24,22 @@
           pkgs = import nixpkgs {
             inherit system;
           };
+          basePackages = with pkgs; [
+            awscli2
+            conftest
+            kubectl
+            opentofu
+            ripgrep
+            talosctl
+            terragrunt
+          ];
+          checkovPackages = pkgs.lib.optionals (system != "x86_64-darwin") [
+            pkgs.checkov
+          ];
         in
         {
           default = pkgs.mkShell {
-            packages = with pkgs; [
-              awscli2
-              kubectl
-              opentofu
-              ripgrep
-              talosctl
-              terragrunt
-            ];
+            packages = basePackages ++ checkovPackages;
           };
         }
       );
