@@ -63,7 +63,7 @@ stack because Terraform manages the Kubernetes Secret.
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token` |
-| tines | `tines-secrets`, `tines-registry` | `tines-secrets`, `tines-registry` | `/homelab/tines/app-secret`, `/homelab/tines/admin-password`, `/homelab/tines/registry-dockerconfigjson` |
+| n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
@@ -75,3 +75,7 @@ Deluge stores only VPN WireGuard material in SSM. Deluge, Prowlarr, Radarr, and
 Sonarr do not store their application passwords or API keys in SSM. Their
 configuration lives on the persistent `/config` volumes and is managed through
 each app after first login.
+
+n8n stores only its instance encryption key in SSM. Workflows, users, saved
+credential metadata, and app configuration persist on the `/home/node/.n8n`
+volume and are managed inside n8n after first login.

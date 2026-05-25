@@ -1,0 +1,55 @@
+controllers:
+  n8n:
+    strategy: Recreate
+    containers:
+      app:
+        image:
+          repository: docker.n8n.io/n8nio/n8n
+          tag: "2.22.2"
+        env:
+          TZ: America/Los_Angeles
+          GENERIC_TIMEZONE: America/Los_Angeles
+          N8N_HOST: n8n.stinkyboi.com
+          N8N_PORT: "5678"
+          N8N_PROTOCOL: https
+          N8N_PROXY_HOPS: "1"
+          N8N_SECURE_COOKIE: "true"
+          WEBHOOK_URL: https://n8n.stinkyboi.com/
+        envFrom:
+          - secretRef:
+              name: n8n-secrets
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 5678
+              failureThreshold: 6
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 5678
+              failureThreshold: 3
+              periodSeconds: 30
+              timeoutSeconds: 5
+service:
+  app:
+    controller: n8n
+    ports:
+      http:
+        port: 5678
+persistence:
+  data:
+    enabled: true
+    storageClass: nfs-default
+    size: 20Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /home/node/.n8n

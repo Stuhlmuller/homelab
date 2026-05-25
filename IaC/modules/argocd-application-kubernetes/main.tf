@@ -46,6 +46,7 @@ locals {
       namespace = try(var.metadata.namespace, "argocd")
     },
     length(try(var.metadata.annotations, {})) > 0 ? { annotations = var.metadata.annotations } : {},
+    length(try(var.metadata.finalizers, [])) > 0 ? { finalizers = var.metadata.finalizers } : {},
     length(try(var.metadata.labels, {})) > 0 ? { labels = var.metadata.labels } : {}
   )
 

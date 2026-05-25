@@ -119,7 +119,7 @@ Every dependency in this table MUST be represented in Terragrunt:
 | sonarr | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage |
 | litellm | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
-| tines | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| n8n | external-secrets, cert-manager, istio, tailscale, platform-storage |
 
 ## Secret Reference Contract
 

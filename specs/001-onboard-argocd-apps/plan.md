@@ -7,7 +7,7 @@
 
 Onboard 15 homelab applications into Argo CD through Terragrunt catalog modules:
 Istio, external-secrets, certificates-manager, Grafana, Prometheus, OpenClaw,
-Tines, Prowlarr, Radarr, Sonarr, Deluge, descheduler, Tailscale, LiteLLM, and
+n8n, Prowlarr, Radarr, Sonarr, Deluge, descheduler, Tailscale, LiteLLM, and
 Argo CD Image Updater. The
 implementation will create one Terragrunt unit per requested Argo CD
 Application plus one supporting `platform-storage` registration for the default
@@ -35,7 +35,7 @@ stateful applications roll out.
 
 **Language/Version**: HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state
 **Primary Dependencies**: Terragrunt catalog modules `argocd-application` and, only when exact CRD control is required, `argocd-application-manifest`; Argo CD; Argo CD Image Updater; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
-**Storage**: Default NFS-backed Kubernetes StorageClass using an existing provisioner discovered via read-only inspection; Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
+**Storage**: Default NFS-backed Kubernetes StorageClass using an existing provisioner discovered via read-only inspection; Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
 **Testing**: Terragrunt HCL formatting and planning; OpenTofu validation through Terragrunt; Helm rendering or Argo CD source rendering for each app; Kubernetes server-side dry-run or `kubectl diff` for repo-owned manifests; post-rollout Argo CD sync/health checks
 **Target Platform**: Talos Linux Kubernetes homelab cluster reachable at the documented Kubernetes API endpoint
 **Project Type**: Infrastructure-as-code and GitOps Kubernetes application onboarding
@@ -104,7 +104,7 @@ IaC/live/argocd-apps/
 ├── sonarr/terragrunt.hcl
 ├── litellm/terragrunt.hcl
 ├── openclaw/terragrunt.hcl
-└── tines/terragrunt.hcl
+└── n8n/terragrunt.hcl
 clusters/homelab/apps/
 ├── argocd-image-updater/
 ├── external-secrets/
@@ -120,7 +120,7 @@ clusters/homelab/apps/
 ├── sonarr/
 ├── litellm/
 ├── openclaw/
-└── tines/
+└── n8n/
 clusters/homelab/platform/storage/
 ├── default-nfs-storageclass.yaml
 ├── kustomization.yaml

@@ -23,7 +23,7 @@
 - [ ] CHK007 Are the requirements clear that the existing NFS provisioner must be discovered by read-only inspection before the default StorageClass desired state is committed? [Clarity, Spec §FR-018-FR-020, Spec §SC-007]
 - [ ] CHK008 Are unsafe public-repository values for NFS provisioner details defined with enough specificity to guide placeholder or safe-reference decisions? [Clarity, Spec §FR-020, Spec §Edge Cases]
 - [ ] CHK009 Are NFS backup coverage and restore expectations required before stateful app readiness in both requirements and success criteria? [Completeness, Spec §FR-021, Spec §SC-008]
-- [ ] CHK010 Are stateful workload profiles required for every stateful app named in the plan, including Prometheus, Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM? [Coverage, Spec §FR-015, Plan §Technical Context, Quickstart §6]
+- [ ] CHK010 Are stateful workload profiles required for every stateful app named in the plan, including Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM? [Coverage, Spec §FR-015, Plan §Technical Context, Quickstart §6]
 
 ## Secret Safety Quality
 

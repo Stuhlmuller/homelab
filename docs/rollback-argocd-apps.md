@@ -9,7 +9,7 @@ handling is clear.
 
 1. argocd-image-updater
 2. OpenClaw
-3. Tines
+3. n8n
 4. Radarr and Sonarr
 5. Prowlarr
 6. LiteLLM

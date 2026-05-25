@@ -28,7 +28,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | sonarr | `https://sonarr.stinkyboi.com` | disabled |
 | litellm | `https://litellm.stinkyboi.com` | disabled |
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
-| tines | `https://tines.stinkyboi.com` | disabled |
+| n8n | `https://n8n.stinkyboi.com` | disabled |
 
 Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 `istio-system`. cert-manager requests this wildcard certificate through the

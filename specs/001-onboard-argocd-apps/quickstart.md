@@ -31,7 +31,7 @@ prowlarr
 radarr
 sonarr
 tailscale
-tines
+n8n
 ```
 
 ## 2. Confirm Secret Safety
@@ -122,7 +122,7 @@ Before rollout, inspect each stateful app profile in docs or app-local README:
 rg -n "Storage|Backup|Restore|Rollback" clusters/homelab/apps docs
 ```
 
-Expected result: Prometheus, Grafana, Tines, Prowlarr, Radarr, Sonarr, Deluge,
+Expected result: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge,
 OpenClaw, and LiteLLM use the default NFS StorageClass unless an exception is
 documented, and each has explicit backup coverage, restore, and rollback
 decisions.
@@ -160,7 +160,7 @@ argocd app get radarr
 argocd app get sonarr
 argocd app get litellm
 argocd app get openclaw
-argocd app get tines
+argocd app get n8n
 ```
 
 Expected result: all 15 requested applications plus the supporting
@@ -174,7 +174,7 @@ Rollback dependent services before shared foundations:
 
 1. argocd-image-updater
 2. OpenClaw
-3. Tines
+3. n8n
 4. Radarr and Sonarr
 5. Prowlarr
 6. LiteLLM

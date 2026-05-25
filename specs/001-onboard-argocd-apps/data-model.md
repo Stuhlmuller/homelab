@@ -211,7 +211,7 @@ Validation rules:
 | sonarr | media | media | cert-manager, istio, tailscale, deluge, prowlarr, platform-storage | persistent config/media refs on default NFS StorageClass | tailnet-only | config PVC-managed app and integration credentials |
 | litellm | ai | AI gateway | external-secrets, cert-manager, istio, tailscale, platform-storage | persistent if configured with DB/config store on default NFS StorageClass | tailnet-only | SSM-backed model provider refs |
 | openclaw | ai | AI service | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage | persistent config/runtime state on default NFS StorageClass | tailnet-only | SSM-backed app/model refs |
-| tines | automation | automation | external-secrets, cert-manager, istio, tailscale, platform-storage | persistent automation state on default NFS StorageClass | tailnet-only | SSM-backed app/auth refs |
+| n8n | automation | automation | external-secrets, cert-manager, istio, tailscale, platform-storage | persistent workflows, SQLite data, and config on default NFS StorageClass | tailnet-only | SSM-backed encryption key |
 
 ## State Transitions
 
