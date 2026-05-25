@@ -5,6 +5,19 @@ controllers:
       unavailable: 0
       surge: 1
     initContainers:
+      download-dirs:
+        image:
+          repository: busybox
+          tag: 1.37.0
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            mkdir -p \
+              /downloads/incomplete \
+              /downloads/complete/radarr \
+              /downloads/complete/sonarr \
+              /downloads/complete/manual
       gluetun:
         image:
           repository: ghcr.io/qdm12/gluetun
@@ -133,6 +146,8 @@ persistence:
     accessMode: ReadWriteMany
     advancedMounts:
       deluge:
+        download-dirs:
+          - path: /downloads
         app:
           - path: /downloads
   tun:

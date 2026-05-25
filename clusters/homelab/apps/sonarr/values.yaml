@@ -33,9 +33,7 @@ persistence:
       - path: /tv
   downloads:
     enabled: true
-    storageClass: nfs-default
-    size: 200Gi
-    accessMode: ReadWriteMany
+    type: persistentVolumeClaim
+    existingClaim: deluge-downloads
     globalMounts:
       - path: /downloads
-

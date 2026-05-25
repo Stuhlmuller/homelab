@@ -135,10 +135,10 @@ app has acceptable backup and restore coverage.
 |-----|--------------|--------------|--------------------|---------------------|------------------------|
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus dashboard export when possible | Restore PVC and re-sync dashboards | Preserve PVC |
-| deluge | config, downloads | `nfs-default` | NFS backup for config and download paths | Restore config/download PVCs before app sync | Preserve PVCs |
+| deluge | config, shared downloads | `nfs-default` | NFS backup for config and shared download paths | Restore config/download PVCs before app sync | Preserve PVCs |
 | prowlarr | indexer config, app integration refs | `nfs-default` | NFS backup for config and indexer integration state | Restore config PVC before app sync and re-test app integrations | Preserve PVC |
-| radarr | config, media refs | `nfs-default` | NFS backup for config and shared media references | Restore config PVC and verify media mount refs | Preserve PVC |
-| sonarr | config, media refs | `nfs-default` | NFS backup for config and shared media references | Restore config PVC and verify media mount refs | Preserve PVC |
+| radarr | config, media refs, shared downloads mount | `nfs-default` | NFS backup for config and shared media/download references | Restore config PVC and verify media and Deluge download mount refs | Preserve PVC |
+| sonarr | config, media refs, shared downloads mount | `nfs-default` | NFS backup for config and shared media/download references | Restore config PVC and verify media and Deluge download mount refs | Preserve PVC |
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |
 | openclaw | config, runtime state | `nfs-default` | NFS backup for runtime state | Restore PVC and verify LiteLLM connectivity | Preserve PVC |
 | tines | automation history, config | `nfs-default` | NFS backup plus app export when available | Restore PVC before worker/web sync | Snapshot first, preserve PVC |

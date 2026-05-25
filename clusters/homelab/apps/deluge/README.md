@@ -36,6 +36,24 @@ port configuration, the sidecar stays unready instead of killing the main app
 container during startup. The Pod becomes ready only after Gluetun is healthy
 and the incoming port has been applied.
 
+## Download Paths
+
+Deluge owns the shared `deluge-downloads` PVC. Radarr and Sonarr mount that same
+claim at `/downloads`, so their download-client checks can see the files Deluge
+creates without remote path mappings.
+
+Use these Deluge paths:
+
+| Setting | Path |
+|---------|------|
+| Download to | `/downloads/incomplete` |
+| Move completed to | `/downloads/complete` |
+| Radarr label path | `/downloads/complete/radarr` |
+| Sonarr label path | `/downloads/complete/sonarr` |
+
+The `download-dirs` init container creates the incomplete, complete, Radarr,
+Sonarr, and manual directories before Deluge starts.
+
 ## Pod Security
 
 Gluetun needs `NET_ADMIN` and `/dev/net/tun` to create the WireGuard tunnel.
