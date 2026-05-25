@@ -35,6 +35,10 @@ run the static checks only.
   `tailscale set --accept-routes=true` so it can use the subnet route to the
   Kubernetes API endpoint without conflicting with the action's own login
   flags.
+- The workflow also selects the repo-owned `homelab-exit-node` connector as a
+  bootstrap path for the GitHub-hosted runner. The connector advertises a
+  narrower `10.1.0.199/32` route for the Kubernetes API; prefer that route once
+  it is approved in the tailnet.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context.
 - Automatic PR plans intentionally skip `IaC/live/kubernetes-secrets` because
@@ -85,34 +89,50 @@ Use separate tags for plan and apply runners:
 Create one Tailscale auth key that tailnet lock can admit. The key should be
 ephemeral, pre-approved for tailnet lock, and restricted to the CI tags when the
 admin panel permits tag scoping. In the tailnet policy, grant those tags only
-the cluster API path they need. If the Kubernetes API is reached through a
-subnet router, keep the destination scoped to the API endpoint and port:
+the cluster API path they need.
+
+The repository-owned `homelab-exit-node` Connector is tagged `tag:k8s`, acts as
+the current bootstrap exit node, and advertises `10.1.0.199/32` as the
+dedicated Kubernetes API route. Auto-approve the narrow route for `tag:k8s`
+when possible, and use grants to keep CI access limited to the API endpoint and
+port:
 
 ```json
 {
+  "autoApprovers": {
+    "exitNode": ["tag:k8s"],
+    "routes": {
+      "10.1.0.199/32": ["tag:k8s"]
+    }
+  },
   "tagOwners": {
     "tag:github-actions-terragrunt-plan": ["autogroup:admin"],
-    "tag:github-actions-terragrunt-apply": ["autogroup:admin"]
+    "tag:github-actions-terragrunt-apply": ["autogroup:admin"],
+    "tag:k8s": ["tag:k8s-operator"]
   },
   "grants": [
     {
       "src": ["tag:github-actions-terragrunt-plan"],
-      "dst": ["10.1.0.199"],
-      "ip": ["tcp:6443"]
+      "dst": ["10.1.0.199/32"],
+      "ip": ["tcp:6443"],
+      "via": ["tag:k8s"]
     },
     {
       "src": ["tag:github-actions-terragrunt-apply"],
-      "dst": ["10.1.0.199"],
-      "ip": ["tcp:6443"]
+      "dst": ["10.1.0.199/32"],
+      "ip": ["tcp:6443"],
+      "via": ["tag:k8s"]
     }
   ]
 }
 ```
 
-Do not grant `tag:github-actions-terragrunt-*` broad tailnet or SSH access
-unless a later repository change documents the requirement. Rotate
-`TS_AUTH_KEY` on any failed or suspicious run, after runner image changes, and
-on a regular schedule.
+If the bootstrap exit-node fallback needs a broader `autogroup:internet` grant
+to be selectable, treat it as temporary and keep it limited to the two CI tags
+and the `tag:k8s` route path. Do not grant `tag:github-actions-terragrunt-*`
+broad tailnet or SSH access unless a later repository change documents the
+requirement. Rotate `TS_AUTH_KEY` on any failed or suspicious run, after runner
+image changes, and on a regular schedule.
 
 ## AWS Setup
 
