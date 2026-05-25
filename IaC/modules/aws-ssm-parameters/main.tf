@@ -46,8 +46,9 @@ resource "aws_kms_alias" "this" {
 }
 
 locals {
-  effective_kms_key_id  = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
-  effective_kms_key_arn = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
+  effective_kms_key_id   = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
+  effective_kms_key_arn  = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
+  parameter_reader_names = setunion(toset(keys(var.parameters)), var.additional_parameter_reader_names)
   external_parameters = {
     for name, parameter in var.parameters :
     name => parameter
@@ -166,7 +167,7 @@ data "aws_iam_policy_document" "parameter_reader" {
     ]
 
     resources = [
-      for name in keys(var.parameters) :
+      for name in local.parameter_reader_names :
       "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${trimprefix(name, "/")}"
     ]
   }
