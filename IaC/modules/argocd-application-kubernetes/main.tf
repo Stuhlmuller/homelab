@@ -39,11 +39,6 @@ removed {
   }
 }
 
-import {
-  to = kubernetes_manifest.this
-  id = "apiVersion=${var.api_version},kind=Application,namespace=${var.metadata.namespace},name=${var.metadata.name}"
-}
-
 locals {
   metadata = merge(
     {
@@ -59,6 +54,11 @@ locals {
     namespace = try(var.destination.namespace, null)
     server    = try(var.destination.server, null)
   }
+
+  computed_fields = distinct(concat(
+    var.computed_fields == null ? [] : var.computed_fields,
+    try(var.destination.name, null) == null ? ["spec.destination.name"] : []
+  ))
 
   sources = [
     for source in var.sources : merge(
@@ -237,7 +237,7 @@ locals {
 
 resource "kubernetes_manifest" "this" {
   manifest        = local.manifest
-  computed_fields = var.computed_fields
+  computed_fields = length(local.computed_fields) > 0 ? local.computed_fields : null
 
   field_manager {
     force_conflicts = true
