@@ -39,6 +39,11 @@ removed {
   }
 }
 
+import {
+  to = kubernetes_manifest.this
+  id = "apiVersion=${var.api_version},kind=Application,namespace=${var.metadata.namespace},name=${var.metadata.name}"
+}
+
 locals {
   metadata = merge(
     {
@@ -171,10 +176,10 @@ locals {
   sync_policy = var.sync_policy == null ? null : merge(
     try(var.sync_policy.automated, null) != null ? {
       automated = {
-        allowEmpty = try(var.sync_policy.automated.allow_empty, false)
-        enabled    = try(var.sync_policy.automated.enabled, true)
-        prune      = try(var.sync_policy.automated.prune, false)
-        selfHeal   = try(var.sync_policy.automated.self_heal, false)
+        allowEmpty = coalesce(try(var.sync_policy.automated.allow_empty, null), false)
+        enabled    = coalesce(try(var.sync_policy.automated.enabled, null), true)
+        prune      = coalesce(try(var.sync_policy.automated.prune, null), false)
+        selfHeal   = coalesce(try(var.sync_policy.automated.self_heal, null), false)
       }
     } : {},
     try(var.sync_policy.managed_namespace_metadata, null) != null ? {

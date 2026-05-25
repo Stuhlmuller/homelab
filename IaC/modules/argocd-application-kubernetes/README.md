@@ -11,6 +11,7 @@ module so existing Terragrunt units can keep the same readable application
 definition.
 
 The module includes a non-destructive `removed` block for the previous
-`argocd_application.this` resource address. That lets OpenTofu forget the old
+`argocd_application.this` resource address and a declarative `import` block for
+the Kubernetes manifest address. That lets OpenTofu forget the old
 Argo-provider-managed state entry while this module adopts the live
-`Application` object through server-side apply.
+`Application` object through the Kubernetes provider.
