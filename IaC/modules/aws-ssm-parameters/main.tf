@@ -48,10 +48,49 @@ resource "aws_kms_alias" "this" {
 locals {
   effective_kms_key_id  = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
   effective_kms_key_arn = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
+  external_parameters = {
+    for name, parameter in var.parameters :
+    name => parameter
+    if try(parameter.generated, null) == null
+  }
+  generated_parameters = {
+    for name, parameter in var.parameters :
+    name => parameter
+    if try(parameter.generated, null) != null
+  }
+  random_generated_parameters = {
+    for name, parameter in local.generated_parameters :
+    name => parameter
+    if try(parameter.generated.source_parameter, null) == null
+  }
+  sourced_generated_parameters = {
+    for name, parameter in local.generated_parameters :
+    name => parameter
+    if try(parameter.generated.source_parameter, null) != null
+  }
+  random_generated_values = {
+    for name, parameter in local.random_generated_parameters :
+    name => "${try(parameter.generated.prefix, "")}${random_password.generated[name].result}"
+  }
+  generated_values = merge(
+    local.random_generated_values,
+    {
+      for name, parameter in local.sourced_generated_parameters :
+      name => local.random_generated_values[parameter.generated.source_parameter]
+    }
+  )
+}
+
+resource "random_password" "generated" {
+  for_each = local.random_generated_parameters
+
+  length           = each.value.generated.length
+  override_special = each.value.generated.override_special
+  special          = each.value.generated.special
 }
 
 resource "aws_ssm_parameter" "this" {
-  for_each = var.parameters
+  for_each = local.external_parameters
 
   region      = var.aws_region
   name        = each.key
@@ -69,6 +108,48 @@ resource "aws_ssm_parameter" "this" {
       value,
     ]
   }
+}
+
+resource "aws_ssm_parameter" "generated" {
+  for_each = local.generated_parameters
+
+  region      = var.aws_region
+  name        = each.key
+  description = each.value.description
+  type        = "SecureString"
+  value       = local.generated_values[each.key]
+  key_id      = local.effective_kms_key_id
+  tier        = each.value.tier
+  tags        = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+moved {
+  from = aws_ssm_parameter.this["/homelab/litellm/master-key"]
+  to   = aws_ssm_parameter.generated["/homelab/litellm/master-key"]
+}
+
+moved {
+  from = aws_ssm_parameter.this["/homelab/media-postgres/app-password"]
+  to   = aws_ssm_parameter.generated["/homelab/media-postgres/app-password"]
+}
+
+moved {
+  from = aws_ssm_parameter.this["/homelab/n8n/encryption-key"]
+  to   = aws_ssm_parameter.generated["/homelab/n8n/encryption-key"]
+}
+
+moved {
+  from = aws_ssm_parameter.this["/homelab/openclaw/app-secret"]
+  to   = aws_ssm_parameter.generated["/homelab/openclaw/app-secret"]
+}
+
+moved {
+  from = aws_ssm_parameter.this["/homelab/openclaw/litellm-token"]
+  to   = aws_ssm_parameter.generated["/homelab/openclaw/litellm-token"]
 }
 
 data "aws_iam_policy_document" "parameter_reader" {

@@ -11,9 +11,8 @@ credentials can be decrypted after restarts or restores.
 
 ## Runtime Secret Contract
 
-- `/homelab/n8n/encryption-key`: stable n8n instance encryption key. Replace the
-  Terragrunt-created placeholder with a strong random value before storing real
-  credentials in n8n.
+- `/homelab/n8n/encryption-key`: stable n8n instance encryption key generated
+  by Terragrunt/OpenTofu and stored in AWS SSM.
 
 ## Access Contract
 

@@ -1,7 +1,14 @@
 variable "parameters" {
   description = "SSM parameters to create for homelab runtime secret references."
   type = map(object({
-    description   = string
+    description = string
+    generated = optional(object({
+      length           = optional(number, 48)
+      override_special = optional(string)
+      prefix           = optional(string, "")
+      source_parameter = optional(string)
+      special          = optional(bool, false)
+    }))
     initial_value = optional(string, "REPLACE_ME")
     tier          = optional(string, "Standard")
   }))

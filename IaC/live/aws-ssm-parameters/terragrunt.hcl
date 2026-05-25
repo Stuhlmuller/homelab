@@ -71,7 +71,12 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/litellm/master-key" = {
-      description   = "LiteLLM master key."
+      description = "LiteLLM master key."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
       initial_value = local.placeholder
     }
     "/homelab/litellm/openai-api-key" = {
@@ -91,19 +96,34 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/media-postgres/app-password" = {
-      description   = "Shared PostgreSQL password for Sonarr, Radarr, and Prowlarr."
+      description = "Shared PostgreSQL password for Sonarr, Radarr, and Prowlarr."
+      generated = {
+        length  = 40
+        special = false
+      }
       initial_value = local.placeholder
     }
     "/homelab/openclaw/app-secret" = {
-      description   = "OpenClaw application secret."
+      description = "OpenClaw application secret."
+      generated = {
+        length  = 64
+        special = false
+      }
       initial_value = local.placeholder
     }
     "/homelab/openclaw/litellm-token" = {
-      description   = "OpenClaw token for LiteLLM access."
+      description = "OpenClaw token for LiteLLM access."
+      generated = {
+        source_parameter = "/homelab/litellm/master-key"
+      }
       initial_value = local.placeholder
     }
     "/homelab/n8n/encryption-key" = {
-      description   = "n8n instance encryption key for saved credentials and encrypted data."
+      description = "n8n instance encryption key for saved credentials and encrypted data."
+      generated = {
+        length  = 64
+        special = false
+      }
       initial_value = local.placeholder
     }
   }

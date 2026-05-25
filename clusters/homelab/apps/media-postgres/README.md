@@ -13,9 +13,9 @@ ExternalSecret creates the credentials consumed by the StatefulSet, and the
 `media-postgres-arr-env` ExternalSecret creates the PostgreSQL settings used by
 the `configure-postgres` init containers for Sonarr, Radarr, and Prowlarr.
 
-Replace the SSM placeholder before syncing this app. The pod includes a
+Terragrunt generates this value and writes it to SSM. The pod includes a
 `require-real-password` init container that fails when `POSTGRES_PASSWORD` is
-empty or still set to `REPLACE_ME`.
+empty or still set to `REPLACE_ME`, which catches incomplete bootstrap runs.
 
 The Docker official PostgreSQL image creates `POSTGRES_USER` as a superuser on
 first initialization. This is intentional here because the Servarr Prowlarr
