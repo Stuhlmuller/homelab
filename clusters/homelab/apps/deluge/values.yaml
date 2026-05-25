@@ -9,6 +9,7 @@ controllers:
         ambient.istio.io/dns-capture: "false"
         homelab.rst.io/ambient-dns-capture: "disabled"
         homelab.rst.io/ambient-egress-capture: "disabled"
+        homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
         traffic.sidecar.istio.io/excludeOutboundIPRanges: "0.0.0.0/0,::/0"
     strategy: Recreate
