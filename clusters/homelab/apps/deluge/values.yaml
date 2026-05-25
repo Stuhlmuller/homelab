@@ -11,10 +11,7 @@ controllers:
         homelab.rst.io/ambient-egress-capture: "disabled"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
         traffic.sidecar.istio.io/excludeOutboundIPRanges: "0.0.0.0/0,::/0"
-    strategy: RollingUpdate
-    rollingUpdate:
-      unavailable: 0
-      surge: 1
+    strategy: Recreate
     initContainers:
       download-dirs:
         image:
