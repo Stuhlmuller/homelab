@@ -76,6 +76,8 @@ spec:
               value: /run/secrets/media-postgres/POSTGRES_DB
             - name: POSTGRES_PASSWORD_FILE
               value: /run/secrets/media-postgres/POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           ports:
             - name: postgres
               containerPort: 5432

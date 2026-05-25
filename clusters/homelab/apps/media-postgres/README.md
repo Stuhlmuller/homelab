@@ -22,6 +22,9 @@ first initialization. This is intentional here because the Servarr Prowlarr
 PostgreSQL guide states that Prowlarr housekeeping needs a superuser for vacuum
 work. Revisit this before adding unrelated apps to this database instance.
 
+`PGDATA` points at a `pgdata` subdirectory inside the PVC so PostgreSQL owns the
+actual database directory even when the NFS provisioner creates the mount root.
+
 ## Databases
 
 The init script creates the logical databases that Servarr expects:
