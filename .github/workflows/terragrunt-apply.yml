@@ -50,6 +50,9 @@ jobs:
       - name: Run Static Checks
         run: nix develop --command bash scripts/ci/static-checks.sh
 
+      - name: Run Conftest Policies
+        run: nix develop --command bash scripts/ci/conftest-policies.sh
+
   terragrunt-apply:
     name: Terragrunt Apply
     needs:

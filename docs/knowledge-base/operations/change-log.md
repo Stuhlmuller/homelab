@@ -10,6 +10,14 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-25 - PR Conftest ordering
+
+- Split Conftest policy evaluation out of `scripts/ci/static-checks.sh` into
+  `scripts/ci/conftest-policies.sh`.
+- Updated the pull request Terragrunt Plan workflow so trusted same-repository
+  PRs run Conftest after the live Terragrunt plan step while forked PRs still
+  run Conftest without receiving live-plan secrets.
+
 ### 2026-05-25 - Enable Policy Bot replica
 
 - Changed Policy Bot from a credential-gated suspended Deployment to one desired

@@ -6,7 +6,7 @@ controllers:
       identifier: openclaw
     pod:
       annotations:
-        homelab.rst.io/openclaw-discord-bot-token-ssm-version: "1"
+        homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
     initContainers:
       bootstrap-config:
         image:
