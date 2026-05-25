@@ -19,9 +19,21 @@ controllers:
           N8N_PROXY_HOPS: "1"
           N8N_SECURE_COOKIE: "true"
           WEBHOOK_URL: https://n8n.stinkyboi.com/
-        envFrom:
-          - secretRef:
-              name: n8n-secrets
+          N8N_BOOTSTRAP_ENCRYPTION_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: n8n-secrets
+                key: N8N_BOOTSTRAP_ENCRYPTION_KEY
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            if [ ! -s /home/node/.n8n/config ]; then
+              : "${N8N_BOOTSTRAP_ENCRYPTION_KEY:?N8N bootstrap encryption key must be provided by n8n-secrets}"
+              export N8N_ENCRYPTION_KEY="$N8N_BOOTSTRAP_ENCRYPTION_KEY"
+            fi
+
+            exec n8n
         probes:
           readiness:
             enabled: true

@@ -38,8 +38,13 @@ outside git.
   target Secret `operator-oauth`.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
-- Policy Bot and Hummingbot are in-flight app additions in the current working
-  tree. Their SSM contracts are summarized in [[runbooks/secrets-aws-ssm]] and
+- n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
+  existing PVCs keep using their persisted `/home/node/.n8n/config` key.
+- Policy Bot remains scaled to zero until its GitHub-App-owned SSM placeholders
+  are replaced. Its SSM contract is summarized in
+  [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
+- Hummingbot is an in-flight app addition in the current working tree. Its SSM
+  contract is summarized in [[runbooks/secrets-aws-ssm]] and
   [[workloads/application-notes]].
 
 ## Source Files
