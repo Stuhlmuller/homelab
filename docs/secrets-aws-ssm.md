@@ -75,6 +75,7 @@ stack because Terraform manages the Kubernetes Secret.
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
+| grafana | `grafana-discord-webhook` | `grafana-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |

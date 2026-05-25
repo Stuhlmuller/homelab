@@ -29,6 +29,11 @@ grafana.ini:
     allow_assign_grafana_admin: false
     skip_org_role_sync: false
     use_pkce: true
+envValueFrom:
+  DISCORD_WEBHOOK_URL:
+    secretKeyRef:
+      name: grafana-discord-webhook
+      key: url
 initChownData:
   enabled: false
 serviceMonitor:
@@ -83,6 +88,65 @@ dashboardProviders:
         updateIntervalSeconds: 30
         options:
           path: /var/lib/grafana/dashboards/homelab
+      - name: kubernetes
+        orgId: 1
+        folder: Kubernetes
+        folderUid: kubernetes
+        type: file
+        disableDeletion: false
+        editable: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards/kubernetes
+      - name: monitoring
+        orgId: 1
+        folder: Monitoring
+        folderUid: monitoring
+        type: file
+        disableDeletion: false
+        editable: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards/monitoring
+dashboards:
+  kubernetes:
+    k8s-views-global:
+      gnetId: 15757
+      revision: 43
+      datasource:
+        - name: DS_PROMETHEUS
+          value: Prometheus
+    k8s-views-namespaces:
+      gnetId: 15758
+      revision: 46
+      datasource:
+        - name: DS_PROMETHEUS
+          value: Prometheus
+    k8s-views-pods:
+      gnetId: 15760
+      revision: 39
+      datasource:
+        - name: DS_PROMETHEUS
+          value: Prometheus
+    k8s-system-api-server:
+      gnetId: 15761
+      revision: 21
+      datasource:
+        - name: DS_PROMETHEUS
+          value: Prometheus
+    k8s-system-coredns:
+      gnetId: 15762
+      revision: 22
+      datasource:
+        - name: DS_PROMETHEUS
+          value: Prometheus
+  monitoring:
+    k8s-addons-prometheus:
+      gnetId: 19105
+      revision: 9
+      datasource:
+        - name: DS_PROMETHEUS
+          value: Prometheus
 dashboardsConfigMaps:
   homelab: grafana-dashboard-homelab-overview
 alerting:
@@ -97,6 +161,13 @@ alerting:
             disableResolveMessage: false
             settings:
               url: http://prometheus-kube-prometheus-alertmanager.monitoring:9093
+          - uid: homelab-discord
+            type: discord
+            disableResolveMessage: false
+            settings:
+              use_discord_username: false
+            secure_settings:
+              url: $DISCORD_WEBHOOK_URL
   policies.yaml:
     apiVersion: 1
     policies:

@@ -77,6 +77,10 @@ inputs = {
       description   = "Grafana admin password."
       initial_value = local.placeholder
     }
+    "/homelab/grafana/discord-webhook-url" = {
+      description   = "Discord incoming webhook URL used by Grafana alert notifications."
+      initial_value = local.placeholder
+    }
     "/homelab/litellm/master-key" = {
       description = "LiteLLM master key."
       generated = {

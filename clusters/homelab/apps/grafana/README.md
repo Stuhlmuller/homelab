@@ -40,19 +40,47 @@ present. Local admin login remains available through `grafana-admin`.
   Kustomize packages it into the stable
   `grafana-dashboard-homelab-overview` ConfigMap, which the Helm chart mounts
   through the `homelab` dashboard provider.
+- `values.yaml` imports pinned Grafana.com dashboard revisions for Kubernetes
+  and Prometheus views that are maintained by the
+  `dotdc/grafana-dashboards-kubernetes` project.
 - `externalsecret.yaml` references the Grafana admin username, admin password,
-  and Entra SSO values in AWS SSM Parameter Store. No secret values belong in
-  this directory.
+  Entra SSO values, and Discord webhook URL in AWS SSM Parameter Store. No
+  secret values belong in this directory.
+
+## Imported Dashboards
+
+The imported dashboards are pinned by dashboard ID and revision so dashboard
+changes are reviewable. The Grafana chart downloads these JSON documents from
+Grafana.com during pod startup, so first rollout depends on outbound HTTPS from
+the cluster to Grafana.com.
+
+| Folder | Dashboard | ID | Revision |
+|--------|-----------|----|----------|
+| Kubernetes | Kubernetes / Views / Global | 15757 | 43 |
+| Kubernetes | Kubernetes / Views / Namespaces | 15758 | 46 |
+| Kubernetes | Kubernetes / Views / Pods | 15760 | 39 |
+| Kubernetes | Kubernetes / System / API Server | 15761 | 21 |
+| Kubernetes | Kubernetes / System / CoreDNS | 15762 | 22 |
+| Monitoring | Prometheus | 19105 | 9 |
+
+The dotdc node dashboard is intentionally not imported while the
+`kube-prometheus-stack` node-exporter subchart is disabled for this cluster's
+current Pod Security baseline. Add it after node-exporter has a compatible,
+documented path.
 
 ## Alerts
 
 Grafana alert rules are provisioned from `values.yaml` and route to the
-in-cluster Prometheus Alertmanager contact point. The Alertmanager datasource is
-available for viewing Prometheus-managed alerts, while Grafana-managed
-notifications stay controlled by the provisioned Grafana policy. This makes
-alert rules reviewable and repeatable, but it does not create any external
-paging or chat receiver by itself. Add external notification credentials through
-secret references only, then document the receiver contract here.
+`homelab-alertmanager` contact point. That contact point fans out to the
+in-cluster Prometheus Alertmanager and to Discord. The Discord webhook URL is
+read from the `grafana-discord-webhook` Kubernetes Secret, which is managed by
+External Secrets from `/homelab/grafana/discord-webhook-url` in AWS SSM
+Parameter Store.
+
+The Alertmanager datasource is available for viewing Prometheus-managed alerts,
+while Grafana-managed notifications stay controlled by the provisioned Grafana
+policy. This makes alert rules and routing reviewable and repeatable without
+putting notification credentials in git.
 
 The first provisioned rules cover:
 
@@ -82,16 +110,23 @@ After Argo CD syncs, verify the monitoring wiring:
 
 ```sh
 kubectl -n monitoring get servicemonitor grafana
+kubectl -n monitoring get externalsecret grafana-admin
 kubectl -n monitoring get externalsecret grafana-azuread-sso
+kubectl -n monitoring get externalsecret grafana-discord-webhook
+kubectl -n monitoring get secret grafana-admin
 kubectl -n monitoring get secret grafana-azuread-sso
+kubectl -n monitoring get secret grafana-discord-webhook
 kubectl -n monitoring get configmap grafana-dashboard-homelab-overview
 kubectl -n monitoring get pods -l app.kubernetes.io/name=grafana
 ```
 
 In Grafana, check that the `Prometheus` datasource is default, the
 `Alertmanager` datasource is healthy, the `Homelab Overview` dashboard appears
-under the `Homelab` folder, the `Entra ID` login path works, and the three
-`homelab-*` alert rules are present under Grafana Alerting.
+under the `Homelab` folder, the imported dashboards appear under the
+`Kubernetes` and `Monitoring` folders, the `Entra ID` login path works, and the
+three `homelab-*` alert rules are present under Grafana Alerting. Use the
+Grafana contact point test action after the Discord webhook parameter has been
+populated in SSM.
 
 ## Rollback
 
