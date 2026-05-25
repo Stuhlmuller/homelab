@@ -50,8 +50,8 @@ shared `deluge-downloads` PVC used by Radarr and Sonarr at `/downloads`.
 
 Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 `IaC/live/azuread-applications/grafana`, provisions Prometheus and Alertmanager
-datasources, dashboards, and Grafana-managed alerts from repo-owned values.
-Discord webhook URL comes from SSM through External Secrets.
+datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
+repo-owned values. Discord webhook URL comes from SSM through External Secrets.
 
 ## Hummingbot
 
@@ -107,8 +107,10 @@ Root routes stay unrouted. The public route depends on Tailscale Funnel for
 
 Prometheus persists metrics and Alertmanager state on `nfs-default`.
 Prometheus is intentionally not exposed through tailnet ingress; Grafana is the
-operator UI. Re-enable Talos component metrics only after adding matching Talos
-machine-config patches and proving targets are `up`.
+operator UI. It also owns ServiceMonitors for the Argo CD application
+controller, repo server, and API server metrics services. Re-enable Talos
+component metrics only after adding matching Talos machine-config patches and
+proving targets are `up`.
 
 ## Prowlarr, Radarr, And Sonarr
 

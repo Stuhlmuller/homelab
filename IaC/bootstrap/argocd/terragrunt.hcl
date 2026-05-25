@@ -7,6 +7,9 @@ locals {
   self_management_project_manifest     = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/appproject.yaml"
   oidc_sso_secret_name                 = "argocd-oidc-sso"
   oidc_sso_admin_group                 = "argocd-admins"
+  argocd_metrics = {
+    enabled = true
+  }
 }
 
 terraform {
@@ -68,10 +71,19 @@ inputs = {
         enabled = true
       }
 
+      controller = {
+        metrics = local.argocd_metrics
+      }
+
+      repoServer = {
+        metrics = local.argocd_metrics
+      }
+
       server = {
         service = {
           type = "ClusterIP"
         }
+        metrics = local.argocd_metrics
       }
     })
   ]

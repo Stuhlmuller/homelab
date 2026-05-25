@@ -1,0 +1,15 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: n8n-allow-tailnet-gateway
+  namespace: automation
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: n8n
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway

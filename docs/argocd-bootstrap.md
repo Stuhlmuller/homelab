@@ -67,6 +67,8 @@ Expected plan:
 
 - Installs or updates the `argocd` Helm release only through Terragrunt.
 - Keeps the Argo CD service internal with `ClusterIP`.
+- Enables the Argo CD application controller, repo server, and API server
+  metrics services for Prometheus scraping.
 - Configures Dex with an OIDC connector and Argo CD RBAC defaults.
 - Does not render `SecretStore` or `ExternalSecret` resources in the Terragrunt
   bootstrap Helm release.
@@ -94,6 +96,7 @@ manifest from this repository.
 ```sh
 kubectl get namespace argocd
 kubectl -n argocd get pods
+kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
 kubectl -n argocd get applications.argoproj.io argocd-self-management
 kubectl -n argocd describe applications.argoproj.io argocd-self-management
 ```
@@ -102,6 +105,8 @@ Expected result within 10 minutes:
 
 - The `argocd` namespace exists.
 - Argo CD pods are running or progressing normally.
+- The Argo CD metrics services exist for the application controller, repo
+  server, and API server.
 - `argocd-self-management` exists in the `argocd` namespace.
 - The `homelab` AppProject exists and no workload Application needs the live
   `default` project.

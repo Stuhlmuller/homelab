@@ -3,10 +3,12 @@ kind: Kustomization
 namespace: monitoring
 resources:
   - externalsecret.yaml
+  - authorizationpolicy.yaml
   - virtualservice.yaml
 configMapGenerator:
   - name: grafana-dashboard-homelab-overview
     files:
+      - argocd-overview.json=dashboards/argocd-overview.json
       - homelab-overview.json=dashboards/homelab-overview.json
     options:
       labels:

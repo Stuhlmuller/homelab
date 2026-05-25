@@ -1,0 +1,39 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: ai-default-deny
+  namespace: ai
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: litellm-allow-required-clients
+  namespace: ai
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: litellm
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/ai/sa/openclaw
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: openclaw-allow-tailnet-gateway
+  namespace: ai
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway

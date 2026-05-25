@@ -26,6 +26,52 @@ new workloads cannot silently add privileged containers, host networking,
 hostPath mounts, or other host-level access. Move a namespace to `privileged`
 only with the documented justification and owner below.
 
+## Istio Ambient Service Access
+
+Istio ambient is enabled in the app namespaces where the current traffic graph
+is known well enough to enforce with Layer 4 identity policy:
+
+- `ai` has a namespace default-deny `AuthorizationPolicy`; only the explicit
+  workload allow rules below should accept inbound mesh traffic.
+- `automation` and `monitoring` are ambient-enrolled, but enforcement starts
+  with selected workload policies instead of a namespace default-deny. Policy
+  Bot Funnel traffic, monitoring operator webhooks, and other controller paths
+  need live source-identity validation before those namespaces move to full
+  default-deny.
+
+The current service access contract is:
+
+| Destination workload | Namespace | Allowed source principal | Reason |
+|----------------------|-----------|--------------------------|--------|
+| `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI/API ingress. |
+| `litellm` | `ai` | `cluster.local/ns/ai/sa/openclaw` | OpenClaw model gateway calls. |
+| `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI and webhook ingress through the private gateway. |
+| `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrapes Grafana metrics. |
+| `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/grafana` | Grafana Prometheus datasource queries. |
+| `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus self-scrape and in-stack access. |
+| `alertmanager` | `monitoring` | `cluster.local/ns/monitoring/sa/grafana` | Grafana Alertmanager datasource and contact point. |
+| `alertmanager` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus alert delivery. |
+| `alertmanager` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager` | Alertmanager peer traffic if replicas increase. |
+| `kube-state-metrics` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus metrics scrape. |
+
+These policies are inbound controls on selected destination workloads. They do
+not replace egress controls, and they do not make Kubernetes `NetworkPolicy`
+effective on flannel. Keep new service-to-service paths out of the mesh until
+the source service account, destination selector, and rollback path are
+documented in the same change.
+
+Ambient is intentionally not enabled for:
+
+- `media`, because Deluge Gluetun/WireGuard and the current media app traffic
+  model still need a repo-owned waypoint or equivalent policy design before
+  re-enrollment;
+- `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
+  API server, webhook, NFS, and controller paths need separate validation;
+- `istio-system` and `tailscale`, because they are privileged networking
+  infrastructure rather than application namespaces.
+
 ## Privileged Workloads
 
 Privileged Pod Security admission must stay narrow and justified near the

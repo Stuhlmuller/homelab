@@ -29,6 +29,11 @@ outside git.
 
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
+- Grafana Discord alerting uses the `grafana-discord-webhook` ExternalSecret
+  in `monitoring`, sourced from `/homelab/grafana/discord-webhook-url`.
+  Webhook rotations require bumping the non-secret Grafana pod annotation that
+  tracks the SSM parameter version because Grafana file provisioning reads the
+  value at startup.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`

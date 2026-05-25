@@ -31,8 +31,8 @@ Freqtrade desired-state files are deleted in the working tree. Recheck
 | `cert-manager` | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | controller-managed certificates | external-secrets |
 | `istio` | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | controller state only | cert-manager |
 | `tailscale` | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | controller state only | external-secrets, istio |
-| `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics | external-secrets, platform-storage |
-| `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config and dashboards | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
+| `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics and Argo CD scrape config | external-secrets, platform-storage |
+| `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, alert rules, and Discord alerting webhook secret | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | `descheduler` | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | controller state only | prometheus |
 | `deluge` | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | persistent config and downloads | cert-manager, istio, tailscale, platform-storage |
 | `prowlarr` | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | persistent config and PostgreSQL databases | cert-manager, istio, media-postgres, tailscale, platform-storage |
@@ -43,6 +43,23 @@ Freqtrade desired-state files are deleted in the working tree. Recheck
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows and credential metadata | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless; credentials from SSM | external-secrets, cert-manager, istio, tailscale |
 | `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | persistent CLI bot config, logs, scripts, controllers, and encrypted connector state | external-secrets, platform-storage |
+
+## Mesh Policy Summary
+
+Istio ambient is committed for the `ai`, `automation`, and `monitoring`
+namespaces. The source of truth is `docs/runtime-isolation.md` plus the
+`authorizationpolicy.yaml` files in the affected app overlays.
+
+- `ai` uses a namespace default-deny policy and explicit inbound allows for the
+  tailnet gateway to `litellm` and `openclaw`, plus `openclaw` to `litellm`.
+- `automation` currently restricts `n8n` inbound access to the tailnet gateway.
+  The namespace is not default-denied yet because Policy Bot Funnel traffic
+  still needs source-identity validation after rollout.
+- `monitoring` restricts Grafana, Prometheus, Alertmanager, and
+  kube-state-metrics by service account. The Prometheus operator remains
+  unselected until its webhook/control-plane paths are modeled.
+- `media` stays out of ambient while Deluge Gluetun/WireGuard and the media app
+  ingress model need a repo-owned waypoint or equivalent policy design.
 
 ## In-Flight Or Historical Rows
 

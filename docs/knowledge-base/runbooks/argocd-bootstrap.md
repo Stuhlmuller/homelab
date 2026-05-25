@@ -8,7 +8,8 @@ Source: `docs/argocd-bootstrap.md`
 
 Bootstrap Argo CD into the Talos cluster using
 `IaC/bootstrap/argocd`. The durable path is one reviewed `terragrunt apply`
-from that stack.
+from that stack. The bootstrap Helm values also enable Argo CD application
+controller, repo server, and API server metrics services for Prometheus.
 
 ## Preconditions
 
@@ -56,6 +57,7 @@ Verify:
 ```sh
 kubectl get namespace argocd
 kubectl -n argocd get pods
+kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
 kubectl -n argocd get applications.argoproj.io argocd-self-management
 kubectl -n argocd describe applications.argoproj.io argocd-self-management
 ```

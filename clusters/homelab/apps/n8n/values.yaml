@@ -1,5 +1,9 @@
+serviceAccount:
+  n8n: {}
 controllers:
   n8n:
+    serviceAccount:
+      identifier: n8n
     strategy: Recreate
     containers:
       app:

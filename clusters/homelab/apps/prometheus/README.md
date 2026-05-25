@@ -5,6 +5,14 @@ Prometheus also discovers repo-owned ServiceMonitor objects in the `monitoring`
 namespace so independent Applications, such as Grafana, can expose metrics
 without spoofing the Prometheus Helm release label.
 
+## Argo CD Metrics
+
+`argocd-servicemonitors.yaml` owns the ServiceMonitor resources that scrape the
+Argo CD application controller, repo server, and API server metrics services in
+the `argocd` namespace. The matching services are enabled by the Argo CD
+bootstrap stack at `IaC/bootstrap/argocd`; the ServiceMonitors live here so
+Prometheus Operator CRDs are installed before this scrape wiring is applied.
+
 - Backup: covered by the NFS backup gate in `docs/storage-nfs.md`.
 - Restore: restore Prometheus and Alertmanager PVCs before relying on retained
   metrics.
@@ -42,3 +50,18 @@ Do not add a Prometheus `VirtualService` until the access path has a reviewed
 authentication story, an owner, and a rollback note. If temporary direct access
 is required for an incident, prefer a short-lived operator port-forward after
 read-only diagnosis and record the reason in the PR or incident notes.
+
+## Validation
+
+Render Prometheus-owned resources:
+
+```sh
+kubectl kustomize clusters/homelab/apps/prometheus
+```
+
+After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
+
+```sh
+kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
+kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
+```

@@ -1,0 +1,71 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-application-controller
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: argocd-application-controller
+    app.kubernetes.io/part-of: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  namespaceSelector:
+    matchNames:
+      - argocd
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-metrics
+      app.kubernetes.io/instance: argocd
+      app.kubernetes.io/component: application-controller
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 30s
+      honorLabels: false
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-repo-server
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: argocd-repo-server
+    app.kubernetes.io/part-of: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  namespaceSelector:
+    matchNames:
+      - argocd
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server-metrics
+      app.kubernetes.io/instance: argocd
+      app.kubernetes.io/component: repo-server
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 30s
+      honorLabels: false
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-server
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/part-of: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  namespaceSelector:
+    matchNames:
+      - argocd
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server-metrics
+      app.kubernetes.io/instance: argocd
+      app.kubernetes.io/component: server
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 30s
+      honorLabels: false

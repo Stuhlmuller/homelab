@@ -37,7 +37,8 @@ present. Local admin login remains available through `grafana-admin`.
   dashboards, configures Microsoft Entra SSO, and provisions Grafana-managed
   alerting resources.
 - `dashboards/homelab-overview.json` is the default Homelab overview dashboard.
-  Kustomize packages it into the stable
+  `dashboards/argocd-overview.json` is the Argo CD GitOps operations
+  dashboard. Kustomize packages both dashboards into the stable
   `grafana-dashboard-homelab-overview` ConfigMap, which the Helm chart mounts
   through the `homelab` dashboard provider.
 - `values.yaml` imports pinned Grafana.com dashboard revisions for Kubernetes
@@ -46,6 +47,10 @@ present. Local admin login remains available through `grafana-admin`.
 - `externalsecret.yaml` references the Grafana admin username, admin password,
   Entra SSO values, and Discord webhook URL in AWS SSM Parameter Store. No
   secret values belong in this directory.
+- `values.yaml` sets a non-secret
+  `homelab.rst.io/discord-webhook-ssm-version` pod annotation. Bump this value
+  to the SSM parameter version after rotating the Discord webhook so Argo CD
+  rolls Grafana and file provisioning re-reads the webhook value.
 
 ## Imported Dashboards
 
@@ -75,18 +80,27 @@ Grafana alert rules are provisioned from `values.yaml` and route to the
 in-cluster Prometheus Alertmanager and to Discord. The Discord webhook URL is
 read from the `grafana-discord-webhook` Kubernetes Secret, which is managed by
 External Secrets from `/homelab/grafana/discord-webhook-url` in AWS SSM
-Parameter Store.
+Parameter Store and refreshed every five minutes.
 
 The Alertmanager datasource is available for viewing Prometheus-managed alerts,
 while Grafana-managed notifications stay controlled by the provisioned Grafana
 policy. This makes alert rules and routing reviewable and repeatable without
 putting notification credentials in git.
 
+Grafana reads the webhook through an environment variable while provisioning
+alerting resources at startup. After replacing the SSM value, update the
+`homelab.rst.io/discord-webhook-ssm-version` annotation to the new SSM
+parameter version so the GitOps rollout restarts Grafana and reloads the
+contact point.
+
 The first provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
+- Argo CD application metrics missing from Prometheus for 10 minutes.
+- Argo CD Applications not `Healthy` for 10 minutes.
+- Argo CD Applications remaining out of sync for 30 minutes.
 
 ## Validation
 
@@ -121,12 +135,12 @@ kubectl -n monitoring get pods -l app.kubernetes.io/name=grafana
 ```
 
 In Grafana, check that the `Prometheus` datasource is default, the
-`Alertmanager` datasource is healthy, the `Homelab Overview` dashboard appears
-under the `Homelab` folder, the imported dashboards appear under the
-`Kubernetes` and `Monitoring` folders, the `Entra ID` login path works, and the
-three `homelab-*` alert rules are present under Grafana Alerting. Use the
-Grafana contact point test action after the Discord webhook parameter has been
-populated in SSM.
+`Alertmanager` datasource is healthy, the `Homelab Overview` and `Argo CD
+Overview` dashboards appear under the `Homelab` folder, the imported dashboards
+appear under the `Kubernetes` and `Monitoring` folders, the `Entra ID` login
+path works, and the six `homelab-*` alert rules are present under Grafana
+Alerting. Use the Grafana contact point test action after the Discord webhook
+parameter has been populated in SSM.
 
 ## Rollback
 

@@ -139,6 +139,13 @@ n8n stores only its Terragrunt-generated instance encryption key in SSM.
 Workflows, users, saved credential metadata, and app configuration persist on
 the `/home/node/.n8n` volume and are managed inside n8n after first login.
 
+Grafana stores its Discord alerting webhook at
+`/homelab/grafana/discord-webhook-url`. Replace the placeholder directly in
+SSM, then bump the non-secret
+`homelab.rst.io/discord-webhook-ssm-version` pod annotation in
+`clusters/homelab/apps/grafana/values.yaml` to the resulting SSM parameter
+version so GitOps rolls Grafana and alerting provisioning reloads the webhook.
+
 Policy Bot stores its GitHub App credentials in SSM and renders them into the
 file-backed `policy-bot-config` Kubernetes Secret. Replace the GitHub App ID,
 private key, OAuth client ID, and OAuth client secret placeholders with values

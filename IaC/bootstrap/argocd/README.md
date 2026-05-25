@@ -21,6 +21,11 @@ as non-secret desired state; the connector reads its provider-specific secret
 values through the Argo CD secret reference syntax from a Kubernetes Secret
 named `argocd-oidc-sso`.
 
+The Helm values enable metrics services for the application controller, repo
+server, and API server. Prometheus `ServiceMonitor` resources live in
+`clusters/homelab/apps/prometheus` so the bootstrap stack does not depend on
+Prometheus Operator CRDs existing before Argo CD is installed.
+
 External Secrets Operator resources for creating `argocd-oidc-sso` from AWS
 Systems Manager Parameter Store live in the Argo CD self-management path at
 `clusters/homelab/argocd/self-management/oidc-external-secret.yaml`. Keeping

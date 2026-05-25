@@ -10,6 +10,15 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-25 - Grafana Discord alert routing
+
+- Populated the Grafana Discord webhook SSM parameter outside git and recorded
+  the repo-owned rollout marker needed for Grafana to reload file-provisioned
+  contact points.
+- Changed `grafana-discord-webhook` to refresh from AWS SSM every five minutes
+  so future webhook rotations update the Kubernetes Secret before the Grafana
+  pod is rolled.
+
 ### 2026-05-25 - Initial knowledge base
 
 - Added this Obsidian vault under `docs/knowledge-base`.
@@ -28,3 +37,21 @@ Use [[templates/knowledge-update]] for new entries.
 - Marked current working-tree app drift: Policy Bot and Hummingbot are present
   in source paths while Freqtrade is deleted and older inventory docs still need
   reconciliation.
+
+### 2026-05-25 - Add Argo CD observability in Grafana
+
+- Enabled Argo CD application controller, repo server, and API server metrics
+  services in the bootstrap Helm values.
+- Added Prometheus ServiceMonitors for those Argo CD metrics services under the
+  monitoring app desired state.
+- Added a repo-owned Argo CD Grafana dashboard and Grafana-managed alert rules
+  for missing Argo CD metrics, unhealthy Applications, and Applications that
+  remain out of sync.
+
+### 2026-05-25 - Istio app service access policy
+
+- Enabled Istio ambient labels for `ai`, `automation`, and `monitoring`.
+- Added workload-scoped `AuthorizationPolicy` manifests for LiteLLM, OpenClaw,
+  n8n, Grafana, Prometheus, Alertmanager, and kube-state-metrics.
+- Recorded the current service-to-service access contract in
+  `docs/runtime-isolation.md` and the workload inventory.
