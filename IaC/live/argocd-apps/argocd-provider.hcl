@@ -3,8 +3,7 @@ generate "argocd_provider" {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "argocd" {
-  server_addr = "localhost:18080"
-  plain_text  = true
+  core = true
 }
 EOF
 }
