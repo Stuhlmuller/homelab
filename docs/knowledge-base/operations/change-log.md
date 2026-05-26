@@ -10,6 +10,13 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-26 - Enable OpenClaw memory wiki
+
+- Enabled OpenClaw's bundled `memory-wiki` plugin during pod startup bootstrap
+  so Imported Insights and Memory Palace are available from the Control UI.
+- Updated OpenClaw app docs and workload notes to keep the UI reload step tied
+  to the repo-owned config path.
+
 ### 2026-05-26 - Clarify SSM KMS apply-role access
 
 - Documented that `IaC/live/aws-ssm-parameters` uses a `us-west-2` SSM

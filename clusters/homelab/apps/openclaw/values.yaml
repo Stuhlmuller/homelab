@@ -44,6 +44,10 @@ controllers:
               'true'
 
             openclaw config set --strict-json \
+              plugins.entries.memory-wiki.enabled \
+              'true'
+
+            openclaw config set --strict-json \
               agents.defaults.model \
               '{"primary":"openai/gpt-5.5"}'
 
