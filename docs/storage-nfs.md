@@ -143,7 +143,7 @@ app has acceptable backup and restore coverage.
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |
 | openclaw | config, runtime state | `nfs-default` | NFS backup for runtime state | Restore PVC and verify LiteLLM connectivity | Preserve PVC |
 | n8n | workflows, SQLite data, credentials metadata, config | `nfs-default` | NFS backup plus workflow export when available | Restore PVC before app sync | Snapshot first, preserve PVC |
-| hummingbot | encrypted config, connector credentials after operator setup, logs, market data, scripts, controllers, certs | `nfs-default` | NFS backup before strategy or connector changes | Restore PVCs before comparing long-running strategy results or reusing connector credentials | Preserve PVCs unless intentionally resetting bot credentials |
+| octobot | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, strategy config | `nfs-default` | NFS backup before strategy, tentacle, or exchange-account changes | Restore PVCs before comparing long-running paper/live strategy results or reusing exchange credentials | Preserve PVCs unless intentionally resetting bot credentials |
 
 ## Validation Notes
 
@@ -151,9 +151,10 @@ app has acceptable backup and restore coverage.
   `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
-- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus,
-  Grafana, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and
-  Hummingbot each explicitly depend on `IaC/live/argocd-apps/platform-storage`.
+- Persistent app Terragrunt units were checked on 2026-05-24 and refreshed for
+  OctoBot on 2026-05-26. Prometheus, Grafana, Deluge, Prowlarr, Radarr,
+  Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot each explicitly depend on
+  `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,

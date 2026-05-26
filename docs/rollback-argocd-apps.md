@@ -10,7 +10,7 @@ handling is clear.
 1. argocd-image-updater
 2. Policy Bot
 3. OpenClaw
-4. Hummingbot
+4. OctoBot
 5. n8n
 6. Radarr and Sonarr
 7. Prowlarr

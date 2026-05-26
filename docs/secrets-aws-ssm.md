@@ -83,11 +83,9 @@ stack because Terraform manages the Kubernetes Secret.
 | openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
-| hummingbot | `hummingbot-config` | `hummingbot-config` | `/homelab/hummingbot/config-password` |
 
 Terragrunt-generated internal values:
 
-- `/homelab/hummingbot/config-password`
 - `/homelab/litellm/master-key`
 - `/homelab/media-postgres/app-password`
 - `/homelab/n8n/encryption-key`
@@ -177,9 +175,10 @@ from SSM into the GitHub App webhook settings so GitHub deliveries to
 GitHub-App-owned placeholders are replaced; scale it back to zero in git before
 reintroducing placeholder config.
 
-Hummingbot stores only its generated client config password in SSM. Exchange API
-credentials are encrypted by Hummingbot on its persistent config volume after an
-operator connects an exchange from the CLI. Do not add live-trading autostart
-configuration until a separate PR adds the repository-owned strategy config,
-documents backtest and paper-trading evidence, and confirms withdrawal access
-is disabled at the exchange.
+OctoBot does not currently have a repository-owned SSM parameter contract.
+First-run setup, exchange credentials, tentacles, and strategy state are managed
+through the OctoBot UI and persist on the `finance` namespace PVCs. Do not add
+live-trading autostart configuration until a separate PR adds the
+repository-owned secret contract or documents why UI-managed state is sufficient,
+records backtest and paper-trading evidence, and confirms withdrawal access is
+disabled at the exchange.

@@ -1,0 +1,73 @@
+serviceAccount:
+  octobot: {}
+controllers:
+  octobot:
+    serviceAccount:
+      identifier: octobot
+    strategy: Recreate
+    pod:
+      annotations:
+        homelab.rst.io/trading-mode: "ui-configured"
+        homelab.rst.io/live-trading-autostart: "false"
+    containers:
+      app:
+        image:
+          repository: drakkarsoftware/octobot
+          tag: "2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
+        env:
+          TZ: America/Los_Angeles
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 5001
+              failureThreshold: 6
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 5001
+              failureThreshold: 3
+              periodSeconds: 30
+              timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+service:
+  app:
+    controller: octobot
+    ports:
+      http:
+        port: 5001
+persistence:
+  user:
+    enabled: true
+    storageClass: nfs-default
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /octobot/user
+  tentacles:
+    enabled: true
+    storageClass: nfs-default
+    size: 5Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /octobot/tentacles
+  logs:
+    enabled: true
+    storageClass: nfs-default
+    size: 5Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /octobot/logs

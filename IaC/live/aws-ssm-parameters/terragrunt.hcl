@@ -185,13 +185,5 @@ inputs = {
       }
       initial_value = local.placeholder
     }
-    "/homelab/hummingbot/config-password" = {
-      description = "Hummingbot client password used to encrypt local bot credentials."
-      generated = {
-        length  = 40
-        special = false
-      }
-      initial_value = local.placeholder
-    }
   }
 }

@@ -53,8 +53,9 @@ outside git.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
-- Hummingbot is an in-flight app addition in the current working tree. Its SSM
-  contract is summarized in [[runbooks/secrets-aws-ssm]] and
+- OctoBot currently has no repository-owned SSM contract. Its first-run setup,
+  exchange credentials, tentacles, and strategy state live on the finance
+  namespace PVCs and are summarized in [[runbooks/secrets-aws-ssm]] and
   [[workloads/application-notes]].
 
 ## Source Files

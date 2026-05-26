@@ -24,6 +24,16 @@ Use [[templates/knowledge-update]] for new entries.
   so the same GitHub variable can drive both trusted PR plans and production
   applies.
 
+### 2026-05-26 - Replace Hummingbot with OctoBot UI
+
+- Replaced the finance namespace Hummingbot CLI workload with OctoBot using
+  `drakkarsoftware/octobot:2.1.1`, NFS-backed `user`, `tentacles`, and `logs`
+  PVCs, and the tailnet-only `https://octobot.stinkyboi.com` Istio route.
+- Removed the Hummingbot ExternalSecret and SSM parameter contract because
+  OctoBot setup and exchange credentials are UI-managed runtime state on PVCs.
+- Updated app inventory, storage, ingress, image automation, runtime isolation,
+  rollback, and secrets notes so OctoBot is the current finance app.
+
 ### 2026-05-26 - Restore OpenClaw Codex subscription route
 
 - Updated OpenClaw from `2026.3.1` to `2026.5.20` so the bundled `codex`
