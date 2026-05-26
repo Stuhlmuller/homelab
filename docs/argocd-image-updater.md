@@ -32,6 +32,10 @@ the normal review, CI, and Argo CD reconciliation path still applies.
 The write-back credential is the Kubernetes Secret
 `argocd/argocd-image-updater-git`, created by the ExternalSecret at
 `clusters/homelab/apps/argocd-image-updater/externalsecret.yaml`.
+The ExternalSecret uses `refreshPolicy: OnChange`. After replacing GitHub App
+values in SSM, bump the
+`homelab.rst.io/github-app-credentials-ssm-version` annotation so External
+Secrets reconciles the in-cluster Secret without direct edits.
 
 Required AWS SSM Parameter Store values:
 

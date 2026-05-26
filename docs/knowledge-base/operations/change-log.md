@@ -56,6 +56,12 @@ Use [[templates/knowledge-update]] for new entries.
   and the local `TERRAGRUNT_PLAN_MARKDOWN` output path for reviewing rendered
   plans.
 
+### 2026-05-25 - Refresh Image Updater GitHub App credentials
+
+- Kept `argocd-image-updater-git` on `refreshPolicy: OnChange` and bumped the
+  non-secret GitHub App SSM version marker to `2` so External Secrets refreshes
+  the in-cluster write-back Secret from updated AWS SSM values.
+
 ### 2026-05-25 - Enable Image Updater pull requests
 
 - Replaced the annotation opt-in ImageUpdater policy with a managed-image

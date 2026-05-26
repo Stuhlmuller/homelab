@@ -32,7 +32,9 @@ Required AWS SSM parameters:
 - `/homelab/argocd-image-updater/github-app/private-key`
 
 The GitHub App needs repository contents write access and pull-request write
-access for `Stuhlmuller/homelab`.
+access for `Stuhlmuller/homelab`. The ExternalSecret uses `OnChange`; bump
+`homelab.rst.io/github-app-credentials-ssm-version` after credential
+replacement so External Secrets refreshes the Kubernetes Secret.
 
 ## Gate
 
