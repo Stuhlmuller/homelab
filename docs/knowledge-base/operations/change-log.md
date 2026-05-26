@@ -18,6 +18,15 @@ Use [[templates/knowledge-update]] for new entries.
   PRs run Conftest after the live Terragrunt plan step while forked PRs still
   run Conftest without receiving live-plan secrets.
 
+### 2026-05-26 - Add Kiali mesh UI
+
+- Added the `kiali` Argo CD Application and desired state using the official
+  Kiali operator Helm chart.
+- Exposed Kiali at `https://kiali.stinkyboi.com` through the tailnet-only Istio
+  gateway with anonymous read-only access.
+- Updated monitoring AuthorizationPolicies so Kiali can query Grafana and
+  Prometheus without opening direct Prometheus ingress.
+
 ### 2026-05-25 - Add Hummingbot tailnet status route
 
 - Added a tailnet-only Istio route at `https://hummingbot.stinkyboi.com` backed

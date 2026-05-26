@@ -53,6 +53,14 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
 repo-owned values. Discord webhook URL comes from SSM through External Secrets.
 
+## Kiali
+
+Kiali is the reviewed read-only Istio mesh UI at
+`https://kiali.stinkyboi.com`. The `kiali` Argo CD Application installs the
+official Kiali operator chart and creates a Kiali CR in `monitoring` with
+anonymous access plus `view_only_mode: true`. Monitoring AuthorizationPolicies
+allow `kiali-service-account` to query Grafana and Prometheus.
+
 ## Hummingbot
 
 Hummingbot is an in-flight finance workload in the current working tree. It is

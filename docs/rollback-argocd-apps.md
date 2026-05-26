@@ -17,15 +17,16 @@ handling is clear.
 8. media-postgres
 9. LiteLLM
 10. Deluge
-11. Grafana
-12. Descheduler
-13. Prometheus
-14. platform-storage
-15. Tailscale
-16. Istio
-17. cert-manager
-18. external-secrets
-19. platform-dns
+11. Kiali
+12. Grafana
+13. Descheduler
+14. Prometheus
+15. platform-storage
+16. Tailscale
+17. Istio
+18. cert-manager
+19. external-secrets
+20. platform-dns
 
 ## Persistent Data
 
@@ -40,6 +41,9 @@ the PostgreSQL PVC unless intentionally rebuilding the media apps from backups.
 Policy Bot is stateless. Roll back its public exposure by removing the
 `policy-bot-hook-funnel` Ingress first, then roll back the Deployment and
 ExternalSecret if the GitHub App should stop evaluating pull requests.
+
+Kiali is stateless. Remove the Kiali custom resource before removing the
+operator chart so the operator can clean up its managed server resources.
 
 ## Break-Glass
 

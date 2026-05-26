@@ -14,9 +14,9 @@ registration and sources the repository-local
 `IaC/modules/argocd-application-kubernetes` module. Runtime desired state lives
 under `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`.
 
-The current app onboarding runbook says there are 17 requested apps plus
-support Applications. The working tree also includes Hummingbot and deletes
-Freqtrade desired-state files, so reconcile source docs before publishing.
+The current app onboarding runbook says there are 18 requested apps plus
+support Applications. Kiali is the read-only Istio mesh UI, and Hummingbot is
+the persistent CLI trading workload that replaced older Freqtrade material.
 
 ## Support Applications
 
