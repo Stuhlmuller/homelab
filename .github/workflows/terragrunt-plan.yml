@@ -55,6 +55,11 @@ jobs:
   terragrunt-plan:
     name: Terragrunt Plan
     if: github.event.pull_request.head.repo.full_name == github.repository
+    # The plan reads shared OpenTofu state, so only one trusted PR plan should
+    # hold the backend lock at a time.
+    concurrency:
+      group: terragrunt-plan-live-state
+      cancel-in-progress: false
     needs:
       - static-policy
     runs-on: ubuntu-24.04

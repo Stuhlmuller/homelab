@@ -10,6 +10,14 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-26 - Serialize trusted Terragrunt PR plans
+
+- Added a shared concurrency gate to the trusted PR `Terragrunt Plan` job so
+  simultaneous Renovate branches queue before reading the shared OpenTofu S3
+  backend state.
+- Documented that queued Terragrunt PR plans are expected when another trusted
+  PR is already holding the live-state lock lane.
+
 ### 2026-05-25 - PR Conftest ordering
 
 - Split Conftest policy evaluation out of `scripts/ci/static-checks.sh` into
