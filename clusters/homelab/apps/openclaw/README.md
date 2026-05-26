@@ -11,8 +11,11 @@ The `openclaw-secrets` ExternalSecret reads the Discord bot token from
 `DISCORD_BOT_TOKEN`.
 
 On pod startup, the `bootstrap-config` init container keeps the Control UI
-origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, OpenClaw's
-startup doctor enables Discord from the environment automatically.
+origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, it installs
+the official `@openclaw/discord` channel plugin into a pod-local plugin cache,
+enables the plugin, and stores a SecretRef to the environment-backed token.
+The plugin cache is intentionally not on the NFS-backed state PVC because
+OpenClaw rejects code plugins owned by the QNAP NFS `nobody` mapping.
 
 Discord bootstrap is skipped when the SSM value is still `REPLACE_ME`, so the
 app can start before the real Discord bot token exists. After replacing the SSM

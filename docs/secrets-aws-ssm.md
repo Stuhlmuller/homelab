@@ -98,13 +98,14 @@ Terragrunt-generated internal values:
 until a repository-managed LiteLLM virtual-key workflow exists.
 
 OpenClaw reads `/homelab/openclaw/discord-bot-token` as
-`DISCORD_BOT_TOKEN`. Replace the placeholder directly in SSM before relying on
-Discord, then bump
+`DISCORD_BOT_TOKEN`. The pod bootstrap installs and enables the Discord channel
+plugin, then writes a SecretRef to that environment-backed token instead of
+copying the token into OpenClaw config. Replace the placeholder directly in SSM
+before relying on Discord, then bump
 `homelab.rst.io/openclaw-discord-bot-token-ssm-version` in
 `clusters/homelab/apps/openclaw/values.yaml` to the resulting SSM parameter
-version so GitOps rolls OpenClaw. OpenClaw enables Discord from
-`DISCORD_BOT_TOKEN` during startup. ChatGPT Pro or Codex OAuth credentials are
-not SSM values; they are created interactively and persist on the OpenClaw PVC.
+version so GitOps rolls OpenClaw. ChatGPT Pro or Codex OAuth credentials are not
+SSM values; they are created interactively and persist on the OpenClaw PVC.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

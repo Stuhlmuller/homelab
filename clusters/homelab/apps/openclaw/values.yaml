@@ -50,7 +50,19 @@ controllers:
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
             else
-              echo "DISCORD_BOT_TOKEN is populated; OpenClaw will enable Discord from the environment"
+              echo "DISCORD_BOT_TOKEN is populated; installing and enabling the Discord channel plugin"
+              if ! openclaw plugins info discord >/dev/null 2>&1; then
+                openclaw plugins install clawhub:@openclaw/discord
+              fi
+              openclaw plugins enable discord
+              openclaw config set --strict-json \
+                channels.discord.enabled \
+                'true'
+              openclaw config set \
+                channels.discord.token \
+                --ref-provider default \
+                --ref-source env \
+                --ref-id DISCORD_BOT_TOKEN
             fi
     containers:
       app:
@@ -166,3 +178,12 @@ persistence:
           - path: /data
         proxy:
           - path: /data
+  plugin-cache:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      openclaw:
+        app:
+          - path: /data/openclaw/npm
+        bootstrap-config:
+          - path: /data/openclaw/npm

@@ -44,6 +44,10 @@ Use [[templates/knowledge-update]] for new entries.
   schemas are migrated before writing new defaults.
 - Added `gateway.mode=local` to the bootstrap defaults for the
   container-managed gateway process.
+- Moved OpenClaw's npm plugin cache to pod-local `emptyDir` storage so channel
+  plugins are not blocked by QNAP NFS `nobody` ownership.
+- Made bootstrap install and enable `@openclaw/discord`, then configure
+  `channels.discord.token` as a SecretRef to `DISCORD_BOT_TOKEN`.
 - Updated OpenClaw operator docs and app notes so Codex OAuth remains
   PVC-backed runtime state instead of an SSM secret or committed API key.
 

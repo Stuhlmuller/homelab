@@ -47,9 +47,10 @@ outside git.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
 - OpenClaw uses `/homelab/openclaw/discord-bot-token` as
-  `DISCORD_BOT_TOKEN`; OpenClaw enables Discord from that environment value at
-  startup. ChatGPT Pro or Codex OAuth credentials are interactive user
-  credentials stored on the OpenClaw PVC, not SSM parameters.
+  `DISCORD_BOT_TOKEN`; bootstrap configures Discord with an OpenClaw SecretRef
+  to that environment value instead of storing the token in config. ChatGPT Pro
+  or Codex OAuth credentials are interactive user credentials stored on the
+  OpenClaw PVC, not SSM parameters.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
