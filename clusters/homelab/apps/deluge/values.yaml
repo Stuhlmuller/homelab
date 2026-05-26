@@ -139,9 +139,8 @@ service:
 persistence:
   config:
     enabled: true
-    storageClass: nfs-default
-    size: 5Gi
-    accessMode: ReadWriteOnce
+    type: persistentVolumeClaim
+    existingClaim: deluge-config
     advancedMounts:
       deluge:
         app:
@@ -150,15 +149,16 @@ persistence:
           - path: /config
   downloads:
     enabled: true
-    storageClass: nfs-default
-    size: 200Gi
-    accessMode: ReadWriteMany
+    type: persistentVolumeClaim
+    existingClaim: media-downloads
     advancedMounts:
       deluge:
         download-dirs:
           - path: /downloads
+            subPath: downloads
         app:
           - path: /downloads
+            subPath: downloads
   tun:
     enabled: true
     type: hostPath

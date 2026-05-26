@@ -18,6 +18,11 @@ Kubernetes persistent storage is backed by a QNAP NFS export.
 `platform-storage` owns the parent Argo CD Application, and the child
 `nfs-subdir-external-provisioner` Application owns the StorageClass.
 
+Media-library paths are intentionally separate from app state. Deluge, Radarr,
+and Sonarr use static PV/PVC pairs against the QNAP `/media` export for
+downloads, movies, and TV library data. Read-only `showmount -e 10.1.0.2`
+verified `/media` and `/homelab` on 2026-05-26.
+
 ## Stateful Workload Gate
 
 Stateful workloads can be registered before they are considered operationally
@@ -41,4 +46,7 @@ notes.
 
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
+- `clusters/homelab/apps/deluge/media-storage.yaml`
+- `clusters/homelab/apps/radarr/media-storage.yaml`
+- `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`

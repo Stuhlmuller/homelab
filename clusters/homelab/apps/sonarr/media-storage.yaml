@@ -1,0 +1,176 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-config
+  namespace: media
+  labels:
+    app.kubernetes.io/name: sonarr
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/data-class: app-config
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-default
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-media
+  namespace: media
+  labels:
+    app.kubernetes.io/name: sonarr
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/data-class: legacy-migration-source
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 500Gi
+  storageClassName: nfs-default
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-tv
+  labels:
+    app.kubernetes.io/name: media-tv
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: qnap-media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 2Ti
+  claimRef:
+    name: media-tv
+    namespace: media
+  mountOptions:
+    - nfsvers=3
+  nfs:
+    path: /media
+    server: 10.1.0.2
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: media-qnap-static
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-tv
+  namespace: media
+  labels:
+    app.kubernetes.io/name: media-tv
+    app.kubernetes.io/part-of: homelab-media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Ti
+  storageClassName: media-qnap-static
+  volumeName: media-tv
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: media-tv-migration
+  namespace: media
+  labels:
+    app.kubernetes.io/name: media-tv-migration
+    app.kubernetes.io/part-of: homelab-media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media-tv-migration
+        app.kubernetes.io/part-of: homelab-media
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        fsGroup: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              umask 0000
+              mkdir -p /target/tv
+
+              if [ -d /source/tv ]; then
+                cp -R /source/tv/. /target/tv/
+              fi
+
+              chmod -R a+rwX /target/tv
+              touch /target/tv/.migration-write-test
+              rm -f /target/tv/.migration-write-test
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: old-tv
+              mountPath: /source/tv
+              readOnly: true
+            - name: media-tv
+              mountPath: /target
+      volumes:
+        - name: old-tv
+          persistentVolumeClaim:
+            claimName: sonarr-media
+            readOnly: true
+        - name: media-tv
+          persistentVolumeClaim:
+            claimName: media-tv
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: media-tv-migration
+  namespace: media
+  labels:
+    app.kubernetes.io/name: media-tv-migration
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: media-tv-migration
+      app.kubernetes.io/part-of: homelab-media
+  policyTypes:
+    - Ingress
+    - Egress

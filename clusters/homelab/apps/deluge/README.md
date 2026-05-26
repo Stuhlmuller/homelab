@@ -42,9 +42,18 @@ and the incoming port has been applied.
 
 ## Download Paths
 
-Deluge owns the shared `deluge-downloads` PVC. Radarr and Sonarr mount that same
-claim at `/downloads`, so their download-client checks can see the files Deluge
-creates without remote path mappings.
+Deluge owns the shared `media-downloads` PVC backed by the QNAP `/media` NFS
+export. Radarr and Sonarr mount that same claim at `/downloads`, so their
+download-client checks can see the files Deluge creates without remote path
+mappings.
+
+The `media-downloads-migration` Job copies any files from the older
+`deluge-downloads` PVC into `/media/downloads` before Deluge switches to the new
+claim. The job also creates the expected Servarr subdirectories, sets
+write-friendly NFS permissions, and verifies that the target path accepts a
+write from inside the cluster. The older `deluge-downloads` claim remains in
+desired state as the migration source and rollback reference until the copy is
+verified.
 
 Use these Deluge paths:
 
@@ -55,8 +64,8 @@ Use these Deluge paths:
 | Radarr label path | `/downloads/complete/radarr` |
 | Sonarr label path | `/downloads/complete/sonarr` |
 
-The `download-dirs` init container creates the incomplete, complete, Radarr,
-Sonarr, and manual directories before Deluge starts.
+The `download-dirs` init container keeps the incomplete, complete, Radarr,
+Sonarr, and manual directories present before Deluge starts.
 
 ## Pod Security
 

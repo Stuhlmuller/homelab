@@ -24,6 +24,18 @@ persistent `/config` volume:
 The database password comes from AWS SSM Parameter Store through External
 Secrets. Do not commit it to this repository.
 
+## Media Storage
+
+Sonarr mounts the static `media-tv` PVC at `/tv` and the shared
+`media-downloads` PVC at `/downloads`. Both claims point at the QNAP `/media`
+NFS export instead of the default `/homelab` provisioner path.
+
+The `media-tv-migration` Job copies files from the older `sonarr-media` PVC into
+`/media/tv`, sets write-friendly NFS permissions, and verifies that the target
+path can be written before the app switches to the new claim. The older
+`sonarr-media` claim remains in desired state as the migration source and
+rollback reference until the copy is verified.
+
 ## Migration Notes
 
 The Servarr guide requires Sonarr `v4.0.0.615` or newer. The Git baseline pins
