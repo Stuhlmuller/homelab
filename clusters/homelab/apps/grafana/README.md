@@ -36,6 +36,12 @@ present. Local admin login remains available through `grafana-admin`.
   stable UIDs, enables a `ServiceMonitor` for Grafana metrics, mounts
   dashboards, configures Microsoft Entra SSO, and provisions Grafana-managed
   alerting resources.
+- The Helm release uses a `Recreate` deployment strategy because Grafana stores
+  SQLite state on a single PVC. Avoid overlapping old and new pods against the
+  same database during rollouts.
+- Datasource provisioning deletes the old `Prometheus` and `Alertmanager`
+  entries before recreating them with stable UIDs. This handles first-rollout
+  databases that already contain Grafana-generated datasource UIDs.
 - `dashboards/homelab-overview.json` is the default Homelab overview dashboard.
   `dashboards/argocd-overview.json` is the Argo CD GitOps operations
   dashboard. Kustomize packages both dashboards into the stable

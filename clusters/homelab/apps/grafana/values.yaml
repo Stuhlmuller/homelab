@@ -2,6 +2,8 @@ admin:
   existingSecret: grafana-admin
   userKey: username
   passwordKey: password
+deploymentStrategy:
+  type: Recreate
 extraSecretMounts:
   - name: grafana-azuread-sso
     secretName: grafana-azuread-sso
@@ -56,23 +58,28 @@ datasources:
         orgId: 1
       - name: Alertmanager
         orgId: 1
+    prune: true
     datasources:
       - name: Alertmanager
+        orgId: 1
         uid: alertmanager
         type: alertmanager
         access: proxy
         url: http://prometheus-kube-prometheus-alertmanager.monitoring:9093
         editable: false
+        version: 2
         jsonData:
           implementation: prometheus
           handleGrafanaManagedAlerts: false
       - name: Prometheus
+        orgId: 1
         uid: prometheus
         type: prometheus
         access: proxy
         url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
         isDefault: true
         editable: false
+        version: 2
         jsonData:
           httpMethod: POST
           timeInterval: 30s
