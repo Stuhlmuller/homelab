@@ -16,11 +16,12 @@ address from tailnet clients. DNS is not managed by this repo yet.
 ## Current Route Rules
 
 - Argo CD, Grafana, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
-  and Policy Bot UI are tailnet-only.
+  Policy Bot UI, and Hummingbot status are tailnet-only.
 - Policy Bot GitHub webhook is the reviewed public Funnel exception:
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI.
-- Hummingbot is intentionally not exposed; operators attach with `kubectl`.
+- Hummingbot exposes only a tailnet status page; operators still use
+  `kubectl attach` for interactive bot operation.
 
 ## TLS And Certificates
 

@@ -78,6 +78,15 @@ spec:
             helm:
               name: controllers.hummingbot.containers.app.image.repository
               tag: controllers.hummingbot.containers.app.image.tag
+        - alias: hummingbotRouteStatus
+          imageName: hummingbot/hummingbot
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^version-[0-9]+\.[0-9]+\.[0-9]+$
+          manifestTargets:
+            helm:
+              name: controllers.hummingbot.containers.route-status.image.repository
+              tag: controllers.hummingbot.containers.route-status.image.tag
     - namePattern: litellm
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.

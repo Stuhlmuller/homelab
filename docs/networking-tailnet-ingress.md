@@ -30,6 +30,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
 | n8n | `https://n8n.stinkyboi.com` | disabled |
 | policy-bot UI | `https://policy-bot.stinkyboi.com` | disabled |
+| hummingbot status | `https://hummingbot.stinkyboi.com` | disabled |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
 
 Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
@@ -53,10 +54,11 @@ Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and direct Prometheus ingress must not be restored
 without a documented authentication plan and rollback path.
 
-Hummingbot is intentionally absent from the tailnet route inventory. It is an
-interactive CLI trading client with no HTTP Service or VirtualService in this
-rollout; operators attach with `kubectl` instead of exposing the bot over
-ingress.
+Hummingbot exposes only a tailnet status page at
+`https://hummingbot.stinkyboi.com`. It is still an interactive CLI trading
+client; the Istio route does not expose the Hummingbot API, exchange
+credentials, or trading controls. Operators attach with `kubectl` for bot
+operation.
 
 ## Homelab VPN Exit Node And API Route
 

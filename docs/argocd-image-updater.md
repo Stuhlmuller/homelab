@@ -10,7 +10,7 @@ container image that this repository declares directly in workload Helm values
 or raw manifests:
 
 - `deluge`: BusyBox, Gluetun, and Deluge containers.
-- `hummingbot`: bootstrap and app containers.
+- `hummingbot`: bootstrap, app, and route status containers.
 - `litellm`: LiteLLM database container.
 - `media-postgres`: PostgreSQL StatefulSet image.
 - `n8n`: n8n app container.

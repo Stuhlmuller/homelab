@@ -67,6 +67,9 @@ Ambient is intentionally not enabled for:
 - `media`, because Deluge Gluetun/WireGuard and the current media app traffic
   model still need a repo-owned waypoint or equivalent policy design before
   re-enrollment;
+- `finance`, because Hummingbot exposes only a tailnet status page today and
+  the trading client needs a separate identity-policy design before any
+  service-to-service or API control path is mesh-enrolled;
 - `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
   API server, webhook, NFS, and controller paths need separate validation;
 - `istio-system` and `tailscale`, because they are privileged networking
@@ -94,6 +97,7 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 | `external-secrets` | `clusters/homelab/apps/external-secrets/namespace.yaml` |
 | `ai` | `clusters/homelab/apps/litellm/namespace.yaml` |
 | `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
+| `finance` | `clusters/homelab/apps/hummingbot/namespace.yaml` |
 | `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
 | `storage` | `clusters/homelab/platform/storage/namespace.yaml` |
 

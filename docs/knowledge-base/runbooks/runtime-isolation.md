@@ -26,9 +26,10 @@ Current enforced controls:
 
 ## Baseline Namespaces
 
-`argocd`, `cert-manager`, `external-secrets`, `ai`, `automation`,
+`argocd`, `cert-manager`, `external-secrets`, `ai`, `automation`, `finance`,
 `monitoring`, and `storage` are explicitly baseline in repo-owned namespace
-manifests.
+manifests. `finance` is not mesh-enrolled; Hummingbot's current route is a
+tailnet status page, not a service-to-service or trading API path.
 
 ## Network Policy Gate
 

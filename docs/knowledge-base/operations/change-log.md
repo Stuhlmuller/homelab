@@ -18,6 +18,16 @@ Use [[templates/knowledge-update]] for new entries.
   PRs run Conftest after the live Terragrunt plan step while forked PRs still
   run Conftest without receiving live-plan secrets.
 
+### 2026-05-25 - Add Hummingbot tailnet status route
+
+- Added a tailnet-only Istio route at `https://hummingbot.stinkyboi.com` backed
+  by a `route-status` sidecar on the Hummingbot pod.
+- Kept interactive trading access on `kubectl attach`; the route is not the
+  Hummingbot API and does not expose exchange credentials or trading controls.
+- Added a repo-owned `finance` namespace manifest with baseline Pod Security
+  labels and recorded the route in ingress, runtime-isolation, image-updater,
+  and workload notes.
+
 ### 2026-05-25 - Enable Policy Bot replica
 
 - Changed Policy Bot from a credential-gated suspended Deployment to one desired

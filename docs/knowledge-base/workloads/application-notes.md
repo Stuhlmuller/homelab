@@ -56,8 +56,10 @@ repo-owned values. Discord webhook URL comes from SSM through External Secrets.
 ## Hummingbot
 
 Hummingbot is an in-flight finance workload in the current working tree. It is
-a persistent CLI trading client with six PVCs on `nfs-default` and no Service,
-VirtualService, or public route. Operators attach with:
+a persistent CLI trading client with six PVCs on `nfs-default`. Its
+tailnet-only Istio route at `https://hummingbot.stinkyboi.com` serves a status
+page from the `route-status` sidecar only; it is not the Hummingbot API and does
+not expose trading controls. Operators attach with:
 
 ```sh
 kubectl -n finance attach -it deploy/hummingbot -c app

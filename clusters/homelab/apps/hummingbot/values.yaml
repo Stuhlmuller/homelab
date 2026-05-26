@@ -54,6 +54,72 @@ controllers:
             memory: 1Gi
           limits:
             memory: 3Gi
+      route-status:
+        image:
+          repository: hummingbot/hummingbot
+          tag: "version-2.14.0@sha256:6aa4f635b74426e1da8428a06c3a3f4e80f46be1d2657d2b55c6ab26fc6db7a0"
+        command:
+          - /bin/bash
+          - -lc
+          - |
+            set -eu
+
+            mkdir -p /tmp/hummingbot-route
+            cat > /tmp/hummingbot-route/index.html <<'EOF'
+            <!doctype html>
+            <html lang="en">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Hummingbot</title>
+              </head>
+              <body>
+                <main>
+                  <h1>Hummingbot</h1>
+                  <p>The trading client is running as an interactive CLI workload.</p>
+                  <p>Attach with: <code>kubectl -n finance attach -it deploy/hummingbot -c app</code></p>
+                </main>
+              </body>
+            </html>
+            EOF
+
+            exec python -m http.server 8000 --bind 0.0.0.0 --directory /tmp/hummingbot-route
+        ports:
+          - name: http
+            containerPort: 8000
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: http
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 2
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: http
+              failureThreshold: 3
+              periodSeconds: 30
+              timeoutSeconds: 2
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
 persistence:
   conf:
     enabled: true

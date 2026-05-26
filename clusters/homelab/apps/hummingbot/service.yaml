@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hummingbot
+  namespace: finance
+  labels:
+    app.kubernetes.io/name: hummingbot
+    app.kubernetes.io/part-of: homelab-finance
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/controller: hummingbot
+    app.kubernetes.io/instance: hummingbot
+    app.kubernetes.io/name: hummingbot
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
