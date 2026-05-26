@@ -10,6 +10,14 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-26 - Clarify SSM KMS apply-role access
+
+- Documented that `IaC/live/aws-ssm-parameters` uses a `us-west-2` SSM
+  SecureString KMS key under `alias/homelab-opentofu`, separate from the
+  `us-east-1` OpenTofu state key with the same alias.
+- Added troubleshooting guidance for production applies that fail during SSM
+  state refresh with `kms:DescribeKey` denied on the `us-west-2` key.
+
 ### 2026-05-26 - Accept secret fallback for Terragrunt CI inputs
 
 - Updated the trusted PR plan and protected production apply workflows so
