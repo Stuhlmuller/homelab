@@ -124,6 +124,10 @@ jobs:
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: bash scripts/ci/update-pr-plan-description.sh
 
+      - name: Run Conftest Policies
+        if: ${{ !cancelled() }}
+        run: nix develop --command bash scripts/ci/conftest-policies.sh
+
   fork-plan-skipped:
     name: Terragrunt Plan Skipped For Fork
     if: github.event.pull_request.head.repo.full_name != github.repository
@@ -133,5 +137,20 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Check Out Repository
+        # actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Explain Skip
         run: echo "Live Terragrunt plan is skipped for forked pull requests because it requires AWS, Tailscale, and Kubernetes secrets."
+
+      - name: Run Conftest Policies
+        run: nix develop --command bash scripts/ci/conftest-policies.sh

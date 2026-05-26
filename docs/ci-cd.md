@@ -2,15 +2,19 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
-- `Terragrunt Plan` runs on pull requests. It always runs static checks,
-  Conftest policies, and Checkov. Trusted same-repository pull requests also
-  connect to the tailnet and run a live Terragrunt plan.
+- `Terragrunt Plan` runs on pull requests. It always runs static checks and
+  Checkov first. Trusted same-repository pull requests then connect to the
+  tailnet, run a live Terragrunt plan, and run Conftest policies after the plan
+  step. Forked pull requests run Conftest after the live plan skip notice.
 - `Terragrunt Apply` runs after changes land on `main` and can also be started
-  manually with `workflow_dispatch`. It repeats static checks before connecting
-  to the tailnet and applying the live Terragrunt stack.
+  manually with `workflow_dispatch`. It repeats static checks and Conftest
+  before connecting to the tailnet and applying the live Terragrunt phases in
+  order: Argo CD bootstrap, SSM parameter declarations, Entra application
+  registrations, Argo CD Application registrations, and Kubernetes secret
+  materialization.
 
 Forked pull requests never receive AWS, Tailscale, or Kubernetes secrets. They
-run the static checks only.
+run the static checks and Conftest only.
 
 ## Security Model
 
@@ -201,6 +205,7 @@ Run the same checks locally through the Nix shell:
 ```sh
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
+nix develop --command bash scripts/ci/conftest-policies.sh
 ```
 
 The PR plan script intentionally skips the privileged SSM declaration and
@@ -216,5 +221,7 @@ Only run apply after the same validation has passed and the change has been
 reviewed:
 
 ```sh
+nix develop --command bash scripts/ci/static-checks.sh
+nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```

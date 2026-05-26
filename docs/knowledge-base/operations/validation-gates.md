@@ -13,6 +13,7 @@ For most repo changes, start with:
 terragrunt hcl fmt --check
 terragrunt hcl validate
 nix develop --command bash scripts/ci/static-checks.sh
+nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
 
@@ -60,6 +61,10 @@ Implicit stack validation:
 cd IaC/live/argocd-apps
 terragrunt run --all --parallelism 1 --source-update plan -no-color
 ```
+
+The pull request workflow runs `scripts/ci/conftest-policies.sh` after the live
+Terragrunt plan step for trusted same-repository PRs. Run the same order locally
+when reproducing PR gate behavior.
 
 ## Live Rollout Rule
 

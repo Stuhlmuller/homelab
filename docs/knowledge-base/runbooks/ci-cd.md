@@ -6,14 +6,15 @@ Source: `docs/ci-cd.md`
 
 ## Pipeline Shape
 
-- `Terragrunt Plan` runs on pull requests. It always runs static checks,
-  Conftest, and Checkov. Trusted same-repo PRs can join the tailnet and run a
-  live Terragrunt plan.
+- `Terragrunt Plan` runs on pull requests. It always runs static checks and
+  Checkov first. Trusted same-repo PRs can join the tailnet, run a live
+  Terragrunt plan, and then run Conftest. Forked PRs run Conftest after the
+  live plan skip notice.
 - `Terragrunt Apply` runs after merge to `main` and through
-  `workflow_dispatch`. It repeats static checks, joins the tailnet, and applies
-  the live Terragrunt phases in order: Argo CD bootstrap, SSM parameter
-  declarations, Entra application registrations, Argo CD Application
-  registrations, and Kubernetes secret materialization.
+  `workflow_dispatch`. It repeats static checks and Conftest, joins the
+  tailnet, and applies the live Terragrunt phases in order: Argo CD bootstrap,
+  SSM parameter declarations, Entra application registrations, Argo CD
+  Application registrations, and Kubernetes secret materialization.
 - Forked PRs never receive AWS, Tailscale, or Kubernetes secrets.
 
 ## Security Model
@@ -62,6 +63,7 @@ route to reach the Kubernetes API. Keep grants limited to TCP `6443`.
 ```sh
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
+nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
 
