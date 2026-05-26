@@ -27,6 +27,10 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
+            if ! openclaw config validate; then
+              openclaw doctor --fix --non-interactive
+            fi
+
             openclaw config set --strict-json \
               gateway.controlUi.allowedOrigins \
               '["https://openclaw.stinkyboi.com"]'

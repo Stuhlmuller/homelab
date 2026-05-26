@@ -16,6 +16,8 @@ Use [[templates/knowledge-update]] for new entries.
   plugin is available for ChatGPT/Codex subscription auth.
 - Added startup bootstrap config for `plugins.entries.codex.enabled` and the
   canonical `openai/gpt-5.5` default model route.
+- Added a safe OpenClaw doctor repair during bootstrap so stale PVC config
+  schemas are migrated before writing new defaults.
 - Updated OpenClaw operator docs and app notes so Codex OAuth remains
   PVC-backed runtime state instead of an SSM secret or committed API key.
 

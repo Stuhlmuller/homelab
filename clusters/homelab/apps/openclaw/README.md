@@ -44,6 +44,11 @@ default agent model to the canonical Codex-backed OpenAI route,
 `openai/gpt-5.5`. The older `openai-codex/gpt-*` model refs are legacy routes
 and should not be used for new default config.
 
+During startup, the bootstrap runs OpenClaw's safe doctor repairs when the
+persisted PVC config no longer matches the current OpenClaw schema. This keeps
+version upgrades from blocking on stale runtime config while preserving secrets
+and OAuth state on the PVC.
+
 Run the interactive login from a tailnet-connected operator machine:
 
 ```sh

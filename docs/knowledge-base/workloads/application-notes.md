@@ -78,7 +78,9 @@ Discord from `DISCORD_BOT_TOKEN` during startup. ChatGPT Pro access uses
 interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
 secret or committed API key. The bootstrap also enables the bundled `codex`
 plugin and sets the default agent model to `openai/gpt-5.5`, which is the
-canonical Codex-backed OpenAI model route for new OpenClaw config.
+canonical Codex-backed OpenAI model route for new OpenClaw config. The
+bootstrap runs safe `openclaw doctor --fix --non-interactive` repairs when the
+persisted PVC config does not validate against the current OpenClaw schema.
 
 ## Media PostgreSQL
 
