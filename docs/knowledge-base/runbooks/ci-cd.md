@@ -35,9 +35,10 @@ Source: `docs/ci-cd.md`
   managed KMS, IAM, and SSM resources that require the protected apply role.
   They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
   stacks after review.
-- Stack-wide apply phases use Terragrunt's explicit `run --all -- apply ...`
-  form so OpenTofu flags such as `-auto-approve` are forwarded to OpenTofu
-  instead of being parsed as Terragrunt CLI flags.
+- Stack-wide apply phases use Terragrunt's explicit
+  `run --all --non-interactive -- apply ...` form so the run queue is accepted
+  in Actions and OpenTofu flags such as `-auto-approve` are forwarded to
+  OpenTofu instead of being parsed as Terragrunt CLI flags.
 
 ## Environments
 

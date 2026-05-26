@@ -58,9 +58,9 @@ run the static checks and Conftest only.
   bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
   registrations, apply Argo CD Application registrations serially, and finally
   materialize Kubernetes Secrets from SSM. Stack-wide apply phases use
-  Terragrunt's explicit `run --all -- apply ...` form so OpenTofu flags such as
-  `-auto-approve` are forwarded to OpenTofu instead of being parsed as
-  Terragrunt CLI flags.
+  Terragrunt's explicit `run --all --non-interactive -- apply ...` form so the
+  run queue is accepted in Actions and OpenTofu flags such as `-auto-approve`
+  are forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
 
 References:
 
