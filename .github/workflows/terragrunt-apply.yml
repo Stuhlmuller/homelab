@@ -65,14 +65,18 @@ jobs:
       id-token: write
     timeout-minutes: 90
     env:
-      ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID }}
+      AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+      ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
-      ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
+      APPLY_BASE_SHA: ${{ github.event.before }}
+      APPLY_HEAD_SHA: ${{ github.sha }}
     steps:
       - name: Check Out Repository
         # actions/checkout@v5
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install Nix
@@ -82,13 +86,8 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify Production Apply Inputs
-        env:
-          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_TERRAGRUNT_APPLY_ROLE_ARN }}
         run: |
-          test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_TERRAGRUNT_APPLY_ROLE_ARN must be set on homelab-production."; exit 1; }
-          test -n "${ARM_CLIENT_ID}" || { echo "AZUREAD_CLIENT_ID must be set on homelab-production."; exit 1; }
-          test -n "${ARM_CLIENT_SECRET}" || { echo "AZUREAD_CLIENT_SECRET must be set on homelab-production."; exit 1; }
-          test -n "${ARM_TENANT_ID}" || { echo "AZUREAD_TENANT_ID must be set on homelab-production."; exit 1; }
+          test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-production environment variable or secret."; exit 1; }
 
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
@@ -97,7 +96,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
           role-session-name: homelab-terragrunt-apply-${{ github.run_id }}
-          role-to-assume: ${{ vars.AWS_TERRAGRUNT_APPLY_ROLE_ARN }}
+          role-to-assume: ${{ env.AWS_APPLY_ROLE_ARN }}
           unset-current-credentials: true
 
       - name: Connect To Tailnet

@@ -88,12 +88,14 @@ approval rules and tighter rotation:
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production` | Microsoft Entra application secret used by the AzureAD provider during production applies. |
 
-Add these environment variables:
+Add these environment variables. The workflows read each non-sensitive value
+from a GitHub variable first and fall back to a secret with the same name, so
+storing them as environment secrets also works when that is how the repository
+has been configured:
 
 | Variable | Environment | Purpose |
 |----------|-------------|---------|
-| `AWS_ROLE_TO_ASSUME_HOMELAB` | repository or `homelab-plan` | AWS role used by PR plans. |
-| `AWS_TERRAGRUNT_APPLY_ROLE_ARN` | `homelab-production` | AWS role used by protected post-merge applies. |
+| `AWS_ROLE_TO_ASSUME_HOMELAB` | repository, `homelab-plan`, or `homelab-production` | AWS role used by trusted PR plans and protected post-merge applies. |
 | `AZUREAD_CLIENT_ID` | `homelab-production` | Microsoft Entra application client ID used by the AzureAD provider. |
 | `AZUREAD_TENANT_ID` | `homelab-production` | Microsoft Entra tenant ID used by the AzureAD provider. |
 
@@ -154,8 +156,9 @@ image changes, and on a regular schedule.
 
 ## AWS Setup
 
-Use separate IAM roles for plan and apply. Both roles should trust GitHub OIDC
-only for this repository and the expected environment subject:
+The workflows use `AWS_ROLE_TO_ASSUME_HOMELAB` for both trusted PR plans and
+protected post-merge applies. That role should trust GitHub OIDC only for this
+repository and the expected environment subjects:
 
 ```json
 {
@@ -170,7 +173,10 @@ only for this repository and the expected environment subject:
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:Stuhlmuller/homelab:environment:homelab-production"
+          "token.actions.githubusercontent.com:sub": [
+            "repo:Stuhlmuller/homelab:environment:homelab-plan",
+            "repo:Stuhlmuller/homelab:environment:homelab-production"
+          ]
         }
       }
     }
@@ -178,13 +184,7 @@ only for this repository and the expected environment subject:
 }
 ```
 
-Use `repo:Stuhlmuller/homelab:environment:homelab-plan` for the plan role.
-The plan role should have the narrowest read access that lets OpenTofu refresh
-state and create state lock files for the bootstrap and Argo CD Application
-registration stacks. It does not need to refresh the SSM declaration stack.
-
-Set `AWS_TERRAGRUNT_APPLY_ROLE_ARN` in `homelab-production` to the role used by
-the protected apply workflow. That role needs the write permissions for the
+Because the same role is used for apply, it must have write permissions for the
 resources represented under `IaC/`, including S3 state lock writes and OpenTofu
 state encryption access to `alias/homelab-opentofu` in the state region
 (`us-east-1`). Required state-key permissions include `kms:Decrypt`,
@@ -196,7 +196,11 @@ state encryption access to `alias/homelab-opentofu` in the state region
 The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
 `ARM_TENANT_ID` environment variables mapped from the protected GitHub
 environment values above. Keep those credentials scoped to the Grafana Entra
-application workflow.
+application workflow. The production apply script applies
+`IaC/live/azuread-applications` when those credentials are configured. When they
+are not configured, it skips that phase only if the push did not change the
+AzureAD stack; AzureAD stack changes and manual dispatches require the
+credentials so identity drift is not silently ignored.
 
 ## Local Equivalents
 
