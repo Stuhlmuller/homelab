@@ -29,8 +29,12 @@ Use [[templates/knowledge-update]] for new entries.
 - Replaced the finance namespace Hummingbot CLI workload with OctoBot using
   `drakkarsoftware/octobot:2.1.1`, NFS-backed `user`, `tentacles`, and `logs`
   PVCs, and the tailnet-only `https://octobot.stinkyboi.com` Istio route.
-- Removed the Hummingbot ExternalSecret and SSM parameter contract because
-  OctoBot setup and exchange credentials are UI-managed runtime state on PVCs.
+- Retired the Hummingbot workload into a PVC-only Argo CD Application so Argo
+  prunes the old Deployment, Service, ExternalSecret, and route while keeping
+  rollback data protected.
+- Kept `/homelab/hummingbot/config-password` declared while the retired
+  Hummingbot PVCs exist; OctoBot setup and exchange credentials are UI-managed
+  runtime state on OctoBot PVCs.
 - Updated app inventory, storage, ingress, image automation, runtime isolation,
   rollback, and secrets notes so OctoBot is the current finance app.
 

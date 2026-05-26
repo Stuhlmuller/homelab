@@ -72,6 +72,11 @@ are configured through the UI and stored on the PVCs. Start with paper trading;
 before enabling live trading, document backtest and paper-trading evidence and
 confirm withdrawal access is disabled at the exchange.
 
+The older Hummingbot workload is retired in place. Its Argo CD Application now
+keeps only the `hummingbot-*` PVCs so Argo can prune the old workload resources
+without deleting rollback data. The old `/homelab/hummingbot/config-password`
+SSM parameter remains declared until those PVCs are archived or removed.
+
 ## OpenClaw
 
 OpenClaw persists runtime state on `/data/openclaw`. The startup bootstrap

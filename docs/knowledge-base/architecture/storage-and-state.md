@@ -32,8 +32,9 @@ ready, but they must not be treated as production-ready until:
 ## Stateful Apps
 
 The current stateful set includes Prometheus, Grafana, Deluge, media-postgres,
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. Freqtrade and
-Hummingbot are historical finance-app notes unless reintroduced by a future
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. Hummingbot is
+retired but keeps PVC-only rollback state until a separate retention decision
+archives or removes it. Freqtrade is historical unless reintroduced by a future
 desired-state change. See [[workloads/inventory]] for ownership and dependency
 notes.
 
