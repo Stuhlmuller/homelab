@@ -42,11 +42,19 @@ Source: `docs/ci-cd.md`
 - `homelab-production`: post-merge applies, reviewer-gated, branch-limited to
   `main`.
 
-Both need `TS_AUTH_KEY` and `KUBE_CONFIG_B64`. AWS role values are documented in
-the source runbook. `homelab-production` also needs
-`AWS_TERRAGRUNT_APPLY_ROLE_ARN`, `AZUREAD_CLIENT_ID`, `AZUREAD_TENANT_ID`, and
-`AZUREAD_CLIENT_SECRET`; the apply role must include OpenTofu state KMS access
-to `alias/homelab-opentofu` in `us-east-1`.
+Both need `TS_AUTH_KEY` and `KUBE_CONFIG_B64`. `AWS_ROLE_TO_ASSUME_HOMELAB` is
+used by both trusted PR plans and protected post-merge applies, so it must trust
+the `homelab-plan` and `homelab-production` GitHub OIDC subjects and include
+apply-level OpenTofu state KMS access to `alias/homelab-opentofu` in
+`us-east-1`. The workflows resolve non-sensitive role/client/tenant values from
+GitHub variables first and same-named secrets as a fallback, while
+`AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`, and `KUBE_CONFIG_B64` remain secret-only
+inputs.
+
+`IaC/live/azuread-applications` is applied only when Entra credentials are
+configured. Without those credentials, push applies skip that phase when the
+AzureAD stack did not change; AzureAD stack changes and manual dispatches still
+fail fast so identity drift is not hidden.
 
 ## Tailscale CI Route
 

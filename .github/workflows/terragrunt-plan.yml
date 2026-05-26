@@ -70,6 +70,8 @@ jobs:
       id-token: write
       pull-requests: write
     timeout-minutes: 60
+    env:
+      AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
     steps:
       - name: Check Out Repository
         # actions/checkout@v5
@@ -83,6 +85,10 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Verify Live Plan Inputs
+        run: |
+          test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
+
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
@@ -90,7 +96,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
           role-session-name: homelab-terragrunt-plan-${{ github.run_id }}
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          role-to-assume: ${{ env.AWS_PLAN_ROLE_ARN }}
           unset-current-credentials: true
 
       - name: Connect To Tailnet

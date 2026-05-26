@@ -10,6 +10,20 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-26 - Accept secret fallback for Terragrunt CI inputs
+
+- Updated the trusted PR plan and protected production apply workflows so
+  non-sensitive role, client, and tenant identifiers can come from GitHub
+  variables or same-named secrets.
+- Added early input checks before AWS role assumption so missing GitHub
+  environment configuration fails before tailnet or live Terragrunt work starts.
+- Kept post-merge applies moving when Entra credentials are not configured by
+  skipping the AzureAD phase only for pushes that did not touch the AzureAD
+  stack.
+- Consolidated plan and apply AWS role selection on `AWS_ROLE_TO_ASSUME_HOMELAB`
+  so the same GitHub variable can drive both trusted PR plans and production
+  applies.
+
 ### 2026-05-26 - Restore OpenClaw Codex subscription route
 
 - Updated OpenClaw from `2026.3.1` to `2026.5.20` so the bundled `codex`
