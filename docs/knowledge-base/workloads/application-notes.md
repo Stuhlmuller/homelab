@@ -132,6 +132,14 @@ The Deployment runs one replica after the GitHub App ID, private key, OAuth
 client ID, and OAuth client secret placeholders are replaced in SSM. Scale it
 back to zero in git before reintroducing placeholder config.
 
+Policy Bot's `integration_id` field is the GitHub App ID from the app's general
+settings page, not the installation ID or OAuth client ID. A startup log with
+`failed to get configured GitHub app` and `404 Integration not found` from
+`https://api.github.com/app` means the rendered app ID and private key do not
+identify the same active GitHub App. The ExternalSecret uses
+`refreshPolicy: OnChange`, so SSM fixes need a repo-owned metadata change and
+Argo CD sync before the rendered Kubernetes Secret changes.
+
 ## Prometheus
 
 Prometheus persists metrics and Alertmanager state on `nfs-default`.

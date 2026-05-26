@@ -80,6 +80,16 @@ Use [[templates/knowledge-update]] for new entries.
   labels and recorded the route in ingress, runtime-isolation, image-updater,
   and workload notes.
 
+### 2026-05-25 - Clarify Policy Bot GitHub App identity
+
+- Documented that Policy Bot's `integration_id` setting maps to the GitHub App
+  ID, not the installation ID or OAuth client ID.
+- Added the `404 Integration not found` startup failure mode so future repairs
+  check the GitHub App ID/private-key pairing before troubleshooting ingress or
+  External Secrets.
+- Recorded the `refreshPolicy: OnChange` follow-up so SSM repairs are rolled
+  through a repo-owned ExternalSecret change and Argo CD sync.
+
 ### 2026-05-25 - Enable Policy Bot replica
 
 - Changed Policy Bot from a credential-gated suspended Deployment to one desired
