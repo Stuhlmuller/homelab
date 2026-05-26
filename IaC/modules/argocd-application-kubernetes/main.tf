@@ -51,19 +51,30 @@ locals {
   )
 
   destination = {
-    name      = try(var.destination.name, null)
+    # The Kubernetes provider's CRD schema expects this key even when Argo CD uses server-based destinations.
+    name      = try(var.destination.name, null) != null ? var.destination.name : ""
     namespace = try(var.destination.namespace, null)
     server    = try(var.destination.server, null)
   }
 
-  computed_fields = var.computed_fields == null ? [] : var.computed_fields
+  default_computed_fields = concat(
+    [
+      "metadata.annotations",
+      "metadata.labels",
+      "spec.destination.name",
+    ],
+    [for index in range(length(local.sources)) : "spec.sources[${index}].path"]
+  )
+  computed_fields = var.computed_fields == null ? local.default_computed_fields : distinct(concat(local.default_computed_fields, var.computed_fields))
 
   sources = [
     for source in var.sources : merge(
       { repoURL = source.repo_url },
       try(source.chart, null) != null ? { chart = source.chart } : {},
       try(source.name, null) != null ? { name = source.name } : {},
-      try(source.path, null) != null ? { path = source.path } : {},
+      try(source.path, null) != null ? { path = source.path } : (
+        try(source.chart, null) != null || try(source.ref, null) != null || try(source.directory, null) != null ? { path = "." } : {}
+      ),
       try(source.ref, null) != null ? { ref = source.ref } : {},
       try(source.target_revision, null) != null ? { targetRevision = source.target_revision } : {},
       try(source.directory, null) != null ? {
