@@ -22,6 +22,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 |-----|------------------|---------------|
 | argocd | `https://argocd.stinkyboi.com` | disabled |
 | grafana | `https://grafana.stinkyboi.com` | disabled |
+| kiali | `https://kiali.stinkyboi.com` | disabled |
 | deluge | `https://deluge.stinkyboi.com` | disabled |
 | prowlarr | `https://prowlarr.stinkyboi.com` | disabled |
 | radarr | `https://radarr.stinkyboi.com` | disabled |
@@ -51,8 +52,9 @@ Every other Istio gateway and VirtualService route manifest remains
 tailnet-only.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
-the reviewed metrics UI, and direct Prometheus ingress must not be restored
-without a documented authentication plan and rollback path.
+the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct
+Prometheus ingress must not be restored without a documented authentication plan
+and rollback path.
 
 OctoBot exposes its UI only through the tailnet Istio route at
 `https://octobot.stinkyboi.com`. The route is intended for private setup,
