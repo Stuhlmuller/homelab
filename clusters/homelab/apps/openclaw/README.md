@@ -39,6 +39,11 @@ repo for OpenClaw. ChatGPT Pro subscription access is separate from API-key
 billing, but OpenAI Codex can sign in with a ChatGPT plan and store local
 credentials on the OpenClaw PVC.
 
+The pod startup bootstrap enables the bundled `codex` plugin and sets the
+default agent model to the canonical Codex-backed OpenAI route,
+`openai/gpt-5.5`. The older `openai-codex/gpt-*` model refs are legacy routes
+and should not be used for new default config.
+
 Run the interactive login from a tailnet-connected operator machine:
 
 ```sh
@@ -46,14 +51,21 @@ kubectl -n ai exec -it deploy/openclaw -c app -- \
   openclaw models auth login --provider openai-codex --set-default
 ```
 
-Then set and verify the default model:
+For a headless terminal or callback-hostile network, use the device-code flow:
 
 ```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models set openai-codex/gpt-5.3-codex
+  openclaw models auth login --provider openai-codex --device-code --set-default
+```
 
+Then verify the default model and plugin-backed runtime:
+
+```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
   openclaw models status --plain
+
+kubectl -n ai exec deploy/openclaw -c app -- \
+  openclaw models list --provider openai-codex
 ```
 
 Those OAuth credentials persist on the `/data/openclaw` volume and should not be
