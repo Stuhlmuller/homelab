@@ -46,10 +46,13 @@ Both need `TS_AUTH_KEY` and `KUBE_CONFIG_B64`. `AWS_ROLE_TO_ASSUME_HOMELAB` is
 used by both trusted PR plans and protected post-merge applies, so it must trust
 the `homelab-plan` and `homelab-production` GitHub OIDC subjects and include
 apply-level OpenTofu state KMS access to `alias/homelab-opentofu` in
-`us-east-1`. The workflows resolve non-sensitive role/client/tenant values from
-GitHub variables first and same-named secrets as a fallback, while
-`AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`, and `KUBE_CONFIG_B64` remain secret-only
-inputs.
+`us-east-1`. The same role also needs identity-based KMS access on the resolved
+`us-west-2` SSM SecureString key ARN managed by `IaC/live/aws-ssm-parameters`;
+state-key-only access fails during SSM provider refresh with
+`AccessDeniedException` for `kms:DescribeKey`. The workflows resolve
+non-sensitive role/client/tenant values from GitHub variables first and
+same-named secrets as a fallback, while `AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`,
+and `KUBE_CONFIG_B64` remain secret-only inputs.
 
 `IaC/live/azuread-applications` is applied only when Entra credentials are
 configured. Without those credentials, push applies skip that phase when the

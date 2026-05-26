@@ -11,6 +11,9 @@ External Secrets reads runtime secret material from AWS SSM Parameter Store in
 names, but never secret values.
 
 Parameter paths use `/homelab/<app>/<name>`.
+SecureString parameters use a `us-west-2` KMS key managed by
+`IaC/live/aws-ssm-parameters` under `alias/homelab-opentofu`. That key is
+separate from the OpenTofu remote-state key with the same alias in `us-east-1`.
 
 ## Bootstrap Order
 
@@ -21,6 +24,9 @@ Parameter paths use `/homelab/<app>/<name>`.
 
 The Kubernetes Secret stack refuses to apply while either required SSM value is
 empty or still `REPLACE_ME`.
+If the SSM declaration apply fails on `kms:DescribeKey` for a `us-west-2` key,
+grant the apply role identity-based access to that resolved SSM key ARN; do not
+change External Secrets or SSM values to fix the IAM refresh failure.
 
 ## Namespace Allow-List
 

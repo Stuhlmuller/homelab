@@ -15,6 +15,11 @@ Secrets. External Secrets itself uses a Kubernetes Secret created through the
 after placeholder SSM parameters exist and real credential values are injected
 outside git.
 
+The SSM SecureString key is managed by `IaC/live/aws-ssm-parameters` in
+`us-west-2` under `alias/homelab-opentofu`. It is distinct from the
+OpenTofu remote-state key with the same alias in `us-east-1`; production apply
+roles need identity-based KMS permissions for both keys.
+
 ## AWS SSM Pattern
 
 - Public parameter prefix: `/homelab/<app>/<name>`

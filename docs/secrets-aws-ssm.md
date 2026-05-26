@@ -5,6 +5,10 @@ repository may commit parameter names and Kubernetes Secret target names, but it
 must not commit secret values.
 
 All homelab runtime secret parameters live in AWS region `us-west-2`.
+The Terragrunt stack at `IaC/live/aws-ssm-parameters` manages those parameters
+as SecureStrings with a regional KMS key. It inherits the repository KMS alias
+`alias/homelab-opentofu`, but the SSM key is a `us-west-2` key and is separate
+from the OpenTofu remote-state key in `us-east-1`.
 
 ## Placeholder Rules
 
@@ -37,6 +41,11 @@ The `IaC/live/aws-ssm-parameters` stack also attaches the existing
 `homelab-ssm-parameter-reader` policy lets External Secrets read both
 placeholder parameters and listed Entra-managed SSO parameters, and call
 `kms:Decrypt`.
+
+Operators applying `IaC/live/aws-ssm-parameters` also need identity-based KMS
+permissions on the resolved `us-west-2` SSM key ARN. An apply role that can
+only use the `us-east-1` state key will still fail during provider refresh with
+`AccessDeniedException` for `kms:DescribeKey` on the SSM key.
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
