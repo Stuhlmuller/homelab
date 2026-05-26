@@ -19,7 +19,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected app-registration plan currently references 17 requested Argo CD
+Expected app-registration plan currently references 18 requested Argo CD
 Applications plus `platform-dns`, `platform-storage`, and `media-postgres`.
 
 ## Render And Diff
@@ -49,7 +49,8 @@ placeholders.
 
 Upstream apps must be registered, synced, and healthy before dependent apps are
 considered available. Check `external-secrets`, `cert-manager`, `istio`,
-`tailscale`, `argocd-image-updater`, `platform-dns`, and `platform-storage`.
+`tailscale`, `argocd-image-updater`, `kiali`, `platform-dns`, and
+`platform-storage`.
 
 Policy Bot has extra route checks: the tailnet UI should redirect to auth, the
 public webhook should return `400` for an unsigned empty request, and the

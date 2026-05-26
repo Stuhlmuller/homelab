@@ -64,6 +64,15 @@ Use [[templates/knowledge-update]] for new entries.
 - Updated OpenClaw operator docs and app notes so Codex OAuth remains
   PVC-backed runtime state instead of an SSM secret or committed API key.
 
+### 2026-05-26 - Add Kiali mesh UI
+
+- Added the `kiali` Argo CD Application and desired state using the official
+  Kiali operator Helm chart.
+- Exposed Kiali at `https://kiali.stinkyboi.com` through the tailnet-only Istio
+  gateway with anonymous read-only access.
+- Updated monitoring AuthorizationPolicies so Kiali can query Grafana and
+  Prometheus without opening direct Prometheus ingress.
+
 ### 2026-05-26 - Serialize trusted Terragrunt PR plans
 
 - Added a shared concurrency gate to the trusted PR `Terragrunt Plan` job so

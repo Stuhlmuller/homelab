@@ -13,4 +13,5 @@ spec:
         - source:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/monitoring/sa/kiali-service-account
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus

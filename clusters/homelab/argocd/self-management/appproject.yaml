@@ -16,6 +16,7 @@ spec:
     - https://charts.jetstack.io
     - https://grafana.github.io/helm-charts
     - https://istio-release.storage.googleapis.com/charts
+    - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
     - https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
     - https://pkgs.tailscale.com/helmcharts

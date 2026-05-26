@@ -19,7 +19,7 @@ cd IaC/live/argocd-apps
 terragrunt run --all plan -no-color
 ```
 
-Expected result: 17 requested Argo CD Applications plus the support
+Expected result: 18 requested Argo CD Applications plus the support
 Applications `platform-dns`, `platform-storage`, and `media-postgres` are
 planned, and every upstream relationship appears in a Terragrunt `dependencies`
 block.
@@ -63,9 +63,22 @@ argocd app get cert-manager
 argocd app get istio
 argocd app get tailscale
 argocd app get argocd-image-updater
+argocd app get kiali
 argocd app get platform-dns
 argocd app get platform-storage
 ```
+
+For Kiali, verify the operator-created custom resource and tailnet UI:
+
+```sh
+kubectl -n monitoring get kiali kiali
+kubectl -n monitoring get deploy,svc kiali
+curl -I https://kiali.stinkyboi.com
+```
+
+Expected result: the Kiali Application is synced and healthy, the Kiali custom
+resource is successfully reconciled, and the tailnet HTTPS route reaches the
+read-only UI.
 
 For image automation, confirm the controller and selector CR exist before
 relying on update pull requests:
@@ -159,6 +172,16 @@ migration.
   `nix flake check --no-build --all-systems` passed before live rollout.
   Focused Prowlarr Terragrunt initialization and validation use the
   repository-local `IaC/modules/argocd-application-kubernetes` module.
+- Kiali desired state was added on 2026-05-26. `terragrunt hcl fmt --check`,
+  `terragrunt hcl validate`, `kubectl kustomize clusters/homelab/apps/kiali`,
+  `helm template kiali-operator kiali-operator --repo
+  https://kiali.org/helm-charts --version 2.26.0 --namespace istio-system -f
+  clusters/homelab/apps/kiali/values.yaml`, focused
+  `terragrunt --log-disable validate -no-color`, focused
+  `terragrunt --log-disable plan -no-color`, `git diff --check`, repository
+  secret scanning, and `nix develop --command bash scripts/ci/static-checks.sh`
+  passed before any live rollout. The focused Kiali plan showed `1 to add, 0
+  to change, 0 to destroy`.
 
 ## Failure Modes
 
