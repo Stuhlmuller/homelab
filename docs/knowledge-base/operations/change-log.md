@@ -20,6 +20,12 @@ Use [[templates/knowledge-update]] for new entries.
   memory limit.
 - Added a small proxy resource profile and documented the allocation in the
   OpenClaw README and workload knowledge-base notes.
+### 2026-05-26 - Forward Terragrunt apply flags explicitly
+
+- Updated `scripts/ci/terragrunt-apply.sh` so stack-wide apply phases call
+  `terragrunt run --all -- apply -no-color -auto-approve`, matching
+  Terragrunt 1.x flag parsing and forwarding OpenTofu flags correctly.
+- Documented the flag-forwarding requirement in the CI/CD runbook note.
 
 ### 2026-05-26 - Clarify SSM KMS apply-role access
 
