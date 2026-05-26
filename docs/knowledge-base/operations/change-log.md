@@ -16,6 +16,22 @@ Use [[templates/knowledge-update]] for new entries.
   so Imported Insights and Memory Palace are available from the Control UI.
 - Updated OpenClaw app docs and workload notes to keep the UI reload step tied
   to the repo-owned config path.
+### 2026-05-26 - Increase OpenClaw resource profile
+
+- Added explicit OpenClaw app resources for Codex-backed agent work: `1` CPU
+  and `2Gi` memory requested, `6Gi` memory limit, and no CPU limit so work can
+  burst when node capacity is available.
+- Added bootstrap init-container resources so config validation and channel
+  plugin installation have `500m` CPU and `1Gi` memory requested with a `3Gi`
+  memory limit.
+- Added a small proxy resource profile and documented the allocation in the
+  OpenClaw README and workload knowledge-base notes.
+### 2026-05-26 - Forward Terragrunt apply flags explicitly
+
+- Updated `scripts/ci/terragrunt-apply.sh` so stack-wide apply phases call
+  `terragrunt run --all -- apply -no-color -auto-approve`, matching
+  Terragrunt 1.x flag parsing and forwarding OpenTofu flags correctly.
+- Documented the flag-forwarding requirement in the CI/CD runbook note.
 
 ### 2026-05-26 - Clarify SSM KMS apply-role access
 
@@ -71,6 +87,15 @@ Use [[templates/knowledge-update]] for new entries.
 - Updated OpenClaw operator docs and app notes so Codex OAuth remains
   PVC-backed runtime state instead of an SSM secret or committed API key.
 
+### 2026-05-26 - Add Kiali mesh UI
+
+- Added the `kiali` Argo CD Application and desired state using the official
+  Kiali operator Helm chart.
+- Exposed Kiali at `https://kiali.stinkyboi.com` through the tailnet-only Istio
+  gateway with anonymous read-only access.
+- Updated monitoring AuthorizationPolicies so Kiali can query Grafana and
+  Prometheus without opening direct Prometheus ingress.
+
 ### 2026-05-26 - Serialize trusted Terragrunt PR plans
 
 - Added a shared concurrency gate to the trusted PR `Terragrunt Plan` job so
@@ -120,6 +145,13 @@ Use [[templates/knowledge-update]] for new entries.
   External Secrets.
 - Recorded the `refreshPolicy: OnChange` follow-up so SSM repairs are rolled
   through a repo-owned ExternalSecret change and Argo CD sync.
+
+### 2026-05-25 - Preserve runtime security audit WIP
+
+- Preserved namespace Pod Security hardening so non-privileged namespaces keep
+  `baseline` enforcement while warning and auditing against `restricted`.
+- Preserved service-account token and Istio LoadBalancer node-port hardening
+  notes from the audit worktree for review in a dedicated draft PR.
 
 ### 2026-05-25 - Enable Policy Bot replica
 

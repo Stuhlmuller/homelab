@@ -20,8 +20,14 @@ unless an app-specific exception is documented here.
 | Media NFS export path | `/media` |
 
 NFS is enabled from QTS at Control Panel > Network & File Services >
-Win/Mac/NFS/WebDAV > NFS Service. The current NAS configuration enables
-NFSv2/NFSv3, and Kubernetes mounts the export with `nfsvers=3`.
+Win/Mac/NFS/WebDAV > NFS Service. Kubernetes mounts the export with
+`nfsvers=3`.
+
+Security audit note from 2026-05-25: read-only `rpcinfo -p 10.1.0.2` showed
+the NAS advertising both NFSv2 and NFSv3. Kubernetes does not need NFSv2.
+Disable NFSv2 in QTS after confirming no non-Kubernetes clients depend on it,
+then re-run `rpcinfo -p 10.1.0.2` and confirm only the required NFS version is
+advertised.
 
 The `homelab` shared folder grants NFS read/write access only to the Talos node
 addresses. The `Media` shared folder must use the same node allow-list before
@@ -80,7 +86,7 @@ Important settings:
 | Namespace | `storage` | Keeps storage controller resources out of app namespaces |
 | `nfs.server` | `10.1.0.2` | QNAP NAS address |
 | `nfs.path` | `/homelab` | Export path verified with `showmount` |
-| `nfs.mountOptions` | `nfsvers=3` | Matches the enabled QNAP NFS service |
+| `nfs.mountOptions` | `nfsvers=3` | Matches the Kubernetes-supported NAS NFS mode |
 | StorageClass | `nfs-default` | Stable class name for homelab PVCs |
 | `defaultClass` | `true` | Allows ordinary PVCs to bind without per-app overrides |
 | `provisionerName` | `k8s-sigs.io/qnap-nfs` | Stable provisioner identity |
@@ -200,3 +206,7 @@ app has acceptable backup and restore coverage.
 - A temporary PVC smoke test on 2026-05-24 dynamically provisioned storage,
   mounted it into a pod, wrote `smoke.txt`, read it back, and then removed the
   temporary PVC, pod, and smoke-test StorageClass.
+- Read-only QNAP checks on 2026-05-25 confirmed `/homelab` remains exported
+  only to `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`. The same
+  audit found NFSv2 still advertised through RPC; disable it in QTS because the
+  Kubernetes StorageClass mounts with NFSv3.

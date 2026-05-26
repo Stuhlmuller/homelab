@@ -1,0 +1,46 @@
+metrics:
+  enabled: true
+
+debug:
+  enabled: false
+
+onlyViewOnlyMode: true
+allowAdHocKialiNamespace: false
+allowAdHocKialiImage: false
+allowAdHocOSSMConsoleImage: false
+allowAdHocContainers: false
+allowSecurityContextOverride: false
+
+cr:
+  create: true
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  spec:
+    istio_namespace: istio-system
+    auth:
+      strategy: anonymous
+    deployment:
+      namespace: monitoring
+      cluster_wide_access: true
+      service_type: ClusterIP
+      view_only_mode: true
+      resources:
+        requests:
+          cpu: 25m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
+    external_services:
+      grafana:
+        enabled: true
+        external_url: https://grafana.stinkyboi.com
+        internal_url: http://grafana.monitoring.svc.cluster.local
+      prometheus:
+        enabled: true
+        url: http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+    server:
+      web_fqdn: kiali.stinkyboi.com
+      web_port: "443"
+      web_root: /
+      web_schema: https

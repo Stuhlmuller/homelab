@@ -56,6 +56,14 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
 repo-owned values. Discord webhook URL comes from SSM through External Secrets.
 
+## Kiali
+
+Kiali is the reviewed read-only Istio mesh UI at
+`https://kiali.stinkyboi.com`. The `kiali` Argo CD Application installs the
+official Kiali operator chart and creates a Kiali CR in `monitoring` with
+anonymous access plus `view_only_mode: true`. Monitoring AuthorizationPolicies
+allow `kiali-service-account` to query Grafana and Prometheus.
+
 ## OctoBot
 
 OctoBot is the finance namespace trading bot with a real web UI. It runs from
@@ -99,6 +107,9 @@ Memory Palace are available after the Control UI tab is reloaded. The
 bootstrap runs safe `openclaw doctor --fix --non-interactive` repairs when the
 persisted PVC config does not validate against the current OpenClaw schema, and
 sets `gateway.mode` to `local` for the container-managed gateway process.
+OpenClaw has an explicit agent-heavy resource profile: the app requests `1`
+CPU and `2Gi` memory with a `6Gi` memory cap and no CPU limit, while bootstrap
+gets enough memory to validate config and install channel plugins at startup.
 
 ## Media PostgreSQL
 

@@ -22,6 +22,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 |-----|------------------|---------------|
 | argocd | `https://argocd.stinkyboi.com` | disabled |
 | grafana | `https://grafana.stinkyboi.com` | disabled |
+| kiali | `https://kiali.stinkyboi.com` | disabled |
 | deluge | `https://deluge.stinkyboi.com` | disabled |
 | prowlarr | `https://prowlarr.stinkyboi.com` | disabled |
 | radarr | `https://radarr.stinkyboi.com` | disabled |
@@ -50,9 +51,17 @@ VirtualService remains annotated with `homelab.rst.io/public-funnel: "false"`.
 Every other Istio gateway and VirtualService route manifest remains
 tailnet-only.
 
+The Istio ingressgateway Service is a Tailscale `LoadBalancer` and sets
+`allocateLoadBalancerNodePorts: false` so the gateway is not exposed through
+high NodePorts on every Talos node. A 2026-05-25 read-only scan found existing
+NodePorts from the earlier Service revision. After Argo CD syncs this desired
+state, verify those ports are gone with `kubectl -n istio-system get svc
+istio-ingressgateway -o yaml` and a focused node-port scan.
+
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
-the reviewed metrics UI, and direct Prometheus ingress must not be restored
-without a documented authentication plan and rollback path.
+the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct
+Prometheus ingress must not be restored without a documented authentication plan
+and rollback path.
 
 OctoBot exposes its UI only through the tailnet Istio route at
 `https://octobot.stinkyboi.com`. The route is intended for private setup,

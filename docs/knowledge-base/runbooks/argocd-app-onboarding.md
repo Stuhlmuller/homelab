@@ -15,9 +15,10 @@ registration and sources the repository-local
 under `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`.
 
 The current app onboarding runbook includes the requested apps plus support
-Applications. OctoBot is the current finance namespace app; Hummingbot remains
-as a retired PVC-only Application for rollback data, and Freqtrade is
-historical unless a future change reintroduces it.
+Applications. Kiali is the read-only Istio mesh UI, and OctoBot is the current
+finance namespace app. Hummingbot remains as a retired PVC-only Application for
+rollback data, and Freqtrade is historical unless a future change reintroduces
+it.
 
 ## Support Applications
 
