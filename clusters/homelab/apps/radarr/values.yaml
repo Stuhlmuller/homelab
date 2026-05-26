@@ -5,6 +5,7 @@ controllers:
     serviceAccount:
       identifier: radarr
     pod:
+      automountServiceAccountToken: false
       annotations:
         homelab.rst.io/mesh-mode: "tailnet-ingress"
     initContainers:

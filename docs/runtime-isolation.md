@@ -24,7 +24,9 @@ Current enforced controls are therefore:
 Non-privileged runtime namespaces use the `baseline` Pod Security profile so
 new workloads cannot silently add privileged containers, host networking,
 hostPath mounts, or other host-level access. Move a namespace to `privileged`
-only with the documented justification and owner below.
+only with the documented justification and owner below. These namespaces warn
+and audit against the stricter `restricted` profile so future chart changes
+surface before becoming production assumptions.
 
 ## Istio Ambient Service Access
 
@@ -104,6 +106,13 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 Do not broaden privileged admission for convenience. If another workload needs
 privileged mode, add the reason, owner, rollback note, and safer alternatives in
 the same PR as the manifest change.
+
+Security audit note from 2026-05-25: `media` is broader than ideal because
+Sonarr, Radarr, Prowlarr, and media PostgreSQL share the namespace with the
+Deluge VPN Pod that needs `/dev/net/tun`. Do not add more privileged workloads
+to `media`. The long-term hardening path is to move Deluge and its shared
+downloads contract into a dedicated privileged namespace or replace the VPN
+pattern with one that does not require privileged namespace admission.
 
 ## Network Policy Placeholder
 

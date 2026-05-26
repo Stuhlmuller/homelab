@@ -21,6 +21,16 @@ The parent audit reported:
 Treat `10.1.0.216` as stale. It may still appear in live service-account issuer
 discovery until the control-plane machine config is corrected and applied.
 
+Security refresh on 2026-05-25:
+
+- Kubernetes `v1.34.1` is still on a supported upstream minor, but upstream
+  `1.34` has newer patch releases. Plan a Kubernetes patch upgrade after
+  reading the current `1.34` changelog.
+- Talos `v1.11.3` is behind the current Talos security baseline. Sidero's
+  CVE-2026-31431 guidance recommends upgrading clusters to Talos `1.12.7` or
+  newer, or `1.13.0` or newer. Treat a Talos minor upgrade as a separate
+  maintenance change with validated machine config and a node-by-node rollout.
+
 ## Desired Service-Account Issuer State
 
 The desired service-account issuer is the canonical Kubernetes API endpoint:
@@ -166,8 +176,8 @@ baseline from the parent audit is Talos `v1.11.3` and Kubernetes `v1.34.1`.
    kubectl get nodes -o wide
    ```
 
-   Then check the Talos support matrix, Talos release notes, and Kubernetes
-   release notes for the selected target versions.
+   Then check the Talos support matrix, Talos release notes, Talos security
+   guidance, and Kubernetes release notes for the selected target versions.
 
 2. Choose targets:
 

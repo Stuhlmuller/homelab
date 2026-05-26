@@ -5,6 +5,7 @@ controllers:
     serviceAccount:
       identifier: openclaw
     pod:
+      automountServiceAccountToken: false
       annotations:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
     initContainers:
