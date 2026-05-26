@@ -83,9 +83,10 @@ OpenClaw persists runtime state on `/data/openclaw`. The startup bootstrap
 keeps the tailnet Control UI origin allow-list in config. When
 `/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
 installs and enables the official `@openclaw/discord` plugin and writes a
-SecretRef to `DISCORD_BOT_TOKEN`. The plugin cache is an `emptyDir` mounted at
-`/data/openclaw/npm` because QNAP NFS maps PVC writes to `nobody`, and OpenClaw
-blocks code plugins with suspicious ownership. ChatGPT Pro access uses
+SecretRef to `DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory
+are `emptyDir` mounts at `/data/openclaw/npm` and
+`/data/openclaw/extensions` because QNAP NFS maps PVC writes to `nobody`, and
+OpenClaw blocks code plugins with suspicious ownership. ChatGPT Pro access uses
 interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
 secret or committed API key. The bootstrap also enables the bundled `codex`
 plugin and sets the default agent model to `openai/gpt-5.5`, which is the

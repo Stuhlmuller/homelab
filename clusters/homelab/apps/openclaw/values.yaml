@@ -187,3 +187,12 @@ persistence:
           - path: /data/openclaw/npm
         bootstrap-config:
           - path: /data/openclaw/npm
+  plugin-extensions:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      openclaw:
+        app:
+          - path: /data/openclaw/extensions
+        bootstrap-config:
+          - path: /data/openclaw/extensions
