@@ -66,6 +66,11 @@ The pull request workflow runs `scripts/ci/conftest-policies.sh` after the live
 Terragrunt plan step for trusted same-repository PRs. Run the same order locally
 when reproducing PR gate behavior.
 
+The trusted GitHub Actions PR plan job is serialized with a shared concurrency
+group because it reads the same OpenTofu S3 backend state across pull requests.
+Do not treat a queued PR plan as unhealthy; it is waiting for the live-state
+lock lane.
+
 ## Live Rollout Rule
 
 Do not mutate live cluster, Talos, cloud, Argo CD, or secret-manager state until
