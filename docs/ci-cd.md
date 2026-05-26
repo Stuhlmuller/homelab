@@ -57,7 +57,10 @@ run the static checks and Conftest only.
 - The protected post-merge apply runs the production phases explicitly:
   bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
   registrations, apply Argo CD Application registrations serially, and finally
-  materialize Kubernetes Secrets from SSM.
+  materialize Kubernetes Secrets from SSM. Stack-wide apply phases use
+  Terragrunt's explicit `run --all -- apply ...` form so OpenTofu flags such as
+  `-auto-approve` are forwarded to OpenTofu instead of being parsed as
+  Terragrunt CLI flags.
 
 References:
 
