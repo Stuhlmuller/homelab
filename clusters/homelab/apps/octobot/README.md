@@ -54,11 +54,9 @@ the tailnet.
 
 - Back up the PVCs before changing strategies, enabling real exchange accounts,
   or testing a major OctoBot upgrade.
-- This app replaces the earlier Hummingbot desired state. If the live
-  `hummingbot` Argo CD Application still exists, cut over deliberately: publish
-  the OctoBot source paths first, apply the OctoBot Application, verify the UI,
-  then destroy or prune the retired Hummingbot Application through the
-  Terragrunt/Argo CD path before relying on the Hummingbot source deletion.
+- This app replaces the earlier Hummingbot runtime. The retained Hummingbot
+  Argo CD Application is PVC-only rollback state and should not run a pod,
+  service, route, or ExternalSecret.
 - Prefer paper trading and backtesting until the configuration is proven.
 - Do not place exchange API keys in Git, Terragrunt inputs, Helm values,
   Kubernetes Secrets, or External Secrets without adding an explicit repository

@@ -14,9 +14,10 @@ registration and sources the repository-local
 `IaC/modules/argocd-application-kubernetes` module. Runtime desired state lives
 under `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`.
 
-The current app onboarding runbook says there are 17 requested apps plus
-support Applications. OctoBot is the current finance namespace app; Hummingbot
-and Freqtrade are historical unless a future change reintroduces them.
+The current app onboarding runbook includes the requested apps plus support
+Applications. OctoBot is the current finance namespace app; Hummingbot remains
+as a retired PVC-only Application for rollback data, and Freqtrade is
+historical unless a future change reintroduces it.
 
 ## Support Applications
 
