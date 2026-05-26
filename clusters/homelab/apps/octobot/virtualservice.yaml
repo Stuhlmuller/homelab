@@ -1,18 +1,18 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: hummingbot-tailnet
+  name: octobot-tailnet
   namespace: finance
   annotations:
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
-    - hummingbot.stinkyboi.com
+    - octobot.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:
     - route:
         - destination:
-            host: hummingbot.finance.svc.cluster.local
+            host: octobot.finance.svc.cluster.local
             port:
-              number: 8000
+              number: 5001

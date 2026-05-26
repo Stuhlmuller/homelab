@@ -8,11 +8,9 @@ units as the source of truth when they disagree with this note.
 
 ## Import Note
 
-This note reflects the current working tree at import time. Several app changes
-are in flight: Policy Bot and Hummingbot desired-state paths exist, while the
-Freqtrade desired-state files are deleted in the working tree. Recheck
-`clusters/homelab/apps`, `IaC/live/argocd-apps`, and
-`docs/argocd-app-onboarding.md` before applying or publishing the branch.
+This note reflects the current working tree. OctoBot is the finance namespace
+trading workload with a tailnet-only UI; older Freqtrade and Hummingbot
+desired-state paths are retired in this branch.
 
 ## Platform And Support Applications
 
@@ -42,7 +40,7 @@ Freqtrade desired-state files are deleted in the working tree. Recheck
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, Discord channel config, and Codex OAuth credentials on PVC | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, and instance settings; SSM key bootstraps fresh PVCs only | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
-| `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | persistent CLI bot config, logs, scripts, controllers, encrypted connector state, and tailnet-only status route | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and tailnet-only UI route | cert-manager, istio, tailscale, platform-storage |
 
 ## Mesh Policy Summary
 
@@ -63,9 +61,9 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
 
 ## In-Flight Or Historical Rows
 
-- `freqtrade` appears in older onboarding material, but its app and Terragrunt
-  files are deleted in the current working tree. Treat it as removed or
-  superseded by Hummingbot only after the owning PR reconciles the source docs.
+- `freqtrade` and `hummingbot` appear only in older historical notes. Treat both
+  as retired unless a future change intentionally reintroduces them with new
+  desired-state paths and docs.
 
 ## Update Checklist
 

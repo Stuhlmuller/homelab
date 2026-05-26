@@ -53,21 +53,24 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
 repo-owned values. Discord webhook URL comes from SSM through External Secrets.
 
-## Hummingbot
+## OctoBot
 
-Hummingbot is an in-flight finance workload in the current working tree. It is
-a persistent CLI trading client with six PVCs on `nfs-default`. Its
-tailnet-only Istio route at `https://hummingbot.stinkyboi.com` serves a status
-page from the `route-status` sidecar only; it is not the Hummingbot API and does
-not expose trading controls. Operators attach with:
+OctoBot is the finance namespace trading bot with a real web UI. It runs from
+the upstream `drakkarsoftware/octobot` image, listens on container port `5001`,
+and exposes only the tailnet Istio route at `https://octobot.stinkyboi.com`.
+State persists on the `octobot-user`, `octobot-tentacles`, and `octobot-logs`
+PVCs using `nfs-default`.
 
 ```sh
-kubectl -n finance attach -it deploy/hummingbot -c app
+kubectl -n finance get deploy,pod,pvc,svc -l app.kubernetes.io/instance=octobot
+curl -I https://octobot.stinkyboi.com
 ```
 
 Do not add exchange API credentials, live-trading autostart, or strategy config
-until a separate PR documents backtest and paper-trading evidence and disables
-withdrawal access at the exchange.
+to git. First-run setup, tentacles, strategy state, and exchange credentials
+are configured through the UI and stored on the PVCs. Start with paper trading;
+before enabling live trading, document backtest and paper-trading evidence and
+confirm withdrawal access is disabled at the exchange.
 
 ## OpenClaw
 

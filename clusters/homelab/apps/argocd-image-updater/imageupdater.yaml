@@ -49,44 +49,23 @@ spec:
             helm:
               name: controllers.deluge.containers.port-config.image.repository
               tag: controllers.deluge.containers.port-config.image.tag
-    - namePattern: hummingbot
+    - namePattern: octobot
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
         method: git:secret:argocd/argocd-image-updater-git
         gitConfig:
           repository: https://github.com/Stuhlmuller/homelab.git
           branch: main
-          writeBackTarget: helmvalues:/clusters/homelab/apps/hummingbot/values.yaml
+          writeBackTarget: helmvalues:/clusters/homelab/apps/octobot/values.yaml
           pullRequest:
             github: {}
       images:
-        - alias: hummingbotBootstrap
-          imageName: hummingbot/hummingbot
-          commonUpdateSettings:
-            updateStrategy: newest-build
-            allowTags: regexp:^version-[0-9]+\.[0-9]+\.[0-9]+$
+        - alias: octobot
+          imageName: drakkarsoftware/octobot:2.x
           manifestTargets:
             helm:
-              name: controllers.hummingbot.initContainers.bootstrap-password.image.repository
-              tag: controllers.hummingbot.initContainers.bootstrap-password.image.tag
-        - alias: hummingbotApp
-          imageName: hummingbot/hummingbot
-          commonUpdateSettings:
-            updateStrategy: newest-build
-            allowTags: regexp:^version-[0-9]+\.[0-9]+\.[0-9]+$
-          manifestTargets:
-            helm:
-              name: controllers.hummingbot.containers.app.image.repository
-              tag: controllers.hummingbot.containers.app.image.tag
-        - alias: hummingbotRouteStatus
-          imageName: hummingbot/hummingbot
-          commonUpdateSettings:
-            updateStrategy: newest-build
-            allowTags: regexp:^version-[0-9]+\.[0-9]+\.[0-9]+$
-          manifestTargets:
-            helm:
-              name: controllers.hummingbot.containers.route-status.image.repository
-              tag: controllers.hummingbot.containers.route-status.image.tag
+              name: controllers.octobot.containers.app.image.repository
+              tag: controllers.octobot.containers.app.image.tag
     - namePattern: litellm
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.

@@ -8,7 +8,9 @@ terraform {
 
 dependencies {
   paths = [
-    "../external-secrets",
+    "../cert-manager",
+    "../istio",
+    "../tailscale",
     "../platform-storage"
   ]
 }
@@ -20,7 +22,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "hummingbot"
+    name      = "octobot"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -41,8 +43,8 @@ inputs = {
       chart           = "app-template"
       target_revision = "4.4.0"
       helm = {
-        release_name = "hummingbot"
-        value_files  = ["$values/clusters/homelab/apps/hummingbot/values.yaml"]
+        release_name = "octobot"
+        value_files  = ["$values/clusters/homelab/apps/octobot/values.yaml"]
       }
     },
     {
@@ -56,7 +58,7 @@ inputs = {
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      path            = "clusters/homelab/apps/hummingbot"
+      path            = "clusters/homelab/apps/octobot"
       kustomize       = {}
     }
   ]
@@ -83,7 +85,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "manual Hummingbot client only; no exchange credentials or autostart strategy are committed"
+      value = "OctoBot UI is tailnet-only; no exchange credentials, real-trading strategy, or autostart configuration are committed"
     }
   ]
 }

@@ -15,8 +15,8 @@ registration and sources the repository-local
 under `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`.
 
 The current app onboarding runbook says there are 17 requested apps plus
-support Applications. The working tree also includes Hummingbot and deletes
-Freqtrade desired-state files, so reconcile source docs before publishing.
+support Applications. OctoBot is the current finance namespace app; Hummingbot
+and Freqtrade are historical unless a future change reintroduces them.
 
 ## Support Applications
 

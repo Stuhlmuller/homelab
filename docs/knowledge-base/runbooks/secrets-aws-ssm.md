@@ -45,7 +45,6 @@ allow-list in the same PR that adds its first ExternalSecret.
 | openclaw | `openclaw-secrets` | App secret, LiteLLM token, and Discord bot token |
 | n8n | `n8n-secrets` | First-boot encryption key exposed as `N8N_BOOTSTRAP_ENCRYPTION_KEY`; existing PVC config remains the runtime key source |
 | policy-bot | `policy-bot-config` | GitHub App, OAuth, webhook, and session config; Deployment runs one replica after GitHub-App-owned placeholders are replaced |
-| hummingbot | `hummingbot-config` | Generated client config password |
 
 ## Important App Notes
 
@@ -65,9 +64,10 @@ allow-list in the same PR that adds its first ExternalSecret.
   OpenClaw pod annotation in `clusters/homelab/apps/openclaw/values.yaml` so
   startup channel bootstrap runs with the new value. ChatGPT Pro or Codex OAuth
   credentials stay on the OpenClaw PVC, not in SSM.
-- Hummingbot exchange credentials are encrypted on the persistent config volume
-  after CLI setup; do not commit exchange credentials or live-trading autostart
-  config.
+- OctoBot currently has no SSM parameter contract. Exchange credentials,
+  tentacles, and strategy state are configured through the UI and stored on
+  PVC-backed runtime state; do not commit exchange credentials or live-trading
+  autostart config.
 
 ## Related Notes
 

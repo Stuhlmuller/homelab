@@ -14,7 +14,7 @@ the `argocd` namespace.
 `homelab-managed-images` `ImageUpdater` resource. It manages every image this
 repo declares directly in workload Helm values or raw manifests:
 
-- Deluge, Hummingbot, LiteLLM, Media Postgres, n8n, OpenClaw, Policy Bot,
+- Deluge, LiteLLM, Media Postgres, n8n, OctoBot, OpenClaw, Policy Bot,
   Prowlarr, Radarr, and Sonarr.
 - Chart-default images remain tied to chart version updates until the repo adds
   explicit values plus an `ImageUpdater` entry for them.

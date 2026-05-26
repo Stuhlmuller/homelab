@@ -61,7 +61,7 @@ with automated sync, but they are not production-ready until backup and restore
 coverage is acceptable.
 
 Current stateful apps include Prometheus, Grafana, Deluge, media-postgres,
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and Hummingbot.
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot.
 
 ## Related Notes
 
