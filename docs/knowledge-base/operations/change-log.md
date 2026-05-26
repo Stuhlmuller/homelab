@@ -10,6 +10,13 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-26 - Make Terragrunt apply non-interactive
+
+- Added `--non-interactive` to stack-wide production apply phases so
+  Terragrunt accepts the `run --all` apply queue in GitHub Actions before
+  forwarding OpenTofu flags.
+- Updated the CI/CD runbook note with the final non-interactive command shape.
+
 ### 2026-05-26 - Enable OpenClaw memory wiki
 
 - Enabled OpenClaw's bundled `memory-wiki` plugin during pod startup bootstrap
