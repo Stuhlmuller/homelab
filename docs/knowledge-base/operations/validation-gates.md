@@ -69,7 +69,9 @@ when reproducing PR gate behavior.
 The trusted GitHub Actions PR plan job is serialized with a shared concurrency
 group because it reads the same OpenTofu S3 backend state across pull requests.
 Do not treat a queued PR plan as unhealthy; it is waiting for the live-state
-lock lane.
+lock lane. Same-PR replacement runs also queue instead of canceling in-progress
+plans, because interrupting OpenTofu while it holds an S3 backend lock can leave
+a stale lock that blocks later plans.
 
 ## Live Rollout Rule
 

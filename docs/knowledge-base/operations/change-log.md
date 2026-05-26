@@ -56,6 +56,9 @@ Use [[templates/knowledge-update]] for new entries.
 - Added a shared concurrency gate to the trusted PR `Terragrunt Plan` job so
   simultaneous Renovate branches queue before reading the shared OpenTofu S3
   backend state.
+- Changed same-PR workflow concurrency to queue replacement runs instead of
+  canceling active runs, because canceling a live OpenTofu plan can strand an
+  S3 backend lock.
 - Documented that queued Terragrunt PR plans are expected when another trusted
   PR is already holding the live-state lock lane.
 
