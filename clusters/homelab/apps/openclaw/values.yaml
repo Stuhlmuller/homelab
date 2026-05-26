@@ -13,6 +13,12 @@ controllers:
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.5.22@sha256:dcfd148777401d1bbdc63eab5c2f280bbfa912dfb1818566f9d66bb96ffb3f95"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            memory: 3Gi
         env:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
@@ -77,6 +83,12 @@ controllers:
         envFrom:
           - secretRef:
               name: openclaw-secrets
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
+          limits:
+            memory: 6Gi
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -159,6 +171,12 @@ controllers:
               failureThreshold: 3
               periodSeconds: 5
               timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            memory: 256Mi
 service:
   app:
     controller: openclaw

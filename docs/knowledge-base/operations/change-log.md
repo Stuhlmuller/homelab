@@ -10,6 +10,17 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-26 - Increase OpenClaw resource profile
+
+- Added explicit OpenClaw app resources for Codex-backed agent work: `1` CPU
+  and `2Gi` memory requested, `6Gi` memory limit, and no CPU limit so work can
+  burst when node capacity is available.
+- Added bootstrap init-container resources so config validation and channel
+  plugin installation have `500m` CPU and `1Gi` memory requested with a `3Gi`
+  memory limit.
+- Added a small proxy resource profile and documented the allocation in the
+  OpenClaw README and workload knowledge-base notes.
+
 ### 2026-05-26 - Clarify SSM KMS apply-role access
 
 - Documented that `IaC/live/aws-ssm-parameters` uses a `us-west-2` SSM
