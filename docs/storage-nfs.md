@@ -16,13 +16,16 @@ unless an app-specific exception is documented here.
 | Kubernetes volume | `Homelab (System)` |
 | Kubernetes shared folder | `homelab` |
 | NFS export path | `/homelab` |
+| Media shared folder | `Media` |
+| Media NFS export path | `/media` |
 
 NFS is enabled from QTS at Control Panel > Network & File Services >
 Win/Mac/NFS/WebDAV > NFS Service. The current NAS configuration enables
 NFSv2/NFSv3, and Kubernetes mounts the export with `nfsvers=3`.
 
 The `homelab` shared folder grants NFS read/write access only to the Talos node
-addresses:
+addresses. The `Media` shared folder must use the same node allow-list before
+the media migration is applied:
 
 | Node | Address | Access |
 | --- | --- | --- |
@@ -43,10 +46,18 @@ Verify the export path and allow-list from an operator workstation:
 showmount -e 10.1.0.2
 ```
 
-Expected result:
+Expected result before media-library cutover:
 
 ```text
 Exports list on 10.1.0.2:
+/homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
+```
+
+Expected result before syncing the Servarr media-storage migration:
+
+```text
+Exports list on 10.1.0.2:
+/media 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 /homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
 
@@ -80,6 +91,30 @@ Important settings:
 The parent `platform-storage` Application auto-syncs by default. Treat it as a
 readiness gate anyway: verify the QNAP export is visible and the child
 provisioner Application is healthy before relying on stateful workload PVCs.
+
+## Media Library Static Volumes
+
+The default `nfs-default` StorageClass remains the path for application config,
+PostgreSQL data, dashboards, metrics, and other app-owned state. Deluge, Radarr,
+and Sonarr media-library data uses static PV/PVC pairs that mount the QNAP
+`/media` export directly:
+
+| Claim | Owned by | Mounted in apps | Media subdirectory |
+| --- | --- | --- | --- |
+| `media-downloads` | `clusters/homelab/apps/deluge/media-storage.yaml` | Deluge, Radarr, Sonarr | `/media/downloads` |
+| `media-movies` | `clusters/homelab/apps/radarr/media-storage.yaml` | Radarr | `/media/movies` |
+| `media-tv` | `clusters/homelab/apps/sonarr/media-storage.yaml` | Sonarr | `/media/tv` |
+
+Each media app also owns a migration Job that runs as UID/GID `65534`, mounts
+the old dynamically provisioned PVC read-only, copies its files into the
+corresponding `/media` subdirectory, applies `a+rwX` permissions, and performs a
+write test before the app rollout reaches the new volume mounts. The legacy
+`deluge-downloads`, `radarr-media`, and `sonarr-media` claims stay in desired
+state as migration sources and rollback references until the `/media` copy is
+verified. The broad directory mode is intentional for this NAS path because QNAP
+NFS squashes Kubernetes client UIDs to the NAS guest identity; the security
+boundary is the NAS export allow-list and the cluster namespace, not POSIX
+per-user ownership on the export.
 
 ## Validation
 
@@ -135,11 +170,11 @@ app has acceptable backup and restore coverage.
 |-----|--------------|--------------|--------------------|---------------------|------------------------|
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus repo-owned dashboard and alerting config in `clusters/homelab/apps/grafana` | Restore PVC and re-sync Grafana desired state | Preserve PVC |
-| deluge | config, shared downloads | `nfs-default` | NFS backup for config and shared download paths | Restore config/download PVCs before app sync | Preserve PVCs |
+| deluge | config on `nfs-default`, shared downloads on `media-downloads` backed by `/media` | `nfs-default` plus static `/media` PV | NFS backup for config and `/media/downloads` | Restore config PVC and `/media/downloads` before app sync | Preserve PVCs and `/media/downloads` |
 | media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | `nfs-default` | NFS backup plus `pg_dump` logical dumps before upgrades | Restore PostgreSQL PVC or logical dumps before media app sync | Preserve PVC unless intentionally rebuilding from dumps |
 | prowlarr | config, indexer refs, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases before app sync and re-test app integrations | Preserve PVCs |
-| radarr | config, media refs, shared downloads mount, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases, then verify media and Deluge download mount refs | Preserve PVCs |
-| sonarr | config, media refs, shared downloads mount, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases, then verify media and Deluge download mount refs | Preserve PVCs |
+| radarr | config and PostgreSQL refs on `nfs-default`, movies on `media-movies`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/movies`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/movies` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
+| sonarr | config and PostgreSQL refs on `nfs-default`, TV on `media-tv`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/tv`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/tv` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |
 | openclaw | config, runtime state | `nfs-default` | NFS backup for runtime state | Restore PVC and verify LiteLLM connectivity | Preserve PVC |
 | n8n | workflows, SQLite data, credentials metadata, config | `nfs-default` | NFS backup plus workflow export when available | Restore PVC before app sync | Snapshot first, preserve PVC |
@@ -150,6 +185,9 @@ app has acceptable backup and restore coverage.
 
 - Read-only `showmount -e 10.1.0.2` verified `/homelab` is exported only to
   `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`.
+- Read-only `showmount -e 10.1.0.2` on 2026-05-26 verified `/media` and
+  `/homelab` are exported to `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and
+  `10.1.0.202`.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
 - Persistent app Terragrunt units were checked on 2026-05-24 and refreshed for

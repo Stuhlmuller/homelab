@@ -24,6 +24,18 @@ persistent `/config` volume:
 The database password comes from AWS SSM Parameter Store through External
 Secrets. Do not commit it to this repository.
 
+## Media Storage
+
+Radarr mounts the static `media-movies` PVC at `/movies` and the shared
+`media-downloads` PVC at `/downloads`. Both claims point at the QNAP `/media`
+NFS export instead of the default `/homelab` provisioner path.
+
+The `media-movies-migration` Job copies files from the older `radarr-media` PVC
+into `/media/movies`, sets write-friendly NFS permissions, and verifies that the
+target path can be written before the app switches to the new claim. The older
+`radarr-media` claim remains in desired state as the migration source and
+rollback reference until the copy is verified.
+
 ## Migration Notes
 
 The Servarr guide requires Radarr `v4.1.0.6133` or newer. The Git baseline pins

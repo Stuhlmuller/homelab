@@ -95,9 +95,8 @@ service:
 persistence:
   config:
     enabled: true
-    storageClass: nfs-default
-    size: 10Gi
-    accessMode: ReadWriteOnce
+    type: persistentVolumeClaim
+    existingClaim: sonarr-config
     advancedMounts:
       sonarr:
         app:
@@ -106,18 +105,19 @@ persistence:
           - path: /config
   media:
     enabled: true
-    storageClass: nfs-default
-    size: 500Gi
-    accessMode: ReadWriteMany
+    type: persistentVolumeClaim
+    existingClaim: media-tv
     advancedMounts:
       sonarr:
         app:
           - path: /tv
+            subPath: tv
   downloads:
     enabled: true
     type: persistentVolumeClaim
-    existingClaim: deluge-downloads
+    existingClaim: media-downloads
     advancedMounts:
       sonarr:
         app:
           - path: /downloads
+            subPath: downloads

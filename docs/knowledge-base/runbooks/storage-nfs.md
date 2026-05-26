@@ -11,6 +11,7 @@ Source: `docs/storage-nfs.md`
 | NAS | QNAP TS-451+ |
 | Address | `10.1.0.2` |
 | Export | `/homelab` |
+| Media export | `/media` |
 | StorageClass | `nfs-default` |
 | NFS version | `nfsvers=3` |
 | Provisioner | `k8s-sigs.io/qnap-nfs` |
@@ -19,6 +20,11 @@ Source: `docs/storage-nfs.md`
 The export allows read/write access only from the Talos node addresses
 `10.1.0.199` through `10.1.0.202`. QNAP NFS rules use `sys` security and squash
 all users to the NAS `guest` identity.
+
+The default `/homelab` export stores app state through `nfs-default`. The media
+library uses static PV/PVC pairs against `/media`: `media-downloads`,
+`media-movies`, and `media-tv`. Do not sync that cutover until `showmount` lists
+`/media` for the same Talos node allow-list.
 
 ## GitOps Desired State
 
@@ -39,6 +45,7 @@ Expected export:
 
 ```text
 /homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
+/media 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
 ```
 
 Render and cluster checks:
@@ -60,8 +67,10 @@ NFS backup coverage is a hard readiness gate. Persistent apps are registered
 with automated sync, but they are not production-ready until backup and restore
 coverage is acceptable.
 
-Current stateful apps include Prometheus, Grafana, Deluge, media-postgres,
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot.
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. Deluge,
+Radarr, and Sonarr split app config from media-library data: config and
+databases stay on `nfs-default`, while `/media/downloads`, `/media/movies`, and
+`/media/tv` are backed by static media claims.
 
 ## Related Notes
 

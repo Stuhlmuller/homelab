@@ -83,6 +83,17 @@ Use [[templates/knowledge-update]] for new entries.
   PRs run Conftest after the live Terragrunt plan step while forked PRs still
   run Conftest without receiving live-plan secrets.
 
+### 2026-05-25 - Move Servarr media library to QNAP Media export
+
+- Added static media PV/PVC desired state for Deluge downloads, Radarr movies,
+  and Sonarr TV library data against the QNAP `/media` export.
+- Added migration Jobs that copy the old dynamic PVC contents into `/media`,
+  set NFS-safe write permissions, and verify target writes before app cutover.
+- Kept the old dynamic media PVCs in desired state as rollback sources until
+  the `/media` migration is verified.
+- Documented the 2026-05-26 read-only `showmount -e 10.1.0.2` check that
+  verified `/media` and `/homelab` are exported to the Talos nodes.
+
 ### 2026-05-25 - Add Hummingbot tailnet status route
 
 - Added a tailnet-only Istio route at `https://hummingbot.stinkyboi.com` backed

@@ -44,7 +44,10 @@ updates can be pushed.
 
 Deluge is coupled to Gluetun. If VPN secrets are missing, WireGuard config is
 bad, or Gluetun is unhealthy, Deluge must not become ready. The app owns the
-shared `deluge-downloads` PVC used by Radarr and Sonarr at `/downloads`.
+shared `media-downloads` PVC backed by the QNAP `/media` export and used by
+Radarr and Sonarr at `/downloads`. The `media-downloads-migration` Job copies
+the older `deluge-downloads` PVC into `/media/downloads` and verifies write
+access before cutover.
 
 ## Grafana
 
@@ -161,6 +164,12 @@ The Servarr apps use `media-postgres` and configure PostgreSQL through
 persistent `/config/config.xml` fields instead of environment overrides. The
 desired state does not migrate existing SQLite data; follow upstream migration
 guides before treating a migration rollout as complete.
+
+Radarr and Sonarr keep `/config` and PostgreSQL state on `nfs-default`, but
+their library mounts now target the QNAP `/media` export: Radarr uses
+`media-movies` at `/movies`, Sonarr uses `media-tv` at `/tv`, and both share
+`media-downloads` at `/downloads`. The old dynamic media PVCs stay declared as
+migration sources until the `/media` copy is verified.
 
 ## Tailscale
 

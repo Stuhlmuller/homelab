@@ -94,6 +94,13 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
 `docs/storage-nfs.md` records backup coverage.
 
+Deluge, Radarr, and Sonarr media-library data is an exception to the default
+StorageClass rule: their downloads, movies, and TV library mounts use static
+PV/PVC objects backed by the QNAP `/media` export. Before syncing that cutover,
+verify `showmount -e 10.1.0.2` lists `/media` for `10.1.0.199` through
+`10.1.0.202`, then confirm the `media-downloads-migration`,
+`media-movies-migration`, and `media-tv-migration` Jobs complete successfully.
+
 Sonarr, Radarr, and Prowlarr must also wait for `media-postgres` to sync and
 become healthy. Verify the ExternalSecrets, StatefulSet, PVC, and logical
 databases documented in `clusters/homelab/apps/media-postgres/README.md`
@@ -107,6 +114,8 @@ migration.
 
 - Read-only `showmount -e 10.1.0.2` verified the QNAP `/homelab` export is
   allow-listed to the four Talos node IPs.
+- Read-only `showmount -e 10.1.0.2` on 2026-05-26 verified the QNAP `/media`
+  export is also allow-listed to the four Talos node IPs.
 - Read-only `kubectl get storageclass` returned no resources before the QNAP
   NFS provisioner desired state was added.
 - Stateful readiness is blocked until `platform-storage` is synced and a PVC
