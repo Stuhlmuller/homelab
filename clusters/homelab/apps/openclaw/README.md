@@ -57,6 +57,10 @@ default agent model to the canonical Codex-backed OpenAI route,
 `openai/gpt-5.5`. The older `openai-codex/gpt-*` model refs are legacy routes
 and should not be used for new default config.
 
+The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
+plugin for Imported Insights and Memory Palace, so reload the Control UI tab
+after the synced pod restarts if those views still show an enable-plugin prompt.
+
 During startup, the bootstrap runs OpenClaw's safe doctor repairs when the
 persisted PVC config no longer matches the current OpenClaw schema. This keeps
 version upgrades from blocking on stale runtime config while preserving secrets
