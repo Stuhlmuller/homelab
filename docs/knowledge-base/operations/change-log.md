@@ -36,7 +36,7 @@ Use [[templates/knowledge-update]] for new entries.
 
 ### 2026-05-26 - Restore OpenClaw Codex subscription route
 
-- Updated OpenClaw from `2026.3.1` to `2026.5.20` so the bundled `codex`
+- Updated OpenClaw from `2026.3.1` to `2026.5.22` so the bundled `codex`
   plugin is available for ChatGPT/Codex subscription auth.
 - Added startup bootstrap config for `plugins.entries.codex.enabled` and the
   canonical `openai/gpt-5.5` default model route.
