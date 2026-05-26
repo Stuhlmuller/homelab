@@ -5,6 +5,7 @@ controllers:
     serviceAccount:
       identifier: prowlarr
     pod:
+      automountServiceAccountToken: false
       annotations:
         homelab.rst.io/mesh-mode: "tailnet-ingress"
     initContainers:

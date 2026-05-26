@@ -4,6 +4,8 @@ controllers:
   n8n:
     serviceAccount:
       identifier: n8n
+    pod:
+      automountServiceAccountToken: false
     strategy: Recreate
     containers:
       app:

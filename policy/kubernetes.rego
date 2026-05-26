@@ -7,10 +7,29 @@ homelab_repo_urls := {
 	"git@github.com:Stuhlmuller/homelab.git",
 }
 
+required_pod_security_labels := {
+	"pod-security.kubernetes.io/enforce",
+	"pod-security.kubernetes.io/enforce-version",
+	"pod-security.kubernetes.io/audit",
+	"pod-security.kubernetes.io/audit-version",
+	"pod-security.kubernetes.io/warn",
+	"pod-security.kubernetes.io/warn-version",
+}
+
 deny contains msg if {
 	input.kind == "Secret"
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("raw Kubernetes Secret %q must not be committed; use ExternalSecret, encrypted secret material, or a CI-injected secret path", [name])
+}
+
+deny contains msg if {
+	input.kind == "Namespace"
+	metadata := object.get(input, "metadata", {})
+	labels := object.get(metadata, "labels", {})
+	some key in required_pod_security_labels
+	not has_nonempty_label(labels, key)
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("namespace %q must set %s", [name, key])
 }
 
 deny contains msg if {
@@ -58,6 +77,11 @@ deny contains msg if {
 
 has_nonempty_annotation(annotations, key) if {
 	value := object.get(annotations, key, "")
+	count(trim(value, " ")) > 0
+}
+
+has_nonempty_label(labels, key) if {
+	value := object.get(labels, key, "")
 	count(trim(value, " ")) > 0
 }
 

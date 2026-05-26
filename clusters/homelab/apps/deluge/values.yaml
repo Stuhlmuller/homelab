@@ -5,6 +5,7 @@ controllers:
     serviceAccount:
       identifier: deluge
     pod:
+      automountServiceAccountToken: false
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"

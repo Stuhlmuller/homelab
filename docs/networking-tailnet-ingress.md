@@ -50,6 +50,13 @@ VirtualService remains annotated with `homelab.rst.io/public-funnel: "false"`.
 Every other Istio gateway and VirtualService route manifest remains
 tailnet-only.
 
+The Istio ingressgateway Service is a Tailscale `LoadBalancer` and sets
+`allocateLoadBalancerNodePorts: false` so the gateway is not exposed through
+high NodePorts on every Talos node. A 2026-05-25 read-only scan found existing
+NodePorts from the earlier Service revision. After Argo CD syncs this desired
+state, verify those ports are gone with `kubectl -n istio-system get svc
+istio-ingressgateway -o yaml` and a focused node-port scan.
+
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and direct Prometheus ingress must not be restored
 without a documented authentication plan and rollback path.

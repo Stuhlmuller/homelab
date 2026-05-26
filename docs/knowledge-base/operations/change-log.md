@@ -114,6 +114,13 @@ Use [[templates/knowledge-update]] for new entries.
 - Recorded the `refreshPolicy: OnChange` follow-up so SSM repairs are rolled
   through a repo-owned ExternalSecret change and Argo CD sync.
 
+### 2026-05-25 - Preserve runtime security audit WIP
+
+- Preserved namespace Pod Security hardening so non-privileged namespaces keep
+  `baseline` enforcement while warning and auditing against `restricted`.
+- Preserved service-account token and Istio LoadBalancer node-port hardening
+  notes from the audit worktree for review in a dedicated draft PR.
+
 ### 2026-05-25 - Enable Policy Bot replica
 
 - Changed Policy Bot from a credential-gated suspended Deployment to one desired
