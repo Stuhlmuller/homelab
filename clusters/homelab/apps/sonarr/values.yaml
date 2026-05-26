@@ -11,7 +11,7 @@ controllers:
       configure-postgres:
         image:
           repository: lscr.io/linuxserver/sonarr
-          tag: 4.0.15@sha256:fbe67c25693dc5f3de220c5691f374576ae265df782c16918cc071b630490bd7
+          tag: 4.0.17@sha256:0b5c4803f92456fb9b65bae8375716ea120b4ea17b3cced7da32b63f0085782b
         envFrom:
           - secretRef:
               name: media-postgres-arr-env
@@ -80,7 +80,7 @@ controllers:
       app:
         image:
           repository: lscr.io/linuxserver/sonarr
-          tag: 4.0.15@sha256:fbe67c25693dc5f3de220c5691f374576ae265df782c16918cc071b630490bd7
+          tag: 4.0.17@sha256:0b5c4803f92456fb9b65bae8375716ea120b4ea17b3cced7da32b63f0085782b
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
