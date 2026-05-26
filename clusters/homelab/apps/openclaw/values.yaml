@@ -32,6 +32,10 @@ controllers:
             fi
 
             openclaw config set --strict-json \
+              gateway.mode \
+              '"local"'
+
+            openclaw config set --strict-json \
               gateway.controlUi.allowedOrigins \
               '["https://openclaw.stinkyboi.com"]'
 

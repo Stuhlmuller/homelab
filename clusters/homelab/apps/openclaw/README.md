@@ -47,7 +47,8 @@ and should not be used for new default config.
 During startup, the bootstrap runs OpenClaw's safe doctor repairs when the
 persisted PVC config no longer matches the current OpenClaw schema. This keeps
 version upgrades from blocking on stale runtime config while preserving secrets
-and OAuth state on the PVC.
+and OAuth state on the PVC. It also pins `gateway.mode` to `local`, which is
+required for the container-managed gateway process.
 
 Run the interactive login from a tailnet-connected operator machine:
 
