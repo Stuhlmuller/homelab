@@ -119,6 +119,9 @@ Argo CD Image Updater stores its GitHub App write-back credential in
 private key placeholders in SSM before relying on automated image update pull
 requests. The GitHub App needs repository contents write access and pull-request
 write access for `Stuhlmuller/homelab`; the private key must stay outside git.
+The ExternalSecret uses `refreshPolicy: OnChange`; bump
+`homelab.rst.io/github-app-credentials-ssm-version` after SSM value replacement
+so External Secrets refreshes the Kubernetes Secret.
 
 ## Microsoft Entra SSO Bootstrap
 

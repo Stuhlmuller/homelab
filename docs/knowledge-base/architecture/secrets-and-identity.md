@@ -29,7 +29,9 @@ outside git.
 
 - Argo CD Image Updater uses the `argocd-image-updater-git` ExternalSecret for
   GitHub App credentials that open image update pull requests through Git
-  write-back. Its SSM contract is summarized in
+  write-back. It refreshes on ExternalSecret changes; bump the non-secret
+  `homelab.rst.io/github-app-credentials-ssm-version` annotation after SSM
+  credential replacement. Its SSM contract is summarized in
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
