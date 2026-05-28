@@ -48,7 +48,7 @@ allow-list in the same PR that adds its first ExternalSecret.
 | litellm | `litellm-provider-keys` | Master and provider keys |
 | deluge | `deluge-vpn` | WireGuard material |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | Shared database password and Servarr env |
-| openclaw | `openclaw-secrets` | App secret, LiteLLM token, and Discord bot token |
+| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | App secret, LiteLLM token, Discord bot token, and GitHub App credentials |
 | n8n | `n8n-secrets` | First-boot encryption key exposed as `N8N_BOOTSTRAP_ENCRYPTION_KEY`; existing PVC config remains the runtime key source |
 | policy-bot | `policy-bot-config` | GitHub App, OAuth, webhook, and session config; Deployment runs one replica after GitHub-App-owned placeholders are replaced |
 
@@ -73,8 +73,12 @@ allow-list in the same PR that adds its first ExternalSecret.
 - OpenClaw uses `/homelab/openclaw/discord-bot-token` only for the Discord
   channel account. Replace the placeholder in SSM, then bump the non-secret
   OpenClaw pod annotation in `clusters/homelab/apps/openclaw/values.yaml` so
-  startup channel bootstrap runs with the new value. ChatGPT Pro or Codex OAuth
-  credentials stay on the OpenClaw PVC, not in SSM.
+  startup channel bootstrap runs with the new value. GitHub App credentials use
+  `/homelab/openclaw/github-app/id`,
+  `/homelab/openclaw/github-app/installation-id`, and
+  `/homelab/openclaw/github-app/private-key`; bump the GitHub App SSM version
+  annotation after replacing those placeholders so env-backed values reload.
+  ChatGPT Pro or Codex OAuth credentials stay on the OpenClaw PVC, not in SSM.
 - OctoBot currently has no SSM parameter contract. Exchange credentials,
   tentacles, and strategy state are configured through the UI and stored on
   PVC-backed runtime state; do not commit exchange credentials or live-trading

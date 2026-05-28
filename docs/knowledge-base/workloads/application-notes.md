@@ -107,6 +107,11 @@ Memory Palace are available after the Control UI tab is reloaded. The
 bootstrap runs safe `openclaw doctor --fix --non-interactive` repairs when the
 persisted PVC config does not validate against the current OpenClaw schema, and
 sets `gateway.mode` to `local` for the container-managed gateway process.
+GitHub App identity is SSM-backed: `GITHUB_APP_ID` and
+`GITHUB_APP_INSTALLATION_ID` come from `openclaw-secrets`, while the private key
+is mounted from `openclaw-github-app-private-key` and referenced by
+`GITHUB_APP_PRIVATE_KEY_PATH` at
+`/var/run/secrets/openclaw/github-app/private-key.pem`.
 OpenClaw has an explicit agent-heavy resource profile: the app requests `1`
 CPU and `2Gi` memory with a `6Gi` memory cap and no CPU limit, while bootstrap
 gets enough memory to validate config and install channel plugins at startup.

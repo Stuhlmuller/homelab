@@ -45,6 +45,27 @@ The Discord bot must be invited to the target server and channel with at least
 the permissions OpenClaw reports as required for Discord, including viewing the
 channel and sending messages.
 
+## GitHub App Credentials
+
+OpenClaw receives GitHub App identity through AWS SSM-backed ExternalSecrets:
+
+| SSM parameter | Pod surface |
+| --- | --- |
+| `/homelab/openclaw/github-app/id` | `GITHUB_APP_ID` |
+| `/homelab/openclaw/github-app/installation-id` | `GITHUB_APP_INSTALLATION_ID` |
+| `/homelab/openclaw/github-app/private-key` | `/var/run/secrets/openclaw/github-app/private-key.pem` |
+
+The pod sets `GITHUB_APP_PRIVATE_KEY_PATH` to
+`/var/run/secrets/openclaw/github-app/private-key.pem`. The private key is
+mounted as a file from `openclaw-github-app-private-key` instead of being
+exported through `envFrom`, so the PEM is not copied into the process
+environment.
+
+After replacing any GitHub App SSM placeholder, bump
+`homelab.rst.io/openclaw-github-app-credentials-ssm-version` in `values.yaml`
+to the resulting SSM parameter version so Argo CD rolls the pod and reloads the
+environment variables.
+
 ## ChatGPT Pro And Codex
 
 Do not store ChatGPT passwords, browser cookies, or OpenAI API keys in this

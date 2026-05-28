@@ -89,7 +89,7 @@ stack because Terraform manages the Kubernetes Secret.
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
-| openclaw | `openclaw-secrets` | `openclaw-secrets` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token` |
+| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
@@ -115,6 +115,19 @@ before relying on Discord, then bump
 `clusters/homelab/apps/openclaw/values.yaml` to the resulting SSM parameter
 version so GitOps rolls OpenClaw. ChatGPT Pro or Codex OAuth credentials are not
 SSM values; they are created interactively and persist on the OpenClaw PVC.
+
+OpenClaw also reads GitHub App credentials from
+`/homelab/openclaw/github-app/id`,
+`/homelab/openclaw/github-app/installation-id`, and
+`/homelab/openclaw/github-app/private-key`. The app and bootstrap containers
+receive the ID values as `GITHUB_APP_ID` and `GITHUB_APP_INSTALLATION_ID`.
+The PEM is mounted from `openclaw-github-app-private-key` at
+`/var/run/secrets/openclaw/github-app/private-key.pem`, and
+`GITHUB_APP_PRIVATE_KEY_PATH` points at that file. After replacing SSM
+placeholders, bump
+`homelab.rst.io/openclaw-github-app-credentials-ssm-version` in
+`clusters/homelab/apps/openclaw/values.yaml` so env-backed values reload through
+a normal GitOps rollout.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

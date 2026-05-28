@@ -10,6 +10,16 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-28 - Add OpenClaw GitHub App secret contract
+
+- Added OpenClaw SSM placeholders for GitHub App ID, installation ID, and
+  private key PEM.
+- Exposed the GitHub App IDs through `openclaw-secrets`, mounted the private
+  key from a separate Secret as a file, and added
+  `GITHUB_APP_PRIVATE_KEY_PATH` for the app and bootstrap containers.
+- Updated OpenClaw app docs and secret-contract notes with the rollout
+  annotation to bump after replacing SSM placeholders.
+
 ### 2026-05-26 - Make Terragrunt apply non-interactive
 
 - Added `--non-interactive` to stack-wide production apply phases so
