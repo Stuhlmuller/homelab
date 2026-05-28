@@ -119,6 +119,12 @@ base intentionally adopts them again and the documentation explains why.
 8. Summarize what changed, what was validated, and any remaining operational
    risk.
 
+Treat security and reliability improvement as ongoing stewardship. When you
+notice a risk, drift, weak assumption, missing validation, or hardening
+opportunity, either fix it through the normal repository workflow or record it
+as an explicit finding in `docs/knowledge-base/` with source context and next
+steps. Do not leave important homelab observations only in chat history.
+
 If a checkout is intentionally incomplete and expected scripts or Nix targets
 are missing, say that clearly in the PR or final response and use the next best
 specific validation available, such as `talosctl validate`, `kubectl diff`,

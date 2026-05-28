@@ -21,10 +21,12 @@ The route uses the shared `istio-system/tailnet-gateway` and is annotated with
 `homelab.rst.io/public-funnel: "false"`. Do not add a public Funnel route for
 Kiali.
 
-Kiali uses `auth.strategy: anonymous` and `deployment.view_only_mode: true`.
-This keeps the UI immediately usable from the tailnet without granting write
-operations through Kiali. If this becomes a broader operator surface, replace
-anonymous access with OIDC-backed authentication in a separate change.
+Kiali uses `auth.strategy: anonymous` and `deployment.view_only_mode: true`,
+with an Istio `AuthorizationPolicy` that only allows the tailnet gateway and
+Prometheus to reach the Kiali workload. This keeps the UI immediately usable
+from the tailnet without granting write operations through Kiali. If this
+becomes a broader operator surface, replace anonymous access with OIDC-backed
+authentication in a separate change.
 
 ## Dependencies
 
@@ -36,7 +38,8 @@ Kiali depends on:
 - Grafana for dashboard links.
 
 The monitoring AuthorizationPolicies allow the Kiali service account to query
-Prometheus and Grafana. Kiali has no persistent storage requirement.
+Prometheus and Grafana, and allow Prometheus plus the tailnet gateway to reach
+Kiali. Kiali has no persistent storage requirement.
 
 ## Validation
 
