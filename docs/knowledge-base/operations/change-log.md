@@ -10,6 +10,14 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-28 - Cache Terragrunt CI Nix dev shell
+
+- Added a pinned Nix store cache step to the Terragrunt Plan and Terragrunt
+  Apply workflows after Nix installation and before `nix develop --command`
+  checks, plans, policies, and applies.
+- Documented that the cache key follows the runner OS plus `flake.nix` and
+  `flake.lock`, with an OS-scoped fallback for nearby dev shell closures.
+
 ### 2026-05-28 - Add OpenClaw GitHub App secret contract
 
 - Added OpenClaw SSM placeholders for GitHub App ID, installation ID, and
