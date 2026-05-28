@@ -43,9 +43,47 @@ controllers:
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
             mkdir -p "$OPENCLAW_WORKSPACE_DIR/.openclaw/trash" "$OPENCLAW_STATE_DIR/src"
             mkdir -p "$(dirname "$OPENCLAW_CONFIG_PATH")"
+            if ! command -v ssh-keygen >/dev/null 2>&1 && [ ! -x "$OPENCLAW_STATE_DIR/tools/usr/bin/ssh-keygen" ]; then
+              mkdir -p "$OPENCLAW_STATE_DIR/apt/state/lists/partial" \
+                "$OPENCLAW_STATE_DIR/apt/cache/archives/partial" \
+                "$OPENCLAW_STATE_DIR/pkg-cache" \
+                "$OPENCLAW_STATE_DIR/tools"
+              apt-get \
+                -o Dir::State="$OPENCLAW_STATE_DIR/apt/state" \
+                -o Dir::Cache="$OPENCLAW_STATE_DIR/apt/cache" \
+                -o Debug::NoLocking=1 \
+                update
+              (
+                cd "$OPENCLAW_STATE_DIR/pkg-cache"
+                apt-get \
+                  -o Dir::State="$OPENCLAW_STATE_DIR/apt/state" \
+                  -o Dir::Cache="$OPENCLAW_STATE_DIR/apt/cache" \
+                  -o Debug::NoLocking=1 \
+                  download openssh-client
+                dpkg-deb -x "$(ls -t openssh-client_*.deb | head -n1)" "$OPENCLAW_STATE_DIR/tools"
+              )
+            fi
+            SSH_KEYGEN="$(command -v ssh-keygen || printf '%s\n' "$OPENCLAW_STATE_DIR/tools/usr/bin/ssh-keygen")"
+            SIGNING_KEY="$OPENCLAW_STATE_DIR/signing/claw_ed25519"
+            mkdir -p "$OPENCLAW_STATE_DIR/signing" "$OPENCLAW_STATE_DIR/git"
+            chmod 700 "$OPENCLAW_STATE_DIR/signing"
+            if [ ! -s "$SIGNING_KEY" ]; then
+              "$SSH_KEYGEN" -q -t ed25519 -N '' -C 'Claw homelab commit signing' -f "$SIGNING_KEY"
+            fi
+            chmod 600 "$SIGNING_KEY"
+            chmod 644 "$SIGNING_KEY.pub"
+            printf 'claw %s\n' "$(cat "$SIGNING_KEY.pub")" > "$OPENCLAW_STATE_DIR/git/allowed_signers"
             touch "$GIT_CONFIG_GLOBAL"
             git config --global --replace-all safe.directory "$OPENCLAW_WORKSPACE_DIR"
             git config --global --add safe.directory "$OPENCLAW_STATE_DIR/src/*"
+            git config --global user.name 'Claw'
+            git config --global user.email 'claw@openclaw.local'
+            git config --global gpg.format ssh
+            git config --global user.signingkey "$SIGNING_KEY.pub"
+            git config --global gpg.ssh.program "$SSH_KEYGEN"
+            git config --global gpg.ssh.allowedSignersFile "$OPENCLAW_STATE_DIR/git/allowed_signers"
+            git config --global commit.gpgsign true
+            git config --global log.showSignature true
             if [ ! -s "$OPENCLAW_CONFIG_PATH" ]; then
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
