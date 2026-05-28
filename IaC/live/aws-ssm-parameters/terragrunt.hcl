@@ -153,6 +153,18 @@ inputs = {
       description   = "OpenClaw Discord bot token used to configure the Discord channel account at startup."
       initial_value = local.placeholder
     }
+    "/homelab/openclaw/github-app/id" = {
+      description   = "OpenClaw GitHub App ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/github-app/installation-id" = {
+      description   = "OpenClaw GitHub App installation ID."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/github-app/private-key" = {
+      description   = "OpenClaw GitHub App private key PEM."
+      initial_value = local.placeholder
+    }
     "/homelab/n8n/encryption-key" = {
       description = "n8n instance encryption key for saved credentials and encrypted data."
       generated = {
