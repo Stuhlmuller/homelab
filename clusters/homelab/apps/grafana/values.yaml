@@ -509,10 +509,10 @@ alerting:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: sum(argocd_app_info{health_status=~"Degraded|Missing|Unknown"}) or vector(0)
+                  expr: argocd_app_info{health_status=~"Degraded|Missing|Unknown"}
                   instant: true
                   intervalMs: 1000
-                  legendFormat: Unhealthy applications
+                  legendFormat: "{{name}} {{health_status}}"
                   maxDataPoints: 43200
                   range: false
                   refId: A
@@ -584,10 +584,10 @@ alerting:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: sum(argocd_app_info{sync_status!="Synced"}) or vector(0)
+                  expr: argocd_app_info{sync_status!="Synced"}
                   instant: true
                   intervalMs: 1000
-                  legendFormat: Out-of-sync applications
+                  legendFormat: "{{name}} {{sync_status}}"
                   maxDataPoints: 43200
                   range: false
                   refId: A

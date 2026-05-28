@@ -108,6 +108,11 @@ The first provisioned rules cover:
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining out of sync for 30 minutes.
 
+The Argo CD application health and sync rules intentionally keep the original
+`argocd_app_info` series labels instead of aggregating them. Grafana sends one
+alert instance per affected application so notifications include the application
+name, namespace, and current Argo CD status for triage.
+
 ## Validation
 
 Render the raw Grafana resources:
