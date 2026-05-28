@@ -72,6 +72,10 @@ and exposes only the tailnet Istio route at `https://octobot.stinkyboi.com`.
 State persists on the `octobot-user`, `octobot-tentacles`, and `octobot-logs`
 PVCs using `nfs-default`.
 
+Image automation is pinned to `2.1.1` until a newer image is tested against the
+current PVC-backed config. The `2.1.13` image rejected
+`config.trading.paused` during startup migration and crash-looped.
+
 ```sh
 kubectl -n finance get deploy,pod,pvc,svc -l app.kubernetes.io/instance=octobot
 curl -I https://octobot.stinkyboi.com

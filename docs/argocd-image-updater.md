@@ -13,7 +13,9 @@ or raw manifests:
 - `litellm`: LiteLLM database container.
 - `media-postgres`: PostgreSQL StatefulSet image.
 - `n8n`: n8n app container.
-- `octobot`: OctoBot app container.
+- `octobot`: OctoBot app container. OctoBot is currently allow-listed to
+  `2.1.1` because `2.1.13` rejected the existing PVC-backed
+  `config.trading.paused` field during startup migration.
 - `openclaw`: bootstrap, app, and proxy containers.
 - `policy-bot`: Policy Bot Deployment image.
 - `prowlarr`, `radarr`, and `sonarr`: PostgreSQL bootstrap and app containers.

@@ -62,6 +62,10 @@ spec:
       images:
         - alias: octobot
           imageName: drakkarsoftware/octobot:2.x
+          commonUpdateSettings:
+            # 2.1.13 rejects the current PVC-backed config.trading.paused key.
+            # Keep OctoBot on the last known-good image until a migration is tested.
+            allowTags: regexp:^2\.1\.1$
           manifestTargets:
             helm:
               name: controllers.octobot.containers.app.image.repository

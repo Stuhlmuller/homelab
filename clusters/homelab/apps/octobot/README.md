@@ -63,3 +63,7 @@ the tailnet.
   secret contract and runbook first.
 - If live trading is enabled through the UI, document the strategy, exchange,
   backup point, and rollback notes in the related pull request.
+- OctoBot image automation is pinned to `2.1.1` until a newer image can be
+  tested against the current PVC-backed config. The `2.1.13` image rejected the
+  persisted `config.trading.paused` key during startup migration and caused the
+  pod to crash loop.

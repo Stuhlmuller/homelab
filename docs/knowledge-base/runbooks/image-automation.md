@@ -18,6 +18,8 @@ repo declares directly in workload Helm values or raw manifests:
   Prowlarr, Radarr, and Sonarr.
 - Chart-default images remain tied to chart version updates until the repo adds
   explicit values plus an `ImageUpdater` entry for them.
+- OctoBot is temporarily allow-listed to `2.1.1`; `2.1.13` rejected the current
+  PVC-backed `config.trading.paused` field during startup migration.
 
 Image Updater uses Git write-back with GitHub pull-request mode, not live-only
 Argo CD parameter overrides. The write-back credential is the
