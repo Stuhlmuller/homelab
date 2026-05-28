@@ -83,6 +83,11 @@ base intentionally adopts them again and the documentation explains why.
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,
   or upgrade assumptions.
+- Make cleanup commands idempotent. When moving generated or one-shot files to
+  trash, check that the source exists first; an already-absent file means the
+  cleanup is complete, not a tool failure. This matters for agent workspace
+  files such as `BOOTSTRAP.md`, which OpenClaw may remove or stop injecting as
+  part of first-run completion.
 - Use `--insecure` with `talosctl` only for nodes that are known to be in Talos
   maintenance mode before machine config has been applied.
 - After Talos machine config is applied, use authenticated Talos access through
@@ -113,6 +118,12 @@ base intentionally adopts them again and the documentation explains why.
    applying changes.
 8. Summarize what changed, what was validated, and any remaining operational
    risk.
+
+Treat security and reliability improvement as ongoing stewardship. When you
+notice a risk, drift, weak assumption, missing validation, or hardening
+opportunity, either fix it through the normal repository workflow or record it
+as an explicit finding in `docs/knowledge-base/` with source context and next
+steps. Do not leave important homelab observations only in chat history.
 
 If a checkout is intentionally incomplete and expected scripts or Nix targets
 are missing, say that clearly in the PR or final response and use the next best

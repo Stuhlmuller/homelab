@@ -23,6 +23,8 @@ what to read, what facts matter, and what must be updated with future changes.
 
 ## Operations
 
+- [[../operations/continuous-improvement]] records the standing security and
+  reliability stewardship loop.
 - [[ci-cd]] records the GitHub Actions plan/apply model.
 - [[runtime-isolation]] records current Pod Security and network isolation
   assumptions.

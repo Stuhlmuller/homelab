@@ -10,7 +10,7 @@ desired state.
 
 | Source | Vault note | Purpose |
 | --- | --- | --- |
-| `AGENTS.md` | [[runbooks/index]] | Agent workflow, safety boundaries, ownership |
+| `AGENTS.md` | [[operations/continuous-improvement]] | Agent workflow, safety boundaries, ownership, ongoing stewardship |
 | `ONBOARDING.md` | [[runbooks/homelab-onboarding]] | Talos and cluster onboarding |
 
 ## Runbooks

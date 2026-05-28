@@ -23,6 +23,8 @@ in the same change.
   workload READMEs.
 - [[runbooks/index]] maps the top-level onboarding and operations runbooks into
   vault notes.
+- [[operations/continuous-improvement]] records the standing stewardship loop
+  for security, reliability, findings, and follow-up work.
 - [[source-map]] lists the source docs and repo paths imported into the vault.
 - [[patterns/new-application]] is the checklist for adding a new workload.
 - [[patterns/new-platform-service]] is the checklist for shared platform
@@ -40,7 +42,10 @@ For every substantive change, update the smallest useful set of notes:
    evidence in the notes that remain the durable source for that topic.
 4. Mark unverified or environment-specific facts explicitly instead of writing
    them as general guidance.
-5. When pulling source docs into Obsidian, keep source paths visible so readers
+5. Capture security and reliability findings in
+   [[operations/continuous-improvement]] or the more specific affected note,
+   with enough source context for the next agent or human to act.
+6. When pulling source docs into Obsidian, keep source paths visible so readers
    can jump back to the canonical file before changing desired state.
 
 ## Public-Repo Boundary
