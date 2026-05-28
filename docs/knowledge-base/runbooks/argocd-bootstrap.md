@@ -25,13 +25,17 @@ controller, repo server, and API server metrics services for Prometheus.
 Argo CD uses bundled Dex with an upstream OIDC connector. The
 `argocd-oidc-sso` Kubernetes Secret comes from External Secrets and AWS SSM:
 
-- `/homelab/argocd/oidc/url`
 - `/homelab/argocd/oidc/issuer`
 - `/homelab/argocd/oidc/client-id`
 - `/homelab/argocd/oidc/client-secret`
 
 The Secret must keep `app.kubernetes.io/part-of: argocd` so Argo CD can resolve
 Dex connector references from `argocd-cm`.
+
+For Microsoft Entra, Dex requests only `openid`, `profile`, and `email`. Do not
+add `groups` as a requested OAuth scope; Entra rejects it with `AADSTS650053`.
+Group-based RBAC depends on Entra emitting a token `groups` claim and Dex
+`insecureEnableGroups` passing that claim through to Argo CD.
 
 ## Apply And Verify
 

@@ -10,6 +10,13 @@ Use [[templates/knowledge-update]] for new entries.
 
 ## Entries
 
+### 2026-05-28 - Fix Argo CD Entra OIDC scopes
+
+- Removed the invalid `groups` OAuth scope from the Argo CD Dex connector so
+  Microsoft Entra accepts OIDC login requests.
+- Documented that Argo CD group RBAC depends on an Entra-emitted `groups`
+  token claim plus Dex `insecureEnableGroups`, not a requested `groups` scope.
+
 ### 2026-05-26 - Make Terragrunt apply non-interactive
 
 - Added `--non-interactive` to stack-wide production apply phases so
