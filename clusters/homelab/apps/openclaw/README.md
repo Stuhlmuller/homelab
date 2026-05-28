@@ -13,6 +13,19 @@ with a `3Gi` memory limit because it validates config and installs channel
 plugins during startup. The local TCP proxy stays small at `25m` CPU and
 `64Mi` memory requested with a `256Mi` memory limit.
 
+## Workspace Runtime Setup
+
+The OpenClaw PVC is backed by the QNAP NFS share, so files under `/data/openclaw`
+can appear owned by `nobody:nogroup` inside the container even though the app
+runs as the `node` user. Startup bootstrap avoids fighting that ownership
+mapping with `chown`. Instead it creates the expected workspace scratch paths,
+including `/data/openclaw/workspace/.openclaw/trash`, and points Git at a
+shared global config file on the PVC with safe-directory entries for the
+workspace and `/data/openclaw/src/*` checkouts.
+
+This keeps agent file cleanup and Git operations from failing on NFS ownership
+metadata while preserving the PVC as the source of durable agent state.
+
 ## Gateway Auth
 
 The generated `/homelab/openclaw/app-secret` SSM parameter is exposed to the

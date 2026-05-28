@@ -25,6 +25,7 @@ controllers:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
               secretKeyRef:
@@ -40,7 +41,11 @@ controllers:
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
+            mkdir -p "$OPENCLAW_WORKSPACE_DIR/.openclaw/trash" "$OPENCLAW_STATE_DIR/src"
             mkdir -p "$(dirname "$OPENCLAW_CONFIG_PATH")"
+            touch "$GIT_CONFIG_GLOBAL"
+            git config --global --replace-all safe.directory "$OPENCLAW_WORKSPACE_DIR"
+            git config --global --add safe.directory "$OPENCLAW_STATE_DIR/src/*"
             if [ ! -s "$OPENCLAW_CONFIG_PATH" ]; then
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
@@ -106,6 +111,7 @@ controllers:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
               secretKeyRef:

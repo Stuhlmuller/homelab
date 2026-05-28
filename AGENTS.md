@@ -83,6 +83,11 @@ base intentionally adopts them again and the documentation explains why.
   passed or you have recorded why they are unavailable.
 - Prefer read-only inspection before changing bootstrap, networking, storage,
   or upgrade assumptions.
+- Make cleanup commands idempotent. When moving generated or one-shot files to
+  trash, check that the source exists first; an already-absent file means the
+  cleanup is complete, not a tool failure. This matters for agent workspace
+  files such as `BOOTSTRAP.md`, which OpenClaw may remove or stop injecting as
+  part of first-run completion.
 - Use `--insecure` with `talosctl` only for nodes that are known to be in Talos
   maintenance mode before machine config has been applied.
 - After Talos machine config is applied, use authenticated Talos access through
