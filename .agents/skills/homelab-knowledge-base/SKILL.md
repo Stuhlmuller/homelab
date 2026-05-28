@@ -18,19 +18,15 @@ and runbook updates.
    index and memory layer, not the source of truth.
 4. Implement the requested repo change through repository-owned code and docs.
 5. Update the affected knowledge-base note or notes in the same change.
-6. Add an entry to `docs/knowledge-base/operations/change-log.md` when the work
-   creates, removes, renames, or materially changes an app, platform dependency,
-   workflow, topology assumption, secret contract, storage requirement, or
-   validation gate.
-7. Record validation performed and any skipped checks in the final response.
+6. Record validation performed and any skipped checks in the final response.
 
 ## What To Update
 
-- New or changed app: update `docs/knowledge-base/workloads/inventory.md`,
-  relevant architecture notes, and the change log.
+- New or changed app: update `docs/knowledge-base/workloads/inventory.md` and
+  relevant architecture notes.
 - New platform service: update the relevant architecture note, validation gates
-  if readiness checks changed, workload dependencies if downstream apps depend
-  on it, and the change log.
+  if readiness checks changed, and workload dependencies if downstream apps
+  depend on it.
 - New Terragrunt/OpenTofu unit: update GitOps flow or validation notes when the
   unit changes module ownership, bootstrap flow, dependency structure, or
   command expectations.

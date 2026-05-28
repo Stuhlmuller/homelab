@@ -26,6 +26,6 @@ Use this checklist before adding or changing a Terragrunt unit.
 
 ## Knowledge-Base Update
 
-Update [[architecture/gitops-flow]], [[operations/validation-gates]], and
-[[operations/change-log]] when the unit changes workflow, bootstrap behavior,
-module ownership, validation, or dependency structure.
+Update [[architecture/gitops-flow]] and [[operations/validation-gates]] when the
+unit changes workflow, bootstrap behavior, module ownership, validation, or
+dependency structure.
