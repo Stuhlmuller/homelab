@@ -86,7 +86,7 @@ controllers:
       app:
         image:
           repository: lscr.io/linuxserver/deluge
-          tag: 2.1.1@sha256:9de4b097e0cb5dceb5ef0aaa4deb2565101c65e7d06770a59151770750a54858
+          tag: 2.2.0@sha256:0f775eabb317192909f50d768d274cddeb7d0f1b42db8ac688dca32db404e32a
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
@@ -94,7 +94,7 @@ controllers:
       port-config:
         image:
           repository: lscr.io/linuxserver/deluge
-          tag: 2.1.1@sha256:9de4b097e0cb5dceb5ef0aaa4deb2565101c65e7d06770a59151770750a54858
+          tag: 2.2.0@sha256:0f775eabb317192909f50d768d274cddeb7d0f1b42db8ac688dca32db404e32a
         env:
           DELUGE_INCOMING_PORT: *delugeIncomingPort
         command:
