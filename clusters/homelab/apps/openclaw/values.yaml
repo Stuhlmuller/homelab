@@ -21,8 +21,15 @@ controllers:
           limits:
             memory: 3Gi
         env:
+          OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
+          OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          OPENCLAW_GATEWAY_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: APP_SECRET
           GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
         envFrom:
           - secretRef:
@@ -31,6 +38,8 @@ controllers:
           - /bin/sh
           - -ec
           - |
+            : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
             mkdir -p "$(dirname "$OPENCLAW_CONFIG_PATH")"
             if [ ! -s "$OPENCLAW_CONFIG_PATH" ]; then
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
@@ -43,6 +52,16 @@ controllers:
             openclaw config set --strict-json \
               gateway.mode \
               '"local"'
+
+            openclaw config set --strict-json \
+              gateway.auth.mode \
+              '"token"'
+
+            openclaw config set \
+              gateway.auth.token \
+              --ref-provider default \
+              --ref-source env \
+              --ref-id OPENCLAW_GATEWAY_TOKEN
 
             openclaw config set --strict-json \
               gateway.controlUi.allowedOrigins \
@@ -83,8 +102,15 @@ controllers:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.5.27@sha256:555d6512c8adc145911c0f3d383663da2f7032d52547f7a1ee1da382a819d3bc"
         env:
+          OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
+          OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          OPENCLAW_GATEWAY_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-secrets
+                key: APP_SECRET
           GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
         envFrom:

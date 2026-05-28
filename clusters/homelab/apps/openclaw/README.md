@@ -13,6 +13,19 @@ with a `3Gi` memory limit because it validates config and installs channel
 plugins during startup. The local TCP proxy stays small at `25m` CPU and
 `64Mi` memory requested with a `256Mi` memory limit.
 
+## Gateway Auth
+
+The generated `/homelab/openclaw/app-secret` SSM parameter is exposed to the
+pod as `OPENCLAW_GATEWAY_TOKEN`. Startup bootstrap stores
+`gateway.auth.token` as a SecretRef to that environment value and pins
+`gateway.auth.mode` to `token`, so the gateway does not depend on a generated
+file under the container user's home directory.
+
+If gateway startup reports a missing
+`/home/node/.openclaw/secrets/gateway-auth-token.txt`, sync this desired state
+and roll the pod. The environment token wins during startup auth resolution and
+makes stale file-backed gateway token refs inactive.
+
 ## Discord Channel
 
 The `openclaw-secrets` ExternalSecret reads the Discord bot token from

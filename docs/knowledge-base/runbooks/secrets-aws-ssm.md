@@ -70,7 +70,10 @@ allow-list in the same PR that adds its first ExternalSecret.
 - n8n's SSM key is only exported as `N8N_ENCRYPTION_KEY` when the persisted
   settings file is absent. Do not fix an existing-key mismatch by overwriting
   the PVC config or rotating SSM without an n8n-supported migration.
-- OpenClaw uses `/homelab/openclaw/discord-bot-token` only for the Discord
+- OpenClaw uses `/homelab/openclaw/app-secret` as the generated gateway auth
+  token through `OPENCLAW_GATEWAY_TOKEN`; bootstrap stores a SecretRef to that
+  env value so stale file-backed gateway token paths do not block startup.
+  OpenClaw uses `/homelab/openclaw/discord-bot-token` only for the Discord
   channel account. Replace the placeholder in SSM, then bump the non-secret
   OpenClaw pod annotation in `clusters/homelab/apps/openclaw/values.yaml` so
   startup channel bootstrap runs with the new value. GitHub App credentials use
