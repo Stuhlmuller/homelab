@@ -512,7 +512,7 @@ alerting:
                   expr: argocd_app_info{health_status=~"Degraded|Missing|Unknown"}
                   instant: true
                   intervalMs: 1000
-                  legendFormat: "{{name}} {{health_status}}"
+                  legendFormat: Unhealthy application
                   maxDataPoints: 43200
                   range: false
                   refId: A
@@ -587,7 +587,7 @@ alerting:
                   expr: argocd_app_info{sync_status!="Synced"}
                   instant: true
                   intervalMs: 1000
-                  legendFormat: "{{name}} {{sync_status}}"
+                  legendFormat: Out-of-sync application
                   maxDataPoints: 43200
                   range: false
                   refId: A
