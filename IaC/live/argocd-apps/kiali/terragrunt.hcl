@@ -89,7 +89,7 @@ inputs = {
     },
     {
       name  = "auth"
-      value = "anonymous read-only; tailnet-only"
+      value = "anonymous read-only; tailnet gateway allowlisted"
     }
   ]
 }
