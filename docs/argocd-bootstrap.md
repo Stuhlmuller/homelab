@@ -38,15 +38,23 @@ Create these AWS Systems Manager Parameter Store entries before rollout:
 
 | Parameter | Secret key | Expected value |
 | --- | --- | --- |
-| `/homelab/argocd/oidc/url` | `url` | Browser-facing Argo CD base URL registered with the IdP. |
 | `/homelab/argocd/oidc/issuer` | `issuer` | OIDC issuer URL used for provider discovery. |
 | `/homelab/argocd/oidc/client-id` | `clientID` | OIDC client ID issued by the IdP. |
 | `/homelab/argocd/oidc/client-secret` | `clientSecret` | OIDC client secret stored outside git. |
 
 Store `/homelab/argocd/oidc/client-secret` as a SecureString. The other values
-may be String or SecureString depending on local policy. This change does not
-create an ingress or DNS record. Register `<url>/api/dex/callback` with the IdP;
-Argo CD derives that Dex connector callback from the configured `url`.
+may be String or SecureString depending on local policy. The browser-facing
+Argo CD URL is committed as non-secret desired state in
+`IaC/bootstrap/argocd/terragrunt.hcl`, not stored in Parameter Store. This
+change does not create an ingress or DNS record. Register
+`https://argocd.stinkyboi.com/api/dex/callback` with the IdP; Argo CD derives
+that Dex connector callback from the configured `url`.
+
+For Microsoft Entra, keep Dex requested scopes to `openid`, `profile`, and
+`email`. Do not add `groups` as an OAuth scope; Entra rejects it with
+`AADSTS650053`. Argo CD group authorization still uses the token `groups` claim
+through Dex `insecureEnableGroups`, so configure the Entra application
+registration to emit group membership claims.
 
 ## Validate Before Apply
 
@@ -131,8 +139,10 @@ Expected OIDC result:
 
 If `argocd-oidc-sso` reports `ClusterSecretStore "aws-ssm" is not ready`, wait
 for the `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` stack to
-create the `external-secrets/aws-ssm-auth` Secret. The ExternalSecret refreshes
-every 5 minutes after that provider dependency is ready.
+create the `external-secrets/aws-ssm-auth` Secret. The ExternalSecret uses
+`refreshPolicy: OnChange`; if only SSM values changed, make a repo-owned
+metadata or spec change and let Argo CD sync it rather than patching the live
+resource.
 
 ## First Handoff
 
@@ -192,6 +202,9 @@ OIDC login fails:
 5. Inspect `kubectl -n argocd logs deploy/argocd-dex-server` for OIDC
    validation errors. Do not paste raw assertion, token, or secret values into
    the repository.
+6. If Dex logs `AADSTS650053` for the `groups` scope, remove `groups` from the
+   requested Dex scopes and configure the IdP app to emit a `groups` claim
+   instead.
 
 Partial install:
 

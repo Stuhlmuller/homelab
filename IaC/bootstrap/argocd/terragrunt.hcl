@@ -51,7 +51,6 @@ inputs = {
                     - openid
                     - profile
                     - email
-                    - groups
                   insecureEnableGroups: true
           EOT
         }

@@ -44,6 +44,12 @@ Register `https://argocd.stinkyboi.com/api/dex/callback` as the IdP callback
 URL. Argo CD derives the Dex connector callback from its configured `url`; do
 not store a separate callback value in git or Parameter Store.
 
+For Microsoft Entra, keep the Dex connector's requested scopes to standard
+OpenID Connect scopes: `openid`, `profile`, and `email`. Do not request a
+`groups` OAuth scope; Entra rejects that request. Group-based Argo CD RBAC
+still uses the token's `groups` claim through Dex `insecureEnableGroups`, so
+the Entra application registration must emit group membership claims.
+
 The `terraform.source` value points directly at the Terragrunt catalog
 `helm-release` module pinned to version `0.3.0`. There are no repository-local
 OpenTofu modules in this bootstrap stack.
