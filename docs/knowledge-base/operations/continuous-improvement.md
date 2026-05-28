@@ -56,3 +56,13 @@ when a more specific note does not already own the finding.
   `GIT_CONFIG_GLOBAL=/data/openclaw/gitconfig`, can run `git status` in
   `/data/openclaw/workspace`, and has
   `/data/openclaw/workspace/.openclaw/trash`.
+- **Status:** planned
+- **Area:** agent runtime
+- **Evidence:** Rodman requires Claw to sign all commits. The current OpenClaw
+  image lacks `gpg` and `ssh-keygen`, so the pod bootstrap must provide a
+  persistent signing helper and key.
+- **Risk:** unsigned commits weaken auditability for agent-authored
+  infrastructure changes.
+- **Next step:** configure startup bootstrap to generate a persistent SSH
+  signing key on the OpenClaw PVC, set `commit.gpgsign=true`, and verify future
+  agent commits show a good SSH signature.

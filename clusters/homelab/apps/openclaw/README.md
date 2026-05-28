@@ -26,6 +26,13 @@ workspace and `/data/openclaw/src/*` checkouts.
 This keeps agent file cleanup and Git operations from failing on NFS ownership
 metadata while preserving the PVC as the source of durable agent state.
 
+Startup bootstrap also configures Claw's commits to be SSH-signed. The signing
+key is generated once at `/data/openclaw/signing/claw_ed25519`, Git uses
+`/data/openclaw/gitconfig` as its global config, and `commit.gpgsign=true`
+prevents unsigned commits from being created by default. If the image does not
+ship `ssh-keygen`, bootstrap unpacks `openssh-client` into
+`/data/openclaw/tools` and points Git at that persistent helper.
+
 ## Gateway Auth
 
 The generated `/homelab/openclaw/app-secret` SSM parameter is exposed to the
