@@ -8,6 +8,7 @@ controllers:
       automountServiceAccountToken: false
       annotations:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
+        homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
       bootstrap-config:
         image:
@@ -22,6 +23,7 @@ controllers:
         env:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
+          GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
         envFrom:
           - secretRef:
               name: openclaw-secrets
@@ -83,6 +85,7 @@ controllers:
         env:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
+          GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
         envFrom:
           - secretRef:
@@ -219,3 +222,18 @@ persistence:
           - path: /data/openclaw/extensions
         bootstrap-config:
           - path: /data/openclaw/extensions
+  github-app-private-key:
+    enabled: true
+    type: secret
+    name: openclaw-github-app-private-key
+    items:
+      - key: private-key.pem
+        path: private-key.pem
+    advancedMounts:
+      openclaw:
+        app:
+          - path: /var/run/secrets/openclaw/github-app
+            readOnly: true
+        bootstrap-config:
+          - path: /var/run/secrets/openclaw/github-app
+            readOnly: true

@@ -55,7 +55,12 @@ roles need identity-based KMS permissions for both keys.
   `DISCORD_BOT_TOKEN`; bootstrap configures Discord with an OpenClaw SecretRef
   to that environment value instead of storing the token in config. ChatGPT Pro
   or Codex OAuth credentials are interactive user credentials stored on the
-  OpenClaw PVC, not SSM parameters.
+  OpenClaw PVC, not SSM parameters. OpenClaw GitHub App credentials use
+  `/homelab/openclaw/github-app/id`,
+  `/homelab/openclaw/github-app/installation-id`, and
+  `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
+  the private key is mounted as a file referenced by
+  `GITHUB_APP_PRIVATE_KEY_PATH`.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
