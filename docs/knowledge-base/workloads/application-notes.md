@@ -91,7 +91,10 @@ SSM parameter remains declared until those PVCs are archived or removed.
 ## OpenClaw
 
 OpenClaw persists runtime state on `/data/openclaw`. The startup bootstrap
-keeps the tailnet Control UI origin allow-list in config. When
+keeps the tailnet Control UI origin allow-list in config and stores
+`gateway.auth.token` as an environment-backed SecretRef to
+`OPENCLAW_GATEWAY_TOKEN`, sourced from the generated
+`/homelab/openclaw/app-secret` SSM parameter. When
 `/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
 installs and enables the official `@openclaw/discord` plugin and writes a
 SecretRef to `DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory

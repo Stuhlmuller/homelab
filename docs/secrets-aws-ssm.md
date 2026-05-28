@@ -106,6 +106,12 @@ Terragrunt-generated internal values:
 `/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
 until a repository-managed LiteLLM virtual-key workflow exists.
 
+OpenClaw reads `/homelab/openclaw/app-secret` as `APP_SECRET` and
+`OPENCLAW_GATEWAY_TOKEN`. Bootstrap stores `gateway.auth.token` as an
+environment-backed SecretRef to `OPENCLAW_GATEWAY_TOKEN`, which keeps gateway
+auth out of plaintext config and prevents startup from depending on generated
+token files under the container user's home directory.
+
 OpenClaw reads `/homelab/openclaw/discord-bot-token` as
 `DISCORD_BOT_TOKEN`. The pod bootstrap installs and enables the Discord channel
 plugin, then writes a SecretRef to that environment-backed token instead of

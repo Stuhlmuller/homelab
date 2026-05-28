@@ -56,11 +56,15 @@ roles need identity-based KMS permissions for both keys.
   ExternalSecret and target Secret `cloudflare-api-token`.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
-- OpenClaw uses `/homelab/openclaw/discord-bot-token` as
-  `DISCORD_BOT_TOKEN`; bootstrap configures Discord with an OpenClaw SecretRef
-  to that environment value instead of storing the token in config. ChatGPT Pro
-  or Codex OAuth credentials are interactive user credentials stored on the
-  OpenClaw PVC, not SSM parameters. OpenClaw GitHub App credentials use
+- OpenClaw uses `/homelab/openclaw/app-secret` as
+  `OPENCLAW_GATEWAY_TOKEN`; bootstrap configures gateway auth with an OpenClaw
+  SecretRef to that environment value instead of a generated file under the
+  container user's home directory. OpenClaw uses
+  `/homelab/openclaw/discord-bot-token` as `DISCORD_BOT_TOKEN`; bootstrap
+  configures Discord with an OpenClaw SecretRef to that environment value
+  instead of storing the token in config. ChatGPT Pro or Codex OAuth
+  credentials are interactive user credentials stored on the OpenClaw PVC, not
+  SSM parameters. OpenClaw GitHub App credentials use
   `/homelab/openclaw/github-app/id`,
   `/homelab/openclaw/github-app/installation-id`, and
   `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
