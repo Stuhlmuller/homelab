@@ -33,5 +33,6 @@ fresh cluster can install Argo CD before External Secrets CRDs exist. Sync
 and allowed to read the Argo CD OIDC issuer, client ID, and client secret
 parameters in `us-west-2`. The browser-facing Argo CD URL is non-secret
 desired state in the bootstrap Terragrunt values, not an SSM parameter.
-The ExternalSecret refreshes every 5 minutes so bootstrap recovery is picked up
-soon after the shared `aws-ssm` ClusterSecretStore becomes ready.
+The ExternalSecret uses `refreshPolicy: OnChange`; if only the SSM values
+change, roll that through a repo-owned metadata or spec change and let Argo CD
+sync it instead of patching the live resource.

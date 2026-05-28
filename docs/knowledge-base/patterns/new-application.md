@@ -36,5 +36,5 @@ checks, data exposure, and rollback steps.
 
 ## Knowledge-Base Update
 
-Update [[workloads/inventory]], any affected architecture note, and
-[[operations/change-log]] in the same change.
+Update [[workloads/inventory]] and any affected architecture or runbook note in
+the same change.
