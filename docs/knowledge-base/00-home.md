@@ -29,8 +29,6 @@ in the same change.
   services.
 - [[patterns/new-terragrunt-unit]] is the checklist for new Terragrunt units.
 - [[operations/validation-gates]] collects validation expectations.
-- [[operations/change-log]] captures knowledge-base updates as the homelab
-  evolves.
 
 ## Update Rule
 
@@ -39,13 +37,10 @@ For every substantive change, update the smallest useful set of notes:
 1. Read this index and any note related to the code or docs being changed.
 2. Make the repository source change first.
 3. Update affected knowledge-base links, inventories, decisions, and validation
-   evidence.
-4. Add an entry to [[operations/change-log]] when the change creates, removes,
-   renames, or materially changes an app, platform dependency, workflow,
-   topology assumption, secret contract, or storage requirement.
-5. Mark unverified or environment-specific facts explicitly instead of writing
+   evidence in the notes that remain the durable source for that topic.
+4. Mark unverified or environment-specific facts explicitly instead of writing
    them as general guidance.
-6. When pulling source docs into Obsidian, keep source paths visible so readers
+5. When pulling source docs into Obsidian, keep source paths visible so readers
    can jump back to the canonical file before changing desired state.
 
 ## Public-Repo Boundary

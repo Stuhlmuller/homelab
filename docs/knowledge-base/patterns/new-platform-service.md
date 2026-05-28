@@ -29,5 +29,4 @@ cluster-wide controller.
 ## Knowledge-Base Update
 
 Update the affected architecture note, [[workloads/inventory]] if dependencies
-change, [[operations/validation-gates]] if validation changes, and
-[[operations/change-log]].
+change, and [[operations/validation-gates]] if validation changes.
