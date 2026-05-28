@@ -22,6 +22,11 @@ run the static checks and Conftest only.
   `pull_request_target`.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
+- The Terragrunt plan and apply workflows restore and save a GitHub Actions
+  cache for the Nix store after Nix is installed and before the first
+  `nix develop --command ...` step. The cache key is derived from the runner OS,
+  `flake.nix`, and `flake.lock`, with an OS-scoped fallback so dependency
+  updates can still reuse the nearest previous dev shell closure.
 - GitHub token permissions default to none. Jobs opt in to `contents: read`;
   live Terragrunt jobs request `id-token: write`; and the trusted PR plan job
   requests `pull-requests: write` only so it can refresh the managed plan
@@ -67,6 +72,7 @@ References:
 - [Tailscale GitHub Action](https://tailscale.com/docs/integrations/github/github-action)
 - [Tailscale grants syntax](https://tailscale.com/docs/reference/syntax/grants)
 - [GitHub OIDC with AWS](https://docs.github.com/en/actions/how-tos/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
+- [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
 - [Conftest](https://www.conftest.dev/)
 - [Checkov GitHub Actions integration](https://www.checkov.io/4.Integrations/GitHub%20Actions.html)
 

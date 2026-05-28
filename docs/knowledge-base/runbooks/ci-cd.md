@@ -21,6 +21,10 @@ Source: `docs/ci-cd.md`
 
 - Workflows use `pull_request` and `push`, not `pull_request_target`.
 - External actions are pinned to full commit SHAs and checked by Conftest.
+- Terragrunt plan and apply jobs restore and save a GitHub Actions cache for the
+  Nix store after installing Nix. The cache key is derived from the runner OS,
+  `flake.nix`, and `flake.lock`, with an OS-scoped fallback for nearby dev shell
+  closures.
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Tailscale uses an auth key because tailnet lock blocks the federated path for
