@@ -123,6 +123,12 @@ the persistent `/config/config.xml` contains the Servarr-documented
 `PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
 migration.
 
+n8n must also wait for `n8n-postgres` to sync and become healthy. Verify the
+`n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, the StatefulSet,
+the PVC, and an authenticated connection to the `n8n` database documented in
+`clusters/homelab/apps/n8n-postgres/README.md` before treating n8n as migrated
+to PostgreSQL.
+
 ## Current Validation Record
 
 - Read-only `showmount -e 10.1.0.2` verified the QNAP `/homelab` export is
