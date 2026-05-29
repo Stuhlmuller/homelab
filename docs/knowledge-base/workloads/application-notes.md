@@ -65,6 +65,9 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 `IaC/live/azuread-applications/grafana`, provisions Prometheus and Alertmanager
 datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
 repo-owned values. Discord webhook URL comes from SSM through External Secrets.
+Its Helm-rendered Deployment uses a resource-level Argo CD `Replace=true` sync
+option because the app keeps a `Recreate` strategy for the single Grafana PVC,
+and server-side apply can otherwise preserve stale `rollingUpdate` fields.
 
 ## Kiali
 
