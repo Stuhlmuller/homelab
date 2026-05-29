@@ -46,10 +46,10 @@ run the static checks and Conftest only.
   `tailscale set --accept-routes=true` so it can use the subnet route to the
   Kubernetes API endpoint without conflicting with the action's own login
   flags.
-- The workflow also selects the repo-owned `homelab-exit-node` connector as a
-  bootstrap path for the GitHub-hosted runner. The connector advertises a
-  narrower `10.1.0.199/32` route for the Kubernetes API; prefer that route once
-  it is approved in the tailnet.
+- The workflow relies on the repo-owned `homelab-exit-node` connector's
+  advertised `10.1.0.199/32` subnet route for Kubernetes API access. It does
+  not select the connector as a full exit node, so public AWS STS/KMS calls keep
+  using the GitHub-hosted runner's normal network path and DNS resolver.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace

@@ -25,7 +25,6 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER: 10.1.0.199
-  TAILSCALE_EXIT_NODE: homelab-exit-node
   TAILSCALE_VERSION: 1.98.3
 
 jobs:
@@ -123,9 +122,6 @@ jobs:
 
       - name: Accept Tailnet Subnet Routes
         run: sudo tailscale set --accept-routes=true
-
-      - name: Select Homelab Exit Node
-        run: sudo tailscale set --exit-node="${TAILSCALE_EXIT_NODE}"
 
       - name: Install Kubeconfig
         env:
