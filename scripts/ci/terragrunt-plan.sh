@@ -33,7 +33,7 @@ render_plan_out() {
 echo "::group::Argo CD bootstrap plan"
 (
   cd IaC/bootstrap/argocd
-  terragrunt --log-disable plan -no-color
+  terragrunt --log-disable plan -lock=false -no-color
 )
 echo "::endgroup::"
 render_plan_out "Argo CD bootstrap" "IaC/bootstrap/argocd"
@@ -43,7 +43,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --parallelism 1 --source-update plan -no-color
+  terragrunt run --all --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
