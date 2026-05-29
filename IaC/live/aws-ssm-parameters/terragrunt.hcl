@@ -110,6 +110,10 @@ inputs = {
       description   = "Deluge AirVPN WireGuard private key."
       initial_value = local.placeholder
     }
+    "/homelab/deluge/vpn/wireguard-config" = {
+      description   = "Deluge AirVPN WireGuard wg0.conf profile."
+      initial_value = local.placeholder
+    }
     "/homelab/deluge/vpn/wireguard-preshared-key" = {
       description   = "Deluge AirVPN WireGuard pre-shared key."
       initial_value = local.placeholder

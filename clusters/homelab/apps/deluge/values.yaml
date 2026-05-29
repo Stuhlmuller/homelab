@@ -9,7 +9,7 @@ controllers:
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
-        homelab.rst.io/wireguard-profile-ssm-version: "2"
+        homelab.rst.io/wireguard-profile-ssm-version: "3"
     strategy: Recreate
     initContainers:
       download-dirs:
@@ -25,6 +25,62 @@ controllers:
               /downloads/complete/radarr \
               /downloads/complete/sonarr \
               /downloads/complete/manual
+      config-wireguard:
+        image:
+          repository: busybox
+          tag: 1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            source_config=/vpn-source/wg0.conf
+            target_config=/gluetun/wireguard/wg0.conf
+            test -s "$source_config"
+            endpoint="$(
+              awk -F= '
+                tolower($1) ~ /^[[:space:]]*endpoint[[:space:]]*$/ {
+                  value=$2
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                  print value
+                  exit
+                }
+              ' "$source_config"
+            )"
+            host="${endpoint%:*}"
+            port="${endpoint##*:}"
+            if [ -z "$endpoint" ] || [ "$host" = "$endpoint" ] || [ -z "$port" ]; then
+              echo "WireGuard config must contain Endpoint = host:port" >&2
+              exit 1
+            fi
+            if printf "%s\n" "$host" | grep -Eq '^[0-9]+([.][0-9]+){3}$'; then
+              endpoint_ip="$host"
+            else
+              endpoint_ip="$(
+                nslookup "$host" |
+                  awk '/^Address: / {print $2}' |
+                  grep -E '^[0-9]+([.][0-9]+){3}$' |
+                  head -n 1
+              )"
+              if [ -z "$endpoint_ip" ]; then
+                echo "failed to resolve WireGuard endpoint hostname" >&2
+                exit 1
+              fi
+            fi
+            awk -v replacement="Endpoint = ${endpoint_ip}:${port}" '
+              /^[[:space:]]*Endpoint[[:space:]]*=/ && !done {
+                print replacement
+                done=1
+                next
+              }
+              { print }
+              END {
+                if (!done) {
+                  exit 1
+                }
+              }
+            ' "$source_config" >"${target_config}.tmp"
+            chmod 0400 "${target_config}.tmp"
+            mv "${target_config}.tmp" "$target_config"
       gluetun:
         image:
           repository: ghcr.io/qdm12/gluetun
@@ -180,6 +236,16 @@ persistence:
           - path: /dev/net/tun
   vpn-profile:
     enabled: true
+    type: emptyDir
+    advancedMounts:
+      deluge:
+        config-wireguard:
+          - path: /gluetun/wireguard
+        gluetun:
+          - path: /gluetun/wireguard
+            readOnly: true
+  vpn-profile-source:
+    enabled: true
     type: secret
     name: deluge-vpn
     items:
@@ -187,6 +253,6 @@ persistence:
         path: wg0.conf
     advancedMounts:
       deluge:
-        gluetun:
-          - path: /gluetun/wireguard
+        config-wireguard:
+          - path: /vpn-source
             readOnly: true
