@@ -9,6 +9,7 @@ controllers:
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
+        homelab.rst.io/wireguard-profile-ssm-version: "2"
     strategy: Recreate
     initContainers:
       download-dirs:
@@ -31,16 +32,12 @@ controllers:
         restartPolicy: Always
         env:
           TZ: America/Los_Angeles
-          VPN_SERVICE_PROVIDER: airvpn
+          VPN_SERVICE_PROVIDER: custom
           VPN_TYPE: wireguard
-          WIREGUARD_ALLOWED_IPS: "0.0.0.0/0"
           FIREWALL: "on"
           FIREWALL_INPUT_PORTS: "8112"
           FIREWALL_VPN_INPUT_PORTS: &delugeIncomingPort "5983"
           HEALTH_RESTART_VPN: "on"
-        envFrom:
-          - secretRef:
-              name: deluge-vpn
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -103,8 +100,9 @@ controllers:
           - |
             rm -f /tmp/deluge-port-configured
             expected="listen_ports: (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+            port_command="config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
             for attempt in $(seq 1 120); do
-              timeout 10s deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})" || true
+              timeout 10s deluge-console -c /config "$port_command" || true
               listen_ports="$(timeout 10s deluge-console -c /config "config listen_ports" 2>&1 || true)"
               printf "%s\n" "$listen_ports"
               if printf "%s\n" "$listen_ports" | grep -F "$expected" >/dev/null; then
@@ -169,3 +167,15 @@ persistence:
       deluge:
         gluetun:
           - path: /dev/net/tun
+  vpn-profile:
+    enabled: true
+    type: secret
+    name: deluge-vpn
+    items:
+      - key: wg0.conf
+        path: wg0.conf
+    advancedMounts:
+      deluge:
+        gluetun:
+          - path: /gluetun/wireguard
+            readOnly: true
