@@ -8,21 +8,28 @@ pass, Deluge must not become ready.
 
 ## Secret Contract
 
-The `deluge-vpn` ExternalSecret reads AirVPN WireGuard values from AWS SSM
-Parameter Store:
+The `deluge-vpn` ExternalSecret reads the AirVPN WireGuard profile from AWS
+SSM Parameter Store and publishes it as `wg0.conf`:
 
-| SSM parameter | WireGuard config field |
-|---------------|------------------------|
-| `/homelab/deluge/vpn/wireguard-private-key` | `PrivateKey` |
-| `/homelab/deluge/vpn/wireguard-preshared-key` | peer `PresharedKey` |
-| `/homelab/deluge/vpn/wireguard-addresses` | interface `Address` |
+| SSM parameter | Kubernetes Secret key |
+|---------------|-----------------------|
+| `/homelab/deluge/vpn/wireguard-config` | `wg0.conf` |
 
-Use only the IPv4 CIDR in `WIREGUARD_ADDRESSES` unless the cluster and Pod
-network are intentionally configured for IPv6. The ExternalSecret template
-extracts the first IPv4 CIDR from the SSM value before writing the Kubernetes
-Secret, and `values.yaml` pins `WIREGUARD_ALLOWED_IPS` to `0.0.0.0/0`, so
-AirVPN-provided IPv6 values do not make Gluetun configure IPv6 routing in this
-IPv4-only cluster.
+The `deluge-vpn` ExternalSecret uses `refreshPolicy: OnChange`. After replacing
+the AirVPN profile values in SSM, bump the non-secret
+`homelab.rst.io/wireguard-profile-ssm-version` annotation in both
+`externalsecret.yaml` and `values.yaml`. The ExternalSecret metadata change
+causes External Secrets to render a fresh Kubernetes Secret, and the pod
+template annotation rolls Deluge so Gluetun reads the new WireGuard profile at
+startup.
+
+Gluetun runs this profile through its `custom` WireGuard provider so it uses the
+exact AirVPN peer instead of selecting a random AirVPN server from provider
+metadata. Gluetun's custom WireGuard path still requires the endpoint host to
+be an IP address at startup, while AirVPN profiles can contain an endpoint DNS
+name. A `config-wireguard` init container reads the secret profile, resolves a
+DNS endpoint to its first IPv4 address when needed, and writes the normalized
+profile into an in-memory volume mounted at `/gluetun/wireguard/wg0.conf`.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
@@ -31,14 +38,17 @@ shared `DELUGE_INCOMING_PORT` value. A `port-config` sidecar shares the Deluge
 config volume and applies:
 
 ```sh
-deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT}); config --set random_outgoing_ports true; config --set outgoing_ports (0, 0)"
 ```
 
 The sidecar retries while Deluge starts and verifies that Deluge reports the
-configured `listen_ports` value. If it cannot connect to Deluge and apply the
-port configuration, the sidecar stays unready instead of killing the main app
+configured `listen_ports`, default `outgoing_ports`, and random outgoing port
+behavior. Keep the forwarded AirVPN port fixed only for incoming connections;
+pinning outgoing connections to the same single port can leave torrents unable
+to make enough peer connections. If the sidecar cannot connect to Deluge and
+apply the port configuration, it stays unready instead of killing the main app
 container during startup. The Pod becomes ready only after Gluetun is healthy
-and the incoming port has been applied.
+and the port configuration has been applied.
 
 ## Download Paths
 

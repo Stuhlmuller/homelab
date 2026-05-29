@@ -74,6 +74,7 @@ controllers:
             set_config_tag PostgresHost "$RADARR_POSTGRES_HOST"
             set_config_tag PostgresMainDb "$RADARR_POSTGRES_MAIN_DB"
             set_config_tag PostgresLogDb "$RADARR_POSTGRES_LOG_DB"
+            set_config_tag AuthenticationMethod External
         securityContext:
           runAsGroup: 1000
           runAsUser: 1000

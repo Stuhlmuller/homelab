@@ -54,6 +54,14 @@ roles need identity-based KMS permissions for both keys.
   target Secret `operator-oauth`.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
+- Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
+  material. It reads the full profile from
+  `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
+  refreshes on ExternalSecret changes; after replacing the SSM profile value,
+  bump `homelab.rst.io/wireguard-profile-ssm-version` on both the
+  ExternalSecret and Deluge pod template so the Secret is rerendered and
+  Gluetun starts with the new profile. The Deluge pod resolves an endpoint DNS
+  name in the profile to an IPv4 address before handing it to Gluetun.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
 - OpenClaw uses `/homelab/openclaw/app-secret` as
