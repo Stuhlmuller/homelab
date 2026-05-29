@@ -85,9 +85,6 @@ roles need identity-based KMS permissions for both keys.
   exchange credentials, tentacles, and strategy state live on the finance
   namespace PVCs and are summarized in [[runbooks/secrets-aws-ssm]] and
   [[workloads/application-notes]].
-- The retired Hummingbot PVCs still have rollback value, so
-  `/homelab/hummingbot/config-password` remains declared until those PVCs are
-  archived or intentionally removed.
 
 ## Source Files
 

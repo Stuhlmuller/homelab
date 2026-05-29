@@ -238,8 +238,3 @@ live-trading autostart configuration until a separate PR adds the
 repository-owned secret contract or documents why UI-managed state is sufficient,
 records backtest and paper-trading evidence, and confirms withdrawal access is
 disabled at the exchange.
-
-The old `/homelab/hummingbot/config-password` parameter is retained while the
-retired Hummingbot PVCs exist. It is not consumed by the active OctoBot
-deployment, but keeping it avoids destroying rollback material before the old
-PVCs are intentionally archived or deleted.
