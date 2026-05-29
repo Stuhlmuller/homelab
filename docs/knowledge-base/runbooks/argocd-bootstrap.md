@@ -35,7 +35,15 @@ Dex connector references from `argocd-cm`.
 For Microsoft Entra, Dex requests only `openid`, `profile`, and `email`. Do not
 add `groups` as a requested OAuth scope; Entra rejects it with `AADSTS650053`.
 Group-based RBAC depends on Entra emitting a token `groups` claim and Dex
-`insecureEnableGroups` passing that claim through to Argo CD.
+`insecureEnableGroups` passing that claim through to Argo CD. The connector
+also sets `insecureSkipEmailVerified: true` because Entra can return an ID
+token without `email_verified`; access still depends on the Entra app
+registration, callback URL, client secret, and Argo CD RBAC.
+
+Dex startup uses the literal Entra issuer committed in
+`IaC/bootstrap/argocd/terragrunt.hcl`. Keep `/homelab/argocd/oidc/issuer`
+aligned with that value for the compatibility Secret, but do not make Dex
+startup depend on a placeholder-backed issuer.
 
 ## Apply And Verify
 

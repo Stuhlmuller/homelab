@@ -91,6 +91,10 @@ stack because Terraform manages the Kubernetes Secret.
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
+
+For Argo CD, `/homelab/argocd/oidc/issuer` is a compatibility copy for the
+generated Secret and should match the literal Microsoft Entra issuer committed
+in `IaC/bootstrap/argocd/terragrunt.hcl`; do not reset it to `REPLACE_ME`.
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
 Terragrunt-generated internal values:

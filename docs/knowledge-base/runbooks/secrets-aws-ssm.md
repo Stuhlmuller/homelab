@@ -39,7 +39,7 @@ allow-list in the same PR that adds its first ExternalSecret.
 
 | App | Target Secret | Notes |
 | --- | --- | --- |
-| Argo CD | `argocd-oidc-sso` | Dex OIDC connector |
+| Argo CD | `argocd-oidc-sso` | Dex OIDC connector; issuer path is a compatibility copy and must stay aligned with the committed Entra issuer |
 | Argo CD Image Updater | `argocd-image-updater-git` | GitHub App credential for image update pull requests |
 | cert-manager | `cloudflare-api-token` | DNS-01 Cloudflare token |
 | external-secrets | `aws-ssm-auth` | Provider credential bridge |

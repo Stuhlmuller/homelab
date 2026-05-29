@@ -3,9 +3,10 @@ include "root" {
 }
 
 locals {
-  root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  aws_region  = local.root_config.locals.aws_region
-  placeholder = "REPLACE_ME"
+  root_config        = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region         = local.root_config.locals.aws_region
+  placeholder        = "REPLACE_ME"
+  argocd_oidc_issuer = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
 }
 
 terraform {
@@ -39,7 +40,7 @@ inputs = {
   parameters = {
     "/homelab/argocd/oidc/issuer" = {
       description   = "Argo CD OIDC issuer URL used for provider discovery."
-      initial_value = local.placeholder
+      initial_value = local.argocd_oidc_issuer
     }
     "/homelab/argocd/oidc/client-id" = {
       description   = "Argo CD OIDC client ID issued by the IdP."
