@@ -99,19 +99,30 @@ controllers:
           - -ec
           - |
             rm -f /tmp/deluge-port-configured
-            expected="listen_ports: (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
-            port_command="config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+            expected_listen_ports="listen_ports: (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+            expected_outgoing_ports="outgoing_ports: (0, 0)"
+            expected_random_outgoing="random_outgoing_ports: True"
+            port_command="config --set random_port false"
+            port_command="${port_command}; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+            port_command="${port_command}; config --set random_outgoing_ports true"
+            port_command="${port_command}; config --set outgoing_ports (0, 0)"
             for attempt in $(seq 1 120); do
               timeout 10s deluge-console -c /config "$port_command" || true
               listen_ports="$(timeout 10s deluge-console -c /config "config listen_ports" 2>&1 || true)"
+              outgoing_ports="$(timeout 10s deluge-console -c /config "config outgoing_ports" 2>&1 || true)"
+              random_outgoing="$(timeout 10s deluge-console -c /config "config random_outgoing_ports" 2>&1 || true)"
               printf "%s\n" "$listen_ports"
-              if printf "%s\n" "$listen_ports" | grep -F "$expected" >/dev/null; then
+              printf "%s\n" "$outgoing_ports"
+              printf "%s\n" "$random_outgoing"
+              if printf "%s\n" "$listen_ports" | grep -F "$expected_listen_ports" >/dev/null &&
+                printf "%s\n" "$outgoing_ports" | grep -F "$expected_outgoing_ports" >/dev/null &&
+                printf "%s\n" "$random_outgoing" | grep -F "$expected_random_outgoing" >/dev/null; then
                 touch /tmp/deluge-port-configured
                 exec tail -f /dev/null
               fi
               sleep 2
             done
-            echo "failed to configure Deluge listen port ${DELUGE_INCOMING_PORT}" >&2
+            echo "failed to configure Deluge incoming/outgoing ports" >&2
             exit 1
         securityContext:
           runAsGroup: 1000

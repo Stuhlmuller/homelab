@@ -49,14 +49,17 @@ shared `DELUGE_INCOMING_PORT` value. A `port-config` sidecar shares the Deluge
 config volume and applies:
 
 ```sh
-deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
+deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT}); config --set random_outgoing_ports true; config --set outgoing_ports (0, 0)"
 ```
 
 The sidecar retries while Deluge starts and verifies that Deluge reports the
-configured `listen_ports` value. If it cannot connect to Deluge and apply the
-port configuration, the sidecar stays unready instead of killing the main app
+configured `listen_ports`, default `outgoing_ports`, and random outgoing port
+behavior. Keep the forwarded AirVPN port fixed only for incoming connections;
+pinning outgoing connections to the same single port can leave torrents unable
+to make enough peer connections. If the sidecar cannot connect to Deluge and
+apply the port configuration, it stays unready instead of killing the main app
 container during startup. The Pod becomes ready only after Gluetun is healthy
-and the incoming port has been applied.
+and the port configuration has been applied.
 
 ## Download Paths
 

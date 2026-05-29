@@ -52,7 +52,10 @@ AirVPN profile fields in SSM so Gluetun uses the selected peer instead of a
 random provider endpoint. AirVPN profile rotations require updating the SSM
 profile fields and bumping `homelab.rst.io/wireguard-profile-ssm-version` on
 both the `deluge-vpn` ExternalSecret and Deluge pod template so External
-Secrets rereads SSM and Gluetun restarts with the new profile.
+Secrets rereads SSM and Gluetun restarts with the new profile. Keep Deluge's
+AirVPN forwarded port fixed only for `listen_ports`; `outgoing_ports` should
+stay at Deluge's default random behavior, otherwise active torrents can report
+too few outgoing ports and fail to establish enough peer connections.
 
 ## Grafana
 
