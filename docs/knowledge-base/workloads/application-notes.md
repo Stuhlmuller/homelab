@@ -129,6 +129,15 @@ GitHub App identity is SSM-backed: `GITHUB_APP_ID` and
 is mounted from `openclaw-github-app-private-key` and referenced by
 `GITHUB_APP_PRIVATE_KEY_PATH` at
 `/var/run/secrets/openclaw/github-app/private-key.pem`.
+The Control UI error
+`unauthorized: device token mismatch (rotate/reissue device token)` means the
+browser's cached device-pairing token is stale against the gateway. Verify the
+gateway with `openclaw gateway health`, identify the
+`clientId: openclaw-control-ui` record with `openclaw devices list --json`, then
+refresh the browser's site data or rotate the affected operator token with
+`openclaw devices rotate --device <device-id> --role operator`. Any generated
+device token or token-bearing dashboard URL is secret runtime material and must
+stay out of git.
 OpenClaw has an explicit agent-heavy resource profile: the app requests `1`
 CPU and `2Gi` memory with a `6Gi` memory cap and no CPU limit, while bootstrap
 gets enough memory to validate config and install channel plugins at startup.

@@ -46,6 +46,30 @@ If gateway startup reports a missing
 and roll the pod. The environment token wins during startup auth resolution and
 makes stale file-backed gateway token refs inactive.
 
+If the Control UI reports
+`unauthorized: device token mismatch (rotate/reissue device token)`, the browser
+has a stale device-pairing token for the otherwise healthy gateway. Start with
+read-only checks:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- openclaw gateway health
+kubectl -n ai exec deploy/openclaw -c app -- openclaw devices list --json
+```
+
+If the gateway is healthy, refresh the browser's site data for
+`https://openclaw.stinkyboi.com` and reconnect through the current shared
+gateway-auth flow. To reissue a server-side token for a paired Control UI
+device, identify the `clientId: openclaw-control-ui` record and rotate its
+operator token:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- \
+  openclaw devices rotate --device <device-id> --role operator
+```
+
+Treat any generated device token or token-bearing dashboard URL as secret
+runtime material. Do not commit it or paste it into docs.
+
 ## Discord Channel
 
 The `openclaw-secrets` ExternalSecret reads the Discord bot token from
