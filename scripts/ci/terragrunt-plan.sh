@@ -43,7 +43,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --parallelism 1 --source-update plan -lock=false -no-color
+  terragrunt run --all --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
