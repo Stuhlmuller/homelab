@@ -153,6 +153,14 @@ inputs = {
       description   = "OpenClaw Discord bot token used to configure the Discord channel account at startup."
       initial_value = local.placeholder
     }
+    "/homelab/openclaw/grafana/username" = {
+      description   = "Grafana username for Claw to inspect homelab dashboards and alerts."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/grafana/password" = {
+      description   = "Grafana password for Claw to inspect homelab dashboards and alerts."
+      initial_value = local.placeholder
+    }
     "/homelab/openclaw/github-app/id" = {
       description   = "OpenClaw GitHub App ID."
       initial_value = local.placeholder

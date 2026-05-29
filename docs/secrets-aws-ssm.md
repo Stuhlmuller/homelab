@@ -89,7 +89,7 @@ stack because Terraform manages the Kubernetes Secret.
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
-| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
+| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
@@ -121,6 +121,14 @@ before relying on Discord, then bump
 `clusters/homelab/apps/openclaw/values.yaml` to the resulting SSM parameter
 version so GitOps rolls OpenClaw. ChatGPT Pro or Codex OAuth credentials are not
 SSM values; they are created interactively and persist on the OpenClaw PVC.
+
+OpenClaw reads `/homelab/openclaw/grafana/username` and
+`/homelab/openclaw/grafana/password` as `GRAFANA_USERNAME` and
+`GRAFANA_PASSWORD`. These credentials let Claw inspect Grafana dashboards and
+alerts during homelab incident triage. Replace both placeholders directly in
+SSM, then bump `homelab.rst.io/openclaw-grafana-login-ssm-version` in
+`clusters/homelab/apps/openclaw/values.yaml` to the latest SSM parameter
+version so GitOps rolls OpenClaw and reloads the environment variables.
 
 OpenClaw also reads GitHub App credentials from
 `/homelab/openclaw/github-app/id`,
