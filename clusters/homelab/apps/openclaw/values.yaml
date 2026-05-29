@@ -8,6 +8,7 @@ controllers:
       automountServiceAccountToken: false
       annotations:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
+        homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
       bootstrap-config:

@@ -184,6 +184,11 @@ alerting:
         group_by:
           - grafana_folder
           - alertname
+          - namespace
+          - name
+          - project
+          - health_status
+          - sync_status
         group_wait: 30s
         group_interval: 5m
         repeat_interval: 4h
