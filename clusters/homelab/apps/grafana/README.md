@@ -112,6 +112,9 @@ The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one
 alert instance per affected application so notifications include the application
 name, namespace, and current Argo CD status for triage.
+The notification policy groups on those Argo CD labels as well as the shared
+alert labels so Discord messages keep the affected application dimensions
+visible instead of collapsing them into a folder-level aggregate.
 
 ## Validation
 
