@@ -23,6 +23,11 @@ before they become incidents.
    unavailable validation plainly.
 5. Update this vault whenever a finding, decision, source path, risk, or
    follow-up matters beyond the current chat.
+6. Own PR follow-through for Claw-authored work: push the branch, open the PR,
+   monitor required checks, resolve merge blockers, and merge when repository
+   policy allows. PR creation is not the finish line.
+7. Use Conventional Commits for Claw-authored commit messages and PR titles so
+   release automation and reviewers can classify changes consistently.
 
 ## Finding Format
 
@@ -43,6 +48,14 @@ needed, to treat the homelab as home, and to mark findings in
 `docs/knowledge-base/`. This page is the durable capture point for that work
 when a more specific note does not already own the finding.
 
+Rodman also expects Claw to make sure Claw-authored PRs actually get merged.
+Merging to `main` is the handoff to the repository's Terragrunt/GitOps apply
+path, so check and merge ownership is part of the operational work.
+
+Claw-authored commits and PR titles should use Conventional Commit format, for
+example `docs: update homelab runbook` or `fix: tighten openclaw network
+policy`.
+
 ## Open Findings
 
 - **Status:** open
@@ -56,13 +69,24 @@ when a more specific note does not already own the finding.
   `GIT_CONFIG_GLOBAL=/data/openclaw/gitconfig`, can run `git status` in
   `/data/openclaw/workspace`, and has
   `/data/openclaw/workspace/.openclaw/trash`.
-- **Status:** planned
+- **Status:** fixed
 - **Area:** agent runtime
 - **Evidence:** Rodman requires Claw to sign all commits. The current OpenClaw
-  image lacks `gpg` and `ssh-keygen`, so the pod bootstrap must provide a
-  persistent signing helper and key.
+  image lacks `gpg` and `ssh-keygen`; PR #297 configured pod bootstrap to
+  provide a persistent SSH signing helper and key.
 - **Risk:** unsigned commits weaken auditability for agent-authored
   infrastructure changes.
-- **Next step:** configure startup bootstrap to generate a persistent SSH
-  signing key on the OpenClaw PVC, set `commit.gpgsign=true`, and verify future
-  agent commits show a good SSH signature.
+- **Next step:** after PR #297 syncs, verify the rolled pod has
+  `commit.gpgsign=true` and that future Claw branch commits show a good SSH
+  signature before push.
+- **Status:** open
+- **Area:** CI/CD
+- **Evidence:** the repository currently accepts squash merges only. GitHub
+  creates the final squash commit on `main`, while Claw's branch commits are
+  locally SSH-signed before push.
+- **Risk:** GitHub's squash commit may not carry Claw's local SSH signature,
+  which can blur the "all Claw commits are signed" rule unless the repository
+  policy or merge workflow explicitly accounts for it.
+- **Next step:** decide whether to keep squash-only merges with GitHub-signed
+  mainline commits, allow rebase/merge methods that preserve Claw-signed branch
+  commits, or add a bot-supported path for signed squash commits.
