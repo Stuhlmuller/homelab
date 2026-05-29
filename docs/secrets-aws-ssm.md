@@ -87,7 +87,7 @@ stack because Terraform manages the Kubernetes Secret.
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | grafana | `grafana-discord-webhook` | `grafana-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
-| deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-private-key`, `/homelab/deluge/vpn/wireguard-public-key`, `/homelab/deluge/vpn/wireguard-preshared-key`, `/homelab/deluge/vpn/wireguard-addresses`, `/homelab/deluge/vpn/wireguard-endpoint-ip`, `/homelab/deluge/vpn/wireguard-endpoint-port` |
+| deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
@@ -187,15 +187,14 @@ store only their PostgreSQL password contract in SSM through
 upstream-supported `config.xml` PostgreSQL fields during pod startup;
 application passwords, API keys, indexers, and app integrations still live on
 the persistent `/config` volumes and are managed through each app after first
-login. The `deluge-vpn` ExternalSecret renders Gluetun's
-`/gluetun/wireguard/wg0.conf` from AirVPN profile fields in SSM: private key,
-peer public key, preshared key, interface address, endpoint IP, and endpoint
-port. Gluetun runs this profile through the `custom` WireGuard provider so it
-uses the exact selected AirVPN peer instead of rotating through provider
-metadata. The custom endpoint must be an IP address; if the AirVPN profile
-shows a hostname, resolve it outside git and store the resulting IP in
-`/homelab/deluge/vpn/wireguard-endpoint-ip`. The ExternalSecret uses
-`refreshPolicy: OnChange`; after replacing profile values in SSM, bump
+login. The `deluge-vpn` ExternalSecret reads the full AirVPN WireGuard profile
+from `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`.
+Gluetun runs this profile through the `custom` WireGuard provider so it uses
+the exact selected AirVPN peer instead of rotating through provider metadata.
+The custom endpoint must be an IP address at startup, but AirVPN profiles can
+contain a DNS name; the Deluge `config-wireguard` init container resolves that
+endpoint to an IPv4 address before Gluetun starts. The ExternalSecret uses
+`refreshPolicy: OnChange`; after replacing the profile in SSM, bump
 `homelab.rst.io/wireguard-profile-ssm-version` in both
 `clusters/homelab/apps/deluge/externalsecret.yaml` and
 `clusters/homelab/apps/deluge/values.yaml` so External Secrets refreshes the

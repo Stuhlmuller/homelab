@@ -8,17 +8,12 @@ pass, Deluge must not become ready.
 
 ## Secret Contract
 
-The `deluge-vpn` ExternalSecret reads AirVPN WireGuard profile values from AWS
-SSM Parameter Store and renders `/gluetun/wireguard/wg0.conf` for Gluetun:
+The `deluge-vpn` ExternalSecret reads the AirVPN WireGuard profile from AWS
+SSM Parameter Store and publishes it as `wg0.conf`:
 
-| SSM parameter | WireGuard config field |
-|---------------|------------------------|
-| `/homelab/deluge/vpn/wireguard-private-key` | `PrivateKey` |
-| `/homelab/deluge/vpn/wireguard-public-key` | peer `PublicKey` |
-| `/homelab/deluge/vpn/wireguard-preshared-key` | peer `PresharedKey` |
-| `/homelab/deluge/vpn/wireguard-addresses` | interface `Address` |
-| `/homelab/deluge/vpn/wireguard-endpoint-ip` | peer `Endpoint` IP |
-| `/homelab/deluge/vpn/wireguard-endpoint-port` | peer `Endpoint` port |
+| SSM parameter | Kubernetes Secret key |
+|---------------|-----------------------|
+| `/homelab/deluge/vpn/wireguard-config` | `wg0.conf` |
 
 The `deluge-vpn` ExternalSecret uses `refreshPolicy: OnChange`. After replacing
 the AirVPN profile values in SSM, bump the non-secret
@@ -30,17 +25,11 @@ startup.
 
 Gluetun runs this profile through its `custom` WireGuard provider so it uses the
 exact AirVPN peer instead of selecting a random AirVPN server from provider
-metadata. Store the `Endpoint` as an IP address and port split into the two SSM
-parameters above; Gluetun's custom WireGuard endpoint field does not accept a
-DNS name. If the AirVPN profile shows a hostname, resolve it outside git and
-store only the resulting IP address in SSM.
-
-Use only the IPv4 CIDR in `WIREGUARD_ADDRESSES` unless the cluster and Pod
-network are intentionally configured for IPv6. The ExternalSecret template
-extracts the first IPv4 CIDR from the SSM value before writing the Kubernetes
-Secret, and the generated profile pins `AllowedIPs` to `0.0.0.0/0`, so
-AirVPN-provided IPv6 values do not make Gluetun configure IPv6 routing in the
-current IPv4-only cluster.
+metadata. Gluetun's custom WireGuard path still requires the endpoint host to
+be an IP address at startup, while AirVPN profiles can contain an endpoint DNS
+name. A `config-wireguard` init container reads the secret profile, resolves a
+DNS endpoint to its first IPv4 address when needed, and writes the normalized
+profile into an in-memory volume mounted at `/gluetun/wireguard/wg0.conf`.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
