@@ -47,7 +47,17 @@ bad, or Gluetun is unhealthy, Deluge must not become ready. The app owns the
 shared `media-downloads` PVC backed by the QNAP `/media` export and used by
 Radarr and Sonarr at `/downloads`. The `media-downloads-migration` Job copies
 the older `deluge-downloads` PVC into `/media/downloads` and verifies write
-access before cutover.
+access before cutover. `deluge-vpn` reads a full AirVPN `wg0.conf` from
+`/homelab/deluge/vpn/wireguard-config` so Gluetun uses the selected peer
+instead of a random provider endpoint. AirVPN profile rotations require
+updating that SSM value and bumping
+`homelab.rst.io/wireguard-profile-ssm-version` on both the `deluge-vpn`
+ExternalSecret and Deluge pod template so External Secrets rereads SSM and
+Gluetun restarts with the new profile. The pod resolves endpoint DNS names in
+the profile to IPv4 before Gluetun starts. Keep Deluge's AirVPN forwarded port
+fixed only for `listen_ports`; `outgoing_ports` should stay at Deluge's default
+random behavior, otherwise active torrents can report too few outgoing ports
+and fail to establish enough peer connections.
 
 ## Grafana
 
@@ -195,6 +205,13 @@ their library mounts now target the QNAP `/media` export: Radarr uses
 `media-movies` at `/movies`, Sonarr uses `media-tv` at `/tv`, and both share
 `media-downloads` at `/downloads`. The old dynamic media PVCs stay declared as
 migration sources until the `/media` copy is verified.
+
+Radarr uses `AuthenticationMethod=External` in `/config/config.xml`, managed by
+the startup init container in `clusters/homelab/apps/radarr/values.yaml`. The
+app is tailnet-only with Funnel disabled, so the tailnet gateway is the external
+access boundary. This avoids recurring Radarr password lockouts from internal
+auth drift. If Radarr is ever exposed beyond the tailnet, restore Forms auth or
+add a forward-auth layer first.
 
 ## Tailscale
 

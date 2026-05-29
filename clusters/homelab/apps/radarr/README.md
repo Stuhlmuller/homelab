@@ -24,6 +24,21 @@ persistent `/config` volume:
 The database password comes from AWS SSM Parameter Store through External
 Secrets. Do not commit it to this repository.
 
+## Authentication
+
+The startup `configure-postgres` init container also sets
+`<AuthenticationMethod>External</AuthenticationMethod>` in `/config/config.xml`.
+Radarr is exposed only through the tailnet Istio route with Funnel disabled, so
+the tailnet gateway is the external access boundary and Radarr's own password
+prompt is intentionally disabled.
+
+This avoids recurring lockouts when the internal Radarr username/password state
+drifts or is reset during config/database migrations. If Radarr is ever exposed
+outside the tailnet, restore Forms authentication or add a dedicated forward
+auth layer before rollout. Upstream documents `External` as the config-file-only
+mode for deployments protected by external authentication:
+<https://wiki.servarr.com/radarr/faq#authentication-method>.
+
 ## Media Storage
 
 Radarr mounts the static `media-movies` PVC at `/movies` and the shared

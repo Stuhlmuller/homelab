@@ -110,12 +110,28 @@ inputs = {
       description   = "Deluge AirVPN WireGuard private key."
       initial_value = local.placeholder
     }
+    "/homelab/deluge/vpn/wireguard-config" = {
+      description   = "Deluge AirVPN WireGuard wg0.conf profile."
+      initial_value = local.placeholder
+    }
     "/homelab/deluge/vpn/wireguard-preshared-key" = {
       description   = "Deluge AirVPN WireGuard pre-shared key."
       initial_value = local.placeholder
     }
+    "/homelab/deluge/vpn/wireguard-public-key" = {
+      description   = "Deluge AirVPN WireGuard peer public key from the selected profile."
+      initial_value = local.placeholder
+    }
     "/homelab/deluge/vpn/wireguard-addresses" = {
       description   = "Deluge AirVPN WireGuard interface address CIDR."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/wireguard-endpoint-ip" = {
+      description   = "Deluge AirVPN WireGuard endpoint IP from the selected profile."
+      initial_value = local.placeholder
+    }
+    "/homelab/deluge/vpn/wireguard-endpoint-port" = {
+      description   = "Deluge AirVPN WireGuard endpoint port from the selected profile."
       initial_value = local.placeholder
     }
     "/homelab/media-postgres/app-password" = {
@@ -151,6 +167,14 @@ inputs = {
     }
     "/homelab/openclaw/discord-bot-token" = {
       description   = "OpenClaw Discord bot token used to configure the Discord channel account at startup."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/grafana/username" = {
+      description   = "Grafana username for Claw to inspect homelab dashboards and alerts."
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/grafana/password" = {
+      description   = "Grafana password for Claw to inspect homelab dashboards and alerts."
       initial_value = local.placeholder
     }
     "/homelab/openclaw/github-app/id" = {

@@ -67,6 +67,21 @@ value, bump
 resulting SSM parameter version so Argo CD rolls the pod and the startup
 bootstrap re-runs.
 
+## Grafana Login
+
+The `openclaw-secrets` ExternalSecret also reads the dedicated Claw Grafana
+login from AWS SSM:
+
+| SSM parameter | Pod surface |
+| --- | --- |
+| `/homelab/openclaw/grafana/username` | `GRAFANA_USERNAME` |
+| `/homelab/openclaw/grafana/password` | `GRAFANA_PASSWORD` |
+
+After replacing those placeholders, bump
+`homelab.rst.io/openclaw-grafana-login-ssm-version` in `values.yaml` to the
+latest SSM parameter version so Argo CD rolls the pod and reloads the
+environment variables.
+
 Validate after sync:
 
 ```sh
