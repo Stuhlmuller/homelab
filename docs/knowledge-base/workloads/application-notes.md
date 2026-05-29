@@ -196,6 +196,13 @@ their library mounts now target the QNAP `/media` export: Radarr uses
 `media-downloads` at `/downloads`. The old dynamic media PVCs stay declared as
 migration sources until the `/media` copy is verified.
 
+Radarr uses `AuthenticationMethod=External` in `/config/config.xml`, managed by
+the startup init container in `clusters/homelab/apps/radarr/values.yaml`. The
+app is tailnet-only with Funnel disabled, so the tailnet gateway is the external
+access boundary. This avoids recurring Radarr password lockouts from internal
+auth drift. If Radarr is ever exposed beyond the tailnet, restore Forms auth or
+add a forward-auth layer first.
+
 ## Tailscale
 
 The Tailscale app owns operator support resources, the privileged `tailscale`
