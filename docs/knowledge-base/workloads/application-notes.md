@@ -203,15 +203,16 @@ rollout when existing SQLite contents must be preserved.
 ## Policy Bot
 
 Policy Bot is an in-flight stateless automation workload. The tailnet UI lives
-at `https://policy-bot.stinkyboi.com/details/<org>/<repo>/<pull-request>`.
+at `https://policy-bot.stinkyboi.com`, including the root page, details pages,
+static assets, and OAuth callback.
 The public GitHub webhook is:
 
 ```text
 https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
 ```
 
-Root routes stay unrouted. The public route depends on Tailscale Funnel for
-`tag:k8s` and Policy Bot's own webhook HMAC validation.
+Only the webhook route is public. The public route depends on Tailscale Funnel
+for `tag:k8s` and Policy Bot's own webhook HMAC validation.
 
 The Deployment runs one replica after the GitHub App ID, private key, OAuth
 client ID, and OAuth client secret placeholders are replaced in SSM. Scale it

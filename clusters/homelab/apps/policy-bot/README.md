@@ -12,19 +12,17 @@ config.
 
 ## Routes
 
-- Tailnet operator UI and OAuth callback:
-  `https://policy-bot.stinkyboi.com/details/<org>/<repo>/<pull-request>`,
-  `/static/*`, and `/api/github/auth`.
+- Tailnet operator UI, details pages, static assets, OAuth callback, and normal
+  Policy Bot page routes: `https://policy-bot.stinkyboi.com`.
 - Public GitHub webhook:
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
-- Root routes are intentionally unrouted. Keep `/` private unless a later PR
-  documents why the full UI should be exposed.
 
 The public webhook uses a dedicated Tailscale `Ingress` with
 `tailscale.com/funnel: "true"`. Tailscale Operator currently treats Ingress
 paths as prefix matches, so the reviewed public surface is the
 `/api/github/hook` prefix and the backend must continue to reject unrelated
-paths itself.
+paths itself. Do not add the Policy Bot UI host or root route to the Funnel
+Ingress.
 
 The tailnet policy must allow the operator proxy tag, currently `tag:k8s`, to
 use Funnel:
@@ -74,13 +72,15 @@ rendered again.
 kubectl kustomize clusters/homelab/apps/policy-bot
 kubectl -n automation get deploy,pod,svc,ingress,externalsecret policy-bot policy-bot-hook-funnel policy-bot-config
 kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=policy-bot-hook-funnel
+curl -I https://policy-bot.stinkyboi.com/
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
 curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
 ```
 
 Expected workload behavior: the Deployment has one available replica. Expected
-route behavior: the details URL redirects to `/api/github/auth`, the public hook
-returns `400` for an unsigned empty request, and
+route behavior: the internal host serves the normal Policy Bot UI paths, the
+details URL redirects to `/api/github/auth`, the public hook returns `400` for
+an unsigned empty request, and
 `https://policy-bot-hook.<tailnet-name>.ts.net/` is not routed.
 
 ## Rollback

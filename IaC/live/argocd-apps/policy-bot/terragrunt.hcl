@@ -68,7 +68,7 @@ inputs = {
   info = [
     {
       name  = "public-webhook"
-      value = "Only /api/github/hook is exposed through Tailscale Funnel; UI and OAuth routes remain tailnet-only on policy-bot.stinkyboi.com"
+      value = "Only /api/github/hook is exposed through Tailscale Funnel; all other Policy Bot routes remain tailnet-only on policy-bot.stinkyboi.com"
     }
   ]
 }
