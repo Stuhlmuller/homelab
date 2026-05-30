@@ -11,14 +11,7 @@ spec:
   gateways:
     - istio-system/tailnet-gateway
   http:
-    - match:
-        - uri:
-            exact: /api/github/auth
-        - uri:
-            prefix: /details
-        - uri:
-            prefix: /static
-      route:
+    - route:
         - destination:
             host: policy-bot.automation.svc.cluster.local
             port:

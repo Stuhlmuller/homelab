@@ -30,7 +30,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | litellm | `https://litellm.stinkyboi.com` | disabled |
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
 | n8n | `https://n8n.stinkyboi.com` | disabled |
-| policy-bot UI | `https://policy-bot.stinkyboi.com` | disabled |
+| policy-bot UI and normal routes | `https://policy-bot.stinkyboi.com` | disabled |
 | octobot UI | `https://octobot.stinkyboi.com` | disabled |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
 
@@ -124,9 +124,9 @@ or remove it from kustomization.yaml, then sync the policy-bot Application.
 Data exposed: webhook request body and headers sent by GitHub.
 ```
 
-The Policy Bot details UI, static assets, and OAuth callback stay on
-`https://policy-bot.stinkyboi.com` through the tailnet-only Istio gateway. The
-root path stays unrouted.
+The Policy Bot UI, details routes, static assets, OAuth callback, and root path
+stay on `https://policy-bot.stinkyboi.com` through the tailnet-only Istio
+gateway. Only `/api/github/hook` is exposed through Funnel.
 
 ## Future Funnel Webhook Exception Template
 
