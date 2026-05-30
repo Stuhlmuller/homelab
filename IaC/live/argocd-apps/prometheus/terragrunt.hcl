@@ -83,7 +83,7 @@ inputs = {
   info = [
     {
       name  = "grafana-alerting-cleanup"
-      value = "2026-05-30: deliver one-shot Grafana stale alert cleanup job"
+      value = "2026-05-30: rerun one-shot Grafana stale alert cleanup job through ingress"
     },
     {
       name  = "rollout"
