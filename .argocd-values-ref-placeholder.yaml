@@ -1,0 +1,2 @@
+# This intentionally empty manifest lets Argo CD multi-source Applications use
+# the repository as a Helm values ref without rendering unrelated root files.
