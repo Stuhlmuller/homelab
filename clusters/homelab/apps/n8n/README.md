@@ -3,8 +3,11 @@
 n8n runs as a self-hosted automation service behind the tailnet-only Istio
 gateway at `https://n8n.stinkyboi.com`.
 
-The app persists `/home/node/.n8n` on the default NFS StorageClass so workflows,
-SQLite data, credentials metadata, and instance settings survive pod restarts.
+n8n uses the dedicated `n8n-postgres` support app for workflows, credential
+metadata, user records, and execution history. It still persists
+`/home/node/.n8n` on the default NFS StorageClass for the instance config,
+encryption-key settings, and file-backed runtime data.
+
 The Terragrunt-generated encryption key comes from AWS SSM Parameter Store
 through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. The container
 exports it as `N8N_ENCRYPTION_KEY` only when `/home/node/.n8n/config` does not
@@ -18,9 +21,23 @@ persisted settings file instead of crashlooping on an accidental mismatch.
   `/home/node/.n8n/config` is the runtime source of truth for the persisted
   instance key; do not rotate the SSM value without following an n8n-supported
   key rotation or data migration path.
+- `/homelab/n8n/postgres-app-password`: n8n database user password mounted from
+  `n8n-postgres-client` and read through `DB_POSTGRESDB_PASSWORD_FILE`.
 
 ## Access Contract
 
 - Host: `https://n8n.stinkyboi.com`
 - Ingress: `istio-system/tailnet-gateway`
 - Public Funnel: disabled
+
+## Database Readiness
+
+The pod uses `DB_TYPE=postgresdb` and waits for an authenticated connection to
+`n8n-postgres.automation.svc.cluster.local:5432` before starting n8n. If the
+wait init container fails, inspect the `n8n-postgres-auth` and
+`n8n-postgres-client` ExternalSecrets, then verify the `n8n-postgres`
+StatefulSet and PVC.
+
+Switching from the older SQLite-backed desired state does not automatically
+import rows from `/home/node/.n8n/database.sqlite`. Export workflows and
+credentials before rollout if the existing SQLite contents must be preserved.

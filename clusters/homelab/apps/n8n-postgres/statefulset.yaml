@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: n8n-postgres
+  namespace: automation
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The pod runs as the QNAP NFS anonymous UID 65534 so PostgreSQL owns the squashed data directory without root.
+    checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
+    checkov.io/skip3: CKV_K8S_43=Image tags are pinned for GitOps review; digest pinning is tracked separately for homelab images.
+    checkov.io/skip4: CKV2_K8S_6=n8n-postgres is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+  labels:
+    app.kubernetes.io/name: n8n-postgres
+    app.kubernetes.io/part-of: homelab-automation
+spec:
+  serviceName: n8n-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: n8n-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: n8n-postgres
+        app.kubernetes.io/part-of: homelab-automation
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: require-real-passwords
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              admin_password="$(cat /run/secrets/n8n-postgres/POSTGRES_PASSWORD)"
+              app_password="$(cat /run/secrets/n8n-postgres/POSTGRES_APP_PASSWORD)"
+              if [ -z "$admin_password" ] || [ -z "$app_password" ]; then
+                echo "n8n-postgres passwords are empty; update /homelab/n8n/postgres-* in SSM" >&2
+                exit 1
+              fi
+              if [ "$admin_password" = "REPLACE_ME" ] || [ "$app_password" = "REPLACE_ME" ]; then
+                echo "n8n-postgres password still uses the REPLACE_ME placeholder in SSM" >&2
+                exit 1
+              fi
+              if [ "$admin_password" = "$app_password" ]; then
+                echo "n8n-postgres admin and app passwords must be distinct" >&2
+                exit 1
+              fi
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/n8n-postgres
+              readOnly: true
+      containers:
+        - name: postgres
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_DB
+              value: postgres
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/n8n-postgres/POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - postgres
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - postgres
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/n8n-postgres
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: auth
+          secret:
+            secretName: n8n-postgres-auth
+        - name: initdb
+          configMap:
+            name: n8n-postgres-initdb
+            defaultMode: 0555
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: n8n-postgres
+          app.kubernetes.io/part-of: homelab-automation
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-default
+        resources:
+          requests:
+            storage: 20Gi

@@ -68,6 +68,10 @@ roles need identity-based KMS permissions for both keys.
   name in the profile to an IPv4 address before handing it to Gluetun.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
+  `n8n-postgres` uses generated `/homelab/n8n/postgres-admin-password` and
+  `/homelab/n8n/postgres-app-password` values; n8n receives only the app
+  password through `n8n-postgres-client` and
+  `DB_POSTGRESDB_PASSWORD_FILE`.
 - OpenClaw uses `/homelab/openclaw/app-secret` as
   `OPENCLAW_GATEWAY_TOKEN`; bootstrap configures gateway auth with an OpenClaw
   SecretRef to that environment value instead of a generated file under the

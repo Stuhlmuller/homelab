@@ -109,6 +109,25 @@ spec:
           manifestTargets:
             kustomize:
               name: postgres
+    - namePattern: n8n-postgres
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: kustomization:/clusters/homelab/apps/n8n-postgres
+          pullRequest:
+            github: {}
+      images:
+        - alias: postgres
+          imageName: postgres
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^14\.[0-9]+-bookworm$
+          manifestTargets:
+            kustomize:
+              name: postgres
     - namePattern: n8n
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.

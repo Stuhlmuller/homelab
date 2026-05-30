@@ -59,7 +59,7 @@ Implicit stack validation:
 
 ```sh
 cd IaC/live/argocd-apps
-terragrunt run --all --parallelism 1 --source-update plan -no-color
+terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
 ```
 
 The pull request workflow runs `scripts/ci/conftest-policies.sh` after the live
