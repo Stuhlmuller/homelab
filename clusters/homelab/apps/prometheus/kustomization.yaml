@@ -4,3 +4,4 @@ resources:
   - argocd-servicemonitors.yaml
   - namespace.yaml
   - authorizationpolicy.yaml
+  - grafana-alerting-cleanup.yaml
