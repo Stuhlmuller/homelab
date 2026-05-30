@@ -69,6 +69,12 @@ spec:
         - protocol: TCP
           port: 15012
     - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+    - to:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: kube-system
@@ -116,7 +122,7 @@ spec:
           image: python:3.13-alpine@sha256:420cd0bf0f3998275875e02ecd5808168cf0843cbb4d3c536432f729247b2acc
           env:
             - name: GRAFANA_URL
-              value: http://grafana.monitoring.svc.cluster.local
+              value: https://grafana.stinkyboi.com
           command:
             - python
             - -c
