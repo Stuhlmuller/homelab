@@ -7,8 +7,8 @@ source "${script_dir}/terragrunt-filter-base.sh"
 plan_markdown="${TERRAGRUNT_PLAN_MARKDOWN:-${RUNNER_TEMP:-/tmp}/terragrunt-plan.md}"
 mkdir -p "$(dirname "$plan_markdown")"
 
-clear_plan_outs() {
-  find "$@" -name plan.out -type f -delete
+clear_plan_artifacts() {
+  find "$@" \( -name plan.out -o -name plan.json \) -type f -delete
 }
 
 render_plan_out() {
@@ -40,6 +40,39 @@ render_plan_out_if_present() {
   return 1
 }
 
+render_plan_json_if_present() {
+  local unit_dir="$1"
+
+  if [[ -f "${unit_dir}/plan.out" ]]; then
+    (
+      cd "$unit_dir"
+      terragrunt --log-disable show -json plan.out >plan.json
+    )
+    return 0
+  fi
+
+  return 1
+}
+
+validate_terraform_plan_policies() {
+  local plan_json_files=()
+
+  while IFS= read -r plan_json_file; do
+    plan_json_files+=("$plan_json_file")
+  done < <(
+    find IaC/bootstrap IaC/live/argocd-apps \
+      -name plan.json \
+      -not -path '*/.terragrunt-cache/*' \
+      -print 2>/dev/null | sort
+  )
+
+  if ((${#plan_json_files[@]} > 0)); then
+    echo "::group::Terraform plan Conftest policies"
+    conftest test --policy policy --output github "${plan_json_files[@]}"
+    echo "::endgroup::"
+  fi
+}
+
 append_plan_note() {
   local message="$1"
 
@@ -49,7 +82,7 @@ append_plan_note() {
 }
 
 prepare_terragrunt_filter_base
-clear_plan_outs IaC/bootstrap IaC/live/argocd-apps
+clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps
 
 {
   printf '## Terragrunt Plan Output\n\n'
@@ -69,6 +102,7 @@ echo "::endgroup::"
 if ! render_plan_out_if_present "Argo CD bootstrap" "IaC/bootstrap/argocd"; then
   append_plan_note "No affected Argo CD bootstrap units were planned."
 fi
+render_plan_json_if_present "IaC/bootstrap/argocd" || true
 
 echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans because it manages KMS, IAM, and secret declarations that require the protected production apply role."
 
@@ -85,11 +119,14 @@ while IFS= read -r unit_file; do
   unit_name="$(basename "$unit_dir")"
   if render_plan_out_if_present "Argo CD Application: ${unit_name}" "$unit_dir"; then
     planned_app_count=$((planned_app_count + 1))
+    render_plan_json_if_present "$unit_dir" >/dev/null
   fi
 done < <(find IaC/live/argocd-apps -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
 
 if [[ "$planned_app_count" -eq 0 ]]; then
   append_plan_note "No affected Argo CD Application registration units were planned."
 fi
+
+validate_terraform_plan_policies
 
 echo "IaC/live/kubernetes-secrets is intentionally excluded from PR plans because it reads decrypted SSM parameters."

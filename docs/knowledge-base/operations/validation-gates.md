@@ -62,9 +62,11 @@ cd IaC/live/argocd-apps
 terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
 ```
 
-The pull request workflow runs `scripts/ci/conftest-policies.sh` after the live
-Terragrunt plan step for trusted same-repository PRs. Run the same order locally
-when reproducing PR gate behavior.
+The pull request workflow renders saved Terragrunt `plan.out` files to local
+`plan.json` files and runs Terraform-plan Conftest policy during
+`scripts/ci/terragrunt-plan.sh`. It then runs `scripts/ci/conftest-policies.sh`
+for static YAML policy checks. Run the same order locally when reproducing PR
+gate behavior.
 
 The trusted GitHub Actions PR plan job is serialized with a shared concurrency
 group because it reads the same OpenTofu S3 backend state across pull requests.

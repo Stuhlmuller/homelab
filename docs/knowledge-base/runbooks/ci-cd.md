@@ -8,7 +8,8 @@ Source: `docs/ci-cd.md`
 
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repo PRs can join the tailnet, run a live
-  Terragrunt plan, and then run Conftest. Forked PRs run Conftest after the
+  Terragrunt plan, validate the rendered Terraform plan JSON with Conftest,
+  and then run static Conftest checks. Forked PRs run static Conftest after the
   live plan skip notice.
 - `Terragrunt Apply` runs after merge to `main` and through
   `workflow_dispatch`. It repeats static checks and Conftest, joins the
@@ -34,7 +35,9 @@ Source: `docs/ci-cd.md`
 - Plans are not uploaded as artifacts because they may include sensitive state.
   Trusted same-repo PR plans render saved `plan.out` files with
   `terragrunt show -no-color plan.out` and replace the managed plan section in
-  the PR description after each successful plan run.
+  the PR description after each successful plan run. The same job also renders
+  local `plan.json` files from those saved plans and runs Terraform-plan
+  Conftest policies before the PR description update.
 - Automatic PR plans skip `IaC/live/aws-ssm-parameters` because it refreshes
   managed KMS, IAM, and SSM resources that require the protected apply role.
   They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
