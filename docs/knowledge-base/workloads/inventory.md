@@ -20,6 +20,7 @@ trading workload.
 | `platform-dns` | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Argo CD bootstrap |
 | `platform-storage` | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | QNAP NFS export |
 | `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
+| `n8n-postgres` | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | external-secrets, platform-storage |
 
 ## Requested Applications
 
@@ -40,7 +41,7 @@ trading workload.
 | `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config and PostgreSQL databases on `nfs-default`; TV and downloads on QNAP `/media` | cert-manager, istio, tailscale, deluge, media-postgres, prowlarr, platform-storage |
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, SSM-backed gateway auth, Discord channel config, SSM-backed GitHub App credentials, Codex OAuth credentials on PVC, and explicit agent resource profile | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
-| `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, and instance settings; SSM key bootstraps fresh PVCs only | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
 | `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and tailnet-only UI route | cert-manager, istio, tailscale, platform-storage |
 | `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | retired PVC-only rollback state; no Deployment, Service, ExternalSecret, or route | platform-storage |
@@ -54,8 +55,10 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
 - `ai` uses a namespace default-deny policy and explicit inbound allows for the
   tailnet gateway to `litellm` and `openclaw`, plus `openclaw` to `litellm`.
 - `automation` currently restricts `n8n` inbound access to the tailnet gateway.
-  The namespace is not default-denied yet because Policy Bot Funnel traffic
-  still needs source-identity validation after rollout.
+  `n8n-postgres` has a NetworkPolicy that documents n8n-only database access,
+  but the current flannel CNI does not enforce NetworkPolicy yet. The namespace
+  is not default-denied because Policy Bot Funnel traffic and database
+  source-identity validation still need live validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
   kube-state-metrics by service account. The Prometheus operator remains
   unselected until its webhook/control-plane paths are modeled.

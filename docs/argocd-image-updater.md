@@ -12,6 +12,7 @@ or raw manifests:
 - `deluge`: BusyBox, Gluetun, and Deluge containers.
 - `litellm`: LiteLLM database container.
 - `media-postgres`: PostgreSQL StatefulSet image.
+- `n8n-postgres`: n8n PostgreSQL StatefulSet image.
 - `n8n`: n8n app container.
 - `octobot`: OctoBot app container. OctoBot is currently allow-listed to
   `2.1.1` because `2.1.13` rejected the existing PVC-backed

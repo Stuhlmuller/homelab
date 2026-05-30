@@ -27,6 +27,7 @@ it.
 | `platform-dns` | CoreDNS resolver policy |
 | `platform-storage` | QNAP NFS provisioner and default StorageClass |
 | `media-postgres` | Shared PostgreSQL for Sonarr, Radarr, and Prowlarr |
+| `n8n-postgres` | Dedicated PostgreSQL for n8n |
 
 ## Conventions
 
@@ -55,6 +56,10 @@ PVC validation, and backup expectations are all satisfied.
 Sonarr, Radarr, and Prowlarr additionally require `media-postgres`,
 `media-postgres-auth`, `media-postgres-arr-env`, six logical databases, and the
 official Servarr PostgreSQL `config.xml` fields.
+
+n8n additionally requires `n8n-postgres`, `n8n-postgres-auth`,
+`n8n-postgres-client`, the `n8n` database, and any required SQLite export/import
+migration before existing workflows are considered preserved.
 
 ## Related Notes
 

@@ -58,7 +58,9 @@ Funnel root should not route.
 
 Stateful apps wait for `platform-storage`, `nfs-default`, and backup coverage.
 Sonarr, Radarr, and Prowlarr also wait for `media-postgres` and Servarr
-PostgreSQL fields.
+PostgreSQL fields. n8n also waits for `n8n-postgres`, the
+`n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, and an
+authenticated `n8n` database connection before the app is considered ready.
 
 ## Common Stop Conditions
 

@@ -66,6 +66,12 @@ effective on flannel. Keep new service-to-service paths out of the mesh until
 the source service account, destination selector, and rollback path are
 documented in the same change.
 
+`n8n-postgres` has a repository-owned `NetworkPolicy` that allows PostgreSQL
+traffic only from pods labeled `app.kubernetes.io/name=n8n`. Because the
+current CNI does not enforce `NetworkPolicy`, treat that policy as desired
+intent until a repo-owned enforcing dataplane or matching Istio authorization
+policy is added and validated.
+
 Ambient is intentionally not enabled for:
 
 - `media`, because Deluge Gluetun/WireGuard and the current media app traffic
