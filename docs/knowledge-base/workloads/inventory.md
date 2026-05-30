@@ -9,8 +9,7 @@ units as the source of truth when they disagree with this note.
 ## Import Note
 
 This note reflects the current working tree. OctoBot is the finance namespace
-trading workload with a tailnet-only UI. Hummingbot is no longer present in
-repo-owned desired state.
+trading workload with a tailnet-only UI.
 
 ## Platform And Support Applications
 
@@ -62,12 +61,6 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   unselected until its webhook/control-plane paths are modeled.
 - `media` stays out of ambient while Deluge Gluetun/WireGuard and the media app
   ingress model need a repo-owned waypoint or equivalent policy design.
-
-## In-Flight Or Historical Rows
-
-- `hummingbot` and `freqtrade` appear only in historical notes. Treat them as
-  retired unless a future change intentionally reintroduces them with new
-  desired-state paths and docs.
 
 ## Update Checklist
 
