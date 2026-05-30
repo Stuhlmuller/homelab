@@ -7,9 +7,7 @@ terraform {
 }
 
 dependencies {
-  paths = [
-    "../platform-storage"
-  ]
+  paths = ["../platform-storage"]
 }
 
 locals {
