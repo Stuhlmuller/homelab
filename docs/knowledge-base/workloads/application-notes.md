@@ -88,9 +88,9 @@ PVCs using `nfs-default`.
 Image automation is pinned to `2.1.1` until a newer image is tested against the
 current PVC-backed config. The `2.1.13` image rejected
 `config.trading.paused` during startup migration and crash-looped.
-Grafana has a specific critical alert for the `finance/octobot` Deployment
-having no available replicas for five minutes, so a bot crash does not depend
-only on broader scrape-target or Argo CD health alerts.
+Grafana has a generic critical alert for any Kubernetes pod container stuck in
+`CrashLoopBackOff` for five minutes, so OctoBot crash loops should notify
+Discord even when broader scrape-target or Argo CD health alerts do not fire.
 
 ```sh
 kubectl -n finance get deploy,pod,pvc,svc -l app.kubernetes.io/instance=octobot
