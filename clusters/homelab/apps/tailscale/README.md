@@ -35,7 +35,8 @@ readiness, or proxy Pod startup, roll back by reverting the chart
 
 `exit-node-connector.yaml` creates a cluster-scoped Tailscale `Connector` named
 `homelab-exit-node`. The operator creates one proxy device with hostname
-`homelab-exit-node`, tags it as `tag:k8s`, and advertises it as an exit node.
+`homelab-exit-node`, tags it as `tag:k8s`, advertises it as an exit node, and
+advertises the homelab LAN route `10.1.0.0/24`.
 
 Tailnet policy must allow the operator tag to own `tag:k8s`:
 
@@ -46,18 +47,21 @@ Tailnet policy must allow the operator tag to own `tag:k8s`:
 }
 ```
 
-To avoid manual approval after every recreation, auto-approve exit-node
-advertisement for `tag:k8s` in the Tailscale policy:
+To avoid manual approval after every recreation, auto-approve exit-node and
+subnet-route advertisement for `tag:k8s` in the Tailscale policy:
 
 ```json
 "autoApprovers": {
-  "exitNode": ["tag:k8s"]
+  "exitNode": ["tag:k8s"],
+  "routes": {
+    "10.1.0.0/24": ["tag:k8s"]
+  }
 }
 ```
 
 If auto-approval is not configured, approve `homelab-exit-node` as an exit node
-from the Machines page in the Tailscale admin console after Argo CD syncs this
-app.
+and approve the `10.1.0.0/24` route from the Machines page in the Tailscale
+admin console after Argo CD syncs this app.
 
 ## Validation
 
@@ -76,6 +80,8 @@ kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=homela
 ```
 
 Expected result: the connector reports `ISEXITNODE` as `true`, the connector
-condition is ready, and one operator-managed proxy Pod is running in the
-`tailscale` namespace. Then select `homelab-exit-node` as the exit node from a
-tailnet client and confirm the client egress IP changes to the homelab network.
+condition is ready, the advertised route includes `10.1.0.0/24`, and one
+operator-managed proxy Pod is running in the `tailscale` namespace. Then select
+`homelab-exit-node` as the exit node from a tailnet client and confirm the
+client egress IP changes to the homelab network while local homelab LAN
+addresses remain reachable.

@@ -47,8 +47,9 @@ run the static checks and Conftest only.
   Kubernetes API endpoint without conflicting with the action's own login
   flags.
 - The workflow relies on the repo-owned `homelab-exit-node` connector's
-  advertised `10.1.0.199/32` subnet route for Kubernetes API access. It does
-  not select the connector as a full exit node, so public AWS STS/KMS calls keep
+  advertised `10.1.0.0/24` subnet route for Kubernetes API access, with
+  Tailscale grants limiting the CI runner tags to `10.1.0.199:6443`. It does not
+  select the connector as a full exit node, so public AWS STS/KMS calls keep
   using the GitHub-hosted runner's normal network path and DNS resolver.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
@@ -121,17 +122,16 @@ admin panel permits tag scoping. In the tailnet policy, grant those tags only
 the cluster API path they need.
 
 The repository-owned `homelab-exit-node` Connector is tagged `tag:k8s`, acts as
-the current bootstrap exit node, and advertises `10.1.0.199/32` as the
-dedicated Kubernetes API route. Auto-approve the narrow route for `tag:k8s`
-when possible, and use grants to keep CI access limited to the API endpoint and
-port:
+the current bootstrap exit node, and advertises `10.1.0.0/24` as the homelab
+LAN route. Auto-approve the subnet route for `tag:k8s` when possible, and use
+grants to keep CI access limited to the Kubernetes API endpoint and port:
 
 ```json
 {
   "autoApprovers": {
     "exitNode": ["tag:k8s"],
     "routes": {
-      "10.1.0.199/32": ["tag:k8s"]
+      "10.1.0.0/24": ["tag:k8s"]
     }
   },
   "tagOwners": {
