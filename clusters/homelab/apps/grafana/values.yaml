@@ -45,6 +45,7 @@ envValueFrom:
 podAnnotations:
   homelab.rst.io/discord-webhook-ssm-version: "2"
   homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
+  homelab.rst.io/alerting-provisioning-version: "2"
 initChownData:
   enabled: false
 serviceMonitor:
@@ -694,7 +695,7 @@ alerting:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: argocd_app_info{sync_status!="Synced"}
+                  expr: argocd_app_info{sync_status="OutOfSync"}
                   instant: true
                   intervalMs: 1000
                   legendFormat: Out-of-sync application
