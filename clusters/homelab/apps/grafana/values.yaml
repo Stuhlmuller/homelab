@@ -45,7 +45,7 @@ envValueFrom:
 podAnnotations:
   homelab.rst.io/discord-webhook-ssm-version: "2"
   homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
-  homelab.rst.io/alerting-provisioning-version: "2"
+  homelab.rst.io/alerting-provisioning-version: "3"
 initChownData:
   enabled: false
 serviceMonitor:
