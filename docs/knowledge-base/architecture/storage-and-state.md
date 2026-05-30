@@ -38,10 +38,9 @@ ready, but they must not be treated as production-ready until:
 
 The current stateful set includes Prometheus, Grafana, Deluge, media-postgres,
 n8n-postgres, Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot.
-Hummingbot is retired but keeps PVC-only rollback state until a separate
-retention decision archives or removes it. Freqtrade is historical unless
-reintroduced by a future desired-state change. See [[workloads/inventory]] for
-ownership and dependency notes.
+Hummingbot and Freqtrade are historical unless reintroduced by a future
+desired-state change. See [[workloads/inventory]] for ownership and dependency
+notes.
 
 ## Source Files
 

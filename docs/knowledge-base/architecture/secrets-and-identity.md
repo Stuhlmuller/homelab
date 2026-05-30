@@ -33,10 +33,14 @@ roles need identity-based KMS permissions for both keys.
 ## Identity Notes
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
-  issuer, client ID, and client secret. Microsoft Entra group authorization is
-  a token-claim behavior, not a requested OAuth scope: keep Dex scopes to
-  `openid`, `profile`, and `email`, and configure Entra to emit the `groups`
-  claim for Argo CD RBAC.
+  issuer compatibility copy, client ID, and client secret. Dex startup uses the
+  literal Microsoft Entra issuer committed in
+  `IaC/bootstrap/argocd/terragrunt.hcl` so a placeholder SSM value cannot stop
+  provider discovery. Microsoft Entra group authorization is a token-claim
+  behavior, not a requested OAuth scope: keep Dex scopes to `openid`,
+  `profile`, and `email`, configure Entra to emit the `groups` claim for Argo
+  CD RBAC, and keep `insecureSkipEmailVerified: true` because Entra may omit
+  the `email_verified` claim.
 - Argo CD Image Updater uses the `argocd-image-updater-git` ExternalSecret for
   GitHub App credentials that open image update pull requests through Git
   write-back. It refreshes on ExternalSecret changes; bump the non-secret
@@ -89,9 +93,6 @@ roles need identity-based KMS permissions for both keys.
   exchange credentials, tentacles, and strategy state live on the finance
   namespace PVCs and are summarized in [[runbooks/secrets-aws-ssm]] and
   [[workloads/application-notes]].
-- The retired Hummingbot PVCs still have rollback value, so
-  `/homelab/hummingbot/config-password` remains declared until those PVCs are
-  archived or intentionally removed.
 
 ## Source Files
 

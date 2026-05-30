@@ -9,9 +9,8 @@ units as the source of truth when they disagree with this note.
 ## Import Note
 
 This note reflects the current working tree. OctoBot is the finance namespace
-trading workload with a tailnet-only UI. Hummingbot is retained only as a
-PVC-protection Argo CD Application for rollback data; it is not a running
-trading workload.
+trading workload with a tailnet-only UI. Hummingbot is no longer present in
+repo-owned desired state.
 
 ## Platform And Support Applications
 
@@ -44,7 +43,6 @@ trading workload.
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
 | `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and tailnet-only UI route | cert-manager, istio, tailscale, platform-storage |
-| `hummingbot` | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | retired PVC-only rollback state; no Deployment, Service, ExternalSecret, or route | platform-storage |
 
 ## Mesh Policy Summary
 
@@ -67,9 +65,9 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
 
 ## In-Flight Or Historical Rows
 
-- `freqtrade` appears only in older historical notes. Treat it as retired unless
-  a future change intentionally reintroduces it with new desired-state paths and
-  docs.
+- `hummingbot` and `freqtrade` appear only in historical notes. Treat them as
+  retired unless a future change intentionally reintroduces them with new
+  desired-state paths and docs.
 
 ## Update Checklist
 

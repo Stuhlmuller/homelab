@@ -6,6 +6,7 @@ locals {
   self_management_application_manifest = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/application.yaml"
   self_management_project_manifest     = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/appproject.yaml"
   oidc_sso_secret_name                 = "argocd-oidc-sso"
+  oidc_sso_issuer                      = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
   oidc_sso_admin_group                 = "argocd-admins"
   argocd_metrics = {
     enabled = true
@@ -13,7 +14,7 @@ locals {
 }
 
 terraform {
-  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/helm-release?ref=0.3.0"
+  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/helm-release?ref=0.4.0"
 
   after_hook "apply_self_management_application" {
     commands = ["apply"]
@@ -44,13 +45,14 @@ inputs = {
                 id: oidc
                 name: OIDC
                 config:
-                  issuer: ${format("$%s:issuer", local.oidc_sso_secret_name)}
+                  issuer: ${local.oidc_sso_issuer}
                   clientID: ${format("$%s:clientID", local.oidc_sso_secret_name)}
                   clientSecret: ${format("$%s:clientSecret", local.oidc_sso_secret_name)}
                   scopes:
                     - openid
                     - profile
                     - email
+                  insecureSkipEmailVerified: true
                   insecureEnableGroups: true
           EOT
         }

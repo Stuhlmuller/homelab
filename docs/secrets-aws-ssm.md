@@ -94,6 +94,10 @@ stack because Terraform manages the Kubernetes Secret.
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
+For Argo CD, `/homelab/argocd/oidc/issuer` is a compatibility copy for the
+generated Secret and should match the literal Microsoft Entra issuer committed
+in `IaC/bootstrap/argocd/terragrunt.hcl`; do not reset it to `REPLACE_ME`.
+
 Terragrunt-generated internal values:
 
 - `/homelab/litellm/master-key`
@@ -244,8 +248,3 @@ live-trading autostart configuration until a separate PR adds the
 repository-owned secret contract or documents why UI-managed state is sufficient,
 records backtest and paper-trading evidence, and confirms withdrawal access is
 disabled at the exchange.
-
-The old `/homelab/hummingbot/config-password` parameter is retained while the
-retired Hummingbot PVCs exist. It is not consumed by the active OctoBot
-deployment, but keeping it avoids destroying rollback material before the old
-PVCs are intentionally archived or deleted.
