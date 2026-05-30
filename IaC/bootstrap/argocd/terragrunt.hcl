@@ -14,7 +14,7 @@ locals {
 }
 
 terraform {
-  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/helm-release?ref=0.3.0"
+  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/helm-release?ref=0.4.0"
 
   after_hook "apply_self_management_application" {
     commands = ["apply"]
