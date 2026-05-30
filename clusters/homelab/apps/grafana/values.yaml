@@ -187,6 +187,7 @@ alerting:
           - grafana_folder
           - alertname
           - namespace
+          - deployment
           - name
           - project
           - health_status
@@ -351,6 +352,79 @@ alerting:
               runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/grafana/README.md
             labels:
               severity: warning
+              managed_by: grafana-provisioning
+          - uid: homelab-octobot-deployment-unavailable
+            title: OctoBot deployment unavailable
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: (kube_deployment_spec_replicas{namespace="finance", deployment="octobot"} - kube_deployment_status_replicas_available{namespace="finance", deployment="octobot"} > 0) or absent(kube_deployment_status_replicas_available{namespace="finance", deployment="octobot"})
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: OctoBot unavailable
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: OctoBot has no available Deployment replicas.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/octobot/README.md
+            labels:
+              severity: critical
               managed_by: grafana-provisioning
           - uid: homelab-pvc-space-low
             title: Homelab PVC space low
