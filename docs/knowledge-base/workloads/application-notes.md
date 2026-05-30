@@ -221,4 +221,5 @@ add a forward-auth layer first.
 The Tailscale app owns operator support resources, the privileged `tailscale`
 namespace, the `operator-oauth` ExternalSecret, and the `homelab-exit-node`
 Connector. Tailnet policy must allow `tag:k8s-operator` to own `tag:k8s` and
-auto-approve exit-node advertisement when possible.
+auto-approve exit-node and `10.1.0.0/24` subnet-route advertisement when
+possible.
