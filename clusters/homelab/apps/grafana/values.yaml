@@ -199,6 +199,9 @@ alerting:
         repeat_interval: 4h
   rules.yaml:
     apiVersion: 1
+    deleteRules:
+      - orgId: 1
+        uid: homelab-octobot-deployment-unavailable
     groups:
       - orgId: 1
         name: homelab-platform

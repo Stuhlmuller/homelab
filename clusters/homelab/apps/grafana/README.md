@@ -112,6 +112,10 @@ The first provisioned rules cover:
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining out of sync for 30 minutes.
 
+The provisioning file also deletes the retired OctoBot-specific deployment
+availability rule so Grafana only evaluates the generic workload alerts after
+startup or an alerting provisioning reload.
+
 The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one
 alert instance per affected application so notifications include the application
