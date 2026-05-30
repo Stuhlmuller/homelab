@@ -39,10 +39,14 @@ Source: `docs/ci-cd.md`
   managed KMS, IAM, and SSM resources that require the protected apply role.
   They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
   stacks after review.
+- Terragrunt plan and apply phases use `--filter-affected` so run queues are
+  limited to units changed between `main` and `HEAD`. In CI, the helper script
+  prepares `main` to mean the PR base branch for plans or the previous push SHA
+  for post-merge applies. Manual apply dispatches compare against `HEAD^`.
 - Stack-wide apply phases use Terragrunt's explicit
-  `run --all --non-interactive -- apply ...` form so the run queue is accepted
-  in Actions and OpenTofu flags such as `-auto-approve` are forwarded to
-  OpenTofu instead of being parsed as Terragrunt CLI flags.
+  `run --all --filter-affected --non-interactive -- apply ...` form so the run
+  queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
+  forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
 
 ## Environments
 
@@ -88,6 +92,12 @@ nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
+
+Local runs use the current `main` ref for Terragrunt's affected-unit
+comparison. Refresh `main` before reproducing a GitHub plan or apply diff.
+
+Manual apply dispatches compare against `HEAD^`; use the normal post-merge push
+path when the affected range needs to span multiple commits.
 
 Run apply only after the same checks have passed and the change has been
 reviewed.
