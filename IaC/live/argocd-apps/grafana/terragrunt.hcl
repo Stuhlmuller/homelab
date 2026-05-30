@@ -18,8 +18,11 @@ dependencies {
 }
 
 locals {
+  # Temporary cache-busting pin: Grafana is stuck at sync_status=Unknown with
+  # stale alert provisioning while tracking main. Revert to "main" after Argo CD
+  # successfully reconciles the v1.30.7 alerting fixes.
   repo_url        = "https://github.com/Stuhlmuller/homelab.git"
-  target_revision = "main"
+  target_revision = "v1.30.7"
 }
 
 inputs = {
@@ -90,7 +93,7 @@ inputs = {
   info = [
     {
       name  = "alerting-reconcile"
-      value = "2026-05-30: force Argo CD to reprocess Grafana alerting provisioning changes"
+      value = "2026-05-30: pinned to v1.30.7 to force Argo CD to reprocess Grafana alerting provisioning changes"
     },
     {
       name  = "rollout"
