@@ -4,8 +4,9 @@ This feature registers 18 requested homelab applications plus supporting
 Applications for shared platform dependencies. `platform-dns` owns CoreDNS
 resolver policy, `platform-storage` owns the QNAP-backed NFS provisioner and
 default StorageClass desired state, and `media-postgres` owns the shared
-PostgreSQL instance for Sonarr, Radarr, and Prowlarr. These support apps are not
-counted as requested workloads.
+PostgreSQL instance for Sonarr, Radarr, and Prowlarr. `n8n-postgres` owns the
+dedicated PostgreSQL instance for n8n. These support apps are not counted as
+requested workloads.
 
 ## Applications
 
@@ -14,6 +15,7 @@ counted as requested workloads.
 | platform-dns | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Yes, no prune | Argo CD bootstrap |
 | platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | Yes | QNAP NFS export validation |
 | media-postgres | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | Yes | external-secrets, platform-storage |
+| n8n-postgres | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | Yes | external-secrets, platform-storage |
 | argocd-image-updater | requested | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | Yes | external-secrets |
 | external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | platform-dns |
 | cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
@@ -29,7 +31,7 @@ counted as requested workloads.
 | sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, tailscale, deluge, media-postgres, prowlarr, platform-storage |
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
-| n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
+| n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
 | policy-bot | requested | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | Yes | external-secrets, cert-manager, istio, tailscale |
 | octobot | requested | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | Yes | cert-manager, istio, tailscale, platform-storage |
 | hummingbot | retired | `finance` | `clusters/homelab/apps/hummingbot` | `IaC/live/argocd-apps/hummingbot` | Yes | platform-storage |
@@ -60,6 +62,11 @@ Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres-arr-env` ExternalSecrets are ready, the six logical databases
 exist, each app's `config.xml` contains the official Servarr PostgreSQL fields,
 and any required SQLite-to-PostgreSQL data migration has been completed.
+
+n8n is not considered ready until `n8n-postgres` is synced and healthy, the
+`n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets are ready, the
+`n8n` database exists, and any required SQLite export/import migration has been
+completed.
 
 ## Registration Provider
 

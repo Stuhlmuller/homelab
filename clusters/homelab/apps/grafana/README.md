@@ -39,6 +39,9 @@ present. Local admin login remains available through `grafana-admin`.
 - The Helm release uses a `Recreate` deployment strategy because Grafana stores
   SQLite state on a single PVC. Avoid overlapping old and new pods against the
   same database during rollouts.
+- The Deployment carries the Argo CD `Replace=true` sync option so Argo replaces
+  the Deployment instead of server-side applying stale `rollingUpdate` fields
+  when reconciling the `Recreate` strategy.
 - Datasource provisioning deletes the old `Prometheus` and `Alertmanager`
   entries before recreating them with stable UIDs. This handles first-rollout
   databases that already contain Grafana-generated datasource UIDs.
