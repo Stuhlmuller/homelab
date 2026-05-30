@@ -187,7 +187,9 @@ alerting:
           - grafana_folder
           - alertname
           - namespace
-          - deployment
+          - pod
+          - container
+          - reason
           - name
           - project
           - health_status
@@ -353,8 +355,8 @@ alerting:
             labels:
               severity: warning
               managed_by: grafana-provisioning
-          - uid: homelab-octobot-deployment-unavailable
-            title: OctoBot deployment unavailable
+          - uid: homelab-kubernetes-pod-crashlooping
+            title: Kubernetes pod crash looping
             condition: C
             data:
               - refId: A
@@ -367,10 +369,10 @@ alerting:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: (kube_deployment_spec_replicas{namespace="finance", deployment="octobot"} - kube_deployment_status_replicas_available{namespace="finance", deployment="octobot"} > 0) or absent(kube_deployment_status_replicas_available{namespace="finance", deployment="octobot"})
+                  expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} > 0
                   instant: true
                   intervalMs: 1000
-                  legendFormat: OctoBot unavailable
+                  legendFormat: '{{ namespace }}/{{ pod }} {{ container }} {{ reason }}'
                   maxDataPoints: 43200
                   range: false
                   refId: A
@@ -421,8 +423,8 @@ alerting:
             execErrState: Alerting
             for: 5m
             annotations:
-              summary: OctoBot has no available Deployment replicas.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/octobot/README.md
+              summary: One or more Kubernetes pod containers are stuck in CrashLoopBackOff.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
             labels:
               severity: critical
               managed_by: grafana-provisioning

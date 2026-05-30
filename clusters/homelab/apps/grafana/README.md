@@ -106,7 +106,7 @@ The first provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
-- OctoBot Deployment unavailable for 5 minutes.
+- Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
@@ -156,7 +156,7 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `Alertmanager` datasource is healthy, the `Homelab Overview` and `Argo CD
 Overview` dashboards appear under the `Homelab` folder, the imported dashboards
 appear under the `Kubernetes` and `Monitoring` folders, the `Entra ID` login
-path works, and the six `homelab-*` alert rules are present under Grafana
+path works, and the seven `homelab-*` alert rules are present under Grafana
 Alerting. Use the Grafana contact point test action after the Discord webhook
 parameter has been populated in SSM.
 
