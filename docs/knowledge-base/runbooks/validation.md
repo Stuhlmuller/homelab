@@ -16,11 +16,11 @@ nix develop --command bash scripts/ci/static-checks.sh
 cd IaC/live/aws-ssm-parameters
 terragrunt plan
 cd IaC/live/argocd-apps
-terragrunt run --all plan -no-color
+terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
 ```
 
-Expected app-registration plan currently references 18 requested Argo CD
-Applications plus `platform-dns`, `platform-storage`, and `media-postgres`.
+Expected app-registration plans include the Argo CD Application units affected
+by `main...HEAD`; unaffected units are skipped by the Terragrunt run queue.
 
 ## Render And Diff
 
@@ -58,7 +58,9 @@ Funnel root should not route.
 
 Stateful apps wait for `platform-storage`, `nfs-default`, and backup coverage.
 Sonarr, Radarr, and Prowlarr also wait for `media-postgres` and Servarr
-PostgreSQL fields.
+PostgreSQL fields. n8n also waits for `n8n-postgres`, the
+`n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, and an
+authenticated `n8n` database connection before the app is considered ready.
 
 ## Common Stop Conditions
 

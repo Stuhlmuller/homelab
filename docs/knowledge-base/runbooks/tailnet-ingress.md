@@ -36,8 +36,9 @@ External Secrets.
 
 The `tailscale` Application installs the Tailscale operator and the
 `homelab-exit-node` Connector. The connector advertises itself as an exit node
-with tag `tag:k8s` and advertises `10.1.0.199/32` for CI access to the
-Kubernetes API.
+with tag `tag:k8s` and advertises `10.1.0.0/24` so tailnet clients can reach
+the homelab LAN. CI grants stay limited to `10.1.0.199:6443` for Kubernetes API
+access.
 
 Validation:
 

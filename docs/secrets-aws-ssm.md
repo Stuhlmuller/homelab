@@ -89,8 +89,9 @@ stack because Terraform manages the Kubernetes Secret.
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
+| n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
-| n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key` |
+| n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
 Terragrunt-generated internal values:
@@ -98,6 +99,8 @@ Terragrunt-generated internal values:
 - `/homelab/litellm/master-key`
 - `/homelab/media-postgres/app-password`
 - `/homelab/n8n/encryption-key`
+- `/homelab/n8n/postgres-admin-password`
+- `/homelab/n8n/postgres-app-password`
 - `/homelab/openclaw/app-secret`
 - `/homelab/openclaw/litellm-token`
 - `/homelab/policy-bot/github-app/webhook-secret`
@@ -200,12 +203,15 @@ endpoint to an IPv4 address before Gluetun starts. The ExternalSecret uses
 `clusters/homelab/apps/deluge/values.yaml` so External Secrets refreshes the
 Kubernetes Secret and GitOps rolls the Deluge pod.
 
-n8n stores only its Terragrunt-generated first-boot encryption key in SSM.
-The pod receives that value as `N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports it as
+n8n stores its Terragrunt-generated first-boot encryption key in SSM. The pod
+receives that value as `N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports it as
 `N8N_ENCRYPTION_KEY` only when `/home/node/.n8n/config` does not exist. After
-first boot, workflows, users, saved credential metadata, app configuration, and
-the active instance key persist on the `/home/node/.n8n` volume and are managed
-inside n8n after first login.
+first boot, the active instance key persists on the `/home/node/.n8n` volume.
+
+The dedicated `n8n-postgres` app uses two generated SSM passwords. The admin
+password stays in `n8n-postgres-auth` for the PostgreSQL container, while the
+application password is also rendered into `n8n-postgres-client` and mounted
+into n8n as a file read through `DB_POSTGRESDB_PASSWORD_FILE`.
 
 Grafana stores its Discord alerting webhook at
 `/homelab/grafana/discord-webhook-url`. Replace the placeholder directly in

@@ -48,8 +48,9 @@ allow-list in the same PR that adds its first ExternalSecret.
 | litellm | `litellm-provider-keys` | Master and provider keys |
 | deluge | `deluge-vpn` | WireGuard profile rendered as `wg0.conf` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | Shared database password and Servarr env |
+| n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | Dedicated n8n database admin and app passwords |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | App secret, LiteLLM token, Discord bot token, and GitHub App credentials |
-| n8n | `n8n-secrets` | First-boot encryption key exposed as `N8N_BOOTSTRAP_ENCRYPTION_KEY`; existing PVC config remains the runtime key source |
+| n8n | `n8n-secrets`, `n8n-postgres-client` | First-boot encryption key plus file-backed PostgreSQL app password |
 | policy-bot | `policy-bot-config` | GitHub App, OAuth, webhook, and session config; Deployment runs one replica after GitHub-App-owned placeholders are replaced |
 
 ## Important App Notes
@@ -77,7 +78,10 @@ allow-list in the same PR that adds its first ExternalSecret.
   correcting SSM.
 - n8n's SSM key is only exported as `N8N_ENCRYPTION_KEY` when the persisted
   settings file is absent. Do not fix an existing-key mismatch by overwriting
-  the PVC config or rotating SSM without an n8n-supported migration.
+  the PVC config or rotating SSM without an n8n-supported migration. The
+  dedicated PostgreSQL app keeps the admin password out of the n8n pod and
+  exposes only `/homelab/n8n/postgres-app-password` through
+  `DB_POSTGRESDB_PASSWORD_FILE`.
 - OpenClaw uses `/homelab/openclaw/app-secret` as the generated gateway auth
   token through `OPENCLAW_GATEWAY_TOKEN`; bootstrap stores a SecretRef to that
   env value so stale file-backed gateway token paths do not block startup.
