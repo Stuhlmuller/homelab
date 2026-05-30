@@ -117,6 +117,26 @@ The Discord bot must be invited to the target server and channel with at least
 the permissions OpenClaw reports as required for Discord, including viewing the
 channel and sending messages.
 
+## Grafana Alert Hook
+
+Grafana alerting can notify Claw directly through OpenClaw's authenticated hook
+endpoint. The hook token is generated at
+`/homelab/grafana/openclaw-alert-hook-token`, exposed to Grafana as
+`OPENCLAW_ALERT_HOOK_TOKEN`, and exposed to OpenClaw as
+`GRAFANA_ALERT_HOOK_TOKEN`.
+
+Startup bootstrap enables OpenClaw hooks at `/hooks` when the token is
+populated. Grafana posts alert notifications to
+`http://openclaw.ai.svc.cluster.local:8080/hooks/agent` with a bearer token, so
+alerts create direct OpenClaw agent runs instead of relying on Claw watching the
+Discord channel. The OpenClaw NetworkPolicy allows ingress to port `8080` from
+the `monitoring` namespace for this path.
+
+After rotating the hook token, bump both
+`homelab.rst.io/openclaw-alert-hook-ssm-version` on Grafana and
+`homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD
+rolls both pods and reloads their environment variables.
+
 ## GitHub App Credentials
 
 OpenClaw receives GitHub App identity through AWS SSM-backed ExternalSecrets:

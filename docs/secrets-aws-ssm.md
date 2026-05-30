@@ -86,6 +86,7 @@ stack because Terraform manages the Kubernetes Secret.
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | grafana | `grafana-discord-webhook` | `grafana-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
+| grafana | `grafana-openclaw-alert-hook` | `grafana-openclaw-alert-hook` | `/homelab/grafana/openclaw-alert-hook-token` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
@@ -223,6 +224,10 @@ SSM, then bump the non-secret
 `homelab.rst.io/discord-webhook-ssm-version` pod annotation in
 `clusters/homelab/apps/grafana/values.yaml` to the resulting SSM parameter
 version so GitOps rolls Grafana and alerting provisioning reloads the webhook.
+Grafana also reads the generated `/homelab/grafana/openclaw-alert-hook-token`
+parameter so it can notify OpenClaw directly through the authenticated hook
+endpoint. OpenClaw reads the same token from `openclaw-secrets`; token rotation
+requires bumping the Grafana and OpenClaw hook-version pod annotations.
 
 Policy Bot stores its GitHub App credentials in SSM and renders them into the
 file-backed `policy-bot-config` Kubernetes Secret. Replace the GitHub App ID,

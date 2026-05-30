@@ -38,8 +38,13 @@ envValueFrom:
     secretKeyRef:
       name: grafana-discord-webhook
       key: url
+  OPENCLAW_ALERT_HOOK_TOKEN:
+    secretKeyRef:
+      name: grafana-openclaw-alert-hook
+      key: token
 podAnnotations:
   homelab.rst.io/discord-webhook-ssm-version: "2"
+  homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
 initChownData:
   enabled: false
 serviceMonitor:
@@ -178,6 +183,25 @@ alerting:
             settings:
               use_discord_username: false
               url: $DISCORD_WEBHOOK_URL
+          - uid: homelab-openclaw-alert-hook
+            type: webhook
+            disableResolveMessage: false
+            settings:
+              url: http://openclaw.ai.svc.cluster.local:8080/hooks/agent
+              httpMethod: POST
+              authorization_scheme: Bearer
+              authorization_credentials: $OPENCLAW_ALERT_HOOK_TOKEN
+              maxAlerts: "10"
+              title: '{{ template "default.title" . }}'
+              message: |
+                Grafana alert notification from homelab.
+
+                Status: {{ .Status }}
+                Title: {{ template "default.title" . }}
+
+                {{ template "default.message" . }}
+
+                Triage this alert directly. If it is actionable, inspect live state when available and fix through the homelab GitOps workflow.
   policies.yaml:
     apiVersion: 1
     policies:

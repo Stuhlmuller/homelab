@@ -44,12 +44,12 @@ allow-list in the same PR that adds its first ExternalSecret.
 | cert-manager | `cloudflare-api-token` | DNS-01 Cloudflare token |
 | external-secrets | `aws-ssm-auth` | Provider credential bridge |
 | tailscale | `operator-oauth` | Operator OAuth client |
-| grafana | `grafana-admin`, `grafana-azuread-sso`, `grafana-discord-webhook` | Admin, Entra SSO, alert notifications |
+| grafana | `grafana-admin`, `grafana-azuread-sso`, `grafana-discord-webhook`, `grafana-openclaw-alert-hook` | Admin, Entra SSO, alert notifications |
 | litellm | `litellm-provider-keys` | Master and provider keys |
 | deluge | `deluge-vpn` | WireGuard profile rendered as `wg0.conf` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | Shared database password and Servarr env |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | Dedicated n8n database admin and app passwords |
-| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | App secret, LiteLLM token, Discord bot token, and GitHub App credentials |
+| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | App secret, LiteLLM token, Discord bot token, Grafana alert hook token, and GitHub App credentials |
 | n8n | `n8n-secrets`, `n8n-postgres-client` | First-boot encryption key plus file-backed PostgreSQL app password |
 | policy-bot | `policy-bot-config` | GitHub App, OAuth, webhook, and session config; Deployment runs one replica after GitHub-App-owned placeholders are replaced |
 
