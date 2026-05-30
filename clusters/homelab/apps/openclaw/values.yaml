@@ -9,6 +9,7 @@ controllers:
       annotations:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
+        homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "1"
         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
       bootstrap-config:
@@ -110,6 +111,26 @@ controllers:
             openclaw config set --strict-json \
               gateway.controlUi.allowedOrigins \
               '["https://openclaw.stinkyboi.com"]'
+
+            if [ -z "${GRAFANA_ALERT_HOOK_TOKEN:-}" ] || [ "$GRAFANA_ALERT_HOOK_TOKEN" = "REPLACE_ME" ]; then
+              echo "GRAFANA_ALERT_HOOK_TOKEN is not populated; skipping hooks bootstrap"
+            else
+              openclaw config set --strict-json \
+                hooks.enabled \
+                'true'
+              openclaw config set --strict-json \
+                hooks.path \
+                '"/hooks"'
+              openclaw config set --strict-json \
+                hooks.token \
+                '"${GRAFANA_ALERT_HOOK_TOKEN}"'
+              openclaw config set --strict-json \
+                hooks.maxBodyBytes \
+                '65536'
+              openclaw config set --strict-json \
+                hooks.allowRequestSessionKey \
+                'false'
+            fi
 
             openclaw config set --strict-json \
               plugins.entries.codex.enabled \

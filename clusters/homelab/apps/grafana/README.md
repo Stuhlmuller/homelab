@@ -86,21 +86,23 @@ documented path.
 
 Grafana alert rules are provisioned from `values.yaml` and route to the
 `homelab-alertmanager` contact point. That contact point fans out to the
-in-cluster Prometheus Alertmanager and to Discord. The Discord webhook URL is
-read from the `grafana-discord-webhook` Kubernetes Secret, which is managed by
-External Secrets from `/homelab/grafana/discord-webhook-url` in AWS SSM
-Parameter Store and refreshed every five minutes.
+in-cluster Prometheus Alertmanager, Discord, and OpenClaw. The Discord webhook
+URL is read from the `grafana-discord-webhook` Kubernetes Secret. The OpenClaw
+hook token is read from the `grafana-openclaw-alert-hook` Kubernetes Secret.
+Both are managed by External Secrets from AWS SSM Parameter Store and refreshed
+every five minutes.
 
 The Alertmanager datasource is available for viewing Prometheus-managed alerts,
 while Grafana-managed notifications stay controlled by the provisioned Grafana
 policy. This makes alert rules and routing reviewable and repeatable without
 putting notification credentials in git.
 
-Grafana reads the webhook through an environment variable while provisioning
-alerting resources at startup. After replacing the SSM value, update the
-`homelab.rst.io/discord-webhook-ssm-version` annotation to the new SSM
-parameter version so the GitOps rollout restarts Grafana and reloads the
-contact point.
+Grafana reads webhook credentials through environment variables while
+provisioning alerting resources at startup. After replacing the Discord webhook
+SSM value, update the `homelab.rst.io/discord-webhook-ssm-version` annotation
+to the new SSM parameter version. After rotating the OpenClaw hook token,
+update `homelab.rst.io/openclaw-alert-hook-ssm-version`. Either change lets
+the GitOps rollout restart Grafana and reload the contact point.
 
 The first provisioned rules cover:
 
@@ -145,9 +147,11 @@ kubectl -n monitoring get servicemonitor grafana
 kubectl -n monitoring get externalsecret grafana-admin
 kubectl -n monitoring get externalsecret grafana-azuread-sso
 kubectl -n monitoring get externalsecret grafana-discord-webhook
+kubectl -n monitoring get externalsecret grafana-openclaw-alert-hook
 kubectl -n monitoring get secret grafana-admin
 kubectl -n monitoring get secret grafana-azuread-sso
 kubectl -n monitoring get secret grafana-discord-webhook
+kubectl -n monitoring get secret grafana-openclaw-alert-hook
 kubectl -n monitoring get configmap grafana-dashboard-homelab-overview
 kubectl -n monitoring get pods -l app.kubernetes.io/name=grafana
 ```
@@ -158,7 +162,7 @@ Overview` dashboards appear under the `Homelab` folder, the imported dashboards
 appear under the `Kubernetes` and `Monitoring` folders, the `Entra ID` login
 path works, and the seven `homelab-*` alert rules are present under Grafana
 Alerting. Use the Grafana contact point test action after the Discord webhook
-parameter has been populated in SSM.
+parameter and OpenClaw hook token have been populated in SSM.
 
 ## Rollback
 

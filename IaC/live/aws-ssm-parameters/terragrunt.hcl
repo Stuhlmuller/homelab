@@ -94,6 +94,14 @@ inputs = {
       description   = "Discord incoming webhook URL used by Grafana alert notifications."
       initial_value = local.placeholder
     }
+    "/homelab/grafana/openclaw-alert-hook-token" = {
+      description = "Shared bearer token used by Grafana to send alert webhooks directly to OpenClaw hooks."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/litellm/master-key" = {
       description = "LiteLLM master key."
       generated = {

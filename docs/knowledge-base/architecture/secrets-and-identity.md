@@ -54,6 +54,11 @@ roles need identity-based KMS permissions for both keys.
   Webhook rotations require bumping the non-secret Grafana pod annotation that
   tracks the SSM parameter version because Grafana file provisioning reads the
   value at startup.
+- Grafana direct-to-Claw alerting uses the generated
+  `/homelab/grafana/openclaw-alert-hook-token` parameter. Grafana reads it
+  through `grafana-openclaw-alert-hook`, and OpenClaw reads the same value
+  through `openclaw-secrets` so the `/hooks/agent` endpoint can authenticate
+  alert deliveries.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
