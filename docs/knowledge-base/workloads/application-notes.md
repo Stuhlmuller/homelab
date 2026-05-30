@@ -105,9 +105,8 @@ are configured through the UI and stored on the PVCs. Start with paper trading;
 before enabling live trading, document backtest and paper-trading evidence and
 confirm withdrawal access is disabled at the exchange.
 
-The older Hummingbot workload and its PVC-only rollback Application have been
-removed from repo-owned desired state. Reintroducing Hummingbot requires a new
-GitOps app path, Argo CD registration, storage decision, and secret contract.
+The `retired-workload-cleanup` hook in the OctoBot app removes stale finance
+PVCs from the retired trading runtime during Argo CD sync.
 
 ## OpenClaw
 
