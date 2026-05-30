@@ -50,6 +50,7 @@ inputs = {
       self_heal = true
     }
     managed_namespace_metadata = {
+      annotations = {}
       labels = {
         "app.kubernetes.io/name"                     = "automation"
         "app.kubernetes.io/part-of"                  = "homelab"
