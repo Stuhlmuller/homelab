@@ -103,6 +103,9 @@ SSM value, update the `homelab.rst.io/discord-webhook-ssm-version` annotation
 to the new SSM parameter version. After rotating the OpenClaw hook token,
 update `homelab.rst.io/openclaw-alert-hook-ssm-version`. Either change lets
 the GitOps rollout restart Grafana and reload the contact point.
+For alerting-only provisioning changes that do not rotate credentials, bump
+`homelab.rst.io/alerting-provisioning-version` so Grafana restarts and processes
+rule additions, changes, and deletions.
 
 The first provisioned rules cover:
 
@@ -112,7 +115,7 @@ The first provisioned rules cover:
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
-- Argo CD Applications remaining out of sync for 30 minutes.
+- Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
 
 The provisioning file also deletes the retired OctoBot-specific deployment
 availability rule so Grafana only evaluates the generic workload alerts after
