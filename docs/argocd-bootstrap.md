@@ -43,8 +43,14 @@ Create these AWS Systems Manager Parameter Store entries before rollout:
 | `/homelab/argocd/oidc/client-secret` | `clientSecret` | OIDC client secret stored outside git. |
 
 Store `/homelab/argocd/oidc/client-secret` as a SecureString. The other values
-may be String or SecureString depending on local policy. The browser-facing
-Argo CD URL is committed as non-secret desired state in
+may be String or SecureString depending on local policy. Dex startup uses the
+literal Microsoft Entra issuer committed in
+`IaC/bootstrap/argocd/terragrunt.hcl`; the SSM issuer path is kept as a
+compatibility copy for the generated `argocd-oidc-sso` Secret. Do not reset it
+to `REPLACE_ME`, because Dex provider discovery fails before it can serve OIDC
+login when the issuer is a placeholder.
+
+The browser-facing Argo CD URL is committed as non-secret desired state in
 `IaC/bootstrap/argocd/terragrunt.hcl`, not stored in Parameter Store. This
 change does not create an ingress or DNS record. Register
 `https://argocd.stinkyboi.com/api/dex/callback` with the IdP; Argo CD derives
@@ -54,7 +60,11 @@ For Microsoft Entra, keep Dex requested scopes to `openid`, `profile`, and
 `email`. Do not add `groups` as an OAuth scope; Entra rejects it with
 `AADSTS650053`. Argo CD group authorization still uses the token `groups` claim
 through Dex `insecureEnableGroups`, so configure the Entra application
-registration to emit group membership claims.
+registration to emit group membership claims. Entra may omit the
+`email_verified` claim from the ID token; the Dex connector sets
+`insecureSkipEmailVerified: true` for this trusted upstream and still relies on
+the Entra app registration, callback URL, client secret, and Argo CD RBAC for
+access control.
 
 ## Validate Before Apply
 
@@ -205,6 +215,9 @@ OIDC login fails:
 6. If Dex logs `AADSTS650053` for the `groups` scope, remove `groups` from the
    requested Dex scopes and configure the IdP app to emit a `groups` claim
    instead.
+7. If Dex logs `missing "email_verified" claim`, keep
+   `insecureSkipEmailVerified: true` in the connector for Microsoft Entra and
+   re-apply the Argo CD bootstrap desired state.
 
 Partial install:
 
