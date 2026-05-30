@@ -37,3 +37,8 @@ Before expecting `NetworkPolicy` enforcement, first add a repo-owned enforcing
 CNI migration or policy-engine installation with rollback notes. After that,
 start with namespace default-deny policies and add narrow allow rules for DNS,
 ingress gateway traffic, metrics, and app dependencies.
+
+`n8n-postgres` now includes a NetworkPolicy that documents n8n-only PostgreSQL
+access in the `automation` namespace. It is desired-state intent, not an
+enforced boundary, until the NetworkPolicy gate above is satisfied or an Istio
+authorization policy for the database path is added and validated.

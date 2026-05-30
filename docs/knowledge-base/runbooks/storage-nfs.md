@@ -67,10 +67,12 @@ NFS backup coverage is a hard readiness gate. Persistent apps are registered
 with automated sync, but they are not production-ready until backup and restore
 coverage is acceptable.
 
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. Deluge,
-Radarr, and Sonarr split app config from media-library data: config and
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n-postgres, n8n, and OctoBot.
+Deluge, Radarr, and Sonarr split app config from media-library data: config and
 databases stay on `nfs-default`, while `/media/downloads`, `/media/movies`, and
-`/media/tv` are backed by static media claims.
+`/media/tv` are backed by static media claims. n8n now splits PostgreSQL state
+into `n8n-postgres` while keeping instance config and file-backed runtime data
+on the n8n PVC.
 
 ## Related Notes
 

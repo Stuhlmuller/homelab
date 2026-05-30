@@ -69,7 +69,7 @@ paper trading, and operator-reviewed live trading; exchange credentials and
 strategy state are configured through OctoBot and persist on its NFS-backed
 volumes, not in public repository files.
 
-## Homelab VPN Exit Node And API Route
+## Homelab VPN Exit Node And LAN Route
 
 Tailscale also provides the homelab VPN exit path. The `tailscale` Argo CD
 Application installs the upstream Tailscale Kubernetes Operator and applies the
@@ -80,12 +80,14 @@ The connector is cluster-scoped, creates one operator-managed proxy device, and
 advertises that device as a Tailscale exit node with hostname
 `homelab-exit-node` and tag `tag:k8s`. Tailnet clients can select that device as
 their exit node to route internet-bound traffic through the homelab cluster
-egress path. It also advertises the single-host `10.1.0.199/32` route so CI/CD
-runners can reach the Kubernetes API without exposing the rest of the LAN.
+egress path. It also advertises the `10.1.0.0/24` homelab LAN route so tailnet
+clients can reach local network services through the same operator-managed
+device. CI/CD grants still restrict GitHub-hosted runners to the Kubernetes API
+at `10.1.0.199:6443`.
 
 This repository cannot approve tailnet routes by itself. The tailnet policy must
 allow `tag:k8s-operator` to own `tag:k8s`, and either auto-approve exit-node
-and `10.1.0.199/32` route advertisement for `tag:k8s`, or rely on an admin
+and `10.1.0.0/24` route advertisement for `tag:k8s`, or rely on an admin
 manually approving `homelab-exit-node` and the advertised route in the Tailscale
 Machines page after sync.
 
@@ -98,11 +100,11 @@ kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=homela
 ```
 
 Expected result: the connector reports exit-node status and the
-`10.1.0.199/32` subnet route, its ready condition is true, and a single
-Tailscale proxy Pod is running. Then select `homelab-exit-node` on a client and
-verify the public egress IP changes to the homelab network. Keep local-network
-access enabled on clients that still need nearby LAN access while using the exit
-node.
+`10.1.0.0/24` subnet route, its ready condition is true, and a single Tailscale
+proxy Pod is running. Then select `homelab-exit-node` on a client and verify the
+public egress IP changes to the homelab network while homelab LAN addresses in
+`10.1.0.0/24` remain reachable. Keep local-network access enabled on clients
+that still need their nearby LAN access while using the exit node.
 
 ## Policy Bot Webhook Funnel Exception
 

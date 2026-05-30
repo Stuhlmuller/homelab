@@ -5,12 +5,13 @@ applications with Argo CD. Each child directory owns exactly one Argo CD
 Application and sources the repository-local
 `IaC/modules/argocd-application-kubernetes` module.
 
-The 18 requested apps are registered here along with supporting Applications
-for shared platform services. `platform-dns` owns CoreDNS resolver policy,
+The requested apps are registered here along with supporting Applications for
+shared platform services. `platform-dns` owns CoreDNS resolver policy,
 `platform-storage` owns the QNAP NFS provisioner and default StorageClass
 desired state, and `media-postgres` owns the shared PostgreSQL instance for
-Sonarr, Radarr, and Prowlarr. These support apps are not counted as requested
-workloads; they exist so dependency state is still delivered through Argo CD.
+Sonarr, Radarr, and Prowlarr. `n8n-postgres` owns the dedicated PostgreSQL
+instance for n8n. These support apps are not counted as requested workloads;
+they exist so dependency state is still delivered through Argo CD.
 
 ## Conventions
 

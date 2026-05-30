@@ -189,6 +189,22 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/n8n/postgres-admin-password" = {
+      description = "n8n dedicated PostgreSQL admin password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/n8n/postgres-app-password" = {
+      description = "n8n dedicated PostgreSQL application user password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/policy-bot/github-app/integration-id" = {
       description   = "Policy Bot GitHub App integration ID."
       initial_value = local.placeholder

@@ -12,7 +12,8 @@ dependencies {
     "../cert-manager",
     "../istio",
     "../tailscale",
-    "../platform-storage"
+    "../platform-storage",
+    "../n8n-postgres"
   ]
 }
 
@@ -86,7 +87,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "automated; update the n8n encryption key before storing real credentials and verify NFS backup coverage before relying on automation history"
+      value = "automated; update the n8n encryption key before storing real credentials and verify n8n-postgres plus NFS backup coverage before relying on automation history"
     }
   ]
 }
