@@ -26,6 +26,9 @@ inputs = {
   metadata = {
     name      = "grafana"
     namespace = "argocd"
+    annotations = {
+      "argocd.argoproj.io/refresh" = "hard"
+    }
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
       "app.kubernetes.io/part-of"    = "homelab"
