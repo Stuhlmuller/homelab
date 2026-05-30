@@ -59,6 +59,19 @@ policy`.
 ## Open Findings
 
 - **Status:** open
+- **Area:** storage
+- **Evidence:** after Hummingbot was removed from repo-owned desired state,
+  read-only checks on 2026-05-29 reported no `argocd/hummingbot` Application
+  and no Hummingbot Deployment, Service, ExternalSecret, or VirtualService, but
+  six bound `finance` namespace PVCs still matched
+  `app.kubernetes.io/instance=hummingbot`.
+- **Risk:** orphaned rollback PVCs can linger outside GitOps ownership and keep
+  old trading config, logs, certificates, scripts, and controller files around
+  longer than intended.
+- **Next step:** make an explicit data-retention decision, verify backup or
+  archival needs, then remove the orphaned PVCs through a reviewed repo-owned
+  cleanup path instead of ad hoc `kubectl delete`.
+- **Status:** open
 - **Area:** agent runtime
 - **Evidence:** OpenClaw pod currently runs on an NFS-backed PVC where files can
   appear as `nobody:nogroup`; PR #296 configures workspace scratch paths and
