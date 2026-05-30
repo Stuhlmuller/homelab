@@ -16,13 +16,12 @@ nix develop --command bash scripts/ci/static-checks.sh
 cd IaC/live/aws-ssm-parameters
 terragrunt plan
 cd IaC/live/argocd-apps
-terragrunt run --all plan -no-color
+terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
 ```
 
-Expected result: 18 requested Argo CD Applications plus the support
-Applications `platform-dns`, `platform-storage`, and `media-postgres` are
-planned, and every upstream relationship appears in a Terragrunt `dependencies`
-block.
+Expected result: the Argo CD Application units affected by `main...HEAD` are
+planned, their dependencies remain ordered by Terragrunt `dependencies` blocks,
+and unaffected units are skipped by the run queue.
 
 Render or dry-run GitOps sources:
 

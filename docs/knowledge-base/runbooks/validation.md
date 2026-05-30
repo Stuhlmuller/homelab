@@ -16,11 +16,11 @@ nix develop --command bash scripts/ci/static-checks.sh
 cd IaC/live/aws-ssm-parameters
 terragrunt plan
 cd IaC/live/argocd-apps
-terragrunt run --all plan -no-color
+terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
 ```
 
-Expected app-registration plan currently references 18 requested Argo CD
-Applications plus `platform-dns`, `platform-storage`, and `media-postgres`.
+Expected app-registration plans include the Argo CD Application units affected
+by `main...HEAD`; unaffected units are skipped by the Terragrunt run queue.
 
 ## Render And Diff
 

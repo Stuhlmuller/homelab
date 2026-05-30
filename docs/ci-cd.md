@@ -60,13 +60,20 @@ run the static checks and Conftest only.
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`
   because that unit reads decrypted AWS SSM parameters.
+- Terragrunt plan and apply phases use `--filter-affected` so only units
+  changed between `main` and `HEAD` are queued. In CI, the helper script
+  prepares the local `main` ref for that comparison: pull request plans compare
+  against the PR base branch, while push applies compare against the previous
+  `main` SHA from the GitHub event. Manual apply dispatches compare against
+  `HEAD^`.
 - The protected post-merge apply runs the production phases explicitly:
   bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
   registrations, apply Argo CD Application registrations serially, and finally
   materialize Kubernetes Secrets from SSM. Stack-wide apply phases use
-  Terragrunt's explicit `run --all --non-interactive -- apply ...` form so the
-  run queue is accepted in Actions and OpenTofu flags such as `-auto-approve`
-  are forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+  Terragrunt's explicit
+  `run --all --filter-affected --non-interactive -- apply ...` form so the run
+  queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
+  forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
 
 References:
 
@@ -241,6 +248,10 @@ Kubernetes secret materialization stacks. To review those locally, assume the
 production apply role, install the kubeconfig, and run a focused
 `terragrunt plan` from the stack directory.
 
+The local scripts rely on your current `main` ref for Terragrunt's
+`--filter-affected` comparison. Update `main` first when you want local output
+to match the GitHub pull request or push diff.
+
 Set `TERRAGRUNT_PLAN_MARKDOWN=/path/to/terragrunt-plan.md` when running the PR
 plan script locally if you want the same rendered `plan.out` markdown that the
 workflow writes into pull request descriptions.
@@ -253,3 +264,6 @@ nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
+
+Manual apply dispatches compare against `HEAD^`; use the normal post-merge push
+path when the affected-unit range needs to span multiple commits.
