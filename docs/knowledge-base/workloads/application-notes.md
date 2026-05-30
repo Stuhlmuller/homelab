@@ -65,6 +65,9 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 `IaC/live/azuread-applications/grafana`, provisions Prometheus and Alertmanager
 datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
 repo-owned values. Discord webhook URL comes from SSM through External Secrets.
+Its Helm-rendered Deployment uses a resource-level Argo CD `Replace=true` sync
+option because the app keeps a `Recreate` strategy for the single Grafana PVC,
+and server-side apply can otherwise preserve stale `rollingUpdate` fields.
 
 ## Kiali
 
@@ -241,4 +244,5 @@ add a forward-auth layer first.
 The Tailscale app owns operator support resources, the privileged `tailscale`
 namespace, the `operator-oauth` ExternalSecret, and the `homelab-exit-node`
 Connector. Tailnet policy must allow `tag:k8s-operator` to own `tag:k8s` and
-auto-approve exit-node advertisement when possible.
+auto-approve exit-node and `10.1.0.0/24` subnet-route advertisement when
+possible.

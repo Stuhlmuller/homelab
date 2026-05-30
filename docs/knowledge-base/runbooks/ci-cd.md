@@ -74,8 +74,11 @@ CI uses tags:
 - `tag:github-actions-terragrunt-plan`
 - `tag:github-actions-terragrunt-apply`
 
-Prefer the repo-owned `homelab-exit-node` connector and its `10.1.0.199/32`
-route to reach the Kubernetes API. Keep grants limited to TCP `6443`.
+Use the repo-owned `homelab-exit-node` connector's advertised `10.1.0.0/24`
+route to reach the Kubernetes API at `10.1.0.199:6443`. Do not select it as a
+full exit node in CI: Terragrunt still needs public AWS STS/KMS access, and
+routing that traffic through the tailnet path has caused runner DNS timeouts
+against `127.0.0.53`. Keep CI grants limited to TCP `6443` on the API host.
 
 ## Local Equivalents
 
