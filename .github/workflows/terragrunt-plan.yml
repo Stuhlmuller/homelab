@@ -27,7 +27,6 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER: 10.1.0.199
-  TAILSCALE_EXIT_NODE: homelab-exit-node
   TAILSCALE_VERSION: 1.98.3
 
 jobs:
@@ -84,6 +83,7 @@ jobs:
         # actions/checkout@v5
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Install Nix
@@ -123,9 +123,6 @@ jobs:
 
       - name: Accept Tailnet Subnet Routes
         run: sudo tailscale set --accept-routes=true
-
-      - name: Select Homelab Exit Node
-        run: sudo tailscale set --exit-node="${TAILSCALE_EXIT_NODE}"
 
       - name: Install Kubeconfig
         env:

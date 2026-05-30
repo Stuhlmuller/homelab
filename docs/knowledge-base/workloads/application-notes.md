@@ -65,6 +65,9 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 `IaC/live/azuread-applications/grafana`, provisions Prometheus and Alertmanager
 datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
 repo-owned values. Discord webhook URL comes from SSM through External Secrets.
+Its Helm-rendered Deployment uses a resource-level Argo CD `Replace=true` sync
+option because the app keeps a `Recreate` strategy for the single Grafana PVC,
+and server-side apply can otherwise preserve stale `rollingUpdate` fields.
 
 ## Kiali
 
@@ -159,14 +162,37 @@ creates six logical databases:
 Application-ready restore requires logical dumps plus matching app config PVC
 backups.
 
+## n8n PostgreSQL
+
+`n8n-postgres` is a dedicated PostgreSQL support app in the `automation`
+namespace. It exposes only `n8n-postgres.automation.svc.cluster.local:5432`,
+persists on `nfs-default`, and creates the `n8n` role/database from generated
+SSM passwords at `/homelab/n8n/postgres-admin-password` and
+`/homelab/n8n/postgres-app-password`. The admin password stays in
+`n8n-postgres-auth`; n8n receives only the application password through
+`n8n-postgres-client` and `DB_POSTGRESDB_PASSWORD_FILE`.
+
+Changing database names, users, or passwords after first initialization needs
+an explicit migration or `ALTER ROLE` plan because PostgreSQL init scripts only
+run against an empty data directory.
+
 ## n8n
 
-n8n persists `/home/node/.n8n` on NFS. Its stable encryption key comes from
-`/homelab/n8n/encryption-key` only on first boot. The pod receives it as
-`N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports `N8N_ENCRYPTION_KEY` only when the
-persisted `/home/node/.n8n/config` file is absent, so restored or existing PVCs
-continue using their persisted instance key. Do not rotate the SSM value as a
-shortcut for changing an existing n8n instance key.
+n8n uses `DB_TYPE=postgresdb` and waits for an authenticated connection to
+`n8n-postgres` before startup. Workflows, users, credential metadata, and
+execution history live in PostgreSQL. `/home/node/.n8n` still persists on NFS
+for the instance config, encryption-key settings, and file-backed runtime data.
+
+The stable encryption key comes from `/homelab/n8n/encryption-key` only on
+first boot. The pod receives it as `N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports
+`N8N_ENCRYPTION_KEY` only when the persisted `/home/node/.n8n/config` file is
+absent, so restored or existing PVCs continue using their persisted instance
+key. Do not rotate the SSM value as a shortcut for changing an existing n8n
+instance key.
+
+The PostgreSQL desired state preserves the old SQLite file on the PVC but does
+not automatically import rows from it. Export workflows and credentials before
+rollout when existing SQLite contents must be preserved.
 
 ## Policy Bot
 
@@ -227,4 +253,5 @@ add a forward-auth layer first.
 The Tailscale app owns operator support resources, the privileged `tailscale`
 namespace, the `operator-oauth` ExternalSecret, and the `homelab-exit-node`
 Connector. Tailnet policy must allow `tag:k8s-operator` to own `tag:k8s` and
-auto-approve exit-node advertisement when possible.
+auto-approve exit-node and `10.1.0.0/24` subnet-route advertisement when
+possible.

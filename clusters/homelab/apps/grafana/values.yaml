@@ -4,6 +4,8 @@ admin:
   passwordKey: password
 deploymentStrategy:
   type: Recreate
+annotations:
+  argocd.argoproj.io/sync-options: Replace=true
 extraSecretMounts:
   - name: grafana-azuread-sso
     secretName: grafana-azuread-sso

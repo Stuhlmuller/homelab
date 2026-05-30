@@ -16,21 +16,22 @@ handling is clear.
 3. OpenClaw
 4. OctoBot
 5. n8n
-6. Radarr and Sonarr
-7. Prowlarr
-8. media-postgres
-9. LiteLLM
-10. Deluge
-11. Kiali
-12. Grafana
-13. Descheduler
-14. Prometheus
-15. platform-storage
-16. Tailscale
-17. Istio
-18. cert-manager
-19. external-secrets
-20. platform-dns
+6. n8n-postgres
+7. Radarr and Sonarr
+8. Prowlarr
+9. media-postgres
+10. LiteLLM
+11. Deluge
+12. Kiali
+13. Grafana
+14. Descheduler
+15. Prometheus
+16. platform-storage
+17. Tailscale
+18. Istio
+19. cert-manager
+20. external-secrets
+21. platform-dns
 
 ## Persistent Data
 
@@ -41,6 +42,11 @@ registration.
 For `media-postgres`, take logical dumps before rollback whenever Sonarr,
 Radarr, or Prowlarr have written data to PostgreSQL. Preserve the PostgreSQL
 PVC unless intentionally rebuilding from backups.
+
+For `n8n-postgres`, take a logical dump before rollback whenever n8n has
+written workflows, users, credentials metadata, or execution history to
+PostgreSQL. Preserve both the PostgreSQL PVC and n8n PVC unless intentionally
+rebuilding from exports.
 
 Policy Bot is stateless. Roll back its public exposure by removing
 `policy-bot-hook-funnel` first.
