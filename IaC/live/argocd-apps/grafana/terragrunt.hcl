@@ -89,6 +89,10 @@ inputs = {
 
   info = [
     {
+      name  = "alerting-reconcile"
+      value = "2026-05-30: force Argo CD to reprocess Grafana alerting provisioning changes"
+    },
+    {
       name  = "rollout"
       value = "automated; verify Prometheus and NFS backup coverage before relying on dashboards"
     },
