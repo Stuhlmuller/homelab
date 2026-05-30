@@ -31,6 +31,9 @@ they exist so dependency state is still delivered through Argo CD.
 - Add repo-declared workload images to
   `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` when they
   should be kept current by Image Updater pull requests.
+- Keep retired Applications registered until the live Argo CD resource has
+  synced to an empty target or has been explicitly destroyed. Deleting the
+  Terragrunt directory alone leaves the live Application unmanaged.
 
 ## Readiness Semantics
 
