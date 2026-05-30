@@ -106,19 +106,19 @@ The first provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
-- OctoBot Deployment unavailable for 5 minutes.
+- Kubernetes pods in `CrashLoopBackOff` for 5 minutes.
+- Kubernetes Deployments with unavailable replicas for 5 minutes.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining out of sync for 30 minutes.
 
-The Argo CD application health and sync rules intentionally keep the original
-`argocd_app_info` series labels instead of aggregating them. Grafana sends one
-alert instance per affected application so notifications include the application
-name, namespace, and current Argo CD status for triage.
-The notification policy groups on those Argo CD labels as well as the shared
-alert labels so Discord messages keep the affected application dimensions
-visible instead of collapsing them into a folder-level aggregate.
+The Kubernetes workload rules intentionally keep the original namespace, pod,
+container, reason, and deployment labels. The Argo CD application health and
+sync rules intentionally keep the original `argocd_app_info` series labels
+instead of aggregating them. Grafana sends one alert instance per affected
+workload or application so notifications include the triage dimensions instead
+of collapsing them into a folder-level aggregate.
 
 ## Validation
 
