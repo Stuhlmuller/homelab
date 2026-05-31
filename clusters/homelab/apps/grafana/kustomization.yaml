@@ -9,6 +9,7 @@ configMapGenerator:
   - name: grafana-dashboard-homelab-overview
     files:
       - argocd-overview.json=dashboards/argocd-overview.json
+      - github-pr-status.json=dashboards/github-pr-status.json
       - homelab-overview.json=dashboards/homelab-overview.json
     options:
       labels:

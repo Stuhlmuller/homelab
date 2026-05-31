@@ -63,13 +63,17 @@ and fail to establish enough peer connections.
 
 Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 `IaC/live/azuread-applications/grafana`, provisions Prometheus and Alertmanager
-datasources, Homelab and Argo CD dashboards, and Grafana-managed alerts from
-repo-owned values. Discord webhook URL and the OpenClaw alert hook token come
-from SSM through External Secrets. Grafana sends alert notifications both to
-Discord and directly to OpenClaw's authenticated `/hooks/agent` endpoint.
+datasources, a public GitHub API Infinity datasource, Homelab, Argo CD, and
+GitHub PR status dashboards, and Grafana-managed alerts from repo-owned values.
+Discord webhook URL and the OpenClaw alert hook token come from SSM through
+External Secrets. Grafana sends alert notifications both to Discord and
+directly to OpenClaw's authenticated `/hooks/agent` endpoint.
 Alerting-only provisioning changes bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and applies
 rule additions, updates, and deletions.
+The GitHub dashboard and Actions failure alerts use unauthenticated public REST
+API reads against `Stuhlmuller/homelab`, so keep polling conservative unless a
+token-backed secret contract is added.
 Its Helm-rendered Deployment uses a resource-level Argo CD `Replace=true` sync
 option because the app keeps a `Recreate` strategy for the single Grafana PVC,
 and server-side apply can otherwise preserve stale `rollingUpdate` fields.

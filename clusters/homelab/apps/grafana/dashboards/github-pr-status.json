@@ -1,0 +1,1004 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [
+        "homelab"
+      ],
+      "targetBlank": false,
+      "title": "Homelab dashboards",
+      "type": "dashboards"
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "noValue": "0",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "count"
+          ],
+          "fields": "/^PR$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "number",
+              "text": "PR",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "items",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/search/issues",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "q",
+                "value": "repo:Stuhlmuller/homelab is:pr is:open"
+              },
+              {
+                "key": "per_page",
+                "value": "100"
+              },
+              {
+                "key": "sort",
+                "value": "updated"
+              },
+              {
+                "key": "order",
+                "value": "desc"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "Open PRs",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "noValue": "0",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "count"
+          ],
+          "fields": "/^PR$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "number",
+              "text": "PR",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "items",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/search/issues",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "q",
+                "value": "repo:Stuhlmuller/homelab is:pr is:open status:failure"
+              },
+              {
+                "key": "per_page",
+                "value": "100"
+              },
+              {
+                "key": "sort",
+                "value": "updated"
+              },
+              {
+                "key": "order",
+                "value": "desc"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "PRs Failing Checks",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "noValue": "0",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "count"
+          ],
+          "fields": "/^PR$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "number",
+              "text": "PR",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "items",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/search/issues",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "q",
+                "value": "repo:Stuhlmuller/homelab is:pr is:open status:pending"
+              },
+              {
+                "key": "per_page",
+                "value": "100"
+              },
+              {
+                "key": "sort",
+                "value": "updated"
+              },
+              {
+                "key": "order",
+                "value": "desc"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "PRs Pending Checks",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "noValue": "0",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "count"
+          ],
+          "fields": "/^run_id$/",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "id",
+              "text": "run_id",
+              "type": "number"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "workflow_runs",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "status",
+                "value": "failure"
+              },
+              {
+                "key": "created",
+                "value": ">=${__timeFrom:date:iso}"
+              },
+              {
+                "key": "per_page",
+                "value": "100"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "Failed Actions Runs",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "URL"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open",
+                    "url": "${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Updated"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "number",
+              "text": "PR",
+              "type": "number"
+            },
+            {
+              "selector": "title",
+              "text": "Title",
+              "type": "string"
+            },
+            {
+              "selector": "user.login",
+              "text": "Author",
+              "type": "string"
+            },
+            {
+              "selector": "updated_at",
+              "text": "Updated",
+              "type": "string"
+            },
+            {
+              "selector": "html_url",
+              "text": "URL",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "items",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/search/issues",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "q",
+                "value": "repo:Stuhlmuller/homelab is:pr is:open"
+              },
+              {
+                "key": "per_page",
+                "value": "20"
+              },
+              {
+                "key": "sort",
+                "value": "updated"
+              },
+              {
+                "key": "order",
+                "value": "desc"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "Open Pull Requests",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "URL"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open",
+                    "url": "${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "id": 6,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Updated"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "number",
+              "text": "PR",
+              "type": "number"
+            },
+            {
+              "selector": "title",
+              "text": "Title",
+              "type": "string"
+            },
+            {
+              "selector": "user.login",
+              "text": "Author",
+              "type": "string"
+            },
+            {
+              "selector": "updated_at",
+              "text": "Updated",
+              "type": "string"
+            },
+            {
+              "selector": "html_url",
+              "text": "URL",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "items",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/search/issues",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "q",
+                "value": "repo:Stuhlmuller/homelab is:pr is:open status:failure"
+              },
+              {
+                "key": "per_page",
+                "value": "20"
+              },
+              {
+                "key": "sort",
+                "value": "updated"
+              },
+              {
+                "key": "order",
+                "value": "desc"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "Open PRs With Failing Checks",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "yesoreyeram-infinity-datasource",
+        "uid": "github"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "URL"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Open",
+                    "url": "${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Created"
+          }
+        ]
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "columns": [
+            {
+              "selector": "id",
+              "text": "run_id",
+              "type": "number"
+            },
+            {
+              "selector": "name",
+              "text": "Workflow",
+              "type": "string"
+            },
+            {
+              "selector": "display_title",
+              "text": "Title",
+              "type": "string"
+            },
+            {
+              "selector": "head_branch",
+              "text": "Branch",
+              "type": "string"
+            },
+            {
+              "selector": "event",
+              "text": "Event",
+              "type": "string"
+            },
+            {
+              "selector": "conclusion",
+              "text": "Conclusion",
+              "type": "string"
+            },
+            {
+              "selector": "created_at",
+              "text": "Created",
+              "type": "string"
+            },
+            {
+              "selector": "html_url",
+              "text": "URL",
+              "type": "string"
+            }
+          ],
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "github"
+          },
+          "filters": [],
+          "format": "table",
+          "global_query_id": "",
+          "parser": "backend",
+          "refId": "A",
+          "root_selector": "workflow_runs",
+          "source": "url",
+          "type": "json",
+          "url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs",
+          "url_options": {
+            "body_content_type": "application/json",
+            "body_form": [],
+            "body_graphql_query": "",
+            "body_graphql_variables": "",
+            "body_type": "raw",
+            "data": "",
+            "headers": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.github+json"
+              },
+              {
+                "key": "X-GitHub-Api-Version",
+                "value": "2026-03-10"
+              }
+            ],
+            "method": "GET",
+            "params": [
+              {
+                "key": "status",
+                "value": "failure"
+              },
+              {
+                "key": "created",
+                "value": ">=${__timeFrom:date:iso}"
+              },
+              {
+                "key": "per_page",
+                "value": "20"
+              }
+            ]
+          }
+        }
+      ],
+      "title": "Recent Failed GitHub Actions Runs",
+      "type": "table"
+    }
+  ],
+  "refresh": "10m",
+  "schemaVersion": 41,
+  "tags": [
+    "homelab",
+    "github",
+    "ci-cd"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "GitHub PR Status",
+  "uid": "github-pr-status",
+  "version": 1,
+  "weekStart": ""
+}
