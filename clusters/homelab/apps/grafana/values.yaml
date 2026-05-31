@@ -47,7 +47,7 @@ podAnnotations:
   homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
   homelab.rst.io/alerting-provisioning-version: "3"
 plugins:
-  - yesoreyeram-infinity-datasource@3.8.0
+  - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
   enabled: false
 serviceMonitor:
