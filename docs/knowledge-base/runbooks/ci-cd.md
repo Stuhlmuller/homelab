@@ -42,6 +42,11 @@ Source: `docs/ci-cd.md`
   managed KMS, IAM, and SSM resources that require the protected apply role.
   They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
   stacks after review.
+- Validation and deployment workflows use Terragrunt commands as their repo
+  entrypoints. Terragrunt logs may still show `tofu:` prefixes or
+  `Failed to execute "tofu ..."` because Terragrunt shells out to OpenTofu
+  internally; rerun or recover through the Terragrunt workflow/script instead
+  of copying cache-directory OpenTofu commands.
 - Terragrunt plan and apply phases use `--filter-affected` so run queues are
   limited to units changed between `main` and `HEAD`. In CI, the helper script
   prepares `main` to mean the PR base branch for plans or the previous push SHA

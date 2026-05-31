@@ -15,3 +15,9 @@ The module includes a non-destructive `removed` block for the previous
 been migrated to the Kubernetes manifest address, so this module does not carry
 a persistent import block that would prevent future brand-new Applications from
 being created normally.
+
+The Kubernetes provider validates the object returned by the API server after
+apply. Argo CD reserializes multi-source `spec.sources` entries, so the module
+marks that list as computed while still sending the repository-owned source
+definitions from Terragrunt. This avoids failed state reconciliation after
+normal Argo CD defaulting.

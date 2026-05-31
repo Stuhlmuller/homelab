@@ -74,6 +74,11 @@ unless the repository adds a reviewed token-backed secret contract for Grafana.
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`
   because that unit reads decrypted AWS SSM parameters.
+- Validation and deployment workflows use Terragrunt commands as their repo
+  entrypoints. Terragrunt logs may still show `tofu:` prefixes or a
+  `Failed to execute "tofu ..."` line because Terragrunt shells out to
+  OpenTofu internally; do not copy those cache-directory commands as the
+  operator recovery path.
 - Terragrunt plan and apply phases use `--filter-affected` so only units
   changed between `main` and `HEAD` are queued. In CI, the helper script
   prepares the local `main` ref for that comparison: pull request plans compare
