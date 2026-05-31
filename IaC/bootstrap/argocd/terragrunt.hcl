@@ -7,7 +7,11 @@ locals {
   self_management_project_manifest     = "${get_terragrunt_dir()}/../../../clusters/homelab/argocd/self-management/appproject.yaml"
   oidc_sso_secret_name                 = "argocd-oidc-sso"
   oidc_sso_issuer                      = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
-  oidc_sso_admin_group                 = "argocd-admins"
+  oidc_sso_admin_groups = [
+    # Microsoft Entra emits the group object ID in the Dex groups claim.
+    "b200361e-a378-437a-9a47-731834f1524f",
+    "argocd-admins",
+  ]
   argocd_metrics = {
     enabled = true
   }
@@ -63,8 +67,10 @@ inputs = {
 
         rbac = {
           "policy.default" = "role:readonly"
-          "policy.csv"     = "g, ${local.oidc_sso_admin_group}, role:admin\n"
-          scopes           = "[groups, email]"
+          "policy.csv" = join("\n", concat([
+            for group in local.oidc_sso_admin_groups : "g, ${group}, role:admin"
+          ], [""]))
+          scopes = "[groups, email]"
         }
       }
 

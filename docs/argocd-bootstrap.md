@@ -66,6 +66,12 @@ registration to emit group membership claims. Entra may omit the
 the Entra app registration, callback URL, client secret, and Argo CD RBAC for
 access control.
 
+Microsoft Entra can emit group object IDs rather than display names in the
+Dex `groups` claim. Keep the actual emitted admin group value in
+`local.oidc_sso_admin_groups` inside `IaC/bootstrap/argocd/terragrunt.hcl`;
+otherwise matching users fall back to `role:readonly` even when they belong to
+the intended Entra group.
+
 ## Validate Before Apply
 
 Run formatting and planning from the repo root or stack directory:

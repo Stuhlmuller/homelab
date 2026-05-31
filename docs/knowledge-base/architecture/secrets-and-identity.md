@@ -39,8 +39,9 @@ roles need identity-based KMS permissions for both keys.
   provider discovery. Microsoft Entra group authorization is a token-claim
   behavior, not a requested OAuth scope: keep Dex scopes to `openid`,
   `profile`, and `email`, configure Entra to emit the `groups` claim for Argo
-  CD RBAC, and keep `insecureSkipEmailVerified: true` because Entra may omit
-  the `email_verified` claim.
+  CD RBAC, map the emitted admin group object ID in
+  `local.oidc_sso_admin_groups`, and keep `insecureSkipEmailVerified: true`
+  because Entra may omit the `email_verified` claim.
 - Argo CD Image Updater uses the `argocd-image-updater-git` ExternalSecret for
   GitHub App credentials that open image update pull requests through Git
   write-back. It refreshes on ExternalSecret changes; bump the non-secret

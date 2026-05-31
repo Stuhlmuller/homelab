@@ -58,6 +58,10 @@ the profile to IPv4 before Gluetun starts. Keep Deluge's AirVPN forwarded port
 fixed only for `listen_ports`; `outgoing_ports` should stay at Deluge's default
 random behavior, otherwise active torrents can report too few outgoing ports
 and fail to establish enough peer connections.
+If `deluge-vpn` is ready but Gluetun startup health checks fail with repeated
+DNS lookup timeouts through the tunnel, the likely repair is a fresh AirVPN
+WireGuard profile in SSM plus the matching annotation bump, not a live Pod
+patch or manual restart.
 
 ## Grafana
 

@@ -39,6 +39,9 @@ Group-based RBAC depends on Entra emitting a token `groups` claim and Dex
 also sets `insecureSkipEmailVerified: true` because Entra can return an ID
 token without `email_verified`; access still depends on the Entra app
 registration, callback URL, client secret, and Argo CD RBAC.
+Microsoft Entra can emit group object IDs instead of display names, so
+`IaC/bootstrap/argocd/terragrunt.hcl` must map the actual emitted admin group
+value in `local.oidc_sso_admin_groups` or users stay on `role:readonly`.
 
 Dex startup uses the literal Entra issuer committed in
 `IaC/bootstrap/argocd/terragrunt.hcl`. Keep `/homelab/argocd/oidc/issuer`
