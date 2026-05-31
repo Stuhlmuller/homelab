@@ -33,7 +33,8 @@ present. Local admin login remains available through `grafana-admin`.
 ## Code-Owned Configuration
 
 - `values.yaml` provisions the Prometheus and Alertmanager datasources with
-  stable UIDs, enables a `ServiceMonitor` for Grafana metrics, mounts
+  stable UIDs, provisions the GitHub Infinity datasource with the stable
+  `github` UID, enables a `ServiceMonitor` for Grafana metrics, mounts
   dashboards, configures Microsoft Entra SSO, and provisions Grafana-managed
   alerting resources.
 - The Helm release uses a `Recreate` deployment strategy because Grafana stores
@@ -47,12 +48,18 @@ present. Local admin login remains available through `grafana-admin`.
   databases that already contain Grafana-generated datasource UIDs.
 - `dashboards/homelab-overview.json` is the default Homelab overview dashboard.
   `dashboards/argocd-overview.json` is the Argo CD GitOps operations
-  dashboard. Kustomize packages both dashboards into the stable
-  `grafana-dashboard-homelab-overview` ConfigMap, which the Helm chart mounts
-  through the `homelab` dashboard provider.
+  dashboard. `dashboards/github-pr-status.json` tracks open pull request status
+  filters and recent failed GitHub Actions runs. Kustomize packages these
+  dashboards into the stable `grafana-dashboard-homelab-overview` ConfigMap,
+  which the Helm chart mounts through the `homelab` dashboard provider.
 - `values.yaml` imports pinned Grafana.com dashboard revisions for Kubernetes
   and Prometheus views that are maintained by the
   `dotdc/grafana-dashboards-kubernetes` project.
+- `values.yaml` installs the pinned Infinity datasource plugin so Grafana can
+  read public GitHub REST API endpoints from the server side. The GitHub
+  queries are intentionally unauthenticated because this repository is public;
+  keep the alert interval conservative unless a reviewed token-backed secret
+  contract is added later.
 - `externalsecret.yaml` references the Grafana admin username, admin password,
   Entra SSO values, and Discord webhook URL in AWS SSM Parameter Store. No
   secret values belong in this directory.
@@ -116,6 +123,8 @@ The first provisioned rules cover:
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
+- GitHub Actions workflow runs in `failure` or `timed_out` state during the
+  two-hour alert window.
 
 The provisioning file also deletes the retired OctoBot-specific deployment
 availability rule so Grafana only evaluates the generic workload alerts after
@@ -164,12 +173,13 @@ kubectl -n monitoring get pods -l app.kubernetes.io/name=grafana
 ```
 
 In Grafana, check that the `Prometheus` datasource is default, the
-`Alertmanager` datasource is healthy, the `Homelab Overview` and `Argo CD
-Overview` dashboards appear under the `Homelab` folder, the imported dashboards
-appear under the `Kubernetes` and `Monitoring` folders, the `Entra ID` login
-path works, and the seven `homelab-*` alert rules are present under Grafana
-Alerting. Use the Grafana contact point test action after the Discord webhook
-parameter and OpenClaw hook token have been populated in SSM.
+`Alertmanager` datasource is healthy, the `GitHub` datasource can query
+`https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
+`GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
+dashboards appear under the `Kubernetes` and `Monitoring` folders, the
+`Entra ID` login path works, and the nine `homelab-*` alert rules are present
+under Grafana Alerting. Use the Grafana contact point test action after the
+Discord webhook parameter and OpenClaw hook token have been populated in SSM.
 
 ## Rollback
 

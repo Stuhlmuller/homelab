@@ -16,6 +16,20 @@ This repository uses GitHub Actions for the review and rollout path:
 Forked pull requests never receive AWS, Tailscale, or Kubernetes secrets. They
 run the static checks and Conftest only.
 
+## Monitoring
+
+Grafana owns the repository dashboard for the GitHub review path. The
+`GitHub PR Status` dashboard in `clusters/homelab/apps/grafana` uses the
+provisioned `GitHub` Infinity datasource to query public GitHub REST API
+endpoints for open pull requests, pull requests with failing or pending status
+checks, and recent failed workflow runs.
+
+Grafana-managed alerts poll the GitHub Actions workflow-runs endpoint every
+ten minutes and notify through the normal homelab alert route when a run enters
+`failure` or `timed_out` state during the two-hour alert window. Because these
+reads are unauthenticated public API calls, do not shorten the polling interval
+unless the repository adds a reviewed token-backed secret contract for Grafana.
+
 ## Security Model
 
 - Workflows use `pull_request` and `push`; they do not use
@@ -80,6 +94,8 @@ References:
 - [Tailscale GitHub Action](https://tailscale.com/docs/integrations/github/github-action)
 - [Tailscale grants syntax](https://tailscale.com/docs/reference/syntax/grants)
 - [GitHub OIDC with AWS](https://docs.github.com/en/actions/how-tos/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
+- [GitHub Actions workflow runs REST API](https://docs.github.com/en/rest/actions/workflow-runs)
+- [GitHub issue and pull request search filters](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/filtering-and-searching-issues-and-pull-requests)
 - [nix-community/cache-nix-action](https://github.com/nix-community/cache-nix-action)
 - [Conftest](https://www.conftest.dev/)
 - [Checkov GitHub Actions integration](https://www.checkov.io/4.Integrations/GitHub%20Actions.html)

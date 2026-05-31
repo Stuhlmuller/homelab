@@ -51,6 +51,17 @@ Source: `docs/ci-cd.md`
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
 
+## Monitoring
+
+Grafana's `GitHub PR Status` dashboard uses the provisioned GitHub Infinity
+datasource to read public GitHub REST API endpoints for open pull requests,
+pull requests with failing or pending status checks, and recent failed workflow
+runs. Grafana-managed alerts poll GitHub Actions every ten minutes and notify
+through the normal homelab route when workflow runs enter `failure` or
+`timed_out` during the two-hour alert window. Keep these queries
+unauthenticated and conservatively scheduled unless a reviewed token-backed
+secret contract is added.
+
 ## Environments
 
 - `homelab-plan`: same-repository PR live plans.
