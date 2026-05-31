@@ -125,6 +125,9 @@ controllers:
                 hooks.token \
                 '"${GRAFANA_ALERT_HOOK_TOKEN}"'
               openclaw config set --strict-json \
+                hooks.defaultSessionKey \
+                '"agent:main:hooks:grafana-alerts"'
+              openclaw config set --strict-json \
                 hooks.maxBodyBytes \
                 '65536'
               openclaw config set --strict-json \
