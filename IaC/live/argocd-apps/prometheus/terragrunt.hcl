@@ -82,10 +82,6 @@ inputs = {
 
   info = [
     {
-      name  = "grafana-alerting-cleanup"
-      value = "2026-05-30: deliver one-shot Grafana stale alert cleanup job"
-    },
-    {
       name  = "rollout"
       value = "automated; verify NFS backup coverage before relying on retained metrics"
     },
