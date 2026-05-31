@@ -48,7 +48,7 @@ The current service access contract is:
 | `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI/API ingress. |
 | `litellm` | `ai` | `cluster.local/ns/ai/sa/openclaw` | OpenClaw model gateway calls. |
 | `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
-| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI and webhook ingress through the private gateway. |
+| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress and reviewed n8n webhook Funnel traffic forwarded through the Istio gateway. |
 | `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/kiali-service-account` | Kiali dashboard links and health checks. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrapes Grafana metrics. |

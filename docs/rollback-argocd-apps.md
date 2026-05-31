@@ -44,6 +44,11 @@ has already written workflows, users, credentials metadata, or execution
 history to PostgreSQL. Preserve both the PostgreSQL PVC and the n8n
 `/home/node/.n8n` PVC unless intentionally rebuilding from exports.
 
+n8n public webhook exposure is independent of its stored workflow data. Remove
+`n8n-webhook-funnel`, the `n8n-webhook-funnel` Gateway, and the public
+`WEBHOOK_URL` first, then roll back the app while preserving both n8n PVCs
+unless intentionally rebuilding from exports.
+
 Policy Bot is stateless. Roll back its public exposure by removing the
 `policy-bot-hook-funnel` Ingress first, then roll back the Deployment and
 ExternalSecret if the GitHub App should stop evaluating pull requests.

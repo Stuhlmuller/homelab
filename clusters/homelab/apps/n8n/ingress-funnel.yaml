@@ -1,0 +1,39 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: n8n-webhook-funnel
+  namespace: istio-system
+  annotations:
+    tailscale.com/funnel: "true"
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-funnel-reviewed: "true"
+    homelab.rst.io/public-funnel-purpose: "n8n external webhook deliveries only."
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - n8n-webhook
+  rules:
+    - http:
+        paths:
+          - path: /webhook
+            pathType: Prefix
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  name: http2
+          - path: /webhook-test
+            pathType: Prefix
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  name: http2
+          - path: /webhook-waiting
+            pathType: Prefix
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  name: http2

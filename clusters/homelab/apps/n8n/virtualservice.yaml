@@ -8,10 +8,47 @@ metadata:
 spec:
   hosts:
     - n8n.stinkyboi.com
+    - n8n-webhook.tail67beb.ts.net
   gateways:
     - istio-system/tailnet-gateway
+    - istio-system/n8n-webhook-funnel
   http:
-    - route:
+    - name: public-webhooks
+      match:
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            exact: /webhook
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            prefix: /webhook/
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            exact: /webhook-test
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            prefix: /webhook-test/
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            exact: /webhook-waiting
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            prefix: /webhook-waiting/
+      route:
+        - destination:
+            host: n8n.automation.svc.cluster.local
+            port:
+              number: 5678
+    - name: tailnet-ui
+      match:
+        - gateways:
+            - istio-system/tailnet-gateway
+      route:
         - destination:
             host: n8n.automation.svc.cluster.local
             port:

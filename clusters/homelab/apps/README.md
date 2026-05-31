@@ -22,9 +22,9 @@ in `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`; Image Updater
 opens pull requests for those values instead of relying on live-only overrides.
 
 Most first-rollout routes are tailnet-only. Public Tailscale Funnel routes must
-stay limited to reviewed webhook exceptions such as Policy Bot's
-`/api/github/hook` route, and every exception must be documented in
-`docs/networking-tailnet-ingress.md`.
+stay limited to reviewed webhook exceptions such as n8n's webhook prefixes and
+Policy Bot's `/api/github/hook` route, and every exception must be documented
+in `docs/networking-tailnet-ingress.md`.
 
 Do not add a route just because an upstream chart exposes a web UI. Prefer the
 least direct reviewed access path. For example, Grafana is the operator-facing

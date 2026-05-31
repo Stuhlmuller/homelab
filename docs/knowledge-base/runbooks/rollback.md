@@ -48,6 +48,10 @@ written workflows, users, credentials metadata, or execution history to
 PostgreSQL. Preserve both the PostgreSQL PVC and n8n PVC unless intentionally
 rebuilding from exports.
 
+n8n public webhook exposure is independent of stored workflow data. Remove
+`n8n-webhook-funnel`, its Gateway, and the public `WEBHOOK_URL` before rolling
+back the app.
+
 Policy Bot is stateless. Roll back its public exposure by removing
 `policy-bot-hook-funnel` first.
 
