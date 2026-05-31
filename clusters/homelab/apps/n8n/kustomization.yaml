@@ -4,4 +4,6 @@ resources:
   - namespace.yaml
   - externalsecret.yaml
   - authorizationpolicy.yaml
+  - gateway-funnel.yaml
+  - ingress-funnel.yaml
   - virtualservice.yaml

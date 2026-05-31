@@ -29,7 +29,8 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | sonarr | `https://sonarr.stinkyboi.com` | disabled |
 | litellm | `https://litellm.stinkyboi.com` | disabled |
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
-| n8n | `https://n8n.stinkyboi.com` | disabled |
+| n8n editor/UI | `https://n8n.stinkyboi.com` | disabled |
+| n8n webhooks | `https://n8n-webhook.tail67beb.ts.net/webhook...` | enabled for `/webhook`, `/webhook-test`, and `/webhook-waiting` only |
 | policy-bot UI and normal routes | `https://policy-bot.stinkyboi.com` | disabled |
 | octobot UI | `https://octobot.stinkyboi.com` | disabled |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
@@ -43,13 +44,13 @@ Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 not referenced by the ingress wildcard certificate.
 
 Validation on 2026-05-24 found no enabled first-rollout Funnel routes. Policy
-Bot adds the first reviewed Funnel exception for GitHub webhook delivery only.
-The `policy-bot-hook-funnel` Tailscale Ingress is annotated with
-`homelab.rst.io/public-funnel: "true"` and
-`homelab.rst.io/public-funnel-reviewed: "true"`; the Policy Bot UI
-VirtualService remains annotated with `homelab.rst.io/public-funnel: "false"`.
-Every other Istio gateway and VirtualService route manifest remains
-tailnet-only.
+Bot later added a reviewed Funnel exception for GitHub webhook delivery, and
+n8n now adds a reviewed Funnel exception for workflow webhook delivery. The
+`policy-bot-hook-funnel` and `n8n-webhook-funnel` Tailscale Ingresses are
+annotated with `homelab.rst.io/public-funnel: "true"` and
+`homelab.rst.io/public-funnel-reviewed: "true"`; the Policy Bot UI and n8n
+editor routes remain private. Every other Istio gateway and VirtualService
+route manifest remains tailnet-only.
 
 The Istio ingressgateway Service is a Tailscale `LoadBalancer` and sets
 `allocateLoadBalancerNodePorts: false` so the gateway is not exposed through
@@ -127,6 +128,27 @@ Data exposed: webhook request body and headers sent by GitHub.
 The Policy Bot UI, details routes, static assets, OAuth callback, and root path
 stay on `https://policy-bot.stinkyboi.com` through the tailnet-only Istio
 gateway. Only `/api/github/hook` is exposed through Funnel.
+
+## n8n Webhook Funnel Exception
+
+n8n must advertise webhook URLs that external SaaS systems can call. The
+reviewed public route is:
+
+```text
+Owning application: n8n
+Public paths: /webhook, /webhook-test, /webhook-waiting
+Purpose: n8n workflow webhook deliveries from external systems.
+Source system: workflow-specific SaaS integrations and HTTP clients configured in n8n.
+Authentication or signature check: workflow-specific n8n webhook credentials, node-level signing, or path entropy where configured.
+Tailscale Funnel hostname: n8n-webhook.tail67beb.ts.net
+Rollback command: revert clusters/homelab/apps/n8n/ingress-funnel.yaml, clusters/homelab/apps/n8n/gateway-funnel.yaml, and the WEBHOOK_URL change, then sync the n8n Application.
+Data exposed: request bodies and headers sent to active n8n webhook workflows.
+```
+
+The n8n editor, REST API, static assets, and root path stay on
+`https://n8n.stinkyboi.com` through the tailnet-only Istio gateway. The Funnel
+Ingress forwards only webhook path prefixes to the Istio gateway, and the n8n
+VirtualService only routes those prefixes on the public webhook gateway.
 
 ## Future Funnel Webhook Exception Template
 

@@ -17,7 +17,7 @@ private keys, raw certificate material, private kubeconfigs, or private
 hostnames.
 
 Most routes are tailnet-only. Public Funnel is limited to reviewed webhook
-exceptions such as Policy Bot's `/api/github/hook`.
+exceptions such as n8n's webhook prefixes and Policy Bot's `/api/github/hook`.
 
 ## Platform DNS
 
@@ -203,6 +203,13 @@ instance key.
 The PostgreSQL desired state preserves the old SQLite file on the PVC but does
 not automatically import rows from it. Export workflows and credentials before
 rollout when existing SQLite contents must be preserved.
+
+n8n keeps the editor and API on `https://n8n.stinkyboi.com`, but advertises
+workflow webhook URLs through `https://n8n-webhook.tail67beb.ts.net`. The
+Funnel route is limited to `/webhook`, `/webhook-test`, and
+`/webhook-waiting`, and forwards through the Istio ingress gateway so the n8n
+workload AuthorizationPolicy can continue allowing only the gateway service
+account.
 
 ## Policy Bot
 

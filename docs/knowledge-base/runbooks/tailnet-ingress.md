@@ -16,9 +16,12 @@ address from tailnet clients. DNS is not managed by this repo yet.
 ## Current Route Rules
 
 - Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,
-  OpenClaw, n8n, Policy Bot UI and normal routes, and OctoBot UI are
+  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI are
   tailnet-only.
-- Policy Bot GitHub webhook is the reviewed public Funnel exception:
+- n8n webhooks are a reviewed public Funnel exception:
+  `https://n8n-webhook.tail67beb.ts.net` for `/webhook`, `/webhook-test`, and
+  `/webhook-waiting` only.
+- Policy Bot GitHub webhook is another reviewed public Funnel exception:
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali
   is the read-only mesh UI.

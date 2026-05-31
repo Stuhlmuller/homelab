@@ -130,6 +130,19 @@ the PVC, and an authenticated connection to the `n8n` database documented in
 `clusters/homelab/apps/n8n-postgres/README.md` before treating n8n as migrated
 to PostgreSQL.
 
+n8n webhooks use the reviewed Tailscale Funnel route at
+`https://n8n-webhook.tail67beb.ts.net`. After sync, verify the Tailscale
+Ingress and operator proxy exist, then check that the editor host remains on
+the tailnet-only route and the public host only reaches n8n under webhook path
+prefixes:
+
+```sh
+kubectl -n istio-system get gateway,ingress n8n-webhook-funnel
+kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=n8n-webhook-funnel
+curl -I https://n8n.stinkyboi.com/
+curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
+```
+
 ## Current Validation Record
 
 - Read-only `showmount -e 10.1.0.2` verified the QNAP `/homelab` export is
@@ -152,8 +165,10 @@ to PostgreSQL.
 - Repository secret scan found no raw secret material. Matches were expected
   ExternalSecret names, AWS SSM paths, documentation references, and existing
   placeholder environment variable names.
-- First-rollout Funnel review found no enabled public Funnel paths; route
-  manifests use `homelab.rst.io/public-funnel: "false"`.
+- First-rollout Funnel review found no enabled public Funnel paths. Later
+  reviewed exceptions must carry `homelab.rst.io/public-funnel: "true"` and
+  `homelab.rst.io/public-funnel-reviewed: "true"` and be documented in
+  `docs/networking-tailnet-ingress.md`.
 - Prometheus direct tailnet ingress is intentionally absent from desired state;
   Grafana is the reviewed operator-facing metrics UI.
 - First live rollout on 2026-05-24 applied AWS SSM Parameter Store placeholders
@@ -204,5 +219,6 @@ to PostgreSQL.
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
 | Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
 | Policy Bot webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `policy-bot-hook-funnel` Ingress and the operator-managed proxy Pod; do not expose additional Funnel routes. |
+| n8n webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `n8n-webhook-funnel` Ingress, Gateway, VirtualService, and operator-managed proxy Pod; keep editor/API routes off Funnel. |
 | Image updater misconfiguration | Remove the affected `applicationRefs` image entry or write-back target from `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`, then fix the repository desired state. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

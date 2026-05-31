@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: n8n-webhook-funnel
+  namespace: istio-system
+  annotations:
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-funnel-reviewed: "true"
+    homelab.rst.io/public-funnel-purpose: "n8n external webhook deliveries only."
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http-n8n-webhook-funnel
+        protocol: HTTP
+      hosts:
+        - n8n-webhook.tail67beb.ts.net

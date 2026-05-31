@@ -26,9 +26,31 @@ persisted settings file instead of crashlooping on an accidental mismatch.
 
 ## Access Contract
 
-- Host: `https://n8n.stinkyboi.com`
-- Ingress: `istio-system/tailnet-gateway`
-- Public Funnel: disabled
+- Editor/UI host: `https://n8n.stinkyboi.com`
+- Editor/UI ingress: `istio-system/tailnet-gateway`
+- Public webhook Funnel host: `https://n8n-webhook.tail67beb.ts.net`
+- Public webhook paths: `/webhook`, `/webhook-test`, and `/webhook-waiting`
+
+`WEBHOOK_URL` is set to the public Funnel host so n8n advertises externally
+reachable webhook URLs. The editor base URL stays on the tailnet-only
+`n8n.stinkyboi.com` host. The Funnel route is declared as a Tailscale Ingress
+in `istio-system` and forwards only the webhook path prefixes to the Istio
+gateway, which then routes to the n8n service. Do not add the root path, editor
+routes, static assets, or API routes to the Funnel Ingress.
+
+The Tailscale tailnet policy must allow the operator proxy tag, currently
+`tag:k8s`, to use Funnel:
+
+```json
+{
+  "nodeAttrs": [
+    {
+      "target": ["tag:k8s"],
+      "attr": ["funnel"]
+    }
+  ]
+}
+```
 
 ## Database Readiness
 
@@ -41,3 +63,28 @@ StatefulSet and PVC.
 Switching from the older SQLite-backed desired state does not automatically
 import rows from `/home/node/.n8n/database.sqlite`. Export workflows and
 credentials before rollout if the existing SQLite contents must be preserved.
+
+## Validation
+
+```sh
+kubectl kustomize clusters/homelab/apps/n8n
+kubectl -n automation get deploy,svc,externalsecret n8n n8n-secrets
+kubectl -n istio-system get gateway n8n-webhook-funnel
+kubectl -n istio-system get ingress n8n-webhook-funnel
+kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=n8n-webhook-funnel
+curl -I https://n8n.stinkyboi.com/
+curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
+```
+
+Expected route behavior: the editor host serves n8n through the tailnet, the
+Funnel host reaches n8n only under the webhook prefixes, and an unknown
+webhook path returns an n8n not-found response until a workflow registers that
+webhook.
+
+## Rollback
+
+Rollback removes public webhook exposure first by removing
+`ingress-funnel.yaml` and `gateway-funnel.yaml` from the kustomization and
+restoring `WEBHOOK_URL` to the tailnet editor host. Then sync the n8n Argo CD
+Application. Preserve both the n8n PVC and `n8n-postgres` PVC unless the
+operator explicitly chooses to rebuild from exports.
