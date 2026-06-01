@@ -1,0 +1,220 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-argocd
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Argo CD
+    compass.adinhodovic.com/description: GitOps control plane and application sync status.
+    compass.adinhodovic.com/icon: selfhst:argo-cd
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: platform,gitops
+spec:
+  hostnames:
+    - argocd.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-compass
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Compass
+    compass.adinhodovic.com/description: Homelab service catalog and operator launchpad.
+    compass.adinhodovic.com/icon: lucide:compass
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: platform,catalog
+spec:
+  hostnames:
+    - compass.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-deluge
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Deluge
+    compass.adinhodovic.com/description: Tailnet-only torrent client behind the media VPN path.
+    compass.adinhodovic.com/icon: selfhst:deluge
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: media
+spec:
+  hostnames:
+    - deluge.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-grafana
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Grafana
+    compass.adinhodovic.com/description: Dashboards, alerts, and homelab observability.
+    compass.adinhodovic.com/icon: selfhst:grafana
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: monitoring
+spec:
+  hostnames:
+    - grafana.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-kiali
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Kiali
+    compass.adinhodovic.com/description: Read-only Istio mesh topology and traffic view.
+    compass.adinhodovic.com/icon: selfhst:kiali
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: monitoring,mesh
+spec:
+  hostnames:
+    - kiali.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-litellm
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: LiteLLM
+    compass.adinhodovic.com/description: AI model gateway used by homelab agents.
+    compass.adinhodovic.com/icon: selfhst:litellm
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: ai
+spec:
+  hostnames:
+    - litellm.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-n8n
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: n8n
+    compass.adinhodovic.com/description: Workflow automation editor and execution UI.
+    compass.adinhodovic.com/icon: selfhst:n8n
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: automation
+spec:
+  hostnames:
+    - n8n.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-octobot
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: OctoBot
+    compass.adinhodovic.com/description: Finance bot UI for reviewed trading experiments.
+    compass.adinhodovic.com/icon: selfhst:octobot
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: finance
+spec:
+  hostnames:
+    - octobot.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-openclaw
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: OpenClaw
+    compass.adinhodovic.com/description: Local agent gateway and homelab assistant runtime.
+    compass.adinhodovic.com/icon: lucide:bot
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: ai,agents
+spec:
+  hostnames:
+    - openclaw.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-policy-bot
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Policy Bot
+    compass.adinhodovic.com/description: GitHub App policy evaluator and webhook receiver.
+    compass.adinhodovic.com/icon: lucide:shield-check
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: automation,github
+spec:
+  hostnames:
+    - policy-bot.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-prowlarr
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Prowlarr
+    compass.adinhodovic.com/description: Indexer manager for the media stack.
+    compass.adinhodovic.com/icon: selfhst:prowlarr
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: media
+spec:
+  hostnames:
+    - prowlarr.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-radarr
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Radarr
+    compass.adinhodovic.com/description: Movie library automation.
+    compass.adinhodovic.com/icon: selfhst:radarr
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: media
+spec:
+  hostnames:
+    - radarr.stinkyboi.com
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: compass-discovery-sonarr
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Sonarr
+    compass.adinhodovic.com/description: TV library automation.
+    compass.adinhodovic.com/icon: selfhst:sonarr
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: media
+spec:
+  hostnames:
+    - sonarr.stinkyboi.com

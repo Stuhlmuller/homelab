@@ -76,6 +76,12 @@ Compass exposes the service catalog only through the tailnet Istio route at
 routes with read-only RBAC, disables operator debug routes, and does not persist
 application state.
 
+Because the homelab's reviewed ingress path is still Istio `VirtualService`,
+Compass also owns discovery-only Gateway API `HTTPRoute` resources in the
+`monitoring` namespace. Those resources carry the same hostnames and Compass
+metadata for catalog discovery, but they do not replace the Istio
+`VirtualService` resources that route traffic through `tailnet-gateway`.
+
 ## Homelab VPN Exit Node And LAN Route
 
 Tailscale also provides the homelab VPN exit path. The `tailscale` Argo CD
