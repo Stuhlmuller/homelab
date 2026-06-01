@@ -70,6 +70,23 @@ spec:
             helm:
               name: controllers.octobot.containers.app.image.repository
               tag: controllers.octobot.containers.app.image.tag
+    - namePattern: compass
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/compass/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: compass
+          imageName: adinhodovic/compass:0.x
+          manifestTargets:
+            helm:
+              name: image.repository
+              tag: image.tag
     - namePattern: litellm
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.

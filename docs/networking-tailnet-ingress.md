@@ -23,6 +23,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | argocd | `https://argocd.stinkyboi.com` | disabled |
 | grafana | `https://grafana.stinkyboi.com` | disabled |
 | kiali | `https://kiali.stinkyboi.com` | disabled |
+| compass | `https://compass.stinkyboi.com` | disabled |
 | deluge | `https://deluge.stinkyboi.com` | disabled |
 | prowlarr | `https://prowlarr.stinkyboi.com` | disabled |
 | radarr | `https://radarr.stinkyboi.com` | disabled |
@@ -69,6 +70,11 @@ OctoBot exposes its UI only through the tailnet Istio route at
 paper trading, and operator-reviewed live trading; exchange credentials and
 strategy state are configured through OctoBot and persist on its NFS-backed
 volumes, not in public repository files.
+
+Compass exposes the service catalog only through the tailnet Istio route at
+`https://compass.stinkyboi.com`. It discovers Kubernetes ingress and Gateway API
+routes with read-only RBAC, disables operator debug routes, and does not persist
+application state.
 
 ## Homelab VPN Exit Node And LAN Route
 

@@ -32,6 +32,7 @@ trading workload with a tailnet-only UI.
 | `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics and Argo CD scrape config | external-secrets, platform-storage |
 | `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, alert rules, public GitHub API PR/status polling, and Discord alerting webhook secret | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | `kiali` | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | controller state only; read-only mesh UI | istio, tailscale, prometheus, grafana |
+| `compass` | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | stateless Kubernetes service discovery dashboard with tailnet-only UI | cert-manager, istio, tailscale, prometheus |
 | `descheduler` | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | controller state only | prometheus |
 | `deluge` | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | persistent config on `nfs-default`; shared downloads on QNAP `/media`; SSM-backed WireGuard profile via `deluge-vpn` | cert-manager, istio, tailscale, platform-storage |
 | `prowlarr` | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | persistent config and PostgreSQL databases | cert-manager, istio, media-postgres, tailscale, platform-storage |
@@ -59,8 +60,9 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   Funnel traffic and database source-identity validation still need live
   validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
-  kube-state-metrics by service account. The Prometheus operator remains
-  unselected until its webhook/control-plane paths are modeled.
+  kube-state-metrics by service account. Compass allows only the tailnet gateway
+  and Prometheus scraper. The Prometheus operator remains unselected until its
+  webhook/control-plane paths are modeled.
 - `media` stays out of ambient while Deluge Gluetun/WireGuard and the media app
   ingress model need a repo-owned waypoint or equivalent policy design.
 
