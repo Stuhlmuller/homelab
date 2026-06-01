@@ -1,5 +1,15 @@
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: compass-discovery
+  labels:
+    app.kubernetes.io/name: compass
+    app.kubernetes.io/part-of: homelab
+spec:
+  controller: homelab.stinkyboi.com/compass-discovery
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-argocd
   namespace: monitoring
@@ -12,11 +22,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: platform,gitops
 spec:
-  hostnames:
-    - argocd.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: argocd.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-compass
   namespace: monitoring
@@ -29,11 +49,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: platform,catalog
 spec:
-  hostnames:
-    - compass.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: compass.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-deluge
   namespace: monitoring
@@ -46,11 +76,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: media
 spec:
-  hostnames:
-    - deluge.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: deluge.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-grafana
   namespace: monitoring
@@ -63,11 +103,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: monitoring
 spec:
-  hostnames:
-    - grafana.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: grafana.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-kiali
   namespace: monitoring
@@ -80,11 +130,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: monitoring,mesh
 spec:
-  hostnames:
-    - kiali.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: kiali.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-litellm
   namespace: monitoring
@@ -97,11 +157,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: ai
 spec:
-  hostnames:
-    - litellm.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: litellm.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-n8n
   namespace: monitoring
@@ -114,11 +184,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: automation
 spec:
-  hostnames:
-    - n8n.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: n8n.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-octobot
   namespace: monitoring
@@ -131,11 +211,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: finance
 spec:
-  hostnames:
-    - octobot.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: octobot.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-openclaw
   namespace: monitoring
@@ -148,11 +238,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: ai,agents
 spec:
-  hostnames:
-    - openclaw.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: openclaw.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-policy-bot
   namespace: monitoring
@@ -165,11 +265,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: automation,github
 spec:
-  hostnames:
-    - policy-bot.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: policy-bot.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-prowlarr
   namespace: monitoring
@@ -182,11 +292,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: media
 spec:
-  hostnames:
-    - prowlarr.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: prowlarr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-radarr
   namespace: monitoring
@@ -199,11 +319,21 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: media
 spec:
-  hostnames:
-    - radarr.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: radarr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
 ---
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: compass-discovery-sonarr
   namespace: monitoring
@@ -216,5 +346,15 @@ metadata:
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: media
 spec:
-  hostnames:
-    - sonarr.stinkyboi.com
+  ingressClassName: compass-discovery
+  rules:
+    - host: sonarr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
