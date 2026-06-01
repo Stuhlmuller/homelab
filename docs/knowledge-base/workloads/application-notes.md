@@ -79,7 +79,9 @@ The Infinity plugin is pinned with the Grafana release ZIP syntax in
 Grafana treats it as the plugin ID and fails startup with a plugin-catalog 404.
 The stale-alert cleanup is isolated in
 `clusters/homelab/apps/grafana-alert-cleanup`, where the Job waits for Grafana
-health before calling the provisioning API. Do not embed one-shot Grafana API
+health through the in-cluster Grafana service before calling the provisioning
+API. Bump the cleanup resource names when re-running the hook; hook-only edits
+do not reliably create Argo CD autosync drift. Do not embed one-shot Grafana API
 cleanup hooks in the Prometheus app.
 Its Helm-rendered Deployment uses a resource-level Argo CD `Replace=true` sync
 option because the app keeps a `Recreate` strategy for the single Grafana PVC,
