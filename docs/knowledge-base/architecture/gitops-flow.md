@@ -43,6 +43,12 @@ Argo CD Applications are registered through the repository-local
 point at this repository, set `target_revision` to `main` unless a temporary
 non-default branch is explicitly documented for testing or recovery.
 
+The module sends repo-owned `spec.sources` values but marks that list as
+computed for the Kubernetes provider because Argo CD normalizes multi-source
+Application entries after apply. Production logs can therefore include
+Terragrunt's internal `tofu apply` subprocess even though the operator entrypoint
+remains the Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
+
 ## Dependency Rule
 
 Terragrunt `dependencies` blocks order Application registration. They do not

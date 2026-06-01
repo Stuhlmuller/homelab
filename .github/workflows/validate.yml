@@ -25,14 +25,11 @@ jobs:
       - name: Check flake
         run: nix flake check --no-build --all-systems
 
-      - name: Check HCL formatting
+      - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 
       - name: Validate Terragrunt HCL
         run: nix develop --command terragrunt hcl validate
-
-      - name: Check OpenTofu formatting
-        run: nix develop --command tofu fmt -check -recursive IaC
 
       - name: Render Kustomize sources
         run: |

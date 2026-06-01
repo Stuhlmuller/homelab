@@ -57,14 +57,16 @@ locals {
     server    = try(var.destination.server, null)
   }
 
-  default_computed_fields = concat(
-    [
-      "metadata.annotations",
-      "metadata.labels",
-      "spec.destination.name",
-    ],
-    [for index in range(length(local.sources)) : "spec.sources[${index}].path"]
-  )
+  default_computed_fields = [
+    "metadata.annotations",
+    "metadata.labels",
+    "spec.destination.name",
+    # Argo CD normalizes multi-source entries after apply, including default path
+    # values and empty nested source blocks. Treat the list as API-computed so
+    # the Kubernetes provider stores Argo CD's returned shape without failing
+    # state reconciliation while still sending the repo-owned sources below.
+    "spec.sources",
+  ]
   computed_fields = var.computed_fields == null ? local.default_computed_fields : distinct(concat(local.default_computed_fields, var.computed_fields))
 
   sources = [
