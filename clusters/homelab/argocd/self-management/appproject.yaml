@@ -15,6 +15,7 @@ spec:
     - https://charts.external-secrets.io
     - https://charts.jetstack.io
     - https://grafana.github.io/helm-charts
+    - ghcr.io/adinhodovic/charts
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
