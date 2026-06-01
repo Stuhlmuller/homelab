@@ -2,34 +2,37 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: grafana-alerting-cleanup-v2
+  name: grafana-alerting-cleanup-v3
   namespace: monitoring
   labels:
-    app.kubernetes.io/name: grafana-alerting-cleanup-v2
+    app.kubernetes.io/name: grafana-alerting-cleanup-v3
     app.kubernetes.io/part-of: homelab-monitoring
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: grafana-alerting-cleanup-v2
+  name: grafana-alerting-cleanup-v3
   namespace: monitoring
   labels:
-    app.kubernetes.io/name: grafana-alerting-cleanup-v2
+    app.kubernetes.io/name: grafana-alerting-cleanup-v3
     app.kubernetes.io/part-of: homelab-monitoring
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: grafana-alerting-cleanup-v2
+      app.kubernetes.io/name: grafana-alerting-cleanup-v3
       app.kubernetes.io/part-of: homelab-monitoring
   policyTypes:
     - Egress
   egress:
     - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
       ports:
         - protocol: TCP
-          port: 443
+          port: 3000
+        - protocol: TCP
+          port: 80
     - to:
         - namespaceSelector:
             matchLabels:
@@ -43,10 +46,10 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: grafana-alerting-cleanup-v2
+  name: grafana-alerting-cleanup-v3
   namespace: monitoring
   labels:
-    app.kubernetes.io/name: grafana-alerting-cleanup-v2
+    app.kubernetes.io/name: grafana-alerting-cleanup-v3
     app.kubernetes.io/part-of: homelab-monitoring
   annotations:
     argocd.argoproj.io/hook: Sync
@@ -57,12 +60,12 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: grafana-alerting-cleanup-v2
+        app.kubernetes.io/name: grafana-alerting-cleanup-v3
         app.kubernetes.io/part-of: homelab-monitoring
     spec:
       automountServiceAccountToken: false
       restartPolicy: Never
-      serviceAccountName: grafana-alerting-cleanup-v2
+      serviceAccountName: grafana-alerting-cleanup-v3
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
@@ -75,7 +78,7 @@ spec:
           image: python:3.13-alpine@sha256:420cd0bf0f3998275875e02ecd5808168cf0843cbb4d3c536432f729247b2acc
           env:
             - name: GRAFANA_URL
-              value: https://grafana.stinkyboi.com
+              value: http://grafana.monitoring.svc.cluster.local
           command:
             - python
             - -c
