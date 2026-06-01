@@ -61,6 +61,10 @@ roles need identity-based KMS permissions for both keys.
   alert deliveries.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
+- Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
+  `octelium-client`, sourced from `/homelab/octelium/client-auth-token`. The
+  token belongs to the external Octelium workload User
+  `homelab-octelium-client` and is created outside git with `octeliumctl`.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile

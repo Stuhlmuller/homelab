@@ -13,6 +13,10 @@ webhook paths that external SaaS systems must reach.
 `*.stinkyboi.com` is expected to resolve to the Tailscale-exposed Istio ingress
 address from tailnet clients. DNS is not managed by this repo yet.
 
+Octelium is being staged separately as a client bridge and demo under
+[[octelium]]. It does not own the current `*.stinkyboi.com` Istio routes and
+does not replace the Tailscale exit node.
+
 ## Current Route Rules
 
 - Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,

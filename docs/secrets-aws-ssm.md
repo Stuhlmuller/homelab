@@ -49,8 +49,8 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`finance`, `media`, `monitoring`, and `tailscale`. Add a namespace to that
-allow-list in the same PR that adds its first ExternalSecret.
+`finance`, `media`, `monitoring`, `octelium-client`, and `tailscale`. Add a
+namespace to that allow-list in the same PR that adds its first ExternalSecret.
 
 ## External Secrets AWS Auth Bootstrap
 
@@ -83,6 +83,7 @@ stack because Terraform manages the Kubernetes Secret.
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
+| octelium | `octelium-client-auth` | `octelium-client-auth` | `/homelab/octelium/client-auth-token` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | grafana | `grafana-discord-webhook` | `grafana-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
@@ -150,6 +151,14 @@ placeholders, bump
 `homelab.rst.io/openclaw-github-app-credentials-ssm-version` in
 `clusters/homelab/apps/openclaw/values.yaml` so env-backed values reload through
 a normal GitOps rollout.
+
+Octelium reads `/homelab/octelium/client-auth-token` through
+`octelium-client-auth` as the workload authentication token for the
+`homelab-octelium-client` User in the external Octelium Cluster. Keep the
+token out of git; after replacing the placeholder directly in SSM, bump
+`homelab.rst.io/octelium-credential-ssm-version` in
+`clusters/homelab/apps/octelium/externalsecret.yaml` if External Secrets needs
+to reread the value.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

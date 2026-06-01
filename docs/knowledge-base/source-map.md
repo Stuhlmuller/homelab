@@ -22,6 +22,7 @@ desired state.
 | `docs/argocd-image-updater.md` | [[runbooks/image-automation]] |
 | `docs/ci-cd.md` | [[runbooks/ci-cd]] |
 | `docs/networking-tailnet-ingress.md` | [[runbooks/tailnet-ingress]] |
+| `docs/octelium.md` | [[runbooks/octelium]] |
 | `docs/rollback-argocd-apps.md` | [[runbooks/rollback]] |
 | `docs/runtime-isolation.md` | [[runbooks/runtime-isolation]] |
 | `docs/secrets-aws-ssm.md` | [[runbooks/secrets-aws-ssm]] |

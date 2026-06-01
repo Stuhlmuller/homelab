@@ -1,0 +1,51 @@
+replicaCount: 0
+
+image:
+  repository: ghcr.io/octelium/octelium
+  pullPolicy: IfNotPresent
+  tag: "0.34.0@sha256:8e7feabc8918b5385798a77d21baa6ac76bf672e8953d1dcb26c62494f242ebe"
+
+fullnameOverride: octelium-client
+
+serviceAccount:
+  create: true
+  automount: false
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  homelab.rst.io/octelium-mode: client-connector
+
+podLabels:
+  app.kubernetes.io/part-of: octelium
+
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    add: []
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+octelium:
+  domain: octelium.stinkyboi.com
+  # checkov:skip=CKV_SECRET_6: Kubernetes Secret name, not a secret value.
+  authTokenSecret: octelium-client-auth
+  # checkov:skip=CKV_SECRET_6: Kubernetes Secret key name, not a secret value.
+  authTokenSecretKey: auth-token
+  args:
+    - --implementation=gvisor
+    - --ip-mode=v4
+    - --scope=homelab-demo.homelab
+  serve:
+    - homelab-demo.homelab
