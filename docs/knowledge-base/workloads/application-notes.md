@@ -83,9 +83,11 @@ health through the public Grafana route before calling the provisioning API.
 The public route keeps cleanup traffic on the same Istio AuthorizationPolicy
 path as normal ingressgateway traffic. Grafana's AuthorizationPolicy also keeps
 the cleanup hook service accounts allowed so stale direct-service retries can
-drain after hook revisions. Bump the cleanup resource names when re-running the
-hook; hook-only edits do not reliably create Argo CD autosync drift. Do not
-embed one-shot Grafana API cleanup hooks in the Prometheus app.
+drain after hook revisions. The cleanup is best-effort: if Grafana's API route
+is unavailable, the hook exits successfully and records the skip instead of
+leaving the Argo CD app in `SyncFailed`. Bump the cleanup resource names when
+re-running the hook; hook-only edits do not reliably create Argo CD autosync
+drift. Do not embed one-shot Grafana API cleanup hooks in the Prometheus app.
 Its Helm-rendered Deployment uses a resource-level Argo CD `Replace=true` sync
 option because the app keeps a `Recreate` strategy for the single Grafana PVC,
 and server-side apply can otherwise preserve stale `rollingUpdate` fields.
