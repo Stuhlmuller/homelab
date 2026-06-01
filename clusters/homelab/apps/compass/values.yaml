@@ -1,0 +1,49 @@
+config: |
+  organization:
+    name: Homelab
+    description: Services and operator links discovered from the cluster.
+    logo: lucide:compass
+
+  ui:
+    default_group_by: tags
+
+  debug:
+    enabled: false
+
+  header_links:
+    - label: Grafana
+      url: https://grafana.stinkyboi.com
+      icon: selfhst:grafana
+    - label: Argo CD
+      url: https://argocd.stinkyboi.com
+      icon: selfhst:argo-cd
+    - label: Kiali
+      url: https://kiali.stinkyboi.com
+      icon: selfhst:kiali
+
+  services:
+    filters:
+      dedupe_www: true
+      exclude_wildcard_hosts: true
+    sources:
+      - type: kubernetes
+        name: homelab
+        tags: [kubernetes]
+        kubernetes:
+          namespaces: []
+          auto_discover_all: true
+
+image:
+  repository: adinhodovic/compass
+  tag: "0.7.0"
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+serviceMonitor:
+  enabled: true
+  scrapeInterval: 30s

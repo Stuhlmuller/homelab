@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: compass-tailnet
+  namespace: monitoring
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - compass.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: compass.monitoring.svc.cluster.local
+            port:
+              number: 8080
