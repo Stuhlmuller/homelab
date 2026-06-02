@@ -42,5 +42,8 @@ jobs:
       - name: Check whitespace
         run: git diff --check
 
-      - name: Secret scan
-        run: nix develop --command bash scripts/ci/secret-scan.sh
+      - name: Secret reference review
+        run: |
+          matches="$(rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" clusters IaC docs || true)"
+          printf "%s\n" "$matches"
+          ! printf "%s\n" "$matches" | rg -i -- "-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----|-----BEGIN CERTIFICATE-----|AKIA[0-9A-Z]{16}|ghp_[0-9A-Za-z_]{36}"

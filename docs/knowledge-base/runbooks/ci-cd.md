@@ -15,9 +15,7 @@ Source: `docs/ci-cd.md`
   `workflow_dispatch`. It repeats static checks and Conftest, joins the
   tailnet, and applies the live Terragrunt phases in order: Argo CD bootstrap,
   SSM parameter declarations, Entra application registrations, Argo CD
-  Application registrations. The External Secrets AWS auth Secret is installed
-  by a protected CI script before Argo CD app registration so decrypted runtime
-  credentials do not enter OpenTofu state.
+  Application registrations, and Kubernetes secret materialization.
 - Forked PRs never receive AWS, Tailscale, or Kubernetes secrets.
 
 ## Security Model
@@ -42,9 +40,8 @@ Source: `docs/ci-cd.md`
   Conftest policies before the PR description update.
 - Automatic PR plans skip `IaC/live/aws-ssm-parameters` because it refreshes
   managed KMS, IAM, and SSM resources that require the protected apply role.
-  Protected apply creates a saved SSM plan, runs Terraform plan policy, and
-  applies that saved plan. Runtime Kubernetes Secrets are installed by protected
-  CI scripts rather than OpenTofu state.
+  They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
+  stacks after review.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or
   `Failed to execute "tofu ..."` because Terragrunt shells out to OpenTofu

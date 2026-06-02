@@ -19,7 +19,8 @@ address from tailnet clients. DNS is not managed by this repo yet.
   OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI are
   tailnet-only.
 - n8n webhooks are a reviewed public Funnel exception:
-  `https://n8n-webhook.tail67beb.ts.net` for production `/webhook` paths only.
+  `https://n8n-webhook.tail67beb.ts.net` for `/webhook`, `/webhook-test`, and
+  `/webhook-waiting` only.
 - Policy Bot GitHub webhook is another reviewed public Funnel exception:
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali

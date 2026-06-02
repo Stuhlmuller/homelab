@@ -66,6 +66,14 @@ inputs = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder
     }
+    "/homelab/external-secrets/aws-ssm/access-key-id" = {
+      description   = "AWS access key ID used by External Secrets to read homelab SSM parameters."
+      initial_value = local.placeholder
+    }
+    "/homelab/external-secrets/aws-ssm/secret-access-key" = {
+      description   = "AWS secret access key used by External Secrets to read homelab SSM parameters."
+      initial_value = local.placeholder
+    }
     "/homelab/tailscale/oauth-client-id" = {
       description   = "Tailscale Kubernetes operator OAuth client ID."
       initial_value = local.placeholder

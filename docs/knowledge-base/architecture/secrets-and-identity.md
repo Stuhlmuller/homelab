@@ -10,11 +10,10 @@ not commit secret values, kubeconfigs with private credentials, Talos secrets,
 raw certificates, tokens, private SSH keys, or private keys.
 
 Runtime app secrets are pulled from AWS SSM Parameter Store by External
-Secrets. External Secrets itself uses the `external-secrets/aws-ssm-auth`
-Kubernetes Secret installed by `scripts/ci/install-external-secrets-aws-auth.sh`
-from protected GitHub environment secrets during production apply. The repo no
-longer uses OpenTofu to read decrypted SSM values into Kubernetes Secrets, so
-those runtime credentials do not enter OpenTofu state.
+Secrets. External Secrets itself uses a Kubernetes Secret created through the
+`IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` Terragrunt stack
+after placeholder SSM parameters exist and real credential values are injected
+outside git.
 
 The SSM SecureString key is managed by `IaC/live/aws-ssm-parameters` in
 `us-west-2` under `alias/homelab-opentofu`. It is distinct from the
@@ -104,5 +103,5 @@ roles need identity-based KMS permissions for both keys.
 
 - `docs/secrets-aws-ssm.md`
 - `IaC/live/aws-ssm-parameters`
-- `scripts/ci/install-external-secrets-aws-auth.sh`
+- `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`
 - `clusters/homelab/apps/external-secrets`
