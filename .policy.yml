@@ -19,14 +19,17 @@ approval_rules:
       conditions:
         has_valid_signatures: true
   - name: review bot approved
+    description: >-
+      Count only an explicit +1 or :+1: comment from the Codex review bot; PR
+      body text does not satisfy this rule.
     options:
       methods:
         comments: []
-        comment_patterns: []
+        comment_patterns:
+          - '(^|\s)(:\+1:|\+1)(\s|$)'
         github_review: false
         github_review_comment_patterns: []
-        body_patterns:
-          - '(^|\s)(:\+1:|\+1)(\s|$)'
+        body_patterns: []
     requires:
       count: 1
       users:

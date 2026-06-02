@@ -13,7 +13,8 @@ config.
 Policy Bot looks for a repository-local `.policy.yml` first and falls back to
 `policy.yml` in the shared `.github` repository. The homelab policy requires
 GitHub-verified commit signatures in addition to the normal review approval
-rules.
+rules. The review-bot path accepts an explicit `+1` or `:+1:` comment from
+`chatgpt-codex-connector[bot]`; PR body text does not count for that rule.
 
 ## Routes
 

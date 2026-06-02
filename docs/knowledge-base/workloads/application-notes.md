@@ -254,7 +254,9 @@ Argo CD sync before the rendered Kubernetes Secret changes.
 The runtime config reads repository-local `.policy.yml` files before falling
 back to shared `.github/policy.yml`. Homelab's local policy keeps the shared
 review approval choices and adds a Policy Bot condition requiring every PR
-commit to have a GitHub-verified signature.
+commit to have a GitHub-verified signature. The review-bot approval path counts
+only an explicit `+1` or `:+1:` comment from `chatgpt-codex-connector[bot]`,
+not PR body text.
 
 ## Prometheus
 
