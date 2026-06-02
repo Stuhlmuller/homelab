@@ -66,6 +66,10 @@ if [[ -n "$unmanaged_tag_only_images" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Secret scan"
+bash scripts/ci/secret-scan.sh
+echo "::endgroup::"
+
 echo "::group::Checkov"
 if command -v checkov >/dev/null 2>&1; then
   checkov --config-file .checkov.yaml --framework terraform --directory IaC/modules
