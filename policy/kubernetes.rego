@@ -75,6 +75,40 @@ deny contains msg if {
 	msg := sprintf("Application %q source %d must target the homelab repository default branch main", [name, index])
 }
 
+forbidden_public_funnel_prefixes := {
+	"/webhook-test",
+	"/webhook-test/",
+	"/webhook-waiting",
+	"/webhook-waiting/",
+}
+
+deny contains msg if {
+	input.kind == "Ingress"
+	metadata := object.get(input, "metadata", {})
+	annotations := object.get(metadata, "annotations", {})
+	truthy(object.get(annotations, "homelab.rst.io/public-funnel", "false"))
+	rule := object.get(object.get(input, "spec", {}), "rules", [])[_]
+	http := object.get(rule, "http", {})
+	backend_path := object.get(http, "paths", [])[_]
+	path := object.get(backend_path, "path", "")
+	path in forbidden_public_funnel_prefixes
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("public Funnel Ingress %q must not expose non-production webhook path %q", [name, path])
+}
+
+deny contains msg if {
+	input.kind == "VirtualService"
+	metadata := object.get(input, "metadata", {})
+	route := object.get(object.get(input, "spec", {}), "http", [])[_]
+	match := object.get(route, "match", [])[_]
+	object.get(match, "gateways", [])[_] == "istio-system/n8n-webhook-funnel"
+	uri := object.get(match, "uri", {})
+	path := object.get(uri, "exact", object.get(uri, "prefix", ""))
+	path in forbidden_public_funnel_prefixes
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("VirtualService %q must not route non-production webhook path %q through the public n8n funnel", [name, path])
+}
+
 has_nonempty_annotation(annotations, key) if {
 	value := object.get(annotations, key, "")
 	count(trim(value, " ")) > 0
