@@ -2,6 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "automerge": false,
+  "packageRules": [
+    {
+      "description": "Compass image updates are owned by Argo CD Image Updater.",
+      "matchManagers": ["helm-values"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["adinhodovic/compass"],
+      "matchFileNames": ["clusters/homelab/apps/compass/values.yaml"],
+      "enabled": false
+    }
+  ],
   "lockFileMaintenance": {
     "enabled": true
   }

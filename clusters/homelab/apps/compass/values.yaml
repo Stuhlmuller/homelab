@@ -35,7 +35,7 @@ config: |
 
 image:
   repository: adinhodovic/compass
-  tag: "0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
+  tag: "0.7.0"
 
 resources:
   requests:
