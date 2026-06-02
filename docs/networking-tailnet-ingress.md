@@ -5,6 +5,10 @@ reachability layer. Most routes are internal-only; public Tailscale Funnel is
 reserved for reviewed webhook paths that must be reachable by external SaaS
 systems.
 
+Octelium is staged separately in `docs/octelium.md` as a client bridge and demo
+service. It does not replace the Tailscale operator, tailnet gateway, Funnel
+exceptions, or homelab exit node in this runbook.
+
 ## Initial DNS Assumption
 
 The repository expects one initial DNS or tailnet naming setup that covers all

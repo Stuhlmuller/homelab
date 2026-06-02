@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: octelium-demo-allow-client
+  namespace: octelium-client
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: octelium-demo
+      app.kubernetes.io/instance: octelium-demo
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: octelium
+              app.kubernetes.io/instance: octelium-client
+      ports:
+        - protocol: TCP
+          port: 9898

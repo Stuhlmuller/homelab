@@ -74,6 +74,10 @@ inputs = {
       description   = "Tailscale Kubernetes operator OAuth client secret."
       initial_value = local.placeholder
     }
+    "/homelab/octelium/client-auth-token" = {
+      description   = "Octelium authentication token for the homelab workload client connector."
+      initial_value = local.placeholder
+    }
     "/homelab/grafana/admin-user" = {
       description   = "Grafana admin username."
       initial_value = local.placeholder

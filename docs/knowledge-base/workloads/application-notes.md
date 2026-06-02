@@ -100,6 +100,26 @@ official Kiali operator chart and creates a Kiali CR in `monitoring` with
 anonymous access plus `view_only_mode: true`. Monitoring AuthorizationPolicies
 allow `kiali-service-account` to query Grafana and Prometheus.
 
+## Octelium
+
+Octelium is staged as a rootless client connector in the `octelium-client`
+namespace, not as a full Octelium Cluster and not as a Tailscale replacement.
+The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
+client chart plus repo-owned support manifests in
+`clusters/homelab/apps/octelium`. The Helm values pin the `0.34.0` Octelium
+image by digest and force `--implementation=gvisor` so the namespace can keep
+baseline Pod Security.
+
+`replicaCount` starts at `0` until an external Octelium Cluster has the
+`homelab-demo.homelab` Service and `homelab-octelium-client` workload User from
+`docs/examples/octelium/homelab-demo.yaml`. The workload credential lives in
+SSM at `/homelab/octelium/client-auth-token` and renders to
+`octelium-client-auth`.
+
+The included `octelium-demo` Podinfo service is in-cluster only. It exists so
+the bridge can serve one harmless HTTP target before any production app is
+moved behind Octelium.
+
 ## OctoBot
 
 OctoBot is the finance namespace trading bot with a real web UI. It runs from
