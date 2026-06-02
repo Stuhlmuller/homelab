@@ -23,6 +23,22 @@ spec:
             - istio-system/n8n-webhook-funnel
           uri:
             prefix: /webhook/
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            exact: /webhook-test
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            prefix: /webhook-test/
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            exact: /webhook-waiting
+        - gateways:
+            - istio-system/n8n-webhook-funnel
+          uri:
+            prefix: /webhook-waiting/
       route:
         - destination:
             host: n8n.automation.svc.cluster.local

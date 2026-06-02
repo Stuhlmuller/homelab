@@ -13,19 +13,11 @@ echo "::group::Argo CD bootstrap apply"
 )
 echo "::endgroup::"
 
-echo "::group::AWS SSM parameter declaration plan and apply"
+echo "::group::AWS SSM parameter declaration apply"
 (
   cd IaC/live/aws-ssm-parameters
-  rm -f plan.out plan.json
-  terragrunt plan -out plan.out -no-color
-  terragrunt --log-disable show -json plan.out >plan.json
-  conftest test --policy ../../../policy --output github plan.json
-  terragrunt apply -no-color plan.out
+  terragrunt run --all --filter-affected --non-interactive --parallelism 1 -- apply -no-color -auto-approve
 )
-echo "::endgroup::"
-
-echo "::group::External Secrets AWS auth Secret install"
-bash scripts/ci/install-external-secrets-aws-auth.sh
 echo "::endgroup::"
 
 azuread_credentials_available() {
@@ -65,6 +57,13 @@ echo "::endgroup::"
 echo "::group::Argo CD Application registration apply"
 (
   cd IaC/live/argocd-apps
+  terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+)
+echo "::endgroup::"
+
+echo "::group::Kubernetes secret materialization apply"
+(
+  cd IaC/live/kubernetes-secrets
   terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
 )
 echo "::endgroup::"

@@ -240,8 +240,8 @@ rollout when existing SQLite contents must be preserved.
 
 n8n keeps the editor and API on `https://n8n.stinkyboi.com`, but advertises
 workflow webhook URLs through `https://n8n-webhook.tail67beb.ts.net`. The
-Funnel route is limited to production `/webhook` paths and forwards through
-the Istio ingress gateway so the n8n
+Funnel route is limited to `/webhook`, `/webhook-test`, and
+`/webhook-waiting`, and forwards through the Istio ingress gateway so the n8n
 workload AuthorizationPolicy can continue allowing only the gateway service
 account.
 

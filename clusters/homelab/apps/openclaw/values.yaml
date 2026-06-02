@@ -34,41 +34,9 @@ controllers:
                 name: openclaw-secrets
                 key: APP_SECRET
           GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
-          LITELLM_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: LITELLM_TOKEN
-          DISCORD_BOT_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: DISCORD_BOT_TOKEN
-          GRAFANA_USERNAME:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_USERNAME
-          GRAFANA_PASSWORD:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_PASSWORD
-          GRAFANA_ALERT_HOOK_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_ALERT_HOOK_TOKEN
-          GITHUB_APP_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_ID
-          GITHUB_APP_INSTALLATION_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_INSTALLATION_ID
+        envFrom:
+          - secretRef:
+              name: openclaw-secrets
         command:
           - /bin/sh
           - -ec
@@ -214,41 +182,9 @@ controllers:
                 key: APP_SECRET
           GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
-          LITELLM_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: LITELLM_TOKEN
-          DISCORD_BOT_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: DISCORD_BOT_TOKEN
-          GRAFANA_USERNAME:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_USERNAME
-          GRAFANA_PASSWORD:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_PASSWORD
-          GRAFANA_ALERT_HOOK_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_ALERT_HOOK_TOKEN
-          GITHUB_APP_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_ID
-          GITHUB_APP_INSTALLATION_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_INSTALLATION_ID
+        envFrom:
+          - secretRef:
+              name: openclaw-secrets
         resources:
           requests:
             cpu: 1
