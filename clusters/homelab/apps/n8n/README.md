@@ -29,7 +29,7 @@ persisted settings file instead of crashlooping on an accidental mismatch.
 - Editor/UI host: `https://n8n.stinkyboi.com`
 - Editor/UI ingress: `istio-system/tailnet-gateway`
 - Public webhook Funnel host: `https://n8n-webhook.tail67beb.ts.net`
-- Public webhook paths: `/webhook`, `/webhook-test`, and `/webhook-waiting`
+- Public webhook paths: production `/webhook` paths only
 
 `WEBHOOK_URL` is set to the public Funnel host so n8n advertises externally
 reachable webhook URLs. The editor base URL stays on the tailnet-only

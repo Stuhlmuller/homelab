@@ -23,17 +23,3 @@ spec:
                 name: istio-ingressgateway
                 port:
                   name: http2
-          - path: /webhook-test
-            pathType: Prefix
-            backend:
-              service:
-                name: istio-ingressgateway
-                port:
-                  name: http2
-          - path: /webhook-waiting
-            pathType: Prefix
-            backend:
-              service:
-                name: istio-ingressgateway
-                port:
-                  name: http2

@@ -90,7 +90,7 @@ clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps
   if [[ -n "${GITHUB_SHA:-}" ]]; then
     printf 'Source commit: `%s`.\n\n' "$GITHUB_SHA"
   fi
-  printf '> `IaC/live/aws-ssm-parameters` and `IaC/live/kubernetes-secrets` are intentionally excluded from PR plans because they require protected apply credentials or decrypted SSM reads.\n\n'
+  printf '> `IaC/live/aws-ssm-parameters` is intentionally excluded from PR plans because it manages KMS, IAM, and secret declarations that require protected apply credentials. Runtime Kubernetes Secrets are installed by protected CI scripts instead of OpenTofu state.\n\n'
 } >"$plan_markdown"
 
 echo "::group::Argo CD bootstrap plan"
@@ -128,5 +128,3 @@ if [[ "$planned_app_count" -eq 0 ]]; then
 fi
 
 validate_terraform_plan_policies
-
-echo "IaC/live/kubernetes-secrets is intentionally excluded from PR plans because it reads decrypted SSM parameters."

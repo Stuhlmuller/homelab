@@ -19,11 +19,15 @@ separate from the OpenTofu remote-state key with the same alias in `us-east-1`.
 
 1. Apply `IaC/live/aws-ssm-parameters` to create placeholders and generated
    internal values.
-2. Replace the External Secrets AWS credential placeholders outside git.
-3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
+2. Store the External Secrets AWS provider access key as protected GitHub
+   environment secrets named `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID` and
+   `EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY`.
+3. Run protected production apply so
+   `scripts/ci/install-external-secrets-aws-auth.sh` creates
+   `external-secrets/aws-ssm-auth` without writing decrypted values to OpenTofu
+   state.
 
-The Kubernetes Secret stack refuses to apply while either required SSM value is
-empty or still `REPLACE_ME`.
+The install script refuses to run while either protected CI secret is absent.
 If the SSM declaration apply fails on `kms:DescribeKey` for a `us-west-2` key,
 grant the apply role identity-based access to that resolved SSM key ARN; do not
 change External Secrets or SSM values to fix the IAM refresh failure.
@@ -32,7 +36,7 @@ change External Secrets or SSM values to fix the IAM refresh failure.
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repo-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`finance`, `media`, `monitoring`, and `tailscale`. Add a namespace to the
+`media`, `monitoring`, and `tailscale`. Add a namespace to the
 allow-list in the same PR that adds its first ExternalSecret.
 
 ## App Contracts
@@ -42,7 +46,7 @@ allow-list in the same PR that adds its first ExternalSecret.
 | Argo CD | `argocd-oidc-sso` | Dex OIDC connector; issuer path is a compatibility copy and must stay aligned with the committed Entra issuer |
 | Argo CD Image Updater | `argocd-image-updater-git` | GitHub App credential for image update pull requests |
 | cert-manager | `cloudflare-api-token` | DNS-01 Cloudflare token |
-| external-secrets | `aws-ssm-auth` | Provider credential bridge |
+| external-secrets | `aws-ssm-auth` | Provider credential bridge installed from protected GitHub environment secrets, not OpenTofu state |
 | tailscale | `operator-oauth` | Operator OAuth client |
 | grafana | `grafana-admin`, `grafana-azuread-sso`, `grafana-discord-webhook`, `grafana-openclaw-alert-hook` | Admin, Entra SSO, alert notifications |
 | litellm | `litellm-provider-keys` | Master and provider keys |

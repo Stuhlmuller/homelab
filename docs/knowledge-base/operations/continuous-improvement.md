@@ -90,3 +90,40 @@ policy`.
 - **Next step:** decide whether to keep squash-only merges with GitHub-signed
   mainline commits, allow rebase/merge methods that preserve Claw-signed branch
   commits, or add a bot-supported path for signed squash commits.
+
+- **Status:** fixed
+- **Area:** secrets / CI/CD
+- **Evidence:** June 2026 security audit found the retired
+  `IaC/modules/kubernetes-secret-from-ssm` path read decrypted SSM values into a
+  Kubernetes Secret resource, which put provider credentials in OpenTofu state.
+  This change removes that stack, installs `external-secrets/aws-ssm-auth` from
+  protected CI secrets with `scripts/ci/install-external-secrets-aws-auth.sh`,
+  and adds stronger secret scanning.
+- **Risk:** decrypted External Secrets AWS provider credentials could otherwise
+  be exposed to anyone or anything with access to OpenTofu state, plan caches, or
+  CI artifacts.
+- **Next step:** rotate the External Secrets IAM access key after confirming any
+  older state object that contained the Kubernetes Secret data has been removed.
+- **Status:** fixed
+- **Area:** networking / platform service
+- **Evidence:** June 2026 security audit found privileged namespace audit/warn
+  labels set to `privileged` and the public n8n Funnel exposing test and waiting
+  webhook paths. This change moves privileged namespaces to restricted audit/warn
+  mode, removes `/webhook-test` and `/webhook-waiting` from the public Funnel,
+  and adds Conftest policies for those routes and ExternalSecret SSM prefixes.
+- **Risk:** broad public or privileged paths increase the blast radius of chart
+  drift, compromised workloads, or unauthenticated webhook probing.
+- **Next step:** continue splitting the Deluge VPN privilege exception into a
+  dedicated namespace and add app-level NetworkPolicies where missing.
+- **Status:** open
+- **Area:** platform service / GitOps
+- **Evidence:** June 2026 security audit found remaining structural hardening
+  work: the shared Argo CD AppProject can still deploy cluster-scoped RBAC,
+  Kiali remains anonymous/view-only on the tailnet, several app-template
+  workloads need explicit restricted container security contexts, and remote
+  Terragrunt catalog modules are still referenced by the mutable `0.4.0` tag.
+- **Risk:** these are reviewability, reconnaissance, and lateral-movement risks
+  that are larger than a single safe patch.
+- **Next step:** split AppProjects, add Kiali identity controls, harden compatible
+  app-template values, and pin or vendor remote modules once the immutable commit
+  for `terragrunt-catalog` tag `0.4.0` can be verified.

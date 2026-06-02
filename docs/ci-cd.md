@@ -72,8 +72,9 @@ unless the repository adds a reviewed token-backed secret contract for Grafana.
   after every successful plan.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
-  protected production apply role. They also skip `IaC/live/kubernetes-secrets`
-  because that unit reads decrypted AWS SSM parameters.
+  protected production apply role. Runtime Kubernetes Secrets are installed by
+  protected CI scripts instead of OpenTofu so decrypted runtime credentials do
+  not enter OpenTofu state.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or a
   `Failed to execute "tofu ..."` line because Terragrunt shells out to
@@ -86,10 +87,11 @@ unless the repository adds a reviewed token-backed secret contract for Grafana.
   `main` SHA from the GitHub event. Manual apply dispatches compare against
   `HEAD^`.
 - The protected post-merge apply runs the production phases explicitly:
-  bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
-  registrations, apply Argo CD Application registrations serially, and finally
-  materialize Kubernetes Secrets from SSM. Stack-wide apply phases use
-  Terragrunt's explicit
+  bootstrap Argo CD, plan and policy-check SSM parameter declarations before
+  applying the saved plan, install the External Secrets AWS auth Secret from
+  protected CI secrets, apply Entra application registrations, and apply Argo CD
+  Application registrations serially. Stack-wide apply phases use Terragrunt's
+  explicit
   `run --all --filter-affected --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
