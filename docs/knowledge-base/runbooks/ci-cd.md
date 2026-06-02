@@ -44,7 +44,9 @@ Source: `docs/ci-cd.md`
   managed KMS, IAM, and SSM resources that require the protected apply role.
   Protected apply creates a saved SSM plan, runs Terraform plan policy, and
   applies that saved plan. Runtime Kubernetes Secrets are installed by protected
-  CI scripts rather than OpenTofu state.
+  CI scripts rather than OpenTofu state. Terraform plan policy keeps sensitive
+  deletes denied, with a narrow migration exception for removing the legacy
+  External Secrets AWS auth SSM parameter placeholders from OpenTofu state.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or
   `Failed to execute "tofu ..."` because Terragrunt shells out to OpenTofu
