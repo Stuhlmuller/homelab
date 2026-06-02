@@ -101,7 +101,7 @@ fi
 s6-svc "$action" "$svc_dir"'
 
 remote_process_absent_script='set -eu
-process_pattern="$1"
+process_pattern="${PROCESS_PATTERN:?PROCESS_PATTERN is required}"
 for _ in $(seq 1 60); do
   if command -v pgrep >/dev/null 2>&1; then
     if ! pgrep -f -- "$process_pattern" >/dev/null; then
@@ -116,7 +116,7 @@ echo "Timed out waiting for process to stop: ${process_pattern}" >&2
 exit 1'
 
 remote_process_present_script='set -eu
-process_pattern="$1"
+process_pattern="${PROCESS_PATTERN:?PROCESS_PATTERN is required}"
 for _ in $(seq 1 60); do
   if command -v pgrep >/dev/null 2>&1; then
     if pgrep -f -- "$process_pattern" >/dev/null; then
@@ -136,11 +136,11 @@ start_service() {
 
 stop_service() {
   kubectl -n "$namespace" exec "$pod" -- /bin/sh -ec "$remote_service_script" sh "$service_name" -d
-  kubectl -n "$namespace" exec "$pod" -- /bin/sh -ec "$remote_process_absent_script" sh "$process_pattern"
+  kubectl -n "$namespace" exec "$pod" -- env PROCESS_PATTERN="$process_pattern" /bin/sh -ec "$remote_process_absent_script"
 }
 
 wait_for_start() {
-  kubectl -n "$namespace" exec "$pod" -- /bin/sh -ec "$remote_process_present_script" sh "$process_pattern"
+  kubectl -n "$namespace" exec "$pod" -- env PROCESS_PATTERN="$process_pattern" /bin/sh -ec "$remote_process_present_script"
 }
 
 echo "Checking live Prowlarr resources..."
