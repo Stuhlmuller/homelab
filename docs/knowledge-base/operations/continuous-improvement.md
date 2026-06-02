@@ -90,3 +90,18 @@ policy`.
 - **Next step:** decide whether to keep squash-only merges with GitHub-signed
   mainline commits, allow rebase/merge methods that preserve Claw-signed branch
   commits, or add a bot-supported path for signed squash commits.
+
+- **Status:** fixed
+- **Area:** CI/CD
+- **Evidence:** PR #374 updates `scripts/ci/terragrunt-plan.sh`,
+  `scripts/ci/terragrunt-apply.sh`, and
+  `scripts/ci/terragrunt-filter-base.sh` after PR #371 exposed that
+  current-tree `terragrunt run --all --filter-affected` cannot enter a deleted
+  unit directory.
+- **Risk:** deleting a Terragrunt unit can otherwise leave remote-state-backed
+  cloud or Kubernetes resources orphaned while reviewers assume post-merge apply
+  cleaned them up.
+- **Next step:** keep deleted-unit cleanup in the CI path: generate a temporary
+  empty Terragrunt unit at each deleted path, rely on `IaC/root.hcl` to target
+  the original backend key, list the remote-state resources, and apply the saved
+  destroy plan before applying the current checkout.

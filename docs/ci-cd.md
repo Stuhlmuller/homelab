@@ -85,11 +85,20 @@ unless the repository adds a reviewed token-backed secret contract for Grafana.
   against the PR base branch, while push applies compare against the previous
   `main` SHA from the GitHub event. Manual apply dispatches compare against
   `HEAD^`.
+- Deleted Terragrunt units are handled separately because the current checkout
+  no longer contains the directory that owns their state. The plan and apply
+  scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`
+  files, create temporary empty Terragrunt units at those deleted paths, and
+  reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
+  the original backend key. Pull request plans list the remote-state resources
+  and save a destroy plan without rendering potentially sensitive values.
+  Production apply lists the same state resources, applies the saved destroy
+  plan, and then continues with the current checkout.
 - The protected post-merge apply runs the production phases explicitly:
-  bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
-  registrations, apply Argo CD Application registrations serially, and finally
-  materialize Kubernetes Secrets from SSM. Stack-wide apply phases use
-  Terragrunt's explicit
+  destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
+  SSM parameter declarations, apply Entra application registrations, apply Argo
+  CD Application registrations serially, and finally materialize Kubernetes
+  Secrets from SSM. Stack-wide apply phases use Terragrunt's explicit
   `run --all --filter-affected --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
@@ -271,7 +280,9 @@ production apply role, install the kubeconfig, and run a focused
 
 The local scripts rely on your current `main` ref for Terragrunt's
 `--filter-affected` comparison. Update `main` first when you want local output
-to match the GitHub pull request or push diff.
+to match the GitHub pull request or push diff. Deleted-unit detection uses the
+same comparison base; set `TERRAGRUNT_FILTER_BASE_SHA` and
+`TERRAGRUNT_FILTER_HEAD_SHA` when reproducing an exact GitHub run locally.
 
 Set `TERRAGRUNT_PLAN_MARKDOWN=/path/to/terragrunt-plan.md` when running the PR
 plan script locally if you want the same rendered `plan.out` markdown that the

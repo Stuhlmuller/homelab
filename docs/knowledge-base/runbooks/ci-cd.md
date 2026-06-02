@@ -51,6 +51,15 @@ Source: `docs/ci-cd.md`
   limited to units changed between `main` and `HEAD`. In CI, the helper script
   prepares `main` to mean the PR base branch for plans or the previous push SHA
   for post-merge applies. Manual apply dispatches compare against `HEAD^`.
+- Deleted Terragrunt units are a special case because current-tree
+  `--filter-affected` runs cannot enter a directory that no longer exists.
+  `scripts/ci/terragrunt-plan.sh` and `scripts/ci/terragrunt-apply.sh` detect
+  deleted `IaC/**/terragrunt.hcl` files, create temporary empty Terragrunt
+  units at those deleted paths, and rely on `IaC/root.hcl` so the fake units
+  point at the same remote-state keys as the removed units. PR plans list the
+  state resources and save destroy plans without rendering potentially
+  sensitive values; production apply lists those state resources and applies
+  the saved destroy plans before applying the current checkout.
 - Stack-wide apply phases use Terragrunt's explicit
   `run --all --filter-affected --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
