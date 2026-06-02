@@ -34,6 +34,9 @@ unless the repository adds a reviewed token-backed secret contract for Grafana.
 
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
+- Pull request commits must be SSH-signed by the repo-pinned `claw` signing
+  key in `.github/allowed_signers`, with fingerprint
+  `SHA256:aEGjgIntjDt20o2jFQdaHHEzDEYq5Vcm3oJ5qOFhFpA`.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions

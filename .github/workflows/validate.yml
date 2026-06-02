@@ -17,7 +17,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify Commit Signatures
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash scripts/ci/verify-commit-signatures.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee

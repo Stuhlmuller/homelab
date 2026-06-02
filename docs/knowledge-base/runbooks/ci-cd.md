@@ -23,6 +23,9 @@ Source: `docs/ci-cd.md`
 ## Security Model
 
 - Workflows use `pull_request` and `push`, not `pull_request_target`.
+- Pull request commits must be SSH-signed by the repo-pinned `claw` signing
+  key in `.github/allowed_signers`, with fingerprint
+  `SHA256:aEGjgIntjDt20o2jFQdaHHEzDEYq5Vcm3oJ5qOFhFpA`.
 - External actions are pinned to full commit SHAs and checked by Conftest.
 - Terragrunt plan and apply jobs restore and save a GitHub Actions cache for the
   Nix store after installing Nix. The cache key is derived from the runner OS,
