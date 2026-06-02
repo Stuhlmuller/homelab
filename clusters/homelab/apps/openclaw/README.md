@@ -149,9 +149,9 @@ OpenClaw receives GitHub App identity through AWS SSM-backed ExternalSecrets:
 
 The pod sets `GITHUB_APP_PRIVATE_KEY_PATH` to
 `/var/run/secrets/openclaw/github-app/private-key.pem`. The private key is
-mounted as a file from `openclaw-github-app-private-key` instead of being
-exported through `envFrom`, so the PEM is not copied into the process
-environment.
+mounted as a file from `openclaw-github-app-private-key`, so the PEM is not
+copied into the process environment. Other OpenClaw secret keys are mapped with
+explicit `secretKeyRef` entries rather than a broad `envFrom` import.
 
 After replacing any GitHub App SSM placeholder, bump
 `homelab.rst.io/openclaw-github-app-credentials-ssm-version` in `values.yaml`
