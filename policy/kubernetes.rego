@@ -96,6 +96,7 @@ external_secret_allowed_prefixes := {
 	"cert-manager": {"/homelab/cert-manager/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
+	"octelium-client": {"/homelab/octelium/"},
 	"tailscale": {"/homelab/tailscale/"},
 }
 
