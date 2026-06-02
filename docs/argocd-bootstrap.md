@@ -148,8 +148,9 @@ Expected OIDC result:
 - The generated Kubernetes Secret is labeled as part of Argo CD.
 
 If `argocd-oidc-sso` reports `ClusterSecretStore "aws-ssm" is not ready`, wait
-for the `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` stack to
-create the `external-secrets/aws-ssm-auth` Secret. The ExternalSecret uses
+for `scripts/ci/install-external-secrets-aws-auth.sh` to create the
+`external-secrets/aws-ssm-auth` Secret from protected CI secrets. The
+ExternalSecret uses
 `refreshPolicy: OnChange`; if only SSM values changed, make a repo-owned
 metadata or spec change and let Argo CD sync it rather than patching the live
 resource.

@@ -10,6 +10,7 @@ desired state.
 
 | Source | Vault note | Purpose |
 | --- | --- | --- |
+| `README.md` | [[00-home]] | Project overview, repository map, and first-read navigation |
 | `AGENTS.md` | [[operations/continuous-improvement]] | Agent workflow, safety boundaries, ownership, ongoing stewardship |
 | `ONBOARDING.md` | [[runbooks/homelab-onboarding]] | Talos and cluster onboarding |
 

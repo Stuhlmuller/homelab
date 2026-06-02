@@ -35,7 +35,7 @@ that must be added through a separate Terragrunt/OpenTofu entry point.
 | litellm | `https://litellm.stinkyboi.com` | disabled |
 | openclaw | `https://openclaw.stinkyboi.com` | disabled |
 | n8n editor/UI | `https://n8n.stinkyboi.com` | disabled |
-| n8n webhooks | `https://n8n-webhook.tail67beb.ts.net/webhook...` | enabled for `/webhook`, `/webhook-test`, and `/webhook-waiting` only |
+| n8n webhooks | `https://n8n-webhook.tail67beb.ts.net/webhook...` | enabled for production `/webhook` paths only |
 | policy-bot UI and normal routes | `https://policy-bot.stinkyboi.com` | disabled |
 | octobot UI | `https://octobot.stinkyboi.com` | disabled |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
@@ -79,6 +79,13 @@ Compass exposes the service catalog only through the tailnet Istio route at
 `https://compass.stinkyboi.com`. It discovers Kubernetes ingress and Gateway API
 routes with read-only RBAC, disables operator debug routes, and does not persist
 application state.
+
+Because the homelab's reviewed ingress path is still Istio `VirtualService`,
+Compass also owns discovery-only `Ingress` resources in the `monitoring`
+namespace. Those resources use the inert `compass-discovery` IngressClass and
+carry the same hostnames and Compass metadata for catalog discovery, but they
+do not replace the Istio `VirtualService` resources that route traffic through
+`tailnet-gateway`.
 
 ## Homelab VPN Exit Node And LAN Route
 
@@ -146,7 +153,7 @@ reviewed public route is:
 
 ```text
 Owning application: n8n
-Public paths: /webhook, /webhook-test, /webhook-waiting
+Public paths: /webhook and /webhook/*
 Purpose: n8n workflow webhook deliveries from external systems.
 Source system: workflow-specific SaaS integrations and HTTP clients configured in n8n.
 Authentication or signature check: workflow-specific n8n webhook credentials, node-level signing, or path entropy where configured.

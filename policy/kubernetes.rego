@@ -88,3 +88,74 @@ has_nonempty_label(labels, key) if {
 truthy(value) if {
 	lower(sprintf("%v", [value])) == "true"
 }
+
+external_secret_allowed_prefixes := {
+	"ai": {"/homelab/litellm/", "/homelab/openclaw/", "/homelab/grafana/openclaw-alert-hook-token"},
+	"argocd": {"/homelab/argocd/", "/homelab/argocd-image-updater/"},
+	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
+	"cert-manager": {"/homelab/cert-manager/"},
+	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
+	"monitoring": {"/homelab/grafana/"},
+	"tailscale": {"/homelab/tailscale/"},
+}
+
+forbidden_public_funnel_prefixes := {
+	"/webhook-test",
+	"/webhook-test/",
+	"/webhook-waiting",
+	"/webhook-waiting/",
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	namespace := object.get(metadata, "namespace", "default")
+	allowed := external_secret_allowed_prefixes[namespace]
+	item := object.get(object.get(input, "spec", {}), "data", [])[_]
+	key := object.get(object.get(item, "remoteRef", {}), "key", "")
+	key != ""
+	not remote_ref_key_allowed(key, allowed)
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	namespace := object.get(metadata, "namespace", "default")
+	not external_secret_allowed_prefixes[namespace]
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("ExternalSecret %q uses ClusterSecretStore in namespace %q without an approved SSM prefix policy", [name, namespace])
+}
+
+deny contains msg if {
+	input.kind == "Ingress"
+	metadata := object.get(input, "metadata", {})
+	annotations := object.get(metadata, "annotations", {})
+	truthy(object.get(annotations, "homelab.rst.io/public-funnel", "false"))
+	rule := object.get(object.get(input, "spec", {}), "rules", [])[_]
+	http := object.get(rule, "http", {})
+	backend_path := object.get(http, "paths", [])[_]
+	path := object.get(backend_path, "path", "")
+	path in forbidden_public_funnel_prefixes
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("public Funnel Ingress %q must not expose non-production webhook path %q", [name, path])
+}
+
+deny contains msg if {
+	input.kind == "VirtualService"
+	metadata := object.get(input, "metadata", {})
+	route := object.get(object.get(input, "spec", {}), "http", [])[_]
+	match := object.get(route, "match", [])[_]
+	object.get(match, "gateways", [])[_] == "istio-system/n8n-webhook-funnel"
+	uri := object.get(match, "uri", {})
+	path := object.get(uri, "exact", object.get(uri, "prefix", ""))
+	path in forbidden_public_funnel_prefixes
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("VirtualService %q must not route non-production webhook path %q through the public n8n funnel", [name, path])
+}
+
+remote_ref_key_allowed(key, allowed) if {
+	some prefix in allowed
+	startswith(key, prefix)
+}
