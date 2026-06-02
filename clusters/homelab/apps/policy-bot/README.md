@@ -10,6 +10,11 @@ receiver stay online. If credentials need to be revoked or rebuilt, scale this
 file path back to `replicas: 0` in git before Argo CD rolls out placeholder
 config.
 
+Policy Bot looks for a repository-local `.policy.yml` first and falls back to
+`policy.yml` in the shared `.github` repository. The homelab policy requires
+GitHub-verified commit signatures in addition to the normal review approval
+rules.
+
 ## Routes
 
 - Tailnet operator UI, details pages, static assets, OAuth callback, and normal

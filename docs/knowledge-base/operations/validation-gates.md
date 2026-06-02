@@ -44,6 +44,19 @@ kubectl kustomize clusters/homelab/apps/argocd-image-updater
 rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-image-updater/imageupdater.yaml
 ```
 
+## Policy Bot Checks
+
+Repository-local `.policy.yml` changes need Policy Bot validation, not just YAML
+parsing:
+
+```sh
+policy-bot validate -p .policy.yml
+curl -sS --fail-with-body https://policy-bot.stinkyboi.com/api/validate -T .policy.yml
+```
+
+Use the live endpoint when the local binary and Docker validator are
+unavailable.
+
 ## Terragrunt Checks
 
 Focused unit validation:

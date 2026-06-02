@@ -251,6 +251,11 @@ identify the same active GitHub App. The ExternalSecret uses
 `refreshPolicy: OnChange`, so SSM fixes need a repo-owned metadata change and
 Argo CD sync before the rendered Kubernetes Secret changes.
 
+The runtime config reads repository-local `.policy.yml` files before falling
+back to shared `.github/policy.yml`. Homelab's local policy keeps the shared
+review approval choices and adds a Policy Bot condition requiring every PR
+commit to have a GitHub-verified signature.
+
 ## Prometheus
 
 Prometheus persists metrics and Alertmanager state on `nfs-default`.

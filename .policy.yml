@@ -1,0 +1,38 @@
+policy:
+  approval:
+    - pull request commits have verified signatures
+    - or:
+        - review bot approved
+        - organization member approved
+  disapproval:
+    requires:
+      organizations:
+        - "Stuhlmuller"
+
+approval_rules:
+  - name: pull request commits have verified signatures
+    description: >-
+      Every pull request commit must have a GitHub-verified signature before
+      Policy Bot can approve the change.
+    requires:
+      count: 0
+      conditions:
+        has_valid_signatures: true
+  - name: review bot approved
+    options:
+      methods:
+        comments: []
+        comment_patterns: []
+        github_review: false
+        github_review_comment_patterns: []
+        body_patterns:
+          - '(^|\s)(:\+1:|\+1)(\s|$)'
+    requires:
+      count: 1
+      users:
+        - "chatgpt-codex-connector[bot]"
+  - name: organization member approved
+    requires:
+      count: 1
+      organizations:
+        - "Stuhlmuller"
