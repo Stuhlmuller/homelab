@@ -88,3 +88,40 @@ has_nonempty_label(labels, key) if {
 truthy(value) if {
 	lower(sprintf("%v", [value])) == "true"
 }
+
+external_secret_allowed_prefixes := {
+	"ai": {"/homelab/litellm/", "/homelab/openclaw/", "/homelab/grafana/openclaw-alert-hook-token"},
+	"argocd": {"/homelab/argocd/", "/homelab/argocd-image-updater/"},
+	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
+	"cert-manager": {"/homelab/cert-manager/"},
+	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
+	"monitoring": {"/homelab/grafana/"},
+	"tailscale": {"/homelab/tailscale/"},
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	namespace := object.get(metadata, "namespace", "default")
+	allowed := external_secret_allowed_prefixes[namespace]
+	item := object.get(object.get(input, "spec", {}), "data", [])[_]
+	key := object.get(object.get(item, "remoteRef", {}), "key", "")
+	key != ""
+	not remote_ref_key_allowed(key, allowed)
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	namespace := object.get(metadata, "namespace", "default")
+	not external_secret_allowed_prefixes[namespace]
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("ExternalSecret %q uses ClusterSecretStore in namespace %q without an approved SSM prefix policy", [name, namespace])
+}
+
+remote_ref_key_allowed(key, allowed) if {
+	some prefix in allowed
+	startswith(key, prefix)
+}
