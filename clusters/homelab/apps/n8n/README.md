@@ -30,13 +30,20 @@ persisted settings file instead of crashlooping on an accidental mismatch.
 - Editor/UI ingress: `istio-system/tailnet-gateway`
 - Public webhook Funnel host: `https://n8n-webhook.tail67beb.ts.net`
 - Public webhook paths: production `/webhook` paths only
+- Private test and waiting webhook paths:
+  `https://n8n.stinkyboi.com/webhook-test/...` and
+  `https://n8n.stinkyboi.com/webhook-waiting/...`
 
 `WEBHOOK_URL` is set to the public Funnel host so n8n advertises externally
-reachable webhook URLs. The editor base URL stays on the tailnet-only
-`n8n.stinkyboi.com` host. The Funnel route is declared as a Tailscale Ingress
-in `istio-system` and forwards only the webhook path prefixes to the Istio
-gateway, which then routes to the n8n service. Do not add the root path, editor
-routes, static assets, or API routes to the Funnel Ingress.
+reachable production webhook URLs. n8n also uses that value when displaying
+test and waiting webhook URLs, so operators testing from the editor should keep
+the generated path but replace the host with the tailnet-only
+`n8n.stinkyboi.com` host for `/webhook-test/...` and `/webhook-waiting/...`.
+The Funnel route is declared as a Tailscale Ingress in `istio-system` and
+forwards only the production `/webhook` path family to the Istio gateway, which
+then routes to the n8n service. Do not add the root path, editor routes, static
+assets, API routes, `/webhook-test`, or `/webhook-waiting` to the Funnel
+Ingress.
 
 The Tailscale tailnet policy must allow the operator proxy tag, currently
 `tag:k8s`, to use Funnel:
@@ -77,9 +84,10 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/w
 ```
 
 Expected route behavior: the editor host serves n8n through the tailnet, the
-Funnel host reaches n8n only under the webhook prefixes, and an unknown
-webhook path returns an n8n not-found response until a workflow registers that
-webhook.
+Funnel host reaches n8n only under `/webhook` and `/webhook/*`, private
+`/webhook-test/...` and `/webhook-waiting/...` calls use
+`n8n.stinkyboi.com`, and an unknown webhook path returns an n8n not-found
+response until a workflow registers that webhook.
 
 ## Rollback
 

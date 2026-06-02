@@ -24,6 +24,9 @@ does not replace the Tailscale exit node.
   tailnet-only.
 - n8n webhooks are a reviewed public Funnel exception:
   `https://n8n-webhook.tail67beb.ts.net` for production `/webhook` paths only.
+- n8n test and waiting webhook paths stay private on the tailnet editor host:
+  `https://n8n.stinkyboi.com/webhook-test/...` and
+  `https://n8n.stinkyboi.com/webhook-waiting/...`.
 - Policy Bot GitHub webhook is another reviewed public Funnel exception:
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali

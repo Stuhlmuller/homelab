@@ -243,7 +243,9 @@ workflow webhook URLs through `https://n8n-webhook.tail67beb.ts.net`. The
 Funnel route is limited to production `/webhook` paths and forwards through
 the Istio ingress gateway so the n8n
 workload AuthorizationPolicy can continue allowing only the gateway service
-account.
+account. Test and waiting webhook paths remain private by using the generated
+path on `https://n8n.stinkyboi.com` instead of exposing `/webhook-test` or
+`/webhook-waiting` through Funnel.
 
 ## Policy Bot
 

@@ -164,8 +164,14 @@ Data exposed: request bodies and headers sent to active n8n webhook workflows.
 
 The n8n editor, REST API, static assets, and root path stay on
 `https://n8n.stinkyboi.com` through the tailnet-only Istio gateway. The Funnel
-Ingress forwards only webhook path prefixes to the Istio gateway, and the n8n
-VirtualService only routes those prefixes on the public webhook gateway.
+Ingress forwards only the production `/webhook` path family to the Istio
+gateway, and the n8n VirtualService only routes those prefixes on the public
+webhook gateway.
+Test and waiting webhook URLs remain private: because n8n displays the
+configured `WEBHOOK_URL` host for those generated URLs too, operators should
+use the same generated path on `https://n8n.stinkyboi.com` for
+`/webhook-test/...` and `/webhook-waiting/...` while testing from the tailnet.
+Do not add those non-production endpoint families to the public Funnel route.
 
 ## Future Funnel Webhook Exception Template
 

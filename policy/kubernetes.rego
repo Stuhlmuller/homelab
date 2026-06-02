@@ -77,9 +77,17 @@ deny contains msg if {
 
 forbidden_public_funnel_prefixes := {
 	"/webhook-test",
-	"/webhook-test/",
 	"/webhook-waiting",
-	"/webhook-waiting/",
+}
+
+forbidden_public_funnel_path(path) if {
+	some prefix in forbidden_public_funnel_prefixes
+	path == prefix
+}
+
+forbidden_public_funnel_path(path) if {
+	some prefix in forbidden_public_funnel_prefixes
+	startswith(path, sprintf("%s/", [prefix]))
 }
 
 deny contains msg if {
@@ -91,7 +99,7 @@ deny contains msg if {
 	http := object.get(rule, "http", {})
 	backend_path := object.get(http, "paths", [])[_]
 	path := object.get(backend_path, "path", "")
-	path in forbidden_public_funnel_prefixes
+	forbidden_public_funnel_path(path)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("public Funnel Ingress %q must not expose non-production webhook path %q", [name, path])
 }
@@ -104,7 +112,7 @@ deny contains msg if {
 	object.get(match, "gateways", [])[_] == "istio-system/n8n-webhook-funnel"
 	uri := object.get(match, "uri", {})
 	path := object.get(uri, "exact", object.get(uri, "prefix", ""))
-	path in forbidden_public_funnel_prefixes
+	forbidden_public_funnel_path(path)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("VirtualService %q must not route non-production webhook path %q through the public n8n funnel", [name, path])
 }
