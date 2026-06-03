@@ -29,11 +29,18 @@ ten minutes and notify through the normal homelab alert route when a run enters
 `failure` or `timed_out` state during the two-hour alert window. Because these
 reads are unauthenticated public API calls, do not shorten the polling interval
 unless the repository adds a reviewed token-backed secret contract for Grafana.
+Datasource query errors are treated as OK for these GitHub-backed alerts so API
+rate limits do not fire critical alerts without matching workflow-run evidence.
 
 ## Security Model
 
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
+- Policy Bot reads this repository's `.policy.yml` and requires every pull
+  request commit to have a GitHub-verified signature before normal review
+  approval can satisfy the `policy-bot: main` branch protection check. The
+  review-bot path accepts only an explicit `+1` or `:+1:` comment from
+  `chatgpt-codex-connector[bot]`; it does not read PR body text.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions

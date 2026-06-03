@@ -45,7 +45,7 @@ envValueFrom:
 podAnnotations:
   homelab.rst.io/discord-webhook-ssm-version: "2"
   homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
-  homelab.rst.io/alerting-provisioning-version: "3"
+  homelab.rst.io/alerting-provisioning-version: "4"
 plugins:
   - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
@@ -228,6 +228,7 @@ alerting:
           - namespace
           - pod
           - container
+          - app
           - reason
           - name
           - project
@@ -474,6 +475,87 @@ alerting:
             labels:
               severity: critical
               managed_by: grafana-provisioning
+          - uid: homelab-deluge-unavailable
+            title: Deluge unavailable
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: |
+                    (
+                      kube_deployment_spec_replicas{namespace="media", deployment="deluge"} > 0
+                      and
+                      kube_deployment_status_replicas_available{namespace="media", deployment="deluge"} < 1
+                    )
+                    or absent(kube_deployment_status_replicas_available{namespace="media", deployment="deluge"})
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: Deluge available replicas
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: Deluge has no available Kubernetes Deployment replicas, or kube-state-metrics no longer reports the Deluge Deployment.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/deluge/README.md
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              app: deluge
+              namespace: media
           - uid: homelab-pvc-space-low
             title: Homelab PVC space low
             condition: C
@@ -888,7 +970,7 @@ alerting:
             dashboardUid: github-pr-status
             panelId: 4
             noDataState: OK
-            execErrState: Alerting
+            execErrState: OK
             for: 1m
             annotations:
               summary: A GitHub Actions workflow run failed in Stuhlmuller/homelab during the alert window.
@@ -1006,7 +1088,7 @@ alerting:
             dashboardUid: github-pr-status
             panelId: 4
             noDataState: OK
-            execErrState: Alerting
+            execErrState: OK
             for: 1m
             annotations:
               summary: A GitHub Actions workflow run timed out in Stuhlmuller/homelab during the alert window.

@@ -119,12 +119,15 @@ The first provisioned rules cover:
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
+- Deluge having no available Deployment replicas, or missing Deluge Deployment
+  metrics, for 5 minutes.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
 - GitHub Actions workflow runs in `failure` or `timed_out` state during the
-  two-hour alert window.
+  two-hour alert window. GitHub API query errors resolve to OK so public API
+  rate limits do not create critical firing alerts without workflow evidence.
 
 The provisioning file also deletes the retired OctoBot-specific deployment
 availability rule so Grafana only evaluates the generic workload alerts after
