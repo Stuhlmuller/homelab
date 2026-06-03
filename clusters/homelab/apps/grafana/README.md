@@ -185,8 +185,9 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
 `Entra ID` login path works, and the nine provisioned `homelab-*` alert rules
-under Grafana Alerting. Use the Grafana contact point test action after the
-Discord webhook parameter and OpenClaw hook token have been populated in SSM.
+are present under Grafana Alerting. Use the Grafana contact point test action
+after the Discord webhook parameter and OpenClaw hook token have been populated
+in SSM.
 
 ## Rollback
 
