@@ -130,15 +130,19 @@ Create two GitHub environments:
   deployment branches to `main`.
 
 Add `TS_AUTH_KEY` and `KUBE_CONFIG_B64` to both environments. Add
-`AZUREAD_CLIENT_SECRET` to `homelab-production`. Repository-level secrets also
-work, but environment secrets are preferred so production credentials can have
-approval rules and tighter rotation:
+`AZUREAD_CLIENT_SECRET`,
+`EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID`, and
+`EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` to `homelab-production`.
+Repository-level secrets also work, but environment secrets are preferred so
+production credentials can have approval rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
 | `TS_AUTH_KEY` | both | Tailscale auth key allowed by tailnet lock and scoped to the CI runner tags. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production` | Microsoft Entra application secret used by the AzureAD provider during production applies. |
+| `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID` | `homelab-production` | AWS access key ID installed into the External Secrets `aws-ssm-auth` Kubernetes Secret by protected CI. Must not be blank or `REPLACE_ME`. |
+| `EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` | `homelab-production` | AWS secret access key installed into the External Secrets `aws-ssm-auth` Kubernetes Secret by protected CI. Must not be blank or `REPLACE_ME`. |
 
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so

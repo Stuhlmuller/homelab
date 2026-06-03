@@ -100,7 +100,11 @@ state-key-only access fails during SSM provider refresh with
 `AccessDeniedException` for `kms:DescribeKey`. The workflows resolve
 non-sensitive role/client/tenant values from GitHub variables first and
 same-named secrets as a fallback, while `AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`,
-and `KUBE_CONFIG_B64` remain secret-only inputs.
+`KUBE_CONFIG_B64`, `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID`, and
+`EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` remain secret-only inputs. The
+External Secrets AWS SSM credential values are installed into the
+`aws-ssm-auth` Kubernetes Secret by protected CI and must not be blank or
+`REPLACE_ME`.
 
 `IaC/live/azuread-applications` is applied only when Entra credentials are
 configured. Without those credentials, push applies skip that phase when the

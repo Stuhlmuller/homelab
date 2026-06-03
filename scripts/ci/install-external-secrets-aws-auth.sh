@@ -4,6 +4,20 @@ set -euo pipefail
 : "${EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID:?EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID must be provided by the protected CI environment}"
 : "${EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY:?EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY must be provided by the protected CI environment}"
 
+validate_secret_value() {
+  local name="$1"
+  local value="$2"
+  local compact_value="${value//[[:space:]]/}"
+
+  if [[ -z "$compact_value" || "$compact_value" == "REPLACE_ME" ]]; then
+    echo "${name} must be a non-placeholder value; blank values and REPLACE_ME are rejected." >&2
+    exit 1
+  fi
+}
+
+validate_secret_value "EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID" "$EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID"
+validate_secret_value "EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY" "$EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY"
+
 namespace_manifest="clusters/homelab/apps/external-secrets/namespace.yaml"
 secret_name="aws-ssm-auth"
 namespace="external-secrets"
