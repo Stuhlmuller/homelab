@@ -78,9 +78,8 @@ contract for Grafana.
   after every successful plan.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
-  protected production apply role. Runtime Kubernetes Secrets are installed by
-  protected CI scripts instead of OpenTofu so decrypted runtime credentials do
-  not enter OpenTofu state.
+  protected production apply role. They also skip `IaC/live/kubernetes-secrets`
+  because that unit reads decrypted AWS SSM parameters.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or a
   `Failed to execute "tofu ..."` line because Terragrunt shells out to
@@ -93,15 +92,9 @@ contract for Grafana.
   `main` SHA from the GitHub event. Manual apply dispatches compare against
   `HEAD^`.
 - The protected post-merge apply runs the production phases explicitly:
-  bootstrap Argo CD, plan and policy-check SSM parameter declarations before
-  applying the saved plan, remove the retired External Secrets AWS auth
-  Kubernetes Secret and decrypted SSM data-source addresses from the deleted
-  unit's remote state, install the replacement External Secrets AWS auth Secret
-  from protected CI secrets, apply Entra application registrations, and apply
-  Argo CD Application registrations serially. Terraform plan policy keeps
-  sensitive resource deletes denied, with a narrow migration exception for
-  removing the legacy External Secrets AWS auth SSM parameter placeholders from
-  OpenTofu state. Stack-wide apply phases use
+  bootstrap Argo CD, apply SSM parameter declarations, apply Entra application
+  registrations, apply Argo CD Application registrations serially, and finally
+  materialize Kubernetes Secrets from SSM. Stack-wide apply phases use
   Terragrunt's explicit
   `run --all --filter-affected --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
@@ -129,19 +122,15 @@ Create two GitHub environments:
   deployment branches to `main`.
 
 Add `TS_AUTH_KEY` and `KUBE_CONFIG_B64` to both environments. Add
-`AZUREAD_CLIENT_SECRET`,
-`EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID`, and
-`EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` to `homelab-production`.
-Repository-level secrets also work, but environment secrets are preferred so
-production credentials can have approval rules and tighter rotation:
+`AZUREAD_CLIENT_SECRET` to `homelab-production`. Repository-level secrets also
+work, but environment secrets are preferred so production credentials can have
+approval rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
 | `TS_AUTH_KEY` | both | Tailscale auth key allowed by tailnet lock and scoped to the CI runner tags. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production` | Microsoft Entra application secret used by the AzureAD provider during production applies. |
-| `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID` | `homelab-production` | AWS access key ID installed into the External Secrets `aws-ssm-auth` Kubernetes Secret by protected CI. Must not be blank or `REPLACE_ME`. |
-| `EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` | `homelab-production` | AWS secret access key installed into the External Secrets `aws-ssm-auth` Kubernetes Secret by protected CI. Must not be blank or `REPLACE_ME`. |
 
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so
