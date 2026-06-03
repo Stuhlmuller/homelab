@@ -126,7 +126,8 @@ The first provisioned rules cover:
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
 - GitHub Actions workflow runs in `failure` or `timed_out` state during the
-  two-hour alert window.
+  two-hour alert window. GitHub API query errors resolve to OK so public API
+  rate limits do not create critical firing alerts without workflow evidence.
 
 The provisioning file also deletes the retired OctoBot-specific deployment
 availability rule so Grafana only evaluates the generic workload alerts after

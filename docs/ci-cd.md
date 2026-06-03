@@ -29,6 +29,8 @@ ten minutes and notify through the normal homelab alert route when a run enters
 `failure` or `timed_out` state during the two-hour alert window. Because these
 reads are unauthenticated public API calls, do not shorten the polling interval
 unless the repository adds a reviewed token-backed secret contract for Grafana.
+Datasource query errors are treated as OK for these GitHub-backed alerts so API
+rate limits do not fire critical alerts without matching workflow-run evidence.
 
 ## Security Model
 
