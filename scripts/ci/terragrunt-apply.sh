@@ -24,6 +24,10 @@ echo "::group::AWS SSM parameter declaration plan and apply"
 )
 echo "::endgroup::"
 
+echo "::group::External Secrets AWS auth legacy state cleanup"
+bash scripts/ci/remove-external-secrets-aws-auth-state.sh
+echo "::endgroup::"
+
 echo "::group::External Secrets AWS auth Secret install"
 bash scripts/ci/install-external-secrets-aws-auth.sh
 echo "::endgroup::"
