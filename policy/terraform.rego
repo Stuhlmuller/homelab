@@ -9,16 +9,10 @@ sensitive_delete_resource_types := {
 	"kubernetes_secret_v1",
 }
 
-allowed_sensitive_delete_ssm_parameter_names := {
-	"/homelab/external-secrets/aws-ssm/access-key-id",
-	"/homelab/external-secrets/aws-ssm/secret-access-key",
-}
-
 deny contains msg if {
 	some change in terraform_resource_changes
 	change.type in sensitive_delete_resource_types
 	action_deletes(change.change.actions)
-	not allowed_sensitive_delete(change)
 	msg := sprintf("Terraform plan must not delete sensitive resource %q of type %s", [change.address, change.type])
 }
 
@@ -93,11 +87,6 @@ terraform_resource_changes contains change if {
 	change := object.get(input, "resource_changes", [])[index]
 }
 
-planned_before(change) := before if {
-	before := object.get(object.get(change, "change", {}), "before", null)
-	before != null
-}
-
 planned_after(change) := after if {
 	after := object.get(object.get(change, "change", {}), "after", null)
 	after != null
@@ -106,11 +95,4 @@ planned_after(change) := after if {
 action_deletes(actions) if {
 	some action in actions
 	action == "delete"
-}
-
-allowed_sensitive_delete(change) if {
-	change.type == "aws_ssm_parameter"
-	change.change.actions == ["delete"]
-	before := planned_before(change)
-	before.name in allowed_sensitive_delete_ssm_parameter_names
 }

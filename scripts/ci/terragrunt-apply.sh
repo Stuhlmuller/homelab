@@ -24,14 +24,6 @@ echo "::group::AWS SSM parameter declaration plan and apply"
 )
 echo "::endgroup::"
 
-echo "::group::External Secrets AWS auth legacy state cleanup"
-bash scripts/ci/remove-external-secrets-aws-auth-state.sh
-echo "::endgroup::"
-
-echo "::group::External Secrets AWS auth Secret install"
-bash scripts/ci/install-external-secrets-aws-auth.sh
-echo "::endgroup::"
-
 azuread_credentials_available() {
   [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_CLIENT_SECRET:-}" && -n "${ARM_TENANT_ID:-}" ]]
 }
@@ -69,6 +61,28 @@ echo "::endgroup::"
 echo "::group::Argo CD Application registration apply"
 (
   cd IaC/live/argocd-apps
+  terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+)
+echo "::endgroup::"
+
+echo "::group::External Secrets AWS auth Secret state adoption"
+kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml
+if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then
+  (
+    cd IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth
+    terragrunt init -no-color
+    if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'kubernetes_secret_v1.this'; then
+      terragrunt import -no-color kubernetes_secret_v1.this external-secrets/aws-ssm-auth
+    fi
+  )
+else
+  echo "external-secrets/aws-ssm-auth is absent; Kubernetes secret materialization will create it from SSM."
+fi
+echo "::endgroup::"
+
+echo "::group::Kubernetes secret materialization apply"
+(
+  cd IaC/live/kubernetes-secrets
   terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
 )
 echo "::endgroup::"

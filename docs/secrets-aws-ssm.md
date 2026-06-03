@@ -17,9 +17,10 @@ from the OpenTofu remote-state key in `us-east-1`.
   secret injection path.
 - Placeholder manifests must identify the expected runtime secret and purpose.
 - Provider credentials for External Secrets itself are copied into Kubernetes by
-  `scripts/ci/install-external-secrets-aws-auth.sh` from protected GitHub
-  environment secrets during production apply. The values do not pass through
-  OpenTofu data sources, resources, plans, or state.
+  the Terragrunt stack at
+  `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`. The stack reads
+  encrypted SSM parameters and creates only the `external-secrets/aws-ssm-auth`
+  Kubernetes Secret through the Kubernetes provider.
 
 ## Secret Reference Matrix
 
@@ -55,33 +56,31 @@ that allow-list in the same PR that adds its first ExternalSecret.
 
 External Secrets cannot read Parameter Store until the cluster has the
 `external-secrets/aws-ssm-auth` Kubernetes Secret. This repository creates that
-Secret through `scripts/ci/install-external-secrets-aws-auth.sh` in the protected
-production apply workflow.
+Secret through the Kubernetes Terraform provider in
+`IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
 Bootstrap order:
 
-1. Apply `IaC/live/aws-ssm-parameters` to create the SSM placeholders and attach
-   the pre-existing `external-secrets_aws-ssm-auth` IAM user to the
-   repository-managed `homelab-ssm-parameter-readers` IAM group.
-2. Store that IAM user's access key ID and secret access key as protected GitHub
-   environment secrets named `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID` and
-   `EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY`. Do not store these provider
-   credentials in SSM or OpenTofu state.
-3. Run the protected production apply so
-   `scripts/ci/install-external-secrets-aws-auth.sh` installs
-   `external-secrets/aws-ssm-auth`.
+1. Apply `IaC/live/aws-ssm-parameters` to create the SSM placeholders.
+2. Replace `/homelab/external-secrets/aws-ssm/access-key-id` and
+   `/homelab/external-secrets/aws-ssm/secret-access-key` with an IAM access key
+   that can read `/homelab/*` Parameter Store values in `us-west-2` and decrypt
+   the configured KMS key. The repository-managed
+   `homelab-ssm-parameter-reader` IAM policy grants those permissions through
+   the `homelab-ssm-parameter-readers` IAM group.
+3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
-The install script fails if either protected CI secret is absent. The decrypted
-credential values are not committed to git and are not copied into OpenTofu
-remote state. Rotate the IAM access key after removing any older Terraform state
-object that previously contained the Kubernetes Secret data.
+The Kubernetes Secret stack refuses to apply while either SSM value is empty or
+still set to `REPLACE_ME`. The decrypted credential values are not committed to
+git, but they are copied into the encrypted OpenTofu remote state for that
+stack because Terraform manages the Kubernetes Secret.
 
 | App | ExternalSecret | Target Secret | SSM parameters |
 |-----|----------------|---------------|----------------|
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
 | argocd-image-updater | `argocd-image-updater-git` | `argocd-image-updater-git` | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
-| external-secrets | Protected-CI-managed Kubernetes Secret | `aws-ssm-auth` | `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID`, `EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` GitHub environment secrets |
+| external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth` | `/homelab/octelium/client-auth-token` |
