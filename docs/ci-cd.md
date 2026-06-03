@@ -36,6 +36,11 @@ rate limits do not fire critical alerts without matching workflow-run evidence.
 
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
+- Policy Bot reads this repository's `.policy.yml` and requires every pull
+  request commit to have a GitHub-verified signature before normal review
+  approval can satisfy the `policy-bot: main` branch protection check. The
+  review-bot path accepts only an explicit `+1` or `:+1:` comment from
+  `chatgpt-codex-connector[bot]`; it does not read PR body text.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions
