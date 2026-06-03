@@ -96,12 +96,13 @@ rate limits do not fire critical alerts without matching workflow-run evidence.
 - The protected post-merge apply runs the production phases explicitly:
   bootstrap Argo CD, plan and policy-check SSM parameter declarations before
   applying the saved plan, remove the retired External Secrets AWS auth
-  Kubernetes Secret address from the deleted unit's remote state, install the
-  replacement External Secrets AWS auth Secret from protected CI secrets, apply
-  Entra application registrations, and apply Argo CD Application registrations
-  serially. Terraform plan policy keeps sensitive resource deletes denied, with
-  a narrow migration exception for removing the legacy External Secrets AWS auth
-  SSM parameter placeholders from OpenTofu state. Stack-wide apply phases use
+  Kubernetes Secret and decrypted SSM data-source addresses from the deleted
+  unit's remote state, install the replacement External Secrets AWS auth Secret
+  from protected CI secrets, apply Entra application registrations, and apply
+  Argo CD Application registrations serially. Terraform plan policy keeps
+  sensitive resource deletes denied, with a narrow migration exception for
+  removing the legacy External Secrets AWS auth SSM parameter placeholders from
+  OpenTofu state. Stack-wide apply phases use
   Terragrunt's explicit
   `run --all --filter-affected --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are

@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-legacy_state_address="kubernetes_secret_v1.this"
 legacy_state_key="IaC/homelab/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terraform.tfstate"
+legacy_state_addresses=(
+  'data.aws_ssm_parameter.secret_data["access-key-id"]'
+  'data.aws_ssm_parameter.secret_data["secret-access-key"]'
+  "kubernetes_secret_v1.this"
+)
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "${tmp_dir}"' EXIT
@@ -42,9 +46,11 @@ EOF
     exit 1
   fi
 
-  if grep -Fxq "${legacy_state_address}" "${state_list}"; then
-    tofu state rm "${legacy_state_address}"
-  else
-    echo "Legacy External Secrets AWS auth state address is already absent: ${legacy_state_address}"
-  fi
+  for legacy_state_address in "${legacy_state_addresses[@]}"; do
+    if grep -Fxq "${legacy_state_address}" "${state_list}"; then
+      tofu state rm "${legacy_state_address}"
+    else
+      echo "Legacy External Secrets AWS auth state address is already absent: ${legacy_state_address}"
+    fi
+  done
 )

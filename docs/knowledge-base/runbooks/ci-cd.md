@@ -51,12 +51,14 @@ Source: `docs/ci-cd.md`
   Protected apply creates a saved SSM plan, runs Terraform plan policy, and
   applies that saved plan. Runtime Kubernetes Secrets are installed by protected
   CI scripts rather than OpenTofu state. Before installing the replacement
-  Secret, the apply removes `kubernetes_secret_v1.this` from the retired
-  `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` remote state so
-  decrypted runtime credentials are not retained in OpenTofu state after the
-  migration. Terraform plan policy keeps sensitive deletes denied, with a narrow
-  migration exception for removing the legacy External Secrets AWS auth SSM
-  parameter placeholders from OpenTofu state.
+  Secret, the apply removes the retired
+  `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` state's decrypted
+  `data.aws_ssm_parameter.secret_data["access-key-id"]`,
+  `data.aws_ssm_parameter.secret_data["secret-access-key"]`, and
+  `kubernetes_secret_v1.this` addresses so runtime credentials are not retained
+  in OpenTofu state after the migration. Terraform plan policy keeps sensitive
+  deletes denied, with a narrow migration exception for removing the legacy
+  External Secrets AWS auth SSM parameter placeholders from OpenTofu state.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or
   `Failed to execute "tofu ..."` because Terragrunt shells out to OpenTofu
