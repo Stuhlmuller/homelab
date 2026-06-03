@@ -121,8 +121,15 @@ deny contains msg if {
 }
 
 remote_ref_key_allowed(key, allowed) if {
-	some prefix in allowed
-	startswith(key, prefix)
+	some allowed_key in allowed
+	endswith(allowed_key, "/")
+	startswith(key, allowed_key)
+}
+
+remote_ref_key_allowed(key, allowed) if {
+	some allowed_key in allowed
+	not endswith(allowed_key, "/")
+	key == allowed_key
 }
 
 external_secret_remote_keys(secret) := keys if {
