@@ -88,3 +88,79 @@ has_nonempty_label(labels, key) if {
 truthy(value) if {
 	lower(sprintf("%v", [value])) == "true"
 }
+
+external_secret_allowed_prefixes := {
+	"ai": {"/homelab/litellm/", "/homelab/openclaw/", "/homelab/grafana/openclaw-alert-hook-token"},
+	"argocd": {"/homelab/argocd/", "/homelab/argocd-image-updater/"},
+	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
+	"cert-manager": {"/homelab/cert-manager/"},
+	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
+	"monitoring": {"/homelab/grafana/"},
+	"octelium-client": {"/homelab/octelium/"},
+	"tailscale": {"/homelab/tailscale/"},
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	namespace := object.get(metadata, "namespace", "default")
+	allowed := external_secret_allowed_prefixes[namespace]
+	key := external_secret_remote_keys(input)[_]
+	not remote_ref_key_allowed(key, allowed)
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	namespace := object.get(metadata, "namespace", "default")
+	not external_secret_allowed_prefixes[namespace]
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("ExternalSecret %q uses ClusterSecretStore in namespace %q without an approved SSM prefix policy", [name, namespace])
+}
+
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	item := object.get(object.get(input, "spec", {}), "dataFrom", [])[_]
+	find := object.get(item, "find", {})
+	count(find) > 0
+	path := object.get(find, "path", "")
+	count(trim(path, " ")) == 0
+	name := object.get(metadata, "name", "<unknown>")
+	namespace := object.get(metadata, "namespace", "default")
+	msg := sprintf("ExternalSecret %q in namespace %q uses dataFrom.find without a scoped SSM path", [name, namespace])
+}
+
+remote_ref_key_allowed(key, allowed) if {
+	some allowed_key in allowed
+	endswith(allowed_key, "/")
+	startswith(key, allowed_key)
+}
+
+remote_ref_key_allowed(key, allowed) if {
+	some allowed_key in allowed
+	not endswith(allowed_key, "/")
+	key == allowed_key
+}
+
+external_secret_remote_keys(secret) := keys if {
+	spec := object.get(secret, "spec", {})
+	data_keys := [key |
+		item := object.get(spec, "data", [])[_]
+		key := object.get(object.get(item, "remoteRef", {}), "key", "")
+		key != ""
+	]
+	extract_keys := [key |
+		item := object.get(spec, "dataFrom", [])[_]
+		key := object.get(object.get(item, "extract", {}), "key", "")
+		key != ""
+	]
+	find_keys := [key |
+		item := object.get(spec, "dataFrom", [])[_]
+		key := object.get(object.get(item, "find", {}), "path", "")
+		key != ""
+	]
+	keys := array.concat(array.concat(data_keys, extract_keys), find_keys)
+}
