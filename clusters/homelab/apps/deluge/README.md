@@ -123,3 +123,14 @@ kubectl -n media exec deploy/deluge -c gluetun -- /gluetun-entrypoint healthchec
 
 If Gluetun is unhealthy, Deluge should lose readiness and torrent traffic should
 fail closed instead of bypassing the VPN.
+
+## Troubleshooting
+
+If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
+container repeatedly fails startup health checks with DNS lookup timeouts, treat
+that as an unhealthy WireGuard tunnel rather than a missing Kubernetes secret.
+The usual repair is to generate a fresh AirVPN WireGuard profile, replace
+`/homelab/deluge/vpn/wireguard-config` in SSM, then bump
+`homelab.rst.io/wireguard-profile-ssm-version` in both `externalsecret.yaml`
+and `values.yaml` so External Secrets renders the new Secret and Argo CD rolls
+the Pod. Do not patch or restart the live Pod as the durable fix.

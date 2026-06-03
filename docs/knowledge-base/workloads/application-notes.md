@@ -71,9 +71,10 @@ directly to OpenClaw's authenticated `/hooks/agent` endpoint.
 Alerting-only provisioning changes bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and applies
 rule additions, updates, and deletions.
-The GitHub dashboard and Actions failure alerts use unauthenticated public REST
-API reads against `Stuhlmuller/homelab`, so keep polling conservative unless a
-token-backed secret contract is added.
+The GitHub dashboard uses unauthenticated public REST API reads against
+`Stuhlmuller/homelab`. GitHub Actions failure and timeout alerts are deleted
+from provisioning until Grafana has a token-backed GitHub API secret contract;
+shared public API rate limits have produced noisy datasource-error pages.
 The Infinity plugin is pinned with the Grafana release ZIP syntax in
 `clusters/homelab/apps/grafana/values.yaml`; do not use `plugin@version` because
 Grafana treats it as the plugin ID and fails startup with a plugin-catalog 404.

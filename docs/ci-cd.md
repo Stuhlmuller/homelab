@@ -24,13 +24,12 @@ provisioned `GitHub` Infinity datasource to query public GitHub REST API
 endpoints for open pull requests, pull requests with failing or pending status
 checks, and recent failed workflow runs.
 
-Grafana-managed alerts poll the GitHub Actions workflow-runs endpoint every
-ten minutes and notify through the normal homelab alert route when a run enters
-`failure` or `timed_out` state during the two-hour alert window. Because these
-reads are unauthenticated public API calls, do not shorten the polling interval
-unless the repository adds a reviewed token-backed secret contract for Grafana.
-Datasource query errors are treated as OK for these GitHub-backed alerts so API
-rate limits do not fire critical alerts without matching workflow-run evidence.
+The GitHub dashboard can show recent failed workflow runs through the public
+GitHub REST API. Grafana-managed GitHub Actions alert rules are intentionally
+not provisioned while the datasource is unauthenticated, because shared public
+API rate limits can turn the alert rules into noisy datasource-error pages.
+Re-enable those alerts only after adding a reviewed token-backed secret
+contract for Grafana.
 
 ## Security Model
 

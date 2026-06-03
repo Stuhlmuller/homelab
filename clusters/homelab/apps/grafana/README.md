@@ -56,10 +56,11 @@ present. Local admin login remains available through `grafana-admin`.
   and Prometheus views that are maintained by the
   `dotdc/grafana-dashboards-kubernetes` project.
 - `values.yaml` installs the pinned Infinity datasource plugin so Grafana can
-  read public GitHub REST API endpoints from the server side. The GitHub
-  queries are intentionally unauthenticated because this repository is public;
-  keep the alert interval conservative unless a reviewed token-backed secret
-  contract is added later.
+  read public GitHub REST API endpoints from the server side for dashboards.
+  GitHub Actions alert rules are not provisioned while those reads are
+  unauthenticated; shared public API rate limits can turn alert evaluations
+  into noisy datasource-error notifications. Re-enable them only after adding a
+  reviewed token-backed secret contract.
 - `externalsecret.yaml` references the Grafana admin username, admin password,
   Entra SSO values, and Discord webhook URL in AWS SSM Parameter Store. No
   secret values belong in this directory.
@@ -125,9 +126,8 @@ The first provisioned rules cover:
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
-- GitHub Actions workflow runs in `failure` or `timed_out` state during the
-  two-hour alert window. GitHub API query errors resolve to OK so public API
-  rate limits do not create critical firing alerts without workflow evidence.
+- GitHub Actions workflow alert rules are deleted from provisioning until the
+  GitHub datasource uses authenticated API access.
 
 The provisioning file also deletes the retired OctoBot-specific deployment
 availability rule so Grafana only evaluates the generic workload alerts after
@@ -180,9 +180,10 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the nine `homelab-*` alert rules are present
-under Grafana Alerting. Use the Grafana contact point test action after the
-Discord webhook parameter and OpenClaw hook token have been populated in SSM.
+`Entra ID` login path works, and the seven provisioned `homelab-*` alert rules
+are present under Grafana Alerting. Use the Grafana contact point test action
+after the Discord webhook parameter and OpenClaw hook token have been populated
+in SSM.
 
 ## Rollback
 
