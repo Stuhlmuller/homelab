@@ -105,7 +105,7 @@ deny contains msg if {
 	metadata := object.get(input, "metadata", {})
 	namespace := object.get(metadata, "namespace", "default")
 	allowed := external_secret_allowed_prefixes[namespace]
-	some key in external_secret_remote_keys(input)
+	key := external_secret_remote_keys(input)[_]
 	not remote_ref_key_allowed(key, allowed)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
@@ -125,20 +125,22 @@ remote_ref_key_allowed(key, allowed) if {
 	startswith(key, prefix)
 }
 
-external_secret_remote_keys(secret) contains key if {
-	item := object.get(object.get(secret, "spec", {}), "data", [])[_]
-	key := object.get(object.get(item, "remoteRef", {}), "key", "")
-	key != ""
-}
-
-external_secret_remote_keys(secret) contains key if {
-	item := object.get(object.get(secret, "spec", {}), "dataFrom", [])[_]
-	key := object.get(object.get(item, "extract", {}), "key", "")
-	key != ""
-}
-
-external_secret_remote_keys(secret) contains key if {
-	item := object.get(object.get(secret, "spec", {}), "dataFrom", [])[_]
-	key := object.get(object.get(item, "find", {}), "path", "")
-	key != ""
+external_secret_remote_keys(secret) := keys if {
+	spec := object.get(secret, "spec", {})
+	data_keys := [key |
+		item := object.get(spec, "data", [])[_]
+		key := object.get(object.get(item, "remoteRef", {}), "key", "")
+		key != ""
+	]
+	extract_keys := [key |
+		item := object.get(spec, "dataFrom", [])[_]
+		key := object.get(object.get(item, "extract", {}), "key", "")
+		key != ""
+	]
+	find_keys := [key |
+		item := object.get(spec, "dataFrom", [])[_]
+		key := object.get(object.get(item, "find", {}), "path", "")
+		key != ""
+	]
+	keys := array.concat(array.concat(data_keys, extract_keys), find_keys)
 }
