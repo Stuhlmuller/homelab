@@ -14,8 +14,11 @@ Source: `docs/ci-cd.md`
 - `Terragrunt Apply` runs after merge to `main` and through
   `workflow_dispatch`. It repeats static checks and Conftest, joins the
   tailnet, and applies the live Terragrunt phases in order: Argo CD bootstrap,
-  SSM parameter declarations, Entra application registrations, Argo CD
-  Application registrations, and Kubernetes secret materialization.
+  SSM parameter declarations, legacy External Secrets AWS auth state cleanup,
+  External Secrets AWS auth Secret install, Entra application registrations,
+  Argo CD Application registrations. The External Secrets AWS auth Secret is
+  installed by a protected CI script before Argo CD app registration so
+  decrypted runtime credentials do not enter OpenTofu state.
 - Forked PRs never receive AWS, Tailscale, or Kubernetes secrets.
 
 ## Security Model
@@ -45,8 +48,17 @@ Source: `docs/ci-cd.md`
   Conftest policies before the PR description update.
 - Automatic PR plans skip `IaC/live/aws-ssm-parameters` because it refreshes
   managed KMS, IAM, and SSM resources that require the protected apply role.
-  They also skip `IaC/live/kubernetes-secrets`; protected apply runs those
-  stacks after review.
+  Protected apply creates a saved SSM plan, runs Terraform plan policy, and
+  applies that saved plan. Runtime Kubernetes Secrets are installed by protected
+  CI scripts rather than OpenTofu state. Before installing the replacement
+  Secret, the apply removes the retired
+  `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth` state's decrypted
+  `data.aws_ssm_parameter.secret_data["access-key-id"]`,
+  `data.aws_ssm_parameter.secret_data["secret-access-key"]`, and
+  `kubernetes_secret_v1.this` addresses so runtime credentials are not retained
+  in OpenTofu state after the migration. Terraform plan policy keeps sensitive
+  deletes denied, with a narrow migration exception for removing the legacy
+  External Secrets AWS auth SSM parameter placeholders from OpenTofu state.
 - Validation and deployment workflows use Terragrunt commands as their repo
   entrypoints. Terragrunt logs may still show `tofu:` prefixes or
   `Failed to execute "tofu ..."` because Terragrunt shells out to OpenTofu
@@ -87,7 +99,11 @@ state-key-only access fails during SSM provider refresh with
 `AccessDeniedException` for `kms:DescribeKey`. The workflows resolve
 non-sensitive role/client/tenant values from GitHub variables first and
 same-named secrets as a fallback, while `AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`,
-and `KUBE_CONFIG_B64` remain secret-only inputs.
+`KUBE_CONFIG_B64`, `EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID`, and
+`EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY` remain secret-only inputs. The
+External Secrets AWS SSM credential values are installed into the
+`aws-ssm-auth` Kubernetes Secret by protected CI and must not be blank or
+`REPLACE_ME`.
 
 `IaC/live/azuread-applications` is applied only when Entra credentials are
 configured. Without those credentials, push applies skip that phase when the

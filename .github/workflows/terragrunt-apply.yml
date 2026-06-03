@@ -99,8 +99,13 @@ jobs:
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
       - name: Verify Production Apply Inputs
+        env:
+          EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID: ${{ secrets.EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID }}
+          EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY: ${{ secrets.EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY }}
         run: |
           test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-production environment variable or secret."; exit 1; }
+          test -n "${EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID}" || { echo "EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID must be set as a homelab-production secret."; exit 1; }
+          test -n "${EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY}" || { echo "EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY must be set as a homelab-production secret."; exit 1; }
 
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
@@ -134,4 +139,7 @@ jobs:
           kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Apply
+        env:
+          EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID: ${{ secrets.EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID }}
+          EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY: ${{ secrets.EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY }}
         run: nix develop --command bash scripts/ci/terragrunt-apply.sh
