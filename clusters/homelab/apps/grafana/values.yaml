@@ -970,7 +970,7 @@ alerting:
             dashboardUid: github-pr-status
             panelId: 4
             noDataState: OK
-            execErrState: Alerting
+            execErrState: OK
             for: 1m
             annotations:
               summary: A GitHub Actions workflow run failed in Stuhlmuller/homelab during the alert window.
@@ -1088,7 +1088,7 @@ alerting:
             dashboardUid: github-pr-status
             panelId: 4
             noDataState: OK
-            execErrState: Alerting
+            execErrState: OK
             for: 1m
             annotations:
               summary: A GitHub Actions workflow run timed out in Stuhlmuller/homelab during the alert window.
