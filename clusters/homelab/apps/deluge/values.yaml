@@ -9,7 +9,7 @@ controllers:
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
-        homelab.rst.io/wireguard-profile-ssm-version: "3"
+        homelab.rst.io/wireguard-profile-ssm-version: "4"
     strategy: Recreate
     initContainers:
       download-dirs:
