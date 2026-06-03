@@ -3,7 +3,7 @@ replicaCount: 0
 image:
   repository: ghcr.io/octelium/octelium
   pullPolicy: IfNotPresent
-  tag: "0.34.0@sha256:8e7feabc8918b5385798a77d21baa6ac76bf672e8953d1dcb26c62494f242ebe"
+  tag: "0.35.0@sha256:37bf93b69a6fb42d94909d840bc68542c13de5a60bf8d516ef80975daab053cb"
 
 fullnameOverride: octelium-client
 
