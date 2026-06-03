@@ -133,7 +133,10 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
 ## Review guidelines
 
 - When acting as the Codex review bot on a pull request, add a top-level PR
-  comment containing exactly `👍`.
+  comment containing exactly `👍` only after the pull request is approved and
+  no P0 or P1 review alerts exist.
+- If the pull request is not approved, or any P0 or P1 review alert exists, do
+  not add the thumbs-up comment.
 
 ## Documentation standards
 
