@@ -120,6 +120,19 @@ deny contains msg if {
 	msg := sprintf("ExternalSecret %q uses ClusterSecretStore in namespace %q without an approved SSM prefix policy", [name, namespace])
 }
 
+deny contains msg if {
+	input.kind == "ExternalSecret"
+	metadata := object.get(input, "metadata", {})
+	item := object.get(object.get(input, "spec", {}), "dataFrom", [])[_]
+	find := object.get(item, "find", {})
+	count(find) > 0
+	path := object.get(find, "path", "")
+	count(trim(path, " ")) == 0
+	name := object.get(metadata, "name", "<unknown>")
+	namespace := object.get(metadata, "namespace", "default")
+	msg := sprintf("ExternalSecret %q in namespace %q uses dataFrom.find without a scoped SSM path", [name, namespace])
+}
+
 remote_ref_key_allowed(key, allowed) if {
 	some allowed_key in allowed
 	endswith(allowed_key, "/")
