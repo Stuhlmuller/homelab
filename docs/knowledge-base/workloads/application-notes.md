@@ -75,6 +75,9 @@ The GitHub dashboard uses unauthenticated public REST API reads against
 `Stuhlmuller/homelab`. GitHub Actions failure and timeout alerts are deleted
 from provisioning until Grafana has a token-backed GitHub API secret contract;
 shared public API rate limits have produced noisy datasource-error pages.
+Argo CD app alerting uses `argocd_app_info`: degraded, missing, and unknown
+health states are critical, while apps that stay `Progressing` for 30 minutes
+warn separately so ordinary rollouts do not page as unhealthy.
 The Infinity plugin is pinned with the Grafana release ZIP syntax in
 `clusters/homelab/apps/grafana/values.yaml`; do not use `plugin@version` because
 Grafana treats it as the plugin ID and fails startup with a plugin-catalog 404.

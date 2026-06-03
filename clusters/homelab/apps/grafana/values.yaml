@@ -785,6 +785,81 @@ alerting:
             labels:
               severity: critical
               managed_by: grafana-provisioning
+          - uid: homelab-argocd-app-progressing-stuck
+            title: Argo CD application stuck progressing
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: argocd_app_info{health_status="Progressing"}
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: Progressing application
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            dashboardUid: argocd-overview
+            panelId: 4
+            noDataState: OK
+            execErrState: Alerting
+            for: 30m
+            annotations:
+              summary: One or more Argo CD Applications have remained Progressing for at least 30 minutes.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
+            labels:
+              severity: warning
+              managed_by: grafana-provisioning
           - uid: homelab-argocd-app-out-of-sync
             title: Argo CD application out of sync
             condition: C

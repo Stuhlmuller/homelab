@@ -125,6 +125,7 @@ The first provisioned rules cover:
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
+- Argo CD Applications remaining in `Progressing` for 30 minutes.
 - Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
 - GitHub Actions workflow alert rules are deleted from provisioning until the
   GitHub datasource uses authenticated API access.
@@ -137,6 +138,9 @@ The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one
 alert instance per affected application so notifications include the application
 name, namespace, and current Argo CD status for triage.
+The `Progressing` rule is separate from the critical unhealthy rule so normal
+rollouts can complete without noise; it only warns after the application has
+remained in that health state for 30 minutes.
 The notification policy groups on those Argo CD labels as well as the shared
 alert labels so Discord messages keep the affected application dimensions
 visible instead of collapsing them into a folder-level aggregate.
@@ -180,10 +184,9 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the seven provisioned `homelab-*` alert rules
-are present under Grafana Alerting. Use the Grafana contact point test action
-after the Discord webhook parameter and OpenClaw hook token have been populated
-in SSM.
+`Entra ID` login path works, and the nine provisioned `homelab-*` alert rules
+under Grafana Alerting. Use the Grafana contact point test action after the
+Discord webhook parameter and OpenClaw hook token have been populated in SSM.
 
 ## Rollback
 
