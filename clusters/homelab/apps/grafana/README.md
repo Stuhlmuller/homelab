@@ -119,6 +119,8 @@ The first provisioned rules cover:
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
+- Deluge having no available Deployment replicas, or missing Deluge Deployment
+  metrics, for 5 minutes.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
