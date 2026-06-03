@@ -90,3 +90,14 @@ policy`.
 - **Next step:** decide whether to keep squash-only merges with GitHub-signed
   mainline commits, allow rebase/merge methods that preserve Claw-signed branch
   commits, or add a bot-supported path for signed squash commits.
+- **Status:** fixed
+- **Area:** platform service / Pod Security
+- **Evidence:** June 2026 security audit found privileged namespaces using
+  `privileged` for `enforce`, `audit`, and `warn`. This change keeps the
+  required `enforce: privileged` exception for Deluge VPN, Istio ingress, and
+  Tailscale operator proxy workloads, but moves `audit` and `warn` to
+  `restricted` so drift is visible during review and sync.
+- **Risk:** privileged audit/warn labels hide workloads that could run under a
+  tighter profile or accidentally expand the exception blast radius.
+- **Next step:** continue splitting the Deluge VPN privilege exception into a
+  dedicated namespace once the media workloads can stay restricted.
