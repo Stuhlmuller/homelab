@@ -130,6 +130,11 @@ are missing, say that clearly in the PR or final response and use the next best
 specific validation available, such as `talosctl validate`, `kubectl diff`,
 `helm template`, or `kustomize build`.
 
+## Review guidelines
+
+- When acting as the Codex review bot on a pull request, add a top-level PR
+  comment containing exactly `👍`.
+
 ## Documentation standards
 
 - Write for a reader who is technical but may be new to Talos, Kubernetes, or
