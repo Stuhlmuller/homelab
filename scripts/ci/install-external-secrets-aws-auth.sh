@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID:?EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID must be provided by the protected CI environment}"
-: "${EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY:?EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY must be provided by the protected CI environment}"
+external_secrets_aws_ssm_access_key_id="${EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID:?EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID must be provided by the protected CI environment}"
+external_secrets_aws_ssm_secret_access_key="${EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY:?EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY must be provided by the protected CI environment}"
 
 validate_secret_value() {
   local name="$1"
@@ -15,8 +15,8 @@ validate_secret_value() {
   fi
 }
 
-validate_secret_value "EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID" "$EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID"
-validate_secret_value "EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY" "$EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY"
+validate_secret_value "EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID" "$external_secrets_aws_ssm_access_key_id"
+validate_secret_value "EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY" "$external_secrets_aws_ssm_secret_access_key"
 
 namespace_manifest="clusters/homelab/apps/external-secrets/namespace.yaml"
 secret_name="aws-ssm-auth"
@@ -30,8 +30,8 @@ fi
 kubectl apply -f "$namespace_manifest"
 
 kubectl -n "$namespace" create secret generic "$secret_name" \
-  --from-literal=access-key-id="$EXTERNAL_SECRETS_AWS_SSM_ACCESS_KEY_ID" \
-  --from-literal=secret-access-key="$EXTERNAL_SECRETS_AWS_SSM_SECRET_ACCESS_KEY" \
+  --from-literal=access-key-id="$external_secrets_aws_ssm_access_key_id" \
+  --from-literal=secret-access-key="$external_secrets_aws_ssm_secret_access_key" \
   --dry-run=client \
   -o yaml \
   | kubectl label --local -f - -o yaml \
