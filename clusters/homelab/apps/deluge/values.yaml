@@ -161,7 +161,7 @@ controllers:
             port_command="${port_command}; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
             port_command="${port_command}; config --set random_outgoing_ports true"
             port_command="${port_command}; config --set outgoing_ports (0, 0)"
-            for attempt in $(seq 1 120); do
+            while true; do
               timeout 10s deluge-console -c /config "$port_command" || true
               listen_ports="$(timeout 10s deluge-console -c /config "config listen_ports" 2>&1 || true)"
               outgoing_ports="$(timeout 10s deluge-console -c /config "config outgoing_ports" 2>&1 || true)"
@@ -176,24 +176,9 @@ controllers:
               fi
               sleep 2
             done
-            echo "failed to configure Deluge incoming/outgoing ports" >&2
-            exit 1
         securityContext:
           runAsGroup: 1000
           runAsUser: 1000
-        probes:
-          readiness:
-            enabled: true
-            custom: true
-            spec:
-              exec:
-                command:
-                  - /bin/sh
-                  - -ec
-                  - test -f /tmp/deluge-port-configured
-              failureThreshold: 3
-              periodSeconds: 10
-              timeoutSeconds: 5
 service:
   app:
     controller: deluge

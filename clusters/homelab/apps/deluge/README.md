@@ -43,15 +43,16 @@ deluge-console -c /config "config --set random_port false; config --set listen_p
 
 The sidecar retries while Deluge starts and verifies that Deluge reports the
 configured `listen_ports` and random outgoing port behavior. It still asks
-Deluge to reset `outgoing_ports` to the default range, but readiness only
+Deluge to reset `outgoing_ports` to the default range, but verification only
 depends on random outgoing mode because Deluge can keep reporting its prior
 stored range while honoring `random_outgoing_ports: True`. Keep the forwarded
 AirVPN port fixed only for incoming connections; pinning outgoing connections
 to the same single port can leave torrents unable to make enough peer
 connections. If the sidecar cannot connect to Deluge and apply the port
-configuration, it stays unready instead of killing the main app container
-during startup. The Pod becomes ready only after Gluetun is healthy and the
-port configuration has been applied.
+configuration immediately, it keeps retrying in the background instead of
+blocking the UI service endpoint. The Pod becomes ready only after Gluetun is
+healthy and the Deluge application container is ready, so traffic still fails
+closed when the VPN healthcheck fails.
 
 ## Download Paths
 
