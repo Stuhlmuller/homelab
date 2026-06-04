@@ -120,8 +120,8 @@ The first provisioned rules cover:
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
-- Deluge having no available Deployment replicas, or missing Deluge Deployment
-  metrics, for 5 minutes.
+- Kubernetes Deployments with desired replicas but no available replicas for 5
+  minutes.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
@@ -130,9 +130,9 @@ The first provisioned rules cover:
 - GitHub Actions workflow alert rules are deleted from provisioning until the
   GitHub datasource uses authenticated API access.
 
-The provisioning file also deletes the retired OctoBot-specific deployment
-availability rule so Grafana only evaluates the generic workload alerts after
-startup or an alerting provisioning reload.
+The provisioning file also deletes retired OctoBot- and Deluge-specific
+deployment availability rules so Grafana only evaluates the generic workload
+alerts after startup or an alerting provisioning reload.
 
 The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one
