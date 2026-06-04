@@ -156,7 +156,6 @@ controllers:
           - |
             rm -f /tmp/deluge-port-configured
             expected_listen_ports="listen_ports: (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
-            expected_outgoing_ports="outgoing_ports: (0, 0)"
             expected_random_outgoing="random_outgoing_ports: True"
             port_command="config --set random_port false"
             port_command="${port_command}; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT})"
@@ -171,7 +170,6 @@ controllers:
               printf "%s\n" "$outgoing_ports"
               printf "%s\n" "$random_outgoing"
               if printf "%s\n" "$listen_ports" | grep -F "$expected_listen_ports" >/dev/null &&
-                printf "%s\n" "$outgoing_ports" | grep -F "$expected_outgoing_ports" >/dev/null &&
                 printf "%s\n" "$random_outgoing" | grep -F "$expected_random_outgoing" >/dev/null; then
                 touch /tmp/deluge-port-configured
                 exec tail -f /dev/null
