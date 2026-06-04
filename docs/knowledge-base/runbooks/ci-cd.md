@@ -21,6 +21,11 @@ Source: `docs/ci-cd.md`
 ## Security Model
 
 - Workflows use `pull_request` and `push`, not `pull_request_target`.
+- Policy Bot reads this repository's `.policy.yml` and requires every PR commit
+  to have a GitHub-verified signature before normal review approval can satisfy
+  the `policy-bot: main` branch protection check. The review-bot path accepts
+  only an explicit `+1` or `:+1:` comment from `chatgpt-codex-connector[bot]`;
+  it does not read PR body text.
 - External actions are pinned to full commit SHAs and checked by Conftest.
 - Terragrunt plan and apply jobs restore and save a GitHub Actions cache for the
   Nix store after installing Nix. The cache key is derived from the runner OS,
@@ -70,11 +75,10 @@ Source: `docs/ci-cd.md`
 Grafana's `GitHub PR Status` dashboard uses the provisioned GitHub Infinity
 datasource to read public GitHub REST API endpoints for open pull requests,
 pull requests with failing or pending status checks, and recent failed workflow
-runs. Grafana-managed alerts poll GitHub Actions every ten minutes and notify
-through the normal homelab route when workflow runs enter `failure` or
-`timed_out` during the two-hour alert window. Keep these queries
-unauthenticated and conservatively scheduled unless a reviewed token-backed
-secret contract is added.
+runs. Grafana-managed GitHub Actions alert rules are not provisioned while the
+datasource is unauthenticated, because shared public API rate limits can turn
+alert evaluations into noisy datasource-error pages. Re-enable them only after
+adding a reviewed token-backed secret contract for Grafana.
 
 ## Environments
 

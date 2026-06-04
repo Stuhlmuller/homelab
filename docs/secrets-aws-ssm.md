@@ -49,11 +49,8 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`finance`, `media`, `monitoring`, and `tailscale`. Add a namespace to that
-`finance`, `media`, `monitoring`, `octelium-client`, and `tailscale`. Add a
-namespace to that allow-list in the same PR that adds its first ExternalSecret.
-`media`, `monitoring`, and `tailscale`. Add a namespace to that
-allow-list in the same PR that adds its first ExternalSecret.
+`media`, `monitoring`, `octelium-client`, and `tailscale`. Add a namespace to
+that allow-list in the same PR that adds its first ExternalSecret.
 
 ## External Secrets AWS Auth Bootstrap
 

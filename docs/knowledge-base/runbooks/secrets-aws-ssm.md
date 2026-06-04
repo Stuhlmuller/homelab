@@ -32,8 +32,8 @@ change External Secrets or SSM values to fix the IAM refresh failure.
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repo-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`finance`, `media`, `monitoring`, and `tailscale`. Add a namespace to the
-allow-list in the same PR that adds its first ExternalSecret.
+`media`, `monitoring`, `octelium-client`, and `tailscale`. Add a namespace to
+the allow-list in the same PR that adds its first ExternalSecret.
 
 ## App Contracts
 

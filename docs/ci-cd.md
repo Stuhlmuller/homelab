@@ -24,16 +24,22 @@ provisioned `GitHub` Infinity datasource to query public GitHub REST API
 endpoints for open pull requests, pull requests with failing or pending status
 checks, and recent failed workflow runs.
 
-Grafana-managed alerts poll the GitHub Actions workflow-runs endpoint every
-ten minutes and notify through the normal homelab alert route when a run enters
-`failure` or `timed_out` state during the two-hour alert window. Because these
-reads are unauthenticated public API calls, do not shorten the polling interval
-unless the repository adds a reviewed token-backed secret contract for Grafana.
+The GitHub dashboard can show recent failed workflow runs through the public
+GitHub REST API. Grafana-managed GitHub Actions alert rules are intentionally
+not provisioned while the datasource is unauthenticated, because shared public
+API rate limits can turn the alert rules into noisy datasource-error pages.
+Re-enable those alerts only after adding a reviewed token-backed secret
+contract for Grafana.
 
 ## Security Model
 
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
+- Policy Bot reads this repository's `.policy.yml` and requires every pull
+  request commit to have a GitHub-verified signature before normal review
+  approval can satisfy the `policy-bot: main` branch protection check. The
+  review-bot path accepts only an explicit `+1` or `:+1:` comment from
+  `chatgpt-codex-connector[bot]`; it does not read PR body text.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions

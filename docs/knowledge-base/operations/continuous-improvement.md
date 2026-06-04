@@ -105,3 +105,39 @@ policy`.
   empty Terragrunt unit at each deleted path, rely on `IaC/root.hcl` to target
   the original backend key, list the remote-state resources, and apply the saved
   destroy plan before applying the current checkout.
+- **Status:** open
+- **Area:** secrets / CI/CD
+- **Evidence:** June 2026 security audit found
+  `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terragrunt.hcl`
+  still sources `../../../modules/kubernetes-secret-from-ssm`, whose module
+  reads decrypted SSM values into a Kubernetes Secret resource and OpenTofu
+  state.
+- **Risk:** decrypted External Secrets AWS provider credentials could otherwise
+  be exposed to anyone or anything with access to OpenTofu state, plan caches, or
+  CI artifacts.
+- **Next step:** keep this finding open until repo-owned remediation replaces
+  the state-writing stack, removes any older state object that contained the
+  Kubernetes Secret data, and rotates the External Secrets IAM access key.
+- **Status:** open
+- **Area:** platform service / GitOps
+- **Evidence:** June 2026 security audit found remaining structural hardening
+  work: the shared Argo CD AppProject can still deploy cluster-scoped RBAC,
+  Kiali remains anonymous/view-only on the tailnet, several app-template
+  workloads need explicit restricted container security contexts, and remote
+  Terragrunt catalog modules are still referenced by the mutable `0.4.0` tag.
+- **Risk:** these are reviewability, reconnaissance, and lateral-movement risks
+  that are larger than a single safe patch.
+- **Next step:** split AppProjects, add Kiali identity controls, harden
+  compatible app-template values, and pin or vendor remote modules once the
+  immutable commit for `terragrunt-catalog` tag `0.4.0` can be verified.
+- **Status:** fixed
+- **Area:** platform service / Pod Security
+- **Evidence:** June 2026 security audit found privileged namespaces using
+  `privileged` for `enforce`, `audit`, and `warn`. This change keeps the
+  required `enforce: privileged` exception for Deluge VPN, Istio ingress, and
+  Tailscale operator proxy workloads, but moves `audit` and `warn` to
+  `restricted` so drift is visible during review and sync.
+- **Risk:** privileged audit/warn labels hide workloads that could run under a
+  tighter profile or accidentally expand the exception blast radius.
+- **Next step:** continue splitting the Deluge VPN privilege exception into a
+  dedicated namespace once the media workloads can stay restricted.
