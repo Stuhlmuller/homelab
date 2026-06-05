@@ -93,24 +93,19 @@ documented path.
 ## Alerts
 
 Grafana alert rules are provisioned from `values.yaml` and route to the
-`homelab-alertmanager` contact point. That contact point fans out to the
-in-cluster Prometheus Alertmanager, Discord, and OpenClaw. The Discord webhook
-URL is read from the `grafana-discord-webhook` Kubernetes Secret. The OpenClaw
-hook token is read from the `grafana-openclaw-alert-hook` Kubernetes Secret.
-Both are managed by External Secrets from AWS SSM Parameter Store and refreshed
-every five minutes.
+`homelab-alertmanager` contact point. That contact point sends to the in-cluster
+Prometheus Alertmanager. The Discord webhook URL and OpenClaw hook token remain
+managed by External Secrets from AWS SSM Parameter Store, but Grafana startup is
+not gated on those notification credentials. Do not add direct Grafana webhook
+receivers that read required secret environment variables unless the startup
+failure mode is tested; a missing or invalid notification secret must not take
+the Grafana UI offline.
 
 The Alertmanager datasource is available for viewing Prometheus-managed alerts,
 while Grafana-managed notifications stay controlled by the provisioned Grafana
 policy. This makes alert rules and routing reviewable and repeatable without
 putting notification credentials in git.
 
-Grafana reads webhook credentials through environment variables while
-provisioning alerting resources at startup. After replacing the Discord webhook
-SSM value, update the `homelab.rst.io/discord-webhook-ssm-version` annotation
-to the new SSM parameter version. After rotating the OpenClaw hook token,
-update `homelab.rst.io/openclaw-alert-hook-ssm-version`. Either change lets
-the GitOps rollout restart Grafana and reload the contact point.
 For alerting-only provisioning changes that do not rotate credentials, bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and processes
 rule additions, changes, and deletions.
@@ -142,8 +137,9 @@ The `Progressing` rule is separate from the critical unhealthy rule so normal
 rollouts can complete without noise; it only warns after the application has
 remained in that health state for 30 minutes.
 The notification policy groups on those Argo CD labels as well as the shared
-alert labels so Discord messages keep the affected application dimensions
-visible instead of collapsing them into a folder-level aggregate.
+alert labels so downstream Alertmanager notifications keep the affected
+application dimensions visible instead of collapsing them into a folder-level
+aggregate.
 
 ## Validation
 
@@ -185,9 +181,7 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
 `Entra ID` login path works, and the nine provisioned `homelab-*` alert rules
-are present under Grafana Alerting. Use the Grafana contact point test action
-after the Discord webhook parameter and OpenClaw hook token have been populated
-in SSM.
+are present under Grafana Alerting.
 
 ## Rollback
 
