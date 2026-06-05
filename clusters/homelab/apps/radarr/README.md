@@ -28,8 +28,11 @@ Secrets. Do not commit it to this repository.
 
 The startup `configure-postgres` init container also sets
 `<AuthenticationMethod>External</AuthenticationMethod>` and
+`<AuthenticationType>DisabledForLocalAddresses</AuthenticationType>` plus
 `<AuthenticationRequired>DisabledForLocalAddresses</AuthenticationRequired>` in
-`/config/config.xml`.
+`/config/config.xml`. The Servarr FAQ documents `AuthenticationType` as the
+config-file equivalent for this setting, while the environment variable table
+uses `AuthenticationRequired`, so the startup reset writes both names.
 The Radarr app container also sets `RADARR__AUTH__METHOD=External` and
 `RADARR__AUTH__REQUIRED=DisabledForLocalAddresses`, because Radarr environment
 variables override persisted `config.xml` entries at startup and keep the

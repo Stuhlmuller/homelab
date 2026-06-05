@@ -75,6 +75,7 @@ controllers:
             set_config_tag PostgresMainDb "$RADARR_POSTGRES_MAIN_DB"
             set_config_tag PostgresLogDb "$RADARR_POSTGRES_LOG_DB"
             set_config_tag AuthenticationMethod External
+            set_config_tag AuthenticationType DisabledForLocalAddresses
             set_config_tag AuthenticationRequired DisabledForLocalAddresses
         securityContext:
           runAsGroup: 1000
