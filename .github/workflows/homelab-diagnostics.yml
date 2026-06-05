@@ -1,0 +1,77 @@
+name: Homelab Diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Diagnostic target"
+        required: true
+        default: grafana
+        type: choice
+        options:
+          - grafana
+
+permissions: {}
+
+env:
+  KUBE_API_SERVER: 10.1.0.199
+  TAILSCALE_VERSION: 1.98.3
+
+jobs:
+  grafana:
+    if: inputs.target == 'grafana'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-plan
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Connect To Tailnet
+        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8
+        with:
+          authkey: ${{ secrets.TS_AUTH_KEY }}
+          tags: tag:github-actions-terragrunt-plan
+          version: ${{ env.TAILSCALE_VERSION }}
+
+      - name: Accept Tailnet Subnet Routes
+        run: sudo tailscale set --accept-routes=true
+
+      - name: Install Kubeconfig
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+        run: bash scripts/ci/install-kubeconfig.sh
+
+      - name: Verify Kubernetes API Reachability
+        run: |
+          ip route get "${KUBE_API_SERVER}"
+          kubectl --request-timeout=15s version
+
+      - name: Inspect Grafana
+        run: |
+          set -o pipefail
+          kubectl -n monitoring get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
+            -l app.kubernetes.io/name=grafana -o wide
+          kubectl -n monitoring describe deployment grafana
+          kubectl -n monitoring describe service grafana
+          kubectl -n monitoring get events \
+            --field-selector involvedObject.namespace=monitoring \
+            --sort-by=.lastTimestamp | tail -80
+          for pod in $(kubectl -n monitoring get pod \
+            -l app.kubernetes.io/name=grafana \
+            -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do
+            echo "::group::describe ${pod}"
+            kubectl -n monitoring describe pod "${pod}"
+            echo "::endgroup::"
+            echo "::group::logs ${pod}"
+            kubectl -n monitoring logs "${pod}" --all-containers --tail=200 || true
+            echo "::endgroup::"
+            echo "::group::previous logs ${pod}"
+            kubectl -n monitoring logs "${pod}" --all-containers --previous --tail=200 || true
+            echo "::endgroup::"
+          done
