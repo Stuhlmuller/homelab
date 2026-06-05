@@ -75,6 +75,7 @@ controllers:
             set_config_tag PostgresMainDb "$RADARR_POSTGRES_MAIN_DB"
             set_config_tag PostgresLogDb "$RADARR_POSTGRES_LOG_DB"
             set_config_tag AuthenticationMethod External
+            set_config_tag AuthenticationRequired DisabledForLocalAddresses
         securityContext:
           runAsGroup: 1000
           runAsUser: 1000
@@ -89,6 +90,7 @@ controllers:
           PGID: "1000"
           DELUGE_URL: http://deluge.media.svc.cluster.local:8112
           RADARR__AUTH__METHOD: External
+          RADARR__AUTH__REQUIRED: DisabledForLocalAddresses
 service:
   app:
     controller: radarr

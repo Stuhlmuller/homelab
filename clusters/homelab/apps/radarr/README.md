@@ -27,11 +27,14 @@ Secrets. Do not commit it to this repository.
 ## Authentication
 
 The startup `configure-postgres` init container also sets
-`<AuthenticationMethod>External</AuthenticationMethod>` in `/config/config.xml`.
-The Radarr app container also sets `RADARR__AUTH__METHOD=External`, because
-Radarr environment variables override persisted `config.xml` entries at
-startup and keep the running process aligned if the PVC copy drifts back to
-Forms authentication.
+`<AuthenticationMethod>External</AuthenticationMethod>` and
+`<AuthenticationRequired>DisabledForLocalAddresses</AuthenticationRequired>` in
+`/config/config.xml`.
+The Radarr app container also sets `RADARR__AUTH__METHOD=External` and
+`RADARR__AUTH__REQUIRED=DisabledForLocalAddresses`, because Radarr environment
+variables override persisted `config.xml` entries at startup and keep the
+running process aligned if the PVC copy drifts back to Forms authentication or
+password-required mode.
 Radarr is exposed only through the tailnet Istio route with Funnel disabled, so
 the tailnet gateway is the external access boundary and Radarr's own password
 prompt is intentionally disabled.
