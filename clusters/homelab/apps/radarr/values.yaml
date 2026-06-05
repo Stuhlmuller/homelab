@@ -88,6 +88,7 @@ controllers:
           PUID: "1000"
           PGID: "1000"
           DELUGE_URL: http://deluge.media.svc.cluster.local:8112
+          RADARR__AUTH__METHOD: External
 service:
   app:
     controller: radarr
