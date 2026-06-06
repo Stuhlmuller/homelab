@@ -9,7 +9,8 @@ units as the source of truth when they disagree with this note.
 ## Import Note
 
 This note reflects the current working tree. OctoBot is the finance namespace
-trading workload with a tailnet-only UI.
+trading workload with Octelium-targeted UI access and tailnet fallback until the
+Octelium e2e gate passes.
 
 ## Platform And Support Applications
 
@@ -29,11 +30,11 @@ trading workload with a tailnet-only UI.
 | `cert-manager` | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | controller-managed certificates | external-secrets |
 | `istio` | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | controller state only | cert-manager |
 | `tailscale` | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | controller state only | external-secrets, istio |
-| `octelium` | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | stateless rootless Octelium client bridge for Cluster domain `octelium.stinkyboi.com`; serves the explicit homelab WEB Service catalog from `docs/examples/octelium/homelab-services.yaml`, plus Podinfo demo service; auth token is `/homelab/octelium/client-auth-token`; Enterprise package `octeliumee` desired version `0.22.0` is installed with `scripts/octelium-enterprise-package.sh` | external-secrets, istio |
+| `octelium` | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | stateless rootless Octelium client bridge and target human app access plane for Cluster domain `octelium.stinkyboi.com`; serves the explicit homelab WEB Service catalog from `docs/examples/octelium/homelab-services.yaml`, plus Podinfo demo service; auth token is `/homelab/octelium/client-auth-token`; cutover is gated by `scripts/octelium-e2e-check.sh`; Enterprise package `octeliumee` desired version `0.22.0` is installed with `scripts/octelium-enterprise-package.sh` | external-secrets, istio |
 | `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics, Alertmanager state, Argo CD scrape config, and Alertmanager Discord/OpenClaw notification secrets | external-secrets, platform-storage |
 | `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, alert rules, public GitHub API PR/status polling, and stale direct receiver cleanup | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | `kiali` | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | controller state only; read-only mesh UI | istio, tailscale, prometheus, grafana |
-| `compass` | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | stateless Kubernetes service discovery dashboard with tailnet-only UI from the `ghcr.io/adinhodovic/charts` OCI Helm source | cert-manager, istio, tailscale, prometheus |
+| `compass` | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | stateless Kubernetes service discovery dashboard with Octelium service-name launch links and fallback tailnet UI from the `ghcr.io/adinhodovic/charts` OCI Helm source | cert-manager, istio, tailscale, prometheus |
 | `descheduler` | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | controller state only | prometheus |
 | `deluge` | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | persistent config on `nfs-default`; shared downloads on QNAP `/media`; SSM-backed WireGuard profile via `deluge-vpn` | cert-manager, istio, tailscale, platform-storage |
 | `prowlarr` | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | persistent config and PostgreSQL databases | cert-manager, istio, media-postgres, tailscale, platform-storage |
@@ -43,7 +44,7 @@ trading workload with a tailnet-only UI.
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, SSM-backed gateway auth, Discord channel config, SSM-backed GitHub App credentials, Codex OAuth credentials on PVC, and explicit agent resource profile | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public Funnel is limited to webhook prefixes | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
-| `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and tailnet-only UI route | cert-manager, istio, tailscale, platform-storage |
+| `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and Octelium-targeted UI access with tailnet fallback until the e2e gate passes | cert-manager, istio, tailscale, platform-storage |
 
 ## Mesh Policy Summary
 

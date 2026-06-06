@@ -1,10 +1,14 @@
 # Octelium Client Bridge
 
-This repository prepares Octelium as a parallel secure-access path without removing
-Tailscale. Tailscale remains the active tailnet ingress and homelab exit-node
-layer; Octelium is modeled as a client connector that can serve selected
-in-cluster services to an external Octelium Cluster once the external API and
-workload credential are verified.
+This repository prepares Octelium to replace Tailscale for human access to
+homelab applications. Tailscale remains the temporary fallback for app routes
+until the Octelium Cluster, service catalog, workload credential, connector, and
+client tunnel all pass the e2e gate in `scripts/octelium-e2e-check.sh`.
+
+The Tailscale operator can still have non-app responsibilities, such as CI
+cluster reachability or reviewed public webhook exceptions, until those are
+separately replaced. Do not remove the current tailnet app routes before the
+Octelium e2e check passes.
 
 ## Current Model
 
@@ -20,7 +24,8 @@ The Kubernetes namespace is `octelium-client`. It contains:
 - `octelium-client-auth`, an ExternalSecret that reads
   `/homelab/octelium/client-auth-token`.
 - `octelium-client`, the Helm-managed Octelium client Deployment prepared with
-  `replicaCount: 0` until activation.
+  `replicaCount: 0` until the Octelium API serves real traffic and the catalog
+  credential has been stored in SSM.
 - `octelium-demo`, a small Podinfo HTTP service exposed only as a ClusterIP.
 - `octelium-demo-allow-client`, a NetworkPolicy that allows only the Octelium
   client pod to call the demo service once a policy-enforcing CNI exists.
@@ -86,6 +91,41 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
+## Cutover Gate
+
+Run the e2e gate before removing any old Tailscale-backed app route:
+
+```sh
+scripts/octelium-e2e-check.sh
+```
+
+If the Octelium control plane is external to the homelab cluster, pass separate
+Kubernetes contexts so control-plane checks run against the Octelium Cluster and
+connector checks run against homelab:
+
+```sh
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
+```
+
+The gate verifies:
+
+- the Octelium control-plane namespace and services exist;
+- `octelium-client-auth` is synced from SSM;
+- `octelium-client` has at least one ready replica;
+- `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
+  `octelium-api.octelium.stinkyboi.com` are not generic Istio `404` responses;
+- every homelab WEB Service in `docs/examples/octelium/homelab-services.yaml`
+  exists in the Octelium Cluster;
+- a client tunnel can reach `homelab-demo.homelab`.
+
+When it passes, remove the old application `VirtualService` objects that point
+at `istio-system/tailnet-gateway`, remove the Tailscale-backed Istio
+`LoadBalancer` path for app UI access, and keep only separately reviewed
+non-app exceptions such as webhooks or CI cluster access. If it fails, treat the
+failure output as the cutover work queue.
+
 ## Bootstrap UI Access
 
 The Octelium Cluster domain for this homelab is `octelium.stinkyboi.com`.
@@ -134,8 +174,10 @@ curl -vI https://octelium-api.octelium.stinkyboi.com
 
 The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
-`Unimplemented` response. Once that is true, set `replicaCount` to `1` in
-`clusters/homelab/apps/octelium/values.yaml` in a follow-up PR.
+`Unimplemented` response. Once that is true and the
+`homelab-octelium-client` credential is stored in SSM, set `replicaCount` to
+`1` in `clusters/homelab/apps/octelium/values.yaml`, sync the `octelium` Argo
+CD Application, then run `scripts/octelium-e2e-check.sh`.
 
 ## Octelium Enterprise Package
 
@@ -178,12 +220,13 @@ scripts/octelium-enterprise-package.sh \
 Use `--kubeconfig <path>` when the Octelium Cluster kubeconfig is not the
 default kubeconfig for the operator shell.
 
-## Why Not A Full Cluster Yet
+## Full Cluster Bootstrap Requirements
 
 Octelium's production install path for an existing Kubernetes cluster uses
 `octops init`, labels data-plane and control-plane nodes, requires Multus CNI,
 and needs PostgreSQL, Redis, public DNS, and a wildcard-capable TLS certificate.
-Those are real platform decisions, not a small Helm app.
+Those are real platform decisions, not a small Helm app. The current cluster
+does not yet have a repo-owned full Octelium control-plane bootstrap.
 
 Before self-hosting the Octelium Cluster inside this homelab, add a separate
 design PR that models:
@@ -206,6 +249,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-enterprise-package.sh --help
+scripts/octelium-e2e-check.sh --help
 ```
 
 After activation with `replicaCount: 1`:
@@ -214,6 +258,9 @@ After activation with `replicaCount: 1`:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
 ```
 
 Check the in-cluster demo locally:

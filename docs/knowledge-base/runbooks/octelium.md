@@ -6,16 +6,17 @@ Source: `docs/octelium.md`
 
 ## Model
 
-Octelium runs as a parallel client bridge, not as a replacement for Tailscale.
+Octelium is the replacement target for human access to homelab applications.
 The current app registration is `octelium`, the Kubernetes namespace is
-`octelium-client`, and Tailscale continues to own the active tailnet ingress
-and homelab exit node.
+`octelium-client`, and Tailscale remains only the temporary fallback for app
+routes until the Octelium e2e gate passes. Tailscale can still have separate
+non-app duties, such as CI cluster reachability or reviewed public webhook
+exceptions, until those are replaced in their own change.
 
 The Argo CD Application installs the official Octelium client Helm chart plus
 repo-owned support manifests. The connector is prepared for rootless gVisor
 mode, enrolled in Istio ambient mesh, and kept at `replicaCount: 0` until the
-external Octelium API, Enterprise package, service catalog, and workload
-credential are verified.
+Octelium API, service catalog, and workload credential are verified.
 
 ## Service Catalog
 
@@ -85,6 +86,23 @@ Then run `octelium login --domain octelium.stinkyboi.com`, apply
 Application. Remove the temporary host entries after real DNS or the first VPN
 path reaches the same Octelium ingress.
 
+## Cutover Gate
+
+`scripts/octelium-e2e-check.sh` is the required gate before removing old
+Tailscale-backed app routes. It checks the Octelium control-plane namespace,
+the synced workload credential, a ready `octelium-client` replica, non-Istio
+responses from the Cluster/API/portal hostnames, every homelab WEB Service in
+the Octelium catalog, and a tunnel to `homelab-demo.homelab`.
+
+When the Octelium control plane is external to homelab, run the gate with
+separate `--octelium-context` and `--homelab-context` values so the
+control-plane namespace checks and connector checks target the correct
+clusters.
+
+If the gate fails, keep the app `VirtualService` objects and the Tailscale
+Istio `LoadBalancer` fallback in place. Treat the failure output as the
+remaining cutover work queue.
+
 ## Secret Contract
 
 `octelium-client-auth` reads `/homelab/octelium/client-auth-token` from AWS SSM.
@@ -122,6 +140,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-enterprise-package.sh --help
+scripts/octelium-e2e-check.sh --help
 ```
 
 After activation, confirm External Secrets, the service catalog, and the

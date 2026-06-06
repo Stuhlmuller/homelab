@@ -38,15 +38,16 @@ The Radarr app container also sets `RADARR__AUTH__METHOD=External` and
 variables override persisted `config.xml` entries at startup and keep the
 running process aligned if the PVC copy drifts back to Forms authentication or
 password-required mode.
-Radarr is exposed only through the tailnet Istio route with Funnel disabled, so
-the tailnet gateway is the external access boundary and Radarr's own password
-prompt is intentionally disabled.
+Radarr targets Octelium as the external access boundary, with the tailnet Istio
+route retained as fallback until `scripts/octelium-e2e-check.sh` passes. Funnel
+stays disabled, and Radarr's own password prompt is intentionally disabled.
 
 This avoids recurring lockouts when the internal Radarr username/password state
 drifts or is reset during config/database migrations. If Radarr is ever exposed
-outside the tailnet, restore Forms authentication or add a dedicated forward
-auth layer before rollout. Upstream documents `External` as the config-file-only
-mode for deployments protected by external authentication:
+outside Octelium or another reviewed private access layer, restore Forms
+authentication or add a dedicated forward auth layer before rollout. Upstream
+documents `External` as the config-file-only mode for deployments protected by
+external authentication:
 <https://wiki.servarr.com/radarr/faq#authentication-method>.
 
 ## Media Storage

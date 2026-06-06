@@ -83,7 +83,7 @@ inputs = {
   info = [
     {
       name  = "mode"
-      value = "Octelium client connector for private homelab services; Tailscale remains installed"
+      value = "Octelium client connector target for homelab app access; Tailscale app routes remain fallback until e2e passes"
     },
     {
       name  = "services"

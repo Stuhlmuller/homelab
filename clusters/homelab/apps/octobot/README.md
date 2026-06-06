@@ -1,8 +1,10 @@
 # OctoBot
 
 OctoBot runs as the finance namespace trading bot with a real web UI. The app
-uses the upstream `drakkarsoftware/octobot` Docker image and exposes only the
-tailnet-only Istio route at `https://octobot.stinkyboi.com`.
+uses the upstream `drakkarsoftware/octobot` Docker image. Human UI access
+targets Octelium as `octobot.homelab`; the existing tailnet Istio route at
+`https://octobot.stinkyboi.com` remains fallback until
+`scripts/octelium-e2e-check.sh` passes.
 
 This repository intentionally does not commit exchange API keys, trading
 profiles, Telegram tokens, or live-trading startup configuration. Use the web
@@ -16,7 +18,9 @@ to trading only with withdrawals disabled before enabling live execution.
 - Web UI port: `5001`
 - Persistent state: `octobot-user`, `octobot-tentacles`, and `octobot-logs`
   PVCs on `nfs-default`
-- Route: `https://octobot.stinkyboi.com`; no public Funnel route
+- Route target: `octobot.homelab` through Octelium; fallback
+  `https://octobot.stinkyboi.com` until the cutover gate passes; no public
+  Funnel route
 - Secret source: none committed; OctoBot setup and exchange credentials are
   stored by the application on its persistent volumes
 
@@ -38,7 +42,8 @@ helm template octobot app-template \
   --values clusters/homelab/apps/octobot/values.yaml
 ```
 
-After Argo CD applies the Application, verify the workload and tailnet route:
+After Argo CD applies the Application, verify the workload and current fallback
+route:
 
 ```sh
 kubectl -n argocd get application octobot
@@ -46,9 +51,9 @@ kubectl -n finance get deploy,pod,pvc,svc -l app.kubernetes.io/instance=octobot
 curl -I https://octobot.stinkyboi.com
 ```
 
-Expected result: one OctoBot pod is ready, the UI service listens on port
-`5001`, the three NFS-backed PVCs are bound, and the FQDN is reachable only from
-the tailnet.
+Expected result before the Octelium cutover gate passes: one OctoBot pod is
+ready, the UI service listens on port `5001`, the three NFS-backed PVCs are
+bound, and the fallback FQDN is reachable only from the tailnet.
 
 ## Operations
 

@@ -1,8 +1,10 @@
 # Octelium Client Desired State
 
-This app prepares a repo-owned Octelium client connector in the homelab while
-leaving Tailscale in place as the current tailnet ingress and exit-node layer.
-Octelium is a parallel private access path for the existing homelab services.
+This app prepares a repo-owned Octelium client connector in the homelab.
+Octelium is the replacement target for human app access. Tailscale remains the
+temporary fallback for app routes until `scripts/octelium-e2e-check.sh` proves
+the Octelium Cluster, service catalog, workload credential, connector, and
+client tunnel are all working.
 
 The deployed Kubernetes pieces are:
 
@@ -27,13 +29,12 @@ The Octelium resource catalog for the external Octelium Cluster is
 - WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
   OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
 
-`values.yaml` keeps the connector at `replicaCount: 0` until the external
-Octelium Cluster API, Enterprise package, service catalog, and workload
-credential are verified. The prepared `--scope` entries keep the workload
-credential constrained to the same service names when the connector is
-activated.
+`values.yaml` keeps the connector at `replicaCount: 0` until the Octelium
+Cluster API, service catalog, and workload credential are verified. The
+prepared `--scope` entries keep the workload credential constrained to the same
+service names when the connector is activated.
 
-## Activation
+## Activation And Cutover
 
 Apply the external Octelium resources to the Octelium Cluster:
 
@@ -58,9 +59,26 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-After the external Octelium API is verified, change `replicaCount` to `1` in a
-follow-up PR and let Argo CD sync `octelium`. The connector then serves each
-configured Octelium Service from inside the homelab cluster.
+After the Octelium API is verified, change `replicaCount` to `1` in a follow-up
+PR and let Argo CD sync `octelium`. The connector then serves each configured
+Octelium Service from inside the homelab cluster.
+
+Then run:
+
+```sh
+scripts/octelium-e2e-check.sh
+```
+
+Use separate contexts when the Octelium control plane is not the homelab
+cluster:
+
+```sh
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
+```
+
+Only remove the old Tailscale-backed app UI routes after this e2e gate passes.
 
 ## Bootstrap UI Access
 
@@ -143,6 +161,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-enterprise-package.sh --help
+scripts/octelium-e2e-check.sh --help
 ```
 
 After activation with `replicaCount: 1`:
@@ -151,6 +170,9 @@ After activation with `replicaCount: 1`:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
 ```
 
 From an Octelium client session, query one of the private service names:

@@ -142,7 +142,7 @@ controllers:
 
             openclaw config set --strict-json \
               gateway.controlUi.allowedOrigins \
-              '["https://openclaw.stinkyboi.com"]'
+              '["https://openclaw.stinkyboi.com","http://openclaw.homelab","https://openclaw.homelab"]'
 
             if [ -z "${GRAFANA_ALERT_HOOK_TOKEN:-}" ] || [ "$GRAFANA_ALERT_HOOK_TOKEN" = "REPLACE_ME" ]; then
               echo "GRAFANA_ALERT_HOOK_TOKEN is not populated; skipping hooks bootstrap"

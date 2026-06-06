@@ -6,22 +6,26 @@ Source: `docs/networking-tailnet-ingress.md`
 
 ## Model
 
-Istio is the reverse proxy for app access. Tailscale is the reachability layer.
-Most routes are internal-only. Public Tailscale Funnel is reserved for reviewed
-webhook paths that external SaaS systems must reach.
+Octelium is the target access plane for human app access. Istio plus Tailscale
+remain the fallback app route until `scripts/octelium-e2e-check.sh` proves the
+Octelium Cluster, service catalog, connector, and client tunnel work end to
+end. Public Tailscale Funnel is reserved for reviewed webhook paths that
+external SaaS systems must reach.
 
 `*.stinkyboi.com` is expected to resolve to the Tailscale-exposed Istio ingress
-address from tailnet clients. DNS is not managed by this repo yet.
+address from tailnet clients while those fallback routes remain. DNS is not
+managed by this repo yet.
 
-Octelium is a separate client bridge under [[octelium]] for the same private
-homelab service set. It does not own the current `*.stinkyboi.com` Istio routes
-and does not replace the Tailscale exit node.
+Octelium is documented under [[octelium]] for the same private homelab service
+set. It replaces app access only after the e2e gate passes; it does not
+automatically replace the Tailscale exit node, CI route, or reviewed public
+webhook exceptions.
 
 ## Current Route Rules
 
 - Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,
-  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI are
-  tailnet-only.
+  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI
+  still have tailnet-only fallback routes.
 - n8n webhooks are a reviewed public Funnel exception:
   `https://n8n-webhook.tail67beb.ts.net` for `/webhook`, `/webhook-test`, and
   `/webhook-waiting` only.
@@ -29,12 +33,13 @@ and does not replace the Tailscale exit node.
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali
   is the read-only mesh UI.
-- OctoBot exposes only `https://octobot.stinkyboi.com` through the tailnet
-  gateway. Its exchange credentials and strategy state live on PVC-backed
-  runtime configuration, not in public repository files.
+- OctoBot uses `octobot.homelab` through Octelium after cutover; the
+  `https://octobot.stinkyboi.com` route is fallback until the gate passes. Its
+  exchange credentials and strategy state live on PVC-backed runtime
+  configuration, not in public repository files.
 - Octelium serves private WEB Services from
   `docs/examples/octelium/homelab-services.yaml`; public webhook callbacks stay
-  on their reviewed Tailscale Funnel exceptions.
+  on their reviewed Tailscale Funnel exceptions until separately redesigned.
 
 ## TLS And Certificates
 

@@ -52,7 +52,9 @@ considered available. Check `external-secrets`, `cert-manager`, `istio`,
 `tailscale`, `argocd-image-updater`, `kiali`, `platform-dns`, and
 `platform-storage`.
 
-Policy Bot has extra route checks: the tailnet UI should redirect to auth, the
+Octelium app access has a dedicated gate in `scripts/octelium-e2e-check.sh`.
+Keep fallback tailnet app UI routes in place until that gate passes. Policy Bot
+has extra route checks: the fallback tailnet UI should redirect to auth, the
 public webhook should return `400` for an unsigned empty request, and the
 Funnel root should not route.
 

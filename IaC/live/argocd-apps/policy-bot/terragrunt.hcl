@@ -68,7 +68,7 @@ inputs = {
   info = [
     {
       name  = "public-webhook"
-      value = "Only /api/github/hook is exposed through Tailscale Funnel; all other Policy Bot routes remain tailnet-only on policy-bot.stinkyboi.com"
+      value = "Policy Bot UI targets policy-bot.homelab via Octelium; only /api/github/hook remains a Tailscale Funnel exception until separately replaced"
     }
   ]
 }
