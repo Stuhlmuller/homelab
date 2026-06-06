@@ -27,7 +27,9 @@ Source: `docs/ci-cd.md`
 - The lint workflow mirrors the shared `Stuhlmuller/workflows` Super-Linter PR
   check, keeps external actions pinned to full commit SHAs, and sets
   `DISABLE_ERRORS=true` so findings are surfaced without replacing the stricter
-  static and Terragrunt gates.
+  static and Terragrunt gates. It sets `DEFAULT_BRANCH` from the pull request
+  base branch for changed-file detection, and uses workflow concurrency to
+  cancel stale Super-Linter runs for the same pull request.
 - Policy Bot reads this repository's `.policy.yml` and requires every PR commit
   to have a GitHub-verified signature before normal review approval can satisfy
   the `policy-bot: main` branch protection check. The explicit comment path

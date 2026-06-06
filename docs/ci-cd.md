@@ -43,7 +43,9 @@ contract for Grafana.
   Super-Linter PR check and keeps its external actions pinned to full commit
   SHAs. It sets `DISABLE_ERRORS=true`, so lint findings are surfaced as PR
   status context without replacing the repository's stricter static and
-  Terragrunt gates.
+  Terragrunt gates. Pull request runs set `DEFAULT_BRANCH` to the PR base branch
+  so changed-file detection is explicit, and workflow concurrency cancels stale
+  Super-Linter runs for the same pull request.
 - Policy Bot reads this repository's `.policy.yml` and requires every pull
   request commit to have a GitHub-verified signature before normal review
   approval can satisfy the `policy-bot: main` branch protection check. The

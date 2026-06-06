@@ -3,6 +3,9 @@ name: Lint
 on:  # yamllint disable-line rule:truthy
   pull_request:
 permissions: {}
+concurrency:
+  group: super-linter-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     name: Lint
@@ -24,3 +27,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DISABLE_ERRORS: true
           VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: ${{ github.event.pull_request.base.ref }}
