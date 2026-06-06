@@ -264,7 +264,9 @@ for Octelium v0.35 and also sets the older `OCTELIUM_FRONT_PROXY_MODE=true`
 name for documentation compatibility. The wrapper also labels the `octelium`
 namespace with the privileged Pod Security profile that Octelium data-plane
 workloads require. If an Octelium deployment already exists, the same wrapper
-runs `octops upgrade --wait` instead.
+runs `octops upgrade`, answers the upgrade confirmation, and waits for the
+Kubernetes workloads to roll out instead of using Octelium's portal-authenticated
+wait mode.
 
 After `octops` completes, apply the service catalog and create the connector
 credential:

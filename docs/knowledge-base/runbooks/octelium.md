@@ -155,7 +155,10 @@ after those prerequisites are synced and healthy. The wrapper generates a
 temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
 Octelium ingress front-proxy mode, labels the `octelium` namespace with the
 privileged Pod Security profile required by the Octelium data plane, and waits
-for the namespace pods.
+for the namespace workloads. When an Octelium deployment already exists, the
+same wrapper runs `octops upgrade`, answers the upgrade confirmation, and then
+waits on Kubernetes rollout status; it does not use Octelium's
+portal-authenticated `octops upgrade --wait` mode.
 
 ## Validation
 
