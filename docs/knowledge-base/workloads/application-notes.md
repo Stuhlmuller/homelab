@@ -197,8 +197,10 @@ are `emptyDir` mounts at `/data/openclaw/npm` and
 OpenClaw blocks code plugins with suspicious ownership. ChatGPT Pro access uses
 interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
 secret or committed API key. The bootstrap also enables the bundled `codex`
-plugin and sets the default agent model to `openai/gpt-5.5`, which is the
-canonical Codex-backed OpenAI model route for new OpenClaw config. The
+plugin and sets the default agent model to `codex/gpt-5.5`, which is the
+authenticated Codex route exposed by the current OpenClaw runtime. The older
+`openai-codex/gpt-*` model refs are legacy routes, and `openai/gpt-*` routes
+require a separate OpenAI auth surface that this deployment does not manage. The
 bootstrap enables the bundled `memory-wiki` plugin so Imported Insights and
 Memory Palace are available after the Control UI tab is reloaded. The
 bootstrap pins `agents.defaults.sandbox.mode` to `off` because the Codex

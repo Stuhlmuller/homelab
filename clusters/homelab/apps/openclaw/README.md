@@ -178,9 +178,10 @@ billing, but OpenAI Codex can sign in with a ChatGPT plan and store local
 credentials on the OpenClaw PVC.
 
 The pod startup bootstrap enables the bundled `codex` plugin and sets the
-default agent model to the canonical Codex-backed OpenAI route,
-`openai/gpt-5.5`. The older `openai-codex/gpt-*` model refs are legacy routes
-and should not be used for new default config.
+default agent model to the authenticated Codex route, `codex/gpt-5.5`. The
+older `openai-codex/gpt-*` model refs are legacy routes, and
+`openai/gpt-*` routes require a separate OpenAI auth surface that this
+deployment does not manage.
 
 The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
@@ -222,7 +223,7 @@ kubectl -n ai exec deploy/openclaw -c app -- \
   openclaw models status --plain
 
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models list --provider openai-codex
+  openclaw models list --provider codex
 ```
 
 Those OAuth credentials persist on the `/data/openclaw` volume and should not be

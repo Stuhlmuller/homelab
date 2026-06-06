@@ -181,7 +181,7 @@ controllers:
 
             openclaw config set --strict-json \
               agents.defaults.model \
-              '{"primary":"openai/gpt-5.5"}'
+              '{"primary":"codex/gpt-5.5"}'
 
             openclaw config set --strict-json \
               agents.defaults.sandbox.mode \
