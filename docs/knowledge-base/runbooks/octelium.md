@@ -37,15 +37,20 @@ state and it does not replace the `octelium-client` connector in this homelab.
 
 Current desired package version: `0.22.0`.
 
+The Octelium Cluster domain is `stinkyboi.com`, which makes the client contact
+`octelium-api.stinkyboi.com`. The current cluster certificate is
+`*.stinkyboi.com`, so `octelium.stinkyboi.com` is too deep as a client domain
+unless a future certificate also covers `*.octelium.stinkyboi.com`.
+
 Install or upgrade with:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -100,3 +105,13 @@ connector Deployment in `octelium-client`. Stop the connector by returning
 Rollback for the Enterprise package is an Octelium package operation, not an
 Argo CD sync. Update the desired package version in this runbook first, then
 run the wrapper with the intended `--version` and `--upgrade` flags.
+
+## Failure Notes
+
+If Argo CD is `Synced` but `Degraded`, inspect the child pods and events before
+changing the Application. On June 6, 2026 the first rollout degraded because the
+Podinfo demo had only `args: [--port=9898]`, which made containerd try to
+execute the flag as the binary, and because the connector domain was
+`octelium.stinkyboi.com`, which made the client call
+`octelium-api.octelium.stinkyboi.com` with a certificate that only covered
+`*.stinkyboi.com`.
