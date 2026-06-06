@@ -105,28 +105,6 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-## Human SSO
-
-Microsoft Entra is the human login provider for the Octelium portal and CLI web
-login flow. The Entra app registration is managed by
-`IaC/live/azuread-applications/octelium`; it registers the
-`https://octelium.stinkyboi.com/callback` and
-`https://portal.octelium.stinkyboi.com/callback` redirect URIs and writes the
-client ID, generated client secret, tenant ID, and issuer URL to
-`/homelab/octelium/entra/*`.
-
-After the Terragrunt unit applies, create the Octelium Secret and
-IdentityProvider from the generated SSM values:
-
-```sh
-scripts/octelium-entra-idp.sh
-```
-
-The helper applies the `entra` IdentityProvider with
-`identifierClaim: preferred_username`. Create or update HUMAN Users with an
-explicit `identityProvider: entra` identity matching the Entra
-`preferred_username` value for users that should log in.
-
 ## Cutover Gate
 
 Run the e2e gate before removing any old Tailscale-backed app route:

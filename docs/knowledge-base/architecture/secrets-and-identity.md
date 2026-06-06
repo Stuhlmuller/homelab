@@ -49,13 +49,6 @@ roles need identity-based KMS permissions for both keys.
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
-- Octelium Microsoft Entra SSO is managed through
-  `IaC/live/azuread-applications/octelium`, which writes the OIDC client ID,
-  generated client secret, issuer URL, and tenant ID to
-  `/homelab/octelium/entra/*`. The Octelium-side handoff stays outside
-  Terraform state: `scripts/octelium-entra-idp.sh` reads those SSM values,
-  creates or reuses the Octelium Secret `entra-client-secret`, and applies the
-  `entra` IdentityProvider with `identifierClaim: preferred_username`.
 - Alertmanager owns notification delivery credentials for Grafana-managed
   alerts. The Prometheus app materializes `alertmanager-discord-webhook` and
   `alertmanager-openclaw-alert-hook` ExternalSecrets in `monitoring`, sourced

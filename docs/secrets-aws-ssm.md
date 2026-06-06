@@ -84,7 +84,6 @@ stack because Terraform manages the Kubernetes Secret.
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
-| octelium | Octelium Secret created by `scripts/octelium-entra-idp.sh` | `entra-client-secret` | `/homelab/octelium/entra/client-id`, `/homelab/octelium/entra/client-secret`, `/homelab/octelium/entra/issuer-url`, `/homelab/octelium/entra/tenant-id` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
@@ -202,16 +201,6 @@ tenant-specific authorization and token URLs from the active AzureAD client
 configuration. Rotating the client secret means applying the Entra unit so the
 generated password and SSM value update together, then letting External Secrets
 refresh `grafana-azuread-sso`.
-
-Octelium SSO uses a Microsoft Entra application registration managed through
-`IaC/live/azuread-applications/octelium`. The unit registers
-`https://octelium.stinkyboi.com/callback` and
-`https://portal.octelium.stinkyboi.com/callback`, writes the client ID,
-generated one-year client secret, tenant ID, and issuer URL to
-`/homelab/octelium/entra/*`, and leaves the Octelium Cluster resource handoff to
-`scripts/octelium-entra-idp.sh`. That helper creates the Octelium Secret
-`entra-client-secret` from the SSM client secret and applies the
-`entra` IdentityProvider with `identifierClaim: preferred_username`.
 
 Deluge stores only VPN WireGuard material in SSM. Sonarr, Radarr, and Prowlarr
 store only their PostgreSQL password contract in SSM through
