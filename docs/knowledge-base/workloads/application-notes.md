@@ -111,18 +111,18 @@ allow `kiali-service-account` to query Grafana and Prometheus.
 
 ## Octelium
 
-Octelium runs as a rootless client connector in the `octelium-client`
+Octelium runs as a TUN-mode client connector in the `octelium-client`
 namespace and is the target replacement path for human app access. It is not a
 full Octelium Cluster; the old Tailscale-backed app routes stay as fallback
 until `scripts/octelium-e2e-check.sh` passes.
 The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
 client chart plus repo-owned support manifests in
 `clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
-image by digest and force `--implementation=gvisor` so the namespace can keep
-baseline Pod Security.
+image by digest and force `--implementation=tun` with `NET_ADMIN` so generated
+Octelium service pods can reach the connector's served app ports.
 
 The connector runs with `replicaCount: 1` after the Octelium API, service
-catalog, and workload credential are verified. It serves only the explicit WEB
+catalog, and workload credential are verified. It serves only the explicit app
 Service catalog declared in
 `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
 Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
@@ -144,17 +144,18 @@ domain is `octelium.stinkyboi.com`, so clients contact
 keep the Cluster domain covered by `*.stinkyboi.com` and the API/portal names
 covered by `*.octelium.stinkyboi.com`.
 
-Before removing any old app `VirtualService` or the Tailscale-backed Istio
-`LoadBalancer`, run `scripts/octelium-e2e-check.sh` and confirm the service
-catalog plus `homelab-demo.homelab` tunnel succeed.
+Before removing any old app transport fallback, run
+`scripts/octelium-e2e-check.sh` and confirm the service catalog plus direct
+HTTPS probes for the existing `*.stinkyboi.com` app hostnames succeed through
+Octelium private IPv6 service addresses. The `homelab-demo.homelab` service is
+only a smoke-test target for the connector bridge.
 
 ## OctoBot
 
 OctoBot is the finance namespace trading bot with a real web UI. It runs from
 the upstream `drakkarsoftware/octobot` image, listens on container port `5001`,
-and should be reached as `octobot.homelab` through Octelium after cutover. The
-old `https://octobot.stinkyboi.com` Istio route is fallback until the Octelium
-e2e gate passes.
+and should be reached as `https://octobot.stinkyboi.com` through Octelium after
+cutover. The internal Octelium service name remains `octobot.homelab`.
 State persists on the `octobot-user`, `octobot-tentacles`, and `octobot-logs`
 PVCs using `nfs-default`.
 

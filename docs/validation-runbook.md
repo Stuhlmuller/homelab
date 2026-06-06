@@ -92,10 +92,12 @@ clusters.
 
 Expected result: the Octelium control plane exists, `octelium-client` has a
 ready replica, the Cluster/API/portal hostnames are serving Octelium instead of
-generic Istio 404 responses, every homelab WEB Service is present in the
-Octelium catalog, and `homelab-demo.homelab` is reachable through an Octelium
-client tunnel. If any probe fails, the gate should print one or more `FAIL:`
-lines and exit nonzero; a quiet early exit is a validation harness bug.
+generic Istio 404 responses, every homelab app Service is present in the
+Octelium catalog, and each existing `*.stinkyboi.com` app hostname resolves to
+an Octelium private IPv6 service address and responds over HTTPS through its
+matching Octelium published service with the real URL and SNI preserved. If any
+probe fails, the gate should print one or more `FAIL:` lines and exit nonzero;
+a quiet early exit is a validation harness bug.
 
 For image automation, confirm the controller and selector CR exist before
 relying on update pull requests:

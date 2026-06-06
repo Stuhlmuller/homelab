@@ -4,7 +4,8 @@ metadata:
   name: octelium-client
   labels:
     istio.io/dataplane-mode: ambient
-    pod-security.kubernetes.io/enforce: baseline
+    homelab.rst.io/privileged-namespace-justification: Octelium connector Pods need NET_ADMIN to serve app Services over a real TUN interface.
+    pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/enforce-version: latest
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/audit-version: latest

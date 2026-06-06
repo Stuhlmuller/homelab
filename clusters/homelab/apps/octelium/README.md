@@ -4,34 +4,45 @@ This app prepares a repo-owned Octelium client connector in the homelab.
 Octelium is the replacement target for human app access. Tailscale remains the
 temporary fallback for app routes until `scripts/octelium-e2e-check.sh` proves
 the Octelium Cluster, service catalog, workload credential, connector, and
-client tunnel are all working.
+existing app hostnames are all working through Octelium.
 
 The deployed Kubernetes pieces are:
 
-- `octelium-client` namespace with baseline Pod Security and Istio ambient
-  enrollment.
+- `octelium-client` namespace with privileged Pod Security for the connector's
+  `NET_ADMIN` TUN requirement and Istio ambient enrollment.
 - `octelium-client-auth`, an ExternalSecret sourced from
   `/homelab/octelium/client-auth-token` and currently rendering the versioned
   target Secret `octelium-client-auth-v5`.
-- The official Octelium client Helm chart, configured for rootless gVisor mode
-  so it does not need `NET_ADMIN` or a privileged namespace.
+- The official Octelium client Helm chart, configured for TUN mode with
+  `NET_ADMIN` so generated Octelium service pods can reach the connector's
+  served app ports.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
   harmless smoke-test target.
 - `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
-  Octelium client pod once a policy-enforcing CNI exists.
+  Octelium client pod and the generated Octelium WEB service proxy for the
+  demo.
 
 The Octelium resource catalog for the external Octelium Cluster is
 `docs/examples/octelium/homelab-services.yaml`. It defines:
 
 - Octelium Namespace `homelab`.
 - Policy `homelab-human-web-access`, which allows authenticated human client
-  sessions to WEB Services in the namespace.
+  sessions to app Services in those namespaces.
 - Policy `homelab-workload-web-serve`, which allows only the
-  `homelab-octelium-client` workload User to serve the namespace's WEB
+  `homelab-octelium-client` workload User to serve the namespace's app
   Services.
 - Workload User `homelab-octelium-client`.
-- WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
-  OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
+- Human User `homelab-e2e` for noninteractive app-access validation.
+- TCP/443 Services for the existing HTTPS app routes. The Octelium service
+  names remain valid internal names such as `grafana.homelab`, and each service
+  carries an `appHostname` attribute such as `grafana.stinkyboi.com`.
+- WEB Service `homelab-demo.homelab` for connector smoke tests.
+
+The app Services forward TCP/443 to the in-cluster Istio gateway so the
+existing `https://*.stinkyboi.com` URLs, SNI routing, and wildcard certificate
+continue to work. Exact Cloudflare app records point those hostnames at
+Octelium private service IPs, so clients reach them through the VPN instead of
+the old Tailscale wildcard.
 
 `values.yaml` runs the connector at `replicaCount: 1` after the Octelium
 Cluster API, service catalog, and workload credential are verified. The
@@ -78,10 +89,33 @@ the connector pod annotations when the SSM version changes. Let Argo CD sync
 `octelium`; the active connector then serves each configured Octelium Service
 from inside the homelab cluster.
 
+After the service catalog is applied and the connector has reconnected,
+reconcile DNS:
+
+```sh
+scripts/octelium-gateway-dns.sh
+scripts/octelium-app-dns.sh
+```
+
 Then run:
 
 ```sh
 scripts/octelium-e2e-check.sh
+```
+
+For noninteractive tunnel validation, provide a client authentication token.
+The gate starts an Octelium client session and curls the existing
+`https://*.stinkyboi.com` app hostnames. It fails if any hostname still
+resolves to the old Tailscale wildcard instead of an Octelium private service
+IP. The operator-side e2e client publishes each app Service to a loopback port
+and uses the real `*.stinkyboi.com` URL and SNI with `curl --connect-to`, so it
+does not depend on root-only route installation on the operator workstation.
+Use a HUMAN credential, such as one created for `homelab-e2e` with
+`homelab-human-web-access`, not the workload credential used by the in-cluster
+connector.
+
+```sh
+OCTELIUM_AUTH_TOKEN='<authentication-token>' scripts/octelium-e2e-check.sh
 ```
 
 Use separate contexts when the Octelium control plane is not the homelab
@@ -179,6 +213,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-enterprise-package.sh --help
+bash -n scripts/octelium-app-dns.sh scripts/octelium-gateway-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
 
@@ -188,16 +223,18 @@ After activation with `replicaCount: 1`:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
+scripts/octelium-gateway-dns.sh --dry-run
+scripts/octelium-app-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
 ```
 
-From an Octelium client session, query one of the private service names:
+From an Octelium client session, query one of the existing app URLs:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
-curl http://127.0.0.1:18080/api/health
+octelium connect --domain octelium.stinkyboi.com --ip-mode=v4
+curl -I https://grafana.stinkyboi.com/
 ```
 
 Use the smoke-test service when you want to validate the bridge separately from
@@ -212,16 +249,22 @@ curl http://127.0.0.1:18081/version
 
 1. Add the Octelium `Service` to
    `docs/examples/octelium/homelab-services.yaml`.
-2. Add the service name to both `octelium.args` as a
+2. For app UI routes, use a valid internal Octelium service name in the
+   `homelab` namespace, set `spec.attrs.appHostname` to the existing
+   `*.stinkyboi.com` hostname, and forward TCP/443 to
+   `tcp://istio-ingressgateway.istio-system.svc.cluster.local:443`.
+3. Add the service name to both `octelium.args` as a
    `--scope=service:<name>` entry and `octelium.serve` in `values.yaml`. Keep
    `--scope=api:user.MainService/Connect` present so the scoped token can open
    the User API connection stream.
-3. If the destination workload has an Istio `AuthorizationPolicy`, add
+4. Run `scripts/octelium-app-dns.sh --dry-run` after the service reports an
+   Octelium private IP so the exact app hostname overrides the old wildcard.
+5. If the destination workload has an Istio `AuthorizationPolicy`, add
    `cluster.local/ns/octelium-client/sa/octelium-client` as an allowed source.
-4. If the destination workload has a Kubernetes `NetworkPolicy`, add the
+6. If the destination workload has a Kubernetes `NetworkPolicy`, add the
    `octelium-client` namespace as an ingress source. This is currently intent
    only while kube-flannel is the CNI.
-5. Re-render the Octelium app and the changed destination app.
+7. Re-render the Octelium app and the changed destination app.
 
 ## Rollback
 

@@ -52,6 +52,7 @@ Before running `octops init`, validate the self-hosted Cluster prerequisites:
 kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-app-dns.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -73,10 +74,16 @@ scripts/octelium-e2e-check.sh
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
+Set `OCTELIUM_AUTH_TOKEN` when the final app-hostname probe must run without an
+existing local Octelium login.
 
 The gate checks the Octelium control plane, synced workload credential, ready
-connector replica, non-Istio Cluster/API/portal responses, the complete homelab
-WEB Service catalog, and a tunnel to `homelab-demo.homelab`.
+connector replica, Cluster/API/portal TLS responses, the complete homelab WEB
+Service catalog, exact `AAAA` DNS for each existing `*.stinkyboi.com` app
+hostname, and HTTPS access to each app hostname through its matching Octelium
+published service with the real URL and SNI preserved. Each app hostname must
+resolve to an Octelium `fdee:b76e:*` IPv6 service IP, not the old Tailscale
+wildcard.
 
 The script must report failed probes as `FAIL:` lines and finish with a nonzero
 exit code when any check fails. Keep expected-negative probes inside guarded

@@ -16,6 +16,14 @@ spec:
             matchLabels:
               app.kubernetes.io/name: octelium
               app.kubernetes.io/instance: octelium-client
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: octelium
+          podSelector:
+            matchLabels:
+              app: octelium
+              octelium.com/component: svc
+              octelium.com/svc: homelab-demo.homelab
       ports:
         - protocol: TCP
           port: 9898
