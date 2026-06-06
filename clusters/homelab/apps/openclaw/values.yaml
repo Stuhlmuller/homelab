@@ -153,9 +153,10 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
+              HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
               openclaw config set --strict-json \
                 hooks.token \
-                '"${GRAFANA_ALERT_HOOK_TOKEN}"'
+                "$HOOK_TOKEN_JSON"
               openclaw config set --strict-json \
                 hooks.defaultSessionKey \
                 '"agent:main:hooks:grafana-alerts"'

@@ -166,9 +166,9 @@ keeps the tailnet Control UI origin allow-list in config and stores
 `gateway.auth.token` as an environment-backed SecretRef to
 `OPENCLAW_GATEWAY_TOKEN`, sourced from the generated
 `/homelab/openclaw/app-secret` SSM parameter. When the shared Grafana alert
-hook token is populated, bootstrap stores `hooks.token` as the plain
-env-template string `"${GRAFANA_ALERT_HOOK_TOKEN}"` because OpenClaw rejects
-SecretRef objects for that hook-token surface. When
+hook token is populated, bootstrap expands `GRAFANA_ALERT_HOOK_TOKEN` from the
+mounted Secret, JSON-encodes the runtime value, and stores it as a plain string
+because OpenClaw rejects SecretRef objects for that hook-token surface. When
 `/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
 installs and enables the official `@openclaw/discord` plugin and writes a
 SecretRef to `DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory

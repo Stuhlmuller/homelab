@@ -59,9 +59,8 @@ roles need identity-based KMS permissions for both keys.
   and `homelab-openclaw-alert-hook` receiver UIDs so persisted Grafana PVC state
   does not keep retrying removed integrations. OpenClaw receives the same hook
   token through `openclaw-secrets` as `GRAFANA_ALERT_HOOK_TOKEN`; bootstrap
-  writes `hooks.token` as the plain env-template string
-  `"${GRAFANA_ALERT_HOOK_TOKEN}"` because OpenClaw rejects SecretRef objects for
-  that hook-token surface.
+  expands and JSON-encodes that runtime value before writing `hooks.token`,
+  because OpenClaw rejects SecretRef objects for that hook-token surface.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
