@@ -157,8 +157,10 @@ Octelium reads `/homelab/octelium/client-auth-token` through
 `homelab-octelium-client` User in the Octelium Cluster. Keep the token out of
 git; after replacing the placeholder directly in SSM, bump
 `homelab.rst.io/octelium-credential-ssm-version` in
-`clusters/homelab/apps/octelium/externalsecret.yaml` if External Secrets needs
-to reread the value.
+`clusters/homelab/apps/octelium/externalsecret.yaml` so External Secrets
+rereads the value, and bump the same annotation in
+`clusters/homelab/apps/octelium/values.yaml` so the connector pod restarts with
+the refreshed environment variable.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

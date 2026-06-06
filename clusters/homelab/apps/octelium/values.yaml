@@ -14,6 +14,7 @@ serviceAccount:
   name: ""
 
 podAnnotations:
+  homelab.rst.io/octelium-credential-ssm-version: "3"
   homelab.rst.io/octelium-mode: client-connector
 
 podLabels:
