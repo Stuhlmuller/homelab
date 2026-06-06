@@ -28,7 +28,7 @@ Radarr, Sonarr, and `homelab-demo`.
 
 The policy allows authenticated human client sessions to WEB Services in the
 `homelab` namespace. The Kubernetes connector serves the same service list with
-matching `--scope` flags.
+matching `--scope=service:<name>` flags.
 
 ## Enterprise Package
 

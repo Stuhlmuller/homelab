@@ -46,20 +46,20 @@ octelium:
   args:
     - --implementation=gvisor
     - --ip-mode=v4
-    - --scope=argocd.homelab
-    - --scope=compass.homelab
-    - --scope=deluge.homelab
-    - --scope=grafana.homelab
-    - --scope=homelab-demo.homelab
-    - --scope=kiali.homelab
-    - --scope=litellm.homelab
-    - --scope=n8n.homelab
-    - --scope=octobot.homelab
-    - --scope=openclaw.homelab
-    - --scope=policy-bot.homelab
-    - --scope=prowlarr.homelab
-    - --scope=radarr.homelab
-    - --scope=sonarr.homelab
+    - --scope=service:argocd.homelab
+    - --scope=service:compass.homelab
+    - --scope=service:deluge.homelab
+    - --scope=service:grafana.homelab
+    - --scope=service:homelab-demo.homelab
+    - --scope=service:kiali.homelab
+    - --scope=service:litellm.homelab
+    - --scope=service:n8n.homelab
+    - --scope=service:octobot.homelab
+    - --scope=service:openclaw.homelab
+    - --scope=service:policy-bot.homelab
+    - --scope=service:prowlarr.homelab
+    - --scope=service:radarr.homelab
+    - --scope=service:sonarr.homelab
   serve:
     - argocd.homelab
     - compass.homelab
