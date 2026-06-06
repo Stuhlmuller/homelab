@@ -1,9 +1,10 @@
 # Octelium Client Bridge
 
-This repository runs Octelium as a parallel secure-access path without removing
+This repository prepares Octelium as a parallel secure-access path without removing
 Tailscale. Tailscale remains the active tailnet ingress and homelab exit-node
-layer; Octelium runs as a client connector that serves selected in-cluster
-services to an external Octelium Cluster.
+layer; Octelium is modeled as a client connector that can serve selected
+in-cluster services to an external Octelium Cluster once the external API and
+workload credential are verified.
 
 ## Current Model
 
@@ -18,7 +19,8 @@ The Kubernetes namespace is `octelium-client`. It contains:
 
 - `octelium-client-auth`, an ExternalSecret that reads
   `/homelab/octelium/client-auth-token`.
-- `octelium-client`, the Helm-managed Octelium client Deployment.
+- `octelium-client`, the Helm-managed Octelium client Deployment prepared with
+  `replicaCount: 0` until activation.
 - `octelium-demo`, a small Podinfo HTTP service exposed only as a ClusterIP.
 - `octelium-demo-allow-client`, a NetworkPolicy that allows only the Octelium
   client pod to call the demo service once a policy-enforcing CNI exists.
@@ -56,9 +58,10 @@ They create:
   `prowlarr.homelab`, `radarr.homelab`, and `sonarr.homelab`.
 
 Each Service upstream points at the Kubernetes Service DNS name reachable from
-inside this homelab cluster and is served by the workload user. The Kubernetes
-Deployment serves the same explicit list through `octelium.serve`, and its
-workload credential is constrained with matching `--scope` flags.
+inside this homelab cluster and is served by the workload user. The prepared
+Kubernetes Deployment serves the same explicit list through `octelium.serve`,
+and its workload credential is constrained with matching `--scope` flags when
+the connector is activated.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -83,6 +86,18 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
+Verify that the external Octelium API is actually serving before enabling the
+connector replica:
+
+```sh
+curl -vI https://octelium-api.stinkyboi.com
+```
+
+The TLS certificate must match `octelium-api.stinkyboi.com`, and the endpoint
+must be the Octelium API rather than a generic Istio `404` or gRPC
+`Unimplemented` response. Once that is true, set `replicaCount` to `1` in
+`clusters/homelab/apps/octelium/values.yaml` in a follow-up PR.
+
 ## Octelium Enterprise Package
 
 Octelium Enterprise comes from
@@ -97,11 +112,17 @@ The upstream Enterprise README requires `octops` `v0.29.0` or later and an
 existing Octelium Cluster. Commercial or production use requires an Enterprise
 license; license material must stay outside git.
 
+The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
+client use `octelium-api.stinkyboi.com`. That hostname is covered by the
+current `*.stinkyboi.com` certificate. Do not set the client domain to
+`octelium.stinkyboi.com` unless the Octelium Cluster presents a certificate for
+`*.octelium.stinkyboi.com`.
+
 Install the pinned package:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 ```
 
@@ -110,7 +131,7 @@ updated to the intended package version:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -148,7 +169,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
 scripts/octelium-enterprise-package.sh --help
 ```
 
-After Argo CD syncs the app:
+After activation with `replicaCount: 1`:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
@@ -166,7 +187,7 @@ curl http://127.0.0.1:8080/version
 Check a service through Octelium from a client machine:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
+octelium connect --domain stinkyboi.com -p grafana.homelab:18080
 curl http://127.0.0.1:18080/api/health
 ```
 

@@ -117,12 +117,14 @@ client chart plus repo-owned support manifests in
 image by digest and force `--implementation=gvisor` so the namespace can keep
 baseline Pod Security.
 
-The connector runs one replica and serves only the explicit WEB Service catalog
-declared in `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass,
-Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr,
-Radarr, Sonarr, and the Podinfo demo. The matching workload credential lives in
-SSM at `/homelab/octelium/client-auth-token` and renders to
-`octelium-client-auth`. Protected ambient workloads allow
+The connector is prepared with `replicaCount: 0` until the external Octelium
+API, Enterprise package, service catalog, and workload credential are verified.
+When activated, it serves only the explicit WEB Service catalog declared in
+`docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
+Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
+Sonarr, and the Podinfo demo. The matching workload credential lives in SSM at
+`/homelab/octelium/client-auth-token` and renders to `octelium-client-auth`.
+Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
 desired version `0.22.0`; install or upgrade it against the external Octelium
@@ -285,9 +287,12 @@ Argo CD sync before the rendered Kubernetes Secret changes.
 The runtime config reads repository-local `.policy.yml` files before falling
 back to shared `.github/policy.yml`. Homelab's local policy keeps the shared
 review approval choices and adds a Policy Bot condition requiring every PR
-commit to have a GitHub-verified signature. The review-bot approval path counts
-only an explicit `+1` or `:+1:` comment from `chatgpt-codex-connector[bot]`,
-not PR body text.
+commit to have a GitHub-verified signature. The explicit comment approval path
+counts only a `👍` comment from `rstuhlmuller`, including PRs opened by
+`rodman` and PRs where `rstuhlmuller` authored or committed changes, and does
+not count PR body text or other users' comments. The organization-member rule
+also opts into author and contributor approvals so matching Stuhlmuller
+approvals are not ignored as disqualified.
 
 ## Prometheus
 

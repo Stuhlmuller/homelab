@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 0
 
 image:
   repository: ghcr.io/octelium/octelium
@@ -38,7 +38,7 @@ resources:
     memory: 256Mi
 
 octelium:
-  domain: octelium.stinkyboi.com
+  domain: stinkyboi.com
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret name, not a secret value.
   authTokenSecret: octelium-client-auth
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret key name, not a secret value.

@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: octelium-demo
   namespace: octelium-client
+  annotations:
+    checkov.io/skip1: CKV2_K8S_6=octelium-demo is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
   labels:
     app.kubernetes.io/name: octelium-demo
     app.kubernetes.io/instance: octelium-demo
@@ -27,6 +29,8 @@ spec:
       containers:
         - name: podinfo
           image: ghcr.io/stefanprodan/podinfo:6.9.3@sha256:0c73d438b0fe28c1d52bac0d6aafa04efe2023910378c4b436e234f56b6e9b99
+          command:
+            - ./podinfo
           args:
             - --port=9898
           ports:
