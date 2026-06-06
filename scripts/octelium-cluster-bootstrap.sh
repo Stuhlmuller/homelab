@@ -15,8 +15,8 @@ Bootstrap or upgrade the self-hosted Octelium Cluster in the homelab.
 
 The script reads generated PostgreSQL and Redis passwords from the
 octelium-storage-auth Kubernetes Secret, writes a temporary Octelium bootstrap
-file outside git, then runs octops with OCTELIUM_FRONT_PROXY_MODE=true so the
-existing Istio gateway terminates TLS for:
+file outside git, then runs octops with Octelium ingress front-proxy mode so
+the existing Istio gateway terminates TLS for:
 
   octelium.stinkyboi.com
   portal.octelium.stinkyboi.com
@@ -193,7 +193,7 @@ spec:
 EOF
 
 if [[ -n "$("${kubectl_cmd[@]}" -n octelium get deploy -o name 2>/dev/null || true)" ]]; then
-  action=(upgrade "$domain")
+  action=(upgrade "$domain" --wait)
 else
   action=(init "$domain" --bootstrap "$bootstrap_file")
 fi
@@ -203,13 +203,21 @@ if [[ "$version" != "latest" ]]; then
 fi
 
 echo "Running octops ${action[0]} for ${domain} in front-proxy mode..."
+run_octops() {
+  OCTELIUM_INGRESS_FRONT_PROXY=true OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "$@"
+}
+
 if [[ "${action[0]}" == "upgrade" ]]; then
-  printf 'y\n' | OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "${action[@]}"
+  printf 'y\n' | run_octops "${action[@]}"
 else
-  OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "${action[@]}"
+  run_octops "${action[@]}"
 fi
 ensure_octelium_namespace_labels
 
-echo "Waiting for Octelium control-plane pods..."
-"${kubectl_cmd[@]}" -n octelium wait --for=condition=Ready pod --all --timeout="${wait_timeout}"
-"${kubectl_cmd[@]}" -n octelium get deploy,sts,svc,pod
+echo "Waiting for Octelium workloads..."
+for kind in deployment daemonset statefulset; do
+  for workload in $("${kubectl_cmd[@]}" -n octelium get "$kind" -o name); do
+    "${kubectl_cmd[@]}" -n octelium rollout status "$workload" --timeout="${wait_timeout}"
+  done
+done
+"${kubectl_cmd[@]}" -n octelium get deploy,sts,ds,svc,pod

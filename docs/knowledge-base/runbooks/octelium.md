@@ -138,9 +138,10 @@ the Octelium-native `octops init` command. The steady-state prerequisites are:
   `/homelab/octelium/redis-password`.
 - `octelium-cluster` in `clusters/homelab/apps/octelium-cluster` for the Istio
   `VirtualService` that routes the Cluster, portal, and API hostnames to the
-  Octelium data-plane ingress service in front-proxy mode. The route must use
-  the `octelium-ingress-dataplane` Kubernetes service port `443`; its targetPort
-  is `8080`, but Istio destination ports refer to service ports.
+  Octelium data-plane ingress service in front-proxy mode. The wrapper sets
+  `OCTELIUM_INGRESS_FRONT_PROXY=true` for Octelium v0.35 and also keeps the
+  older `OCTELIUM_FRONT_PROXY_MODE=true` compatibility name so the dataplane
+  exposes cleartext HTTP on port `8080` behind the trusted Istio TLS edge.
 
 The `octelium-cluster` Argo CD Application must not own the `octelium`
 namespace. Octelium genesis deletes and recreates that namespace during
@@ -152,7 +153,7 @@ the ownership handoff.
 Run `scripts/octelium-cluster-bootstrap.sh --domain octelium.stinkyboi.com`
 after those prerequisites are synced and healthy. The wrapper generates a
 temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
-`OCTELIUM_FRONT_PROXY_MODE=true`, labels the `octelium` namespace with the
+Octelium ingress front-proxy mode, labels the `octelium` namespace with the
 privileged Pod Security profile required by the Octelium data plane, and waits
 for the namespace pods.
 
