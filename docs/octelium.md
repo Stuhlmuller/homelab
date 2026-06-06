@@ -259,8 +259,10 @@ scripts/octelium-cluster-bootstrap.sh \
 The wrapper reads the generated storage credentials from
 `octelium-storage-auth`, writes a temporary bootstrap file outside git, and runs
 `octops init` with `OCTELIUM_FRONT_PROXY_MODE=true` so the existing Istio gateway
-terminates TLS. If an Octelium deployment already exists, the same wrapper runs
-`octops upgrade` instead.
+terminates TLS. The wrapper also labels the `octelium` namespace with the
+privileged Pod Security profile that Octelium data-plane workloads require. If
+an Octelium deployment already exists, the same wrapper runs `octops upgrade`
+instead.
 
 After `octops` completes, apply the service catalog and create the connector
 credential:
