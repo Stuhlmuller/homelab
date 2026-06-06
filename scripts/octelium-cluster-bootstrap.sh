@@ -203,7 +203,11 @@ if [[ "$version" != "latest" ]]; then
 fi
 
 echo "Running octops ${action[0]} for ${domain} in front-proxy mode..."
-OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "${action[@]}"
+if [[ "${action[0]}" == "upgrade" ]]; then
+  printf 'y\n' | OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "${action[@]}"
+else
+  OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "${action[@]}"
+fi
 ensure_octelium_namespace_labels
 
 echo "Waiting for Octelium control-plane pods..."
