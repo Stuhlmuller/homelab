@@ -33,7 +33,7 @@ inputs = {
 
   destination = {
     server    = "https://kubernetes.default.svc"
-    namespace = "octelium"
+    namespace = "istio-system"
   }
 
   sources = [
@@ -47,11 +47,11 @@ inputs = {
 
   sync_policy = {
     automated = {
-      prune     = true
+      prune     = false
       self_heal = true
     }
     sync_options = [
-      "CreateNamespace=true",
+      "CreateNamespace=false",
       "ServerSideApply=true"
     ]
     retry = {

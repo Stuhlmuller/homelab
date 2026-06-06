@@ -2,7 +2,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: octelium-cluster
-  namespace: octelium
+  namespace: istio-system
   annotations:
     homelab.rst.io/public-funnel: "false"
 spec:
