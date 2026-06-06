@@ -8,7 +8,8 @@ terraform {
 
 dependencies {
   paths = [
-    "../external-secrets"
+    "../external-secrets",
+    "../istio"
   ]
 }
 
@@ -82,11 +83,15 @@ inputs = {
   info = [
     {
       name  = "mode"
-      value = "Octelium client connector; Tailscale remains installed"
+      value = "Octelium client connector for private homelab services; Tailscale remains installed"
     },
     {
-      name  = "demo"
-      value = "Prepared to serve homelab-demo.homelab after credential activation"
+      name  = "services"
+      value = "Serves the explicit homelab service catalog in docs/examples/octelium"
+    },
+    {
+      name  = "enterprise"
+      value = "Enterprise package octeliumee desired version 0.22.0 is installed with scripts/octelium-enterprise-package.sh"
     },
     {
       name  = "state"

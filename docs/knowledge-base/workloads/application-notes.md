@@ -106,23 +106,24 @@ allow `kiali-service-account` to query Grafana and Prometheus.
 
 ## Octelium
 
-Octelium is staged as a rootless client connector in the `octelium-client`
+Octelium runs as a rootless client connector in the `octelium-client`
 namespace, not as a full Octelium Cluster and not as a Tailscale replacement.
 The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
 client chart plus repo-owned support manifests in
-`clusters/homelab/apps/octelium`. The Helm values pin the `0.34.0` Octelium
+`clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
 image by digest and force `--implementation=gvisor` so the namespace can keep
 baseline Pod Security.
 
-`replicaCount` starts at `0` until an external Octelium Cluster has the
-`homelab-demo.homelab` Service and `homelab-octelium-client` workload User from
-`docs/examples/octelium/homelab-demo.yaml`. The workload credential lives in
+The connector runs one replica and serves only the explicit WEB Service catalog
+declared in `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass,
+Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr,
+Radarr, Sonarr, and the Podinfo demo. The matching workload credential lives in
 SSM at `/homelab/octelium/client-auth-token` and renders to
-`octelium-client-auth`.
-
-The included `octelium-demo` Podinfo service is in-cluster only. It exists so
-the bridge can serve one harmless HTTP target before any production app is
-moved behind Octelium.
+`octelium-client-auth`. Protected ambient workloads allow
+`cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
+Octelium Enterprise is tracked separately as the `octeliumee` package at
+desired version `0.22.0`; install or upgrade it against the external Octelium
+Cluster with `scripts/octelium-enterprise-package.sh`.
 
 ## OctoBot
 

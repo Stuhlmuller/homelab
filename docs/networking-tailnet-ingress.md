@@ -5,9 +5,10 @@ reachability layer. Most routes are internal-only; public Tailscale Funnel is
 reserved for reviewed webhook paths that must be reachable by external SaaS
 systems.
 
-Octelium is staged separately in `docs/octelium.md` as a client bridge and demo
-service. It does not replace the Tailscale operator, tailnet gateway, Funnel
-exceptions, or homelab exit node in this runbook.
+Octelium is documented separately in `docs/octelium.md` as a parallel client
+bridge for the same private homelab service set. It does not replace the
+Tailscale operator, tailnet gateway, Funnel exceptions, or homelab exit node in
+this runbook.
 
 ## Initial DNS Assumption
 
@@ -68,6 +69,13 @@ Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct
 Prometheus ingress must not be restored without a documented authentication plan
 and rollback path.
+
+Octelium serves the private app set through
+`docs/examples/octelium/homelab-services.yaml` with service names in the
+`homelab` Octelium namespace. Keep public Funnel exceptions and Octelium
+Services separate: the n8n and Policy Bot webhook paths remain Tailscale Funnel
+exceptions unless a later PR explicitly redesigns those callbacks through
+Octelium.
 
 OctoBot exposes its UI only through the tailnet Istio route at
 `https://octobot.stinkyboi.com`. The route is intended for private setup,

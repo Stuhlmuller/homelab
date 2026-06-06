@@ -14,3 +14,4 @@ spec:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
+              - cluster.local/ns/octelium-client/sa/octelium-client

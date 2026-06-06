@@ -29,7 +29,7 @@ trading workload with a tailnet-only UI.
 | `cert-manager` | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | controller-managed certificates | external-secrets |
 | `istio` | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | controller state only | cert-manager |
 | `tailscale` | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | controller state only | external-secrets, istio |
-| `octelium` | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | stateless rootless Octelium client bridge plus Podinfo demo service; connector replicas stay at `0` until `/homelab/octelium/client-auth-token` and external Octelium resources are ready | external-secrets |
+| `octelium` | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | stateless rootless Octelium client bridge that serves the explicit homelab WEB Service catalog from `docs/examples/octelium/homelab-services.yaml`, plus Podinfo demo service; auth token is `/homelab/octelium/client-auth-token`; Enterprise package `octeliumee` desired version `0.22.0` is installed with `scripts/octelium-enterprise-package.sh` | external-secrets, istio |
 | `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics and Argo CD scrape config | external-secrets, platform-storage |
 | `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, alert rules, public GitHub API PR/status polling, and Discord alerting webhook secret | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | `kiali` | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | controller state only; read-only mesh UI | istio, tailscale, prometheus, grafana |
@@ -61,9 +61,12 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   Funnel traffic and database source-identity validation still need live
   validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
-  kube-state-metrics by service account. Compass allows only the tailnet gateway
-  and Prometheus scraper. The Prometheus operator remains unselected until its
-  webhook/control-plane paths are modeled.
+  kube-state-metrics by service account. Compass allows only the tailnet
+  gateway, Prometheus scraper, and Octelium connector. The Prometheus operator
+  remains unselected until its webhook/control-plane paths are modeled.
+- `octelium-client` is ambient-enrolled so the connector has a stable workload
+  principal when it calls protected `ai`, `automation`, and `monitoring`
+  services.
 - `media` stays out of ambient while Deluge Gluetun/WireGuard and the media app
   ingress model need a repo-owned waypoint or equivalent policy design.
 

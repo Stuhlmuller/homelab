@@ -1,0 +1,180 @@
+kind: Policy
+metadata:
+  name: homelab-human-web-access
+spec:
+  rules:
+    - effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.spec.type == "HUMAN"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.spec.mode == "WEB"
+---
+kind: Namespace
+metadata:
+  name: homelab
+spec:
+  authorization:
+    policies:
+      - homelab-human-web-access
+---
+kind: User
+metadata:
+  name: homelab-octelium-client
+spec:
+  type: WORKLOAD
+---
+kind: Service
+metadata:
+  name: argocd.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://argocd-server.argocd.svc.cluster.local:80
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: compass.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://compass.monitoring.svc.cluster.local:8080
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: deluge.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://deluge.media.svc.cluster.local:8112
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: grafana.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://grafana.monitoring.svc.cluster.local:80
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: homelab-demo.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://octelium-demo.octelium-client.svc.cluster.local:8080
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: kiali.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://kiali.monitoring.svc.cluster.local:20001
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: litellm.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://litellm.ai.svc.cluster.local:4000
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: n8n.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://n8n.automation.svc.cluster.local:5678
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: octobot.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://octobot.finance.svc.cluster.local:5001
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: openclaw.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://openclaw.ai.svc.cluster.local:8080
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: policy-bot.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://policy-bot.automation.svc.cluster.local:8080
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: prowlarr.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://prowlarr.media.svc.cluster.local:9696
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: radarr.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://radarr.media.svc.cluster.local:7878
+      user: homelab-octelium-client
+---
+kind: Service
+metadata:
+  name: sonarr.homelab
+spec:
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: http://sonarr.media.svc.cluster.local:8989
+      user: homelab-octelium-client

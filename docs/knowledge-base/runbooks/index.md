@@ -19,7 +19,7 @@ what to read, what facts matter, and what must be updated with future changes.
    is added.
 6. [[tailnet-ingress]] before any app route, Funnel exception, or ingress host
    is added.
-7. [[octelium]] before enabling the Octelium client bridge or demo.
+7. [[octelium]] before changing the Octelium client bridge or service catalog.
 8. [[validation]] before any live mutation or rollout.
 
 ## Operations
@@ -29,7 +29,7 @@ what to read, what facts matter, and what must be updated with future changes.
 - [[ci-cd]] records the GitHub Actions plan/apply model.
 - [[runtime-isolation]] records current Pod Security and network isolation
   assumptions.
-- [[octelium]] records the staged Octelium client bridge and demo workflow.
+- [[octelium]] records the Octelium client bridge and private service catalog.
 - [[rollback]] records dependency-aware app rollback order.
 - [[talos-control-plane-maintenance]] records issuer drift repair and upgrade
   gates.

@@ -13,3 +13,4 @@ spec:
         - source:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/octelium-client/sa/octelium-client

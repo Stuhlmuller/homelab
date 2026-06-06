@@ -1,52 +1,92 @@
 # Octelium Client Desired State
 
-This app prepares a repo-owned Octelium client connector for the homelab while
+This app runs a repo-owned Octelium client connector in the homelab while
 leaving Tailscale in place as the current tailnet ingress and exit-node layer.
+Octelium is a parallel private access path for the existing homelab services.
 
-The deployed Kubernetes pieces are intentionally small:
+The deployed Kubernetes pieces are:
 
-- `octelium-client` namespace with baseline Pod Security labels.
-- `octelium-client-auth` ExternalSecret, sourced from
+- `octelium-client` namespace with baseline Pod Security and Istio ambient
+  enrollment.
+- `octelium-client-auth`, an ExternalSecret sourced from
   `/homelab/octelium/client-auth-token`.
-- `octelium-demo`, a tiny in-cluster HTTP service that Octelium can serve as
-  `homelab-demo.homelab`.
-- `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
-  Octelium client pod.
 - The official Octelium client Helm chart, configured for rootless gVisor mode
   so it does not need `NET_ADMIN` or a privileged namespace.
+- `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
+  harmless smoke-test target.
+- `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
+  Octelium client pod once a policy-enforcing CNI exists.
 
-`values.yaml` keeps `replicaCount: 0` until a real Octelium Cluster, service
-definition, and workload-user credential exist. This prevents a placeholder SSM
-value from creating a crash-looping connector after Argo CD syncs the app.
+The Octelium resource catalog for the external Octelium Cluster is
+`docs/examples/octelium/homelab-services.yaml`. It defines:
+
+- Octelium Namespace `homelab`.
+- Policy `homelab-human-web-access`, which allows authenticated human client
+  sessions to WEB Services in the namespace.
+- Workload User `homelab-octelium-client`.
+- WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
+  OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
+
+`values.yaml` runs one connector replica and serves only that explicit service
+catalog. The `--scope` entries keep the workload credential constrained to the
+same service names.
 
 ## Activation
 
-1. Apply the external Octelium resources from
-   `docs/examples/octelium/homelab-demo.yaml` to the Octelium Cluster:
+Apply the external Octelium resources to the Octelium Cluster:
 
-   ```sh
-   octeliumctl apply docs/examples/octelium/homelab-demo.yaml
-   ```
+```sh
+octeliumctl apply docs/examples/octelium/homelab-services.yaml
+```
 
-2. Create an authentication token credential for the workload user:
+Create an authentication token credential for the workload user:
 
-   ```sh
-   octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
-   ```
+```sh
+octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+```
 
-3. Store the printed token outside git:
+Store the printed token outside git:
 
-   ```sh
-   aws ssm put-parameter \
-     --region us-west-2 \
-     --name /homelab/octelium/client-auth-token \
-     --type SecureString \
-     --overwrite \
-     --value '<authentication-token>'
-   ```
+```sh
+aws ssm put-parameter \
+  --region us-west-2 \
+  --name /homelab/octelium/client-auth-token \
+  --type SecureString \
+  --overwrite \
+  --value '<authentication-token>'
+```
 
-4. Change `replicaCount` to `1` in `values.yaml`, review the diff, and let Argo
-   CD sync the app.
+After Argo CD syncs `octelium`, the connector serves each configured Octelium
+Service from inside the homelab cluster.
+
+## Enterprise Package
+
+Octelium Enterprise is tracked as the `octeliumee` package from
+`https://github.com/octelium/octelium-ee`. The package installs into an
+already running Octelium Cluster with `octops`; it is not synced by this Argo CD
+Application and it does not replace the in-cluster client connector.
+
+Current desired Enterprise package version:
+
+```text
+0.22.0
+```
+
+Install or upgrade it with the repo-owned wrapper:
+
+```sh
+scripts/octelium-enterprise-package.sh \
+  --domain octelium.stinkyboi.com \
+  --version 0.22.0
+
+scripts/octelium-enterprise-package.sh \
+  --domain octelium.stinkyboi.com \
+  --version 0.22.0 \
+  --upgrade
+```
+
+The operator host must have `octops` `v0.29.0` or later and kubeconfig access
+to the Octelium Cluster. Keep any Enterprise license material outside git.
 
 ## Validation
 
@@ -58,34 +98,69 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --version 0.3.0 \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
+scripts/octelium-enterprise-package.sh --help
 ```
 
 After activation:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
-kubectl -n octelium-client get deploy,svc,pod -l app.kubernetes.io/part-of=octelium
+kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 ```
 
-The local demo should answer inside the cluster:
+From an Octelium client session, query one of the private service names:
 
 ```sh
-kubectl -n octelium-client port-forward svc/octelium-demo 8080:8080
-curl http://127.0.0.1:8080/version
+octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
+curl http://127.0.0.1:18080/api/health
 ```
 
-From an Octelium client session, publish the private demo service locally and
-query it:
+Use the smoke-test service when you want to validate the bridge separately from
+app-specific auth:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p homelab-demo.homelab:18080
-curl http://127.0.0.1:18080/version
+octelium connect --domain octelium.stinkyboi.com -p homelab-demo.homelab:18081
+curl http://127.0.0.1:18081/version
 ```
+
+## Adding A Service
+
+1. Add the Octelium `Service` to
+   `docs/examples/octelium/homelab-services.yaml`.
+2. Add the service name to both `octelium.args` as a `--scope=...` entry and
+   `octelium.serve` in `values.yaml`.
+3. If the destination workload has an Istio `AuthorizationPolicy`, add
+   `cluster.local/ns/octelium-client/sa/octelium-client` as an allowed source.
+4. If the destination workload has a Kubernetes `NetworkPolicy`, add the
+   `octelium-client` namespace as an ingress source. This is currently intent
+   only while kube-flannel is the CNI.
+5. Re-render the Octelium app and the changed destination app.
 
 ## Rollback
 
 Set `replicaCount` back to `0` and sync the Argo CD Application. That stops the
-connector without touching Tailscale. If the demo is no longer needed, remove
-the `homelab-demo.homelab` Service and `homelab-octelium-client` User from the
-Octelium Cluster with `octeliumctl`.
+connector without touching Tailscale.
+
+To remove the external Octelium resources:
+
+```sh
+for service in \
+  argocd.homelab compass.homelab deluge.homelab grafana.homelab \
+  homelab-demo.homelab kiali.homelab litellm.homelab n8n.homelab \
+  octobot.homelab openclaw.homelab policy-bot.homelab \
+  prowlarr.homelab radarr.homelab sonarr.homelab; do
+  octeliumctl delete svc "${service}"
+done
+
+octeliumctl delete user homelab-octelium-client
+octeliumctl delete policy homelab-human-web-access
+```
+
+Do not delete or change Tailscale resources as part of Octelium rollback unless
+a later migration PR explicitly replaces the tailnet ingress and exit-node
+model.
+
+Remove or downgrade the Enterprise package through an Octelium-supported
+package operation. Update the desired package version in this README and the
+knowledge-base runbook before running the wrapper again.

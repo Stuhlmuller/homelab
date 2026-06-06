@@ -21,7 +21,7 @@ requested workloads.
 | cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
 | istio | requested | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | Yes | cert-manager |
 | tailscale | requested | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | Yes | external-secrets, istio |
-| octelium | requested | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | Yes | external-secrets |
+| octelium | requested | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | Yes | external-secrets, istio |
 | prometheus | requested | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | Yes | external-secrets, platform-storage |
 | grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | kiali | requested | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | Yes | istio, tailscale, prometheus, grafana |
