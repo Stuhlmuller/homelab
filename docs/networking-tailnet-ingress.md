@@ -97,7 +97,11 @@ Compass also owns discovery-only `Ingress` resources in the `monitoring`
 namespace. Those resources use the inert `compass-discovery` IngressClass and
 carry the same hostnames and Compass metadata for catalog discovery, but they
 do not replace the Istio `VirtualService` resources that route traffic through
-`tailnet-gateway`.
+`tailnet-gateway`. They are annotated with
+`argocd.argoproj.io/ignore-healthcheck: "true"` because no ingress controller
+is expected to populate `status.loadBalancer` for the inert class; the
+tailnet-only `VirtualService` and Compass Deployment remain the operational
+health signals.
 
 ## Homelab VPN Exit Node And LAN Route
 

@@ -64,8 +64,11 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   Funnel traffic and database source-identity validation still need live
   validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
-  kube-state-metrics by service account. Compass allows only the tailnet
-  gateway, Prometheus scraper, and Octelium connector. The Prometheus operator
+  kube-state-metrics by service account. Compass allows only the tailnet gateway,
+  Prometheus scraper, and Octelium connector. Compass also owns
+  discovery-only `Ingress` resources with an inert `compass-discovery` class;
+  those resources intentionally ignore Argo CD health checks because no
+  controller populates their load balancer status. The Prometheus operator
   remains unselected until its webhook/control-plane paths are modeled.
 - `octelium-client` is ambient-enrolled so the connector has a stable workload
   principal when it calls protected `ai`, `automation`, and `monitoring`
