@@ -9,6 +9,10 @@ This app intentionally owns only Multus. Octelium node labels are managed by the
 `IaC/live/kubernetes-node-labels` Terragrunt unit, and the Octelium Cluster is
 initialized through `scripts/octelium-cluster-bootstrap.sh`.
 
+The Multus daemon keeps a 128Mi request and 256Mi limit because Octelium service
+pod attachment churn exceeded the upstream-thin 50Mi budget during bootstrap on
+`zimaboard-0`.
+
 ## Validation
 
 After Argo CD syncs this app:

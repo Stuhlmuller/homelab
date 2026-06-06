@@ -198,3 +198,8 @@ was verified. The nested Octelium domain makes the client call
 `replicaCount: 0` until the real Octelium API/package path is ready and the
 nested API hostname serves Octelium instead of a generic Istio `404` or gRPC
 `Unimplemented` response.
+
+During full Cluster bootstrap, Multus must stay ready on every node that can
+host Octelium service pods. A 50Mi daemon limit OOMKilled Multus on
+`zimaboard-0` while it processed Octelium network attachments; the platform
+manifest now uses a 128Mi request and 256Mi limit.
