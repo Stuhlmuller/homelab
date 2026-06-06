@@ -114,6 +114,17 @@ echo "::group::AWS SSM parameter declaration plan and apply"
 )
 echo "::endgroup::"
 
+echo "::group::Kubernetes node label apply"
+(
+  cd IaC/live/kubernetes-node-labels
+  rm -f plan.out plan.json
+  terragrunt plan -out plan.out -no-color
+  terragrunt --log-disable show -json plan.out >plan.json
+  conftest test --policy ../../../policy --output github plan.json
+  terragrunt apply -no-color plan.out
+)
+echo "::endgroup::"
+
 echo "::group::AzureAD application registration apply"
 if azuread_credentials_available; then
   (

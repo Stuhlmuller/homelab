@@ -122,12 +122,28 @@ principal in their `AuthorizationPolicy`. Workloads with Kubernetes
 `NetworkPolicy` should also allow the `octelium-client` namespace, but that is
 intent-only while kube-flannel remains the CNI.
 
-## Full Cluster Gate
+## Full Cluster Bootstrap
 
-A full in-homelab Octelium Cluster is not modeled yet. The official existing
-Kubernetes install path needs `octops init`, Multus, node labels, PostgreSQL,
-Redis, DNS, and TLS. Treat that as a separate platform design before any live
-cluster mutation.
+The in-homelab Octelium Cluster is bootstrapped by repo-owned prerequisites and
+the Octelium-native `octops init` command. The steady-state prerequisites are:
+
+- `platform-multus` in `clusters/homelab/platform/multus` for the
+  Talos-compatible Multus thick DaemonSet.
+- `IaC/live/kubernetes-node-labels` for
+  `octelium.com/node-mode-dataplane=` on `zimaboard-0` and `zimaboard-2`, and
+  `octelium.com/node-mode-controlplane=` on `zimaboard-1`.
+- `octelium-storage` in `clusters/homelab/apps/octelium-storage` for
+  PostgreSQL and Redis, with generated SSM passwords at
+  `/homelab/octelium/postgres-password` and
+  `/homelab/octelium/redis-password`.
+- `octelium-cluster` in `clusters/homelab/apps/octelium-cluster` for the Istio
+  `VirtualService` that routes the Cluster, portal, and API hostnames to the
+  Octelium data-plane ingress service in front-proxy mode.
+
+Run `scripts/octelium-cluster-bootstrap.sh --domain octelium.stinkyboi.com`
+after those prerequisites are synced and healthy. The wrapper generates a
+temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
+`OCTELIUM_FRONT_PROXY_MODE=true`, and waits for the `octelium` namespace pods.
 
 ## Validation
 
@@ -135,10 +151,14 @@ Render the Kubernetes side with:
 
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium
+kubectl kustomize clusters/homelab/apps/octelium-cluster
+kubectl kustomize clusters/homelab/apps/octelium-storage
+kubectl kustomize clusters/homelab/platform/multus
 helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --version 0.3.0 \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
+scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
 ```

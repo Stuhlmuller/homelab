@@ -86,6 +86,22 @@ inputs = {
       description   = "Octelium authentication token for the homelab workload client connector."
       initial_value = local.placeholder
     }
+    "/homelab/octelium/postgres-password" = {
+      description = "Octelium Cluster PostgreSQL password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/octelium/redis-password" = {
+      description = "Octelium Cluster Redis password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/grafana/admin-user" = {
       description   = "Grafana admin username."
       initial_value = local.placeholder

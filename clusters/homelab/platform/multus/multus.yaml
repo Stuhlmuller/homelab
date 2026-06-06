@@ -1,0 +1,283 @@
+# Adapted from the upstream Multus thick DaemonSet v4.2.4 for Talos Linux.
+# Source: https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.2.4/deployments/multus-daemonset-thick.yml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: network-attachment-definitions.k8s.cni.cncf.io
+  annotations:
+    checkov.io/skip1: CKV_K8S_11=CRD schemas do not define CPU requests.
+    checkov.io/skip2: CKV_K8S_12=CRD schemas do not define memory requests.
+    checkov.io/skip3: CKV_K8S_13=CRD schemas do not define memory limits.
+    checkov.io/skip4: CKV_K8S_14=CRD schemas do not define image tags.
+    checkov.io/skip5: CKV_K8S_15=CRD schemas do not define image pull policies.
+    checkov.io/skip6: CKV_K8S_20=CRD schemas do not define container security contexts.
+    checkov.io/skip7: CKV_K8S_21=CRD schemas do not define default namespaces.
+    checkov.io/skip8: CKV_K8S_22=CRD schemas do not mount filesystems.
+    checkov.io/skip9: CKV_K8S_23=CRD schemas do not define host namespaces.
+    checkov.io/skip10: CKV_K8S_28=CRD schemas do not define probes.
+    checkov.io/skip11: CKV_K8S_29=CRD schemas do not define probes.
+    checkov.io/skip12: CKV_K8S_30=CRD schemas do not define probes.
+    checkov.io/skip13: CKV_K8S_31=CRD schemas do not define seccomp.
+    checkov.io/skip14: CKV_K8S_37=CRD schemas do not define capabilities.
+    checkov.io/skip15: CKV_K8S_38=CRD schemas do not define ServiceAccounts.
+    checkov.io/skip16: CKV_K8S_40=CRD schemas do not run containers.
+    checkov.io/skip17: CKV_K8S_43=CRD schemas do not define container images.
+    checkov.io/skip18: CKV2_K8S_6=The Multus DaemonSet below is the networked workload; the CRD itself is inert.
+spec:
+  group: k8s.cni.cncf.io
+  scope: Namespaced
+  names:
+    plural: network-attachment-definitions
+    singular: network-attachment-definition
+    kind: NetworkAttachmentDefinition
+    shortNames:
+      - net-attach-def
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: NetworkAttachmentDefinition is a CRD schema specified by the Network Plumbing Working Group.
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: NetworkAttachmentDefinition spec defines the desired state of a network attachment.
+              type: object
+              properties:
+                config:
+                  description: NetworkAttachmentDefinition config is a JSON-formatted CNI configuration.
+                  type: string
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: multus
+  annotations:
+    checkov.io/skip1: CKV_K8S_49=The upstream Multus ClusterRole watches and updates NetworkAttachmentDefinitions and pod status across namespaces as a CNI plugin.
+rules:
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - "*"
+    verbs:
+      - "*"
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/status
+    verbs:
+      - get
+      - list
+      - update
+      - watch
+  - apiGroups:
+      - ""
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: multus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: multus
+subjects:
+  - kind: ServiceAccount
+    name: multus
+    namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multus
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multus-daemon-config
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: multus
+    app.kubernetes.io/part-of: homelab-platform
+data:
+  daemon-config.json: |
+    {
+        "chrootDir": "/hostroot",
+        "cniVersion": "0.3.1",
+        "logLevel": "verbose",
+        "logToStderr": true,
+        "cniConfigDir": "/host/etc/cni/net.d",
+        "multusAutoconfigDir": "/host/etc/cni/net.d",
+        "multusConfigFile": "auto",
+        "socketDir": "/host/run/multus/"
+    }
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-multus-ds
+  namespace: kube-system
+  annotations:
+    checkov.io/skip1: CKV_K8S_20=Multus is a privileged host CNI plugin that installs node CNI binaries.
+    checkov.io/skip2: CKV_K8S_22=Multus requires write access to host CNI and kubelet paths.
+    checkov.io/skip3: CKV_K8S_23=Multus requires hostNetwork and hostPID to configure pod networking.
+    checkov.io/skip4: CKV_K8S_28=The upstream Multus DaemonSet does not expose an HTTP liveness endpoint.
+    checkov.io/skip5: CKV_K8S_29=The upstream Multus DaemonSet does not expose an HTTP readiness endpoint.
+    checkov.io/skip6: CKV_K8S_31=Privileged host CNI plugins manage seccomp at the host boundary.
+    checkov.io/skip7: CKV_K8S_37=Privileged host CNI plugins need host capabilities to install and serve CNI.
+    checkov.io/skip8: CKV_K8S_38=The dedicated multus ServiceAccount is required for pod status and NAD watch access.
+    checkov.io/skip9: CKV_K8S_40=Multus must run as root/privileged to write host CNI binaries.
+    checkov.io/skip10: CKV2_K8S_6=This cluster still uses flannel; NetworkPolicy intent is documented until a policy-enforcing CNI is introduced.
+    checkov.io/skip11: CKV_K8S_8=The upstream Multus daemon does not expose a kubelet liveness probe surface.
+    checkov.io/skip12: CKV_K8S_9=The upstream Multus daemon does not expose a kubelet readiness probe surface.
+    checkov.io/skip13: CKV_K8S_16=Multus must run privileged to install and serve host CNI binaries.
+    checkov.io/skip14: CKV_K8S_17=Multus uses hostPID as part of the upstream thick CNI DaemonSet.
+    checkov.io/skip15: CKV_K8S_19=Multus uses hostNetwork as part of the upstream thick CNI DaemonSet.
+  labels:
+    app: multus
+    app.kubernetes.io/name: multus
+    app.kubernetes.io/part-of: homelab-platform
+spec:
+  selector:
+    matchLabels:
+      name: multus
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: multus
+        app.kubernetes.io/name: multus
+        app.kubernetes.io/part-of: homelab-platform
+        name: multus
+    spec:
+      automountServiceAccountToken: true
+      hostNetwork: true
+      hostPID: true
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      serviceAccountName: multus
+      initContainers:
+        - name: install-multus-binary
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.2.4-thick@sha256:3c20900b5381fac7f9cbbdfac8370ea10a2f6ed7fbecc678384a9db57047abb1
+          imagePullPolicy: Always
+          command:
+            - /usr/src/multus-cni/bin/install_multus
+            - -d
+            - /host/opt/cni/bin
+            - -t
+            - thick
+          resources:
+            requests:
+              cpu: 10m
+              memory: 15Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: cnibin
+              mountPath: /host/opt/cni/bin
+              mountPropagation: Bidirectional
+      containers:
+        - name: kube-multus
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.2.4-thick@sha256:3c20900b5381fac7f9cbbdfac8370ea10a2f6ed7fbecc678384a9db57047abb1
+          imagePullPolicy: Always
+          command:
+            - /usr/src/multus-cni/bin/multus-daemon
+          resources:
+            requests:
+              cpu: 100m
+              memory: 50Mi
+            limits:
+              cpu: 100m
+              memory: 50Mi
+          securityContext:
+            privileged: true
+          terminationMessagePolicy: FallbackToLogsOnError
+          volumeMounts:
+            - name: cni
+              mountPath: /host/etc/cni/net.d
+            - name: cnibin
+              mountPath: /opt/cni/bin
+            - name: host-run
+              mountPath: /host/run
+            - name: host-var-lib-cni-multus
+              mountPath: /var/lib/cni/multus
+            - name: host-var-lib-kubelet
+              mountPath: /var/lib/kubelet
+              mountPropagation: HostToContainer
+            - name: host-run-k8s-cni-cncf-io
+              mountPath: /run/k8s.cni.cncf.io
+            - name: host-run-netns
+              mountPath: /var/run/netns
+              mountPropagation: HostToContainer
+            - name: multus-daemon-config
+              mountPath: /etc/cni/net.d/multus.d
+              readOnly: true
+            - name: hostroot
+              mountPath: /hostroot
+              mountPropagation: HostToContainer
+            - name: multus-conf-dir
+              mountPath: /etc/cni/multus/net.d
+          env:
+            - name: MULTUS_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: cni
+          hostPath:
+            path: /etc/cni/net.d
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin
+        - name: hostroot
+          hostPath:
+            path: /
+        - name: multus-daemon-config
+          configMap:
+            name: multus-daemon-config
+            items:
+              - key: daemon-config.json
+                path: daemon-config.json
+        - name: host-run
+          hostPath:
+            path: /run
+        - name: host-var-lib-cni-multus
+          hostPath:
+            path: /var/lib/cni/multus
+        - name: host-var-lib-kubelet
+          hostPath:
+            path: /var/lib/kubelet
+        - name: host-run-k8s-cni-cncf-io
+          hostPath:
+            path: /run/k8s.cni.cncf.io
+        - name: host-run-netns
+          hostPath:
+            path: /run/netns
+        - name: multus-conf-dir
+          hostPath:
+            path: /etc/cni/multus/net.d

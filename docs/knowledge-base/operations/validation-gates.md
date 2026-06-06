@@ -46,6 +46,19 @@ rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-i
 
 ## Octelium Cutover Checks
 
+Before running `octops init`, validate the self-hosted Cluster prerequisites:
+
+```sh
+kubectl kustomize clusters/homelab/platform/multus
+kubectl kustomize clusters/homelab/apps/octelium-storage
+kubectl kustomize clusters/homelab/apps/octelium-cluster
+scripts/octelium-cluster-bootstrap.sh --help
+```
+
+After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
+checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
+PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
+
 Before removing any Tailscale-backed app route, the Octelium replacement path
 must pass:
 

@@ -220,23 +220,54 @@ scripts/octelium-enterprise-package.sh \
 Use `--kubeconfig <path>` when the Octelium Cluster kubeconfig is not the
 default kubeconfig for the operator shell.
 
-## Full Cluster Bootstrap Requirements
+## Full Cluster Bootstrap
 
-Octelium's production install path for an existing Kubernetes cluster uses
-`octops init`, labels data-plane and control-plane nodes, requires Multus CNI,
-and needs PostgreSQL, Redis, public DNS, and a wildcard-capable TLS certificate.
-Those are real platform decisions, not a small Helm app. The current cluster
-does not yet have a repo-owned full Octelium control-plane bootstrap.
+The self-hosted Octelium Cluster bootstrap is now represented by repo-owned
+prerequisites plus the Octelium-native `octops init` operation.
 
-Before self-hosting the Octelium Cluster inside this homelab, add a separate
-design PR that models:
+Terragrunt/OpenTofu manages the Octelium node labels:
 
-- Multus installation and Talos CNI compatibility.
-- Which workers are Octelium data-plane and control-plane nodes.
-- PostgreSQL and Redis persistence, backup, and restore.
-- Public DNS and TLS ownership for the Octelium Cluster domain.
-- A repo-owned `octops init` or equivalent bootstrap workflow that does not rely
-  on manual live mutation as steady state.
+| Node | Octelium label |
+| --- | --- |
+| `zimaboard-0` | `octelium.com/node-mode-dataplane=` |
+| `zimaboard-1` | `octelium.com/node-mode-controlplane=` |
+| `zimaboard-2` | `octelium.com/node-mode-dataplane=` |
+
+Argo CD manages:
+
+- `platform-multus`, a Talos-compatible Multus thick DaemonSet in `kube-system`.
+- `octelium-storage`, PostgreSQL and Redis stores in `octelium-storage`.
+- `octelium-cluster`, the Istio `VirtualService` that routes
+  `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
+  `octelium-api.octelium.stinkyboi.com` to
+  `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
+
+The Octelium Cluster workloads themselves are created and upgraded by `octops`.
+Use the repo-owned wrapper after the prerequisite apps are synced:
+
+```sh
+scripts/octelium-cluster-bootstrap.sh \
+  --domain octelium.stinkyboi.com \
+  --version 0.35.0
+```
+
+The wrapper reads the generated storage credentials from
+`octelium-storage-auth`, writes a temporary bootstrap file outside git, and runs
+`octops init` with `OCTELIUM_FRONT_PROXY_MODE=true` so the existing Istio gateway
+terminates TLS. If an Octelium deployment already exists, the same wrapper runs
+`octops upgrade` instead.
+
+After `octops` completes, apply the service catalog and create the connector
+credential:
+
+```sh
+octeliumctl apply docs/examples/octelium/homelab-services.yaml
+octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+```
+
+Store the printed credential in `/homelab/octelium/client-auth-token`, then set
+`replicaCount` to `1` in `clusters/homelab/apps/octelium/values.yaml`, sync the
+`octelium` Argo CD Application, and run `scripts/octelium-e2e-check.sh`.
 
 ## Validation
 
@@ -244,10 +275,14 @@ Before rollout:
 
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium
+kubectl kustomize clusters/homelab/apps/octelium-cluster
+kubectl kustomize clusters/homelab/apps/octelium-storage
+kubectl kustomize clusters/homelab/platform/multus
 helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --version 0.3.0 \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
+scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
 ```

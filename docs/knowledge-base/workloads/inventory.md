@@ -17,7 +17,9 @@ Octelium e2e gate passes.
 | App | Kind | Namespace | GitOps path | Terragrunt path | Depends on |
 | --- | --- | --- | --- | --- | --- |
 | `platform-dns` | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Argo CD bootstrap |
+| `platform-multus` | support | `kube-system` | `clusters/homelab/platform/multus` | `IaC/live/argocd-apps/platform-multus` | Octelium data-plane prerequisites |
 | `platform-storage` | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | QNAP NFS export |
+| `octelium-storage` | support | `octelium-storage` | `clusters/homelab/apps/octelium-storage` | `IaC/live/argocd-apps/octelium-storage` | external-secrets, platform-storage |
 | `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
 | `n8n-postgres` | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | external-secrets, platform-storage |
 
@@ -30,6 +32,7 @@ Octelium e2e gate passes.
 | `cert-manager` | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | controller-managed certificates | external-secrets |
 | `istio` | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | controller state only | cert-manager |
 | `tailscale` | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | controller state only | external-secrets, istio |
+| `octelium-cluster` | `octelium` | `clusters/homelab/apps/octelium-cluster` | `IaC/live/argocd-apps/octelium-cluster` | Istio front-proxy route for the self-hosted Octelium Cluster domain, portal, and API hostnames; Octelium workloads are installed by `scripts/octelium-cluster-bootstrap.sh` through `octops` | istio, platform-multus, octelium-storage |
 | `octelium` | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | stateless rootless Octelium client bridge and target human app access plane for Cluster domain `octelium.stinkyboi.com`; serves the explicit homelab WEB Service catalog from `docs/examples/octelium/homelab-services.yaml`, plus Podinfo demo service; auth token is `/homelab/octelium/client-auth-token`; cutover is gated by `scripts/octelium-e2e-check.sh`; Enterprise package `octeliumee` desired version `0.22.0` is installed with `scripts/octelium-enterprise-package.sh` | external-secrets, istio |
 | `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics, Alertmanager state, Argo CD scrape config, and Alertmanager Discord/OpenClaw notification secrets | external-secrets, platform-storage |
 | `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, platform/workload alert rules, expected hardware-node and Kubernetes-node alerting, public GitHub API PR/status polling, and stale direct receiver cleanup | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
