@@ -83,7 +83,7 @@ stack because Terraform manages the Kubernetes Secret.
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
-| octelium | `octelium-client-auth` | `octelium-client-auth` | `/homelab/octelium/client-auth-token` |
+| octelium | `octelium-client-auth` | `octelium-client-auth-v3` | `/homelab/octelium/client-auth-token` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
@@ -156,9 +156,11 @@ Octelium reads `/homelab/octelium/client-auth-token` through
 `octelium-client-auth` as the workload authentication token for the
 `homelab-octelium-client` User in the Octelium Cluster. Keep the token out of
 git; after replacing the placeholder directly in SSM, bump
-`remoteRef.version` and `homelab.rst.io/octelium-credential-ssm-version` in
+`remoteRef.version`, update the versioned ExternalSecret target Secret name,
+and bump `homelab.rst.io/octelium-credential-ssm-version` in
 `clusters/homelab/apps/octelium/externalsecret.yaml` so External Secrets
-rereads the exact Parameter Store version, and bump the same annotation in
+materializes a fresh Secret from the exact Parameter Store version, and bump
+the same annotation in
 `clusters/homelab/apps/octelium/values.yaml` so the connector pod restarts with
 the refreshed environment variable.
 

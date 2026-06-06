@@ -64,8 +64,9 @@ roles need identity-based KMS permissions for both keys.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
-  `octelium-client`, sourced from `/homelab/octelium/client-auth-token`. The
-  token belongs to the Octelium workload User `homelab-octelium-client` and is
+  `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
+  rendered to the versioned target Secret `octelium-client-auth-v3`. The token
+  belongs to the Octelium workload User `homelab-octelium-client` and is
   created outside git with `octeliumctl`.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and

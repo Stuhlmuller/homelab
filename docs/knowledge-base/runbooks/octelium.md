@@ -105,16 +105,17 @@ remaining cutover work queue.
 
 ## Secret Contract
 
-`octelium-client-auth` reads `/homelab/octelium/client-auth-token` from AWS SSM.
+`octelium-client-auth` reads `/homelab/octelium/client-auth-token` from AWS SSM
+and renders the versioned target Secret `octelium-client-auth-v3`.
 The token is created with `octeliumctl create cred --user
 homelab-octelium-client homelab-octelium-client` and must stay outside git.
 Do not attach `homelab-human-web-access` to this workload credential; that
 Policy is intentionally human-only and denies `WORKLOAD` users.
 When the SSM value changes, bump `homelab.rst.io/octelium-credential-ssm-version`
 on both the `octelium-client-auth` ExternalSecret and the connector pod
-annotations, and bump the ExternalSecret `remoteRef.version` to the exact SSM
-parameter version so External Secrets refreshes the Secret and Argo rolls the
-pod.
+annotations, bump the ExternalSecret `remoteRef.version` to the exact SSM
+parameter version, and update the target Secret name to match that SSM version
+so External Secrets creates a fresh Secret and Argo rolls the pod.
 
 ## Isolation
 
