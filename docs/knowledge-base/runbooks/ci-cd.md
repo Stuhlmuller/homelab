@@ -23,9 +23,9 @@ Source: `docs/ci-cd.md`
 - Workflows use `pull_request` and `push`, not `pull_request_target`.
 - Policy Bot reads this repository's `.policy.yml` and requires every PR commit
   to have a GitHub-verified signature before normal review approval can satisfy
-  the `policy-bot: main` branch protection check. The review-bot path accepts
-  only an explicit `+1` or `:+1:` comment from `chatgpt-codex-connector[bot]`;
-  it does not read PR body text.
+  the `policy-bot: main` branch protection check. The explicit comment path
+  accepts only a `👍` comment from `rstuhlmuller`, including PRs opened by
+  `rodman`; it does not read PR body text or other users' comments.
 - External actions are pinned to full commit SHAs and checked by Conftest.
 - Terragrunt plan and apply jobs restore and save a GitHub Actions cache for the
   Nix store after installing Nix. The cache key is derived from the runner OS,
