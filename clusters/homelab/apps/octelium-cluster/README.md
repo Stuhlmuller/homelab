@@ -12,7 +12,8 @@ handoff to `octops` ownership.
 
 The bootstrap script runs `octops init` with `OCTELIUM_FRONT_PROXY_MODE=true`,
 so Istio terminates TLS and proxies HTTP to
-`octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
+`octelium-ingress-dataplane.octelium.svc.cluster.local:443`. The service's
+targetPort is `8080`, but Istio routes by the Kubernetes service port.
 
 ## Validation
 

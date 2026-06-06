@@ -240,7 +240,7 @@ Argo CD manages:
 - `octelium-cluster`, the Istio `VirtualService` that routes
   `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
   `octelium-api.octelium.stinkyboi.com` to
-  `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
+  `octelium-ingress-dataplane.octelium.svc.cluster.local:443`.
 
 The `octelium-cluster` Application deliberately keeps the `VirtualService` in
 `istio-system` and does not manage the `octelium` namespace. The Octelium
