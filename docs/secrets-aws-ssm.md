@@ -83,7 +83,7 @@ stack because Terraform manages the Kubernetes Secret.
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
-| octelium | `octelium-client-auth` | `octelium-client-auth-v3` | `/homelab/octelium/client-auth-token` |
+| octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |

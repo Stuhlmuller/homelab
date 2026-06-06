@@ -11,6 +11,20 @@ spec:
             - match: ctx.session.status.type == "CLIENT"
             - match: ctx.service.spec.mode == "WEB"
 ---
+kind: Policy
+metadata:
+  name: homelab-workload-web-serve
+spec:
+  rules:
+    - effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-octelium-client"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.spec.mode == "WEB"
+---
 kind: Namespace
 metadata:
   name: homelab
@@ -18,6 +32,7 @@ spec:
   authorization:
     policies:
       - homelab-human-web-access
+      - homelab-workload-web-serve
 ---
 kind: User
 metadata:

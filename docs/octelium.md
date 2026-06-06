@@ -56,6 +56,9 @@ They create:
 - Octelium Namespace `homelab`.
 - Policy `homelab-human-web-access`, allowing authenticated human client
   sessions to WEB Services in that namespace.
+- Policy `homelab-workload-web-serve`, allowing only the
+  `homelab-octelium-client` workload User to serve WEB Services in that
+  namespace.
 - Workload User `homelab-octelium-client`.
 - WEB Services for the current homelab app routes:
   `argocd.homelab`, `compass.homelab`, `deluge.homelab`, `grafana.homelab`,
@@ -66,8 +69,9 @@ They create:
 Each Service upstream points at the Kubernetes Service DNS name reachable from
 inside this homelab cluster and is served by the workload user. The prepared
 Kubernetes Deployment serves the same explicit list through `octelium.serve`,
-and its workload credential is constrained with matching
-`--scope=service:<name>` flags.
+and its workload credential is constrained with
+`--scope=api:user.MainService/Connect` plus matching `--scope=service:<name>`
+flags.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -78,7 +82,10 @@ octeliumctl apply docs/examples/octelium/homelab-services.yaml
 Create a workload authentication token:
 
 ```sh
-octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+octeliumctl create cred \
+  --user homelab-octelium-client \
+  --policy homelab-workload-web-serve \
+  homelab-octelium-client
 ```
 
 Do not attach `homelab-human-web-access` to this workload credential. That
@@ -163,7 +170,10 @@ Then authenticate and set up the cluster resources:
 ```sh
 octelium login --domain octelium.stinkyboi.com
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
-octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+octeliumctl create cred \
+  --user homelab-octelium-client \
+  --policy homelab-workload-web-serve \
+  homelab-octelium-client
 ```
 
 Keep the port-forward and temporary host entries in place until the first VPN
@@ -283,7 +293,10 @@ credential:
 
 ```sh
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
-octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+octeliumctl create cred \
+  --user homelab-octelium-client \
+  --policy homelab-workload-web-serve \
+  homelab-octelium-client
 ```
 
 Store the printed credential in `/homelab/octelium/client-auth-token`, then set
