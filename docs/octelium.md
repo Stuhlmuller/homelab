@@ -242,7 +242,12 @@ Argo CD manages:
   `octelium-api.octelium.stinkyboi.com` to
   `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 
-The Octelium Cluster workloads themselves are created and upgraded by `octops`.
+The `octelium-cluster` Application deliberately keeps the `VirtualService` in
+`istio-system` and does not manage the `octelium` namespace. The Octelium
+Cluster workloads and their runtime namespace are created and upgraded by
+`octops`, and genesis deletes/recreates that namespace during `octops init`.
+Automated pruning is disabled on the front-door Application so Argo does not
+delete the formerly managed namespace during the handoff to `octops`.
 Use the repo-owned wrapper after the prerequisite apps are synced:
 
 ```sh

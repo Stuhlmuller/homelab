@@ -140,6 +140,13 @@ the Octelium-native `octops init` command. The steady-state prerequisites are:
   `VirtualService` that routes the Cluster, portal, and API hostnames to the
   Octelium data-plane ingress service in front-proxy mode.
 
+The `octelium-cluster` Argo CD Application must not own the `octelium`
+namespace. Octelium genesis deletes and recreates that namespace during
+`octops init`, so the homelab keeps only the front-door `VirtualService` in
+`istio-system` as repo-owned desired state. Automated pruning stays disabled on
+that Application so Argo does not prune the formerly managed namespace during
+the ownership handoff.
+
 Run `scripts/octelium-cluster-bootstrap.sh --domain octelium.stinkyboi.com`
 after those prerequisites are synced and healthy. The wrapper generates a
 temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
