@@ -193,7 +193,7 @@ spec:
 EOF
 
 if [[ -n "$("${kubectl_cmd[@]}" -n octelium get deploy -o name 2>/dev/null || true)" ]]; then
-  action=(upgrade "$domain" --wait)
+  action=(upgrade "$domain")
 else
   action=(init "$domain" --bootstrap "$bootstrap_file")
 fi
