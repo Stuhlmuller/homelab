@@ -6,6 +6,9 @@ Source: `docs/ci-cd.md`
 
 ## Pipeline Shape
 
+- `Lint` runs on pull requests with Super-Linter against changed files. It is an
+  advisory shared lint signal; repository-specific blocking checks stay in
+  `Terragrunt Plan` and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repo PRs can join the tailnet, run a live
   Terragrunt plan, validate the rendered Terraform plan JSON with Conftest,
@@ -21,6 +24,10 @@ Source: `docs/ci-cd.md`
 ## Security Model
 
 - Workflows use `pull_request` and `push`, not `pull_request_target`.
+- The lint workflow mirrors the shared `Stuhlmuller/workflows` Super-Linter PR
+  check, keeps external actions pinned to full commit SHAs, and sets
+  `DISABLE_ERRORS=true` so findings are surfaced without replacing the stricter
+  static and Terragrunt gates.
 - Policy Bot reads this repository's `.policy.yml` and requires every PR commit
   to have a GitHub-verified signature before normal review approval can satisfy
   the `policy-bot: main` branch protection check. The review-bot path accepts
@@ -119,11 +126,15 @@ against `127.0.0.53`. Keep CI grants limited to TCP `6443` on the API host.
 ## Local Equivalents
 
 ```sh
+nix develop --command pre-commit run --all-files
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
+
+The pre-commit run is the closest local equivalent to the Super-Linter PR
+check. GitHub Actions remains the source for the exact lint status contexts.
 
 Local runs use the current `main` ref for Terragrunt's affected-unit
 comparison. Refresh `main` before reproducing a GitHub plan or apply diff.
