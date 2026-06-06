@@ -39,8 +39,10 @@ contract for Grafana.
   request commit to have a GitHub-verified signature before normal review
   approval can satisfy the `policy-bot: main` branch protection check. The
   explicit comment path accepts only a `👍` comment from `rstuhlmuller`,
-  including PRs opened by `rodman`; it does not read PR body text or other
-  users' comments.
+  including PRs opened by `rodman` and PRs where `rstuhlmuller` authored or
+  committed changes; it does not read PR body text or other users' comments.
+  The organization-member approval rule also opts into author and contributor
+  approvals so matching Stuhlmuller approvals are not ignored as disqualified.
 - External GitHub Actions are pinned to full commit SHAs and checked by
   Conftest.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions

@@ -283,7 +283,10 @@ back to shared `.github/policy.yml`. Homelab's local policy keeps the shared
 review approval choices and adds a Policy Bot condition requiring every PR
 commit to have a GitHub-verified signature. The explicit comment approval path
 counts only a `👍` comment from `rstuhlmuller`, including PRs opened by
-`rodman`, and does not count PR body text or other users' comments.
+`rodman` and PRs where `rstuhlmuller` authored or committed changes, and does
+not count PR body text or other users' comments. The organization-member rule
+also opts into author and contributor approvals so matching Stuhlmuller
+approvals are not ignored as disqualified.
 
 ## Prometheus
 
