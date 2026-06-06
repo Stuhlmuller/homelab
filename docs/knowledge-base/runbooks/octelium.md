@@ -15,7 +15,7 @@ exceptions, until those are replaced in their own change.
 
 The Argo CD Application installs the official Octelium client Helm chart plus
 repo-owned support manifests. The connector is prepared for rootless gVisor
-mode, enrolled in Istio ambient mesh, and kept at `replicaCount: 0` until the
+mode, enrolled in Istio ambient mesh, and run at `replicaCount: 1` after the
 Octelium API, service catalog, and workload credential are verified.
 
 ## Service Catalog
@@ -182,10 +182,10 @@ scripts/octelium-e2e-check.sh --help
 ```
 
 After activation, confirm External Secrets, the service catalog, and the
-connector Deployment in `octelium-client`. Activate the connector only after
-`https://octelium-api.octelium.stinkyboi.com` serves the Octelium API, not a
-generic Istio `404` or gRPC `Unimplemented` response. Stop the connector by
-returning `replicaCount` to `0`.
+connector Deployment in `octelium-client`. Rotate the workload credential only
+after `https://octelium-api.octelium.stinkyboi.com` serves the Octelium API,
+not a generic Istio `404` or gRPC `Unimplemented` response. Stop the connector
+by returning `replicaCount` to `0`.
 
 Rollback for the Enterprise package is an Octelium package operation, not an
 Argo CD sync. Update the desired package version in this runbook first, then
@@ -200,13 +200,13 @@ execute the flag as the binary. The image's upstream Dockerfile sets
 `WORKDIR /home/app` and `CMD ["./podinfo"]`, so the explicit command must be
 `./podinfo` when passing custom args.
 
-The first rollout also started the connector before the external Octelium API
-was verified. The nested Octelium domain makes the client call
+An early rollout started the connector before the external Octelium API was
+verified. The nested Octelium domain makes the client call
 `octelium-api.octelium.stinkyboi.com`, so certificate coverage for
 `*.octelium.stinkyboi.com` must remain in place. The stable GitOps state keeps
-`replicaCount: 0` until the real Octelium API/package path is ready and the
-nested API hostname serves Octelium instead of a generic Istio `404` or gRPC
-`Unimplemented` response.
+the connector active only after the real Octelium API/package path is ready and
+the nested API hostname serves Octelium instead of a generic Istio `404` or
+gRPC `Unimplemented` response.
 
 During full Cluster bootstrap, Multus must stay ready on every node that can
 host Octelium service pods. A 50Mi daemon limit OOMKilled Multus on
