@@ -153,11 +153,9 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
-              openclaw config set \
+              openclaw config set --strict-json \
                 hooks.token \
-                --ref-provider default \
-                --ref-source env \
-                --ref-id GRAFANA_ALERT_HOOK_TOKEN
+                '"${GRAFANA_ALERT_HOOK_TOKEN}"'
               openclaw config set --strict-json \
                 hooks.defaultSessionKey \
                 '"agent:main:hooks:grafana-alerts"'

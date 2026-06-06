@@ -57,9 +57,11 @@ roles need identity-based KMS permissions for both keys.
   in-cluster Alertmanager contact point, Alertmanager fans out with file-backed
   credentials, and Grafana provisioning deletes the retired `homelab-discord`
   and `homelab-openclaw-alert-hook` receiver UIDs so persisted Grafana PVC state
-  does not keep retrying removed integrations. OpenClaw reads the same hook
-  token through `openclaw-secrets` as an env-backed SecretRef for
-  `/hooks/agent`.
+  does not keep retrying removed integrations. OpenClaw receives the same hook
+  token through `openclaw-secrets` as `GRAFANA_ALERT_HOOK_TOKEN`; bootstrap
+  writes `hooks.token` as the plain env-template string
+  `"${GRAFANA_ALERT_HOOK_TOKEN}"` because OpenClaw rejects SecretRef objects for
+  that hook-token surface.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in

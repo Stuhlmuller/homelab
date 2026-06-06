@@ -135,6 +135,11 @@ AuthorizationPolicy allows the
 `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager`
 principal through the ambient default deny.
 
+OpenClaw rejects SecretRef objects for `hooks.token`, so bootstrap writes the
+plain env-template string `"${GRAFANA_ALERT_HOOK_TOKEN}"` instead of using
+`--ref-source env`. This keeps the token out of git while satisfying
+OpenClaw's hook-token policy.
+
 After rotating the hook token, bump both
 `homelab.rst.io/openclaw-alert-hook-ssm-version` on the Prometheus-owned
 ExternalSecret and Alertmanager pod metadata, plus
