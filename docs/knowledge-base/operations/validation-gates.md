@@ -53,6 +53,9 @@ must pass:
 scripts/octelium-e2e-check.sh
 ```
 
+Pass `--octelium-context` and `--homelab-context` when the Octelium control
+plane and homelab connector live in different Kubernetes clusters.
+
 The gate checks the Octelium control plane, synced workload credential, ready
 connector replica, non-Istio Cluster/API/portal responses, the complete homelab
 WEB Service catalog, and a tunnel to `homelab-demo.homelab`.

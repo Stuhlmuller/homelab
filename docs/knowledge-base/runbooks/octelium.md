@@ -94,6 +94,11 @@ the synced workload credential, a ready `octelium-client` replica, non-Istio
 responses from the Cluster/API/portal hostnames, every homelab WEB Service in
 the Octelium catalog, and a tunnel to `homelab-demo.homelab`.
 
+When the Octelium control plane is external to homelab, run the gate with
+separate `--octelium-context` and `--homelab-context` values so the
+control-plane namespace checks and connector checks target the correct
+clusters.
+
 If the gate fails, keep the app `VirtualService` objects and the Tailscale
 Istio `LoadBalancer` fallback in place. Treat the failure output as the
 remaining cutover work queue.

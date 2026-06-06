@@ -9,6 +9,10 @@ TEST_SERVICE="homelab-demo.homelab"
 TEST_PATH="/version"
 LOCAL_PORT="18081"
 OCTELIUMCTL_TIMEOUT_SECONDS=20
+HOMELAB_KUBECONFIG=""
+HOMELAB_CONTEXT=""
+OCTELIUM_KUBECONFIG=""
+OCTELIUM_CONTEXT=""
 
 usage() {
   cat <<'USAGE'
@@ -24,6 +28,10 @@ Options:
   --service NAME              Service to tunnel for the final probe. Default: homelab-demo.homelab
   --path PATH                 HTTP path to probe through the tunnel. Default: /version
   --local-port PORT           Local port for the tunnel. Default: 18081
+  --homelab-kubeconfig PATH   Kubeconfig for the homelab cluster. Default: kubectl default
+  --homelab-context NAME      Kube context for homelab connector checks. Default: kubectl current context
+  --octelium-kubeconfig PATH  Kubeconfig for the Octelium control-plane cluster. Default: kubectl default
+  --octelium-context NAME     Kube context for Octelium control-plane checks. Default: kubectl current context
   -h, --help                  Show this help.
 USAGE
 }
@@ -48,6 +56,22 @@ while [ "$#" -gt 0 ]; do
       ;;
     --local-port)
       LOCAL_PORT="$2"
+      shift 2
+      ;;
+    --homelab-kubeconfig)
+      HOMELAB_KUBECONFIG="$2"
+      shift 2
+      ;;
+    --homelab-context)
+      HOMELAB_CONTEXT="$2"
+      shift 2
+      ;;
+    --octelium-kubeconfig)
+      OCTELIUM_KUBECONFIG="$2"
+      shift 2
+      ;;
+    --octelium-context)
+      OCTELIUM_CONTEXT="$2"
       shift 2
       ;;
     -h|--help)
@@ -106,6 +130,30 @@ require_command() {
   fi
 }
 
+kubectl_homelab() {
+  local kubectl_args=()
+  if [ -n "${HOMELAB_KUBECONFIG}" ]; then
+    kubectl_args+=(--kubeconfig "${HOMELAB_KUBECONFIG}")
+  fi
+  if [ -n "${HOMELAB_CONTEXT}" ]; then
+    kubectl_args+=(--context "${HOMELAB_CONTEXT}")
+  fi
+
+  kubectl "${kubectl_args[@]}" "$@"
+}
+
+kubectl_octelium() {
+  local kubectl_args=()
+  if [ -n "${OCTELIUM_KUBECONFIG}" ]; then
+    kubectl_args+=(--kubeconfig "${OCTELIUM_KUBECONFIG}")
+  fi
+  if [ -n "${OCTELIUM_CONTEXT}" ]; then
+    kubectl_args+=(--context "${OCTELIUM_CONTEXT}")
+  fi
+
+  kubectl "${kubectl_args[@]}" "$@"
+}
+
 run_with_timeout() {
   timeout_seconds="$1"
   shift
@@ -147,27 +195,27 @@ if [ "${FAILURES}" -gt 0 ]; then
 fi
 
 note "Checking Kubernetes control-plane and connector state"
-if kubectl get namespace "${CONTROL_NAMESPACE}" >/dev/null 2>&1; then
+if kubectl_octelium get namespace "${CONTROL_NAMESPACE}" >/dev/null 2>&1; then
   pass "Octelium control namespace exists: ${CONTROL_NAMESPACE}"
 else
   fail "Octelium control namespace is missing: ${CONTROL_NAMESPACE}"
 fi
 
-CONTROL_SERVICES="$(kubectl -n "${CONTROL_NAMESPACE}" get svc -o name 2>/dev/null || true)"
+CONTROL_SERVICES="$(kubectl_octelium -n "${CONTROL_NAMESPACE}" get svc -o name 2>/dev/null || true)"
 if [ -n "${CONTROL_SERVICES}" ]; then
   pass "Octelium control-plane services are visible"
 else
   fail "Octelium control-plane services are not visible"
 fi
 
-if kubectl get namespace "${CLIENT_NAMESPACE}" >/dev/null 2>&1; then
+if kubectl_homelab get namespace "${CLIENT_NAMESPACE}" >/dev/null 2>&1; then
   pass "Octelium client namespace exists: ${CLIENT_NAMESPACE}"
 else
   fail "Octelium client namespace is missing: ${CLIENT_NAMESPACE}"
 fi
 
-if kubectl -n "${CLIENT_NAMESPACE}" get externalsecret octelium-client-auth >/dev/null 2>&1; then
-  READY="$(kubectl -n "${CLIENT_NAMESPACE}" get externalsecret octelium-client-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')"
+if kubectl_homelab -n "${CLIENT_NAMESPACE}" get externalsecret octelium-client-auth >/dev/null 2>&1; then
+  READY="$(kubectl_homelab -n "${CLIENT_NAMESPACE}" get externalsecret octelium-client-auth -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')"
   if [ "${READY}" = "True" ]; then
     pass "octelium-client-auth ExternalSecret is Ready"
   else
@@ -177,15 +225,15 @@ else
   fail "octelium-client-auth ExternalSecret is missing"
 fi
 
-if kubectl -n "${CLIENT_NAMESPACE}" get secret octelium-client-auth >/dev/null 2>&1; then
+if kubectl_homelab -n "${CLIENT_NAMESPACE}" get secret octelium-client-auth >/dev/null 2>&1; then
   pass "octelium-client-auth Secret exists"
 else
   fail "octelium-client-auth Secret is missing"
 fi
 
-if kubectl -n "${CLIENT_NAMESPACE}" get deploy octelium-client >/dev/null 2>&1; then
-  REPLICAS="$(kubectl -n "${CLIENT_NAMESPACE}" get deploy octelium-client -o jsonpath='{.spec.replicas}')"
-  READY_REPLICAS="$(kubectl -n "${CLIENT_NAMESPACE}" get deploy octelium-client -o jsonpath='{.status.readyReplicas}')"
+if kubectl_homelab -n "${CLIENT_NAMESPACE}" get deploy octelium-client >/dev/null 2>&1; then
+  REPLICAS="$(kubectl_homelab -n "${CLIENT_NAMESPACE}" get deploy octelium-client -o jsonpath='{.spec.replicas}')"
+  READY_REPLICAS="$(kubectl_homelab -n "${CLIENT_NAMESPACE}" get deploy octelium-client -o jsonpath='{.status.readyReplicas}')"
   READY_REPLICAS="${READY_REPLICAS:-0}"
   if [ "${REPLICAS}" -ge 1 ] && [ "${READY_REPLICAS}" -ge 1 ]; then
     pass "octelium-client Deployment is active (${READY_REPLICAS}/${REPLICAS})"

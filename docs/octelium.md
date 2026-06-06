@@ -99,6 +99,16 @@ Run the e2e gate before removing any old Tailscale-backed app route:
 scripts/octelium-e2e-check.sh
 ```
 
+If the Octelium control plane is external to the homelab cluster, pass separate
+Kubernetes contexts so control-plane checks run against the Octelium Cluster and
+connector checks run against homelab:
+
+```sh
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
+```
+
 The gate verifies:
 
 - the Octelium control-plane namespace and services exist;
@@ -248,7 +258,9 @@ After activation with `replicaCount: 1`:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
-scripts/octelium-e2e-check.sh
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
 ```
 
 Check the in-cluster demo locally:

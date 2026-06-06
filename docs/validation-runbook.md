@@ -86,6 +86,10 @@ Tailscale-backed app route:
 scripts/octelium-e2e-check.sh
 ```
 
+Use `--octelium-context <octelium-cluster-context>` and
+`--homelab-context <homelab-context>` when those are separate Kubernetes
+clusters.
+
 Expected result: the Octelium control plane exists, `octelium-client` has a
 ready replica, the Cluster/API/portal hostnames are serving Octelium instead of
 generic Istio 404 responses, every homelab WEB Service is present in the

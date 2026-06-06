@@ -69,6 +69,15 @@ Then run:
 scripts/octelium-e2e-check.sh
 ```
 
+Use separate contexts when the Octelium control plane is not the homelab
+cluster:
+
+```sh
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
+```
+
 Only remove the old Tailscale-backed app UI routes after this e2e gate passes.
 
 ## Bootstrap UI Access
@@ -161,7 +170,9 @@ After activation with `replicaCount: 1`:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
-scripts/octelium-e2e-check.sh
+scripts/octelium-e2e-check.sh \
+  --octelium-context <octelium-cluster-context> \
+  --homelab-context <homelab-context>
 ```
 
 From an Octelium client session, query one of the private service names:
