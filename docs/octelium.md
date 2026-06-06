@@ -240,7 +240,7 @@ Argo CD manages:
 - `octelium-cluster`, the Istio `VirtualService` that routes
   `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
   `octelium-api.octelium.stinkyboi.com` to
-  `octelium-ingress-dataplane.octelium.svc.cluster.local:443`.
+  `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 
 The `octelium-cluster` Application deliberately keeps the `VirtualService` in
 `istio-system` and does not manage the `octelium` namespace. The Octelium
@@ -258,11 +258,13 @@ scripts/octelium-cluster-bootstrap.sh \
 
 The wrapper reads the generated storage credentials from
 `octelium-storage-auth`, writes a temporary bootstrap file outside git, and runs
-`octops init` with `OCTELIUM_FRONT_PROXY_MODE=true` so the existing Istio gateway
-terminates TLS. The wrapper also labels the `octelium` namespace with the
-privileged Pod Security profile that Octelium data-plane workloads require. If
-an Octelium deployment already exists, the same wrapper runs `octops upgrade`
-instead.
+`octops init` with Octelium ingress front-proxy mode so the existing Istio
+gateway terminates TLS. The wrapper sets `OCTELIUM_INGRESS_FRONT_PROXY=true`
+for Octelium v0.35 and also sets the older `OCTELIUM_FRONT_PROXY_MODE=true`
+name for documentation compatibility. The wrapper also labels the `octelium`
+namespace with the privileged Pod Security profile that Octelium data-plane
+workloads require. If an Octelium deployment already exists, the same wrapper
+runs `octops upgrade --wait` instead.
 
 After `octops` completes, apply the service catalog and create the connector
 credential:

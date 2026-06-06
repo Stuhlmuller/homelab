@@ -10,10 +10,9 @@ namespace because Octelium genesis deletes and recreates that namespace during
 the previous repo-owned `Namespace/octelium` object is not pruned during the
 handoff to `octops` ownership.
 
-The bootstrap script runs `octops init` with `OCTELIUM_FRONT_PROXY_MODE=true`,
+The bootstrap script runs `octops init` with Octelium ingress front-proxy mode,
 so Istio terminates TLS and proxies HTTP to
-`octelium-ingress-dataplane.octelium.svc.cluster.local:443`. The service's
-targetPort is `8080`, but Istio routes by the Kubernetes service port.
+`octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 
 ## Validation
 
