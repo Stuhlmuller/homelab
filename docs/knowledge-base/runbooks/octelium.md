@@ -200,6 +200,12 @@ after `https://octelium-api.octelium.stinkyboi.com` serves the Octelium API,
 not a generic Istio `404` or gRPC `Unimplemented` response. Stop the connector
 by returning `replicaCount` to `0`.
 
+Human SSO uses Microsoft Entra through
+`IaC/live/azuread-applications/octelium`. That Terragrunt unit owns the Entra
+application registration and writes `/homelab/octelium/entra/*`; run
+`scripts/octelium-entra-idp.sh` after the unit applies to create the Octelium
+Secret `entra-client-secret` and the `entra` IdentityProvider.
+
 Rollback for the Enterprise package is an Octelium package operation, not an
 Argo CD sync. Update the desired package version in this runbook first, then
 run the wrapper with the intended `--version` and `--upgrade` flags.
