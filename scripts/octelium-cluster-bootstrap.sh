@@ -141,6 +141,49 @@ ensure_octelium_namespace_labels() {
     --overwrite
 }
 
+latest_upgrade_job() {
+  local job
+  local latest=""
+
+  while IFS= read -r job; do
+    if [[ "$job" == octelium-genesis-upgrade-* ]]; then
+      latest="$job"
+    fi
+  done < <(
+    "${kubectl_cmd[@]}" -n octelium get job \
+      -l app=octelium,octelium.com/component=genesis,octelium.com/component-type=cluster \
+      --sort-by=.metadata.creationTimestamp \
+      -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true
+  )
+
+  printf '%s\n' "$latest"
+}
+
+wait_for_upgrade_job() {
+  local previous="$1"
+  local job=""
+
+  for ((attempt = 1; attempt <= 30; attempt++)); do
+    job="$(latest_upgrade_job)"
+    if [[ -n "$job" && "$job" != "$previous" ]]; then
+      break
+    fi
+    sleep 2
+  done
+
+  if [[ -z "$job" || "$job" == "$previous" ]]; then
+    echo "error: octops upgrade did not create a new octelium-genesis-upgrade Job" >&2
+    exit 1
+  fi
+
+  echo "Waiting for Octelium upgrade job ${job}..."
+  if ! "${kubectl_cmd[@]}" -n octelium wait --for=condition=complete "job/${job}" --timeout="${wait_timeout}"; then
+    echo "error: Octelium upgrade job ${job} did not complete" >&2
+    "${kubectl_cmd[@]}" -n octelium logs "job/${job}" --tail=200 >&2 || true
+    exit 1
+  fi
+}
+
 echo "Checking Octelium bootstrap prerequisites..."
 "${kubectl_cmd[@]}" get crd network-attachment-definitions.k8s.cni.cncf.io >/dev/null
 "${kubectl_cmd[@]}" -n kube-system rollout status daemonset/kube-multus-ds --timeout="${wait_timeout}"
@@ -192,7 +235,9 @@ spec:
       isTLS: false
 EOF
 
+previous_upgrade_job=""
 if [[ -n "$("${kubectl_cmd[@]}" -n octelium get deploy -o name 2>/dev/null || true)" ]]; then
+  previous_upgrade_job="$(latest_upgrade_job)"
   action=(upgrade "$domain")
 else
   action=(init "$domain" --bootstrap "$bootstrap_file")
@@ -209,6 +254,7 @@ run_octops() {
 
 if [[ "${action[0]}" == "upgrade" ]]; then
   printf 'y\n' | run_octops "${action[@]}"
+  wait_for_upgrade_job "$previous_upgrade_job"
 else
   run_octops "${action[@]}"
 fi
