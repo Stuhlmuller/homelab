@@ -184,6 +184,15 @@ The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
 after the synced pod restarts if those views still show an enable-plugin prompt.
 
+Startup bootstrap pins `agents.defaults.sandbox.mode` to `off`. The Codex
+harness otherwise tries to create a Docker-backed sandbox for every Discord
+agent run, but the OpenClaw application image does not ship Docker and this pod
+does not run Docker-in-Docker. The containment boundary for this deployment is
+the Kubernetes workload itself: the pod has its service account token disabled,
+uses the committed NetworkPolicy and ambient mesh policies, and writes durable
+agent state only under the OpenClaw PVC. If Docker or another sandbox runtime is
+added to the workload later, revisit this setting before enabling it.
+
 During startup, the bootstrap runs OpenClaw's safe doctor repairs when the
 persisted PVC config no longer matches the current OpenClaw schema. This keeps
 version upgrades from blocking on stale runtime config while preserving secrets
