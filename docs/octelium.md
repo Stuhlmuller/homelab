@@ -97,11 +97,17 @@ The upstream Enterprise README requires `octops` `v0.29.0` or later and an
 existing Octelium Cluster. Commercial or production use requires an Enterprise
 license; license material must stay outside git.
 
+The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
+client use `octelium-api.stinkyboi.com`. That hostname is covered by the
+current `*.stinkyboi.com` certificate. Do not set the client domain to
+`octelium.stinkyboi.com` unless the Octelium Cluster presents a certificate for
+`*.octelium.stinkyboi.com`.
+
 Install the pinned package:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 ```
 
@@ -110,7 +116,7 @@ updated to the intended package version:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -166,7 +172,7 @@ curl http://127.0.0.1:8080/version
 Check a service through Octelium from a client machine:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
+octelium connect --domain stinkyboi.com -p grafana.homelab:18080
 curl http://127.0.0.1:18080/api/health
 ```
 

@@ -72,15 +72,21 @@ Current desired Enterprise package version:
 0.22.0
 ```
 
+The Octelium Cluster domain is `stinkyboi.com`, so the client talks to
+`octelium-api.stinkyboi.com`, which is covered by the current `*.stinkyboi.com`
+certificate. A nested domain such as `octelium.stinkyboi.com` would make the
+client use `octelium-api.octelium.stinkyboi.com` and would require a matching
+`*.octelium.stinkyboi.com` certificate.
+
 Install or upgrade it with the repo-owned wrapper:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -112,7 +118,7 @@ kubectl -n octelium-client logs deploy/octelium-client
 From an Octelium client session, query one of the private service names:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
+octelium connect --domain stinkyboi.com -p grafana.homelab:18080
 curl http://127.0.0.1:18080/api/health
 ```
 
@@ -120,7 +126,7 @@ Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p homelab-demo.homelab:18081
+octelium connect --domain stinkyboi.com -p homelab-demo.homelab:18081
 curl http://127.0.0.1:18081/version
 ```
 
