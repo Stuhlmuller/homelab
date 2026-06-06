@@ -58,11 +58,11 @@ scripts/octelium-cluster-bootstrap.sh --help
 After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
 checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
 PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
-The `octelium-cluster` app must render only the Istio front-door route in
-`istio-system`; it must not create the `octelium` namespace because Octelium
-genesis owns that namespace during bootstrap. The bootstrap wrapper applies the
-required privileged Pod Security labels to the namespace after `octops` creates
-it.
+The `octelium-cluster` app must render only the Istio front-door route and its
+HTTP/2 upstream `DestinationRule` in `istio-system`; it must not create the
+`octelium` namespace because Octelium genesis owns that namespace during
+bootstrap. The bootstrap wrapper applies the required privileged Pod Security
+labels to the namespace after `octops` creates it.
 
 Before removing any Tailscale-backed app route, the Octelium replacement path
 must pass:

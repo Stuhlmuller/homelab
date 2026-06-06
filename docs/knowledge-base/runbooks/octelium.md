@@ -141,7 +141,9 @@ the Octelium-native `octops init` command. The steady-state prerequisites are:
   Octelium data-plane ingress service in front-proxy mode. The wrapper sets
   `OCTELIUM_INGRESS_FRONT_PROXY=true` for Octelium v0.35 and also keeps the
   older `OCTELIUM_FRONT_PROXY_MODE=true` compatibility name so the dataplane
-  exposes cleartext HTTP on port `8080` behind the trusted Istio TLS edge.
+  exposes cleartext HTTP on port `8080` behind the trusted Istio TLS edge. The
+  same app owns a `DestinationRule` that upgrades Istio-to-Octelium upstream
+  traffic to HTTP/2 so Octelium CLI gRPC calls keep their response trailers.
 
 The `octelium-cluster` Argo CD Application must not own the `octelium`
 namespace. Octelium genesis deletes and recreates that namespace during
