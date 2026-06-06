@@ -61,13 +61,11 @@ present. Local admin login remains available through `grafana-admin`.
   unauthenticated; shared public API rate limits can turn alert evaluations
   into noisy datasource-error notifications. Re-enable them only after adding a
   reviewed token-backed secret contract.
-- `externalsecret.yaml` references the Grafana admin username, admin password,
-  Entra SSO values, and Discord webhook URL in AWS SSM Parameter Store. No
-  secret values belong in this directory.
-- `values.yaml` sets a non-secret
-  `homelab.rst.io/discord-webhook-ssm-version` pod annotation. Bump this value
-  to the SSM parameter version after rotating the Discord webhook so Argo CD
-  rolls Grafana and file provisioning re-reads the webhook value.
+- `externalsecret.yaml` references only the Grafana admin username, admin
+  password, and Entra SSO values in AWS SSM Parameter Store. No secret values
+  belong in this directory.
+- Alert delivery secrets live with the Prometheus app because Grafana routes
+  alerts to Alertmanager instead of owning direct Discord or OpenClaw receivers.
 
 ## Imported Dashboards
 
@@ -94,12 +92,17 @@ documented path.
 
 Grafana alert rules are provisioned from `values.yaml` and route to the
 `homelab-alertmanager` contact point. That contact point sends to the in-cluster
-Prometheus Alertmanager. The Discord webhook URL and OpenClaw hook token remain
-managed by External Secrets from AWS SSM Parameter Store, but Grafana startup is
-not gated on those notification credentials. Do not add direct Grafana webhook
-receivers that read required secret environment variables unless the startup
-failure mode is tested; a missing or invalid notification secret must not take
-the Grafana UI offline.
+Prometheus Alertmanager, which owns the Discord and OpenClaw receiver fanout.
+Grafana startup is not gated on those notification credentials. Do not add
+direct Grafana webhook receivers that read required secret environment
+variables unless the startup failure mode is tested; a missing or invalid
+notification secret must not take the Grafana UI offline.
+
+The alerting provisioning file deletes the retired `homelab-discord` and
+`homelab-openclaw-alert-hook` receiver UIDs. Keep those `deleteContactPoints`
+entries while the Grafana PVC can still contain earlier direct receiver state;
+otherwise Grafana can keep retrying stale Discord and OpenClaw integrations even
+when the mounted provisioning file no longer declares them.
 
 The Alertmanager datasource is available for viewing Prometheus-managed alerts,
 while Grafana-managed notifications stay controlled by the provisioned Grafana
@@ -165,12 +168,8 @@ After Argo CD syncs, verify the monitoring wiring:
 kubectl -n monitoring get servicemonitor grafana
 kubectl -n monitoring get externalsecret grafana-admin
 kubectl -n monitoring get externalsecret grafana-azuread-sso
-kubectl -n monitoring get externalsecret grafana-discord-webhook
-kubectl -n monitoring get externalsecret grafana-openclaw-alert-hook
 kubectl -n monitoring get secret grafana-admin
 kubectl -n monitoring get secret grafana-azuread-sso
-kubectl -n monitoring get secret grafana-discord-webhook
-kubectl -n monitoring get secret grafana-openclaw-alert-hook
 kubectl -n monitoring get configmap grafana-dashboard-homelab-overview
 kubectl -n monitoring get pods -l app.kubernetes.io/name=grafana
 ```
