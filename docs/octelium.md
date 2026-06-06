@@ -65,8 +65,8 @@ They create:
 Each Service upstream points at the Kubernetes Service DNS name reachable from
 inside this homelab cluster and is served by the workload user. The prepared
 Kubernetes Deployment serves the same explicit list through `octelium.serve`,
-and its workload credential is constrained with matching `--scope` flags when
-the connector is activated.
+and its workload credential is constrained with matching
+`--scope=service:<name>` flags.
 
 Apply the service catalog to the Octelium Cluster:
 

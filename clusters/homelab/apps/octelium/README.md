@@ -31,8 +31,8 @@ The Octelium resource catalog for the external Octelium Cluster is
 
 `values.yaml` runs the connector at `replicaCount: 1` after the Octelium
 Cluster API, service catalog, and workload credential are verified. The
-prepared `--scope` entries keep the workload credential constrained to the same
-service names while the connector is active.
+prepared `--scope=service:<name>` entries keep the workload credential
+constrained to the same service names while the connector is active.
 
 ## Activation And Cutover
 
@@ -195,8 +195,8 @@ curl http://127.0.0.1:18081/version
 
 1. Add the Octelium `Service` to
    `docs/examples/octelium/homelab-services.yaml`.
-2. Add the service name to both `octelium.args` as a `--scope=...` entry and
-   `octelium.serve` in `values.yaml`.
+2. Add the service name to both `octelium.args` as a
+   `--scope=service:<name>` entry and `octelium.serve` in `values.yaml`.
 3. If the destination workload has an Istio `AuthorizationPolicy`, add
    `cluster.local/ns/octelium-client/sa/octelium-client` as an allowed source.
 4. If the destination workload has a Kubernetes `NetworkPolicy`, add the
