@@ -14,6 +14,18 @@ control-plane node and three Zimaboard workers.
 | `zimaboard-1` | `10.1.0.201` | worker | Hyphenated Kubernetes node name |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
+## Monitoring Contract
+
+Grafana alerting treats this four-node set as the expected hardware inventory
+through `clusters/homelab/apps/grafana/values.yaml`. The node rules watch
+`acer`, `zimaboard-0`, `zimaboard-1`, and `zimaboard-2` with kube-state-metrics
+and kubelet/cAdvisor metrics for inventory count, Kubernetes readiness,
+pressure conditions, and workload CPU/memory use against reported machine
+capacity.
+
+Update the Grafana alert regex and expected count in the same change that adds,
+removes, or renames a node.
+
 ## Canonical Endpoints
 
 - Talos endpoint: `10.1.0.199`

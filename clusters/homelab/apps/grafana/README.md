@@ -113,10 +113,19 @@ For alerting-only provisioning changes that do not rotate credentials, bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and processes
 rule additions, changes, and deletions.
 
-The first provisioned rules cover:
+The provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
+- Expected homelab hardware node inventory missing for 5 minutes. The current
+  expected nodes are `acer`, `zimaboard-0`, `zimaboard-1`, and `zimaboard-2`.
+- Kubernetes node `Ready` condition failures for 5 minutes.
+- Kubernetes node `MemoryPressure`, `DiskPressure`, `PIDPressure`, or
+  `NetworkUnavailable` conditions for 5 minutes.
+- Kubernetes workload CPU usage above 85 percent of a node's reported hardware
+  CPU capacity for 15 minutes.
+- Kubernetes workload memory usage above 90 percent of a node's reported
+  hardware memory capacity for 15 minutes.
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
@@ -127,6 +136,14 @@ The first provisioned rules cover:
 - Argo CD Applications remaining explicitly `OutOfSync` for 30 minutes.
 - GitHub Actions workflow alert rules are deleted from provisioning until the
   GitHub datasource uses authenticated API access.
+
+The hardware and node rules intentionally use metrics already scraped by the
+current Prometheus stack: `kube_node_info`, `kube_node_status_condition`,
+`machine_cpu_cores`, `machine_memory_bytes`,
+`container_cpu_usage_seconds_total`, and `container_memory_working_set_bytes`.
+The Prometheus `nodeExporter` subchart remains disabled, so these alerts do not
+claim host filesystem, SMART, or full operating-system memory telemetry. Add a
+reviewed node-exporter path before adding those bare-metal alert families.
 
 The provisioning file also deletes retired OctoBot- and Deluge-specific
 deployment availability rules so Grafana only evaluates the generic workload
@@ -179,7 +196,7 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the nine provisioned `homelab-*` alert rules
+`Entra ID` login path works, and the fourteen provisioned `homelab-*` alert rules
 are present under Grafana Alerting.
 
 ## Rollback
