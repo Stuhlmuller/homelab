@@ -127,7 +127,9 @@ Service catalog declared in
 `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
 Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
 Sonarr, and the Podinfo demo. The matching workload credential lives in SSM at
-`/homelab/octelium/client-auth-token` and renders to `octelium-client-auth`.
+`/homelab/octelium/client-auth-token` and renders through
+`octelium-client-auth` to the versioned target Secret
+`octelium-client-auth-v3`.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at

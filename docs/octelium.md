@@ -22,7 +22,8 @@ types:
 The Kubernetes namespace is `octelium-client`. It contains:
 
 - `octelium-client-auth`, an ExternalSecret that reads
-  `/homelab/octelium/client-auth-token`.
+  `/homelab/octelium/client-auth-token` and renders the versioned workload
+  token Secret consumed by the connector.
 - `octelium-client`, the Helm-managed Octelium client Deployment running with
   `replicaCount: 1` after the Octelium API served real traffic and the catalog
   credential was stored in SSM.
@@ -115,7 +116,8 @@ scripts/octelium-e2e-check.sh \
 The gate verifies:
 
 - the Octelium control-plane namespace and services exist;
-- `octelium-client-auth` is synced from SSM;
+- `octelium-client-auth` is synced from SSM and renders the versioned workload
+  token Secret consumed by the connector;
 - `octelium-client` has at least one ready replica;
 - `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
   `octelium-api.octelium.stinkyboi.com` are not generic Istio `404` responses;
@@ -179,7 +181,8 @@ The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
 `Unimplemented` response. Once that is true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
-`remoteRef.version` on `octelium-client-auth`, bump
+`remoteRef.version` on `octelium-client-auth`, update the ExternalSecret target
+Secret name to match that SSM version, bump
 `homelab.rst.io/octelium-credential-ssm-version` on both the ExternalSecret and
 the connector pod annotations, sync the `octelium` Argo CD Application, then
 run `scripts/octelium-e2e-check.sh`.

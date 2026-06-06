@@ -11,7 +11,8 @@ The deployed Kubernetes pieces are:
 - `octelium-client` namespace with baseline Pod Security and Istio ambient
   enrollment.
 - `octelium-client-auth`, an ExternalSecret sourced from
-  `/homelab/octelium/client-auth-token`.
+  `/homelab/octelium/client-auth-token` and currently rendering the versioned
+  target Secret `octelium-client-auth-v3`.
 - The official Octelium client Helm chart, configured for rootless gVisor mode
   so it does not need `NET_ADMIN` or a privileged namespace.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
@@ -63,7 +64,8 @@ aws ssm put-parameter \
 ```
 
 After the Octelium API is verified, store the credential in SSM, bump
-`remoteRef.version` on `octelium-client-auth`, and bump
+`remoteRef.version` on `octelium-client-auth`, update the ExternalSecret target
+Secret name to match that SSM version, and bump
 `homelab.rst.io/octelium-credential-ssm-version` on both the ExternalSecret and
 the connector pod annotations when the SSM version changes. Let Argo CD sync
 `octelium`; the active connector then serves each configured Octelium Service
