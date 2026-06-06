@@ -108,6 +108,8 @@ remaining cutover work queue.
 `octelium-client-auth` reads `/homelab/octelium/client-auth-token` from AWS SSM.
 The token is created with `octeliumctl create cred --user
 homelab-octelium-client homelab-octelium-client` and must stay outside git.
+Do not attach `homelab-human-web-access` to this workload credential; that
+Policy is intentionally human-only and denies `WORKLOAD` users.
 
 ## Isolation
 
