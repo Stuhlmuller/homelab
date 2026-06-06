@@ -66,9 +66,10 @@ configured Octelium Service from inside the homelab cluster.
 
 Use `octelium.stinkyboi.com` as the Octelium Cluster domain. With this nested
 domain, clients call `octelium-api.octelium.stinkyboi.com`, and the browser
-portal may use `portal.octelium.stinkyboi.com`. The Istio certificate requests
-both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; a one-level
-`*.stinkyboi.com` wildcard does not cover the API hostname.
+portal may use `portal.octelium.stinkyboi.com`. The existing Istio
+`*.stinkyboi.com` certificate covers `octelium.stinkyboi.com`; it also requests
+`*.octelium.stinkyboi.com` because the one-level wildcard does not cover the API
+hostname.
 
 Before DNS or VPN access reaches the Octelium Cluster ingress, bootstrap
 through a local port-forward:
@@ -112,8 +113,8 @@ Current desired Enterprise package version:
 ```
 
 The Octelium Cluster domain is `octelium.stinkyboi.com`, so the client talks to
-`octelium-api.octelium.stinkyboi.com`. Keep certificates valid for both
-`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`.
+`octelium-api.octelium.stinkyboi.com`. Keep certificates valid for the existing
+`*.stinkyboi.com` wildcard plus `*.octelium.stinkyboi.com`.
 
 Install or upgrade it with the repo-owned wrapper:
 

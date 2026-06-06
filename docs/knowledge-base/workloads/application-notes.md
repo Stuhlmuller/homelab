@@ -131,7 +131,8 @@ desired version `0.22.0`; install or upgrade it against the external Octelium
 Cluster with `scripts/octelium-enterprise-package.sh`. The Octelium Cluster
 domain is `octelium.stinkyboi.com`, so clients contact
 `octelium-api.octelium.stinkyboi.com`; certificate and bootstrap routing must
-cover both the apex Octelium host and `*.octelium.stinkyboi.com`.
+keep the Cluster domain covered by `*.stinkyboi.com` and the API/portal names
+covered by `*.octelium.stinkyboi.com`.
 
 ## OctoBot
 
