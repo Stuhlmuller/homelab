@@ -29,10 +29,10 @@ The Octelium resource catalog for the external Octelium Cluster is
 - WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
   OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
 
-`values.yaml` keeps the connector at `replicaCount: 0` until the Octelium
+`values.yaml` runs the connector at `replicaCount: 1` after the Octelium
 Cluster API, service catalog, and workload credential are verified. The
 prepared `--scope` entries keep the workload credential constrained to the same
-service names when the connector is activated.
+service names while the connector is active.
 
 ## Activation And Cutover
 
@@ -59,9 +59,10 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-After the Octelium API is verified, change `replicaCount` to `1` in a follow-up
-PR and let Argo CD sync `octelium`. The connector then serves each configured
-Octelium Service from inside the homelab cluster.
+After the Octelium API is verified, store the credential in SSM, bump the
+`octelium-client-auth` ExternalSecret annotation when the SSM version changes,
+and let Argo CD sync `octelium`. The active connector then serves each
+configured Octelium Service from inside the homelab cluster.
 
 Then run:
 

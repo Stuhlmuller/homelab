@@ -121,9 +121,9 @@ client chart plus repo-owned support manifests in
 image by digest and force `--implementation=gvisor` so the namespace can keep
 baseline Pod Security.
 
-The connector is prepared with `replicaCount: 0` until the Octelium API,
-service catalog, and workload credential are verified.
-When activated, it serves only the explicit WEB Service catalog declared in
+The connector runs with `replicaCount: 1` after the Octelium API, service
+catalog, and workload credential are verified. It serves only the explicit WEB
+Service catalog declared in
 `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
 Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
 Sonarr, and the Podinfo demo. The matching workload credential lives in SSM at

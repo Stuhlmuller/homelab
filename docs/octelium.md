@@ -23,9 +23,9 @@ The Kubernetes namespace is `octelium-client`. It contains:
 
 - `octelium-client-auth`, an ExternalSecret that reads
   `/homelab/octelium/client-auth-token`.
-- `octelium-client`, the Helm-managed Octelium client Deployment prepared with
-  `replicaCount: 0` until the Octelium API serves real traffic and the catalog
-  credential has been stored in SSM.
+- `octelium-client`, the Helm-managed Octelium client Deployment running with
+  `replicaCount: 1` after the Octelium API served real traffic and the catalog
+  credential was stored in SSM.
 - `octelium-demo`, a small Podinfo HTTP service exposed only as a ClusterIP.
 - `octelium-demo-allow-client`, a NetworkPolicy that allows only the Octelium
   client pod to call the demo service once a policy-enforcing CNI exists.
@@ -165,8 +165,8 @@ Keep the port-forward and temporary host entries in place until the first VPN
 or other private access path is working. Remove the temporary host entries once
 real DNS can resolve the same names to the Octelium ingress.
 
-Verify that the external Octelium API is actually serving before enabling the
-connector replica:
+Verify that the external Octelium API is actually serving before rotating the
+workload credential or rolling the connector:
 
 ```sh
 curl -vI https://octelium-api.octelium.stinkyboi.com
@@ -174,10 +174,10 @@ curl -vI https://octelium-api.octelium.stinkyboi.com
 
 The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
-`Unimplemented` response. Once that is true and the
-`homelab-octelium-client` credential is stored in SSM, set `replicaCount` to
-`1` in `clusters/homelab/apps/octelium/values.yaml`, sync the `octelium` Argo
-CD Application, then run `scripts/octelium-e2e-check.sh`.
+`Unimplemented` response. Once that is true, create or rotate the
+`homelab-octelium-client` credential, store it in SSM, bump
+`homelab.rst.io/octelium-credential-ssm-version`, sync the `octelium` Argo CD
+Application, then run `scripts/octelium-e2e-check.sh`.
 
 ## Octelium Enterprise Package
 
