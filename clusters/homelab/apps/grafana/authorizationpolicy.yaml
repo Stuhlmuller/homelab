@@ -17,3 +17,4 @@ spec:
               - cluster.local/ns/monitoring/sa/grafana-alerting-cleanup-v4
               - cluster.local/ns/monitoring/sa/kiali-service-account
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
+              - cluster.local/ns/octelium-client/sa/octelium-client

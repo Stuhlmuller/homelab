@@ -27,9 +27,12 @@ Current enforced controls:
 ## Baseline Namespaces
 
 `argocd`, `cert-manager`, `external-secrets`, `ai`, `automation`, `finance`,
-`monitoring`, and `storage` are explicitly baseline in repo-owned namespace
-manifests. `finance` is not mesh-enrolled; OctoBot's current route is a tailnet
-UI path, not a service-to-service or trading API path.
+`monitoring`, `octelium-client`, and `storage` are explicitly baseline in
+repo-owned namespace manifests. `octelium-client` is ambient-enrolled so the
+Octelium connector can be allowed as
+`cluster.local/ns/octelium-client/sa/octelium-client` by protected workloads.
+`finance` is not mesh-enrolled; OctoBot's current route is a tailnet UI path,
+not a service-to-service or trading API path.
 
 ## Network Policy Gate
 
@@ -42,3 +45,8 @@ ingress gateway traffic, metrics, and app dependencies.
 access in the `automation` namespace. It is desired-state intent, not an
 enforced boundary, until the NetworkPolicy gate above is satisfied or an Istio
 authorization policy for the database path is added and validated.
+
+Octelium-serving paths use Istio `AuthorizationPolicy` for ambient-enrolled
+destinations and Kubernetes `NetworkPolicy` intent for workloads that already
+have NetworkPolicy manifests. The Octelium connector should stay scoped to the
+explicit service catalog in `docs/examples/octelium/homelab-services.yaml`.

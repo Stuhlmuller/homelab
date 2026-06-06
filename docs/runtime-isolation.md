@@ -40,6 +40,8 @@ is known well enough to enforce with Layer 4 identity policy:
   Bot Funnel traffic, monitoring operator webhooks, and other controller paths
   need live source-identity validation before those namespaces move to full
   default-deny.
+- `octelium-client` is ambient-enrolled so the Octelium connector has a stable
+  service-account principal when it serves protected homelab apps.
 
 The current service access contract is:
 
@@ -47,11 +49,21 @@ The current service access contract is:
 |----------------------|-----------|--------------------------|--------|
 | `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI/API ingress. |
 | `litellm` | `ai` | `cluster.local/ns/ai/sa/openclaw` | OpenClaw model gateway calls. |
+| `litellm` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `openclaw` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress and reviewed n8n webhook Funnel traffic forwarded through the Istio gateway. |
+| `n8n` | `automation` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/kiali-service-account` | Kiali dashboard links and health checks. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrapes Grafana metrics. |
+| `grafana` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
+| `kiali` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `kiali` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrape or health access. |
+| `kiali` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
+| `compass` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `compass` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrape access. |
+| `compass` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/grafana` | Grafana Prometheus datasource queries. |
 | `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/kiali-service-account` | Kiali graph and health queries. |
 | `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus self-scrape and in-stack access. |
@@ -102,13 +114,14 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 
 | Namespace | Desired-state owner |
 |-----------|---------------------|
-| `argocd` | `clusters/homelab/argocd/self-management/namespace.yaml` |
 | `cert-manager` | `clusters/homelab/apps/cert-manager/namespace.yaml` |
 | `external-secrets` | `clusters/homelab/apps/external-secrets/namespace.yaml` |
 | `ai` | `clusters/homelab/apps/litellm/namespace.yaml` |
+| `argocd` | `clusters/homelab/argocd/self-management/namespace.yaml` |
 | `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
 | `finance` | `clusters/homelab/apps/octobot/namespace.yaml` |
 | `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
+| `octelium-client` | `clusters/homelab/apps/octelium/namespace.yaml` |
 | `storage` | `clusters/homelab/platform/storage/namespace.yaml` |
 
 Do not broaden privileged admission for convenience. If another workload needs

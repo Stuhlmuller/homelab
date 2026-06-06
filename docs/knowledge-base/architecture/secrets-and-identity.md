@@ -65,6 +65,9 @@ roles need identity-based KMS permissions for both keys.
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token`. The
   token belongs to the external Octelium workload User
   `homelab-octelium-client` and is created outside git with `octeliumctl`.
+  Octelium Enterprise license material, if required for commercial or
+  production use, also stays outside git; add only a safe SSM or
+  ExternalSecret contract in a future change if the package needs one.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
