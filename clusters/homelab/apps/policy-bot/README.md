@@ -14,8 +14,9 @@ Policy Bot looks for a repository-local `.policy.yml` first and falls back to
 `policy.yml` in the shared `.github` repository. The homelab policy requires
 GitHub-verified commit signatures in addition to the normal review approval
 rules. The explicit comment path accepts a `👍` comment from `rstuhlmuller`,
-including PRs opened by `rodman`; PR body text and other users' comments do not
-count for that rule.
+including PRs opened by `rodman` and PRs where `rstuhlmuller` authored or
+committed changes; PR body text and other users' comments do not count for that
+rule.
 
 ## Routes
 

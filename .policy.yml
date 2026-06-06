@@ -21,9 +21,11 @@ approval_rules:
   - name: rstuhlmuller thumbs-up comment approved
     description: >-
       Count only an explicit thumbs-up comment from rstuhlmuller; this approval
-      path is valid for PRs opened by rodman and PR body text does not satisfy
-      this rule.
+      path is valid when rstuhlmuller opened or contributed to the PR, including
+      PRs opened by rodman, and PR body text does not satisfy this rule.
     options:
+      allow_author: true
+      allow_contributor: true
       methods:
         comments: []
         comment_patterns:
