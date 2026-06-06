@@ -114,12 +114,14 @@ client chart plus repo-owned support manifests in
 image by digest and force `--implementation=gvisor` so the namespace can keep
 baseline Pod Security.
 
-The connector runs one replica and serves only the explicit WEB Service catalog
-declared in `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass,
-Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr,
-Radarr, Sonarr, and the Podinfo demo. The matching workload credential lives in
-SSM at `/homelab/octelium/client-auth-token` and renders to
-`octelium-client-auth`. Protected ambient workloads allow
+The connector is prepared with `replicaCount: 0` until the external Octelium
+API, Enterprise package, service catalog, and workload credential are verified.
+When activated, it serves only the explicit WEB Service catalog declared in
+`docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
+Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
+Sonarr, and the Podinfo demo. The matching workload credential lives in SSM at
+`/homelab/octelium/client-auth-token` and renders to `octelium-client-auth`.
+Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
 desired version `0.22.0`; install or upgrade it against the external Octelium
