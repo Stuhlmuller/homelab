@@ -2,6 +2,10 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+- `Lint` runs on pull requests and invokes Super-Linter against changed files
+  with advisory status reporting. It is the shared lightweight lint signal for
+  every PR; the repository-specific blocking checks remain in `Terragrunt Plan`
+  and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repository pull requests then connect to the
   tailnet, run a live Terragrunt plan, and run Conftest policies after the plan
@@ -35,6 +39,11 @@ contract for Grafana.
 
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
+- The lint workflow is copied from the shared `Stuhlmuller/workflows`
+  Super-Linter PR check and keeps its external actions pinned to full commit
+  SHAs. It sets `DISABLE_ERRORS=true`, so lint findings are surfaced as PR
+  status context without replacing the repository's stricter static and
+  Terragrunt gates.
 - Policy Bot reads this repository's `.policy.yml` and requires every pull
   request commit to have a GitHub-verified signature before normal review
   approval can satisfy the `policy-bot: main` branch protection check. The
@@ -277,10 +286,15 @@ credentials so identity drift is not silently ignored.
 Run the same checks locally through the Nix shell:
 
 ```sh
+nix develop --command pre-commit run --all-files
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 ```
+
+The local pre-commit run is the closest repository-owned equivalent to the
+Super-Linter PR check; GitHub Actions remains the source for the exact
+Super-Linter status contexts.
 
 The PR plan script intentionally skips the privileged SSM declaration and
 Kubernetes secret materialization stacks. To review those locally, assume the
