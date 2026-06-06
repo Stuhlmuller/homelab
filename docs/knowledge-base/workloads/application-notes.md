@@ -65,9 +65,12 @@ Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
 `IaC/live/azuread-applications/grafana`, provisions Prometheus and Alertmanager
 datasources, a public GitHub API Infinity datasource, Homelab, Argo CD, and
 GitHub PR status dashboards, and Grafana-managed alerts from repo-owned values.
-Discord webhook URL and the OpenClaw alert hook token come from SSM through
-External Secrets. Grafana sends alert notifications both to Discord and
-directly to OpenClaw's authenticated `/hooks/agent` endpoint.
+Current Grafana-managed alerts route to the in-cluster Alertmanager contact
+point instead of direct Grafana Discord or OpenClaw receivers. The Prometheus
+app owns the Alertmanager receiver fanout and the file-backed Discord/OpenClaw
+notification secrets. Grafana provisioning deletes the retired
+`homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs so stale
+SQLite/PVC state cannot keep retrying removed integrations.
 Alerting-only provisioning changes bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and applies
 rule additions, updates, and deletions.
@@ -162,7 +165,10 @@ OpenClaw persists runtime state on `/data/openclaw`. The startup bootstrap
 keeps the tailnet Control UI origin allow-list in config and stores
 `gateway.auth.token` as an environment-backed SecretRef to
 `OPENCLAW_GATEWAY_TOKEN`, sourced from the generated
-`/homelab/openclaw/app-secret` SSM parameter. When
+`/homelab/openclaw/app-secret` SSM parameter. When the shared Grafana alert
+hook token is populated, bootstrap stores `hooks.token` as an environment-backed
+SecretRef to `GRAFANA_ALERT_HOOK_TOKEN` instead of copying the secret into PVC
+config. When
 `/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
 installs and enables the official `@openclaw/discord` plugin and writes a
 SecretRef to `DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory
@@ -293,9 +299,13 @@ approvals are not ignored as disqualified.
 Prometheus persists metrics and Alertmanager state on `nfs-default`.
 Prometheus is intentionally not exposed through tailnet ingress; Grafana is the
 operator UI. It also owns ServiceMonitors for the Argo CD application
-controller, repo server, and API server metrics services. Re-enable Talos
-component metrics only after adding matching Talos machine-config patches and
-proving targets are `up`.
+controller, repo server, and API server metrics services. Alertmanager owns
+homelab notification fanout for Grafana-managed alerts:
+`alertmanager-discord-webhook` reads the Discord webhook URL, and
+`alertmanager-openclaw-alert-hook` reads the shared OpenClaw hook token from
+SSM so receivers can use file-backed credentials. Re-enable Talos component
+metrics only after adding matching Talos machine-config patches and proving
+targets are `up`.
 
 ## Prowlarr, Radarr, And Sonarr
 

@@ -44,7 +44,8 @@ the allow-list in the same PR that adds its first ExternalSecret.
 | cert-manager | `cloudflare-api-token` | DNS-01 Cloudflare token |
 | external-secrets | `aws-ssm-auth` | Provider credential bridge |
 | tailscale | `operator-oauth` | Operator OAuth client |
-| grafana | `grafana-admin`, `grafana-azuread-sso`, `grafana-discord-webhook`, `grafana-openclaw-alert-hook` | Admin, Entra SSO, alert notifications |
+| grafana | `grafana-admin`, `grafana-azuread-sso` | Admin and Entra SSO |
+| prometheus | `alertmanager-discord-webhook`, `alertmanager-openclaw-alert-hook` | Alertmanager Discord and OpenClaw notification fanout |
 | litellm | `litellm-provider-keys` | Master and provider keys |
 | deluge | `deluge-vpn` | WireGuard profile rendered as `wg0.conf` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | Shared database password and Servarr env |

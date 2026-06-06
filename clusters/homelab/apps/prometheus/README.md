@@ -5,6 +5,21 @@ Prometheus also discovers repo-owned ServiceMonitor objects in the `monitoring`
 namespace so independent Applications, such as Grafana, can expose metrics
 without spoofing the Prometheus Helm release label.
 
+## Alert Routing
+
+Alertmanager owns homelab notification fanout. Grafana-managed alerts route to
+the `homelab-alertmanager` Grafana contact point, which posts alerts to this
+Alertmanager. Alertmanager then delivers notifications to Discord with the
+native Discord receiver and to OpenClaw's authenticated `/hooks/agent` endpoint
+with a bearer-token webhook receiver.
+
+The `alertmanager-discord-webhook` and `alertmanager-openclaw-alert-hook`
+ExternalSecrets read the existing `/homelab/grafana/discord-webhook-url` and
+`/homelab/grafana/openclaw-alert-hook-token` SSM parameters. The Alertmanager
+pods mount those target Secrets under `/etc/alertmanager/secrets/` so the
+receiver config uses file-backed credentials instead of committing secret
+values or depending on Grafana-owned runtime state.
+
 ## Argo CD Metrics
 
 `argocd-servicemonitors.yaml` owns the ServiceMonitor resources that scrape the
@@ -64,4 +79,6 @@ After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 ```sh
 kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
 kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
+kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 ```

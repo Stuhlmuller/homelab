@@ -49,16 +49,17 @@ roles need identity-based KMS permissions for both keys.
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
-- Grafana Discord alerting uses the `grafana-discord-webhook` ExternalSecret
-  in `monitoring`, sourced from `/homelab/grafana/discord-webhook-url`.
-  Webhook rotations require bumping the non-secret Grafana pod annotation that
-  tracks the SSM parameter version because Grafana file provisioning reads the
-  value at startup.
-- Grafana direct-to-Claw alerting uses the generated
-  `/homelab/grafana/openclaw-alert-hook-token` parameter. Grafana reads it
-  through `grafana-openclaw-alert-hook`, and OpenClaw reads the same value
-  through `openclaw-secrets` so the `/hooks/agent` endpoint can authenticate
-  alert deliveries.
+- Alertmanager owns notification delivery credentials for Grafana-managed
+  alerts. The Prometheus app materializes `alertmanager-discord-webhook` and
+  `alertmanager-openclaw-alert-hook` ExternalSecrets in `monitoring`, sourced
+  from `/homelab/grafana/discord-webhook-url` and
+  `/homelab/grafana/openclaw-alert-hook-token`. Grafana routes alerts to the
+  in-cluster Alertmanager contact point, Alertmanager fans out with file-backed
+  credentials, and Grafana provisioning deletes the retired `homelab-discord`
+  and `homelab-openclaw-alert-hook` receiver UIDs so persisted Grafana PVC state
+  does not keep retrying removed integrations. OpenClaw reads the same hook
+  token through `openclaw-secrets` as an env-backed SecretRef for
+  `/hooks/agent`.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
