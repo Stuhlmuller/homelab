@@ -1,9 +1,10 @@
 # Octelium Client Bridge
 
-This repository runs Octelium as a parallel secure-access path without removing
+This repository prepares Octelium as a parallel secure-access path without removing
 Tailscale. Tailscale remains the active tailnet ingress and homelab exit-node
-layer; Octelium runs as a client connector that serves selected in-cluster
-services to an external Octelium Cluster.
+layer; Octelium is modeled as a client connector that can serve selected
+in-cluster services to an external Octelium Cluster once the external API and
+workload credential are verified.
 
 ## Current Model
 
@@ -18,7 +19,8 @@ The Kubernetes namespace is `octelium-client`. It contains:
 
 - `octelium-client-auth`, an ExternalSecret that reads
   `/homelab/octelium/client-auth-token`.
-- `octelium-client`, the Helm-managed Octelium client Deployment.
+- `octelium-client`, the Helm-managed Octelium client Deployment prepared with
+  `replicaCount: 0` until activation.
 - `octelium-demo`, a small Podinfo HTTP service exposed only as a ClusterIP.
 - `octelium-demo-allow-client`, a NetworkPolicy that allows only the Octelium
   client pod to call the demo service once a policy-enforcing CNI exists.
@@ -56,9 +58,10 @@ They create:
   `prowlarr.homelab`, `radarr.homelab`, and `sonarr.homelab`.
 
 Each Service upstream points at the Kubernetes Service DNS name reachable from
-inside this homelab cluster and is served by the workload user. The Kubernetes
-Deployment serves the same explicit list through `octelium.serve`, and its
-workload credential is constrained with matching `--scope` flags.
+inside this homelab cluster and is served by the workload user. The prepared
+Kubernetes Deployment serves the same explicit list through `octelium.serve`,
+and its workload credential is constrained with matching `--scope` flags when
+the connector is activated.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -120,6 +123,18 @@ octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
 Keep the port-forward and temporary host entries in place until the first VPN
 or other private access path is working. Remove the temporary host entries once
 real DNS can resolve the same names to the Octelium ingress.
+
+Verify that the external Octelium API is actually serving before enabling the
+connector replica:
+
+```sh
+curl -vI https://octelium-api.octelium.stinkyboi.com
+```
+
+The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
+endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
+`Unimplemented` response. Once that is true, set `replicaCount` to `1` in
+`clusters/homelab/apps/octelium/values.yaml` in a follow-up PR.
 
 ## Octelium Enterprise Package
 
@@ -191,7 +206,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
 scripts/octelium-enterprise-package.sh --help
 ```
 
-After Argo CD syncs the app:
+After activation with `replicaCount: 1`:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth

@@ -26,7 +26,7 @@ spec:
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: openclaw-allow-tailnet-gateway
+  name: openclaw-allow-required-clients
   namespace: ai
 spec:
   selector:
@@ -39,3 +39,4 @@ spec:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
               - cluster.local/ns/octelium-client/sa/octelium-client
+              - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager

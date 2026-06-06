@@ -34,9 +34,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/discord-webhook-ssm-version: "2"
-  homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
-  homelab.rst.io/alerting-provisioning-version: "8"
+  homelab.rst.io/alerting-provisioning-version: "9"
 plugins:
   - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
@@ -174,6 +172,11 @@ dashboardsConfigMaps:
 alerting:
   contactpoints.yaml:
     apiVersion: 1
+    deleteContactPoints:
+      - orgId: 1
+        uid: homelab-discord
+      - orgId: 1
+        uid: homelab-openclaw-alert-hook
     contactPoints:
       - orgId: 1
         name: homelab-alertmanager

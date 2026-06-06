@@ -52,6 +52,7 @@ The current service access contract is:
 | `litellm` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
 | `openclaw` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
+| `openclaw` | `ai` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager` | Alertmanager direct `/hooks/agent` delivery. |
 | `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress and reviewed n8n webhook Funnel traffic forwarded through the Istio gateway. |
 | `n8n` | `automation` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |

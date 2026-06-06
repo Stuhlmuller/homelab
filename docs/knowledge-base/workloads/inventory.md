@@ -30,8 +30,8 @@ trading workload with a tailnet-only UI.
 | `istio` | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | controller state only | cert-manager |
 | `tailscale` | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | controller state only | external-secrets, istio |
 | `octelium` | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | stateless rootless Octelium client bridge for Cluster domain `octelium.stinkyboi.com`; serves the explicit homelab WEB Service catalog from `docs/examples/octelium/homelab-services.yaml`, plus Podinfo demo service; auth token is `/homelab/octelium/client-auth-token`; Enterprise package `octeliumee` desired version `0.22.0` is installed with `scripts/octelium-enterprise-package.sh` | external-secrets, istio |
-| `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics and Argo CD scrape config | external-secrets, platform-storage |
-| `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, alert rules, public GitHub API PR/status polling, and Discord alerting webhook secret | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
+| `prometheus` | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | persistent metrics, Alertmanager state, Argo CD scrape config, and Alertmanager Discord/OpenClaw notification secrets | external-secrets, platform-storage |
+| `grafana` | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | persistent config, dashboards, alert rules, public GitHub API PR/status polling, and stale direct receiver cleanup | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
 | `kiali` | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | controller state only; read-only mesh UI | istio, tailscale, prometheus, grafana |
 | `compass` | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | stateless Kubernetes service discovery dashboard with tailnet-only UI from the `ghcr.io/adinhodovic/charts` OCI Helm source | cert-manager, istio, tailscale, prometheus |
 | `descheduler` | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | controller state only | prometheus |
@@ -52,7 +52,9 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
 `authorizationpolicy.yaml` files in the affected app overlays.
 
 - `ai` uses a namespace default-deny policy and explicit inbound allows for the
-  tailnet gateway to `litellm` and `openclaw`, plus `openclaw` to `litellm`.
+  tailnet gateway and Octelium connector to `litellm` and `openclaw`, for
+  Alertmanager to reach OpenClaw `/hooks/agent`, and for OpenClaw to reach
+  LiteLLM.
 - `automation` currently restricts `n8n` workload access to the Istio gateway;
   the reviewed public n8n webhook Funnel forwards into that gateway instead of
   directly to the workload. `n8n-postgres` has a NetworkPolicy that documents
