@@ -194,6 +194,8 @@ alerting:
         group_by:
           - grafana_folder
           - alertname
+          - node
+          - condition
           - namespace
           - pod
           - container
@@ -910,3 +912,395 @@ alerting:
             labels:
               severity: warning
               managed_by: grafana-provisioning
+      - orgId: 1
+        name: homelab-nodes
+        folder: Homelab
+        interval: 1m
+        rules:
+          - uid: homelab-expected-node-missing
+            title: Homelab expected hardware node missing
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: count(kube_node_info{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2"}) or vector(0)
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: Expected homelab hardware nodes
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 4
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: Fewer than four expected homelab hardware nodes are present in kube-state-metrics.
+              description: Expected nodes are acer, zimaboard-0, zimaboard-1, and zimaboard-2. Update this rule when the committed cluster topology changes.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/architecture/cluster-topology.md
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              node_scope: hardware
+          - uid: homelab-node-not-ready
+            title: Kubernetes node not Ready
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: kube_node_status_condition{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2",condition="Ready",status="true"} == 0
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: '{{ "{{" }} node {{ "}}" }} Ready=false'
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: OK
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: A homelab Kubernetes node is not Ready.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              node_scope: kubernetes
+          - uid: homelab-node-pressure
+            title: Kubernetes node pressure
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: kube_node_status_condition{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2",condition=~"MemoryPressure|DiskPressure|PIDPressure|NetworkUnavailable",status="true"} == 1
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: '{{ "{{" }} node {{ "}}" }} {{ "{{" }} condition {{ "}}" }}'
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: OK
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: A homelab Kubernetes node reports pressure or unavailable networking.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              node_scope: kubernetes
+          - uid: homelab-node-cpu-saturation
+            title: Homelab hardware CPU saturation
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: |
+                    100 *
+                    sum by (node) (
+                      rate(container_cpu_usage_seconds_total{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2",container!="",image!=""}[5m])
+                    )
+                    /
+                    max by (node) (
+                      machine_cpu_cores{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2"}
+                    )
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: '{{ "{{" }} node {{ "}}" }} CPU used percent'
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 85
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: OK
+            execErrState: Alerting
+            for: 15m
+            annotations:
+              summary: Kubernetes workload CPU usage is above 85 percent of a homelab node's reported hardware CPU capacity.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
+            labels:
+              severity: warning
+              managed_by: grafana-provisioning
+              node_scope: hardware
+          - uid: homelab-node-memory-saturation
+            title: Homelab hardware memory saturation
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: |
+                    100 *
+                    sum by (node) (
+                      container_memory_working_set_bytes{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2",container!="",image!=""}
+                    )
+                    /
+                    max by (node) (
+                      machine_memory_bytes{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2"}
+                    )
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: '{{ "{{" }} node {{ "}}" }} memory used percent'
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 90
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: OK
+            execErrState: Alerting
+            for: 15m
+            annotations:
+              summary: Kubernetes workload memory usage is above 90 percent of a homelab node's reported hardware memory capacity.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/validation-runbook.md
+            labels:
+              severity: warning
+              managed_by: grafana-provisioning
+              node_scope: hardware
