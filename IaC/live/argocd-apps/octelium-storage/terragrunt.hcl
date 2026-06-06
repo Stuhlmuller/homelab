@@ -63,6 +63,29 @@ inputs = {
     }
   }
 
+  ignore_differences = [
+    {
+      group     = "apps"
+      kind      = "StatefulSet"
+      name      = "octelium-postgres"
+      namespace = "octelium-storage"
+      json_pointers = [
+        "/metadata/annotations",
+        "/spec/volumeClaimTemplates"
+      ]
+    },
+    {
+      group     = "apps"
+      kind      = "StatefulSet"
+      name      = "octelium-redis"
+      namespace = "octelium-storage"
+      json_pointers = [
+        "/metadata/annotations",
+        "/spec/volumeClaimTemplates"
+      ]
+    }
+  ]
+
   info = [
     {
       name  = "state"
