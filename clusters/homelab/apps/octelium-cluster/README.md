@@ -12,11 +12,14 @@ handoff to `octops` ownership.
 
 The bootstrap script runs `octops init` with Octelium ingress front-proxy mode,
 so Istio terminates TLS and proxies HTTP to
-`octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
+`octelium-ingress-dataplane.octelium.svc.cluster.local:8080`. The paired
+`DestinationRule` forces HTTP/2 upstream traffic to that Octelium dataplane
+Service so CLI gRPC responses keep their trailers.
 
 ## Validation
 
 ```sh
+kubectl -n istio-system get destinationrule octelium-cluster-dataplane
 kubectl -n octelium get svc octelium-ingress-dataplane
 kubectl -n istio-system get virtualservice octelium-cluster
 curl -I https://octelium.stinkyboi.com
