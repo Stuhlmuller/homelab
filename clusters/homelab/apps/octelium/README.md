@@ -63,10 +63,11 @@ aws ssm put-parameter \
 ```
 
 After the Octelium API is verified, store the credential in SSM, bump
-`homelab.rst.io/octelium-credential-ssm-version` on both
-`octelium-client-auth` and the connector pod annotations when the SSM version
-changes, and let Argo CD sync `octelium`. The active connector then serves each
-configured Octelium Service from inside the homelab cluster.
+`remoteRef.version` on `octelium-client-auth`, and bump
+`homelab.rst.io/octelium-credential-ssm-version` on both the ExternalSecret and
+the connector pod annotations when the SSM version changes. Let Argo CD sync
+`octelium`; the active connector then serves each configured Octelium Service
+from inside the homelab cluster.
 
 Then run:
 

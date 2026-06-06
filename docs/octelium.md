@@ -179,6 +179,7 @@ The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
 `Unimplemented` response. Once that is true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
+`remoteRef.version` on `octelium-client-auth`, bump
 `homelab.rst.io/octelium-credential-ssm-version` on both the ExternalSecret and
 the connector pod annotations, sync the `octelium` Argo CD Application, then
 run `scripts/octelium-e2e-check.sh`.
