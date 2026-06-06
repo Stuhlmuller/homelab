@@ -1,7 +1,9 @@
 # n8n Desired State
 
-n8n runs as a self-hosted automation service behind the tailnet-only Istio
-gateway at `https://n8n.stinkyboi.com`.
+n8n runs as a self-hosted automation service. Human editor/UI access targets
+Octelium as `n8n.homelab`; the existing tailnet Istio route at
+`https://n8n.stinkyboi.com` remains fallback until
+`scripts/octelium-e2e-check.sh` passes.
 
 n8n uses the dedicated `n8n-postgres` support app for workflows, credential
 metadata, user records, and execution history. It still persists
@@ -26,17 +28,19 @@ persisted settings file instead of crashlooping on an accidental mismatch.
 
 ## Access Contract
 
-- Editor/UI host: `https://n8n.stinkyboi.com`
-- Editor/UI ingress: `istio-system/tailnet-gateway`
+- Editor/UI target: `n8n.homelab` through Octelium after cutover
+- Editor/UI fallback: `https://n8n.stinkyboi.com` through
+  `istio-system/tailnet-gateway` until the Octelium gate passes
 - Public webhook Funnel host: `https://n8n-webhook.tail67beb.ts.net`
 - Public webhook paths: `/webhook`, `/webhook-test`, and `/webhook-waiting`
 
 `WEBHOOK_URL` is set to the public Funnel host so n8n advertises externally
-reachable webhook URLs. The editor base URL stays on the tailnet-only
-`n8n.stinkyboi.com` host. The Funnel route is declared as a Tailscale Ingress
-in `istio-system` and forwards only the webhook path prefixes to the Istio
-gateway, which then routes to the n8n service. Do not add the root path, editor
-routes, static assets, or API routes to the Funnel Ingress.
+reachable webhook URLs. The editor base URL stays on the fallback
+`n8n.stinkyboi.com` host until the Octelium e2e gate passes and the app base
+URL can move to the Octelium service name. The Funnel route is declared as a
+Tailscale Ingress in `istio-system` and forwards only the webhook path prefixes
+to the Istio gateway, which then routes to the n8n service. Do not add the root
+path, editor routes, static assets, or API routes to the Funnel Ingress.
 
 The Tailscale tailnet policy must allow the operator proxy tag, currently
 `tag:k8s`, to use Funnel:
@@ -76,10 +80,10 @@ curl -I https://n8n.stinkyboi.com/
 curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
 ```
 
-Expected route behavior: the editor host serves n8n through the tailnet, the
-Funnel host reaches n8n only under the webhook prefixes, and an unknown
-webhook path returns an n8n not-found response until a workflow registers that
-webhook.
+Expected route behavior before the Octelium cutover gate passes: the fallback
+editor host serves n8n through the tailnet, the Funnel host reaches n8n only
+under the webhook prefixes, and an unknown webhook path returns an n8n
+not-found response until a workflow registers that webhook.
 
 ## Rollback
 

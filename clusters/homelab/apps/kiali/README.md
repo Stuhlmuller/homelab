@@ -14,17 +14,20 @@ plane while using the monitoring namespace's existing observability boundary.
 Kiali is exposed at:
 
 ```text
-https://kiali.stinkyboi.com
+kiali.homelab
 ```
 
-The route uses the shared `istio-system/tailnet-gateway` and is annotated with
+The Octelium service is the target human access path. The existing
+`https://kiali.stinkyboi.com` route through the shared
+`istio-system/tailnet-gateway` remains fallback until
+`scripts/octelium-e2e-check.sh` passes and is annotated with
 `homelab.rst.io/public-funnel: "false"`. Do not add a public Funnel route for
 Kiali.
 
 Kiali uses `auth.strategy: anonymous` and `deployment.view_only_mode: true`,
-with an Istio `AuthorizationPolicy` that only allows the tailnet gateway and
-Prometheus to reach the Kiali workload. This keeps the UI immediately usable
-from the tailnet without granting write operations through Kiali. If this
+with an Istio `AuthorizationPolicy` that allows Octelium, the fallback tailnet
+gateway, and Prometheus to reach the Kiali workload. This keeps the UI
+immediately usable without granting write operations through Kiali. If this
 becomes a broader operator surface, replace anonymous access with OIDC-backed
 authentication in a separate change.
 
@@ -33,13 +36,14 @@ authentication in a separate change.
 Kiali depends on:
 
 - Istio for mesh resources and status.
-- Tailscale and the shared tailnet gateway for private HTTPS access.
+- Octelium for target app access, with Tailscale as fallback until the cutover
+  gate passes.
 - Prometheus for graph and health metrics.
 - Grafana for dashboard links.
 
 The monitoring AuthorizationPolicies allow the Kiali service account to query
-Prometheus and Grafana, and allow Prometheus plus the tailnet gateway to reach
-Kiali. Kiali has no persistent storage requirement.
+Prometheus and Grafana, and allow Prometheus plus Octelium and the fallback
+tailnet gateway to reach Kiali. Kiali has no persistent storage requirement.
 
 ## Validation
 
@@ -52,9 +56,10 @@ kubectl -n monitoring get deploy,svc kiali
 curl -I https://kiali.stinkyboi.com
 ```
 
-Expected result: the Argo CD Application is `Synced` and `Healthy`, the Kiali
-custom resource reports a successful reconciliation, the Deployment and Service
-exist in `monitoring`, and the tailnet HTTPS route returns a Kiali response.
+Expected result before the Octelium cutover gate passes: the Argo CD
+Application is `Synced` and `Healthy`, the Kiali custom resource reports a
+successful reconciliation, the Deployment and Service exist in `monitoring`,
+and the fallback tailnet HTTPS route returns a Kiali response.
 
 Rollback by reverting the `kiali` Application registration and this desired
 state path, then syncing Argo CD. Let the Kiali CR delete cleanly before

@@ -89,7 +89,7 @@ inputs = {
     },
     {
       name  = "auth"
-      value = "anonymous read-only; tailnet gateway allowlisted"
+      value = "anonymous read-only; Octelium connector and fallback tailnet gateway allowlisted"
     }
   ]
 }

@@ -67,7 +67,7 @@ argocd app get platform-dns
 argocd app get platform-storage
 ```
 
-For Kiali, verify the operator-created custom resource and tailnet UI:
+For Kiali, verify the operator-created custom resource and current fallback UI:
 
 ```sh
 kubectl -n monitoring get kiali kiali
@@ -75,9 +75,22 @@ kubectl -n monitoring get deploy,svc kiali
 curl -I https://kiali.stinkyboi.com
 ```
 
-Expected result: the Kiali Application is synced and healthy, the Kiali custom
-resource is successfully reconciled, and the tailnet HTTPS route reaches the
-read-only UI.
+Expected result before the Octelium cutover gate passes: the Kiali Application
+is synced and healthy, the Kiali custom resource is successfully reconciled,
+and the fallback tailnet HTTPS route reaches the read-only UI.
+
+For Octelium app-access cutover, run the e2e gate before removing any
+Tailscale-backed app route:
+
+```sh
+scripts/octelium-e2e-check.sh
+```
+
+Expected result: the Octelium control plane exists, `octelium-client` has a
+ready replica, the Cluster/API/portal hostnames are serving Octelium instead of
+generic Istio 404 responses, every homelab WEB Service is present in the
+Octelium catalog, and `homelab-demo.homelab` is reachable through an Octelium
+client tunnel.
 
 For image automation, confirm the controller and selector CR exist before
 relying on update pull requests:
@@ -132,9 +145,9 @@ to PostgreSQL.
 
 n8n webhooks use the reviewed Tailscale Funnel route at
 `https://n8n-webhook.tail67beb.ts.net`. After sync, verify the Tailscale
-Ingress and operator proxy exist, then check that the editor host remains on
-the tailnet-only route and the public host only reaches n8n under webhook path
-prefixes:
+Ingress and operator proxy exist, then check that the fallback editor host still
+works until the Octelium gate passes and the public host only reaches n8n under
+webhook path prefixes:
 
 ```sh
 kubectl -n istio-system get gateway,ingress n8n-webhook-funnel

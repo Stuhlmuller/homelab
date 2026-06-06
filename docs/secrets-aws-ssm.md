@@ -154,8 +154,8 @@ a normal GitOps rollout.
 
 Octelium reads `/homelab/octelium/client-auth-token` through
 `octelium-client-auth` as the workload authentication token for the
-`homelab-octelium-client` User in the external Octelium Cluster. Keep the
-token out of git; after replacing the placeholder directly in SSM, bump
+`homelab-octelium-client` User in the Octelium Cluster. Keep the token out of
+git; after replacing the placeholder directly in SSM, bump
 `homelab.rst.io/octelium-credential-ssm-version` in
 `clusters/homelab/apps/octelium/externalsecret.yaml` if External Secrets needs
 to reread the value.

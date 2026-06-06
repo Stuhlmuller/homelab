@@ -85,7 +85,7 @@ inputs = {
   info = [
     {
       name  = "ingress"
-      value = "https://compass.stinkyboi.com via tailnet-only Istio gateway"
+      value = "Octelium target compass.homelab; tailnet stinkyboi.com route remains fallback until octelium e2e passes"
     },
     {
       name  = "state"

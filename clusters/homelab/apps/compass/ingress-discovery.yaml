@@ -24,7 +24,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: argocd.stinkyboi.com
+    - host: argocd.homelab
       http:
         paths:
           - path: /
@@ -51,7 +51,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: compass.stinkyboi.com
+    - host: compass.homelab
       http:
         paths:
           - path: /
@@ -71,14 +71,14 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Deluge
-    compass.adinhodovic.com/description: Tailnet-only torrent client behind the media VPN path.
+    compass.adinhodovic.com/description: Torrent client reached through the Octelium app access plane.
     compass.adinhodovic.com/icon: selfhst:deluge
     compass.adinhodovic.com/primary-tag: kubernetes
     compass.adinhodovic.com/tags: media
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: deluge.stinkyboi.com
+    - host: deluge.homelab
       http:
         paths:
           - path: /
@@ -105,7 +105,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: grafana.stinkyboi.com
+    - host: grafana.homelab
       http:
         paths:
           - path: /
@@ -132,7 +132,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: kiali.stinkyboi.com
+    - host: kiali.homelab
       http:
         paths:
           - path: /
@@ -159,7 +159,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: litellm.stinkyboi.com
+    - host: litellm.homelab
       http:
         paths:
           - path: /
@@ -186,7 +186,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: n8n.stinkyboi.com
+    - host: n8n.homelab
       http:
         paths:
           - path: /
@@ -213,7 +213,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: octobot.stinkyboi.com
+    - host: octobot.homelab
       http:
         paths:
           - path: /
@@ -240,7 +240,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: openclaw.stinkyboi.com
+    - host: openclaw.homelab
       http:
         paths:
           - path: /
@@ -267,7 +267,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: policy-bot.stinkyboi.com
+    - host: policy-bot.homelab
       http:
         paths:
           - path: /
@@ -294,7 +294,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: prowlarr.stinkyboi.com
+    - host: prowlarr.homelab
       http:
         paths:
           - path: /
@@ -321,7 +321,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: radarr.stinkyboi.com
+    - host: radarr.homelab
       http:
         paths:
           - path: /
@@ -348,7 +348,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: sonarr.stinkyboi.com
+    - host: sonarr.homelab
       http:
         paths:
           - path: /

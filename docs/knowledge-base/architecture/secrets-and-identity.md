@@ -65,8 +65,8 @@ roles need identity-based KMS permissions for both keys.
   target Secret `operator-oauth`.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token`. The
-  token belongs to the external Octelium workload User
-  `homelab-octelium-client` and is created outside git with `octeliumctl`.
+  token belongs to the Octelium workload User `homelab-octelium-client` and is
+  created outside git with `octeliumctl`.
   Octelium Enterprise license material, if required for commercial or
   production use, also stays outside git; add only a safe SSM or
   ExternalSecret contract in a future change if the package needs one.

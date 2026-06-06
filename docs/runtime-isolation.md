@@ -14,8 +14,8 @@ than a reliable isolation control.
 
 Current enforced controls are therefore:
 
-- tailnet-only Istio ingress routes reviewed in
-  `docs/networking-tailnet-ingress.md`;
+- fallback Istio ingress routes reviewed in `docs/networking-tailnet-ingress.md`
+  while the Octelium cutover gate is still failing;
 - workload-scoped Istio policy only where the namespace is explicitly
   mesh-enrolled and the gateway path is proven to keep working;
 - namespace Pod Security labels that are explicit in repo-owned namespace
@@ -47,22 +47,22 @@ The current service access contract is:
 
 | Destination workload | Namespace | Allowed source principal | Reason |
 |----------------------|-----------|--------------------------|--------|
-| `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI/API ingress. |
+| `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Fallback tailnet UI/API ingress. |
 | `litellm` | `ai` | `cluster.local/ns/ai/sa/openclaw` | OpenClaw model gateway calls. |
 | `litellm` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
-| `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Fallback tailnet UI ingress. |
 | `openclaw` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `openclaw` | `ai` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager` | Alertmanager direct `/hooks/agent` delivery. |
-| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress and reviewed n8n webhook Funnel traffic forwarded through the Istio gateway. |
+| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Fallback tailnet UI ingress and reviewed n8n webhook Funnel traffic forwarded through the Istio gateway. |
 | `n8n` | `automation` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
-| `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Fallback tailnet UI ingress. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/kiali-service-account` | Kiali dashboard links and health checks. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrapes Grafana metrics. |
 | `grafana` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
-| `kiali` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `kiali` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Fallback tailnet UI ingress. |
 | `kiali` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrape or health access. |
 | `kiali` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
-| `compass` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Tailnet UI ingress. |
+| `compass` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Fallback tailnet UI ingress. |
 | `compass` | `monitoring` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus` | Prometheus scrape access. |
 | `compass` | `monitoring` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `prometheus` | `monitoring` | `cluster.local/ns/monitoring/sa/grafana` | Grafana Prometheus datasource queries. |
@@ -90,9 +90,9 @@ Ambient is intentionally not enabled for:
 - `media`, because Deluge Gluetun/WireGuard and the current media app traffic
   model still need a repo-owned waypoint or equivalent policy design before
   re-enrollment;
-- `finance`, because OctoBot is exposed only through a tailnet UI route today
-  and needs a separate identity-policy design before any service-to-service or
-  trading API control path is mesh-enrolled;
+- `finance`, because OctoBot has only a fallback tailnet UI route until the
+  Octelium gate passes and needs a separate identity-policy design before any
+  service-to-service or trading API control path is mesh-enrolled;
 - `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
   API server, webhook, NFS, and controller paths need separate validation;
 - `istio-system` and `tailscale`, because they are privileged networking

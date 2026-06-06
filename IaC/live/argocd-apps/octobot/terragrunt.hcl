@@ -85,7 +85,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "OctoBot UI is tailnet-only; no exchange credentials, real-trading strategy, or autostart configuration are committed"
+      value = "OctoBot UI targets octobot.homelab via Octelium; tailnet route remains fallback until octelium e2e passes; no exchange credentials, real-trading strategy, or autostart configuration are committed"
     }
   ]
 }
