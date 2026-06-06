@@ -12,19 +12,39 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
       statuses: write
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
         with:
-          # Super-Linter needs the full git history to find changed files.
           fetch-depth: 0
           persist-credentials: false
-      - name: Super-linter
-        uses: super-linter/super-linter@9e863354e3ff62e0727d37183162c4a88873df41  # v8.6.0
+      - name: Changed-file lint
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_ERRORS: true
-          VALIDATE_ALL_CODEBASE: false
-          DEFAULT_BRANCH: ${{ github.event.pull_request.base.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          base_ref="origin/${BASE_REF}"
+          changed_files="$(git diff --name-only --diff-filter=ACMRT "${base_ref}...HEAD")"
+
+          git diff --check "${base_ref}...HEAD"
+
+          if [ -z "${changed_files}" ]; then
+            echo "No changed files to lint."
+            exit 0
+          fi
+
+          echo "${changed_files}" | sed 's/^/linting changed file: /'
+
+          yaml_files="$(printf '%s\n' "${changed_files}" | awk '/\.(yaml|yml)$/')"
+          if [ -n "${yaml_files}" ]; then
+            # shellcheck disable=SC2086
+            ruby -e 'require "yaml"; ARGV.each { |file| YAML.load_file(file) }' ${yaml_files}
+          fi
+
+          shell_files="$(printf '%s\n' "${changed_files}" | awk '/\.sh$/')"
+          if [ -n "${shell_files}" ]; then
+            # shellcheck disable=SC2086
+            bash -n ${shell_files}
+          fi
