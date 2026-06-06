@@ -33,11 +33,10 @@ webhook exceptions.
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali
   is the read-only mesh UI.
-- OctoBot uses `octobot.homelab` through Octelium after cutover; the
-  `https://octobot.stinkyboi.com` route is fallback until the gate passes. Its
-  exchange credentials and strategy state live on PVC-backed runtime
+- OctoBot uses `https://octobot.stinkyboi.com` through Octelium after cutover.
+  Its exchange credentials and strategy state live on PVC-backed runtime
   configuration, not in public repository files.
-- Octelium serves private WEB Services from
+- Octelium serves private app Services from
   `docs/examples/octelium/homelab-services.yaml`; public webhook callbacks stay
   on their reviewed Tailscale Funnel exceptions until separately redesigned.
 

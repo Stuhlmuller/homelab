@@ -16,12 +16,28 @@ so Istio terminates TLS and proxies HTTP to
 `DestinationRule` forces HTTP/2 upstream traffic to that Octelium dataplane
 Service so CLI gRPC responses keep their trailers.
 
+Client VPN traffic uses Octelium Gateway hostnames such as
+`_gw-*.octelium.stinkyboi.com`, not the Istio front-proxy route. After
+`octops` creates or updates Gateway status, run
+`scripts/octelium-gateway-dns.sh --dry-run` and then
+`scripts/octelium-gateway-dns.sh` so those exact hostnames resolve to the
+advertised gateway IPv6 addresses instead of falling through to the tailnet
+wildcard DNS record.
+
+Application hostnames stay on the existing `*.stinkyboi.com` names. After the
+Octelium service catalog is applied and Service status reports private
+addresses, run `scripts/octelium-app-dns.sh --dry-run` and then
+`scripts/octelium-app-dns.sh` so exact app names such as
+`grafana.stinkyboi.com` resolve to Octelium `fdee:b76e:*` IPv6 service IPs.
+
 ## Validation
 
 ```sh
 kubectl -n istio-system get destinationrule octelium-cluster-dataplane
 kubectl -n octelium get svc octelium-ingress-dataplane
 kubectl -n istio-system get virtualservice octelium-cluster
+scripts/octelium-gateway-dns.sh --dry-run
+scripts/octelium-app-dns.sh --dry-run
 curl -I https://octelium.stinkyboi.com
 curl -I https://portal.octelium.stinkyboi.com
 curl -I https://octelium-api.octelium.stinkyboi.com

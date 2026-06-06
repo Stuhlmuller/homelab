@@ -9,7 +9,7 @@ spec:
           of:
             - match: ctx.user.spec.type == "HUMAN"
             - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.spec.mode == "WEB"
+            - match: ctx.service.spec.mode in ["WEB", "TCP"]
 ---
 kind: Policy
 metadata:
@@ -23,7 +23,7 @@ spec:
             - match: ctx.user.metadata.name == "homelab-octelium-client"
             - match: ctx.user.spec.type == "WORKLOAD"
             - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.spec.mode == "WEB"
+            - match: ctx.service.spec.mode in ["WEB", "TCP"]
 ---
 kind: Namespace
 metadata:
@@ -40,48 +40,62 @@ metadata:
 spec:
   type: WORKLOAD
 ---
+kind: User
+metadata:
+  name: homelab-e2e
+spec:
+  type: HUMAN
+---
 kind: Service
 metadata:
   name: argocd.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: argocd.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://argocd-server.argocd.svc.cluster.local:80
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: compass.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: compass.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://compass.monitoring.svc.cluster.local:8080
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: deluge.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: deluge.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://deluge.media.svc.cluster.local:8112
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: grafana.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: grafana.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://grafana.monitoring.svc.cluster.local:80
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
@@ -99,97 +113,115 @@ kind: Service
 metadata:
   name: kiali.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: kiali.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://kiali.monitoring.svc.cluster.local:20001
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: litellm.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: litellm.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://litellm.ai.svc.cluster.local:4000
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: n8n.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: n8n.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://n8n.automation.svc.cluster.local:5678
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: octobot.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: octobot.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://octobot.finance.svc.cluster.local:5001
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: openclaw.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: openclaw.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://openclaw.ai.svc.cluster.local:8080
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: policy-bot.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: policy-bot.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://policy-bot.automation.svc.cluster.local:8080
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: prowlarr.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: prowlarr.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://prowlarr.media.svc.cluster.local:9696
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: radarr.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: radarr.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://radarr.media.svc.cluster.local:7878
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client
 ---
 kind: Service
 metadata:
   name: sonarr.homelab
 spec:
-  mode: WEB
-  port: 80
+  attrs:
+    appHostname: sonarr.stinkyboi.com
+  mode: TCP
+  port: 443
   config:
     upstream:
-      url: http://sonarr.media.svc.cluster.local:8989
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
       user: homelab-octelium-client

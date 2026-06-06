@@ -27,7 +27,8 @@ podSecurityContext:
 securityContext:
   allowPrivilegeEscalation: false
   capabilities:
-    add: []
+    add:
+      - NET_ADMIN
     drop:
       - ALL
 
@@ -45,7 +46,7 @@ octelium:
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret key name, not a secret value.
   authTokenSecretKey: auth-token
   args:
-    - --implementation=gvisor
+    - --implementation=tun
     - --ip-mode=v4
     - --scope=api:user.MainService/Connect
     - --scope=service:argocd.homelab
