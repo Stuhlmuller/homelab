@@ -4,3 +4,11 @@ resources:
   - authorizationpolicy.yaml
   - ingress-discovery.yaml
   - virtualservice.yaml
+patches:
+  - target:
+      kind: Ingress
+      labelSelector: compass.adinhodovic.com/enabled=true
+    patch: |-
+      - op: add
+        path: /metadata/annotations/argocd.argoproj.io~1ignore-healthcheck
+        value: "true"
