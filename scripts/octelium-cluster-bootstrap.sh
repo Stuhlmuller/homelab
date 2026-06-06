@@ -165,7 +165,7 @@ for secret_name in POSTGRES_PASSWORD REDIS_PASSWORD; do
   fi
 done
 
-bootstrap_file="$(mktemp "${TMPDIR:-/tmp}/octelium-bootstrap.XXXXXX.yaml")"
+bootstrap_file="$(mktemp "${TMPDIR:-/tmp}/octelium-bootstrap.XXXXXX")"
 cleanup() {
   rm -f "$bootstrap_file"
 }
