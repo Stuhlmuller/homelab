@@ -195,9 +195,15 @@ plugin and sets the default agent model to `openai/gpt-5.5`, which is the
 canonical Codex-backed OpenAI model route for new OpenClaw config. The
 bootstrap enables the bundled `memory-wiki` plugin so Imported Insights and
 Memory Palace are available after the Control UI tab is reloaded. The
-bootstrap runs safe `openclaw doctor --fix --non-interactive` repairs when the
-persisted PVC config does not validate against the current OpenClaw schema, and
-sets `gateway.mode` to `local` for the container-managed gateway process.
+bootstrap pins `agents.defaults.sandbox.mode` to `off` because the Codex
+harness otherwise tries to start a Docker sandbox, while the OpenClaw app image
+does not include Docker and this Kubernetes workload does not run
+Docker-in-Docker. The pod boundary, disabled service account token, NetworkPolicy
+and ambient mesh policies are the runtime containment model for Discord-triggered
+agent work. The bootstrap runs safe `openclaw doctor --fix --non-interactive`
+repairs when the persisted PVC config does not validate against the current
+OpenClaw schema, and sets `gateway.mode` to `local` for the container-managed
+gateway process.
 GitHub App identity is SSM-backed: `GITHUB_APP_ID` and
 `GITHUB_APP_INSTALLATION_ID` come from `openclaw-secrets`, while the private key
 is mounted from `openclaw-github-app-private-key` and referenced by
