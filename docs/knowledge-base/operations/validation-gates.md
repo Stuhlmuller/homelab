@@ -17,6 +17,18 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
 
+## GitHub Workflow Checks
+
+Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
+`policy/workflows.rego`. External `uses:` references must be pinned to a full
+40-character commit SHA; keep an optional trailing version comment when it helps
+reviewers map the immutable pin back to the upstream release tag.
+
+The CodeQL Advanced workflow in `.github/workflows/codeql.yml` runs on pushes
+and pull requests targeting `main` and on its weekly schedule. Treat it as
+CI/CD security automation: workflow edits should pass the static policy gate
+locally before relying on GitHub's code scanning result.
+
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
 
