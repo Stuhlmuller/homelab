@@ -24,10 +24,11 @@ Source: `docs/ci-cd.md`
 ## Security Model
 
 - Workflows use `pull_request` and `push`, not `pull_request_target`.
-- The lint workflow mirrors the shared `Stuhlmuller/workflows` Super-Linter PR
-  check, keeps external actions pinned to full commit SHAs, and sets
-  `DISABLE_ERRORS=true` so findings are surfaced without replacing the stricter
-  static and Terragrunt gates.
+- The lint workflow is a lightweight changed-file gate that preserves the
+  required `Lint` status context without replacing the stricter static and
+  Terragrunt gates. It checks diff whitespace, parses changed YAML, runs
+  `bash -n` on changed shell scripts, and uses workflow concurrency to cancel
+  stale lint runs for the same pull request.
 - Policy Bot reads this repository's `.policy.yml` and requires every PR commit
   to have a GitHub-verified signature before normal review approval can satisfy
   the `policy-bot: main` branch protection check. The explicit comment path

@@ -131,27 +131,33 @@ require_command() {
 }
 
 kubectl_homelab() {
-  local kubectl_args=()
-  if [ -n "${HOMELAB_KUBECONFIG}" ]; then
-    kubectl_args+=(--kubeconfig "${HOMELAB_KUBECONFIG}")
-  fi
   if [ -n "${HOMELAB_CONTEXT}" ]; then
-    kubectl_args+=(--context "${HOMELAB_CONTEXT}")
+    set -- --context "${HOMELAB_CONTEXT}" "$@"
+  fi
+  if [ -n "${HOMELAB_KUBECONFIG}" ]; then
+    set -- --kubeconfig "${HOMELAB_KUBECONFIG}" "$@"
   fi
 
-  kubectl "${kubectl_args[@]}" "$@"
+  if kubectl "$@"; then
+    return 0
+  else
+    return "$?"
+  fi
 }
 
 kubectl_octelium() {
-  local kubectl_args=()
-  if [ -n "${OCTELIUM_KUBECONFIG}" ]; then
-    kubectl_args+=(--kubeconfig "${OCTELIUM_KUBECONFIG}")
-  fi
   if [ -n "${OCTELIUM_CONTEXT}" ]; then
-    kubectl_args+=(--context "${OCTELIUM_CONTEXT}")
+    set -- --context "${OCTELIUM_CONTEXT}" "$@"
+  fi
+  if [ -n "${OCTELIUM_KUBECONFIG}" ]; then
+    set -- --kubeconfig "${OCTELIUM_KUBECONFIG}" "$@"
   fi
 
-  kubectl "${kubectl_args[@]}" "$@"
+  if kubectl "$@"; then
+    return 0
+  else
+    return "$?"
+  fi
 }
 
 run_with_timeout() {
@@ -172,14 +178,21 @@ run_with_timeout() {
     elapsed_seconds=$((elapsed_seconds + 1))
   done
 
-  wait "${command_pid}"
+  if wait "${command_pid}"; then
+    return 0
+  else
+    return "$?"
+  fi
 }
 
 cleanup() {
+  local cleanup_status
+  cleanup_status=$?
   if [ -n "${CONNECT_PID}" ]; then
     kill "${CONNECT_PID}" >/dev/null 2>&1 || true
     wait "${CONNECT_PID}" >/dev/null 2>&1 || true
   fi
+  return "${cleanup_status}"
 }
 trap cleanup EXIT
 

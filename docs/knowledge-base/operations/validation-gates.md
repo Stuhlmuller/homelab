@@ -60,6 +60,11 @@ The gate checks the Octelium control plane, synced workload credential, ready
 connector replica, non-Istio Cluster/API/portal responses, the complete homelab
 WEB Service catalog, and a tunnel to `homelab-demo.homelab`.
 
+The script must report failed probes as `FAIL:` lines and finish with a nonzero
+exit code when any check fails. Keep expected-negative probes inside guarded
+conditionals and avoid empty-array expansion under `set -u`, so macOS Bash 3.2
+does not exit before the failure summary.
+
 ## Policy Bot Checks
 
 Repository-local `.policy.yml` changes need Policy Bot validation, not just YAML
