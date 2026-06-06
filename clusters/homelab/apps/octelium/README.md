@@ -62,6 +62,42 @@ After the external Octelium API is verified, change `replicaCount` to `1` in a
 follow-up PR and let Argo CD sync `octelium`. The connector then serves each
 configured Octelium Service from inside the homelab cluster.
 
+## Bootstrap UI Access
+
+Use `octelium.stinkyboi.com` as the Octelium Cluster domain. With this nested
+domain, clients call `octelium-api.octelium.stinkyboi.com`, and the browser
+portal may use `portal.octelium.stinkyboi.com`. The Istio certificate requests
+both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; a one-level
+`*.stinkyboi.com` wildcard does not cover the API hostname.
+
+Before DNS or VPN access reaches the Octelium Cluster ingress, bootstrap
+through a local port-forward:
+
+```sh
+kubectl -n octelium get svc
+sudo kubectl -n octelium port-forward svc/<octelium-ingress-service> 443:443
+```
+
+Add temporary host entries on the bootstrap workstation:
+
+```text
+127.0.0.1 octelium.stinkyboi.com
+127.0.0.1 portal.octelium.stinkyboi.com
+127.0.0.1 octelium-api.octelium.stinkyboi.com
+```
+
+Then authenticate and apply the catalog while the port-forward is running:
+
+```sh
+octelium login --domain octelium.stinkyboi.com
+octeliumctl apply docs/examples/octelium/homelab-services.yaml
+octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+```
+
+Store the generated workload credential in SSM as shown above, sync the Argo CD
+Application, and remove the temporary host entries after the VPN or real DNS
+path works.
+
 ## Enterprise Package
 
 Octelium Enterprise is tracked as the `octeliumee` package from
@@ -75,21 +111,19 @@ Current desired Enterprise package version:
 0.22.0
 ```
 
-The Octelium Cluster domain is `stinkyboi.com`, so the client talks to
-`octelium-api.stinkyboi.com`, which is covered by the current `*.stinkyboi.com`
-certificate. A nested domain such as `octelium.stinkyboi.com` would make the
-client use `octelium-api.octelium.stinkyboi.com` and would require a matching
-`*.octelium.stinkyboi.com` certificate.
+The Octelium Cluster domain is `octelium.stinkyboi.com`, so the client talks to
+`octelium-api.octelium.stinkyboi.com`. Keep certificates valid for both
+`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`.
 
 Install or upgrade it with the repo-owned wrapper:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain stinkyboi.com \
+  --domain octelium.stinkyboi.com \
   --version 0.22.0
 
 scripts/octelium-enterprise-package.sh \
-  --domain stinkyboi.com \
+  --domain octelium.stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -121,7 +155,7 @@ kubectl -n octelium-client logs deploy/octelium-client
 From an Octelium client session, query one of the private service names:
 
 ```sh
-octelium connect --domain stinkyboi.com -p grafana.homelab:18080
+octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
 curl http://127.0.0.1:18080/api/health
 ```
 
@@ -129,7 +163,7 @@ Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:
 
 ```sh
-octelium connect --domain stinkyboi.com -p homelab-demo.homelab:18081
+octelium connect --domain octelium.stinkyboi.com -p homelab-demo.homelab:18081
 curl http://127.0.0.1:18081/version
 ```
 

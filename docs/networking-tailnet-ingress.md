@@ -45,7 +45,9 @@ Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 `istio-system`. cert-manager requests this wildcard certificate through the
 `letsencrypt-cloudflare` ClusterIssuer, which uses DNS-01 challenges for
 `stinkyboi.com` and reads its Cloudflare token from the External Secrets-managed
-`cloudflare-api-token` Secret in the `cert-manager` namespace. The
+`cloudflare-api-token` Secret in the `cert-manager` namespace. The certificate
+also includes `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com` for the
+nested Octelium Cluster domain and API/portal bootstrap names. The
 `homelab-selfsigned` issuer remains available only as a local fallback and is
 not referenced by the ingress wildcard certificate.
 

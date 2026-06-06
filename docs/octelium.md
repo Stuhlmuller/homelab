@@ -86,15 +86,53 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
+## Bootstrap UI Access
+
+The Octelium Cluster domain for this homelab is `octelium.stinkyboi.com`.
+With that domain, Octelium clients contact
+`octelium-api.octelium.stinkyboi.com`, and browser access may also use
+`portal.octelium.stinkyboi.com`. The Istio wildcard certificate now requests
+both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com` so the nested API
+and portal names can present a valid certificate.
+
+Until DNS or another private route reaches the Octelium Cluster ingress, use a
+local port-forward as the bootstrap path:
+
+```sh
+kubectl -n octelium get svc
+sudo kubectl -n octelium port-forward svc/<octelium-ingress-service> 443:443
+```
+
+For the bootstrap workstation only, point the Octelium Cluster names at the
+local port-forward:
+
+```text
+127.0.0.1 octelium.stinkyboi.com
+127.0.0.1 portal.octelium.stinkyboi.com
+127.0.0.1 octelium-api.octelium.stinkyboi.com
+```
+
+Then authenticate and set up the cluster resources:
+
+```sh
+octelium login --domain octelium.stinkyboi.com
+octeliumctl apply docs/examples/octelium/homelab-services.yaml
+octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+```
+
+Keep the port-forward and temporary host entries in place until the first VPN
+or other private access path is working. Remove the temporary host entries once
+real DNS can resolve the same names to the Octelium ingress.
+
 Verify that the external Octelium API is actually serving before enabling the
 connector replica:
 
 ```sh
-curl -vI https://octelium-api.stinkyboi.com
+curl -vI https://octelium-api.octelium.stinkyboi.com
 ```
 
-The TLS certificate must match `octelium-api.stinkyboi.com`, and the endpoint
-must be the Octelium API rather than a generic Istio `404` or gRPC
+The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
+endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
 `Unimplemented` response. Once that is true, set `replicaCount` to `1` in
 `clusters/homelab/apps/octelium/values.yaml` in a follow-up PR.
 
@@ -112,17 +150,16 @@ The upstream Enterprise README requires `octops` `v0.29.0` or later and an
 existing Octelium Cluster. Commercial or production use requires an Enterprise
 license; license material must stay outside git.
 
-The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
-client use `octelium-api.stinkyboi.com`. That hostname is covered by the
-current `*.stinkyboi.com` certificate. Do not set the client domain to
-`octelium.stinkyboi.com` unless the Octelium Cluster presents a certificate for
-`*.octelium.stinkyboi.com`.
+The configured Octelium Cluster domain is `octelium.stinkyboi.com`, which makes
+the client use `octelium-api.octelium.stinkyboi.com`. The certificate must
+cover both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; the existing
+one-level `*.stinkyboi.com` wildcard is not enough for the API hostname.
 
 Install the pinned package:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain stinkyboi.com \
+  --domain octelium.stinkyboi.com \
   --version 0.22.0
 ```
 
@@ -131,7 +168,7 @@ updated to the intended package version:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain stinkyboi.com \
+  --domain octelium.stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -187,7 +224,7 @@ curl http://127.0.0.1:8080/version
 Check a service through Octelium from a client machine:
 
 ```sh
-octelium connect --domain stinkyboi.com -p grafana.homelab:18080
+octelium connect --domain octelium.stinkyboi.com -p grafana.homelab:18080
 curl http://127.0.0.1:18080/api/health
 ```
 
