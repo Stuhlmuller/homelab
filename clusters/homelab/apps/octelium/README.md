@@ -12,8 +12,8 @@ The deployed Kubernetes pieces are:
   `/homelab/octelium/client-auth-token`.
 - The official Octelium client Helm chart, configured for rootless gVisor mode
   so it does not need `NET_ADMIN` or a privileged namespace.
-- `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
-  harmless smoke-test target.
+- `octelium-demo`, a tiny in-cluster HTTP service kept scaled to zero until the
+  connector is ready to be reactivated as a harmless smoke-test target.
 - `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
   Octelium client pod once a policy-enforcing CNI exists.
 
@@ -27,9 +27,10 @@ The Octelium resource catalog for the external Octelium Cluster is
 - WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
   OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
 
-`values.yaml` runs one connector replica and serves only that explicit service
-catalog. The `--scope` entries keep the workload credential constrained to the
-same service names.
+`values.yaml` keeps the connector scaled to zero until the in-cluster
+credential and runtime are validated. When activated, the connector serves only
+that explicit service catalog. The `--scope` entries keep the workload
+credential constrained to the same service names.
 
 ## Activation
 
@@ -56,8 +57,9 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-After Argo CD syncs `octelium`, the connector serves each configured Octelium
-Service from inside the homelab cluster.
+Set `replicaCount` to `1` and scale `octelium-demo` to `1` after validating the
+secret and runtime prerequisites. After Argo CD syncs `octelium`, the connector
+serves each configured Octelium Service from inside the homelab cluster.
 
 ## Enterprise Package
 
@@ -139,8 +141,8 @@ curl http://127.0.0.1:18081/version
 
 ## Rollback
 
-Set `replicaCount` back to `0` and sync the Argo CD Application. That stops the
-connector without touching Tailscale.
+Keep or set `replicaCount` to `0` and sync the Argo CD Application. That stops
+the connector without touching Tailscale.
 
 To remove the external Octelium resources:
 
