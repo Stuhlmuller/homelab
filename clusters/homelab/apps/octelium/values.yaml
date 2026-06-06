@@ -14,7 +14,7 @@ serviceAccount:
   name: ""
 
 podAnnotations:
-  homelab.rst.io/octelium-credential-ssm-version: "3"
+  homelab.rst.io/octelium-credential-ssm-version: "5"
   homelab.rst.io/octelium-mode: client-connector
 
 podLabels:
@@ -41,12 +41,13 @@ resources:
 octelium:
   domain: octelium.stinkyboi.com
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret name, not a secret value.
-  authTokenSecret: octelium-client-auth-v3
+  authTokenSecret: octelium-client-auth-v5
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret key name, not a secret value.
   authTokenSecretKey: auth-token
   args:
     - --implementation=gvisor
     - --ip-mode=v4
+    - --scope=api:user.MainService/Connect
     - --scope=service:argocd.homelab
     - --scope=service:compass.homelab
     - --scope=service:deluge.homelab

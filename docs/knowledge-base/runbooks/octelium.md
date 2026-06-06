@@ -22,13 +22,17 @@ Octelium API, service catalog, and workload credential are verified.
 
 `docs/examples/octelium/homelab-services.yaml` is the Octelium Cluster resource
 catalog. It creates Namespace `homelab`, Policy `homelab-human-web-access`,
-workload User `homelab-octelium-client`, and WEB Services for Argo CD, Compass,
-Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr,
-Radarr, Sonarr, and `homelab-demo`.
+Policy `homelab-workload-web-serve`, workload User
+`homelab-octelium-client`, and WEB Services for Argo CD, Compass, Deluge,
+Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
+Sonarr, and `homelab-demo`.
 
 The policy allows authenticated human client sessions to WEB Services in the
-`homelab` namespace. The Kubernetes connector serves the same service list with
-matching `--scope=service:<name>` flags.
+`homelab` namespace. The workload policy allows the single
+`homelab-octelium-client` workload User to serve those WEB Services. The
+Kubernetes connector serves the same service list with
+`--scope=api:user.MainService/Connect` and matching `--scope=service:<name>`
+flags.
 
 ## Enterprise Package
 
@@ -106,9 +110,10 @@ remaining cutover work queue.
 ## Secret Contract
 
 `octelium-client-auth` reads `/homelab/octelium/client-auth-token` from AWS SSM
-and renders the versioned target Secret `octelium-client-auth-v3`.
+and renders the versioned target Secret `octelium-client-auth-v5`.
 The token is created with `octeliumctl create cred --user
-homelab-octelium-client homelab-octelium-client` and must stay outside git.
+homelab-octelium-client --policy homelab-workload-web-serve
+homelab-octelium-client` and must stay outside git.
 Do not attach `homelab-human-web-access` to this workload credential; that
 Policy is intentionally human-only and denies `WORKLOAD` users.
 When the SSM value changes, bump `homelab.rst.io/octelium-credential-ssm-version`

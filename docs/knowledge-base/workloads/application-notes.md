@@ -126,10 +126,14 @@ catalog, and workload credential are verified. It serves only the explicit WEB
 Service catalog declared in
 `docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
 Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
-Sonarr, and the Podinfo demo. The matching workload credential lives in SSM at
+Sonarr, and the Podinfo demo. The catalog keeps human WEB access separate from
+the workload WEB-serving rule for `homelab-octelium-client`. The matching
+workload credential lives in SSM at
 `/homelab/octelium/client-auth-token` and renders through
 `octelium-client-auth` to the versioned target Secret
-`octelium-client-auth-v3`.
+`octelium-client-auth-v5`. The connector scope list includes
+`api:user.MainService/Connect` plus one `service:<name>` entry per served WEB
+Service.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at

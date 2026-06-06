@@ -12,7 +12,7 @@ The deployed Kubernetes pieces are:
   enrollment.
 - `octelium-client-auth`, an ExternalSecret sourced from
   `/homelab/octelium/client-auth-token` and currently rendering the versioned
-  target Secret `octelium-client-auth-v3`.
+  target Secret `octelium-client-auth-v5`.
 - The official Octelium client Helm chart, configured for rootless gVisor mode
   so it does not need `NET_ADMIN` or a privileged namespace.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
@@ -26,14 +26,18 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Octelium Namespace `homelab`.
 - Policy `homelab-human-web-access`, which allows authenticated human client
   sessions to WEB Services in the namespace.
+- Policy `homelab-workload-web-serve`, which allows only the
+  `homelab-octelium-client` workload User to serve the namespace's WEB
+  Services.
 - Workload User `homelab-octelium-client`.
 - WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
   OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
 
 `values.yaml` runs the connector at `replicaCount: 1` after the Octelium
 Cluster API, service catalog, and workload credential are verified. The
-prepared `--scope=service:<name>` entries keep the workload credential
-constrained to the same service names while the connector is active.
+prepared `--scope=api:user.MainService/Connect` and
+`--scope=service:<name>` entries keep the workload credential constrained to
+the User API stream and same service names while the connector is active.
 
 ## Activation And Cutover
 
@@ -46,7 +50,10 @@ octeliumctl apply docs/examples/octelium/homelab-services.yaml
 Create an authentication token credential for the workload user:
 
 ```sh
-octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+octeliumctl create cred \
+  --user homelab-octelium-client \
+  --policy homelab-workload-web-serve \
+  homelab-octelium-client
 ```
 
 Do not attach `homelab-human-web-access` to this workload credential. That
@@ -118,7 +125,10 @@ Then authenticate and apply the catalog while the port-forward is running:
 ```sh
 octelium login --domain octelium.stinkyboi.com
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
-octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
+octeliumctl create cred \
+  --user homelab-octelium-client \
+  --policy homelab-workload-web-serve \
+  homelab-octelium-client
 ```
 
 Store the generated workload credential in SSM as shown above, sync the Argo CD
@@ -203,7 +213,9 @@ curl http://127.0.0.1:18081/version
 1. Add the Octelium `Service` to
    `docs/examples/octelium/homelab-services.yaml`.
 2. Add the service name to both `octelium.args` as a
-   `--scope=service:<name>` entry and `octelium.serve` in `values.yaml`.
+   `--scope=service:<name>` entry and `octelium.serve` in `values.yaml`. Keep
+   `--scope=api:user.MainService/Connect` present so the scoped token can open
+   the User API connection stream.
 3. If the destination workload has an Istio `AuthorizationPolicy`, add
    `cluster.local/ns/octelium-client/sa/octelium-client` as an allowed source.
 4. If the destination workload has a Kubernetes `NetworkPolicy`, add the
