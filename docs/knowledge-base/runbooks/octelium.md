@@ -37,20 +37,20 @@ state and it does not replace the `octelium-client` connector in this homelab.
 
 Current desired package version: `0.22.0`.
 
-The Octelium Cluster domain is `stinkyboi.com`, which makes the client contact
-`octelium-api.stinkyboi.com`. The current cluster certificate is
-`*.stinkyboi.com`, so `octelium.stinkyboi.com` is too deep as a client domain
-unless a future certificate also covers `*.octelium.stinkyboi.com`.
+The Octelium Cluster domain is `octelium.stinkyboi.com`, which makes the client
+contact `octelium-api.octelium.stinkyboi.com`. The Istio wildcard certificate
+requests both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; the
+one-level `*.stinkyboi.com` wildcard alone is not enough for the API hostname.
 
 Install or upgrade with:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain stinkyboi.com \
+  --domain octelium.stinkyboi.com \
   --version 0.22.0
 
 scripts/octelium-enterprise-package.sh \
-  --domain stinkyboi.com \
+  --domain octelium.stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -58,6 +58,30 @@ scripts/octelium-enterprise-package.sh \
 The operator workstation needs `octops` `v0.29.0` or later and kubeconfig
 access to the Octelium Cluster. Keep commercial or production license material
 outside git; add only safe references or secret contracts here.
+
+## Bootstrap Access
+
+When DNS or VPN access to the Octelium Cluster is not available yet, bootstrap
+the UI and API through a local port-forward to the Octelium Cluster ingress:
+
+```sh
+kubectl -n octelium get svc
+sudo kubectl -n octelium port-forward svc/<octelium-ingress-service> 443:443
+```
+
+On the bootstrap workstation only, add temporary host entries for:
+
+```text
+octelium.stinkyboi.com
+portal.octelium.stinkyboi.com
+octelium-api.octelium.stinkyboi.com
+```
+
+Then run `octelium login --domain octelium.stinkyboi.com`, apply
+`docs/examples/octelium/homelab-services.yaml`, create the
+`homelab-octelium-client` credential, store it in SSM, and sync the Argo CD
+Application. Remove the temporary host entries after real DNS or the first VPN
+path reaches the same Octelium ingress.
 
 ## Secret Contract
 
@@ -111,7 +135,6 @@ run the wrapper with the intended `--version` and `--upgrade` flags.
 If Argo CD is `Synced` but `Degraded`, inspect the child pods and events before
 changing the Application. On June 6, 2026 the first rollout degraded because the
 Podinfo demo had only `args: [--port=9898]`, which made containerd try to
-execute the flag as the binary, and because the connector domain was
-`octelium.stinkyboi.com`, which made the client call
-`octelium-api.octelium.stinkyboi.com` with a certificate that only covered
-`*.stinkyboi.com`.
+execute the flag as the binary. The nested Octelium domain also requires
+certificate coverage for `*.octelium.stinkyboi.com`; do not remove that SAN
+unless the connector domain changes again.

@@ -123,7 +123,10 @@ SSM at `/homelab/octelium/client-auth-token` and renders to
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
 desired version `0.22.0`; install or upgrade it against the external Octelium
-Cluster with `scripts/octelium-enterprise-package.sh`.
+Cluster with `scripts/octelium-enterprise-package.sh`. The Octelium Cluster
+domain is `octelium.stinkyboi.com`, so clients contact
+`octelium-api.octelium.stinkyboi.com`; certificate and bootstrap routing must
+cover both the apex Octelium host and `*.octelium.stinkyboi.com`.
 
 ## OctoBot
 

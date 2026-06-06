@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEFAULT_DOMAIN="stinkyboi.com"
+DEFAULT_DOMAIN="octelium.stinkyboi.com"
 DEFAULT_VERSION="0.22.0"
 PACKAGE="octeliumee"
 
@@ -13,7 +13,7 @@ Install or upgrade the Octelium Enterprise package in an already running
 Octelium Cluster.
 
 Options:
-  --domain DOMAIN       Octelium Cluster domain. Default: stinkyboi.com
+  --domain DOMAIN       Octelium Cluster domain. Default: octelium.stinkyboi.com
   --version VERSION     Package version to install. Default: 0.22.0
                         Use "latest" to omit --version.
   --upgrade             Upgrade an existing enterprise package installation.
