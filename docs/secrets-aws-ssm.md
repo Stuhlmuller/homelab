@@ -156,9 +156,9 @@ Octelium reads `/homelab/octelium/client-auth-token` through
 `octelium-client-auth` as the workload authentication token for the
 `homelab-octelium-client` User in the Octelium Cluster. Keep the token out of
 git; after replacing the placeholder directly in SSM, bump
-`homelab.rst.io/octelium-credential-ssm-version` in
+`remoteRef.version` and `homelab.rst.io/octelium-credential-ssm-version` in
 `clusters/homelab/apps/octelium/externalsecret.yaml` so External Secrets
-rereads the value, and bump the same annotation in
+rereads the exact Parameter Store version, and bump the same annotation in
 `clusters/homelab/apps/octelium/values.yaml` so the connector pod restarts with
 the refreshed environment variable.
 
