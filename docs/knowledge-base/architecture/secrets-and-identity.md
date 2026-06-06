@@ -67,6 +67,12 @@ roles need identity-based KMS permissions for both keys.
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token`. The
   token belongs to the Octelium workload User `homelab-octelium-client` and is
   created outside git with `octeliumctl`.
+  The self-hosted Octelium Cluster storage layer uses generated
+  `/homelab/octelium/postgres-password` and
+  `/homelab/octelium/redis-password` values materialized by
+  `octelium-storage-auth`; `scripts/octelium-cluster-bootstrap.sh` reads those
+  Kubernetes Secret values into a temporary `octops init` bootstrap file that is
+  never committed.
   Octelium Enterprise license material, if required for commercial or
   production use, also stays outside git; add only a safe SSM or
   ExternalSecret contract in a future change if the package needs one.

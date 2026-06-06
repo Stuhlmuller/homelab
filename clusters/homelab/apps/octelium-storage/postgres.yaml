@@ -1,0 +1,153 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: octelium-postgres
+  namespace: octelium-storage
+  labels:
+    app.kubernetes.io/name: octelium-postgres
+    app.kubernetes.io/part-of: octelium
+spec:
+  selector:
+    app.kubernetes.io/name: octelium-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: octelium-postgres
+  namespace: octelium-storage
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The pod runs as the QNAP NFS anonymous UID 65534 so PostgreSQL owns the squashed data directory without root.
+    checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
+    checkov.io/skip3: CKV2_K8S_6=octelium-storage is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+  labels:
+    app.kubernetes.io/name: octelium-postgres
+    app.kubernetes.io/part-of: octelium
+spec:
+  serviceName: octelium-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: octelium-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: octelium-postgres
+        app.kubernetes.io/part-of: octelium
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: require-real-password
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              password="$(cat /run/secrets/octelium-storage/POSTGRES_PASSWORD)"
+              if [ -z "$password" ] || [ "$password" = "REPLACE_ME" ]; then
+                echo "Octelium PostgreSQL password is empty or still uses REPLACE_ME in SSM" >&2
+                exit 1
+              fi
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/octelium-storage
+              readOnly: true
+      containers:
+        - name: postgres
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER
+              value: octelium
+            - name: POSTGRES_DB
+              value: octelium
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/octelium-storage/POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgres
+              containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - octelium
+                - -d
+                - octelium
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - octelium
+                - -d
+                - octelium
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/octelium-storage
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: auth
+          secret:
+            secretName: octelium-storage-auth
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: octelium-postgres
+          app.kubernetes.io/part-of: octelium
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-default
+        resources:
+          requests:
+            storage: 20Gi
