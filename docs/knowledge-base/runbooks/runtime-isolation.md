@@ -23,6 +23,7 @@ Current enforced controls:
 | --- | --- |
 | `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` |
 | `istio-system` | Istio gateway and dataplane networking |
+| `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`; labels are applied by `scripts/octelium-cluster-bootstrap.sh` after `octops` creates the namespace |
 | `tailscale` | Tailscale operator proxy Pods need privileged networking |
 
 ## Baseline Namespaces

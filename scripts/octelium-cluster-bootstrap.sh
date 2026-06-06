@@ -120,6 +120,27 @@ require_label() {
   fi
 }
 
+ensure_octelium_namespace_labels() {
+  if ! "${kubectl_cmd[@]}" get namespace octelium >/dev/null 2>&1; then
+    return 0
+  fi
+
+  "${kubectl_cmd[@]}" label namespace octelium \
+    app.kubernetes.io/name=octelium \
+    app.kubernetes.io/part-of=octelium \
+    pod-security.kubernetes.io/enforce=privileged \
+    pod-security.kubernetes.io/enforce-version=latest \
+    pod-security.kubernetes.io/audit=restricted \
+    pod-security.kubernetes.io/audit-version=latest \
+    pod-security.kubernetes.io/warn=restricted \
+    pod-security.kubernetes.io/warn-version=latest \
+    --overwrite
+
+  "${kubectl_cmd[@]}" annotate namespace octelium \
+    "homelab.rst.io/privileged-namespace-justification=Octelium data-plane workloads are installed by octops and require privileged network access." \
+    --overwrite
+}
+
 echo "Checking Octelium bootstrap prerequisites..."
 "${kubectl_cmd[@]}" get crd network-attachment-definitions.k8s.cni.cncf.io >/dev/null
 "${kubectl_cmd[@]}" -n kube-system rollout status daemonset/kube-multus-ds --timeout="${wait_timeout}"
@@ -128,6 +149,7 @@ echo "Checking Octelium bootstrap prerequisites..."
 require_label zimaboard-0 octelium.com/node-mode-dataplane
 require_label zimaboard-1 octelium.com/node-mode-controlplane
 require_label zimaboard-2 octelium.com/node-mode-dataplane
+ensure_octelium_namespace_labels
 
 postgres_password="$(jsonpath_secret POSTGRES_PASSWORD)"
 redis_password="$(jsonpath_secret REDIS_PASSWORD)"
@@ -182,6 +204,7 @@ fi
 
 echo "Running octops ${action[0]} for ${domain} in front-proxy mode..."
 OCTELIUM_FRONT_PROXY_MODE=true "${octops_cmd[@]}" "${action[@]}"
+ensure_octelium_namespace_labels
 
 echo "Waiting for Octelium control-plane pods..."
 "${kubectl_cmd[@]}" -n octelium wait --for=condition=Ready pod --all --timeout="${wait_timeout}"

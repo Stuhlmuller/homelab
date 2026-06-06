@@ -150,7 +150,9 @@ the ownership handoff.
 Run `scripts/octelium-cluster-bootstrap.sh --domain octelium.stinkyboi.com`
 after those prerequisites are synced and healthy. The wrapper generates a
 temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
-`OCTELIUM_FRONT_PROXY_MODE=true`, and waits for the `octelium` namespace pods.
+`OCTELIUM_FRONT_PROXY_MODE=true`, labels the `octelium` namespace with the
+privileged Pod Security profile required by the Octelium data plane, and waits
+for the namespace pods.
 
 ## Validation
 
