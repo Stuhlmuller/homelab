@@ -41,9 +41,9 @@ and does not replace the Tailscale exit node.
 Istio terminates HTTPS with `stinkyboi-com-tls` in `istio-system`.
 cert-manager requests the wildcard certificate through
 `letsencrypt-cloudflare`, backed by the `cloudflare-api-token` Secret from
-External Secrets. The certificate also includes `octelium.stinkyboi.com` and
-`*.octelium.stinkyboi.com` for the nested Octelium Cluster domain and bootstrap
-API/portal names.
+External Secrets. The certificate also includes `*.octelium.stinkyboi.com` for
+the nested Octelium API/portal bootstrap names; the existing `*.stinkyboi.com`
+SAN already covers the `octelium.stinkyboi.com` Cluster domain.
 
 ## Homelab Exit Node
 

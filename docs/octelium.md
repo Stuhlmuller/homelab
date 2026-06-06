@@ -91,9 +91,10 @@ aws ssm put-parameter \
 The Octelium Cluster domain for this homelab is `octelium.stinkyboi.com`.
 With that domain, Octelium clients contact
 `octelium-api.octelium.stinkyboi.com`, and browser access may also use
-`portal.octelium.stinkyboi.com`. The Istio wildcard certificate now requests
-both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com` so the nested API
-and portal names can present a valid certificate.
+`portal.octelium.stinkyboi.com`. The existing Istio `*.stinkyboi.com`
+certificate covers `octelium.stinkyboi.com`; it also requests
+`*.octelium.stinkyboi.com` so the nested API and portal names can present a
+valid certificate.
 
 Until DNS or another private route reaches the Octelium Cluster ingress, use a
 local port-forward as the bootstrap path:
@@ -151,9 +152,10 @@ existing Octelium Cluster. Commercial or production use requires an Enterprise
 license; license material must stay outside git.
 
 The configured Octelium Cluster domain is `octelium.stinkyboi.com`, which makes
-the client use `octelium-api.octelium.stinkyboi.com`. The certificate must
-cover both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; the existing
-one-level `*.stinkyboi.com` wildcard is not enough for the API hostname.
+the client use `octelium-api.octelium.stinkyboi.com`. The existing
+`*.stinkyboi.com` wildcard covers the Cluster domain, and the certificate must
+also cover `*.octelium.stinkyboi.com`; the one-level wildcard is not enough for
+the API hostname.
 
 Install the pinned package:
 

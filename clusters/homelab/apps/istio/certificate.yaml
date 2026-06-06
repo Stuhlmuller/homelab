@@ -11,7 +11,6 @@ spec:
     rotationPolicy: Always
   dnsNames:
     - "*.stinkyboi.com"
-    - octelium.stinkyboi.com
     - "*.octelium.stinkyboi.com"
   issuerRef:
     group: cert-manager.io

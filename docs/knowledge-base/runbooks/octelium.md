@@ -40,8 +40,9 @@ Current desired package version: `0.22.0`.
 
 The Octelium Cluster domain is `octelium.stinkyboi.com`, which makes the client
 contact `octelium-api.octelium.stinkyboi.com`. The Istio wildcard certificate
-requests both `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; the
-one-level `*.stinkyboi.com` wildcard alone is not enough for the API hostname.
+uses `*.stinkyboi.com` for the Cluster domain and also requests
+`*.octelium.stinkyboi.com`; the one-level wildcard alone is not enough for the
+API hostname.
 
 Install or upgrade with:
 
