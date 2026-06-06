@@ -114,7 +114,7 @@ jsonpath_secret() {
 require_label() {
   local node="$1"
   local label="$2"
-  if ! "${kubectl_cmd[@]}" get node "$node" -l "$label" -o name | grep -Fxq "node/${node}"; then
+  if ! "${kubectl_cmd[@]}" get node -l "$label" -o name | grep -Fxq "node/${node}"; then
     echo "error: node ${node} is missing required label ${label}" >&2
     exit 1
   fi
