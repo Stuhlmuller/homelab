@@ -12,9 +12,10 @@ The current app registration is `octelium`, the Kubernetes namespace is
 and homelab exit node.
 
 The Argo CD Application installs the official Octelium client Helm chart plus
-repo-owned support manifests. The connector runs one rootless gVisor replica,
-is enrolled in Istio ambient mesh, and serves only the explicit Services listed
-in `clusters/homelab/apps/octelium/values.yaml`.
+repo-owned support manifests. The connector is prepared for rootless gVisor
+mode, enrolled in Istio ambient mesh, and kept at `replicaCount: 0` until the
+external Octelium API, Enterprise package, service catalog, and workload
+credential are verified.
 
 ## Service Catalog
 
@@ -99,7 +100,9 @@ scripts/octelium-enterprise-package.sh --help
 ```
 
 After activation, confirm External Secrets, the service catalog, and the
-connector Deployment in `octelium-client`. Stop the connector by returning
+connector Deployment in `octelium-client`. Activate the connector only after
+`https://octelium-api.stinkyboi.com` serves the Octelium API, not a generic
+Istio `404` or gRPC `Unimplemented` response. Stop the connector by returning
 `replicaCount` to `0`.
 
 Rollback for the Enterprise package is an Octelium package operation, not an
@@ -111,7 +114,13 @@ run the wrapper with the intended `--version` and `--upgrade` flags.
 If Argo CD is `Synced` but `Degraded`, inspect the child pods and events before
 changing the Application. On June 6, 2026 the first rollout degraded because the
 Podinfo demo had only `args: [--port=9898]`, which made containerd try to
-execute the flag as the binary, and because the connector domain was
-`octelium.stinkyboi.com`, which made the client call
+execute the flag as the binary. The image's upstream Dockerfile sets
+`WORKDIR /home/app` and `CMD ["./podinfo"]`, so the explicit command must be
+`./podinfo` when passing custom args.
+
+The first rollout also started the connector before the external Octelium API
+was verified. `octelium.stinkyboi.com` made the client call
 `octelium-api.octelium.stinkyboi.com` with a certificate that only covered
-`*.stinkyboi.com`.
+`*.stinkyboi.com`; `stinkyboi.com` fixed the TLS name but the endpoint then
+returned gRPC `Unimplemented`, so the stable GitOps state keeps
+`replicaCount: 0` until the real Octelium API/package path is ready.

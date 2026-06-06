@@ -1,6 +1,6 @@
 # Octelium Client Desired State
 
-This app runs a repo-owned Octelium client connector in the homelab while
+This app prepares a repo-owned Octelium client connector in the homelab while
 leaving Tailscale in place as the current tailnet ingress and exit-node layer.
 Octelium is a parallel private access path for the existing homelab services.
 
@@ -27,9 +27,11 @@ The Octelium resource catalog for the external Octelium Cluster is
 - WEB Services for Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n,
   OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the demo.
 
-`values.yaml` runs one connector replica and serves only that explicit service
-catalog. The `--scope` entries keep the workload credential constrained to the
-same service names.
+`values.yaml` keeps the connector at `replicaCount: 0` until the external
+Octelium Cluster API, Enterprise package, service catalog, and workload
+credential are verified. The prepared `--scope` entries keep the workload
+credential constrained to the same service names when the connector is
+activated.
 
 ## Activation
 
@@ -56,8 +58,9 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-After Argo CD syncs `octelium`, the connector serves each configured Octelium
-Service from inside the homelab cluster.
+After the external Octelium API is verified, change `replicaCount` to `1` in a
+follow-up PR and let Argo CD sync `octelium`. The connector then serves each
+configured Octelium Service from inside the homelab cluster.
 
 ## Enterprise Package
 
@@ -107,7 +110,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
 scripts/octelium-enterprise-package.sh --help
 ```
 
-After activation:
+After activation with `replicaCount: 1`:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
