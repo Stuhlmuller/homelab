@@ -138,7 +138,9 @@ the Octelium-native `octops init` command. The steady-state prerequisites are:
   `/homelab/octelium/redis-password`.
 - `octelium-cluster` in `clusters/homelab/apps/octelium-cluster` for the Istio
   `VirtualService` that routes the Cluster, portal, and API hostnames to the
-  Octelium data-plane ingress service in front-proxy mode.
+  Octelium data-plane ingress service in front-proxy mode. The route must use
+  the `octelium-ingress-dataplane` Kubernetes service port `443`; its targetPort
+  is `8080`, but Istio destination ports refer to service ports.
 
 The `octelium-cluster` Argo CD Application must not own the `octelium`
 namespace. Octelium genesis deletes and recreates that namespace during

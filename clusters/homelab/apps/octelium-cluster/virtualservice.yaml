@@ -17,4 +17,4 @@ spec:
         - destination:
             host: octelium-ingress-dataplane.octelium.svc.cluster.local
             port:
-              number: 8080
+              number: 443
