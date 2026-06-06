@@ -48,6 +48,9 @@ Create an authentication token credential for the workload user:
 octeliumctl create cred --user homelab-octelium-client homelab-octelium-client
 ```
 
+Do not attach `homelab-human-web-access` to this workload credential. That
+Policy is intentionally human-only and denies `WORKLOAD` users.
+
 Store the printed token outside git:
 
 ```sh
