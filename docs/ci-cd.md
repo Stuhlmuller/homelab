@@ -75,8 +75,9 @@ contract for Grafana.
   current cluster server to `https://127.0.0.1:16443` and sets the TLS server
   name to `10.1.0.199`, so the Kubernetes API certificate remains valid through
   the Octelium-published loopback listener.
-- Kubernetes reachability is verified with
-  `curl -kfsS https://127.0.0.1:16443/version` and
+- Kubernetes reachability is verified first with a TLS reachability `curl`
+  probe against `https://127.0.0.1:16443/version`, which may return `401` on
+  clusters that reject anonymous API requests, and then with authenticated
   `kubectl --request-timeout=15s version` after kubeconfig installation.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the

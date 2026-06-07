@@ -53,6 +53,9 @@ Source: `docs/ci-cd.md`
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
   loopback listener and sets the Kubernetes TLS server name to `10.1.0.199`.
+  The unauthenticated curl readiness check only proves the TLS endpoint is
+  reachable and may receive `401`; authenticated `kubectl version` is the real
+  Kubernetes API validation.
 - Plans are not uploaded as artifacts because they may include sensitive state.
   Trusted same-repo PR plans render saved `plan.out` files with
   `terragrunt show -no-color plan.out` and replace the managed plan section in

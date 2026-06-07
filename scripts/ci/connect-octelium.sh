@@ -9,6 +9,8 @@ OCTELIUM_KUBE_SERVICE="${OCTELIUM_KUBE_SERVICE:-kubernetes-api.homelab}"
 OCTELIUM_KUBE_LOCAL_HOST="${OCTELIUM_KUBE_LOCAL_HOST:-127.0.0.1}"
 OCTELIUM_KUBE_LOCAL_PORT="${OCTELIUM_KUBE_LOCAL_PORT:-16443}"
 OCTELIUM_READY_TIMEOUT_SECONDS="${OCTELIUM_READY_TIMEOUT_SECONDS:-60}"
+OCTELIUM_CONNECT_LOG="${OCTELIUM_CONNECT_LOG:-${OCTELIUM_HOMEDIR}/connect.log}"
+OCTELIUM_CONNECT_PID_FILE="${OCTELIUM_CONNECT_PID_FILE:-${OCTELIUM_HOMEDIR}/connect.pid}"
 
 command -v octelium >/dev/null 2>&1 || {
   echo "octelium is not installed or not on PATH." >&2
@@ -21,19 +23,26 @@ command -v curl >/dev/null 2>&1 || {
 
 install -m 0700 -d "${OCTELIUM_HOMEDIR}"
 
-octelium --homedir "${OCTELIUM_HOMEDIR}" connect \
+nohup octelium --homedir "${OCTELIUM_HOMEDIR}" connect \
   --domain "${OCTELIUM_DOMAIN}" \
   --auth-token "${OCTELIUM_AUTH_TOKEN}" \
-  --detach \
   --implementation gvisor \
   --ip-mode v4 \
   --no-dns \
-  --publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}"
+  --publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}" \
+  >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
+echo "$!" >"${OCTELIUM_CONNECT_PID_FILE}"
 
 deadline=$((SECONDS + OCTELIUM_READY_TIMEOUT_SECONDS))
-until curl -kfsS --max-time 5 "https://${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}/version" >/dev/null; do
+until curl -ksS --max-time 5 -o /dev/null "https://${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}/version"; do
+  if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
+    sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
+    echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
+    exit 1
+  fi
   if [ "${SECONDS}" -ge "${deadline}" ]; then
     octelium --homedir "${OCTELIUM_HOMEDIR}" status || true
+    sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
     echo "Timed out waiting for ${OCTELIUM_KUBE_SERVICE} on ${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}." >&2
     exit 1
   fi

@@ -140,7 +140,7 @@ jobs:
 
       - name: Verify Kubernetes API Reachability
         run: |
-          curl -kfsS --max-time 10 "${KUBE_API_SERVER_URL}/version" >/dev/null
+          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
           kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
@@ -161,9 +161,11 @@ jobs:
 
       - name: Disconnect Octelium
         if: always()
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: command -v octelium >/dev/null 2>&1 && octelium --homedir "${RUNNER_TEMP}/octelium" disconnect --domain "${OCTELIUM_DOMAIN}" --auth-token "${OCTELIUM_AUTH_TOKEN}" || true
+        run: |
+          if [ -f "${RUNNER_TEMP}/octelium/connect.pid" ]; then
+            kill "$(cat "${RUNNER_TEMP}/octelium/connect.pid")" 2>/dev/null || true
+          fi
+          command -v octelium >/dev/null 2>&1 && octelium --homedir "${RUNNER_TEMP}/octelium" disconnect || true
 
   fork-plan-skipped:
     name: Terragrunt Plan Skipped For Fork
