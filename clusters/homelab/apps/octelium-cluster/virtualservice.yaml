@@ -14,6 +14,16 @@ spec:
   gateways:
     - istio-system/tailnet-gateway
   http:
+    - match:
+        - authority:
+            exact: octelium.stinkyboi.com
+      rewrite:
+        authority: stinkyboi.com
+      route:
+        - destination:
+            host: octelium-ingress-dataplane.octelium.svc.cluster.local
+            port:
+              number: 8080
     - route:
         - destination:
             host: octelium-ingress-dataplane.octelium.svc.cluster.local
