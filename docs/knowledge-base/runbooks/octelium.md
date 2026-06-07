@@ -103,7 +103,12 @@ hostnames to the existing Istio `octelium-cluster` route. The Cloudflare Tunnel
 credentials JSON and UUID live outside git in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`; both are rendered by the
-`octelium-public-cloudflared-credentials` ExternalSecret.
+`octelium-public-cloudflared-credentials` ExternalSecret. After those SSM values
+exist, run `scripts/octelium-public-dns.sh` to replace the old tailnet DNS
+answers with exact proxied CNAMEs to the Cloudflare Tunnel target. Cloudflare
+edge TLS must cover `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`;
+the Istio origin certificate alone does not satisfy TLS at Cloudflare's edge
+for nested portal/API hostnames.
 
 If public DNS or VPN access to the Octelium Cluster is not available yet,
 bootstrap the UI and API through a local port-forward to the Octelium Cluster

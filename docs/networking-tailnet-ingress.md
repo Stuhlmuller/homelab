@@ -17,10 +17,19 @@ are the public bootstrap and control-plane exception: Cloudflare Tunnel routes
 those names from the public Internet to the in-cluster Istio gateway, and Istio
 then routes to the Octelium dataplane.
 
-The public control-plane DNS records must be exact CNAMEs to the
+The public control-plane DNS records must be exact proxied CNAMEs to the
 `homelab-octelium-public` Cloudflare Tunnel target,
-`<tunnel-uuid>.cfargotunnel.com`. They must not point at the old tailnet
-LoadBalancer IP.
+`<tunnel-uuid>.cfargotunnel.com`. Public DNS answers should be Cloudflare
+anycast addresses, not the old tailnet LoadBalancer IP. Use
+`scripts/octelium-public-dns.sh` to reconcile those exact records from the
+SSM-backed tunnel UUID.
+
+Cloudflare edge TLS must cover the same names as the origin certificate:
+`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`. The in-cluster
+cert-manager certificate can satisfy Istio origin TLS, but Cloudflare still
+needs edge coverage for the nested `portal.octelium.stinkyboi.com` and
+`octelium-api.octelium.stinkyboi.com` hostnames when the DNS records are
+proxied.
 
 ## Route Inventory
 

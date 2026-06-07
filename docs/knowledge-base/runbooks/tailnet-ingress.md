@@ -15,10 +15,12 @@ reach.
 The Octelium control-plane names are the narrow public exception and do not use
 Tailscale Funnel. `octelium.stinkyboi.com`,
 `portal.octelium.stinkyboi.com`, and
-`octelium-api.octelium.stinkyboi.com` are CNAMEs to the
-`homelab-octelium-public` Cloudflare Tunnel target. The in-cluster
-`octelium-public` app runs `cloudflared` and forwards those hostnames to the
-Istio gateway, which preserves the existing Octelium Cluster `VirtualService`.
+`octelium-api.octelium.stinkyboi.com` are proxied Cloudflare CNAMEs to the
+`homelab-octelium-public` Cloudflare Tunnel target. Public DNS returns
+Cloudflare anycast addresses, while the Cloudflare zone metadata keeps the
+`<tunnel-uuid>.cfargotunnel.com` target. The in-cluster `octelium-public` app
+runs `cloudflared` and forwards those hostnames to the Istio gateway, which
+preserves the existing Octelium Cluster `VirtualService`.
 
 The Octelium service catalog in `docs/examples/octelium/homelab-services.yaml`
 keeps the existing app URLs by storing each `*.stinkyboi.com` hostname as a

@@ -180,10 +180,15 @@ The public Octelium control plane uses a Cloudflare Tunnel connector in
 `octelium-public`. Store the credentials JSON created by
 `cloudflared tunnel create homelab-octelium-public` in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and the tunnel UUID in
-`/homelab/octelium/cloudflare-tunnel-id`, then route `octelium.stinkyboi.com`,
-`portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com` to
-the tunnel target `<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON
-and any Cloudflare API token outside git.
+`/homelab/octelium/cloudflare-tunnel-id`, then run
+`scripts/octelium-public-dns.sh` to route `octelium.stinkyboi.com`,
+`portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com`
+through proxied CNAME records to the tunnel target
+`<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
+API token outside git. Cloudflare edge TLS must cover both
+`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; otherwise the nested
+portal and API names reach Cloudflare but fail before the tunnel with an edge
+TLS handshake error.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

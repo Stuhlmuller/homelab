@@ -28,8 +28,16 @@ the matching origin SNI and Host header. Istio then uses the existing
 `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 
-The Cloudflare DNS records for the three public hostnames must be CNAMEs to the
-named tunnel target, `<tunnel-uuid>.cfargotunnel.com`.
+The Cloudflare DNS records for the three public hostnames must be exact proxied
+CNAMEs to the named tunnel target, `<tunnel-uuid>.cfargotunnel.com`. Reconcile
+them with `scripts/octelium-public-dns.sh` after the tunnel UUID is stored in
+SSM. Public resolvers should return Cloudflare anycast A/AAAA records, not the
+old tailnet `100.64.0.0/10` address.
+
+Cloudflare edge TLS also needs coverage for `octelium.stinkyboi.com` and
+`*.octelium.stinkyboi.com`. Istio's `stinkyboi-com-tls` origin certificate
+covers those names, but proxied Cloudflare records require Cloudflare to present
+a matching edge certificate before traffic reaches this connector.
 
 ## Validation
 
@@ -37,7 +45,8 @@ named tunnel target, `<tunnel-uuid>.cfargotunnel.com`.
 kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
-dig +short octelium.stinkyboi.com CNAME
+scripts/octelium-public-dns.sh --dry-run
+dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://octelium.stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://portal.octelium.stinkyboi.com/
 ```
