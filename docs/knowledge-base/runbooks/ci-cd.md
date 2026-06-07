@@ -45,7 +45,7 @@ Source: `docs/ci-cd.md`
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Octelium uses a workload credential for User `homelab-ci`. The workflow
-  publishes only Service `kubernetes-api.homelab` to
+  publishes only Service `kubernetes-api.ci` to
   `https://127.0.0.1:16443` with the gVisor implementation and no Octelium DNS.
   The policy-bound credential is the enforcement boundary; do not add
   auth-token `--scope` flags to this v0.35 connect path because scoped sessions
@@ -133,7 +133,7 @@ the CI transport contract:
 
 - workload User `homelab-ci`;
 - Policy `homelab-ci-kubernetes-api-access`;
-- TCP Service `kubernetes-api.homelab -> tcp://10.1.0.199:6443`.
+- TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
 Apply the catalog with `octeliumctl apply --domain stinkyboi.com
 docs/examples/octelium/homelab-services.yaml`, then create the credential with

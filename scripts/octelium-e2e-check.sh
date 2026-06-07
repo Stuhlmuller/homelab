@@ -115,6 +115,7 @@ sonarr.stinkyboi.com 18455
 
 REQUIRED_SERVICES="
 homelab-app-gateway.homelab
+kubernetes-api.ci
 argocd.homelab
 compass.homelab
 deluge.homelab

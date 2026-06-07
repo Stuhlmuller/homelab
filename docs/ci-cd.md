@@ -66,7 +66,7 @@ contract for Grafana.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
-  `kubernetes-api.homelab`. The workflow connects with the gVisor
+  `kubernetes-api.ci`. The workflow connects with the gVisor
   implementation, disables Octelium DNS, publishes only that Service to
   `127.0.0.1:16443`, and relies on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
@@ -145,7 +145,7 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to publish `kubernetes-api.homelab` to the runner loopback listener. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to publish `kubernetes-api.ci` to the runner loopback listener. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
@@ -167,7 +167,7 @@ defines:
 
 - workload User `homelab-ci`;
 - Policy `homelab-ci-kubernetes-api-access`;
-- TCP Service `kubernetes-api.homelab -> tcp://10.1.0.199:6443`.
+- TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
 Apply that catalog to the Octelium Cluster after the control plane, portal, and
 API hostnames are reachable:
@@ -193,7 +193,7 @@ only carries the transport path to the Kubernetes API.
 
 Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
 credential unless a newer Octelium release validates that scoped auth-token
-sessions can publish `kubernetes-api.homelab`. On Octelium v0.35, the
+sessions can publish `kubernetes-api.ci`. On Octelium v0.35, the
 policy-bound workload credential authenticates and is then constrained by the
 attached policy; adding `api:*` or `service:*` scopes causes the client session
 to be denied before the runner can publish the loopback listener.

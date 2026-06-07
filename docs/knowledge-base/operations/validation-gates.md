@@ -93,7 +93,7 @@ CI/CD Octelium changes should also pass shell syntax checks for
 `scripts/ci/install-octelium-client.sh`, `scripts/ci/connect-octelium.sh`, and
 `scripts/ci/install-kubeconfig.sh`. Validate that
 `docs/examples/octelium/homelab-services.yaml` parses and contains Service
-`kubernetes-api.homelab` before applying it with `octeliumctl`.
+`kubernetes-api.ci` before applying it with `octeliumctl`.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,

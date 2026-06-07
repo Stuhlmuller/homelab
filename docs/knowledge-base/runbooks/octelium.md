@@ -16,19 +16,20 @@ those are replaced in their own change.
 The Argo CD Application installs repo-owned support manifests, including the
 `octelium-client` connector Deployment. The connector runs in TUN mode with
 `NET_ADMIN` and `MKNOD`, is enrolled in Istio ambient mesh, and runs after the
-Octelium API, service catalog, and workload credential are verified. It maps
-`octelium-api.stinkyboi.com` to the internal Istio gateway so the in-cluster
-connector does not depend on Cloudflare gRPC proxying.
+Octelium API, service catalog, and workload credential are verified. The
+connector now uses the normal `octelium-api.stinkyboi.com` DNS path; do not pin
+the Istio gateway ClusterIP in `hostAliases`.
 
 ## Service Catalog
 
 `docs/examples/octelium/homelab-services.yaml` is the Octelium Cluster resource
-catalog. It creates Namespace `homelab`, Policy
-`homelab-human-web-access`, Policy `homelab-workload-web-serve`, workload User
-`homelab-octelium-client`, human e2e User `homelab-e2e`, TCP/443 Services for
-the shared `homelab-app-gateway.homelab`, Argo CD, Compass, Deluge, Grafana,
-Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, and
-Sonarr, plus WEB Service
+catalog. It creates Namespace `homelab` for apps, Namespace `ci` for CI-only
+transport, Policy `homelab-human-web-access`, Policy
+`homelab-workload-web-serve`, workload User `homelab-octelium-client`, human
+e2e User `homelab-e2e`, TCP/443 Services for the shared
+`homelab-app-gateway.homelab`, Argo CD, Compass, Deluge, Grafana, Kiali,
+LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, and Sonarr, plus
+WEB Service
 `homelab-demo.homelab`. App services keep valid internal Octelium names such
 as `grafana.homelab` and carry
 `spec.attrs.appHostname` values such as `grafana.stinkyboi.com`.
@@ -38,7 +39,7 @@ namespaces. The workload policy allows the single
 `homelab-octelium-client` workload User to serve those Services. CI owns a
 separate workload User `homelab-ci`, Policy
 `homelab-ci-kubernetes-api-access`, and TCP Service
-`kubernetes-api.homelab -> tcp://10.1.0.199:6443`; GitHub Actions uses that
+`kubernetes-api.ci -> tcp://10.1.0.199:6443`; GitHub Actions uses that
 Service as the transport path for live Terragrunt plan/apply and diagnostics.
 The app Services forward TCP/443 to the in-cluster Istio gateway, preserving
 existing `https://*.stinkyboi.com` URLs, SNI routing, and the wildcard
@@ -198,7 +199,7 @@ GitHub Actions CI uses a separate Octelium workload credential for User
 credential as GitHub environment secret `OCTELIUM_CI_AUTH_TOKEN` in both
 `homelab-plan` and `homelab-production`; do not store it in AWS SSM unless a
 future repo-owned workflow needs to materialize it in-cluster. The credential
-must only publish Service `kubernetes-api.homelab` to the runner loopback
+must only publish Service `kubernetes-api.ci` to the runner loopback
 listener. Do not add Octelium `--scope` flags to this v0.35 auth-token connect
 path; the workload policy is the hard access boundary and scoped sessions are
 denied before publish starts.

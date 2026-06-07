@@ -48,15 +48,6 @@ spec:
     spec:
       serviceAccountName: octelium-client
       automountServiceAccountToken: false
-      hostAliases:
-        # The Cloudflare free plan does not currently pass Octelium gRPC
-        # traffic reliably for the API hostname. The in-cluster connector can
-        # safely bypass Cloudflare and use the internal Istio gateway while
-        # preserving the public SNI and certificate name.
-        - ip: 10.101.66.84
-          hostnames:
-            - octelium-api.stinkyboi.com
-            - stinkyboi.com
       securityContext:
         seccompProfile:
           type: RuntimeDefault

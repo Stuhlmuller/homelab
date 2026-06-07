@@ -10,7 +10,7 @@ env:
   KUBE_API_SERVER_URL: https://127.0.0.1:16443
   KUBE_TLS_SERVER_NAME: 10.1.0.199
   OCTELIUM_DOMAIN: stinkyboi.com
-  OCTELIUM_KUBE_SERVICE: kubernetes-api.homelab
+  OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
 
 jobs:

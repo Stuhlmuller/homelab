@@ -27,7 +27,8 @@ The deployed Kubernetes pieces are:
 The Octelium resource catalog for the external Octelium Cluster is
 `docs/examples/octelium/homelab-services.yaml`. It defines:
 
-- Octelium Namespace `homelab`.
+- Octelium Namespace `homelab` for apps and Namespace `ci` for CI-only
+  transport.
 - Policy `homelab-human-web-access`, which allows authenticated human client
   sessions to app Services in those namespaces.
 - Policy `homelab-workload-web-serve`, reserved for the
@@ -39,7 +40,7 @@ The Octelium resource catalog for the external Octelium Cluster is
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
-- TCP/6443 Service `kubernetes-api.homelab`, forwarding to
+- TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
 - TCP/443 Service `homelab-app-gateway.homelab`, the shared authenticated
   Octelium app gateway for existing `*.stinkyboi.com` hostnames.

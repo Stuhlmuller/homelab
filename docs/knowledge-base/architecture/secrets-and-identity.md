@@ -83,7 +83,7 @@ roles need identity-based KMS permissions for both keys.
   runtime mappings and must not be committed to the public repo.
   GitHub Actions uses a separate Octelium workload credential for User
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
-  `kubernetes-api.homelab`. Store the credential only as GitHub environment
+  `kubernetes-api.ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
   `homelab-production`; the CI connector does not add Octelium auth-token
   scopes on v0.35 because the policy-bound credential is the enforcement

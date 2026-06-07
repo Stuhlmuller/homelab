@@ -6,7 +6,7 @@ names at Octelium private service IPs, and per-app Istio `VirtualService`
 objects provide only the backend SNI routing layer for Octelium TCP/443
 Services.
 
-CI cluster reachability now uses the Octelium `kubernetes-api.homelab` Service.
+CI cluster reachability now uses the Octelium `kubernetes-api.ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
 ingress, on their existing paths until they are replaced in their own changes.
 
@@ -53,7 +53,8 @@ docs/examples/octelium/homelab-services.yaml
 
 They create:
 
-- Octelium Namespace `homelab`.
+- Octelium Namespace `homelab` for apps and Namespace `ci` for CI-only
+  transport.
 - Policy `homelab-human-web-access`, allowing authenticated human client
   sessions to app Services in those namespaces.
 - Policy `homelab-workload-web-serve`, reserved for the
@@ -65,7 +66,7 @@ They create:
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
-- TCP/6443 Service `kubernetes-api.homelab`, forwarding to
+- TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
 - TCP/443 Service `homelab-app-gateway.homelab`, the shared authenticated
   Octelium app gateway for existing `*.stinkyboi.com` hostnames.
@@ -200,7 +201,7 @@ The gate verifies:
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
 Octelium TCP Services. CI cluster access now uses the
-`kubernetes-api.homelab` Octelium Service; keep only separately reviewed
+`kubernetes-api.ci` Octelium Service; keep only separately reviewed
 Tailscale-specific non-app exceptions such as webhooks. If the gate fails,
 treat the failure output as the repair work queue.
 
@@ -472,7 +473,7 @@ octelium connect \
   --implementation gvisor \
   --ip-mode=v4 \
   --no-dns \
-  --publish kubernetes-api.homelab:127.0.0.1:16443
+  --publish kubernetes-api.ci:127.0.0.1:16443
 curl -kfsS https://127.0.0.1:16443/version
 ```
 

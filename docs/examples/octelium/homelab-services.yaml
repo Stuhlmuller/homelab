@@ -37,7 +37,7 @@ spec:
             - match: ctx.user.metadata.name == "homelab-ci"
             - match: ctx.user.spec.type == "WORKLOAD"
             - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.metadata.name in ["kubernetes-api", "kubernetes-api.homelab"]
+            - match: ctx.service.metadata.name in ["kubernetes-api", "kubernetes-api.ci"]
             - match: ctx.service.spec.mode == "TCP"
 ---
 kind: Namespace
@@ -48,6 +48,13 @@ spec:
     policies:
       - homelab-human-web-access
       - homelab-workload-web-serve
+---
+kind: Namespace
+metadata:
+  name: ci
+spec:
+  authorization:
+    policies:
       - homelab-ci-kubernetes-api-access
 ---
 kind: User
@@ -150,7 +157,7 @@ spec:
 ---
 kind: Service
 metadata:
-  name: kubernetes-api.homelab
+  name: kubernetes-api.ci
 spec:
   mode: TCP
   port: 6443
