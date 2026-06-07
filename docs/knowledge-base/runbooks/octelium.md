@@ -114,6 +114,14 @@ exist, run `scripts/octelium-public-dns.sh` to replace the old tailnet DNS
 answers with exact proxied CNAMEs to the Cloudflare Tunnel target. Cloudflare
 edge TLS only needs the apex plus first-level `*.stinkyboi.com` names.
 
+Octelium CLI and VPN sessions use gRPC on `octelium-api.stinkyboi.com`.
+Cloudflare returns HTTP `403` to gRPC requests when zone gRPC is disabled, and
+the request is rejected before it reaches `cloudflared`. Store a Cloudflare API
+token with `Zone:Read` and `Zone Settings:Edit` in
+`/homelab/octelium/cloudflare-zone-settings-token`, then run
+`scripts/octelium-cloudflare-grpc.sh` before the e2e gate. The cert-manager
+DNS-01 token is intentionally too narrow and returns Cloudflare error `9109`.
+
 If public DNS or VPN access to the Octelium Cluster is not available yet,
 bootstrap the UI and API through a local port-forward to the Octelium Cluster
 ingress:
@@ -269,6 +277,7 @@ kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-entra-oidc.sh
+bash -n scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help

@@ -240,6 +240,7 @@ Render before rollout:
 kubectl kustomize clusters/homelab/apps/octelium
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
+bash -n scripts/octelium-cloudflare-grpc.sh
 bash -n scripts/octelium-app-dns.sh scripts/octelium-gateway-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
@@ -250,6 +251,7 @@ After activation:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
+scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-app-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \

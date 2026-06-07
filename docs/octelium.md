@@ -258,7 +258,19 @@ curl -vI https://octelium-api.stinkyboi.com
 
 The TLS certificate must match `octelium-api.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
-`Unimplemented` response. Once that is true, create or rotate the
+`Unimplemented` response. The CLI and VPN path also requires Cloudflare to
+allow gRPC for the zone:
+
+```sh
+scripts/octelium-cloudflare-grpc.sh --dry-run
+scripts/octelium-cloudflare-grpc.sh
+```
+
+This reads `/homelab/octelium/cloudflare-zone-settings-token`, which must be a
+Cloudflare API token with `Zone:Read` and `Zone Settings:Edit` for
+`stinkyboi.com`. The cert-manager DNS-01 token cannot update this setting.
+
+Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
 `remoteRef.version` on `octelium-client-auth`, update the ExternalSecret target
 Secret name to match that SSM version, bump
@@ -405,6 +417,7 @@ kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-app-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
+bash -n scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
@@ -416,6 +429,7 @@ After activation:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
+scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-app-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
