@@ -84,6 +84,7 @@ stack because Terraform manages the Kubernetes Secret.
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
+| octelium | Octelium native Secret `entra-oidc-client-secret` | Octelium IdentityProvider `entra` | `/homelab/octelium/entra/client-id`, `/homelab/octelium/entra/client-secret`, `/homelab/octelium/entra/issuer-url`, `/homelab/octelium/entra/tenant-id` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
@@ -164,6 +165,15 @@ the same annotation in
 `clusters/homelab/apps/octelium/values.yaml` so the connector pod restarts with
 the refreshed environment variable.
 
+Octelium portal login uses Microsoft Entra OIDC. The Entra application is
+managed by `IaC/live/azuread-applications/octelium`, which writes generated
+client material to `/homelab/octelium/entra/*`. Those parameters are not
+materialized by External Secrets. Run `scripts/octelium-entra-oidc.sh` after
+the Entra unit applies so the client secret is copied into the Octelium native
+Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
+`--admin-user-name` and `--admin-email` when creating the runtime-only HUMAN
+admin mapping; do not commit personal Entra identifiers into this public repo.
+
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
 token itself in git. The cert-manager ExternalSecret refreshes this value every
@@ -181,16 +191,17 @@ so External Secrets refreshes the Kubernetes Secret.
 
 ## Microsoft Entra SSO Bootstrap
 
-Grafana SSO uses a Microsoft Entra application registration managed through the
-Terragrunt catalog `azuread-application` module pinned to `0.4.0`.
+Grafana and Octelium SSO use Microsoft Entra application registrations managed
+through the Terragrunt catalog `azuread-application` module pinned to `0.4.0`.
 
 Bootstrap order:
 
 1. Apply `IaC/live/aws-ssm-parameters` so External Secrets can read the
    `/homelab/grafana/azuread/*` parameter names after the Entra unit creates
    them.
-2. Apply `IaC/live/azuread-applications/grafana` with AzureAD credentials
-   available to the provider through the operator's approved login path.
+2. Apply the relevant unit under `IaC/live/azuread-applications` with AzureAD
+   credentials available to the provider through the operator's approved login
+   path.
 3. Sync Grafana through Argo CD so `grafana-azuread-sso` is mounted into the
    Grafana pod and the `auth.azuread` provider can read the generated values.
 
@@ -201,6 +212,12 @@ tenant-specific authorization and token URLs from the active AzureAD client
 configuration. Rotating the client secret means applying the Entra unit so the
 generated password and SSM value update together, then letting External Secrets
 refresh `grafana-azuread-sso`.
+
+The Octelium unit registers `https://octelium.stinkyboi.com/callback` and
+`https://portal.octelium.stinkyboi.com/callback`, writes the client ID,
+generated one-year client secret, tenant ID, and issuer URL to SSM, and leaves
+the Octelium native IdentityProvider activation to
+`scripts/octelium-entra-oidc.sh`.
 
 Deluge stores only VPN WireGuard material in SSM. Sonarr, Radarr, and Prowlarr
 store only their PostgreSQL password contract in SSM through

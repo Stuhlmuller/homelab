@@ -78,6 +78,9 @@ jobs:
     timeout-minutes: 60
     env:
       AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+      ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
     steps:
       - name: Check Out Repository
         # actions/checkout@v5

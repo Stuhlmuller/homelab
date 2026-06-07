@@ -9,6 +9,10 @@ mkdir -p "$(dirname "$plan_markdown")"
 extra_plan_json_files=()
 cleanup_dirs=()
 
+azuread_credentials_available() {
+  [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_CLIENT_SECRET:-}" && -n "${ARM_TENANT_ID:-}" ]]
+}
+
 cleanup_temp_dirs() {
   local temp_dir
 
@@ -75,6 +79,7 @@ validate_terraform_plan_policies() {
     plan_json_files+=("$plan_json_file")
   done < <(
     find IaC/bootstrap IaC/live/argocd-apps \
+      IaC/live/azuread-applications \
       -name plan.json \
       -not -path '*/.terragrunt-cache/*' \
       -print 2>/dev/null | sort
@@ -175,7 +180,7 @@ plan_deleted_terragrunt_units() {
 }
 
 prepare_terragrunt_filter_base
-clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps
+clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applications
 
 {
   printf '## Terragrunt Plan Output\n\n'
@@ -189,7 +194,7 @@ clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps
 echo "::group::Argo CD bootstrap plan"
 (
   cd IaC/bootstrap
-  terragrunt run --all --filter-affected --parallelism 1 -- plan -lock=false -no-color
+  terragrunt run --all --filter 'IaC/bootstrap/argocd | [main...HEAD]' --parallelism 1 -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 if ! render_plan_out_if_present "Argo CD bootstrap" "IaC/bootstrap/argocd"; then
@@ -202,7 +207,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -lock=false -no-color
+  terragrunt run --all --filter 'IaC/live/argocd-apps/* | [main...HEAD]' --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
@@ -226,6 +231,32 @@ while IFS= read -r deleted_unit_dir; do
 done < <(terragrunt_deleted_unit_paths)
 
 plan_deleted_terragrunt_units "${deleted_plan_units[@]}"
+
+echo "::group::AzureAD application registration plan"
+if azuread_credentials_available; then
+  (
+    cd IaC/live/azuread-applications
+    terragrunt run --all --filter 'IaC/live/azuread-applications/* | [main...HEAD]' --parallelism 1 --source-update -- plan -lock=false -no-color
+  )
+
+  planned_azuread_count=0
+  while IFS= read -r unit_file; do
+    unit_dir="$(dirname "$unit_file")"
+    unit_name="$(basename "$unit_dir")"
+    if render_plan_out_if_present "AzureAD application: ${unit_name}" "$unit_dir"; then
+      planned_azuread_count=$((planned_azuread_count + 1))
+      render_plan_json_if_present "$unit_dir" >/dev/null
+    fi
+  done < <(find IaC/live/azuread-applications -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
+
+  if [[ "$planned_azuread_count" -eq 0 ]]; then
+    append_plan_note "No AzureAD application registration plans were rendered."
+  fi
+else
+  echo "::warning::Skipping AzureAD application registration plan because ARM_CLIENT_ID, ARM_CLIENT_SECRET, and ARM_TENANT_ID are not configured for this plan run."
+  append_plan_note "AzureAD application registration plans were skipped because the plan environment did not provide \`ARM_CLIENT_ID\`, \`ARM_CLIENT_SECRET\`, and \`ARM_TENANT_ID\`. Production apply still fails fast when \`IaC/live/azuread-applications\` changes and those credentials are absent."
+fi
+echo "::endgroup::"
 
 validate_terraform_plan_policies
 
