@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: octelium-client
   annotations:
-    homelab.rst.io/privileged-namespace-justification: Octelium connector Pods need NET_ADMIN to serve app Services over a real TUN interface.
+    homelab.rst.io/privileged-namespace-justification: Octelium connector Pods need NET_ADMIN and MKNOD to create /dev/net/tun and serve app Services over a real TUN interface.
   labels:
     istio.io/dataplane-mode: ambient
     pod-security.kubernetes.io/enforce: privileged

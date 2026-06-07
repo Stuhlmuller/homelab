@@ -14,9 +14,9 @@ non-app duties, such as CI cluster reachability or reviewed public webhook
 exceptions, until those are replaced in their own change.
 
 The Argo CD Application installs the official Octelium client Helm chart plus
-repo-owned support manifests. The connector runs in TUN mode with `NET_ADMIN`,
-is enrolled in Istio ambient mesh, and runs at `replicaCount: 1` after the
-Octelium API, service catalog, and workload credential are verified.
+repo-owned support manifests. The connector runs in TUN mode with `NET_ADMIN`
+and `MKNOD`, is enrolled in Istio ambient mesh, and runs at `replicaCount: 1`
+after the Octelium API, service catalog, and workload credential are verified.
 
 ## Service Catalog
 
