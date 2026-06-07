@@ -20,6 +20,9 @@ podAnnotations:
 podLabels:
   app.kubernetes.io/part-of: octelium
 
+nodeSelector:
+  octelium.com/node-mode-dataplane: ""
+
 podSecurityContext:
   seccompProfile:
     type: RuntimeDefault

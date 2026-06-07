@@ -14,8 +14,10 @@ The deployed Kubernetes pieces are:
   `/homelab/octelium/client-auth-token` and currently rendering the versioned
   target Secret `octelium-client-auth-v5`.
 - The official Octelium client Helm chart, configured for TUN mode with
-  `NET_ADMIN` and `MKNOD` so generated Octelium service pods can reach the
-  connector's served app ports.
+  `NET_ADMIN` and `MKNOD`, and pinned to nodes labeled
+  `octelium.com/node-mode-dataplane=` so generated Octelium service pods can
+  route to the connector's served app ports through the Octelium dataplane
+  overlay.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
   harmless smoke-test target.
 - `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
@@ -46,6 +48,7 @@ the old Tailscale wildcard.
 
 `values.yaml` runs the connector at `replicaCount: 1` after the Octelium
 Cluster API, service catalog, and workload credential are verified. The
+chart `nodeSelector` keeps the connector on Octelium dataplane nodes. The
 prepared `--scope=api:user.MainService/Connect` and
 `--scope=service:<name>` entries keep the workload credential constrained to
 the User API stream and same service names while the connector is active.

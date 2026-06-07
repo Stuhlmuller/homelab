@@ -41,9 +41,11 @@ cluster.local/ns/octelium-client/sa/octelium-client
 
 The Octelium client is configured for `--implementation=tun` with `NET_ADMIN`
 and `MKNOD` so it can create `/dev/net/tun` and generated Octelium service pods
-can reach the connector's served app ports. The `octelium-client` namespace is
-therefore a narrow privileged namespace; it does not host the Octelium data
-plane.
+can reach the connector's served app ports. The connector is pinned to nodes
+with `octelium.com/node-mode-dataplane=` because generated service pods route
+to the connector session through the Octelium dataplane overlay. The
+`octelium-client` namespace is therefore a narrow privileged namespace; it does
+not host the Octelium data plane.
 
 ## Octelium Service Catalog
 

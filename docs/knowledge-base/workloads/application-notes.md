@@ -120,7 +120,9 @@ client chart plus repo-owned support manifests in
 `clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
 image by digest and force `--implementation=tun` with `NET_ADMIN` and `MKNOD`
 so the connector can create `/dev/net/tun` and generated Octelium service pods
-can reach the connector's served app ports.
+can reach the connector's served app ports. The connector is pinned to nodes
+with `octelium.com/node-mode-dataplane=` because generated service pods route
+to the connector session through the Octelium dataplane overlay.
 
 The connector runs with `replicaCount: 1` after the Octelium API, service
 catalog, and workload credential are verified. It serves only the explicit app
