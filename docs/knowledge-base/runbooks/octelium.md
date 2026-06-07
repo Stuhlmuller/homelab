@@ -54,9 +54,10 @@ native Secret `entra-oidc-client-secret`, and applies the IdentityProvider.
 Pass `--admin-user-name` and `--admin-email` only at runtime when adding the
 operator HUMAN user mapping; keep personal Entra identifiers out of git.
 
-The IdentityProvider uses Entra `preferred_username` as the login identifier
-and does not require `email_verified`, which Entra may omit. If the portal
-shows `No Available Identity Providers`, verify
+The IdentityProvider requests `openid`, `email`, and `profile`, uses Entra
+`preferred_username` as the login identifier, and does not require
+`email_verified`, which Entra may omit. If the portal shows
+`No Available Identity Providers`, verify
 `octeliumctl get identityprovider entra --domain octelium.stinkyboi.com`
 before changing the app service catalog.
 
