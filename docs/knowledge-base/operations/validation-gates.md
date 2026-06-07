@@ -64,7 +64,8 @@ Before running `octops init`, validate the self-hosted Cluster prerequisites:
 kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-app-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
+kubectl kustomize clusters/homelab/apps/octelium-public
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-app-dns.sh scripts/octelium-public-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -86,8 +87,6 @@ scripts/octelium-e2e-check.sh
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
-Set `OCTELIUM_AUTH_TOKEN` when the final app-hostname probe must run without an
-existing local Octelium login.
 
 CI/CD Octelium changes should also pass shell syntax checks for
 `scripts/ci/install-octelium-client.sh`, `scripts/ci/connect-octelium.sh`, and
@@ -97,11 +96,10 @@ CI/CD Octelium changes should also pass shell syntax checks for
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
-the complete homelab WEB Service catalog, exact `A` and `AAAA` DNS for each existing
-`*.stinkyboi.com` app
-hostname, and HTTPS access to each app hostname through the shared Octelium app
-gateway with the real URL and SNI preserved. Each app hostname must resolve to
-the same shared Octelium app gateway address, not the old Tailscale wildcard.
+the complete homelab WEB Service catalog, public DNS for each existing
+`*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
+Octelium clientless WEB access. App hostnames must not resolve to private
+Octelium service IPs or the old Tailscale wildcard.
 
 The script must report failed probes as `FAIL:` lines and finish with a nonzero
 exit code when any check fails. Keep expected-negative probes inside guarded

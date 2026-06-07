@@ -1,10 +1,10 @@
 # Octelium Client Bridge
 
 This repository uses Octelium for human access to homelab applications. App
-hostnames keep their existing `*.stinkyboi.com` names, exact DNS points those
-names at Octelium private service IPs, and per-app Istio `VirtualService`
-objects provide only the backend SNI routing layer for Octelium TCP/443
-Services.
+hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
+records point those names at the public Cloudflare Tunnel, the tunnel forwards
+them to the Octelium public ingress, and Octelium `WEB` Services enforce login
+before proxying to the existing Istio app routes.
 
 CI cluster reachability now uses the Octelium `kubernetes-api.ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
@@ -36,12 +36,12 @@ cluster.local/ns/octelium-client/sa/octelium-client
 ```
 
 The Octelium client is configured for `--implementation=tun` with `NET_ADMIN`
-and `MKNOD` so it can create `/dev/net/tun` when a workload connector is needed.
-The current app access path does not hairpin through that connector: generated
-Octelium service pods forward directly to the in-cluster Istio gateway. The
-connector is pinned to nodes with `octelium.com/node-mode-dataplane=` for any
-future served workload upstreams. The `octelium-client` namespace is therefore a
-narrow privileged namespace; it does not host the Octelium data plane.
+and `MKNOD` so it can create `/dev/net/tun` for the demo and any future
+connector-served upstream. The production app access path does not require a
+local user VPN session or the in-cluster connector: public app requests enter
+through Cloudflare Tunnel, land on the Octelium public ingress, and are
+authorized as clientless browser sessions before Octelium forwards them to the
+in-cluster Istio gateway.
 
 ## Octelium Service Catalog
 
@@ -53,10 +53,10 @@ docs/examples/octelium/homelab-services.yaml
 
 They create:
 
-- Octelium Namespace `homelab` for apps and Namespace `ci` for CI-only
+- Octelium Namespace `homelab` for the demo and Namespace `ci` for CI-only
   transport.
 - Policy `homelab-human-web-access`, allowing authenticated human client
-  sessions to app Services in those namespaces.
+  sessions and clientless browser sessions to app `WEB` Services.
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
@@ -68,19 +68,17 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- TCP/443 Service `homelab-app-gateway.homelab`, the shared authenticated
-  Octelium app gateway for existing `*.stinkyboi.com` hostnames.
-- TCP/443 Services for the current homelab app routes. The Octelium service
-  names remain valid internal names such as `grafana.homelab`, and each service
-  carries an `appHostname` attribute such as `grafana.stinkyboi.com` so DNS
-  automation knows which hostnames belong to the shared app gateway.
+- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
+  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
+  `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
+  such as `https://grafana.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
-The shared app gateway forwards TCP/443 to the in-cluster Istio gateway so the
-existing HTTPS hostname, SNI routing, and wildcard certificate remain the app
-contract. Exact Cloudflare records point every app hostname at the same
-Octelium private app-gateway A and AAAA addresses, which makes the browser path
-VPN-only without changing app base URLs.
+Each app `WEB` Service forwards HTTP to the in-cluster Istio gateway while
+setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
+`X-Forwarded-Proto` for the original app hostname. That keeps each app's
+existing Istio `VirtualService` and base URL intact while moving the user-facing
+authentication layer to Octelium clientless access.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -159,20 +157,10 @@ Run the e2e gate before declaring any Octelium app route ready:
 scripts/octelium-e2e-check.sh
 ```
 
-For noninteractive tunnel validation, provide a client authentication token.
-The gate starts an Octelium client session and curls the existing
+The gate uses ordinary public HTTPS requests to the existing
 `https://*.stinkyboi.com` app hostnames. It fails if any app hostname still
-resolves to the old Tailscale wildcard instead of an Octelium private service
-IP. The operator-side e2e client publishes each app Service to a loopback port
-and uses the real `*.stinkyboi.com` URL and SNI with `curl --connect-to`, so it
-does not depend on root-only route installation on the operator workstation.
-Use a HUMAN credential, such as one created for `homelab-e2e` with
-`homelab-human-web-access`, not the workload credential used by the in-cluster
-connector.
-
-```sh
-OCTELIUM_AUTH_TOKEN='<authentication-token>' scripts/octelium-e2e-check.sh
-```
+resolves to Octelium private service IPs, if an app Service is not `WEB` with
+`isPublic: true`, or if the public hostname returns a routing 404.
 
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and
@@ -196,14 +184,14 @@ The gate verifies:
 - every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
   exists in the Octelium Cluster;
 - IdentityProvider `entra` exists in the Octelium Cluster;
-- each existing app hostname resolves to an Octelium private service IP and
-  responds over HTTPS through the VPN.
+- each existing app hostname resolves publicly through Cloudflare and responds
+  over HTTPS through Octelium clientless access without `octelium connect`.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
-Octelium TCP Services. CI cluster access now uses the
-`kubernetes-api.ci` Octelium Service; keep only separately reviewed
-Tailscale-specific non-app exceptions such as webhooks. If the gate fails,
-treat the failure output as the repair work queue.
+Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api.ci`
+Octelium Service; keep only separately reviewed Tailscale-specific non-app
+exceptions such as webhooks. If the gate fails, treat the failure output as the
+repair work queue.
 
 ## Bootstrap UI Access
 
@@ -281,20 +269,21 @@ the connector pod annotations, sync the `octelium` Argo CD Application, then
 run `scripts/octelium-e2e-check.sh`.
 
 After the Octelium Gateways report public addresses, reconcile exact Cloudflare
-DNS records for their `_gw-*` hostnames:
+DNS records for their `_gw-*` hostnames when gateway hostnames are needed, then
+publish the control-plane and app hostnames through the public Cloudflare
+Tunnel:
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-gateway-dns.sh
-scripts/octelium-app-dns.sh --dry-run
-scripts/octelium-app-dns.sh
+scripts/octelium-public-dns.sh --dry-run
+scripts/octelium-public-dns.sh
 ```
 
-The gateway reconciler prevents `_gw-*` names from falling through to the
-tailnet wildcard record. The app reconciler creates exact `A` and `AAAA`
-records such as `grafana.stinkyboi.com -> 100.64.1.x/fdee:b76e:...` from the
-shared Octelium app gateway Service status, so app traffic uses the VPN on a
-stable shared address.
+The gateway reconciler prevents `_gw-*` names from falling through to stale
+wildcard records. The public DNS reconciler creates exact proxied CNAME records
+for `stinkyboi.com`, Octelium API/portal aliases, and the app hostnames such as
+`grafana.stinkyboi.com`, all pointing at the named Cloudflare Tunnel target.
 
 ## Octelium Enterprise Package
 
@@ -385,13 +374,13 @@ runs `octops upgrade`, answers the upgrade confirmation, and waits for the
 newly created `octelium-genesis-upgrade-*` Job and Kubernetes workloads to roll
 out instead of using Octelium's portal-authenticated wait mode.
 
-Then reconcile the public gateway DNS records:
+Then reconcile public DNS:
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-gateway-dns.sh
-scripts/octelium-app-dns.sh --dry-run
-scripts/octelium-app-dns.sh
+scripts/octelium-public-dns.sh --dry-run
+scripts/octelium-public-dns.sh
 ```
 
 After `octops` completes, apply the service catalog and create the connector
@@ -419,6 +408,7 @@ kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-app-dns.sh
+bash -n scripts/octelium-public-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
 bash -n scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
@@ -434,7 +424,7 @@ kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-app-dns.sh --dry-run
+scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>

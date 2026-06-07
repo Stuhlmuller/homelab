@@ -8,8 +8,11 @@ spec:
         all:
           of:
             - match: ctx.user.spec.type == "HUMAN"
-            - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.spec.mode in ["WEB", "TCP"]
+            - match: ctx.service.spec.mode == "WEB"
+            - any:
+                of:
+                  - match: ctx.session.status.type == "CLIENT"
+                  - match: ctx.session.status.type == "CLIENTLESS" && ctx.session.status.isBrowser
 ---
 kind: Policy
 metadata:
@@ -23,7 +26,8 @@ spec:
             - match: ctx.user.metadata.name == "homelab-octelium-client"
             - match: ctx.user.spec.type == "WORKLOAD"
             - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.spec.mode in ["WEB", "TCP"]
+            - match: ctx.service.metadata.name == "homelab-demo.homelab"
+            - match: ctx.service.spec.mode == "WEB"
 ---
 kind: Policy
 metadata:
@@ -77,66 +81,113 @@ spec:
 ---
 kind: Service
 metadata:
-  name: homelab-app-gateway.homelab
+  name: argocd
 spec:
-  mode: TCP
-  port: 443
+  displayName: Argo CD
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: argocd.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: argocd.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: argocd.homelab
+  name: compass
 spec:
-  attrs:
-    appHostname: argocd.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Compass
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: compass.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: compass.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: compass.homelab
+  name: deluge
 spec:
-  attrs:
-    appHostname: compass.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Deluge
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: deluge.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: deluge.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: deluge.homelab
+  name: grafana
 spec:
-  attrs:
-    appHostname: deluge.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Grafana
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
----
-kind: Service
-metadata:
-  name: grafana.homelab
-spec:
-  attrs:
-    appHostname: grafana.stinkyboi.com
-  mode: TCP
-  port: 443
-  config:
-    upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: grafana.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: grafana.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
   name: homelab-demo.homelab
 spec:
+  displayName: Homelab demo
   mode: WEB
   port: 80
   config:
@@ -145,15 +196,29 @@ spec:
 ---
 kind: Service
 metadata:
-  name: kiali.homelab
+  name: kiali
 spec:
-  attrs:
-    appHostname: kiali.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Kiali
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: kiali.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: kiali.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
@@ -167,96 +232,208 @@ spec:
 ---
 kind: Service
 metadata:
-  name: litellm.homelab
+  name: litellm
 spec:
-  attrs:
-    appHostname: litellm.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: LiteLLM
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: litellm.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: litellm.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: n8n.homelab
+  name: n8n
 spec:
-  attrs:
-    appHostname: n8n.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: n8n
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: n8n.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: n8n.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: octobot.homelab
+  name: octobot
 spec:
-  attrs:
-    appHostname: octobot.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: OctoBot
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: octobot.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: octobot.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: openclaw.homelab
+  name: openclaw
 spec:
-  attrs:
-    appHostname: openclaw.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: OpenClaw
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: openclaw.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: openclaw.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: policy-bot.homelab
+  name: policy-bot
 spec:
-  attrs:
-    appHostname: policy-bot.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Policy Bot
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: policy-bot.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: policy-bot.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: prowlarr.homelab
+  name: prowlarr
 spec:
-  attrs:
-    appHostname: prowlarr.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Prowlarr
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: prowlarr.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: prowlarr.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: radarr.homelab
+  name: radarr
 spec:
-  attrs:
-    appHostname: radarr.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Radarr
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: radarr.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: radarr.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
-  name: sonarr.homelab
+  name: sonarr
 spec:
-  attrs:
-    appHostname: sonarr.stinkyboi.com
-  mode: TCP
-  port: 443
+  displayName: Sonarr
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+    http:
+      header:
+        host:
+          value: sonarr.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: sonarr.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https

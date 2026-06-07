@@ -21,17 +21,15 @@ Usage: scripts/octelium-e2e-check.sh [options]
 
 Validate that Octelium has fully replaced Tailscale for homelab app access.
 The check requires a running Octelium Cluster, an applied homelab service
-catalog, an active octelium-client connector, and a working client tunnel.
-Set OCTELIUM_AUTH_TOKEN to run the final tunnel check noninteractively with an
-authentication token; otherwise the script uses the current local Octelium
-login state.
+catalog, an active octelium-client connector, and clientless WEB access for
+the existing app FQDNs.
 
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
   --catalog PATH              Octelium catalog file. Default: docs/examples/octelium/homelab-services.yaml
   --idp-name NAME             Required Octelium IdentityProvider name. Default: entra
   --path PATH                 HTTPS path to probe on each app hostname. Default: /
-  --client-implementation IMPL Octelium client implementation for hostname probes. Default: gvisor
+  --client-implementation IMPL Deprecated; accepted for compatibility.
   --homelab-kubeconfig PATH   Kubeconfig for the homelab cluster. Default: kubectl default
   --homelab-context NAME      Kube context for homelab connector checks. Default: kubectl current context
   --octelium-kubeconfig PATH  Kubeconfig for the Octelium control-plane cluster. Default: kubectl default
@@ -97,44 +95,43 @@ if [ "${DOMAIN}" = "stinkyboi.com" ]; then
   CONTROL_HOSTS+=("octelium.stinkyboi.com")
 fi
 
-APP_TARGETS="
-argocd.stinkyboi.com 18443
-compass.stinkyboi.com 18444
-deluge.stinkyboi.com 18445
-grafana.stinkyboi.com 18446
-kiali.stinkyboi.com 18447
-litellm.stinkyboi.com 18448
-n8n.stinkyboi.com 18449
-octobot.stinkyboi.com 18450
-openclaw.stinkyboi.com 18451
-policy-bot.stinkyboi.com 18452
-prowlarr.stinkyboi.com 18453
-radarr.stinkyboi.com 18454
-sonarr.stinkyboi.com 18455
+APP_HOSTS="
+argocd.stinkyboi.com
+compass.stinkyboi.com
+deluge.stinkyboi.com
+grafana.stinkyboi.com
+kiali.stinkyboi.com
+litellm.stinkyboi.com
+n8n.stinkyboi.com
+octobot.stinkyboi.com
+openclaw.stinkyboi.com
+policy-bot.stinkyboi.com
+prowlarr.stinkyboi.com
+radarr.stinkyboi.com
+sonarr.stinkyboi.com
 "
 
 REQUIRED_SERVICES="
-homelab-app-gateway.homelab
 kubernetes-api.ci
-argocd.homelab
-compass.homelab
-deluge.homelab
-grafana.homelab
+argocd
+compass
+deluge
+grafana
 homelab-demo.homelab
-kiali.homelab
-litellm.homelab
-n8n.homelab
-octobot.homelab
-openclaw.homelab
-policy-bot.homelab
-prowlarr.homelab
-radarr.homelab
-sonarr.homelab
+kiali
+litellm
+n8n
+octobot
+openclaw
+policy-bot
+prowlarr
+radarr
+sonarr
 "
 
 FAILURES=0
-CONNECT_PID=""
 GRPC_READY=1
+SERVICES_JSON=""
 
 note() {
   printf '==> %s\n' "$*"
@@ -219,10 +216,6 @@ run_with_timeout() {
 cleanup() {
   local cleanup_status
   cleanup_status=$?
-  if [ -n "${CONNECT_PID}" ]; then
-    kill "${CONNECT_PID}" >/dev/null 2>&1 || true
-    wait "${CONNECT_PID}" >/dev/null 2>&1 || true
-  fi
   return "${cleanup_status}"
 }
 trap cleanup EXIT
@@ -231,8 +224,8 @@ note "Checking local tools"
 require_command kubectl
 require_command curl
 require_command dig
-require_command octelium
 require_command octeliumctl
+require_command jq
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Cannot continue without required local tools." >&2
@@ -385,12 +378,20 @@ fi
 rm -f /tmp/octelium-idp.$$ /tmp/octelium-idp.err.$$
 
 if [ "${GRPC_READY}" -eq 1 ]; then
-  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get service >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get service -o json >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
+    SERVICES_JSON="$(cat /tmp/octelium-services.$$)"
     for SERVICE in ${REQUIRED_SERVICES}; do
-      if grep -F "${SERVICE}" /tmp/octelium-services.$$ >/dev/null 2>&1; then
+      if jq -e --arg service "${SERVICE}" '.items[] | select(.metadata.name == $service or .status.primaryHostname == $service)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service exists: ${SERVICE}"
       else
         fail "Octelium Service is missing: ${SERVICE}"
+      fi
+    done
+    for SERVICE in argocd compass deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+        pass "Octelium Service ${SERVICE} is WEB and public/clientless"
+      else
+        fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
     done
   else
@@ -405,101 +406,60 @@ else
 fi
 rm -f /tmp/octelium-services.$$ /tmp/octelium-services.err.$$
 
-note "Checking app hostnames over Octelium VPN"
-if [ "${GRPC_READY}" -ne 1 ]; then
-  note "Skipping Octelium VPN hostname checks because public Octelium gRPC is not available"
-else
-CONNECT_ARGS=(
-  octelium
-  --domain "${DOMAIN}"
-  connect
-  --implementation="${CLIENT_IMPLEMENTATION}"
-  --no-dns
-)
-
-if [ -n "${OCTELIUM_AUTH_TOKEN:-}" ]; then
-  CONNECT_ARGS+=(--auth-token "${OCTELIUM_AUTH_TOKEN}")
-fi
-
-while read -r HOST LOCAL_PORT; do
-  [ -n "${HOST}" ] || continue
-  CONNECT_ARGS+=(--publish "${APP_GATEWAY_SERVICE}:127.0.0.1:${LOCAL_PORT}")
-done <<<"${APP_TARGETS}"
-
-"${CONNECT_ARGS[@]}" >/tmp/octelium-connect.$$ 2>/tmp/octelium-connect.err.$$ &
-CONNECT_PID="$!"
-
-sleep 5
-if ! kill -0 "${CONNECT_PID}" >/dev/null 2>&1; then
-  fail "octelium connect exited before app hostname checks; connect log: $(tr '\n' ' ' </tmp/octelium-connect.err.$$)"
-else
-  EXPECTED_GATEWAY_IPV4=""
-  EXPECTED_GATEWAY_IPV6=""
-  while read -r HOST LOCAL_PORT; do
+note "Checking app hostnames through Octelium clientless WEB access"
+while read -r HOST; do
     [ -n "${HOST}" ] || continue
     HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-app-headers.XXXXXX")"
     CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/octelium-app-curl.XXXXXX")"
-    RESOLVED_IPV4="$(
+    PRIVATE_IPV4="$(
       dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
         awk '/^100\.64\./ {print; exit}'
     )"
-    RESOLVED_IPV6="$(
+    PRIVATE_IPV6="$(
       dig +short @1.1.1.1 "${HOST}" AAAA 2>/dev/null |
         awk '/^fdee:b76e:/ {print; exit}'
     )"
-    if [ -z "${RESOLVED_IPV4}" ]; then
-      fail "https://${HOST}${TEST_PATH} has no public Octelium A record"
+    PUBLIC_IPV4="$(
+      dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
+        awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}'
+    )"
+    if [ -n "${PRIVATE_IPV4}" ] || [ -n "${PRIVATE_IPV6}" ]; then
+      fail "https://${HOST} still resolves to private Octelium service records (${PRIVATE_IPV4:-no A}/${PRIVATE_IPV6:-no AAAA})"
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
-    else
-      pass "https://${HOST} resolves to Octelium service IPv4 ${RESOLVED_IPV4}"
     fi
-    if [ -z "${RESOLVED_IPV6}" ]; then
-      fail "https://${HOST}${TEST_PATH} has no public Octelium AAAA record"
+    if [ -z "${PUBLIC_IPV4}" ]; then
+      fail "https://${HOST} has no public IPv4 DNS answer"
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
     else
-      pass "https://${HOST} resolves to Octelium service IPv6 ${RESOLVED_IPV6}"
-    fi
-    if [ -z "${EXPECTED_GATEWAY_IPV4}" ]; then
-      EXPECTED_GATEWAY_IPV4="${RESOLVED_IPV4}"
-      EXPECTED_GATEWAY_IPV6="${RESOLVED_IPV6}"
-    elif [ "${RESOLVED_IPV4}" != "${EXPECTED_GATEWAY_IPV4}" ] || [ "${RESOLVED_IPV6}" != "${EXPECTED_GATEWAY_IPV6}" ]; then
-      fail "https://${HOST} resolves to ${RESOLVED_IPV4}/${RESOLVED_IPV6}, not shared Octelium app gateway ${EXPECTED_GATEWAY_IPV4}/${EXPECTED_GATEWAY_IPV6}"
-      rm -f "${HEADER_FILE}" "${CURL_ERR}"
-      continue
-    else
-      pass "https://${HOST} uses the shared Octelium app gateway address"
+      pass "https://${HOST} resolves publicly for clientless access"
     fi
 
     CURL_OUT="$(
-      curl -sS -I --max-time 20 --connect-to "${HOST}:443:127.0.0.1:${LOCAL_PORT}" -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
+      curl -sS -I --max-time 20 -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
     )"
     HTTP_CODE="${CURL_OUT%% *}"
     REMOTE_IP="${CURL_OUT#* }"
     SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
 
     case "${HTTP_CODE}" in
-      200|204|301|302|307|308|401|403|404|405)
-        if [ "${REMOTE_IP}" = "127.0.0.1" ]; then
-          pass "https://${HOST}${TEST_PATH} reached ${APP_GATEWAY_SERVICE} through Octelium publish on localhost:${LOCAL_PORT} with HTTP ${HTTP_CODE}"
-        else
-          fail "https://${HOST}${TEST_PATH} connected to ${REMOTE_IP:-unknown}, not the local Octelium publish port"
-        fi
+      200|204|301|302|307|308|401|403|405)
+        pass "https://${HOST}${TEST_PATH} responded through public Octelium clientless path with HTTP ${HTTP_CODE}"
+        ;;
+      404)
+        fail "https://${HOST}${TEST_PATH} returned HTTP 404; Octelium did not route this public app hostname"
         ;;
       000|"")
-        fail "https://${HOST}${TEST_PATH} did not respond via Octelium; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
+        fail "https://${HOST}${TEST_PATH} did not respond publicly; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
         ;;
       *)
-        fail "https://${HOST}${TEST_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} via ${APP_GATEWAY_SERVICE}"
+        fail "https://${HOST}${TEST_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} server ${SERVER:-unknown}"
         ;;
     esac
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
-  done <<<"${APP_TARGETS}"
-fi
-rm -f /tmp/octelium-connect.$$ /tmp/octelium-connect.err.$$
-fi
+done <<<"${APP_HOSTS}"
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Octelium e2e check failed with ${FAILURES} failure(s)." >&2

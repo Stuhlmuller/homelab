@@ -12,13 +12,13 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-public-dns.sh [options]
 
-Reconcile Cloudflare DNS records for the public Octelium control plane.
+Reconcile Cloudflare DNS records for the public Octelium control plane and
+clientless app hostnames.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
 SSM Parameter Store, removes exact A/AAAA records for the Octelium control-plane
 hostnames, and creates exact proxied CNAME records pointing at the named tunnel
-target. It does not touch wildcard records or app hostnames such as
-grafana.stinkyboi.com.
+target. It does not touch wildcard records.
 
 Options:
   --domain DOMAIN                 Octelium Cluster domain. Default: stinkyboi.com
@@ -136,6 +136,19 @@ hostnames=(
   "$domain"
   "portal.${domain}"
   "octelium-api.${domain}"
+  "argocd.${domain}"
+  "compass.${domain}"
+  "deluge.${domain}"
+  "grafana.${domain}"
+  "kiali.${domain}"
+  "litellm.${domain}"
+  "n8n.${domain}"
+  "octobot.${domain}"
+  "openclaw.${domain}"
+  "policy-bot.${domain}"
+  "prowlarr.${domain}"
+  "radarr.${domain}"
+  "sonarr.${domain}"
 )
 
 if [[ "$domain" == "$zone_name" ]]; then

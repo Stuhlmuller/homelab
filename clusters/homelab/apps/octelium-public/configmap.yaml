@@ -37,4 +37,56 @@ data:
         originRequest:
           originServerName: octelium-api.stinkyboi.com
           httpHostHeader: octelium-api.stinkyboi.com
+      - hostname: argocd.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: argocd.stinkyboi.com
+      - hostname: compass.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: compass.stinkyboi.com
+      - hostname: deluge.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: deluge.stinkyboi.com
+      - hostname: grafana.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: grafana.stinkyboi.com
+      - hostname: kiali.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: kiali.stinkyboi.com
+      - hostname: litellm.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: litellm.stinkyboi.com
+      - hostname: n8n.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: n8n.stinkyboi.com
+      - hostname: octobot.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: octobot.stinkyboi.com
+      - hostname: openclaw.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: openclaw.stinkyboi.com
+      - hostname: policy-bot.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: policy-bot.stinkyboi.com
+      - hostname: prowlarr.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: prowlarr.stinkyboi.com
+      - hostname: radarr.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: radarr.stinkyboi.com
+      - hostname: sonarr.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: sonarr.stinkyboi.com
       - service: http_status:404

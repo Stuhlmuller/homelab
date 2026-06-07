@@ -2,9 +2,9 @@
 
 This app prepares a repo-owned Octelium client connector in the homelab.
 Octelium is the replacement path for human app access. App hostnames keep their
-existing `*.stinkyboi.com` names, exact DNS points those names at Octelium
-private service IPs, and per-app Istio `VirtualService` objects provide only the
-backend SNI routing layer for Octelium TCP/443 Services.
+existing `*.stinkyboi.com` names. Exact Cloudflare DNS records point those
+names at the public Cloudflare Tunnel, and Octelium `WEB` Services enforce
+browser login before proxying to the existing Istio app routes.
 
 The deployed Kubernetes pieces are:
 
@@ -30,7 +30,7 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Octelium Namespace `homelab` for apps and Namespace `ci` for CI-only
   transport.
 - Policy `homelab-human-web-access`, which allows authenticated human client
-  sessions to app Services in those namespaces.
+  sessions and clientless browser sessions to app `WEB` Services.
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if a future Service needs a connector
   served upstream.
@@ -42,19 +42,16 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- TCP/443 Service `homelab-app-gateway.homelab`, the shared authenticated
-  Octelium app gateway for existing `*.stinkyboi.com` hostnames.
-- TCP/443 Services for the existing HTTPS app routes. The Octelium service
-  names remain valid internal names such as `grafana.homelab`, and each service
-  carries an `appHostname` attribute such as `grafana.stinkyboi.com` so DNS
-  automation knows which hostnames belong to the shared app gateway.
+- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
+  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`, `radarr`,
+  and `sonarr`, whose public FQDNs are the existing app hostnames such as
+  `https://grafana.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
-The shared app gateway forwards TCP/443 to the in-cluster Istio gateway so the
-existing `https://*.stinkyboi.com` URLs, SNI routing, and wildcard certificate
-continue to work. Exact Cloudflare app records point those hostnames at the same
-Octelium private app-gateway A and AAAA addresses, so clients reach them through
-the VPN instead of the old Tailscale wildcard.
+Each app `WEB` Service forwards to the in-cluster Istio gateway while setting
+the original app hostname in the HTTP headers. Exact Cloudflare app records are
+proxied CNAMEs to the public tunnel, so users can open the existing
+`https://*.stinkyboi.com` URLs without running `octelium connect`.
 
 The connector manifest runs at one replica after the Octelium Cluster API,
 service catalog, and workload credential are verified. The `nodeSelector` keeps
@@ -123,12 +120,10 @@ the connector pod annotations when the SSM version changes. Let Argo CD sync
 `octelium`; the active connector then serves each configured Octelium Service
 from inside the homelab cluster.
 
-After the service catalog is applied and the connector has reconnected,
-reconcile DNS:
+After the service catalog is applied, reconcile public DNS:
 
 ```sh
-scripts/octelium-gateway-dns.sh
-scripts/octelium-app-dns.sh
+scripts/octelium-public-dns.sh
 ```
 
 Then run:
@@ -137,20 +132,9 @@ Then run:
 scripts/octelium-e2e-check.sh
 ```
 
-For noninteractive tunnel validation, provide a client authentication token.
-The gate starts an Octelium client session and curls the existing
-`https://*.stinkyboi.com` app hostnames. It fails if any hostname still
-resolves to the old Tailscale wildcard instead of an Octelium private service
-IP. The operator-side e2e client publishes each app Service to a loopback port
-and uses the real `*.stinkyboi.com` URL and SNI with `curl --connect-to`, so it
-does not depend on root-only route installation on the operator workstation.
-Use a HUMAN credential, such as one created for `homelab-e2e` with
-`homelab-human-web-access`, not the workload credential used by the in-cluster
-connector.
-
-```sh
-OCTELIUM_AUTH_TOKEN='<authentication-token>' scripts/octelium-e2e-check.sh
-```
+The gate uses ordinary public HTTPS requests to the existing app hostnames and
+fails if any hostname still resolves to private Octelium service IPs or if any
+app returns a public routing 404.
 
 Use separate contexts when the Octelium control plane is not the homelab
 cluster:
