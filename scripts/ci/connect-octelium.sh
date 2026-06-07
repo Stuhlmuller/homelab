@@ -18,6 +18,7 @@ command -v octelium >/dev/null 2>&1 || {
   echo "octelium is not installed or not on PATH." >&2
   exit 1
 }
+OCTELIUM_BIN="$(command -v octelium)"
 command -v curl >/dev/null 2>&1 || {
   echo "curl is required to verify the Octelium-published Kubernetes API." >&2
   exit 1
@@ -32,7 +33,7 @@ fi
 install -m 0700 -d "${OCTELIUM_HOMEDIR}"
 
 connect_cmd=(
-  octelium
+  "${OCTELIUM_BIN}"
   --homedir "${OCTELIUM_HOMEDIR}"
   connect
   --domain "${OCTELIUM_DOMAIN}"
@@ -58,9 +59,9 @@ until curl -ksS --max-time 5 -o /dev/null "https://${OCTELIUM_KUBE_LOCAL_HOST}:$
   fi
   if [ "${SECONDS}" -ge "${deadline}" ]; then
     if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
-      sudo -E octelium --homedir "${OCTELIUM_HOMEDIR}" status || true
+      sudo -E "${OCTELIUM_BIN}" --homedir "${OCTELIUM_HOMEDIR}" status || true
     else
-      octelium --homedir "${OCTELIUM_HOMEDIR}" status || true
+      "${OCTELIUM_BIN}" --homedir "${OCTELIUM_HOMEDIR}" status || true
     fi
     sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
     echo "Timed out waiting for ${OCTELIUM_KUBE_SERVICE} on ${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}." >&2
