@@ -95,8 +95,18 @@ outside git; add only safe references or secret contracts here.
 
 ## Bootstrap Access
 
-When DNS or VPN access to the Octelium Cluster is not available yet, bootstrap
-the UI and API through a local port-forward to the Octelium Cluster ingress:
+The steady-state bootstrap path for users outside the tailnet is the
+`octelium-public` Cloudflare Tunnel connector. It exposes only
+`octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
+`octelium-api.octelium.stinkyboi.com` to the public Internet and forwards those
+hostnames to the existing Istio `octelium-cluster` route. The Cloudflare Tunnel
+credentials JSON lives outside git in
+`/homelab/octelium/cloudflare-tunnel-credentials-json` and is rendered by the
+`octelium-public-cloudflared-credentials` ExternalSecret.
+
+If public DNS or VPN access to the Octelium Cluster is not available yet,
+bootstrap the UI and API through a local port-forward to the Octelium Cluster
+ingress:
 
 ```sh
 kubectl -n octelium get svc
@@ -193,6 +203,10 @@ the Octelium-native `octops init` command. The steady-state prerequisites are:
   exposes cleartext HTTP on port `8080` behind the trusted Istio TLS edge. The
   same app owns a `DestinationRule` that upgrades Istio-to-Octelium upstream
   traffic to HTTP/2 so Octelium CLI gRPC calls keep their response trailers.
+- `octelium-public` in `clusters/homelab/apps/octelium-public` for the
+  Cloudflare Tunnel connector that exposes the Octelium control-plane,
+  portal, and API hostnames outside the tailnet without exposing the app
+  service hostnames.
 
 The `octelium-cluster` Argo CD Application must not own the `octelium`
 namespace. Octelium genesis deletes and recreates that namespace during
@@ -226,6 +240,7 @@ Render the Kubernetes side with:
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium
 kubectl kustomize clusters/homelab/apps/octelium-cluster
+kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/platform/multus
 helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \

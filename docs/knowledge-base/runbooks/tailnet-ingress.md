@@ -12,6 +12,14 @@ service addresses instead of the old Tailscale wildcard route. Public Tailscale
 Funnel is reserved for reviewed webhook paths that external SaaS systems must
 reach.
 
+The Octelium control-plane names are the narrow public exception and do not use
+Tailscale Funnel. `octelium.stinkyboi.com`,
+`portal.octelium.stinkyboi.com`, and
+`octelium-api.octelium.stinkyboi.com` are CNAMEs to the
+`homelab-octelium-public` Cloudflare Tunnel target. The in-cluster
+`octelium-public` app runs `cloudflared` and forwards those hostnames to the
+Istio gateway, which preserves the existing Octelium Cluster `VirtualService`.
+
 The Octelium service catalog in `docs/examples/octelium/homelab-services.yaml`
 keeps the existing app URLs by storing each `*.stinkyboi.com` hostname as a
 service attribute and forwarding TCP/443 to the in-cluster Istio gateway. The
@@ -40,6 +48,8 @@ exceptions.
 - Octelium serves private app Services from
   `docs/examples/octelium/homelab-services.yaml`; public webhook callbacks stay
   on their reviewed Tailscale Funnel exceptions until separately redesigned.
+- Octelium control-plane/API/portal access is public through Cloudflare Tunnel
+  so users can log in and start the VPN without already being on Tailscale.
 
 ## TLS And Certificates
 

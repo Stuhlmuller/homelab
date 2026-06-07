@@ -139,6 +139,15 @@ WEB access separate from the reserved workload WEB-serving rule for
 `octelium-client-auth-v5`. The connector scope list includes
 `api:user.MainService/Connect` plus one `service:<name>` entry per served WEB
 Service.
+
+The public Octelium control-plane path is a separate `octelium-public`
+Application. It runs two `cloudflared` replicas in `octelium-public`, reads the
+named tunnel credentials JSON from
+`/homelab/octelium/cloudflare-tunnel-credentials-json`, and forwards only
+`octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
+`octelium-api.octelium.stinkyboi.com` to the in-cluster Istio gateway. App
+hostnames such as `grafana.stinkyboi.com` remain Octelium private Service
+records, not Cloudflare Tunnel records.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at

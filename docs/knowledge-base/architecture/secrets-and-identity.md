@@ -68,6 +68,12 @@ roles need identity-based KMS permissions for both keys.
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token
   belongs to the Octelium workload User `homelab-octelium-client` and is
   created outside git with `octeliumctl`.
+  Public Octelium control-plane access uses the
+  `octelium-public-cloudflared-credentials` ExternalSecret in
+  `octelium-public`, sourced from
+  `/homelab/octelium/cloudflare-tunnel-credentials-json`. The Cloudflare Tunnel
+  credential JSON is created outside git with `cloudflared tunnel create
+  homelab-octelium-public`.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into

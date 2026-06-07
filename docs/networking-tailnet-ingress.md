@@ -13,16 +13,20 @@ Exact app records such as `grafana.stinkyboi.com` and `argocd.stinkyboi.com`
 point at Octelium private service IPs, not the old Tailscale wildcard. The
 Octelium Cluster names `octelium.stinkyboi.com`,
 `portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com`
-continue to route through the Istio gateway to the Octelium dataplane.
+are the public bootstrap and control-plane exception: Cloudflare Tunnel routes
+those names from the public Internet to the in-cluster Istio gateway, and Istio
+then routes to the Octelium dataplane.
 
-Because no DNS provider resources are added in this repository, external DNS
-infrastructure is unaffected by this change. If DNS becomes repo-managed later,
-that must be added through a separate Terragrunt/OpenTofu entry point.
+The public control-plane DNS records must be exact CNAMEs to the
+`homelab-octelium-public` Cloudflare Tunnel target,
+`<tunnel-uuid>.cfargotunnel.com`. They must not point at the old tailnet
+LoadBalancer IP.
 
 ## Route Inventory
 
 | App | HTTPS host | Public Funnel |
 |-----|------------------|---------------|
+| Octelium control plane | `https://octelium.stinkyboi.com`, `https://portal.octelium.stinkyboi.com`, `https://octelium-api.octelium.stinkyboi.com` | disabled; public access uses Cloudflare Tunnel, not Tailscale Funnel |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | disabled; app access is through Octelium private Services |
 | n8n webhooks | `https://n8n-webhook.tail67beb.ts.net/webhook...` | enabled for `/webhook`, `/webhook-test`, and `/webhook-waiting` only |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |

@@ -49,8 +49,9 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`media`, `monitoring`, `octelium-client`, and `tailscale`. Add a namespace to
-that allow-list in the same PR that adds its first ExternalSecret.
+`media`, `monitoring`, `octelium-client`, `octelium-public`,
+`octelium-storage`, and `tailscale`. Add a namespace to that allow-list in the
+same PR that adds its first ExternalSecret.
 
 ## External Secrets AWS Auth Bootstrap
 
@@ -84,6 +85,7 @@ stack because Terraform manages the Kubernetes Secret.
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
+| octelium-public | `octelium-public-cloudflared-credentials` | `octelium-public-cloudflared-credentials` | `/homelab/octelium/cloudflare-tunnel-credentials-json` |
 | octelium | Octelium native Secret `entra-oidc-client-secret` | Octelium IdentityProvider `entra` | `/homelab/octelium/entra/client-id`, `/homelab/octelium/entra/client-secret`, `/homelab/octelium/entra/issuer-url`, `/homelab/octelium/entra/tenant-id` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
@@ -173,6 +175,15 @@ the Entra unit applies so the client secret is copied into the Octelium native
 Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
 `--admin-user-name` and `--admin-email` when creating the runtime-only HUMAN
 admin mapping; do not commit personal Entra identifiers into this public repo.
+
+The public Octelium control plane uses a Cloudflare Tunnel connector in
+`octelium-public`. Store the credentials JSON created by
+`cloudflared tunnel create homelab-octelium-public` in
+`/homelab/octelium/cloudflare-tunnel-credentials-json`, then route
+`octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
+`octelium-api.octelium.stinkyboi.com` to the tunnel target
+`<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
+API token outside git.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

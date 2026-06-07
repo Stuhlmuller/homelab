@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: octelium-public-cloudflared
+  namespace: octelium-public
+  labels:
+    app.kubernetes.io/name: cloudflared
+    app.kubernetes.io/part-of: octelium-public
+data:
+  config.yaml: |
+    tunnel: homelab-octelium-public
+    credentials-file: /etc/cloudflared/creds/credentials.json
+    no-autoupdate: true
+    metrics: 0.0.0.0:2000
+    protocol: http2
+    originRequest:
+      connectTimeout: 30s
+      tlsTimeout: 10s
+      http2Origin: true
+    ingress:
+      - hostname: octelium.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: octelium.stinkyboi.com
+          httpHostHeader: octelium.stinkyboi.com
+      - hostname: portal.octelium.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: portal.octelium.stinkyboi.com
+          httpHostHeader: portal.octelium.stinkyboi.com
+      - hostname: octelium-api.octelium.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: octelium-api.octelium.stinkyboi.com
+          httpHostHeader: octelium-api.octelium.stinkyboi.com
+      - service: http_status:404
