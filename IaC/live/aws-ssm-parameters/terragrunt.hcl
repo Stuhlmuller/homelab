@@ -86,6 +86,10 @@ inputs = {
       description   = "Octelium authentication token for the homelab workload client connector."
       initial_value = local.placeholder
     }
+    "/homelab/octelium/cloudflare-tunnel-credentials-json" = {
+      description   = "Cloudflare Tunnel credentials JSON for the public Octelium control-plane connector."
+      initial_value = local.placeholder
+    }
     "/homelab/octelium/postgres-password" = {
       description = "Octelium Cluster PostgreSQL password."
       generated = {

@@ -97,6 +97,7 @@ external_secret_allowed_prefixes := {
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
 	"octelium-client": {"/homelab/octelium/"},
+	"octelium-public": {"/homelab/octelium/"},
 	"octelium-storage": {"/homelab/octelium/"},
 	"tailscale": {"/homelab/tailscale/"},
 }
