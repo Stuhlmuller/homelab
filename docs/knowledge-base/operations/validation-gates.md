@@ -89,6 +89,12 @@ plane and homelab connector live in different Kubernetes clusters.
 Set `OCTELIUM_AUTH_TOKEN` when the final app-hostname probe must run without an
 existing local Octelium login.
 
+CI/CD Octelium changes should also pass shell syntax checks for
+`scripts/ci/install-octelium-client.sh`, `scripts/ci/connect-octelium.sh`, and
+`scripts/ci/install-kubeconfig.sh`. Validate that
+`docs/examples/octelium/homelab-services.yaml` parses and contains Service
+`kubernetes-api.homelab` before applying it with `octeliumctl`.
+
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
 the complete homelab WEB Service catalog, exact `AAAA` DNS for each existing

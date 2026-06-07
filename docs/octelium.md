@@ -6,9 +6,9 @@ names at Octelium private service IPs, and per-app Istio `VirtualService`
 objects provide only the backend SNI routing layer for Octelium TCP/443
 Services.
 
-The Tailscale operator can still have non-app responsibilities, such as CI
-cluster reachability or reviewed public webhook exceptions, until those are
-separately replaced.
+CI cluster reachability now uses the Octelium `kubernetes-api.homelab` Service.
+Keep only separately reviewed non-app exceptions, such as public webhook
+ingress, on their existing paths until they are replaced in their own changes.
 
 ## Current Model
 
@@ -62,9 +62,14 @@ They create:
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
+- Policy `homelab-ci-kubernetes-api-access`, allowing only the
+  `homelab-ci` workload User to access the Kubernetes API Service.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
+- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
+- TCP/6443 Service `kubernetes-api.homelab`, forwarding to
+  `tcp://10.1.0.199:6443` for CI Kubernetes API access.
 - TCP/443 Services for the current homelab app routes. The Octelium service
   names remain valid internal names such as `grafana.homelab`, and each service
   carries an `appHostname` attribute such as `grafana.stinkyboi.com`.
@@ -81,7 +86,7 @@ direct avoids an unnecessary connector-session hop.
 Apply the service catalog to the Octelium Cluster:
 
 ```sh
-octeliumctl apply docs/examples/octelium/homelab-services.yaml
+octeliumctl apply --domain octelium.stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
 
 ## Microsoft Entra Login
@@ -196,9 +201,10 @@ The gate verifies:
   responds over HTTPS through the VPN.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
-Octelium TCP Services. Keep only separately reviewed Tailscale-specific non-app
-exceptions such as webhooks or CI cluster access. If the gate fails, treat the
-failure output as the repair work queue.
+Octelium TCP Services. CI cluster access now uses the
+`kubernetes-api.homelab` Octelium Service; keep only separately reviewed
+Tailscale-specific non-app exceptions such as webhooks. If the gate fails,
+treat the failure output as the repair work queue.
 
 ## Bootstrap UI Access
 
@@ -440,16 +446,31 @@ octelium connect --domain octelium.stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
+Check the CI Kubernetes API service through Octelium from a client machine:
+
+```sh
+octelium connect \
+  --domain octelium.stinkyboi.com \
+  --implementation gvisor \
+  --ip-mode=v4 \
+  --no-dns \
+  --publish kubernetes-api.homelab:127.0.0.1:16443 \
+  --scope api:user.MainService/Connect \
+  --scope service:kubernetes-api.homelab
+curl -kfsS https://127.0.0.1:16443/version
+```
+
 ## Rollback
 
 Set `replicaCount` back to `0` and sync the `octelium` Argo CD Application.
 That stops the connector while leaving Tailscale untouched.
 
 If the external resources are no longer wanted, delete the homelab Services,
-the `homelab-octelium-client` User, and the `homelab-human-web-access` Policy
+the `homelab-octelium-client` User, the `homelab-ci` User, and the
+homelab Policies
 from the Octelium Cluster with `octeliumctl`. Do not delete or change Tailscale
 resources as part of Octelium rollback unless a later migration PR explicitly
-replaces the remaining webhook, CI, and LAN tailnet model.
+replaces the remaining webhook and LAN tailnet model.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before

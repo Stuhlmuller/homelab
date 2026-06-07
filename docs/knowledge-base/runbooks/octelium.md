@@ -32,11 +32,15 @@ as `grafana.homelab` and carry
 
 The policy allows authenticated human client sessions to app Services in those
 namespaces. The workload policy allows the single
-`homelab-octelium-client` workload User to serve those Services. The app
-Services forward TCP/443 to the in-cluster Istio gateway, preserving existing
-`https://*.stinkyboi.com` URLs, SNI routing, and the wildcard certificate while
-moving the network path onto Octelium. The Kubernetes connector serves the same
-service list with
+`homelab-octelium-client` workload User to serve those Services. CI owns a
+separate workload User `homelab-ci`, Policy
+`homelab-ci-kubernetes-api-access`, and TCP Service
+`kubernetes-api.homelab -> tcp://10.1.0.199:6443`; GitHub Actions uses that
+Service as the transport path for live Terragrunt plan/apply and diagnostics.
+The app Services forward TCP/443 to the in-cluster Istio gateway, preserving
+existing `https://*.stinkyboi.com` URLs, SNI routing, and the wildcard
+certificate while moving the network path onto Octelium. The Kubernetes
+connector serves the app service list with
 `--scope=api:user.MainService/Connect` and matching `--scope=service:<name>`
 flags. The per-app Istio `VirtualService` objects remain as private backend SNI
 routes for these TCP Services and are annotated with
@@ -171,6 +175,14 @@ on both the `octelium-client-auth` ExternalSecret and the connector pod
 annotations, bump the ExternalSecret `remoteRef.version` to the exact SSM
 parameter version, and update the target Secret name to match that SSM version
 so External Secrets creates a fresh Secret and Argo rolls the pod.
+
+GitHub Actions CI uses a separate Octelium workload credential for User
+`homelab-ci` and Policy `homelab-ci-kubernetes-api-access`. Store that
+credential as GitHub environment secret `OCTELIUM_CI_AUTH_TOKEN` in both
+`homelab-plan` and `homelab-production`; do not store it in AWS SSM unless a
+future repo-owned workflow needs to materialize it in-cluster. The credential
+must only publish Service `kubernetes-api.homelab` to the runner loopback
+listener.
 
 ## Isolation
 

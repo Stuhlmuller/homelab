@@ -81,6 +81,11 @@ roles need identity-based KMS permissions for both keys.
   the Octelium native Secret `entra-oidc-client-secret` and IdentityProvider
   `entra` by `scripts/octelium-entra-oidc.sh`. HUMAN user Entra identifiers are
   runtime mappings and must not be committed to the public repo.
+  GitHub Actions uses a separate Octelium workload credential for User
+  `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
+  `kubernetes-api.homelab`. Store the credential only as GitHub environment
+  secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
+  `homelab-production`.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

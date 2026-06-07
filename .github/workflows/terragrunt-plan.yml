@@ -26,8 +26,12 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER: 10.1.0.199
-  TAILSCALE_VERSION: 1.98.3
+  KUBE_API_SERVER: 127.0.0.1
+  KUBE_API_SERVER_URL: https://127.0.0.1:16443
+  KUBE_TLS_SERVER_NAME: 10.1.0.199
+  OCTELIUM_DOMAIN: octelium.stinkyboi.com
+  OCTELIUM_KUBE_SERVICE: kubernetes-api.homelab
+  OCTELIUM_KUBE_LOCAL_PORT: 16443
 
 jobs:
   static-policy:
@@ -103,8 +107,11 @@ jobs:
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
       - name: Verify Live Plan Inputs
+        env:
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
+          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
 
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
@@ -116,25 +123,24 @@ jobs:
           role-to-assume: ${{ env.AWS_PLAN_ROLE_ARN }}
           unset-current-credentials: true
 
-      - name: Connect To Tailnet
-        # tailscale/github-action@v4
-        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8
-        with:
-          authkey: ${{ secrets.TS_AUTH_KEY }}
-          tags: tag:github-actions-terragrunt-plan
-          version: ${{ env.TAILSCALE_VERSION }}
+      - name: Install Octelium Client
+        run: bash scripts/ci/install-octelium-client.sh
 
-      - name: Accept Tailnet Subnet Routes
-        run: sudo tailscale set --accept-routes=true
+      - name: Connect To Octelium
+        env:
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: bash scripts/ci/connect-octelium.sh
 
       - name: Install Kubeconfig
         env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
         run: bash scripts/ci/install-kubeconfig.sh
 
       - name: Verify Kubernetes API Reachability
         run: |
-          ip route get "${KUBE_API_SERVER}"
+          curl -kfsS --max-time 10 "${KUBE_API_SERVER_URL}/version" >/dev/null
           kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
@@ -152,6 +158,10 @@ jobs:
       - name: Run Conftest Policies
         if: ${{ !cancelled() }}
         run: nix develop --command bash scripts/ci/conftest-policies.sh
+
+      - name: Disconnect Octelium
+        if: always()
+        run: command -v octelium >/dev/null 2>&1 && octelium --homedir "${RUNNER_TEMP}/octelium" disconnect || true
 
   fork-plan-skipped:
     name: Terragrunt Plan Skipped For Fork
@@ -182,7 +192,7 @@ jobs:
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
       - name: Explain Skip
-        run: echo "Live Terragrunt plan is skipped for forked pull requests because it requires AWS, Tailscale, and Kubernetes secrets."
+        run: echo "Live Terragrunt plan is skipped for forked pull requests because it requires AWS, Octelium, and Kubernetes secrets."
 
       - name: Run Conftest Policies
         run: nix develop --command bash scripts/ci/conftest-policies.sh
