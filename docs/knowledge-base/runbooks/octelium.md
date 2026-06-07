@@ -100,8 +100,9 @@ The steady-state bootstrap path for users outside the tailnet is the
 `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
 `octelium-api.octelium.stinkyboi.com` to the public Internet and forwards those
 hostnames to the existing Istio `octelium-cluster` route. The Cloudflare Tunnel
-credentials JSON lives outside git in
-`/homelab/octelium/cloudflare-tunnel-credentials-json` and is rendered by the
+credentials JSON and UUID live outside git in
+`/homelab/octelium/cloudflare-tunnel-credentials-json` and
+`/homelab/octelium/cloudflare-tunnel-id`; both are rendered by the
 `octelium-public-cloudflared-credentials` ExternalSecret.
 
 If public DNS or VPN access to the Octelium Cluster is not available yet,

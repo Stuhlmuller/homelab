@@ -142,8 +142,9 @@ Service.
 
 The public Octelium control-plane path is a separate `octelium-public`
 Application. It runs two `cloudflared` replicas in `octelium-public`, reads the
-named tunnel credentials JSON from
-`/homelab/octelium/cloudflare-tunnel-credentials-json`, and forwards only
+named tunnel credentials JSON and UUID from
+`/homelab/octelium/cloudflare-tunnel-credentials-json` and
+`/homelab/octelium/cloudflare-tunnel-id`, and forwards only
 `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
 `octelium-api.octelium.stinkyboi.com` to the in-cluster Istio gateway. App
 hostnames such as `grafana.stinkyboi.com` remain Octelium private Service

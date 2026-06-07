@@ -71,8 +71,9 @@ roles need identity-based KMS permissions for both keys.
   Public Octelium control-plane access uses the
   `octelium-public-cloudflared-credentials` ExternalSecret in
   `octelium-public`, sourced from
-  `/homelab/octelium/cloudflare-tunnel-credentials-json`. The Cloudflare Tunnel
-  credential JSON is created outside git with `cloudflared tunnel create
+  `/homelab/octelium/cloudflare-tunnel-credentials-json` and
+  `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
+  JSON and UUID are created outside git with `cloudflared tunnel create
   homelab-octelium-public`.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
