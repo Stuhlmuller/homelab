@@ -11,7 +11,6 @@ dependencies {
     "../external-secrets",
     "../cert-manager",
     "../istio",
-    "../tailscale",
     "../prometheus",
     "../platform-storage"
   ]
@@ -98,7 +97,7 @@ inputs = {
     },
     {
       name  = "ingress"
-      value = "docs/networking-tailnet-ingress.md"
+      value = "private app access is through the Octelium service catalog with Istio SNI backend routing"
     }
   ]
 }

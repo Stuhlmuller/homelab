@@ -1,9 +1,10 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: openclaw-tailnet
+  name: openclaw-octelium
   namespace: ai
   annotations:
+    homelab.rst.io/access-plane: octelium
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:

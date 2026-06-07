@@ -11,7 +11,6 @@ dependencies {
     "../external-secrets",
     "../cert-manager",
     "../istio",
-    "../tailscale",
     "../litellm",
     "../platform-storage"
   ]

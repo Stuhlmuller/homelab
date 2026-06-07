@@ -6,4 +6,5 @@ resources:
   - authorizationpolicy.yaml
   - gateway-funnel.yaml
   - ingress-funnel.yaml
+  - virtualservice-app.yaml
   - virtualservice.yaml

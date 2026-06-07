@@ -1,16 +1,16 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: n8n-tailnet
+  name: n8n-webhook-funnel
   namespace: automation
   annotations:
-    homelab.rst.io/public-funnel: "false"
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-funnel-reviewed: "true"
+    homelab.rst.io/public-funnel-purpose: "n8n external webhook deliveries only."
 spec:
   hosts:
-    - n8n.stinkyboi.com
     - n8n-webhook.tail67beb.ts.net
   gateways:
-    - istio-system/tailnet-gateway
     - istio-system/n8n-webhook-funnel
   http:
     - name: public-webhooks
@@ -39,15 +39,6 @@ spec:
             - istio-system/n8n-webhook-funnel
           uri:
             prefix: /webhook-waiting/
-      route:
-        - destination:
-            host: n8n.automation.svc.cluster.local
-            port:
-              number: 5678
-    - name: tailnet-ui
-      match:
-        - gateways:
-            - istio-system/tailnet-gateway
       route:
         - destination:
             host: n8n.automation.svc.cluster.local

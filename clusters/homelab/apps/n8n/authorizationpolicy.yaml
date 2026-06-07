@@ -1,7 +1,7 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: n8n-allow-tailnet-gateway
+  name: n8n-allow-istio-gateway
   namespace: automation
 spec:
   selector:

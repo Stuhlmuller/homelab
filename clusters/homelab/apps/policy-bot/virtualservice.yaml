@@ -1,9 +1,10 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: policy-bot-tailnet
+  name: policy-bot-octelium
   namespace: automation
   annotations:
+    homelab.rst.io/access-plane: octelium
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:

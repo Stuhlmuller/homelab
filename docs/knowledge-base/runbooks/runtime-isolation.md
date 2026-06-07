@@ -12,8 +12,7 @@ documentation placeholders until an enforcing CNI or policy engine exists.
 
 Current enforced controls:
 
-- fallback Istio ingress routes while the Octelium cutover gate is still
-  failing;
+- Octelium service-proxy access to app UIs through the Istio gateway;
 - workload-scoped Istio policy only where namespace mesh enrollment is proven;
 - explicit namespace Pod Security labels.
 
@@ -34,8 +33,8 @@ Current enforced controls:
 repo-owned namespace manifests. `octelium-client` is ambient-enrolled so the
 Octelium connector can be allowed as
 `cluster.local/ns/octelium-client/sa/octelium-client` by protected workloads.
-`finance` is not mesh-enrolled; OctoBot's current fallback route is a tailnet UI
-path, not a service-to-service or trading API path.
+`finance` is not mesh-enrolled; OctoBot's UI is reached through the Octelium
+service-proxy path and does not expose trading API access directly.
 
 ## Network Policy Gate
 

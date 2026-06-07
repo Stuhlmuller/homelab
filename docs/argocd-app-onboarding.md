@@ -23,19 +23,19 @@ requested workloads.
 | tailscale | requested | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | Yes | external-secrets, istio |
 | octelium | requested | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | Yes | external-secrets, istio |
 | prometheus | requested | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | Yes | external-secrets, platform-storage |
-| grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, tailscale, prometheus, platform-storage |
-| kiali | requested | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | Yes | istio, tailscale, prometheus, grafana |
-| compass | requested | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | Yes | cert-manager, istio, tailscale, prometheus |
+| grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, prometheus, platform-storage |
+| kiali | requested | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | Yes | istio, prometheus, grafana |
+| compass | requested | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | Yes | cert-manager, istio, prometheus |
 | descheduler | requested | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | Yes | prometheus |
-| deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | cert-manager, istio, tailscale, platform-storage |
-| prowlarr | requested | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | Yes | cert-manager, istio, media-postgres, tailscale, platform-storage |
-| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | cert-manager, istio, tailscale, deluge, media-postgres, prowlarr, platform-storage |
-| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, tailscale, deluge, media-postgres, prowlarr, platform-storage |
-| litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage |
-| openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
+| deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | cert-manager, istio, platform-storage |
+| prowlarr | requested | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | Yes | cert-manager, istio, media-postgres, platform-storage |
+| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
+| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
+| litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, platform-storage |
+| openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, litellm, platform-storage |
 | n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
 | policy-bot | requested | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | Yes | external-secrets, cert-manager, istio, tailscale |
-| octobot | requested | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | Yes | cert-manager, istio, tailscale, platform-storage |
+| octobot | requested | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | Yes | cert-manager, istio, platform-storage |
 
 ## Dependency Readiness
 

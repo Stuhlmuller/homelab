@@ -38,9 +38,10 @@ The Radarr app container also sets `RADARR__AUTH__METHOD=External` and
 variables override persisted `config.xml` entries at startup and keep the
 running process aligned if the PVC copy drifts back to Forms authentication or
 password-required mode.
-Radarr targets Octelium as the external access boundary, with the tailnet Istio
-route retained as fallback until `scripts/octelium-e2e-check.sh` passes. Funnel
-stays disabled, and Radarr's own password prompt is intentionally disabled.
+Radarr targets Octelium as the external access boundary. The stable
+`https://radarr.stinkyboi.com` hostname resolves to the Octelium service
+address, Funnel stays disabled, and Radarr's own password prompt is
+intentionally disabled.
 
 This avoids recurring lockouts when the internal Radarr username/password state
 drifts or is reset during config/database migrations. If Radarr is ever exposed

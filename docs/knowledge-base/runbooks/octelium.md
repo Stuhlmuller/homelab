@@ -8,10 +8,10 @@ Source: `docs/octelium.md`
 
 Octelium is the replacement target for human access to homelab applications.
 The current app registration is `octelium`, the Kubernetes namespace is
-`octelium-client`, and Tailscale remains only the temporary fallback for app
-routes until the Octelium e2e gate passes. Tailscale can still have separate
-non-app duties, such as CI cluster reachability or reviewed public webhook
-exceptions, until those are replaced in their own change.
+`octelium-client`, and app UI routes now use Octelium-backed
+`*.stinkyboi.com` hostnames. Tailscale can still have separate non-app duties,
+such as CI cluster reachability or reviewed public webhook exceptions, until
+those are replaced in their own change.
 
 The Argo CD Application installs the official Octelium client Helm chart plus
 repo-owned support manifests. The connector runs in TUN mode with `NET_ADMIN`
@@ -38,7 +38,9 @@ Services forward TCP/443 to the in-cluster Istio gateway, preserving existing
 moving the network path onto Octelium. The Kubernetes connector serves the same
 service list with
 `--scope=api:user.MainService/Connect` and matching `--scope=service:<name>`
-flags.
+flags. The per-app Istio `VirtualService` objects remain as private backend SNI
+routes for these TCP Services and are annotated with
+`homelab.rst.io/access-plane: octelium`.
 
 ## Enterprise Package
 
@@ -98,8 +100,8 @@ path reaches the same Octelium ingress.
 
 ## Cutover Gate
 
-`scripts/octelium-e2e-check.sh` is the required gate before removing old
-Tailscale-backed app routes. It checks the Octelium control-plane namespace,
+`scripts/octelium-e2e-check.sh` is the required gate for Octelium app access.
+It checks the Octelium control-plane namespace,
 the synced workload credential, a ready `octelium-client` replica, non-Istio
 responses from the Cluster/API/portal hostnames, every homelab app Service in
 the Octelium catalog, exact `AAAA` DNS for each existing app hostname, and
@@ -117,9 +119,8 @@ separate `--octelium-context` and `--homelab-context` values so the
 control-plane namespace checks and connector checks target the correct
 clusters.
 
-If the gate fails, keep the app `VirtualService` objects and the Tailscale
-Istio `LoadBalancer` fallback in place. Treat the failure output as the
-remaining cutover work queue.
+If the gate fails, treat the failure output as the remaining repair queue before
+declaring app access healthy.
 
 ## Secret Contract
 

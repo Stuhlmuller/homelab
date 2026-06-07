@@ -96,15 +96,15 @@ same restored config volume at the same time.
 ## Mesh Policy
 
 The `media` namespace is intentionally not enrolled in Istio ambient mode while
-the operator web UIs are exposed through the shared tailnet ingress gateway.
-The tailnet gateway must be able to proxy to Deluge, Radarr, Sonarr, and
-Prowlarr services without ambient HBONE resets, and the Deluge Pod cannot use
-sidecar injection because Gluetun owns the VPN network setup.
+the operator web UIs are exposed through the shared Istio ingress path published
+by Octelium. The Istio gateway must be able to proxy to Deluge, Radarr, Sonarr,
+and Prowlarr services without ambient HBONE resets, and the Deluge Pod cannot
+use sidecar injection because Gluetun owns the VPN network setup.
 
-Keep media UI access on the Istio reverse proxy ingress path with
-`public-funnel=false` Tailscale annotations. Reintroduce ambient mesh only with a
-repo-owned waypoint or equivalent gateway policy that preserves HTTPS access to
-the `*.stinkyboi.com` operator addresses.
+Keep media UI access on the Octelium service catalog path that forwards TCP/443
+to the Istio reverse proxy. Reintroduce ambient mesh only with a repo-owned
+waypoint or equivalent gateway policy that preserves HTTPS access to the
+`*.stinkyboi.com` operator addresses.
 
 ## Verification
 
