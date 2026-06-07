@@ -161,7 +161,9 @@ jobs:
 
       - name: Disconnect Octelium
         if: always()
-        run: command -v octelium >/dev/null 2>&1 && octelium --homedir "${RUNNER_TEMP}/octelium" disconnect || true
+        env:
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: command -v octelium >/dev/null 2>&1 && octelium --homedir "${RUNNER_TEMP}/octelium" disconnect --domain "${OCTELIUM_DOMAIN}" --auth-token "${OCTELIUM_AUTH_TOKEN}" || true
 
   fork-plan-skipped:
     name: Terragrunt Plan Skipped For Fork

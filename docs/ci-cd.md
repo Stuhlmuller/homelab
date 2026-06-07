@@ -68,8 +68,8 @@ contract for Grafana.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
   `kubernetes-api.homelab`. The workflow connects with the gVisor
   implementation, disables Octelium DNS, publishes only that Service to
-  `127.0.0.1:16443`, and scopes the client session to
-  `api:user.MainService/Connect` plus `service:kubernetes-api.homelab`.
+  `127.0.0.1:16443`, and relies on the
+  `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
   current cluster server to `https://127.0.0.1:16443` and sets the TLS server
@@ -189,6 +189,13 @@ octeliumctl create cred \
 Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after runner image changes,
 and on a regular schedule. The workflow still needs `KUBE_CONFIG_B64`; Octelium
 only carries the transport path to the Kubernetes API.
+
+Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
+credential unless a newer Octelium release validates that scoped auth-token
+sessions can publish `kubernetes-api.homelab`. On Octelium v0.35, the
+policy-bound workload credential authenticates and is then constrained by the
+attached policy; adding `api:*` or `service:*` scopes causes the client session
+to be denied before the runner can publish the loopback listener.
 
 ## AWS Setup
 

@@ -33,9 +33,14 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if a future Service needs a connector
   served upstream.
+- Policy `homelab-ci-kubernetes-api-access`, allowing only the `homelab-ci`
+  workload User to publish the Kubernetes API Service for CI.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
+- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
+- TCP/6443 Service `kubernetes-api.homelab`, forwarding to
+  `tcp://10.1.0.199:6443` for CI Kubernetes API access.
 - TCP/443 Services for the existing HTTPS app routes. The Octelium service
   names remain valid internal names such as `grafana.homelab`, and each service
   carries an `appHostname` attribute such as `grafana.stinkyboi.com`.

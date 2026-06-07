@@ -197,7 +197,9 @@ credential as GitHub environment secret `OCTELIUM_CI_AUTH_TOKEN` in both
 `homelab-plan` and `homelab-production`; do not store it in AWS SSM unless a
 future repo-owned workflow needs to materialize it in-cluster. The credential
 must only publish Service `kubernetes-api.homelab` to the runner loopback
-listener.
+listener. Do not add Octelium `--scope` flags to this v0.35 auth-token connect
+path; the workload policy is the hard access boundary and scoped sessions are
+denied before publish starts.
 
 ## Isolation
 

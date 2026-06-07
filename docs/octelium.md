@@ -472,11 +472,14 @@ octelium connect \
   --implementation gvisor \
   --ip-mode=v4 \
   --no-dns \
-  --publish kubernetes-api.homelab:127.0.0.1:16443 \
-  --scope api:user.MainService/Connect \
-  --scope service:kubernetes-api.homelab
+  --publish kubernetes-api.homelab:127.0.0.1:16443
 curl -kfsS https://127.0.0.1:16443/version
 ```
+
+The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
+this workload credential. Do not add Octelium `--scope` flags to this CI
+connection on v0.35; scoped auth-token sessions are denied before the
+Kubernetes API listener is published.
 
 ## Rollback
 

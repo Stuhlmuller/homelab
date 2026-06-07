@@ -47,6 +47,9 @@ Source: `docs/ci-cd.md`
 - Octelium uses a workload credential for User `homelab-ci`. The workflow
   publishes only Service `kubernetes-api.homelab` to
   `https://127.0.0.1:16443` with the gVisor implementation and no Octelium DNS.
+  The policy-bound credential is the enforcement boundary; do not add
+  auth-token `--scope` flags to this v0.35 connect path because scoped sessions
+  are denied before the loopback listener is published.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
   loopback listener and sets the Kubernetes TLS server name to `10.1.0.199`.
@@ -134,6 +137,11 @@ docs/examples/octelium/homelab-services.yaml`, then create the credential with
 `octeliumctl create cred --domain stinkyboi.com --user homelab-ci
 --policy homelab-ci-kubernetes-api-access homelab-ci`. Store only the printed
 credential token in GitHub environments as `OCTELIUM_CI_AUTH_TOKEN`.
+
+The CI connector intentionally does not pass Octelium `--scope` flags. The
+`homelab-ci-kubernetes-api-access` policy is attached to the workload
+credential and limits access to the Kubernetes API Service; scoped auth-token
+sessions on Octelium v0.35 are denied during session creation.
 
 GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
 public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using

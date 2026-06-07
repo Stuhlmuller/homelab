@@ -28,9 +28,7 @@ octelium --homedir "${OCTELIUM_HOMEDIR}" connect \
   --implementation gvisor \
   --ip-mode v4 \
   --no-dns \
-  --publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}" \
-  --scope api:user.MainService/Connect \
-  --scope "service:${OCTELIUM_KUBE_SERVICE}"
+  --publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}"
 
 deadline=$((SECONDS + OCTELIUM_READY_TIMEOUT_SECONDS))
 until curl -kfsS --max-time 5 "https://${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}/version" >/dev/null; do

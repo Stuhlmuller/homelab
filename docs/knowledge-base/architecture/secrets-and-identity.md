@@ -85,7 +85,9 @@ roles need identity-based KMS permissions for both keys.
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api.homelab`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`.
+  `homelab-production`; the CI connector does not add Octelium auth-token
+  scopes on v0.35 because the policy-bound credential is the enforcement
+  boundary.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by
