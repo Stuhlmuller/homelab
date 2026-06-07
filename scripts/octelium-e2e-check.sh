@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DOMAIN="octelium.stinkyboi.com"
+DOMAIN="stinkyboi.com"
 CLIENT_NAMESPACE="octelium-client"
 CONTROL_NAMESPACE="octelium"
 CATALOG="docs/examples/octelium/homelab-services.yaml"
@@ -26,7 +26,7 @@ authentication token; otherwise the script uses the current local Octelium
 login state.
 
 Options:
-  --domain DOMAIN             Octelium Cluster domain. Default: octelium.stinkyboi.com
+  --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
   --catalog PATH              Octelium catalog file. Default: docs/examples/octelium/homelab-services.yaml
   --idp-name NAME             Required Octelium IdentityProvider name. Default: entra
   --path PATH                 HTTPS path to probe on each app hostname. Default: /
@@ -91,6 +91,10 @@ done
 
 API_HOST="octelium-api.${DOMAIN}"
 PORTAL_HOST="portal.${DOMAIN}"
+CONTROL_HOSTS=("${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}")
+if [ "${DOMAIN}" = "stinkyboi.com" ]; then
+  CONTROL_HOSTS+=("octelium.stinkyboi.com")
+fi
 
 APP_TARGETS="
 argocd.stinkyboi.com argocd.homelab 18443
@@ -283,7 +287,7 @@ else
 fi
 
 note "Checking Octelium TLS/API endpoints"
-for HOST in "${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}"; do
+for HOST in "${CONTROL_HOSTS[@]}"; do
   HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-headers.XXXXXX")"
   HTTP_CODE="$(curl -sS -I --max-time 15 -o "${HEADER_FILE}" -w '%{http_code}' "https://${HOST}" || true)"
   SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"

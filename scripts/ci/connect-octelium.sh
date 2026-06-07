@@ -3,7 +3,7 @@ set -euo pipefail
 
 : "${OCTELIUM_AUTH_TOKEN:?OCTELIUM_AUTH_TOKEN must contain the homelab-ci Octelium credential}"
 
-OCTELIUM_DOMAIN="${OCTELIUM_DOMAIN:-octelium.stinkyboi.com}"
+OCTELIUM_DOMAIN="${OCTELIUM_DOMAIN:-stinkyboi.com}"
 OCTELIUM_HOMEDIR="${OCTELIUM_HOMEDIR:-${RUNNER_TEMP:-/tmp}/octelium}"
 OCTELIUM_KUBE_SERVICE="${OCTELIUM_KUBE_SERVICE:-kubernetes-api.homelab}"
 OCTELIUM_KUBE_LOCAL_HOST="${OCTELIUM_KUBE_LOCAL_HOST:-127.0.0.1}"

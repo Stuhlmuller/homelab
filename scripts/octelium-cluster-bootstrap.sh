@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-domain="octelium.stinkyboi.com"
+domain="stinkyboi.com"
 version="0.35.0"
 kubeconfig=""
 kubecontext=""
@@ -18,12 +18,13 @@ octelium-storage-auth Kubernetes Secret, writes a temporary Octelium bootstrap
 file outside git, then runs octops with Octelium ingress front-proxy mode so
 the existing Istio gateway terminates TLS for:
 
+  stinkyboi.com
+  portal.stinkyboi.com
+  octelium-api.stinkyboi.com
   octelium.stinkyboi.com
-  portal.octelium.stinkyboi.com
-  octelium-api.octelium.stinkyboi.com
 
 Options:
-  --domain DOMAIN       Octelium Cluster domain. Default: octelium.stinkyboi.com
+  --domain DOMAIN       Octelium Cluster domain. Default: stinkyboi.com
   --version VERSION     Octelium Cluster version. Default: 0.35.0
                         Use "latest" to omit --version.
   --kubeconfig PATH     Kubeconfig for the homelab cluster.

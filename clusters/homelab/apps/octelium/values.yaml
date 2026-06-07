@@ -44,7 +44,7 @@ resources:
     memory: 256Mi
 
 octelium:
-  domain: octelium.stinkyboi.com
+  domain: stinkyboi.com
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret name, not a secret value.
   authTokenSecret: octelium-client-auth-v5
   # checkov:skip=CKV_SECRET_6: Kubernetes Secret key name, not a secret value.

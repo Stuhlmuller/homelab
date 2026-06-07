@@ -145,8 +145,8 @@ Application. It runs two `cloudflared` replicas in `octelium-public`, reads the
 named tunnel credentials JSON and UUID from
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`, and forwards only
-`octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
-`octelium-api.octelium.stinkyboi.com` to the in-cluster Istio gateway. App
+`stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
+`octelium-api.stinkyboi.com` to the in-cluster Istio gateway. App
 hostnames such as `grafana.stinkyboi.com` remain Octelium private Service
 records, not Cloudflare Tunnel records.
 Protected ambient workloads allow
@@ -154,10 +154,9 @@ Protected ambient workloads allow
 Octelium Enterprise is tracked separately as the `octeliumee` package at
 desired version `0.22.0`; install or upgrade it against the external Octelium
 Cluster with `scripts/octelium-enterprise-package.sh`. The Octelium Cluster
-domain is `octelium.stinkyboi.com`, so clients contact
-`octelium-api.octelium.stinkyboi.com`; certificate and bootstrap routing must
-keep the Cluster domain covered by `*.stinkyboi.com` and the API/portal names
-covered by `*.octelium.stinkyboi.com`.
+domain is `stinkyboi.com`, so clients contact `octelium-api.stinkyboi.com`;
+certificate and bootstrap routing use apex plus first-level `*.stinkyboi.com`
+coverage, with `octelium.stinkyboi.com` as an alias.
 
 Before changing app transport, run `scripts/octelium-e2e-check.sh` and confirm
 the service catalog plus direct HTTPS probes for the existing

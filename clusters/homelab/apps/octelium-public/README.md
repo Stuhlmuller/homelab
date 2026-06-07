@@ -3,9 +3,10 @@
 This app runs the outbound Cloudflare Tunnel connector that makes only the
 Octelium Cluster control-plane hostnames reachable from outside the tailnet:
 
+- `stinkyboi.com`
 - `octelium.stinkyboi.com`
-- `portal.octelium.stinkyboi.com`
-- `octelium-api.octelium.stinkyboi.com`
+- `portal.stinkyboi.com`
+- `octelium-api.stinkyboi.com`
 
 Application hostnames such as `grafana.stinkyboi.com` and
 `argocd.stinkyboi.com` still resolve to Octelium private Service addresses and
@@ -28,16 +29,16 @@ the matching origin SNI and Host header. Istio then uses the existing
 `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 
-The Cloudflare DNS records for the three public hostnames must be exact proxied
+The Cloudflare DNS records for the public hostnames must be exact proxied
 CNAMEs to the named tunnel target, `<tunnel-uuid>.cfargotunnel.com`. Reconcile
 them with `scripts/octelium-public-dns.sh` after the tunnel UUID is stored in
 SSM. Public resolvers should return Cloudflare anycast A/AAAA records, not the
 old tailnet `100.64.0.0/10` address.
 
-Cloudflare edge TLS also needs coverage for `octelium.stinkyboi.com` and
-`*.octelium.stinkyboi.com`. Istio's `stinkyboi-com-tls` origin certificate
-covers those names, but proxied Cloudflare records require Cloudflare to present
-a matching edge certificate before traffic reaches this connector.
+Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
+`*.stinkyboi.com` certificate shape. The cluster domain is `stinkyboi.com` so
+the Octelium client calls `octelium-api.stinkyboi.com`; the
+`octelium.stinkyboi.com` hostname is only an alias.
 
 ## Validation
 
@@ -47,6 +48,7 @@ kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
 scripts/octelium-public-dns.sh --dry-run
 dig +short octelium.stinkyboi.com
+curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://octelium.stinkyboi.com/
-curl -fsS -o /dev/null -w '%{http_code}\n' https://portal.octelium.stinkyboi.com/
+curl -fsS -o /dev/null -w '%{http_code}\n' https://portal.stinkyboi.com/
 ```

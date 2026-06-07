@@ -172,7 +172,7 @@ Apply that catalog to the Octelium Cluster after the control plane, portal, and
 API hostnames are reachable:
 
 ```sh
-octeliumctl apply --domain octelium.stinkyboi.com docs/examples/octelium/homelab-services.yaml
+octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
 
 Create the workload credential outside git and store the printed token as
@@ -180,7 +180,7 @@ Create the workload credential outside git and store the printed token as
 
 ```sh
 octeliumctl create cred \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --user homelab-ci \
   --policy homelab-ci-kubernetes-api-access \
   homelab-ci

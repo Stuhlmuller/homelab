@@ -50,8 +50,8 @@ routes for these TCP Services and are annotated with
 
 Octelium portal login uses IdentityProvider `entra`. The Microsoft Entra app is
 managed by `IaC/live/azuread-applications/octelium`, registers
-`https://octelium.stinkyboi.com/callback` and
-`https://portal.octelium.stinkyboi.com/callback`, and writes generated client
+`https://stinkyboi.com/callback` and
+`https://portal.stinkyboi.com/callback`, and writes generated client
 material to `/homelab/octelium/entra/*` in SSM. After that unit applies,
 `scripts/octelium-entra-oidc.sh` reads those SSM values, refreshes Octelium
 native Secret `entra-oidc-client-secret`, and applies the IdentityProvider.
@@ -62,7 +62,7 @@ The IdentityProvider requests `openid`, `email`, and `profile`, uses Entra
 `preferred_username` as the login identifier, and does not require
 `email_verified`, which Entra may omit. If the portal shows
 `No Available Identity Providers`, verify
-`octeliumctl get identityprovider entra --domain octelium.stinkyboi.com`
+`octeliumctl get identityprovider entra --domain stinkyboi.com`
 before changing the app service catalog.
 
 ## Enterprise Package
@@ -74,21 +74,21 @@ state and it does not replace the `octelium-client` connector in this homelab.
 
 Current desired package version: `0.22.0`.
 
-The Octelium Cluster domain is `octelium.stinkyboi.com`, which makes the client
-contact `octelium-api.octelium.stinkyboi.com`. The Istio wildcard certificate
-uses `*.stinkyboi.com` for the Cluster domain and also requests
-`*.octelium.stinkyboi.com`; the one-level wildcard alone is not enough for the
-API hostname.
+The Octelium Cluster domain is `stinkyboi.com`, which makes the client contact
+`octelium-api.stinkyboi.com`. `octelium.stinkyboi.com` is a public alias for
+the Octelium control plane, not the CLI domain. This keeps the public API and
+portal names on the Cloudflare Universal SSL shape: apex `stinkyboi.com` plus
+first-level `*.stinkyboi.com`.
 
 Install or upgrade with:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -100,9 +100,9 @@ outside git; add only safe references or secret contracts here.
 ## Bootstrap Access
 
 The steady-state bootstrap path for users outside the tailnet is the
-`octelium-public` Cloudflare Tunnel connector. It exposes only
-`octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
-`octelium-api.octelium.stinkyboi.com` to the public Internet and forwards those
+`octelium-public` Cloudflare Tunnel connector. It exposes only `stinkyboi.com`,
+`octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
+`octelium-api.stinkyboi.com` to the public Internet and forwards those
 hostnames to the existing Istio `octelium-cluster` route. The Cloudflare Tunnel
 credentials JSON and UUID live outside git in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
@@ -110,9 +110,7 @@ credentials JSON and UUID live outside git in
 `octelium-public-cloudflared-credentials` ExternalSecret. After those SSM values
 exist, run `scripts/octelium-public-dns.sh` to replace the old tailnet DNS
 answers with exact proxied CNAMEs to the Cloudflare Tunnel target. Cloudflare
-edge TLS must cover `octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`;
-the Istio origin certificate alone does not satisfy TLS at Cloudflare's edge
-for nested portal/API hostnames.
+edge TLS only needs the apex plus first-level `*.stinkyboi.com` names.
 
 If public DNS or VPN access to the Octelium Cluster is not available yet,
 bootstrap the UI and API through a local port-forward to the Octelium Cluster
@@ -127,11 +125,12 @@ On the bootstrap workstation only, add temporary host entries for:
 
 ```text
 octelium.stinkyboi.com
-portal.octelium.stinkyboi.com
-octelium-api.octelium.stinkyboi.com
+stinkyboi.com
+portal.stinkyboi.com
+octelium-api.stinkyboi.com
 ```
 
-Then run `octelium login --domain octelium.stinkyboi.com`, apply
+Then run `octelium login --domain stinkyboi.com`, apply
 `docs/examples/octelium/homelab-services.yaml`, create the
 `homelab-octelium-client` credential, store it in SSM, and sync the Argo CD
 Application. Remove the temporary host entries after real DNS or the first VPN
@@ -233,7 +232,7 @@ namespace. Octelium genesis deletes and recreates that namespace during
 that Application so Argo does not prune the formerly managed namespace during
 the ownership handoff.
 
-Run `scripts/octelium-cluster-bootstrap.sh --domain octelium.stinkyboi.com`
+Run `scripts/octelium-cluster-bootstrap.sh --domain stinkyboi.com`
 after those prerequisites are synced and healthy. The wrapper generates a
 temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
 Octelium ingress front-proxy mode, labels the `octelium` namespace with the
@@ -273,7 +272,7 @@ scripts/octelium-e2e-check.sh --help
 
 After activation, confirm External Secrets, the service catalog, and the
 connector Deployment in `octelium-client`. Rotate the workload credential only
-after `https://octelium-api.octelium.stinkyboi.com` serves the Octelium API,
+after `https://octelium-api.stinkyboi.com` serves the Octelium API,
 not a generic Istio `404` or gRPC `Unimplemented` response. Stop the connector
 by returning `replicaCount` to `0`.
 
@@ -291,11 +290,12 @@ execute the flag as the binary. The image's upstream Dockerfile sets
 `./podinfo` when passing custom args.
 
 An early rollout started the connector before the external Octelium API was
-verified. The nested Octelium domain makes the client call
-`octelium-api.octelium.stinkyboi.com`, so certificate coverage for
-`*.octelium.stinkyboi.com` must remain in place. The stable GitOps state keeps
-the connector active only after the real Octelium API/package path is ready and
-the nested API hostname serves Octelium instead of a generic Istio `404` or
+verified. Keep the cluster domain at `stinkyboi.com` so the client calls
+`octelium-api.stinkyboi.com`; using `octelium.stinkyboi.com` as the domain
+would make clients call the nested `octelium-api.octelium.stinkyboi.com`
+hostname that Cloudflare Universal SSL does not cover. The stable GitOps state
+keeps the connector active only after the real Octelium API/package path is
+ready and the API hostname serves Octelium instead of a generic Istio `404` or
 gRPC `Unimplemented` response.
 
 During full Cluster bootstrap, Multus must stay ready on every node that can

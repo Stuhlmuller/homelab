@@ -3,7 +3,7 @@
 This app owns the repo-side Octelium Cluster ingress route. `octops init`
 creates and manages the Octelium control-plane workloads in the `octelium`
 namespace, while this Argo CD Application keeps the homelab's Istio bootstrap
-gateway routing the nested Octelium hostnames to the Octelium data-plane
+gateway routing the Octelium public hostnames to the Octelium data-plane
 ingress service. It deliberately does not create or manage the `octelium`
 namespace because Octelium genesis deletes and recreates that namespace during
 `octops init`. Automated pruning is disabled for this small front-door app so
@@ -16,8 +16,8 @@ so Istio terminates TLS and proxies HTTP to
 `DestinationRule` forces HTTP/2 upstream traffic to that Octelium dataplane
 Service so CLI gRPC responses keep their trailers.
 
-Client VPN traffic uses Octelium Gateway hostnames such as
-`_gw-*.octelium.stinkyboi.com`, not the Istio front-proxy route. After
+Client VPN traffic uses Octelium Gateway hostnames generated from the cluster
+domain, such as `_gw-*.stinkyboi.com`, not the Istio front-proxy route. After
 `octops` creates or updates Gateway status, run
 `scripts/octelium-gateway-dns.sh --dry-run` and then
 `scripts/octelium-gateway-dns.sh` so those exact hostnames resolve to the
@@ -39,6 +39,6 @@ kubectl -n istio-system get virtualservice octelium-cluster
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-app-dns.sh --dry-run
 curl -I https://octelium.stinkyboi.com
-curl -I https://portal.octelium.stinkyboi.com
-curl -I https://octelium-api.octelium.stinkyboi.com
+curl -I https://portal.stinkyboi.com
+curl -I https://octelium-api.stinkyboi.com
 ```

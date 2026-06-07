@@ -17,19 +17,24 @@ data:
       tlsTimeout: 10s
       http2Origin: true
     ingress:
+      - hostname: stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: stinkyboi.com
+          httpHostHeader: stinkyboi.com
       - hostname: octelium.stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:
           originServerName: octelium.stinkyboi.com
           httpHostHeader: octelium.stinkyboi.com
-      - hostname: portal.octelium.stinkyboi.com
+      - hostname: portal.stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:
-          originServerName: portal.octelium.stinkyboi.com
-          httpHostHeader: portal.octelium.stinkyboi.com
-      - hostname: octelium-api.octelium.stinkyboi.com
+          originServerName: portal.stinkyboi.com
+          httpHostHeader: portal.stinkyboi.com
+      - hostname: octelium-api.stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:
-          originServerName: octelium-api.octelium.stinkyboi.com
-          httpHostHeader: octelium-api.octelium.stinkyboi.com
+          originServerName: octelium-api.stinkyboi.com
+          httpHostHeader: octelium-api.stinkyboi.com
       - service: http_status:404

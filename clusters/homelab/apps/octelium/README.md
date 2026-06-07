@@ -155,12 +155,12 @@ Only publish app UI routes after this e2e gate passes.
 
 ## Bootstrap UI Access
 
-Use `octelium.stinkyboi.com` as the Octelium Cluster domain. With this nested
-domain, clients call `octelium-api.octelium.stinkyboi.com`, and the browser
-portal may use `portal.octelium.stinkyboi.com`. The existing Istio
-`*.stinkyboi.com` certificate covers `octelium.stinkyboi.com`; it also requests
-`*.octelium.stinkyboi.com` because the one-level wildcard does not cover the API
-hostname.
+Use `stinkyboi.com` as the Octelium Cluster domain. With this domain, clients
+call `octelium-api.stinkyboi.com`, and the browser portal may use
+`portal.stinkyboi.com`. `octelium.stinkyboi.com` remains a public alias, but it
+is not the CLI domain because that would make clients call the nested
+`octelium-api.octelium.stinkyboi.com` hostname that Cloudflare Universal SSL
+does not cover.
 
 Before DNS or VPN access reaches the Octelium Cluster ingress, bootstrap
 through a local port-forward:
@@ -174,14 +174,15 @@ Add temporary host entries on the bootstrap workstation:
 
 ```text
 127.0.0.1 octelium.stinkyboi.com
-127.0.0.1 portal.octelium.stinkyboi.com
-127.0.0.1 octelium-api.octelium.stinkyboi.com
+127.0.0.1 stinkyboi.com
+127.0.0.1 portal.stinkyboi.com
+127.0.0.1 octelium-api.stinkyboi.com
 ```
 
 Then authenticate and apply the catalog while the port-forward is running:
 
 ```sh
-octelium login --domain octelium.stinkyboi.com
+octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
   --admin-email '<entra-user-principal-name>'
@@ -209,19 +210,19 @@ Current desired Enterprise package version:
 0.22.0
 ```
 
-The Octelium Cluster domain is `octelium.stinkyboi.com`, so the client talks to
-`octelium-api.octelium.stinkyboi.com`. Keep certificates valid for the existing
-`*.stinkyboi.com` wildcard plus `*.octelium.stinkyboi.com`.
+The Octelium Cluster domain is `stinkyboi.com`, so the client talks to
+`octelium-api.stinkyboi.com`. Keep certificates valid for the apex plus
+first-level `*.stinkyboi.com` names.
 
 Install or upgrade it with the repo-owned wrapper:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -261,7 +262,7 @@ scripts/octelium-e2e-check.sh \
 From an Octelium client session, query one of the existing app URLs:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com --ip-mode=v4
+octelium connect --domain stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
@@ -269,7 +270,7 @@ Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com -p homelab-demo.homelab:18081
+octelium connect --domain stinkyboi.com -p homelab-demo.homelab:18081
 curl http://127.0.0.1:18081/version
 ```
 

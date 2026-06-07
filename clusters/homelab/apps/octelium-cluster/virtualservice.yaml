@@ -7,9 +7,10 @@ metadata:
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
+    - stinkyboi.com
     - octelium.stinkyboi.com
-    - portal.octelium.stinkyboi.com
-    - octelium-api.octelium.stinkyboi.com
+    - portal.stinkyboi.com
+    - octelium-api.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:

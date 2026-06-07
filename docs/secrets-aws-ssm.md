@@ -181,14 +181,15 @@ The public Octelium control plane uses a Cloudflare Tunnel connector in
 `cloudflared tunnel create homelab-octelium-public` in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and the tunnel UUID in
 `/homelab/octelium/cloudflare-tunnel-id`, then run
-`scripts/octelium-public-dns.sh` to route `octelium.stinkyboi.com`,
-`portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com`
+`scripts/octelium-public-dns.sh` to route `stinkyboi.com`,
+`octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
+`octelium-api.stinkyboi.com`
 through proxied CNAME records to the tunnel target
 `<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
-API token outside git. Cloudflare edge TLS must cover both
-`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; otherwise the nested
-portal and API names reach Cloudflare but fail before the tunnel with an edge
-TLS handshake error.
+API token outside git. Cloudflare edge TLS uses the apex plus first-level
+`*.stinkyboi.com` shape; making `octelium.stinkyboi.com` the cluster domain
+would force the client onto the unsupported nested
+`octelium-api.octelium.stinkyboi.com` hostname.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
@@ -229,8 +230,8 @@ configuration. Rotating the client secret means applying the Entra unit so the
 generated password and SSM value update together, then letting External Secrets
 refresh `grafana-azuread-sso`.
 
-The Octelium unit registers `https://octelium.stinkyboi.com/callback` and
-`https://portal.octelium.stinkyboi.com/callback`, writes the client ID,
+The Octelium unit registers `https://stinkyboi.com/callback` and
+`https://portal.stinkyboi.com/callback`, writes the client ID,
 generated one-year client secret, tenant ID, and issuer URL to SSM, and leaves
 the Octelium native IdentityProvider activation to
 `scripts/octelium-entra-oidc.sh`.

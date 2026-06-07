@@ -86,7 +86,7 @@ direct avoids an unnecessary connector-session hop.
 Apply the service catalog to the Octelium Cluster:
 
 ```sh
-octeliumctl apply --domain octelium.stinkyboi.com docs/examples/octelium/homelab-services.yaml
+octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
 
 ## Microsoft Entra Login
@@ -98,8 +98,8 @@ application registration is managed by:
 IaC/live/azuread-applications/octelium
 ```
 
-The application uses `https://octelium.stinkyboi.com/callback` as the primary
-OAuth redirect URI. `https://portal.octelium.stinkyboi.com/callback` is also
+The application uses `https://stinkyboi.com/callback` as the primary OAuth
+redirect URI. `https://portal.stinkyboi.com/callback` is also
 registered because browser sessions may start from the portal hostname. The
 unit writes the generated client ID, one-year client secret, tenant ID, and
 tenant-specific issuer URL to SSM under `/homelab/octelium/entra/*`.
@@ -191,8 +191,8 @@ The gate verifies:
 - `octelium-client-auth` is synced from SSM and renders the versioned workload
   token Secret consumed by the connector;
 - `octelium-client` has at least one ready replica;
-- `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
-  `octelium-api.octelium.stinkyboi.com` respond over TLS. The API host may
+- `stinkyboi.com`, `portal.stinkyboi.com`, `octelium-api.stinkyboi.com`, and
+  the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
 - every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
   exists in the Octelium Cluster;
@@ -208,13 +208,13 @@ treat the failure output as the repair work queue.
 
 ## Bootstrap UI Access
 
-The Octelium Cluster domain for this homelab is `octelium.stinkyboi.com`.
-With that domain, Octelium clients contact
-`octelium-api.octelium.stinkyboi.com`, and browser access may also use
-`portal.octelium.stinkyboi.com`. The existing Istio `*.stinkyboi.com`
-certificate covers `octelium.stinkyboi.com`; it also requests
-`*.octelium.stinkyboi.com` so the nested API and portal names can present a
-valid certificate.
+The Octelium Cluster domain for this homelab is `stinkyboi.com`. With that
+domain, Octelium clients contact `octelium-api.stinkyboi.com`, and browser
+access may use `portal.stinkyboi.com`. `octelium.stinkyboi.com` is kept as a
+public Octelium alias, but it is not the CLI domain because
+`octelium-api.octelium.stinkyboi.com` would require paid nested wildcard
+coverage at Cloudflare. The Istio origin certificate requests `stinkyboi.com`
+plus `*.stinkyboi.com`, which covers the domain, API, portal, and alias names.
 
 Until DNS or another private route reaches the Octelium Cluster ingress, use a
 local port-forward as the bootstrap path:
@@ -229,14 +229,15 @@ local port-forward:
 
 ```text
 127.0.0.1 octelium.stinkyboi.com
-127.0.0.1 portal.octelium.stinkyboi.com
-127.0.0.1 octelium-api.octelium.stinkyboi.com
+127.0.0.1 stinkyboi.com
+127.0.0.1 portal.stinkyboi.com
+127.0.0.1 octelium-api.stinkyboi.com
 ```
 
 Then authenticate and set up the cluster resources:
 
 ```sh
-octelium login --domain octelium.stinkyboi.com
+octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
   --admin-email '<entra-user-principal-name>'
@@ -255,10 +256,10 @@ Verify that the external Octelium API is actually serving before rotating the
 workload credential or rolling the connector:
 
 ```sh
-curl -vI https://octelium-api.octelium.stinkyboi.com
+curl -vI https://octelium-api.stinkyboi.com
 ```
 
-The TLS certificate must match `octelium-api.octelium.stinkyboi.com`, and the
+The TLS certificate must match `octelium-api.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
 `Unimplemented` response. Once that is true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
@@ -297,17 +298,15 @@ The upstream Enterprise README requires `octops` `v0.29.0` or later and an
 existing Octelium Cluster. Commercial or production use requires an Enterprise
 license; license material must stay outside git.
 
-The configured Octelium Cluster domain is `octelium.stinkyboi.com`, which makes
-the client use `octelium-api.octelium.stinkyboi.com`. The existing
-`*.stinkyboi.com` wildcard covers the Cluster domain, and the certificate must
-also cover `*.octelium.stinkyboi.com`; the one-level wildcard is not enough for
-the API hostname.
+The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
+client use `octelium-api.stinkyboi.com`. The Istio and Cloudflare edge
+certificates only need apex plus first-level `*.stinkyboi.com` coverage.
 
 Install the pinned package:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0
 ```
 
@@ -316,7 +315,7 @@ updated to the intended package version:
 
 ```sh
 scripts/octelium-enterprise-package.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.22.0 \
   --upgrade
 ```
@@ -342,8 +341,8 @@ Argo CD manages:
 - `platform-multus`, a Talos-compatible Multus thick DaemonSet in `kube-system`.
 - `octelium-storage`, PostgreSQL and Redis stores in `octelium-storage`.
 - `octelium-cluster`, the Istio `VirtualService` that routes
-  `octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
-  `octelium-api.octelium.stinkyboi.com` to
+  `stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
+  `octelium-api.stinkyboi.com` to
   `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`, plus the
   `DestinationRule` that upgrades Istio-to-Octelium upstream traffic to HTTP/2
   so Octelium CLI gRPC calls keep response trailers.
@@ -358,7 +357,7 @@ Use the repo-owned wrapper after the prerequisite apps are synced:
 
 ```sh
 scripts/octelium-cluster-bootstrap.sh \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --version 0.35.0
 ```
 
@@ -442,7 +441,7 @@ curl http://127.0.0.1:8080/version
 Check a service through Octelium from a client machine:
 
 ```sh
-octelium connect --domain octelium.stinkyboi.com --ip-mode=v4
+octelium connect --domain stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
@@ -450,7 +449,7 @@ Check the CI Kubernetes API service through Octelium from a client machine:
 
 ```sh
 octelium connect \
-  --domain octelium.stinkyboi.com \
+  --domain stinkyboi.com \
   --implementation gvisor \
   --ip-mode=v4 \
   --no-dns \

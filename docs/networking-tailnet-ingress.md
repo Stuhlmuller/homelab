@@ -11,11 +11,11 @@ external SaaS systems until those callbacks are explicitly redesigned.
 
 Exact app records such as `grafana.stinkyboi.com` and `argocd.stinkyboi.com`
 point at Octelium private service IPs, not the old Tailscale wildcard. The
-Octelium Cluster names `octelium.stinkyboi.com`,
-`portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com`
-are the public bootstrap and control-plane exception: Cloudflare Tunnel routes
-those names from the public Internet to the in-cluster Istio gateway, and Istio
-then routes to the Octelium dataplane.
+Octelium Cluster names `stinkyboi.com`, `portal.stinkyboi.com`,
+`octelium-api.stinkyboi.com`, and the `octelium.stinkyboi.com` alias are the
+public bootstrap and control-plane exception: Cloudflare Tunnel routes those
+names from the public Internet to the in-cluster Istio gateway, and Istio then
+routes to the Octelium dataplane.
 
 The public control-plane DNS records must be exact proxied CNAMEs to the
 `homelab-octelium-public` Cloudflare Tunnel target,
@@ -24,18 +24,16 @@ anycast addresses, not the old tailnet LoadBalancer IP. Use
 `scripts/octelium-public-dns.sh` to reconcile those exact records from the
 SSM-backed tunnel UUID.
 
-Cloudflare edge TLS must cover the same names as the origin certificate:
-`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`. The in-cluster
-cert-manager certificate can satisfy Istio origin TLS, but Cloudflare still
-needs edge coverage for the nested `portal.octelium.stinkyboi.com` and
-`octelium-api.octelium.stinkyboi.com` hostnames when the DNS records are
-proxied.
+Cloudflare edge TLS and the origin certificate must cover the apex plus
+first-level `*.stinkyboi.com` names. That free Cloudflare certificate shape is
+why `stinkyboi.com` is the Octelium cluster domain even though
+`octelium.stinkyboi.com` remains a public alias.
 
 ## Route Inventory
 
 | App | HTTPS host | Public Funnel |
 |-----|------------------|---------------|
-| Octelium control plane | `https://octelium.stinkyboi.com`, `https://portal.octelium.stinkyboi.com`, `https://octelium-api.octelium.stinkyboi.com` | disabled; public access uses Cloudflare Tunnel, not Tailscale Funnel |
+| Octelium control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com`, `https://octelium-api.stinkyboi.com` | disabled; public access uses Cloudflare Tunnel, not Tailscale Funnel |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | disabled; app access is through Octelium private Services |
 | n8n webhooks | `https://n8n-webhook.tail67beb.ts.net/webhook...` | enabled for `/webhook`, `/webhook-test`, and `/webhook-waiting` only |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
@@ -45,9 +43,9 @@ Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
 `letsencrypt-cloudflare` ClusterIssuer, which uses DNS-01 challenges for
 `stinkyboi.com` and reads its Cloudflare token from the External Secrets-managed
 `cloudflare-api-token` Secret in the `cert-manager` namespace. The certificate
-also includes `*.octelium.stinkyboi.com` for the nested Octelium API/portal
-bootstrap names; the existing `*.stinkyboi.com` SAN already covers the
-`octelium.stinkyboi.com` Cluster domain. The `homelab-selfsigned` issuer
+includes `stinkyboi.com` and `*.stinkyboi.com` so Istio origin TLS covers the
+Octelium domain, API, portal, alias, and app backend routes. The
+`homelab-selfsigned` issuer
 remains available only as a local fallback and is not referenced by the ingress
 wildcard certificate.
 

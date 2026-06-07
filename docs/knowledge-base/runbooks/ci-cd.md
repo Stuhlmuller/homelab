@@ -129,16 +129,17 @@ the CI transport contract:
 - Policy `homelab-ci-kubernetes-api-access`;
 - TCP Service `kubernetes-api.homelab -> tcp://10.1.0.199:6443`.
 
-Apply the catalog with `octeliumctl apply --domain octelium.stinkyboi.com
+Apply the catalog with `octeliumctl apply --domain stinkyboi.com
 docs/examples/octelium/homelab-services.yaml`, then create the credential with
-`octeliumctl create cred --domain octelium.stinkyboi.com --user homelab-ci
+`octeliumctl create cred --domain stinkyboi.com --user homelab-ci
 --policy homelab-ci-kubernetes-api-access homelab-ci`. Store only the printed
 credential token in GitHub environments as `OCTELIUM_CI_AUTH_TOKEN`.
 
-GitHub-hosted runners must reach `octelium-api.octelium.stinkyboi.com` from the
-public Internet. If Cloudflare edge TLS does not cover
-`*.octelium.stinkyboi.com`, the Octelium client fails before it can reach the
-VPN service even when the root `octelium.stinkyboi.com` hostname works.
+GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
+public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using
+`octelium.stinkyboi.com` as the domain makes the client call
+`octelium-api.octelium.stinkyboi.com`, which Cloudflare Universal SSL does not
+cover without a paid nested wildcard certificate.
 
 ## Local Equivalents
 
