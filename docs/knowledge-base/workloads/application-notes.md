@@ -119,19 +119,21 @@ The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
 client chart plus repo-owned support manifests in
 `clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
 image by digest and force `--implementation=tun` with `NET_ADMIN` and `MKNOD`
-so the connector can create `/dev/net/tun` and generated Octelium service pods
-can reach the connector's served app ports. The connector is pinned to nodes
-with `octelium.com/node-mode-dataplane=` because generated service pods route
-to the connector session through the Octelium dataplane overlay.
+so the connector can create `/dev/net/tun` when a workload bridge is needed.
+Current app Services do not use a connector upstream; generated Octelium
+service pods forward directly to the in-cluster Istio gateway, preserving the
+existing `*.stinkyboi.com` SNI routes while making the DNS records point at
+Octelium private service IPs. The connector is pinned to nodes with
+`octelium.com/node-mode-dataplane=` for future served workload upstreams.
 
 The connector runs with `replicaCount: 1` after the Octelium API, service
-catalog, and workload credential are verified. It serves only the explicit app
-Service catalog declared in
-`docs/examples/octelium/homelab-services.yaml`: Argo CD, Compass, Deluge,
-Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
-Sonarr, and the Podinfo demo. The catalog keeps human WEB access separate from
-the workload WEB-serving rule for `homelab-octelium-client`. The matching
-workload credential lives in SSM at
+catalog, and workload credential are verified, but the current app Services are
+direct upstreams rather than connector-served upstreams. The explicit app
+Service catalog in `docs/examples/octelium/homelab-services.yaml` covers Argo
+CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy
+Bot, Prowlarr, Radarr, Sonarr, and the Podinfo demo. The catalog keeps human
+WEB access separate from the reserved workload WEB-serving rule for
+`homelab-octelium-client`. The matching workload credential lives in SSM at
 `/homelab/octelium/client-auth-token` and renders through
 `octelium-client-auth` to the versioned target Secret
 `octelium-client-auth-v5`. The connector scope list includes

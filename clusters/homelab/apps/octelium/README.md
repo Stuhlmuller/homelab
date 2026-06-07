@@ -15,9 +15,7 @@ The deployed Kubernetes pieces are:
   target Secret `octelium-client-auth-v5`.
 - The official Octelium client Helm chart, configured for TUN mode with
   `NET_ADMIN` and `MKNOD`, and pinned to nodes labeled
-  `octelium.com/node-mode-dataplane=` so generated Octelium service pods can
-  route to the connector's served app ports through the Octelium dataplane
-  overlay.
+  `octelium.com/node-mode-dataplane=` for future served workload upstreams.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
   harmless smoke-test target.
 - `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
@@ -30,21 +28,24 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Octelium Namespace `homelab`.
 - Policy `homelab-human-web-access`, which allows authenticated human client
   sessions to app Services in those namespaces.
-- Policy `homelab-workload-web-serve`, which allows only the
-  `homelab-octelium-client` workload User to serve the namespace's app
-  Services.
-- Workload User `homelab-octelium-client`.
+- Policy `homelab-workload-web-serve`, reserved for the
+  `homelab-octelium-client` workload User if a future Service needs a connector
+  served upstream.
+- Workload User `homelab-octelium-client`, retained for connector bootstrap and
+  future private upstreams.
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/443 Services for the existing HTTPS app routes. The Octelium service
   names remain valid internal names such as `grafana.homelab`, and each service
   carries an `appHostname` attribute such as `grafana.stinkyboi.com`.
-- WEB Service `homelab-demo.homelab` for connector smoke tests.
+- WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 The app Services forward TCP/443 to the in-cluster Istio gateway so the
 existing `https://*.stinkyboi.com` URLs, SNI routing, and wildcard certificate
 continue to work. Exact Cloudflare app records point those hostnames at
 Octelium private service IPs, so clients reach them through the VPN instead of
-the old Tailscale wildcard.
+the old Tailscale wildcard. The app Services intentionally omit
+`spec.config.upstream.user`; do not add a workload user unless the route needs
+to be served by a connector instead of the generated Octelium service proxy.
 
 `values.yaml` runs the connector at `replicaCount: 1` after the Octelium
 Cluster API, service catalog, and workload credential are verified. The
