@@ -144,4 +144,4 @@ jobs:
 
       - name: Disconnect Octelium
         if: always()
-        run: command -v octelium >/dev/null 2>&1 && octelium --homedir "${RUNNER_TEMP}/octelium" disconnect || true
+        run: bash scripts/ci/disconnect-octelium.sh
