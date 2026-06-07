@@ -67,7 +67,7 @@ argocd app get platform-dns
 argocd app get platform-storage
 ```
 
-For Kiali, verify the operator-created custom resource and current fallback UI:
+For Kiali, verify the operator-created custom resource and Octelium-backed UI:
 
 ```sh
 kubectl -n monitoring get kiali kiali
@@ -75,12 +75,12 @@ kubectl -n monitoring get deploy,svc kiali
 curl -I https://kiali.stinkyboi.com
 ```
 
-Expected result before the Octelium cutover gate passes: the Kiali Application
-is synced and healthy, the Kiali custom resource is successfully reconciled,
-and the fallback tailnet HTTPS route reaches the read-only UI.
+Expected result: the Kiali Application is synced and healthy, the Kiali custom
+resource is successfully reconciled, and the `kiali.stinkyboi.com` hostname
+reaches the read-only UI through Octelium.
 
-For Octelium app-access cutover, run the e2e gate before removing any
-Tailscale-backed app route:
+For Octelium app-access readiness, run the e2e gate before declaring app UI
+access healthy:
 
 ```sh
 scripts/octelium-e2e-check.sh
@@ -152,9 +152,8 @@ to PostgreSQL.
 
 n8n webhooks use the reviewed Tailscale Funnel route at
 `https://n8n-webhook.tail67beb.ts.net`. After sync, verify the Tailscale
-Ingress and operator proxy exist, then check that the fallback editor host still
-works until the Octelium gate passes and the public host only reaches n8n under
-webhook path prefixes:
+Ingress and operator proxy exist, then check that the Octelium-backed editor
+host works and the public host only reaches n8n under webhook path prefixes:
 
 ```sh
 kubectl -n istio-system get gateway,ingress n8n-webhook-funnel
@@ -237,7 +236,7 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/w
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
-| Tailscale unavailable | Do not expose tailnet VirtualServices as ready, even if workloads are healthy. |
+| Tailscale unavailable | Do not mark Funnel webhook exceptions or LAN/CI tailnet routes as ready, even if workloads are healthy. |
 | Policy Bot webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `policy-bot-hook-funnel` Ingress and the operator-managed proxy Pod; do not expose additional Funnel routes. |
 | n8n webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `n8n-webhook-funnel` Ingress, Gateway, VirtualService, and operator-managed proxy Pod; keep editor/API routes off Funnel. |
 | Image updater misconfiguration | Remove the affected `applicationRefs` image entry or write-back target from `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`, then fix the repository desired state. |

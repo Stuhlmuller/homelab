@@ -11,7 +11,6 @@ dependencies {
     "../cert-manager",
     "../istio",
     "../media-postgres",
-    "../tailscale",
     "../platform-storage"
   ]
 }

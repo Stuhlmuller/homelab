@@ -10,7 +10,6 @@ dependencies {
   paths = [
     "../cert-manager",
     "../istio",
-    "../tailscale",
     "../prometheus"
   ]
 }
@@ -85,7 +84,7 @@ inputs = {
   info = [
     {
       name  = "ingress"
-      value = "Octelium target compass.homelab; tailnet stinkyboi.com route remains fallback until octelium e2e passes"
+      value = "Octelium target compass.homelab with private Istio SNI backend routing"
     },
     {
       name  = "state"

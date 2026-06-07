@@ -11,15 +11,14 @@ Sources:
 ## Shared App Rules
 
 App desired state lives under `clusters/homelab/apps/<app>`. Typical files are
-Helm values, ExternalSecret references, VirtualServices, Kustomize resources,
-and app-specific README notes. No file in this tree may contain secret values,
-private keys, raw certificate material, private kubeconfigs, or private
-hostnames.
+Helm values, ExternalSecret references, Kustomize resources, and app-specific
+README notes. No file in this tree may contain secret values, private keys, raw
+certificate material, private kubeconfigs, or private hostnames.
 
 Human app access targets the Octelium `.homelab` service catalog. Existing
-tailnet app routes are fallback until `scripts/octelium-e2e-check.sh` passes.
-Public Funnel is limited to reviewed webhook exceptions such as n8n's webhook
-prefixes and Policy Bot's `/api/github/hook`.
+`*.stinkyboi.com` app hostnames resolve to Octelium private service IPs instead
+of the old tailnet wildcard. Public Funnel is limited to reviewed webhook
+exceptions such as n8n's webhook prefixes and Policy Bot's `/api/github/hook`.
 
 ## Platform DNS
 
@@ -112,9 +111,10 @@ allow `kiali-service-account` to query Grafana and Prometheus.
 ## Octelium
 
 Octelium runs as a TUN-mode client connector in the `octelium-client`
-namespace and is the target replacement path for human app access. It is not a
-full Octelium Cluster; the old Tailscale-backed app routes stay as fallback
-until `scripts/octelium-e2e-check.sh` passes.
+namespace and is the replacement path for human app access. App hostnames keep
+their existing `*.stinkyboi.com` names, exact DNS points those names at
+Octelium private service IPs, and per-app Istio `VirtualService` objects provide
+only the backend SNI routing layer for Octelium TCP/443 Services.
 The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
 client chart plus repo-owned support manifests in
 `clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
@@ -149,11 +149,11 @@ domain is `octelium.stinkyboi.com`, so clients contact
 keep the Cluster domain covered by `*.stinkyboi.com` and the API/portal names
 covered by `*.octelium.stinkyboi.com`.
 
-Before removing any old app transport fallback, run
-`scripts/octelium-e2e-check.sh` and confirm the service catalog plus direct
-HTTPS probes for the existing `*.stinkyboi.com` app hostnames succeed through
-Octelium private IPv6 service addresses. The `homelab-demo.homelab` service is
-only a smoke-test target for the connector bridge.
+Before changing app transport, run `scripts/octelium-e2e-check.sh` and confirm
+the service catalog plus direct HTTPS probes for the existing
+`*.stinkyboi.com` app hostnames succeed through Octelium private IPv6 service
+addresses. The `homelab-demo.homelab` service is only a smoke-test target for
+the service-proxy path.
 
 ## OctoBot
 
@@ -284,8 +284,8 @@ not automatically import rows from it. Export workflows and credentials before
 rollout when existing SQLite contents must be preserved.
 
 n8n targets editor and API access through Octelium as `n8n.homelab`, while the
-fallback editor route stays on `https://n8n.stinkyboi.com` until the cutover
-gate passes. It advertises workflow webhook URLs through
+stable editor URL remains `https://n8n.stinkyboi.com`. It advertises workflow
+webhook URLs through
 `https://n8n-webhook.tail67beb.ts.net`. The Funnel route is limited to
 `/webhook`, `/webhook-test`, and
 `/webhook-waiting`, and forwards through the Istio ingress gateway so the n8n
@@ -295,9 +295,9 @@ account.
 ## Policy Bot
 
 Policy Bot is an in-flight stateless automation workload. Human UI access
-targets Octelium as `policy-bot.homelab`; the fallback tailnet UI lives at
+targets Octelium as `policy-bot.homelab`; the stable UI URL remains
 `https://policy-bot.stinkyboi.com`, including the root page, details pages,
-static assets, and OAuth callback, until the cutover gate passes.
+static assets, and OAuth callback.
 The public GitHub webhook is:
 
 ```text
@@ -357,10 +357,9 @@ migration sources until the `/media` copy is verified.
 
 Radarr uses `AuthenticationMethod=External` in `/config/config.xml`, managed by
 the startup init container in `clusters/homelab/apps/radarr/values.yaml`.
-Octelium is the target access boundary, and the tailnet gateway remains fallback
-with Funnel disabled until the cutover gate passes. This avoids recurring Radarr
-password lockouts from internal auth drift while keeping browser access behind a
-reviewed private access layer.
+Octelium is the target access boundary, with Funnel disabled. This avoids
+recurring Radarr password lockouts from internal auth drift while keeping
+browser access behind a reviewed private access layer.
 
 ## Tailscale
 

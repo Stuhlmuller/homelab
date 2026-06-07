@@ -1,9 +1,9 @@
 # OpenClaw
 
-OpenClaw targets Octelium app access as `openclaw.homelab`. The existing
-tailnet Istio route at `https://openclaw.stinkyboi.com` remains fallback until
-`scripts/octelium-e2e-check.sh` passes. Runtime config and agent state persist
-on the `openclaw` PVC under `/data/openclaw`.
+OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
+URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
+service address. Runtime config and agent state persist on the `openclaw` PVC
+under `/data/openclaw`.
 
 ## Resource Profile
 
@@ -57,11 +57,10 @@ kubectl -n ai exec deploy/openclaw -c app -- openclaw gateway health
 kubectl -n ai exec deploy/openclaw -c app -- openclaw devices list --json
 ```
 
-If the gateway is healthy, refresh the browser's site data for the host in use:
-`openclaw.homelab` through Octelium after cutover or the fallback
-`https://openclaw.stinkyboi.com` route before the gate passes. Reconnect through
-the current shared gateway-auth flow. To reissue a server-side token for a
-paired Control UI device, identify the `clientId: openclaw-control-ui` record
+If the gateway is healthy, refresh the browser's site data for the stable
+`https://openclaw.stinkyboi.com` host reached through Octelium. Reconnect
+through the current shared gateway-auth flow. To reissue a server-side token for
+a paired Control UI device, identify the `clientId: openclaw-control-ui` record
 and rotate its operator token:
 
 ```sh

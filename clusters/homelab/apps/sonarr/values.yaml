@@ -7,7 +7,7 @@ controllers:
     pod:
       automountServiceAccountToken: false
       annotations:
-        homelab.rst.io/mesh-mode: "tailnet-ingress"
+        homelab.rst.io/access-mode: "octelium"
     initContainers:
       configure-postgres:
         image:

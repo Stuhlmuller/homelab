@@ -6,26 +6,27 @@ Source: `docs/networking-tailnet-ingress.md`
 
 ## Model
 
-Octelium is the target access plane for human app access. Istio plus Tailscale
-remain the fallback app route until `scripts/octelium-e2e-check.sh` proves the
-Octelium Cluster, service catalog, connector, and client tunnel work end to
-end. Public Tailscale Funnel is reserved for reviewed webhook paths that
-external SaaS systems must reach.
+Octelium is the access plane for human app access. App hostnames stay on
+`*.stinkyboi.com`, but exact DNS records resolve them to Octelium private
+service addresses instead of the old Tailscale wildcard route. Public Tailscale
+Funnel is reserved for reviewed webhook paths that external SaaS systems must
+reach.
 
-`*.stinkyboi.com` is expected to resolve to the Tailscale-exposed Istio ingress
-address from tailnet clients while those fallback routes remain. DNS is not
-managed by this repo yet.
+The Octelium service catalog in `docs/examples/octelium/homelab-services.yaml`
+keeps the existing app URLs by storing each `*.stinkyboi.com` hostname as a
+service attribute and forwarding TCP/443 to the in-cluster Istio gateway. The
+per-app Istio `VirtualService` objects are private backend routes for that
+Octelium path, not public Funnel routes.
 
-Octelium is documented under [[octelium]] for the same private homelab service
-set. It replaces app access only after the e2e gate passes; it does not
-automatically replace the Tailscale exit node, CI route, or reviewed public
-webhook exceptions.
+Octelium is documented under [[octelium]]. It replaces app access only; it does
+not replace the Tailscale exit node, CI route, or reviewed public webhook
+exceptions.
 
 ## Current Route Rules
 
 - Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,
-  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI
-  still have tailnet-only fallback routes.
+  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI use
+  Octelium-backed `*.stinkyboi.com` app hostnames.
 - n8n webhooks are a reviewed public Funnel exception:
   `https://n8n-webhook.tail67beb.ts.net` for `/webhook`, `/webhook-test`, and
   `/webhook-waiting` only.
@@ -33,8 +34,8 @@ webhook exceptions.
   `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali
   is the read-only mesh UI.
-- OctoBot uses `https://octobot.stinkyboi.com` through Octelium after cutover.
-  Its exchange credentials and strategy state live on PVC-backed runtime
+- OctoBot uses `https://octobot.stinkyboi.com` through Octelium. Its exchange
+  credentials and strategy state live on PVC-backed runtime
   configuration, not in public repository files.
 - Octelium serves private app Services from
   `docs/examples/octelium/homelab-services.yaml`; public webhook callbacks stay

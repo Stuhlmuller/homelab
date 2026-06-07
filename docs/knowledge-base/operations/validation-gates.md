@@ -65,7 +65,7 @@ HTTP/2 upstream `DestinationRule` in `istio-system`; it must not create the
 bootstrap. The bootstrap wrapper applies the required privileged Pod Security
 labels to the namespace after `octops` creates it.
 
-Before removing any Tailscale-backed app route, the Octelium replacement path
+Before declaring Octelium-backed app UI access healthy, the replacement path
 must pass:
 
 ```sh

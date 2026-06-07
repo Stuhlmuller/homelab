@@ -7,8 +7,9 @@ Typical files:
 
 - `values.yaml`: Helm values or app-template values with non-secret defaults.
 - `externalsecret.yaml`: AWS SSM Parameter Store references only.
-- `virtualservice.yaml`: Istio fallback route for app UI access while the
-  Octelium cutover gate is still failing.
+- `virtualservice.yaml`: Istio SNI routing for an app hostname that is published
+  through Octelium, or a separately reviewed non-app exception such as a webhook
+  Funnel route.
 - `kustomization.yaml`: Raw resources included by Argo CD alongside Helm
   sources.
 - `README.md`: Storage, backup, restore, rollback, and app-specific notes.
@@ -22,11 +23,13 @@ in `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`; Image Updater
 opens pull requests for those values instead of relying on live-only overrides.
 
 Human app access targets the Octelium `.homelab` service catalog in
-`docs/examples/octelium/homelab-services.yaml`. Existing tailnet app routes stay
-as fallback only until `scripts/octelium-e2e-check.sh` passes. Public Tailscale
-Funnel routes must stay limited to reviewed webhook exceptions such as n8n's
-webhook prefixes and Policy Bot's `/api/github/hook` route, and every exception
-must be documented in `docs/networking-tailnet-ingress.md`.
+`docs/examples/octelium/homelab-services.yaml`. App `VirtualService` objects are
+the private Istio backend routing layer for Octelium TCP/443 Services; they must
+stay annotated with `homelab.rst.io/access-plane: octelium` and
+`homelab.rst.io/public-funnel: "false"`. Public Tailscale Funnel routes must
+stay limited to reviewed webhook exceptions such as n8n's webhook prefixes and
+Policy Bot's `/api/github/hook` route, and every exception must be documented in
+`docs/networking-tailnet-ingress.md`.
 
 Do not add a route just because an upstream chart exposes a web UI. Prefer the
 least direct reviewed access path. For example, Grafana is the operator-facing

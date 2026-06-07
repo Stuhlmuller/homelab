@@ -1,15 +1,14 @@
 # Octelium Client Bridge
 
-This repository prepares Octelium to replace Tailscale for human access to
-homelab applications. Tailscale remains the temporary fallback for app routes
-until the Octelium Cluster, service catalog, workload credential, connector, and
-existing app hostnames all pass the e2e gate in
-`scripts/octelium-e2e-check.sh`.
+This repository uses Octelium for human access to homelab applications. App
+hostnames keep their existing `*.stinkyboi.com` names, exact DNS points those
+names at Octelium private service IPs, and per-app Istio `VirtualService`
+objects provide only the backend SNI routing layer for Octelium TCP/443
+Services.
 
 The Tailscale operator can still have non-app responsibilities, such as CI
 cluster reachability or reviewed public webhook exceptions, until those are
-separately replaced. Do not remove the current tailnet app routes before the
-Octelium e2e check passes.
+separately replaced.
 
 ## Current Model
 
@@ -110,7 +109,7 @@ aws ssm put-parameter \
 
 ## Cutover Gate
 
-Run the e2e gate before removing any old Tailscale-backed app route:
+Run the e2e gate before declaring any Octelium app route ready:
 
 ```sh
 scripts/octelium-e2e-check.sh
@@ -155,11 +154,10 @@ The gate verifies:
 - each existing app hostname resolves to an Octelium private service IP and
   responds over HTTPS through the VPN.
 
-When it passes, remove the old application `VirtualService` objects that point
-at `istio-system/tailnet-gateway`, remove the Tailscale-backed Istio
-`LoadBalancer` path for app UI access, and keep only separately reviewed
-non-app exceptions such as webhooks or CI cluster access. If it fails, treat the
-failure output as the cutover work queue.
+Keep per-app `VirtualService` objects as private Istio backend routes for the
+Octelium TCP Services. Keep only separately reviewed Tailscale-specific non-app
+exceptions such as webhooks or CI cluster access. If the gate fails, treat the
+failure output as the repair work queue.
 
 ## Bootstrap UI Access
 
@@ -406,7 +404,7 @@ If the external resources are no longer wanted, delete the homelab Services,
 the `homelab-octelium-client` User, and the `homelab-human-web-access` Policy
 from the Octelium Cluster with `octeliumctl`. Do not delete or change Tailscale
 resources as part of Octelium rollback unless a later migration PR explicitly
-replaces the tailnet ingress and exit-node model.
+replaces the remaining webhook, CI, and LAN tailnet model.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before

@@ -1,42 +1,30 @@
 # Tailnet Ingress
 
-Octelium is the target access plane for human access to homelab apps. The
-Tailscale-backed Istio gateway remains the fallback route until
+Octelium is the access plane for human access to homelab apps. Existing
+`*.stinkyboi.com` app hostnames resolve to Octelium private service IPs after
 `scripts/octelium-e2e-check.sh` proves that the Octelium Cluster, service
 catalog, connector, and client tunnel all work end to end. Public Tailscale
 Funnel remains reserved for reviewed webhook paths that must be reachable by
 external SaaS systems until those callbacks are explicitly redesigned.
 
-## Initial DNS Assumption
+## DNS Model
 
-The repository still has one fallback DNS or tailnet naming setup that covers
-the old internal app routes. For this homelab, `*.stinkyboi.com` resolves to
-the Tailscale-exposed Istio ingress address from tailnet clients until Octelium
-passes the cutover gate. This feature does not add or edit public DNS records
-after that initial setup.
+Exact app records such as `grafana.stinkyboi.com` and `argocd.stinkyboi.com`
+point at Octelium private service IPs, not the old Tailscale wildcard. The
+Octelium Cluster names `octelium.stinkyboi.com`,
+`portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com`
+continue to route through the Istio gateway to the Octelium dataplane.
 
 Because no DNS provider resources are added in this repository, external DNS
 infrastructure is unaffected by this change. If DNS becomes repo-managed later,
 that must be added through a separate Terragrunt/OpenTofu entry point.
 
-## Fallback Route Inventory
+## Route Inventory
 
 | App | HTTPS host | Public Funnel |
 |-----|------------------|---------------|
-| argocd | `https://argocd.stinkyboi.com` | disabled |
-| grafana | `https://grafana.stinkyboi.com` | disabled |
-| kiali | `https://kiali.stinkyboi.com` | disabled |
-| compass | `https://compass.stinkyboi.com` | disabled |
-| deluge | `https://deluge.stinkyboi.com` | disabled |
-| prowlarr | `https://prowlarr.stinkyboi.com` | disabled |
-| radarr | `https://radarr.stinkyboi.com` | disabled |
-| sonarr | `https://sonarr.stinkyboi.com` | disabled |
-| litellm | `https://litellm.stinkyboi.com` | disabled |
-| openclaw | `https://openclaw.stinkyboi.com` | disabled |
-| n8n editor/UI | `https://n8n.stinkyboi.com` | disabled |
+| app UIs | existing `https://*.stinkyboi.com` app hostnames | disabled; app access is through Octelium private Services |
 | n8n webhooks | `https://n8n-webhook.tail67beb.ts.net/webhook...` | enabled for `/webhook`, `/webhook-test`, and `/webhook-waiting` only |
-| policy-bot UI and normal routes | `https://policy-bot.stinkyboi.com` | disabled |
-| octobot UI | `https://octobot.stinkyboi.com` | disabled |
 | policy-bot GitHub webhook | `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook` | enabled for `/api/github/hook` only |
 
 Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
@@ -56,9 +44,10 @@ n8n now adds a reviewed Funnel exception for workflow webhook delivery. The
 `policy-bot-hook-funnel` and `n8n-webhook-funnel` Tailscale Ingresses are
 annotated with `homelab.rst.io/public-funnel: "true"` and
 `homelab.rst.io/public-funnel-reviewed: "true"`; the Policy Bot UI and n8n
-editor routes remain private. Every other Istio gateway and VirtualService
-route manifest is fallback app access only until Octelium e2e validation
-passes.
+editor routes remain private through Octelium. Other app `VirtualService`
+objects are retained only as private Istio backend routes for Octelium TCP/443
+Services, with `homelab.rst.io/access-plane: octelium` and public Funnel
+disabled.
 
 The Istio ingressgateway Service is a Tailscale `LoadBalancer` and sets
 `allocateLoadBalancerNodePorts: false` so the gateway is not exposed through
@@ -74,34 +63,28 @@ and rollback path.
 
 Octelium serves the private app set through
 `docs/examples/octelium/homelab-services.yaml` with service names in the
-`homelab` Octelium namespace. The old app `VirtualService` objects and the
-Tailscale-backed Istio `LoadBalancer` are removable only after
-`scripts/octelium-e2e-check.sh` passes. Keep public Funnel exceptions and
-Octelium Services separate: the n8n and Policy Bot webhook paths remain
-Tailscale Funnel exceptions unless a later PR explicitly redesigns those
-callbacks through Octelium.
+`homelab` Octelium namespace. Keep public Funnel exceptions and Octelium
+Services separate: the n8n and Policy Bot webhook paths remain Tailscale
+Funnel exceptions unless a later PR explicitly redesigns those callbacks
+through Octelium.
 
-OctoBot currently has a fallback UI route at `https://octobot.stinkyboi.com`.
-After Octelium cutover, use `octobot.homelab` through Octelium for private setup,
-paper trading, and operator-reviewed live trading; exchange credentials and
-strategy state are configured through OctoBot and persist on its NFS-backed
-volumes, not in public repository files.
+Use `octobot.homelab` through Octelium for private setup, paper trading, and
+operator-reviewed live trading; exchange credentials and strategy state are
+configured through OctoBot and persist on its NFS-backed volumes, not in public
+repository files.
 
-Compass currently has a fallback route at `https://compass.stinkyboi.com`, but
-its launch links and discovery-only entries point at Octelium service names. It
-discovers Kubernetes ingress and Gateway API routes with read-only RBAC,
+Compass launch links and discovery-only entries point at Octelium service names.
+It discovers Kubernetes ingress and Gateway API routes with read-only RBAC,
 disables operator debug routes, and does not persist application state.
 
 Because the homelab's reviewed ingress path is still Istio `VirtualService`,
 Compass also owns discovery-only `Ingress` resources in the `monitoring`
 namespace. Those resources use the inert `compass-discovery` IngressClass and
 carry the same hostnames and Compass metadata for catalog discovery, but they
-do not replace the Istio `VirtualService` resources that route traffic through
-`tailnet-gateway`. They are annotated with
+do not route traffic. They are annotated with
 `argocd.argoproj.io/ignore-healthcheck: "true"` because no ingress controller
-is expected to populate `status.loadBalancer` for the inert class; the
-tailnet-only `VirtualService` and Compass Deployment remain the operational
-health signals.
+is expected to populate `status.loadBalancer` for the inert class; the Compass
+Deployment remains the operational health signal.
 
 ## Homelab VPN Exit Node And LAN Route
 
@@ -159,9 +142,8 @@ Data exposed: webhook request body and headers sent by GitHub.
 ```
 
 The Policy Bot UI, details routes, static assets, OAuth callback, and root path
-target `policy-bot.homelab` through Octelium after cutover. The
-`https://policy-bot.stinkyboi.com` tailnet Istio route remains fallback until
-the Octelium gate passes. Only `/api/github/hook` is exposed through Funnel.
+target `policy-bot.homelab` through Octelium. Only `/api/github/hook` is
+exposed through Funnel.
 
 ## n8n Webhook Funnel Exception
 
@@ -180,10 +162,9 @@ Data exposed: request bodies and headers sent to active n8n webhook workflows.
 ```
 
 The n8n editor, REST API, static assets, and root path target `n8n.homelab`
-through Octelium after cutover. The `https://n8n.stinkyboi.com` tailnet Istio
-route remains fallback until the Octelium gate passes. The Funnel Ingress
-forwards only webhook path prefixes to the Istio gateway, and the n8n
-VirtualService only routes those prefixes on the public webhook gateway.
+through Octelium. The Funnel Ingress forwards only webhook path prefixes to the
+Istio gateway, and the n8n VirtualService only routes those prefixes on the
+public webhook gateway.
 
 ## Future Funnel Webhook Exception Template
 

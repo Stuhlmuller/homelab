@@ -9,7 +9,6 @@ terraform {
 dependencies {
   paths = [
     "../istio",
-    "../tailscale",
     "../prometheus",
     "../grafana"
   ]
@@ -85,11 +84,11 @@ inputs = {
   info = [
     {
       name  = "ingress"
-      value = "docs/networking-tailnet-ingress.md"
+      value = "private app access is through the Octelium service catalog"
     },
     {
       name  = "auth"
-      value = "anonymous read-only; Octelium connector and fallback tailnet gateway allowlisted"
+      value = "anonymous read-only; Octelium service-proxy access through Istio is allowlisted"
     }
   ]
 }

@@ -10,7 +10,6 @@ dependencies {
   paths = [
     "../cert-manager",
     "../istio",
-    "../tailscale",
     "../platform-storage"
   ]
 }
@@ -85,7 +84,7 @@ inputs = {
   info = [
     {
       name  = "rollout"
-      value = "OctoBot UI targets octobot.homelab via Octelium; tailnet route remains fallback until octelium e2e passes; no exchange credentials, real-trading strategy, or autostart configuration are committed"
+      value = "OctoBot UI targets octobot.homelab via Octelium; no exchange credentials, real-trading strategy, or autostart configuration are committed"
     }
   ]
 }

@@ -10,7 +10,6 @@ dependencies {
   paths = [
     "../cert-manager",
     "../istio",
-    "../tailscale",
     "../deluge",
     "../media-postgres",
     "../prowlarr",

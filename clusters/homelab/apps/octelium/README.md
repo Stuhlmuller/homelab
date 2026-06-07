@@ -1,10 +1,10 @@
 # Octelium Client Desired State
 
 This app prepares a repo-owned Octelium client connector in the homelab.
-Octelium is the replacement target for human app access. Tailscale remains the
-temporary fallback for app routes until `scripts/octelium-e2e-check.sh` proves
-the Octelium Cluster, service catalog, workload credential, connector, and
-existing app hostnames are all working through Octelium.
+Octelium is the replacement path for human app access. App hostnames keep their
+existing `*.stinkyboi.com` names, exact DNS points those names at Octelium
+private service IPs, and per-app Istio `VirtualService` objects provide only the
+backend SNI routing layer for Octelium TCP/443 Services.
 
 The deployed Kubernetes pieces are:
 
@@ -131,7 +131,7 @@ scripts/octelium-e2e-check.sh \
   --homelab-context <homelab-context>
 ```
 
-Only remove the old Tailscale-backed app UI routes after this e2e gate passes.
+Only publish app UI routes after this e2e gate passes.
 
 ## Bootstrap UI Access
 
@@ -292,7 +292,9 @@ octeliumctl delete policy homelab-human-web-access
 
 Do not delete or change Tailscale resources as part of Octelium rollback unless
 a later migration PR explicitly replaces the tailnet ingress and exit-node
-model.
+model. The app VirtualServices are retained as private Istio backend routing for
+Octelium Services; the remaining Tailscale resources are non-app paths such as
+CI/LAN reachability and reviewed webhook Funnel exceptions.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Update the desired package version in this README and the

@@ -83,7 +83,7 @@ inputs = {
   info = [
     {
       name  = "mode"
-      value = "Octelium client connector target for homelab app access; Tailscale app routes remain fallback until e2e passes"
+      value = "Octelium service catalog is the homelab app access path; app FQDNs use private Istio SNI backend routes"
     },
     {
       name  = "services"
