@@ -13,9 +13,11 @@ The deployed Kubernetes pieces are:
 - `octelium-client-auth`, an ExternalSecret sourced from
   `/homelab/octelium/client-auth-token` and currently rendering the versioned
   target Secret `octelium-client-auth-v5`.
-- The official Octelium client Helm chart, configured for TUN mode with
-  `NET_ADMIN` and `MKNOD`, and pinned to nodes labeled
+- The repo-owned `octelium-client` connector Deployment, configured for TUN
+  mode with `NET_ADMIN` and `MKNOD`, and pinned to nodes labeled
   `octelium.com/node-mode-dataplane=` for future served workload upstreams.
+  The pod resolves `octelium-api.stinkyboi.com` to the internal Istio gateway
+  so the in-cluster connector does not depend on Cloudflare gRPC proxying.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
   harmless smoke-test target.
 - `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the
@@ -47,10 +49,10 @@ the old Tailscale wildcard. The app Services intentionally omit
 `spec.config.upstream.user`; do not add a workload user unless the route needs
 to be served by a connector instead of the generated Octelium service proxy.
 
-`values.yaml` runs the connector at `replicaCount: 1` after the Octelium
-Cluster API, service catalog, and workload credential are verified. The
-chart `nodeSelector` keeps the connector on Octelium dataplane nodes. The
-prepared `--scope=api:user.MainService/Connect` and
+The connector manifest runs at one replica after the Octelium Cluster API,
+service catalog, and workload credential are verified. The `nodeSelector` keeps
+the connector on Octelium dataplane nodes. The prepared
+`--scope=api:user.MainService/Connect` and
 `--scope=service:<name>` entries keep the workload credential constrained to
 the User API stream and same service names while the connector is active.
 
@@ -236,17 +238,13 @@ Render before rollout:
 
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium
-helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
-  --version 0.3.0 \
-  --namespace octelium-client \
-  -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
 bash -n scripts/octelium-app-dns.sh scripts/octelium-gateway-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
 
-After activation with `replicaCount: 1`:
+After activation:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
@@ -262,9 +260,13 @@ scripts/octelium-e2e-check.sh \
 From an Octelium client session, query one of the existing app URLs:
 
 ```sh
-octelium connect --domain stinkyboi.com --ip-mode=v4
+octelium connect --domain stinkyboi.com --ip-mode=both
 curl -I https://grafana.stinkyboi.com/
 ```
+
+The app hostnames publish exact `AAAA` records that point at Octelium private
+IPv6 service addresses. Use `--ip-mode=both` or IPv6 for human browser access;
+`--ip-mode=v4` will not route the existing `*.stinkyboi.com` app hostnames.
 
 Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:
@@ -282,8 +284,8 @@ curl http://127.0.0.1:18081/version
    `homelab` namespace, set `spec.attrs.appHostname` to the existing
    `*.stinkyboi.com` hostname, and forward TCP/443 to
    `tcp://istio-ingressgateway.istio-system.svc.cluster.local:443`.
-3. Add the service name to both `octelium.args` as a
-   `--scope=service:<name>` entry and `octelium.serve` in `values.yaml`. Keep
+3. Add the service name to both the connector `--serve` list and the matching
+   `--scope=service:<name>` entry in `connector.yaml`. Keep
    `--scope=api:user.MainService/Connect` present so the scoped token can open
    the User API connection stream.
 4. Run `scripts/octelium-app-dns.sh --dry-run` after the service reports an
@@ -297,8 +299,8 @@ curl http://127.0.0.1:18081/version
 
 ## Rollback
 
-Set `replicaCount` back to `0` and sync the Argo CD Application. That stops the
-connector without touching Tailscale.
+Set the connector Deployment replicas to `0` and sync the Argo CD Application.
+That stops the connector without touching Tailscale.
 
 To remove the external Octelium resources:
 

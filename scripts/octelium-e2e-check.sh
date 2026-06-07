@@ -131,6 +131,7 @@ sonarr.homelab
 
 FAILURES=0
 CONNECT_PID=""
+GRPC_READY=1
 
 note() {
   printf '==> %s\n' "$*"
@@ -181,6 +182,10 @@ kubectl_octelium() {
   else
     return "$?"
   fi
+}
+
+octeliumctl_cluster() {
+  octeliumctl --domain "${DOMAIN}" "$@"
 }
 
 run_with_timeout() {
@@ -314,6 +319,42 @@ for HOST in "${CONTROL_HOSTS[@]}"; do
   esac
 done
 
+GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
+GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
+GRPC_HTTP_CODE="$(
+  curl -sS \
+    -H "content-type: application/grpc" \
+    -H "${GRPC_TRAILERS_HEADER}" \
+    --max-time 15 \
+    -o /dev/null \
+    -D "${GRPC_HEADER_FILE}" \
+    -w '%{http_code}' \
+    "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
+)"
+GRPC_SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
+rm -f "${GRPC_HEADER_FILE}"
+case "${GRPC_HTTP_CODE}" in
+  200|204|400|401|404|405|415|501)
+    pass "https://${API_HOST} accepted a gRPC-shaped request path with HTTP ${GRPC_HTTP_CODE}"
+    ;;
+  403)
+    if [ "${GRPC_SERVER}" = "cloudflare" ]; then
+      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; enable Cloudflare zone gRPC or use a non-public-hostname Tunnel route before Octelium clients can connect from outside the tailnet"
+    else
+      fail "https://${API_HOST} returned HTTP 403 to a gRPC request"
+    fi
+    GRPC_READY=0
+    ;;
+  000|"")
+    fail "https://${API_HOST} did not respond to a gRPC-shaped request"
+    GRPC_READY=0
+    ;;
+  *)
+    fail "https://${API_HOST} returned unexpected HTTP ${GRPC_HTTP_CODE} to a gRPC request"
+    GRPC_READY=0
+    ;;
+esac
+
 note "Checking Octelium service catalog"
 if [ ! -f "${CATALOG}" ]; then
   fail "catalog file is missing: ${CATALOG}"
@@ -321,39 +362,54 @@ else
   pass "catalog file exists: ${CATALOG}"
 fi
 
-if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl get identityprovider "${IDP_NAME}" --domain "${DOMAIN}" >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then
-  pass "Octelium IdentityProvider exists: ${IDP_NAME}"
-else
-  if [ -s /tmp/octelium-idp.err.$$ ]; then
-    fail "Octelium IdentityProvider ${IDP_NAME} is not available: $(tr '\n' ' ' </tmp/octelium-idp.err.$$)"
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get identityprovider >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then
+    if grep -F "${IDP_NAME}" /tmp/octelium-idp.$$ >/dev/null 2>&1; then
+      pass "Octelium IdentityProvider exists: ${IDP_NAME}"
+    else
+      fail "Octelium IdentityProvider is missing: ${IDP_NAME}"
+    fi
   else
-    fail "Octelium IdentityProvider ${IDP_NAME} could not be listed within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    if [ -s /tmp/octelium-idp.err.$$ ]; then
+      fail "Octelium IdentityProvider ${IDP_NAME} is not available: $(tr '\n' ' ' </tmp/octelium-idp.err.$$)"
+    else
+      fail "Octelium IdentityProvider ${IDP_NAME} could not be listed within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
   fi
+else
+  note "Skipping octeliumctl IdentityProvider check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-idp.$$ /tmp/octelium-idp.err.$$
 
-if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl get service --domain "${DOMAIN}" >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
-  for SERVICE in ${REQUIRED_SERVICES}; do
-    if grep -F "${SERVICE}" /tmp/octelium-services.$$ >/dev/null 2>&1; then
-      pass "Octelium Service exists: ${SERVICE}"
-    else
-      fail "Octelium Service is missing: ${SERVICE}"
-    fi
-  done
-else
-  if [ -s /tmp/octelium-services.err.$$ ]; then
-    fail "octeliumctl could not list services for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-services.err.$$)"
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get service >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
+    for SERVICE in ${REQUIRED_SERVICES}; do
+      if grep -F "${SERVICE}" /tmp/octelium-services.$$ >/dev/null 2>&1; then
+        pass "Octelium Service exists: ${SERVICE}"
+      else
+        fail "Octelium Service is missing: ${SERVICE}"
+      fi
+    done
   else
-    fail "octeliumctl could not list services for ${DOMAIN} within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    if [ -s /tmp/octelium-services.err.$$ ]; then
+      fail "octeliumctl could not list services for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-services.err.$$)"
+    else
+      fail "octeliumctl could not list services for ${DOMAIN} within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
   fi
+else
+  note "Skipping octeliumctl Service catalog check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-services.$$ /tmp/octelium-services.err.$$
 
 note "Checking app hostnames over Octelium VPN"
+if [ "${GRPC_READY}" -ne 1 ]; then
+  note "Skipping Octelium VPN hostname checks because public Octelium gRPC is not available"
+else
 CONNECT_ARGS=(
   octelium
-  connect
   --domain "${DOMAIN}"
+  connect
   --implementation="${CLIENT_IMPLEMENTATION}"
   --no-dns
 )
@@ -421,6 +477,7 @@ else
   done <<<"${APP_TARGETS}"
 fi
 rm -f /tmp/octelium-connect.$$ /tmp/octelium-connect.err.$$
+fi
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Octelium e2e check failed with ${FAILURES} failure(s)." >&2

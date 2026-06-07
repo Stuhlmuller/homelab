@@ -164,7 +164,7 @@ and bump `homelab.rst.io/octelium-credential-ssm-version` in
 `clusters/homelab/apps/octelium/externalsecret.yaml` so External Secrets
 materializes a fresh Secret from the exact Parameter Store version, and bump
 the same annotation in
-`clusters/homelab/apps/octelium/values.yaml` so the connector pod restarts with
+`clusters/homelab/apps/octelium/connector.yaml` so the connector pod restarts with
 the refreshed environment variable.
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is

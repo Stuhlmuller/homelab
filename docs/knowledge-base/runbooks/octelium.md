@@ -13,10 +13,12 @@ The current app registration is `octelium`, the Kubernetes namespace is
 such as CI cluster reachability or reviewed public webhook exceptions, until
 those are replaced in their own change.
 
-The Argo CD Application installs the official Octelium client Helm chart plus
-repo-owned support manifests. The connector runs in TUN mode with `NET_ADMIN`
-and `MKNOD`, is enrolled in Istio ambient mesh, and runs at `replicaCount: 1`
-after the Octelium API, service catalog, and workload credential are verified.
+The Argo CD Application installs repo-owned support manifests, including the
+`octelium-client` connector Deployment. The connector runs in TUN mode with
+`NET_ADMIN` and `MKNOD`, is enrolled in Istio ambient mesh, and runs after the
+Octelium API, service catalog, and workload credential are verified. It maps
+`octelium-api.stinkyboi.com` to the internal Istio gateway so the in-cluster
+connector does not depend on Cloudflare gRPC proxying.
 
 ## Service Catalog
 
@@ -152,6 +154,12 @@ wildcard. Noninteractive e2e runs need a HUMAN credential, such as one for
 `homelab-e2e` with `homelab-human-web-access`; the workload credential is only
 for serving.
 
+Human client sessions that browse the existing app hostnames must use
+`octelium connect --domain stinkyboi.com --ip-mode=both` or IPv6 because those
+hostnames intentionally publish Octelium private `AAAA` records. IPv4-only
+sessions are reserved for explicit publish workflows such as CI's
+`kubernetes-api.homelab` loopback mapping.
+
 When the Octelium control plane is external to homelab, run the gate with
 separate `--octelium-context` and `--homelab-context` values so the
 control-plane namespace checks and connector checks target the correct
@@ -260,10 +268,6 @@ kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/platform/multus
-helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
-  --version 0.3.0 \
-  --namespace octelium-client \
-  -f clusters/homelab/apps/octelium/values.yaml
 bash -n scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
@@ -274,7 +278,7 @@ After activation, confirm External Secrets, the service catalog, and the
 connector Deployment in `octelium-client`. Rotate the workload credential only
 after `https://octelium-api.stinkyboi.com` serves the Octelium API,
 not a generic Istio `404` or gRPC `Unimplemented` response. Stop the connector
-by returning `replicaCount` to `0`.
+by setting the connector Deployment replicas to `0`.
 
 Rollback for the Enterprise package is an Octelium package operation, not an
 Argo CD sync. Update the desired package version in this runbook first, then

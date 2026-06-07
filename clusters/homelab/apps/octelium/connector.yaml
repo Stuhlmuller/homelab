@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: octelium-client
+  namespace: octelium-client
+  labels:
+    app.kubernetes.io/name: octelium
+    app.kubernetes.io/instance: octelium-client
+    app.kubernetes.io/part-of: octelium
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: octelium-client
+  namespace: octelium-client
+  annotations:
+    checkov.io/skip1: CKV_K8S_28=The connector needs NET_ADMIN to create and run its TUN interface.
+    checkov.io/skip2: CKV_K8S_29=The connector needs NET_ADMIN to serve Octelium services.
+    checkov.io/skip3: CKV_K8S_8=Octelium connect is a long-running CLI process without a stable in-container health endpoint.
+    checkov.io/skip4: CKV_K8S_9=Octelium connect is considered ready when the Deployment rollout reports an available replica and logs connected successfully.
+    checkov.io/skip5: CKV_K8S_40=The connector needs root-capable TUN setup and cannot run as an arbitrary high UID.
+    checkov.io/skip6: CKV_K8S_22=The connector writes runtime client state while creating and maintaining the tunnel.
+    checkov.io/skip7: CKV_K8S_35=The Octelium CLI accepts the workload credential through OCTELIUM_AUTH_TOKEN.
+    checkov.io/skip8: CKV_K8S_25=The connector needs MKNOD and NET_ADMIN to create /dev/net/tun and serve Services.
+    checkov.io/skip9: CKV_K8S_23=The connector needs root-capable TUN setup.
+    checkov.io/skip10: CKV2_K8S_6=networkpolicy.yaml constrains octelium-client ingress for the demo workload; the connector itself initiates outbound sessions.
+  labels:
+    app.kubernetes.io/name: octelium
+    app.kubernetes.io/instance: octelium-client
+    app.kubernetes.io/part-of: octelium
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: octelium
+      app.kubernetes.io/instance: octelium-client
+  template:
+    metadata:
+      annotations:
+        homelab.rst.io/octelium-credential-ssm-version: "5"
+        homelab.rst.io/octelium-mode: client-connector
+      labels:
+        app.kubernetes.io/name: octelium
+        app.kubernetes.io/instance: octelium-client
+        app.kubernetes.io/part-of: octelium
+    spec:
+      serviceAccountName: octelium-client
+      automountServiceAccountToken: false
+      hostAliases:
+        # The Cloudflare free plan does not currently pass Octelium gRPC
+        # traffic reliably for the API hostname. The in-cluster connector can
+        # safely bypass Cloudflare and use the internal Istio gateway while
+        # preserving the public SNI and certificate name.
+        - ip: 10.101.66.84
+          hostnames:
+            - octelium-api.stinkyboi.com
+            - stinkyboi.com
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        octelium.com/node-mode-dataplane: ""
+      containers:
+        - name: octelium
+          image: ghcr.io/octelium/octelium:0.35.0@sha256:37bf93b69a6fb42d94909d840bc68542c13de5a60bf8d516ef80975daab053cb
+          imagePullPolicy: IfNotPresent
+          command:
+            - octelium
+          args:
+            - connect
+            - --serve
+            - argocd.homelab
+            - --serve
+            - compass.homelab
+            - --serve
+            - deluge.homelab
+            - --serve
+            - grafana.homelab
+            - --serve
+            - homelab-demo.homelab
+            - --serve
+            - kiali.homelab
+            - --serve
+            - litellm.homelab
+            - --serve
+            - n8n.homelab
+            - --serve
+            - octobot.homelab
+            - --serve
+            - openclaw.homelab
+            - --serve
+            - policy-bot.homelab
+            - --serve
+            - prowlarr.homelab
+            - --serve
+            - radarr.homelab
+            - --serve
+            - sonarr.homelab
+            - --implementation=tun
+            - --ip-mode=v4
+            - --scope=api:user.MainService/Connect
+            - --scope=service:argocd.homelab
+            - --scope=service:compass.homelab
+            - --scope=service:deluge.homelab
+            - --scope=service:grafana.homelab
+            - --scope=service:homelab-demo.homelab
+            - --scope=service:kiali.homelab
+            - --scope=service:litellm.homelab
+            - --scope=service:n8n.homelab
+            - --scope=service:octobot.homelab
+            - --scope=service:openclaw.homelab
+            - --scope=service:policy-bot.homelab
+            - --scope=service:prowlarr.homelab
+            - --scope=service:radarr.homelab
+            - --scope=service:sonarr.homelab
+          env:
+            - name: OCTELIUM_DOMAIN
+              value: stinkyboi.com
+            - name: OCTELIUM_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: octelium-client-auth-v5
+                  key: auth-token
+            - name: OCTELIUM_LOGOUT
+              value: "true"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - MKNOD
+                - NET_ADMIN
+              drop:
+                - ALL

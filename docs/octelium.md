@@ -12,21 +12,18 @@ ingress, on their existing paths until they are replaced in their own changes.
 
 ## Current Model
 
-The Argo CD Application at `IaC/live/argocd-apps/octelium` installs two source
-types:
-
-- The official Octelium client Helm chart from `ghcr.io/octelium/helm-charts`.
-- Repo-owned Kubernetes support manifests from
-  `clusters/homelab/apps/octelium`.
+The Argo CD Application at `IaC/live/argocd-apps/octelium` installs the
+repo-owned Kubernetes manifests from `clusters/homelab/apps/octelium`.
 
 The Kubernetes namespace is `octelium-client`. It contains:
 
 - `octelium-client-auth`, an ExternalSecret that reads
   `/homelab/octelium/client-auth-token` and renders the versioned workload
   token Secret consumed by the connector.
-- `octelium-client`, the Helm-managed Octelium client Deployment running with
-  `replicaCount: 1` after the Octelium API served real traffic and the catalog
-  credential was stored in SSM.
+- `octelium-client`, the repo-owned Octelium client Deployment running after
+  the Octelium API served real traffic and the catalog credential was stored in
+  SSM. It resolves `octelium-api.stinkyboi.com` to the internal Istio gateway
+  to avoid depending on Cloudflare gRPC proxying for the in-cluster connector.
 - `octelium-demo`, a small Podinfo HTTP service exposed only as a ClusterIP.
 - `octelium-demo-allow-client`, a NetworkPolicy that allows only the Octelium
   client pod to call the demo service once a policy-enforcing CNI exists.
@@ -393,8 +390,7 @@ octeliumctl create cred \
   homelab-octelium-client
 ```
 
-Store the printed credential in `/homelab/octelium/client-auth-token`, then set
-`replicaCount` to `1` in `clusters/homelab/apps/octelium/values.yaml`, sync the
+Store the printed credential in `/homelab/octelium/client-auth-token`, sync the
 `octelium` Argo CD Application, and run `scripts/octelium-e2e-check.sh`.
 
 ## Validation
@@ -409,16 +405,12 @@ kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-app-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
-helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
-  --version 0.3.0 \
-  --namespace octelium-client \
-  -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
 ```
 
-After activation with `replicaCount: 1`:
+After activation:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
@@ -441,9 +433,22 @@ curl http://127.0.0.1:8080/version
 Check a service through Octelium from a client machine:
 
 ```sh
-octelium connect --domain stinkyboi.com --ip-mode=v4
+octelium connect --domain stinkyboi.com --ip-mode=both
 curl -I https://grafana.stinkyboi.com/
 ```
+
+The app hostnames publish exact `AAAA` records that point at Octelium private
+IPv6 service addresses, so a human client session must use `--ip-mode=both` or
+IPv6. `--ip-mode=v4` is reserved for the CI Kubernetes API publish path below
+and will not route `grafana.stinkyboi.com`, `argocd.stinkyboi.com`, or the
+other browser app hostnames.
+
+Cloudflare Tunnel public hostname routes can serve the Octelium portal, but
+Cloudflare currently documents gRPC over Tunnel as supported through private
+subnet routing rather than public hostname deployments. If
+`scripts/octelium-e2e-check.sh` reports Cloudflare HTTP `403` for the
+`octelium-api.stinkyboi.com` gRPC probe, outside-tailnet Octelium CLI sessions
+will not be reliable until the API is published through a gRPC-capable route.
 
 Check the CI Kubernetes API service through Octelium from a client machine:
 
@@ -461,8 +466,8 @@ curl -kfsS https://127.0.0.1:16443/version
 
 ## Rollback
 
-Set `replicaCount` back to `0` and sync the `octelium` Argo CD Application.
-That stops the connector while leaving Tailscale untouched.
+Set the connector Deployment replicas to `0` and sync the `octelium` Argo CD
+Application. That stops the connector while leaving Tailscale untouched.
 
 If the external resources are no longer wanted, delete the homelab Services,
 the `homelab-octelium-client` User, the `homelab-ci` User, and the
