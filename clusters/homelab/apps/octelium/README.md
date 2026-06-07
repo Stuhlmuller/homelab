@@ -62,6 +62,26 @@ Apply the external Octelium resources to the Octelium Cluster:
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 ```
 
+Configure Microsoft Entra as the portal login provider after
+`IaC/live/azuread-applications/octelium` has applied:
+
+```sh
+scripts/octelium-entra-oidc.sh
+```
+
+To make an operator able to log in, pass a runtime-only user mapping. Keep the
+actual Entra user principal name out of git:
+
+```sh
+scripts/octelium-entra-oidc.sh \
+  --admin-user-name homelab-owner \
+  --admin-email '<entra-user-principal-name>'
+```
+
+The script reads `/homelab/octelium/entra/*` from SSM, stores the generated
+client secret in an Octelium native Secret, and applies IdentityProvider
+`entra`.
+
 Create an authentication token credential for the workload user:
 
 ```sh
@@ -162,6 +182,9 @@ Then authenticate and apply the catalog while the port-forward is running:
 
 ```sh
 octelium login --domain octelium.stinkyboi.com
+scripts/octelium-entra-oidc.sh \
+  --admin-user-name homelab-owner \
+  --admin-email '<entra-user-principal-name>'
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
   --user homelab-octelium-client \
@@ -217,6 +240,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
 scripts/octelium-enterprise-package.sh --help
+bash -n scripts/octelium-entra-oidc.sh
 bash -n scripts/octelium-app-dns.sh scripts/octelium-gateway-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```

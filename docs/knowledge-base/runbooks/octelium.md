@@ -42,6 +42,24 @@ flags. The per-app Istio `VirtualService` objects remain as private backend SNI
 routes for these TCP Services and are annotated with
 `homelab.rst.io/access-plane: octelium`.
 
+## Microsoft Entra Login
+
+Octelium portal login uses IdentityProvider `entra`. The Microsoft Entra app is
+managed by `IaC/live/azuread-applications/octelium`, registers
+`https://octelium.stinkyboi.com/callback` and
+`https://portal.octelium.stinkyboi.com/callback`, and writes generated client
+material to `/homelab/octelium/entra/*` in SSM. After that unit applies,
+`scripts/octelium-entra-oidc.sh` reads those SSM values, refreshes Octelium
+native Secret `entra-oidc-client-secret`, and applies the IdentityProvider.
+Pass `--admin-user-name` and `--admin-email` only at runtime when adding the
+operator HUMAN user mapping; keep personal Entra identifiers out of git.
+
+The IdentityProvider uses Entra `preferred_username` as the login identifier
+and does not require `email_verified`, which Entra may omit. If the portal
+shows `No Available Identity Providers`, verify
+`octeliumctl get identityprovider entra --domain octelium.stinkyboi.com`
+before changing the app service catalog.
+
 ## Enterprise Package
 
 Octelium Enterprise is represented by the `octeliumee` package from
@@ -101,7 +119,7 @@ path reaches the same Octelium ingress.
 ## Cutover Gate
 
 `scripts/octelium-e2e-check.sh` is the required gate for Octelium app access.
-It checks the Octelium control-plane namespace,
+It checks the Octelium control-plane namespace, IdentityProvider `entra`,
 the synced workload credential, a ready `octelium-client` replica, non-Istio
 responses from the Cluster/API/portal hostnames, every homelab app Service in
 the Octelium catalog, exact `AAAA` DNS for each existing app hostname, and
@@ -213,6 +231,7 @@ helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --version 0.3.0 \
   --namespace octelium-client \
   -f clusters/homelab/apps/octelium/values.yaml
+bash -n scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help

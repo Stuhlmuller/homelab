@@ -84,6 +84,45 @@ Apply the service catalog to the Octelium Cluster:
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 ```
 
+## Microsoft Entra Login
+
+The Octelium portal login provider is Microsoft Entra OIDC. The Entra
+application registration is managed by:
+
+```text
+IaC/live/azuread-applications/octelium
+```
+
+The application uses `https://octelium.stinkyboi.com/callback` as the primary
+OAuth redirect URI. `https://portal.octelium.stinkyboi.com/callback` is also
+registered because browser sessions may start from the portal hostname. The
+unit writes the generated client ID, one-year client secret, tenant ID, and
+tenant-specific issuer URL to SSM under `/homelab/octelium/entra/*`.
+
+After that Terragrunt unit has applied, configure the Octelium native
+IdentityProvider from the SSM values:
+
+```sh
+scripts/octelium-entra-oidc.sh
+```
+
+For an operator/admin login, apply a runtime-only HUMAN user mapping. Do not
+commit personal email addresses or Entra identifiers into this public repo:
+
+```sh
+scripts/octelium-entra-oidc.sh \
+  --admin-user-name homelab-owner \
+  --admin-email '<entra-user-principal-name>'
+```
+
+The script reads the generated SSM parameters, replaces the Octelium native
+Secret `entra-oidc-client-secret`, applies IdentityProvider `entra`, and, when
+both admin flags are supplied, applies a HUMAN user with an explicit Entra
+identity and the built-in `allow-all` policy. Octelium uses the Entra
+`preferred_username` claim as the login identifier. Microsoft Entra may omit
+`email_verified`, so the IdentityProvider intentionally does not require that
+claim.
+
 Create a workload authentication token:
 
 ```sh
@@ -151,6 +190,7 @@ The gate verifies:
   return `404` at the HTTP root because the real API is gRPC;
 - every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
   exists in the Octelium Cluster;
+- IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves to an Octelium private service IP and
   responds over HTTPS through the VPN.
 
@@ -190,6 +230,9 @@ Then authenticate and set up the cluster resources:
 
 ```sh
 octelium login --domain octelium.stinkyboi.com
+scripts/octelium-entra-oidc.sh \
+  --admin-user-name homelab-owner \
+  --admin-email '<entra-user-principal-name>'
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
   --user homelab-octelium-client \
@@ -359,6 +402,7 @@ kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-app-dns.sh
+bash -n scripts/octelium-entra-oidc.sh
 helm template octelium-client oci://ghcr.io/octelium/helm-charts/octelium \
   --version 0.3.0 \
   --namespace octelium-client \

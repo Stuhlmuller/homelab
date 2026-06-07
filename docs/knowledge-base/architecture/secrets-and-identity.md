@@ -68,6 +68,12 @@ roles need identity-based KMS permissions for both keys.
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token
   belongs to the Octelium workload User `homelab-octelium-client` and is
   created outside git with `octeliumctl`.
+  Octelium portal login uses Microsoft Entra OIDC. The Entra application is
+  managed by `IaC/live/azuread-applications/octelium` and writes generated
+  client material to `/homelab/octelium/entra/*`; these values are copied into
+  the Octelium native Secret `entra-oidc-client-secret` and IdentityProvider
+  `entra` by `scripts/octelium-entra-oidc.sh`. HUMAN user Entra identifiers are
+  runtime mappings and must not be committed to the public repo.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

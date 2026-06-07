@@ -109,10 +109,13 @@ non-sensitive role/client/tenant values from GitHub variables first and
 same-named secrets as a fallback, while `AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`,
 and `KUBE_CONFIG_B64` remain secret-only inputs.
 
-`IaC/live/azuread-applications` is applied only when Entra credentials are
-configured. Without those credentials, push applies skip that phase when the
-AzureAD stack did not change; AzureAD stack changes and manual dispatches still
-fail fast so identity drift is not hidden.
+`IaC/live/azuread-applications` is planned and applied only when Entra
+credentials are configured. Same-repository PR plans render AzureAD plans when
+those values are present in `homelab-plan`; otherwise that PR plan phase is
+skipped with a warning. Protected push applies need the values in
+`homelab-production`. Without those credentials, push applies skip that phase
+when the AzureAD stack did not change; AzureAD stack changes and manual
+dispatches still fail fast so identity drift is not hidden.
 
 ## Tailscale CI Route
 

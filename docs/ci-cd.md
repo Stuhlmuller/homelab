@@ -143,15 +143,17 @@ Create two GitHub environments:
   deployment branches to `main`.
 
 Add `TS_AUTH_KEY` and `KUBE_CONFIG_B64` to both environments. Add
-`AZUREAD_CLIENT_SECRET` to `homelab-production`. Repository-level secrets also
-work, but environment secrets are preferred so production credentials can have
-approval rules and tighter rotation:
+`AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan`
+lets trusted pull requests render AzureAD application plans, otherwise that PR
+plan phase is skipped with a warning. Repository-level secrets also work, but
+environment secrets are preferred so production credentials can have approval
+rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
 | `TS_AUTH_KEY` | both | Tailscale auth key allowed by tailnet lock and scoped to the CI runner tags. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
-| `AZUREAD_CLIENT_SECRET` | `homelab-production` | Microsoft Entra application secret used by the AzureAD provider during production applies. |
+| `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so
@@ -161,8 +163,8 @@ has been configured:
 | Variable | Environment | Purpose |
 |----------|-------------|---------|
 | `AWS_ROLE_TO_ASSUME_HOMELAB` | repository, `homelab-plan`, or `homelab-production` | AWS role used by trusted PR plans and protected post-merge applies. |
-| `AZUREAD_CLIENT_ID` | `homelab-production` | Microsoft Entra application client ID used by the AzureAD provider. |
-| `AZUREAD_TENANT_ID` | `homelab-production` | Microsoft Entra tenant ID used by the AzureAD provider. |
+| `AZUREAD_CLIENT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application client ID used by the AzureAD provider. |
+| `AZUREAD_TENANT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra tenant ID used by the AzureAD provider. |
 
 ## Tailscale Setup
 
@@ -274,12 +276,14 @@ Terragrunt can refresh the SSM declaration state.
 
 The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
 `ARM_TENANT_ID` environment variables mapped from the protected GitHub
-environment values above. Keep those credentials scoped to the Grafana Entra
-application workflow. The production apply script applies
-`IaC/live/azuread-applications` when those credentials are configured. When they
-are not configured, it skips that phase only if the push did not change the
-AzureAD stack; AzureAD stack changes and manual dispatches require the
-credentials so identity drift is not silently ignored.
+environment values above. Keep those credentials scoped to the homelab Entra
+application registration workflow. Trusted pull request plans render the
+AzureAD stack only when the credentials are configured in `homelab-plan`; the
+production apply script applies that stack when the credentials are configured
+in `homelab-production`. When they are not configured, production apply skips
+that phase only if the push did not change the AzureAD stack; AzureAD stack
+changes and manual dispatches require the credentials so identity drift is not
+silently ignored.
 
 ## Local Equivalents
 

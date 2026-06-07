@@ -5,6 +5,7 @@ DOMAIN="octelium.stinkyboi.com"
 CLIENT_NAMESPACE="octelium-client"
 CONTROL_NAMESPACE="octelium"
 CATALOG="docs/examples/octelium/homelab-services.yaml"
+IDP_NAME="entra"
 TEST_PATH="/"
 CLIENT_IMPLEMENTATION="gvisor"
 OCTELIUMCTL_TIMEOUT_SECONDS=20
@@ -27,6 +28,7 @@ login state.
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: octelium.stinkyboi.com
   --catalog PATH              Octelium catalog file. Default: docs/examples/octelium/homelab-services.yaml
+  --idp-name NAME             Required Octelium IdentityProvider name. Default: entra
   --path PATH                 HTTPS path to probe on each app hostname. Default: /
   --client-implementation IMPL Octelium client implementation for hostname probes. Default: gvisor
   --homelab-kubeconfig PATH   Kubeconfig for the homelab cluster. Default: kubectl default
@@ -45,6 +47,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --catalog)
       CATALOG="$2"
+      shift 2
+      ;;
+    --idp-name)
+      IDP_NAME="$2"
       shift 2
       ;;
     --path)
@@ -310,6 +316,17 @@ if [ ! -f "${CATALOG}" ]; then
 else
   pass "catalog file exists: ${CATALOG}"
 fi
+
+if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl get identityprovider "${IDP_NAME}" --domain "${DOMAIN}" >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then
+  pass "Octelium IdentityProvider exists: ${IDP_NAME}"
+else
+  if [ -s /tmp/octelium-idp.err.$$ ]; then
+    fail "Octelium IdentityProvider ${IDP_NAME} is not available: $(tr '\n' ' ' </tmp/octelium-idp.err.$$)"
+  else
+    fail "Octelium IdentityProvider ${IDP_NAME} could not be listed within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+  fi
+fi
+rm -f /tmp/octelium-idp.$$ /tmp/octelium-idp.err.$$
 
 if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl get service --domain "${DOMAIN}" >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
   for SERVICE in ${REQUIRED_SERVICES}; do
