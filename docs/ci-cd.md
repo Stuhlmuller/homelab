@@ -66,9 +66,9 @@ contract for Grafana.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
-  `kubernetes-api.ci`. The workflow connects with the gVisor
-  implementation, disables Octelium DNS, publishes only that Service to
-  `127.0.0.1:16443`, and relies on the
+  `kubernetes-api.ci`. GitHub-hosted runners connect with sudo-backed TUN mode,
+  disable Octelium DNS, publish only that Service to `127.0.0.1:16443`, and
+  rely on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the

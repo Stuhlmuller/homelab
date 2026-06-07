@@ -17,6 +17,8 @@ fi
 
 if kill "${connect_pid}" 2>/dev/null; then
   echo "Stopped Octelium connect process ${connect_pid}."
+elif command -v sudo >/dev/null 2>&1 && sudo kill "${connect_pid}" 2>/dev/null; then
+  echo "Stopped Octelium connect process ${connect_pid} with sudo."
 else
   echo "Octelium connect process ${connect_pid} was already stopped."
 fi
