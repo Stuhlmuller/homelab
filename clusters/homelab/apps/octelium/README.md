@@ -9,13 +9,13 @@ existing app hostnames are all working through Octelium.
 The deployed Kubernetes pieces are:
 
 - `octelium-client` namespace with privileged Pod Security for the connector's
-  `NET_ADMIN` TUN requirement and Istio ambient enrollment.
+  `NET_ADMIN`/`MKNOD` TUN requirement and Istio ambient enrollment.
 - `octelium-client-auth`, an ExternalSecret sourced from
   `/homelab/octelium/client-auth-token` and currently rendering the versioned
   target Secret `octelium-client-auth-v5`.
 - The official Octelium client Helm chart, configured for TUN mode with
-  `NET_ADMIN` so generated Octelium service pods can reach the connector's
-  served app ports.
+  `NET_ADMIN` and `MKNOD` so generated Octelium service pods can reach the
+  connector's served app ports.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
   harmless smoke-test target.
 - `octelium-demo-allow-client`, a NetworkPolicy limiting demo ingress to the

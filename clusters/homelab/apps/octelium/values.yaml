@@ -28,6 +28,7 @@ securityContext:
   allowPrivilegeEscalation: false
   capabilities:
     add:
+      - MKNOD
       - NET_ADMIN
     drop:
       - ALL
