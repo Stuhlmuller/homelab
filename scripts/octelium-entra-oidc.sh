@@ -122,6 +122,22 @@ read_parameter() {
     --output text
 }
 
+apply_identity_resources() {
+  local apply_output
+
+  if ! apply_output="$(octeliumctl apply --domain "$domain" "$identity_file" 2>&1)"; then
+    printf '%s\n' "$apply_output" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$apply_output"
+
+  if grep -Eq '(^|[[:space:]])Could not (create|update|apply)|gRPC error' <<<"$apply_output"; then
+    echo "error: octeliumctl reported one or more failed resource changes" >&2
+    exit 1
+  fi
+}
+
 require_command aws
 require_command octeliumctl
 validate_name "$idp_name" "--idp-name"
@@ -178,6 +194,7 @@ spec:
       fromSecret: ${secret_name}
     identifierClaim: preferred_username
     scopes:
+      - openid
       - email
       - profile
 YAML
@@ -201,7 +218,7 @@ spec:
 YAML
 fi
 
-octeliumctl apply --domain "$domain" "$identity_file"
+apply_identity_resources
 
 echo "Configured Octelium IdentityProvider ${idp_name} for ${domain}."
 if [[ -n "$admin_user_name" ]]; then

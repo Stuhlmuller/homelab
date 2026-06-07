@@ -115,10 +115,11 @@ scripts/octelium-entra-oidc.sh \
   --admin-email '<entra-user-principal-name>'
 ```
 
-The script reads the generated SSM parameters, replaces the Octelium native
-Secret `entra-oidc-client-secret`, applies IdentityProvider `entra`, and, when
-both admin flags are supplied, applies a HUMAN user with an explicit Entra
-identity and the built-in `allow-all` policy. Octelium uses the Entra
+The script reads the generated SSM parameters, creates or updates the Octelium
+native Secret `entra-oidc-client-secret`, applies IdentityProvider `entra`, and,
+when both admin flags are supplied, applies a HUMAN user with an explicit Entra
+identity and the built-in `allow-all` policy. The IdentityProvider requests the
+`openid`, `email`, and `profile` OIDC scopes, and Octelium uses the Entra
 `preferred_username` claim as the login identifier. Microsoft Entra may omit
 `email_verified`, so the IdentityProvider intentionally does not require that
 claim.
