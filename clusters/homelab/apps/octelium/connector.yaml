@@ -71,6 +71,8 @@ spec:
           args:
             - connect
             - --serve
+            - homelab-app-gateway.homelab
+            - --serve
             - argocd.homelab
             - --serve
             - compass.homelab
@@ -101,6 +103,7 @@ spec:
             - --implementation=tun
             - --ip-mode=v4
             - --scope=api:user.MainService/Connect
+            - --scope=service:homelab-app-gateway.homelab
             - --scope=service:argocd.homelab
             - --scope=service:compass.homelab
             - --scope=service:deluge.homelab

@@ -26,8 +26,9 @@ connector does not depend on Cloudflare gRPC proxying.
 catalog. It creates Namespace `homelab`, Policy
 `homelab-human-web-access`, Policy `homelab-workload-web-serve`, workload User
 `homelab-octelium-client`, human e2e User `homelab-e2e`, TCP/443 Services for
-Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw,
-Policy Bot, Prowlarr, Radarr, and Sonarr, plus WEB Service
+the shared `homelab-app-gateway.homelab`, Argo CD, Compass, Deluge, Grafana,
+Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr, and
+Sonarr, plus WEB Service
 `homelab-demo.homelab`. App services keep valid internal Octelium names such
 as `grafana.homelab` and carry
 `spec.attrs.appHostname` values such as `grafana.stinkyboi.com`.
@@ -44,8 +45,9 @@ existing `https://*.stinkyboi.com` URLs, SNI routing, and the wildcard
 certificate while moving the network path onto Octelium. The Kubernetes
 connector serves the app service list with
 `--scope=api:user.MainService/Connect` and matching `--scope=service:<name>`
-flags. The per-app Istio `VirtualService` objects remain as private backend SNI
-routes for these TCP Services and are annotated with
+flags, including the shared app gateway. The per-app Istio `VirtualService`
+objects remain as private backend SNI routes for these TCP Services and are
+annotated with
 `homelab.rst.io/access-plane: octelium`.
 
 ## Microsoft Entra Login
@@ -152,21 +154,21 @@ path reaches the same Octelium ingress.
 It checks the Octelium control-plane namespace, IdentityProvider `entra`,
 the synced workload credential, a ready `octelium-client` replica, non-Istio
 responses from the Cluster/API/portal hostnames, every homelab app Service in
-the Octelium catalog, exact `AAAA` DNS for each existing app hostname, and
-HTTPS access to each app through its matching Octelium Service. The
-app-hostname probe starts an Octelium client session, publishes each app
-Service to a loopback port, curls the real `https://*.stinkyboi.com` URL with
-SNI preserved by `curl --connect-to`, and verifies the public DNS record points
-at an Octelium `fdee:b76e:*` IPv6 service address instead of the old Tailscale
-wildcard. Noninteractive e2e runs need a HUMAN credential, such as one for
+the Octelium catalog, exact `A` and `AAAA` DNS for each existing app hostname,
+and HTTPS access to each app through the shared Octelium app gateway. The
+app-hostname probe starts an Octelium client session, publishes
+`homelab-app-gateway.homelab` to loopback ports, curls the real
+`https://*.stinkyboi.com` URL with SNI preserved by `curl --connect-to`, and
+verifies every public DNS record points at the same Octelium private gateway
+address instead of the old Tailscale wildcard. Noninteractive e2e runs need a
+HUMAN credential, such as one for
 `homelab-e2e` with `homelab-human-web-access`; the workload credential is only
 for serving.
 
-Human client sessions that browse the existing app hostnames must use
-`octelium connect --domain stinkyboi.com --ip-mode=both` or IPv6 because those
-hostnames intentionally publish Octelium private `AAAA` records. IPv4-only
-sessions are reserved for explicit publish workflows such as CI's
-`kubernetes-api.homelab` loopback mapping.
+Human client sessions that browse the existing app hostnames can use
+`octelium connect --domain stinkyboi.com --ip-mode=v4`, IPv6, or dual stack.
+The hostnames intentionally publish Octelium private `A` and `AAAA` records for
+the shared app gateway.
 
 When the Octelium control plane is external to homelab, run the gate with
 separate `--octelium-context` and `--homelab-context` values so the
@@ -264,9 +266,9 @@ on Kubernetes rollout status; it does not use Octelium's portal-authenticated
   SSM and reconciles exact `_gw-*` AAAA records from Octelium Gateway status so
   client VPN traffic does not fall through to the tailnet wildcard record.
 - `scripts/octelium-app-dns.sh`, which reads Octelium Service status and
-  reconciles exact app `AAAA` records like
-  `grafana.stinkyboi.com -> fdee:b76e:...` so existing app hostnames route
-  through Octelium VPN access without overlapping Tailscale IPv4 routes.
+  reconciles exact app `A` and `AAAA` records like
+  `grafana.stinkyboi.com -> 100.64.1.x/fdee:b76e:...` to the shared app
+  gateway so existing app hostnames route through Octelium VPN access.
 
 ## Validation
 

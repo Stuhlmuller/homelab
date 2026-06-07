@@ -97,12 +97,11 @@ CI/CD Octelium changes should also pass shell syntax checks for
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
-the complete homelab WEB Service catalog, exact `AAAA` DNS for each existing
+the complete homelab WEB Service catalog, exact `A` and `AAAA` DNS for each existing
 `*.stinkyboi.com` app
-hostname, and HTTPS access to each app hostname through its matching Octelium
-published service with the real URL and SNI preserved. Each app hostname must
-resolve to an Octelium `fdee:b76e:*` IPv6 service IP, not the old Tailscale
-wildcard.
+hostname, and HTTPS access to each app hostname through the shared Octelium app
+gateway with the real URL and SNI preserved. Each app hostname must resolve to
+the same shared Octelium app gateway address, not the old Tailscale wildcard.
 
 The script must report failed probes as `FAIL:` lines and finish with a nonzero
 exit code when any check fails. Keep expected-negative probes inside guarded

@@ -6,6 +6,7 @@ zone_name="stinkyboi.com"
 aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 dry_run="false"
+gateway_service="homelab-app-gateway.homelab"
 
 usage() {
   cat <<'USAGE'
@@ -14,10 +15,11 @@ Usage: scripts/octelium-app-dns.sh [options]
 Reconcile exact Cloudflare DNS records for app hostnames served by Octelium.
 
 The script reads the Cloudflare API token from AWS SSM Parameter Store, queries
-Octelium Service status, and creates exact AAAA records for hostnames declared in
-spec.attrs.appHostname, such as grafana.stinkyboi.com. The AAAA records point at
-Octelium private service IPv6 addresses so those names route through the
-Octelium VPN without overlapping Tailscale's 100.64.0.0/10 IPv4 space.
+Octelium Service status, and creates exact A and AAAA records for hostnames
+declared in spec.attrs.appHostname, such as grafana.stinkyboi.com. Those records
+point at a shared Octelium private app-gateway service address so the normal app
+FQDNs route through authenticated Octelium VPN sessions while Istio keeps doing
+hostname/SNI routing behind that single address.
 
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
@@ -25,6 +27,8 @@ Options:
   --aws-region REGION         AWS region for SSM. Default: us-west-2
   --token-parameter NAME      SSM parameter containing the Cloudflare API token.
                               Default: /homelab/cert-manager/cloudflare-api-token
+  --gateway-service NAME      Octelium TCP Service whose address should back all
+                              app hostnames. Default: homelab-app-gateway.homelab
   --dry-run                   Print intended changes without writing Cloudflare DNS.
   -h, --help                  Show this help.
 USAGE
@@ -46,6 +50,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --token-parameter)
       token_parameter="$2"
+      shift 2
+      ;;
+    --gateway-service)
+      gateway_service="$2"
       shift 2
       ;;
     --dry-run)
@@ -113,6 +121,24 @@ zone_id="$(
 
 services_json="$(octeliumctl get service --domain "$domain" -o json)"
 
+gateway_record="$(
+  jq -r --arg service "$gateway_service" '
+    .items[]
+    | select(.metadata.name == $service)
+    | .status.addresses[0].dualStackIP.ipv4 as $ipv4
+    | .status.addresses[0].dualStackIP.ipv6 as $ipv6
+    | select(($ipv4 | startswith("100.64.")) and ($ipv6 | startswith("fdee:")))
+    | [$ipv4, $ipv6]
+    | @tsv
+  ' <<<"$services_json"
+)"
+
+if [[ -z "$gateway_record" ]]; then
+  echo "error: no Octelium gateway service address found for ${gateway_service}" >&2
+  exit 1
+fi
+IFS=$'\t' read -r gateway_ipv4 gateway_ipv6 <<<"$gateway_record"
+
 app_records=()
 while IFS= read -r app_record; do
   [[ -n "$app_record" ]] || continue
@@ -121,15 +147,13 @@ done < <(
   jq -r --arg zone "$zone_name" '
     .items[]
     | (.spec.attrs.appHostname // "") as $hostname
-    | .status.addresses[0].dualStackIP.ipv6 as $ipv6
-    | select(($hostname | endswith("." + $zone)) and ($ipv6 | startswith("fdee:")))
-    | [$hostname, $ipv6]
-    | @tsv
+    | select($hostname | endswith("." + $zone))
+    | $hostname
   ' <<<"$services_json"
 )
 
 if [[ "${#app_records[@]}" -eq 0 ]]; then
-  echo "error: no Octelium app service IPv6 addresses found for ${zone_name}" >&2
+  echo "error: no Octelium app service addresses found for ${zone_name}" >&2
   exit 1
 fi
 
@@ -161,40 +185,41 @@ delete_exact_records() {
   done <<<"$records"
 }
 
-upsert_aaaa_record() {
-  local hostname="$1"
-  local ipv6="$2"
+upsert_record() {
+  local record_type="$1"
+  local hostname="$2"
+  local content="$3"
   local payload records record_id
 
   payload="$(
     jq -cn \
-      --arg type "AAAA" \
+      --arg type "$record_type" \
       --arg name "$hostname" \
-      --arg content "$ipv6" \
+      --arg content "$content" \
       '{type: $type, name: $name, content: $content, ttl: 300, proxied: false}'
   )"
 
   records="$(
-    cf_api GET "/zones/${zone_id}/dns_records?type=AAAA&name=${hostname}" |
+    cf_api GET "/zones/${zone_id}/dns_records?type=${record_type}&name=${hostname}" |
       jq -c '.result[]'
   )"
 
   if [[ -z "$records" ]]; then
     if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN create AAAA ${hostname} ${ipv6}"
+      echo "DRY-RUN create ${record_type} ${hostname} ${content}"
     else
       cf_api POST "/zones/${zone_id}/dns_records" "$payload" >/dev/null
-      echo "Created AAAA ${hostname} ${ipv6}"
+      echo "Created ${record_type} ${hostname} ${content}"
     fi
     return 0
   fi
 
   record_id="$(jq -r '.id' <<<"$(head -n 1 <<<"$records")")"
   if [[ "$dry_run" == "true" ]]; then
-    echo "DRY-RUN update AAAA ${hostname} ${ipv6}"
+    echo "DRY-RUN update ${record_type} ${hostname} ${content}"
   else
     cf_api PUT "/zones/${zone_id}/dns_records/${record_id}" "$payload" >/dev/null
-    echo "Updated AAAA ${hostname} ${ipv6}"
+    echo "Updated ${record_type} ${hostname} ${content}"
   fi
 
   tail -n +2 <<<"$records" | while IFS= read -r extra_record; do
@@ -203,19 +228,18 @@ upsert_aaaa_record() {
     extra_id="$(jq -r '.id' <<<"$extra_record")"
     extra_content="$(jq -r '.content' <<<"$extra_record")"
     if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN delete extra AAAA ${hostname} ${extra_content}"
+      echo "DRY-RUN delete extra ${record_type} ${hostname} ${extra_content}"
     else
       cf_api DELETE "/zones/${zone_id}/dns_records/${extra_id}" >/dev/null
-      echo "Deleted extra AAAA ${hostname} ${extra_content}"
+      echo "Deleted extra ${record_type} ${hostname} ${extra_content}"
     fi
   done
 }
 
 for app_record in "${app_records[@]}"; do
-  hostname="${app_record%%$'\t'*}"
-  ipv6="${app_record#*$'\t'}"
+  hostname="$app_record"
 
   delete_exact_records "$hostname" CNAME
-  delete_exact_records "$hostname" A
-  upsert_aaaa_record "$hostname" "$ipv6"
+  upsert_record A "$hostname" "$gateway_ipv4"
+  upsert_record AAAA "$hostname" "$gateway_ipv6"
 done

@@ -67,18 +67,19 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.homelab`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
+- TCP/443 Service `homelab-app-gateway.homelab`, the shared authenticated
+  Octelium app gateway for existing `*.stinkyboi.com` hostnames.
 - TCP/443 Services for the current homelab app routes. The Octelium service
   names remain valid internal names such as `grafana.homelab`, and each service
-  carries an `appHostname` attribute such as `grafana.stinkyboi.com`.
+  carries an `appHostname` attribute such as `grafana.stinkyboi.com` so DNS
+  automation knows which hostnames belong to the shared app gateway.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
-Each app Service forwards TCP/443 to the in-cluster Istio gateway so the
+The shared app gateway forwards TCP/443 to the in-cluster Istio gateway so the
 existing HTTPS hostname, SNI routing, and wildcard certificate remain the app
-contract. Exact Cloudflare records then point those app hostnames at Octelium
-private service IPs, which makes the browser path VPN-only without changing app
-base URLs. Do not set `spec.config.upstream.user` on these app Services unless
-the route intentionally needs a served workload connector; keeping the upstream
-direct avoids an unnecessary connector-session hop.
+contract. Exact Cloudflare records point every app hostname at the same
+Octelium private app-gateway A and AAAA addresses, which makes the browser path
+VPN-only without changing app base URLs.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -289,9 +290,10 @@ scripts/octelium-app-dns.sh
 ```
 
 The gateway reconciler prevents `_gw-*` names from falling through to the
-tailnet wildcard record. The app reconciler creates exact `AAAA` records such
-as `grafana.stinkyboi.com -> fdee:b76e:...` from Octelium Service status, so
-app traffic uses the VPN without overlapping Tailscale IPv4 routes.
+tailnet wildcard record. The app reconciler creates exact `A` and `AAAA`
+records such as `grafana.stinkyboi.com -> 100.64.1.x/fdee:b76e:...` from the
+shared Octelium app gateway Service status, so app traffic uses the VPN on a
+stable shared address.
 
 ## Octelium Enterprise Package
 
@@ -447,15 +449,13 @@ curl http://127.0.0.1:8080/version
 Check a service through Octelium from a client machine:
 
 ```sh
-octelium connect --domain stinkyboi.com --ip-mode=both
+octelium connect --domain stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
-The app hostnames publish exact `AAAA` records that point at Octelium private
-IPv6 service addresses, so a human client session must use `--ip-mode=both` or
-IPv6. `--ip-mode=v4` is reserved for the CI Kubernetes API publish path below
-and will not route `grafana.stinkyboi.com`, `argocd.stinkyboi.com`, or the
-other browser app hostnames.
+The app hostnames publish exact `A` and `AAAA` records that point at the shared
+Octelium private app gateway, so a human client session can use `--ip-mode=v4`,
+`--ip-mode=v6`, or `--ip-mode=both` depending on the client network.
 
 Cloudflare Tunnel public hostname routes can serve the Octelium portal, but
 Cloudflare currently documents gRPC over Tunnel as supported through private

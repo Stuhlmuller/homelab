@@ -113,17 +113,18 @@ allow `kiali-service-account` to query Grafana and Prometheus.
 Octelium runs as a TUN-mode client connector in the `octelium-client`
 namespace and is the replacement path for human app access. App hostnames keep
 their existing `*.stinkyboi.com` names, exact DNS points those names at
-Octelium private service IPs, and per-app Istio `VirtualService` objects provide
-only the backend SNI routing layer for Octelium TCP/443 Services.
+the shared Octelium private app gateway, and per-app Istio `VirtualService`
+objects provide only the backend SNI routing layer behind that TCP/443 gateway.
 The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
 client chart plus repo-owned support manifests in
 `clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
 image by digest and force `--implementation=tun` with `NET_ADMIN` and `MKNOD`
 so the connector can create `/dev/net/tun` when a workload bridge is needed.
-Current app Services do not use a connector upstream; generated Octelium
-service pods forward directly to the in-cluster Istio gateway, preserving the
-existing `*.stinkyboi.com` SNI routes while making the DNS records point at
-Octelium private service IPs. The connector is pinned to nodes with
+Current app access uses `homelab-app-gateway.homelab`, a shared generated
+Octelium service pod that forwards directly to the in-cluster Istio gateway,
+preserving the existing `*.stinkyboi.com` SNI routes while making all app DNS
+records point at the same authenticated Octelium private service IPs. The
+connector is pinned to nodes with
 `octelium.com/node-mode-dataplane=` for future served workload upstreams.
 
 The connector runs with `replicaCount: 1` after the Octelium API, service
@@ -160,9 +161,9 @@ coverage, with `octelium.stinkyboi.com` as an alias.
 
 Before changing app transport, run `scripts/octelium-e2e-check.sh` and confirm
 the service catalog plus direct HTTPS probes for the existing
-`*.stinkyboi.com` app hostnames succeed through Octelium private IPv6 service
-addresses. The `homelab-demo.homelab` service is only a smoke-test target for
-the service-proxy path.
+`*.stinkyboi.com` app hostnames succeed through the shared Octelium private app
+gateway. The `homelab-demo.homelab` service is only a smoke-test target for the
+service-proxy path.
 
 ## OctoBot
 

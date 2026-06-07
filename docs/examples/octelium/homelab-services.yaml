@@ -70,6 +70,16 @@ spec:
 ---
 kind: Service
 metadata:
+  name: homelab-app-gateway.homelab
+spec:
+  mode: TCP
+  port: 443
+  config:
+    upstream:
+      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
+---
+kind: Service
+metadata:
   name: argocd.homelab
 spec:
   attrs:

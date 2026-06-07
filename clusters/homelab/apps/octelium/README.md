@@ -41,25 +41,27 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.homelab`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
+- TCP/443 Service `homelab-app-gateway.homelab`, the shared authenticated
+  Octelium app gateway for existing `*.stinkyboi.com` hostnames.
 - TCP/443 Services for the existing HTTPS app routes. The Octelium service
   names remain valid internal names such as `grafana.homelab`, and each service
-  carries an `appHostname` attribute such as `grafana.stinkyboi.com`.
+  carries an `appHostname` attribute such as `grafana.stinkyboi.com` so DNS
+  automation knows which hostnames belong to the shared app gateway.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
-The app Services forward TCP/443 to the in-cluster Istio gateway so the
+The shared app gateway forwards TCP/443 to the in-cluster Istio gateway so the
 existing `https://*.stinkyboi.com` URLs, SNI routing, and wildcard certificate
-continue to work. Exact Cloudflare app records point those hostnames at
-Octelium private service IPs, so clients reach them through the VPN instead of
-the old Tailscale wildcard. The app Services intentionally omit
-`spec.config.upstream.user`; do not add a workload user unless the route needs
-to be served by a connector instead of the generated Octelium service proxy.
+continue to work. Exact Cloudflare app records point those hostnames at the same
+Octelium private app-gateway A and AAAA addresses, so clients reach them through
+the VPN instead of the old Tailscale wildcard.
 
 The connector manifest runs at one replica after the Octelium Cluster API,
 service catalog, and workload credential are verified. The `nodeSelector` keeps
 the connector on Octelium dataplane nodes. The prepared
 `--scope=api:user.MainService/Connect` and
 `--scope=service:<name>` entries keep the workload credential constrained to
-the User API stream and same service names while the connector is active.
+the User API stream, the shared app gateway, and the same app service names
+while the connector is active.
 
 ## Activation And Cutover
 
@@ -267,13 +269,13 @@ scripts/octelium-e2e-check.sh \
 From an Octelium client session, query one of the existing app URLs:
 
 ```sh
-octelium connect --domain stinkyboi.com --ip-mode=both
+octelium connect --domain stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
-The app hostnames publish exact `AAAA` records that point at Octelium private
-IPv6 service addresses. Use `--ip-mode=both` or IPv6 for human browser access;
-`--ip-mode=v4` will not route the existing `*.stinkyboi.com` app hostnames.
+The app hostnames publish exact `A` and `AAAA` records that point at the shared
+Octelium private app gateway, so IPv4-only client sessions can browse the
+existing `*.stinkyboi.com` app hostnames.
 
 Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:
@@ -295,8 +297,10 @@ curl http://127.0.0.1:18081/version
    `--scope=service:<name>` entry in `connector.yaml`. Keep
    `--scope=api:user.MainService/Connect` present so the scoped token can open
    the User API connection stream.
-4. Run `scripts/octelium-app-dns.sh --dry-run` after the service reports an
-   Octelium private IP so the exact app hostname overrides the old wildcard.
+4. Run `scripts/octelium-app-dns.sh --dry-run` after
+   `homelab-app-gateway.homelab` reports an Octelium private address. The exact
+   app hostname must point at the shared gateway address, not the per-app
+   service address.
 5. If the destination workload has an Istio `AuthorizationPolicy`, add
    `cluster.local/ns/octelium-client/sa/octelium-client` as an allowed source.
 6. If the destination workload has a Kubernetes `NetworkPolicy`, add the

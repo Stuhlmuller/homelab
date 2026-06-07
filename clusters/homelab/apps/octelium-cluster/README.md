@@ -28,7 +28,8 @@ Application hostnames stay on the existing `*.stinkyboi.com` names. After the
 Octelium service catalog is applied and Service status reports private
 addresses, run `scripts/octelium-app-dns.sh --dry-run` and then
 `scripts/octelium-app-dns.sh` so exact app names such as
-`grafana.stinkyboi.com` resolve to Octelium `fdee:b76e:*` IPv6 service IPs.
+`grafana.stinkyboi.com` resolve to the shared Octelium app-gateway A and AAAA
+addresses.
 
 ## Validation
 

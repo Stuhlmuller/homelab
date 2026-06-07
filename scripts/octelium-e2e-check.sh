@@ -8,6 +8,7 @@ CATALOG="docs/examples/octelium/homelab-services.yaml"
 IDP_NAME="entra"
 TEST_PATH="/"
 CLIENT_IMPLEMENTATION="gvisor"
+APP_GATEWAY_SERVICE="homelab-app-gateway.homelab"
 OCTELIUMCTL_TIMEOUT_SECONDS=20
 HOMELAB_KUBECONFIG=""
 HOMELAB_CONTEXT=""
@@ -97,22 +98,23 @@ if [ "${DOMAIN}" = "stinkyboi.com" ]; then
 fi
 
 APP_TARGETS="
-argocd.stinkyboi.com argocd.homelab 18443
-compass.stinkyboi.com compass.homelab 18444
-deluge.stinkyboi.com deluge.homelab 18445
-grafana.stinkyboi.com grafana.homelab 18446
-kiali.stinkyboi.com kiali.homelab 18447
-litellm.stinkyboi.com litellm.homelab 18448
-n8n.stinkyboi.com n8n.homelab 18449
-octobot.stinkyboi.com octobot.homelab 18450
-openclaw.stinkyboi.com openclaw.homelab 18451
-policy-bot.stinkyboi.com policy-bot.homelab 18452
-prowlarr.stinkyboi.com prowlarr.homelab 18453
-radarr.stinkyboi.com radarr.homelab 18454
-sonarr.stinkyboi.com sonarr.homelab 18455
+argocd.stinkyboi.com 18443
+compass.stinkyboi.com 18444
+deluge.stinkyboi.com 18445
+grafana.stinkyboi.com 18446
+kiali.stinkyboi.com 18447
+litellm.stinkyboi.com 18448
+n8n.stinkyboi.com 18449
+octobot.stinkyboi.com 18450
+openclaw.stinkyboi.com 18451
+policy-bot.stinkyboi.com 18452
+prowlarr.stinkyboi.com 18453
+radarr.stinkyboi.com 18454
+sonarr.stinkyboi.com 18455
 "
 
 REQUIRED_SERVICES="
+homelab-app-gateway.homelab
 argocd.homelab
 compass.homelab
 deluge.homelab
@@ -416,15 +418,11 @@ CONNECT_ARGS=(
 
 if [ -n "${OCTELIUM_AUTH_TOKEN:-}" ]; then
   CONNECT_ARGS+=(--auth-token "${OCTELIUM_AUTH_TOKEN}")
-  CONNECT_ARGS+=(--scope "api:user.MainService/Connect")
-  for SERVICE in ${REQUIRED_SERVICES}; do
-    CONNECT_ARGS+=(--scope "service:${SERVICE}")
-  done
 fi
 
-while read -r HOST SERVICE LOCAL_PORT; do
+while read -r HOST LOCAL_PORT; do
   [ -n "${HOST}" ] || continue
-  CONNECT_ARGS+=(--publish "${SERVICE}:127.0.0.1:${LOCAL_PORT}")
+  CONNECT_ARGS+=(--publish "${APP_GATEWAY_SERVICE}:127.0.0.1:${LOCAL_PORT}")
 done <<<"${APP_TARGETS}"
 
 "${CONNECT_ARGS[@]}" >/tmp/octelium-connect.$$ 2>/tmp/octelium-connect.err.$$ &
@@ -434,20 +432,43 @@ sleep 5
 if ! kill -0 "${CONNECT_PID}" >/dev/null 2>&1; then
   fail "octelium connect exited before app hostname checks; connect log: $(tr '\n' ' ' </tmp/octelium-connect.err.$$)"
 else
-  while read -r HOST SERVICE LOCAL_PORT; do
+  EXPECTED_GATEWAY_IPV4=""
+  EXPECTED_GATEWAY_IPV6=""
+  while read -r HOST LOCAL_PORT; do
     [ -n "${HOST}" ] || continue
     HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-app-headers.XXXXXX")"
     CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/octelium-app-curl.XXXXXX")"
-    RESOLVED_IP="$(
+    RESOLVED_IPV4="$(
+      dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
+        awk '/^100\.64\./ {print; exit}'
+    )"
+    RESOLVED_IPV6="$(
       dig +short @1.1.1.1 "${HOST}" AAAA 2>/dev/null |
         awk '/^fdee:b76e:/ {print; exit}'
     )"
-    if [ -z "${RESOLVED_IP}" ]; then
+    if [ -z "${RESOLVED_IPV4}" ]; then
+      fail "https://${HOST}${TEST_PATH} has no public Octelium A record"
+      rm -f "${HEADER_FILE}" "${CURL_ERR}"
+      continue
+    else
+      pass "https://${HOST} resolves to Octelium service IPv4 ${RESOLVED_IPV4}"
+    fi
+    if [ -z "${RESOLVED_IPV6}" ]; then
       fail "https://${HOST}${TEST_PATH} has no public Octelium AAAA record"
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
     else
-      pass "https://${HOST} resolves to Octelium service IPv6 ${RESOLVED_IP}"
+      pass "https://${HOST} resolves to Octelium service IPv6 ${RESOLVED_IPV6}"
+    fi
+    if [ -z "${EXPECTED_GATEWAY_IPV4}" ]; then
+      EXPECTED_GATEWAY_IPV4="${RESOLVED_IPV4}"
+      EXPECTED_GATEWAY_IPV6="${RESOLVED_IPV6}"
+    elif [ "${RESOLVED_IPV4}" != "${EXPECTED_GATEWAY_IPV4}" ] || [ "${RESOLVED_IPV6}" != "${EXPECTED_GATEWAY_IPV6}" ]; then
+      fail "https://${HOST} resolves to ${RESOLVED_IPV4}/${RESOLVED_IPV6}, not shared Octelium app gateway ${EXPECTED_GATEWAY_IPV4}/${EXPECTED_GATEWAY_IPV6}"
+      rm -f "${HEADER_FILE}" "${CURL_ERR}"
+      continue
+    else
+      pass "https://${HOST} uses the shared Octelium app gateway address"
     fi
 
     CURL_OUT="$(
@@ -460,7 +481,7 @@ else
     case "${HTTP_CODE}" in
       200|204|301|302|307|308|401|403|404|405)
         if [ "${REMOTE_IP}" = "127.0.0.1" ]; then
-          pass "https://${HOST}${TEST_PATH} reached ${SERVICE} through Octelium publish on localhost:${LOCAL_PORT} with HTTP ${HTTP_CODE}"
+          pass "https://${HOST}${TEST_PATH} reached ${APP_GATEWAY_SERVICE} through Octelium publish on localhost:${LOCAL_PORT} with HTTP ${HTTP_CODE}"
         else
           fail "https://${HOST}${TEST_PATH} connected to ${REMOTE_IP:-unknown}, not the local Octelium publish port"
         fi
@@ -469,7 +490,7 @@ else
         fail "https://${HOST}${TEST_PATH} did not respond via Octelium; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
         ;;
       *)
-        fail "https://${HOST}${TEST_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} via ${SERVICE}"
+        fail "https://${HOST}${TEST_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} via ${APP_GATEWAY_SERVICE}"
         ;;
     esac
 
