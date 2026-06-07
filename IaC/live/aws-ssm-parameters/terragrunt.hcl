@@ -94,6 +94,10 @@ inputs = {
       description   = "Cloudflare Tunnel UUID for the public Octelium control-plane connector."
       initial_value = local.placeholder
     }
+    "/homelab/octelium/cloudflare-zone-settings-token" = {
+      description   = "Cloudflare API token with Zone:Read and Zone Settings:Edit permissions used to enable gRPC for the Octelium public API hostname."
+      initial_value = local.placeholder
+    }
     "/homelab/octelium/postgres-password" = {
       description = "Octelium Cluster PostgreSQL password."
       generated = {

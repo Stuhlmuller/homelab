@@ -14,9 +14,8 @@ spec:
         name: http
         protocol: HTTP
       hosts:
+        - stinkyboi.com
         - "*.stinkyboi.com"
-        - octelium.stinkyboi.com
-        - "*.octelium.stinkyboi.com"
       tls:
         httpsRedirect: true
     - port:
@@ -24,9 +23,8 @@ spec:
         name: https
         protocol: HTTPS
       hosts:
+        - stinkyboi.com
         - "*.stinkyboi.com"
-        - octelium.stinkyboi.com
-        - "*.octelium.stinkyboi.com"
       tls:
         mode: SIMPLE
         credentialName: stinkyboi-com-tls

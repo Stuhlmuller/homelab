@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-domain="octelium.stinkyboi.com"
+domain="stinkyboi.com"
 zone_name="stinkyboi.com"
 aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
@@ -19,7 +19,7 @@ _gw-* hostnames. Exact gateway records prevent those names from falling through
 to a wildcard A record that points at the tailnet.
 
 Options:
-  --domain DOMAIN             Octelium Cluster domain. Default: octelium.stinkyboi.com
+  --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
   --zone NAME                 Cloudflare zone name. Default: stinkyboi.com
   --aws-region REGION         AWS region for SSM. Default: us-west-2
   --token-parameter NAME      SSM parameter containing the Cloudflare API token.

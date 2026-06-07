@@ -4,8 +4,8 @@ include "root" {
 
 locals {
   root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  app_url     = "https://octelium.stinkyboi.com"
-  portal_url  = "https://portal.octelium.stinkyboi.com"
+  app_url     = "https://stinkyboi.com"
+  portal_url  = "https://portal.stinkyboi.com"
   aws_region  = local.root_config.locals.aws_region
   kms_key_id  = local.root_config.locals.kms_key_id
   tags = {

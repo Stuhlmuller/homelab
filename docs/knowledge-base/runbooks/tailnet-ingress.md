@@ -13,9 +13,9 @@ Funnel is reserved for reviewed webhook paths that external SaaS systems must
 reach.
 
 The Octelium control-plane names are the narrow public exception and do not use
-Tailscale Funnel. `octelium.stinkyboi.com`,
-`portal.octelium.stinkyboi.com`, and
-`octelium-api.octelium.stinkyboi.com` are proxied Cloudflare CNAMEs to the
+Tailscale Funnel. `stinkyboi.com`, `octelium.stinkyboi.com`,
+`portal.stinkyboi.com`, and `octelium-api.stinkyboi.com` are proxied
+Cloudflare CNAMEs to the
 `homelab-octelium-public` Cloudflare Tunnel target. Public DNS returns
 Cloudflare anycast addresses, while the Cloudflare zone metadata keeps the
 `<tunnel-uuid>.cfargotunnel.com` target. The in-cluster `octelium-public` app
@@ -56,11 +56,10 @@ exceptions.
 ## TLS And Certificates
 
 Istio terminates HTTPS with `stinkyboi-com-tls` in `istio-system`.
-cert-manager requests the wildcard certificate through
+cert-manager requests the apex plus first-level wildcard certificate through
 `letsencrypt-cloudflare`, backed by the `cloudflare-api-token` Secret from
-External Secrets. The certificate also includes `*.octelium.stinkyboi.com` for
-the nested Octelium API/portal bootstrap names; the existing `*.stinkyboi.com`
-SAN already covers the `octelium.stinkyboi.com` Cluster domain.
+External Secrets. That certificate covers the Octelium domain
+`stinkyboi.com`, API, portal, alias, and private app backend hostnames.
 
 ## Homelab Exit Node
 

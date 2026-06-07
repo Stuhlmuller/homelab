@@ -15,10 +15,11 @@ Helm values, ExternalSecret references, Kustomize resources, and app-specific
 README notes. No file in this tree may contain secret values, private keys, raw
 certificate material, private kubeconfigs, or private hostnames.
 
-Human app access targets the Octelium `.homelab` service catalog. Existing
-`*.stinkyboi.com` app hostnames resolve to Octelium private service IPs instead
-of the old tailnet wildcard. Public Funnel is limited to reviewed webhook
-exceptions such as n8n's webhook prefixes and Policy Bot's `/api/github/hook`.
+Human app access targets Octelium clientless `WEB` Services. Existing
+`*.stinkyboi.com` app hostnames resolve to Cloudflare Tunnel records and are
+authenticated by Octelium before proxying to the existing Istio app routes.
+Public Funnel is limited to reviewed webhook exceptions such as n8n's webhook
+prefixes and Policy Bot's `/api/github/hook`.
 
 ## Platform DNS
 
@@ -112,18 +113,19 @@ allow `kiali-service-account` to query Grafana and Prometheus.
 
 Octelium runs as a TUN-mode client connector in the `octelium-client`
 namespace and is the replacement path for human app access. App hostnames keep
-their existing `*.stinkyboi.com` names, exact DNS points those names at
-Octelium private service IPs, and per-app Istio `VirtualService` objects provide
-only the backend SNI routing layer for Octelium TCP/443 Services.
+their existing `*.stinkyboi.com` names, exact DNS points those names at the
+public Cloudflare Tunnel, and Octelium `WEB` Services enforce browser login
+before proxying to the existing Istio app routes.
 The Argo CD Application installs the official `ghcr.io/octelium/helm-charts`
 client chart plus repo-owned support manifests in
 `clusters/homelab/apps/octelium`. The Helm values pin the `0.35.0` Octelium
 image by digest and force `--implementation=tun` with `NET_ADMIN` and `MKNOD`
 so the connector can create `/dev/net/tun` when a workload bridge is needed.
-Current app Services do not use a connector upstream; generated Octelium
-service pods forward directly to the in-cluster Istio gateway, preserving the
-existing `*.stinkyboi.com` SNI routes while making the DNS records point at
-Octelium private service IPs. The connector is pinned to nodes with
+Current app access uses public first-level Octelium `WEB` Services such as
+`grafana` and `argocd`. Each service forwards HTTP to the in-cluster Istio
+gateway while setting the original app hostname headers, preserving the
+existing `*.stinkyboi.com` app URLs without requiring users to run
+`octelium connect`. The connector is pinned to nodes with
 `octelium.com/node-mode-dataplane=` for future served workload upstreams.
 
 The connector runs with `replicaCount: 1` after the Octelium API, service
@@ -136,34 +138,34 @@ WEB access separate from the reserved workload WEB-serving rule for
 `homelab-octelium-client`. The matching workload credential lives in SSM at
 `/homelab/octelium/client-auth-token` and renders through
 `octelium-client-auth` to the versioned target Secret
-`octelium-client-auth-v5`. The connector scope list includes
-`api:user.MainService/Connect` plus one `service:<name>` entry per served WEB
-Service.
+`octelium-client-auth-v5`. The connector scope list is limited to
+`api:user.MainService/Connect` and the demo service; app traffic enters through
+the public Octelium ingress.
 
 The public Octelium control-plane path is a separate `octelium-public`
 Application. It runs two `cloudflared` replicas in `octelium-public`, reads the
 named tunnel credentials JSON and UUID from
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`, and forwards only
-`octelium.stinkyboi.com`, `portal.octelium.stinkyboi.com`, and
-`octelium-api.octelium.stinkyboi.com` to the in-cluster Istio gateway. App
-hostnames such as `grafana.stinkyboi.com` remain Octelium private Service
-records, not Cloudflare Tunnel records.
+`stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`,
+`octelium-api.stinkyboi.com`, and app hostnames such as
+`grafana.stinkyboi.com`. Control-plane hostnames route through the in-cluster
+Istio gateway; app hostnames route directly to the Octelium ingress dataplane
+so Octelium can select the matching public `WEB` Service.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
 desired version `0.22.0`; install or upgrade it against the external Octelium
 Cluster with `scripts/octelium-enterprise-package.sh`. The Octelium Cluster
-domain is `octelium.stinkyboi.com`, so clients contact
-`octelium-api.octelium.stinkyboi.com`; certificate and bootstrap routing must
-keep the Cluster domain covered by `*.stinkyboi.com` and the API/portal names
-covered by `*.octelium.stinkyboi.com`.
+domain is `stinkyboi.com`, so clients contact `octelium-api.stinkyboi.com`;
+certificate and bootstrap routing use apex plus first-level `*.stinkyboi.com`
+coverage, with `octelium.stinkyboi.com` as an alias.
 
 Before changing app transport, run `scripts/octelium-e2e-check.sh` and confirm
 the service catalog plus direct HTTPS probes for the existing
-`*.stinkyboi.com` app hostnames succeed through Octelium private IPv6 service
-addresses. The `homelab-demo.homelab` service is only a smoke-test target for
-the service-proxy path.
+`*.stinkyboi.com` app hostnames succeed through Octelium clientless WEB access.
+The `homelab-demo.homelab` service is only a smoke-test target for the
+service-proxy path.
 
 ## OctoBot
 

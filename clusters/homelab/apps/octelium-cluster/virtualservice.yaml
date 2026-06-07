@@ -7,12 +7,23 @@ metadata:
     homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
+    - stinkyboi.com
     - octelium.stinkyboi.com
-    - portal.octelium.stinkyboi.com
-    - octelium-api.octelium.stinkyboi.com
+    - portal.stinkyboi.com
+    - octelium-api.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:
+    - match:
+        - authority:
+            exact: octelium.stinkyboi.com
+      rewrite:
+        authority: stinkyboi.com
+      route:
+        - destination:
+            host: octelium-ingress-dataplane.octelium.svc.cluster.local
+            port:
+              number: 8080
     - route:
         - destination:
             host: octelium-ingress-dataplane.octelium.svc.cluster.local

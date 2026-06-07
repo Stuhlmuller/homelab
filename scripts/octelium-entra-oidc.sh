@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-domain="octelium.stinkyboi.com"
+domain="stinkyboi.com"
 region="us-west-2"
 idp_name="entra"
 idp_display_name="Login with Microsoft Entra"
@@ -21,7 +21,7 @@ Terragrunt-managed SSM parameters. The client secret is copied into an
 Octelium native Secret and is never written to git.
 
 Options:
-  --domain DOMAIN                    Octelium Cluster domain. Default: octelium.stinkyboi.com
+  --domain DOMAIN                    Octelium Cluster domain. Default: stinkyboi.com
   --region REGION                    AWS region for SSM. Default: us-west-2
   --idp-name NAME                    Octelium IdentityProvider name. Default: entra
   --secret-name NAME                 Octelium Secret name for the client secret.

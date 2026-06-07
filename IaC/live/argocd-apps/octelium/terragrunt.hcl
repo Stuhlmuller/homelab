@@ -37,23 +37,6 @@ inputs = {
 
   sources = [
     {
-      repo_url        = "ghcr.io/octelium/helm-charts"
-      chart           = "octelium"
-      target_revision = "0.3.0"
-      helm = {
-        release_name = "octelium-client"
-        value_files  = ["$values/clusters/homelab/apps/octelium/values.yaml"]
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
       repo_url        = local.repo_url
       target_revision = local.target_revision
       path            = "clusters/homelab/apps/octelium"

@@ -10,16 +10,16 @@ Source: `docs/ci-cd.md`
   advisory shared lint signal; repository-specific blocking checks stay in
   `Terragrunt Plan` and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
-  Checkov first. Trusted same-repo PRs can join the tailnet, run a live
+  Checkov first. Trusted same-repo PRs connect to Octelium, run a live
   Terragrunt plan, validate the rendered Terraform plan JSON with Conftest,
   and then run static Conftest checks. Forked PRs run static Conftest after the
   live plan skip notice.
 - `Terragrunt Apply` runs after merge to `main` and through
-  `workflow_dispatch`. It repeats static checks and Conftest, joins the
-  tailnet, and applies the live Terragrunt phases in order: Argo CD bootstrap,
+  `workflow_dispatch`. It repeats static checks and Conftest, connects to
+  Octelium, and applies the live Terragrunt phases in order: Argo CD bootstrap,
   SSM parameter declarations, Entra application registrations, Argo CD
   Application registrations, and Kubernetes secret materialization.
-- Forked PRs never receive AWS, Tailscale, or Kubernetes secrets.
+- Forked PRs never receive AWS, Octelium, or Kubernetes secrets.
 
 ## Security Model
 
@@ -44,10 +44,18 @@ Source: `docs/ci-cd.md`
   closures.
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
-- Tailscale uses an auth key because tailnet lock blocks the federated path for
-  these runners.
+- Octelium uses a workload credential for User `homelab-ci`. The workflow
+  publishes only Service `kubernetes-api.ci` to
+  `https://127.0.0.1:16443` with sudo-backed TUN mode and no Octelium DNS. The
+  policy-bound credential is the enforcement boundary; do not add auth-token
+  `--scope` flags to this v0.35 connect path because scoped sessions are denied
+  before the loopback listener is published.
 - Kubeconfig is injected only from GitHub environment secrets and written
-  locally with mode `0600`.
+  locally with mode `0600`; CI rewrites the current cluster server to the
+  loopback listener and sets the Kubernetes TLS server name to `10.1.0.199`.
+  The unauthenticated curl readiness check only proves the TLS endpoint is
+  reachable and may receive `401`; authenticated `kubectl version` is the real
+  Kubernetes API validation.
 - Plans are not uploaded as artifacts because they may include sensitive state.
   Trusted same-repo PR plans render saved `plan.out` files with
   `terragrunt show -no-color plan.out` and replace the managed plan section in
@@ -97,17 +105,18 @@ adding a reviewed token-backed secret contract for Grafana.
 - `homelab-production`: post-merge applies, reviewer-gated, branch-limited to
   `main`.
 
-Both need `TS_AUTH_KEY` and `KUBE_CONFIG_B64`. `AWS_ROLE_TO_ASSUME_HOMELAB` is
-used by both trusted PR plans and protected post-merge applies, so it must trust
-the `homelab-plan` and `homelab-production` GitHub OIDC subjects and include
-apply-level OpenTofu state KMS access to `alias/homelab-opentofu` in
-`us-east-1`. The same role also needs identity-based KMS access on the resolved
-`us-west-2` SSM SecureString key ARN managed by `IaC/live/aws-ssm-parameters`;
-state-key-only access fails during SSM provider refresh with
-`AccessDeniedException` for `kms:DescribeKey`. The workflows resolve
-non-sensitive role/client/tenant values from GitHub variables first and
-same-named secrets as a fallback, while `AZUREAD_CLIENT_SECRET`, `TS_AUTH_KEY`,
-and `KUBE_CONFIG_B64` remain secret-only inputs.
+Both need `OCTELIUM_CI_AUTH_TOKEN` and `KUBE_CONFIG_B64`.
+`AWS_ROLE_TO_ASSUME_HOMELAB` is used by both trusted PR plans and protected
+post-merge applies, so it must trust the `homelab-plan` and
+`homelab-production` GitHub OIDC subjects and include apply-level OpenTofu
+state KMS access to `alias/homelab-opentofu` in `us-east-1`. The same role also
+needs identity-based KMS access on the resolved `us-west-2` SSM SecureString
+key ARN managed by `IaC/live/aws-ssm-parameters`; state-key-only access fails
+during SSM provider refresh with `AccessDeniedException` for `kms:DescribeKey`.
+The workflows resolve non-sensitive role/client/tenant values from GitHub
+variables first and same-named secrets as a fallback, while
+`AZUREAD_CLIENT_SECRET`, `OCTELIUM_CI_AUTH_TOKEN`, and `KUBE_CONFIG_B64` remain
+secret-only inputs.
 
 `IaC/live/azuread-applications` is planned and applied only when Entra
 credentials are configured. Same-repository PR plans render AzureAD plans when
@@ -117,18 +126,31 @@ skipped with a warning. Protected push applies need the values in
 when the AzureAD stack did not change; AzureAD stack changes and manual
 dispatches still fail fast so identity drift is not hidden.
 
-## Tailscale CI Route
+## Octelium CI Route
 
-CI uses tags:
+The Octelium catalog in `docs/examples/octelium/homelab-services.yaml` owns
+the CI transport contract:
 
-- `tag:github-actions-terragrunt-plan`
-- `tag:github-actions-terragrunt-apply`
+- workload User `homelab-ci`;
+- Policy `homelab-ci-kubernetes-api-access`;
+- TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
-Use the repo-owned `homelab-exit-node` connector's advertised `10.1.0.0/24`
-route to reach the Kubernetes API at `10.1.0.199:6443`. Do not select it as a
-full exit node in CI: Terragrunt still needs public AWS STS/KMS access, and
-routing that traffic through the tailnet path has caused runner DNS timeouts
-against `127.0.0.53`. Keep CI grants limited to TCP `6443` on the API host.
+Apply the catalog with `octeliumctl apply --domain stinkyboi.com
+docs/examples/octelium/homelab-services.yaml`, then create the credential with
+`octeliumctl create cred --domain stinkyboi.com --user homelab-ci
+--policy homelab-ci-kubernetes-api-access homelab-ci`. Store only the printed
+credential token in GitHub environments as `OCTELIUM_CI_AUTH_TOKEN`.
+
+The CI connector intentionally does not pass Octelium `--scope` flags. The
+`homelab-ci-kubernetes-api-access` policy is attached to the workload
+credential and limits access to the Kubernetes API Service; scoped auth-token
+sessions on Octelium v0.35 are denied during session creation.
+
+GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
+public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using
+`octelium.stinkyboi.com` as the domain makes the client call
+`octelium-api.octelium.stinkyboi.com`, which Cloudflare Universal SSL does not
+cover without a paid nested wildcard certificate.
 
 ## Local Equivalents
 

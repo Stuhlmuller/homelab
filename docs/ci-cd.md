@@ -8,16 +8,16 @@ This repository uses GitHub Actions for the review and rollout path:
   and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repository pull requests then connect to the
-  tailnet, run a live Terragrunt plan, and run Conftest policies after the plan
-  step. Forked pull requests run Conftest after the live plan skip notice.
+  Octelium VPN, run a live Terragrunt plan, and run Conftest policies after the
+  plan step. Forked pull requests run Conftest after the live plan skip notice.
 - `Terragrunt Apply` runs after changes land on `main` and can also be started
   manually with `workflow_dispatch`. It repeats static checks and Conftest
-  before connecting to the tailnet and applying the live Terragrunt phases in
+  before connecting to Octelium and applying the live Terragrunt phases in
   order: Argo CD bootstrap, SSM parameter declarations, Entra application
   registrations, Argo CD Application registrations, and Kubernetes secret
   materialization.
 
-Forked pull requests never receive AWS, Tailscale, or Kubernetes secrets. They
+Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
 
 ## Monitoring
@@ -65,24 +65,20 @@ contract for Grafana.
   section in the PR description after a successful plan.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
-- Tailscale access uses an auth key because this tailnet has tailnet lock
-  enabled and the federated identity path is not available for these runners.
-  Keep the key ephemeral, reusable only if operationally required, pre-approved
-  for tailnet lock, and scoped to the CI tags documented below.
+- Octelium access uses a workload credential for User `homelab-ci` and Service
+  `kubernetes-api.ci`. GitHub-hosted runners connect with sudo-backed TUN mode,
+  disable Octelium DNS, publish only that Service to `127.0.0.1:16443`, and
+  rely on the
+  `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
 - The kubeconfig is injected only from GitHub environment secrets and written to
-  `$HOME/.kube/config` with mode `0600`.
-- The workflow does not use the Tailscale action's built-in `ping` input for
-  subnet-routed cluster addresses. Kubernetes reachability is verified with
+  `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
+  current cluster server to `https://127.0.0.1:16443` and sets the TLS server
+  name to `10.1.0.199`, so the Kubernetes API certificate remains valid through
+  the Octelium-published loopback listener.
+- Kubernetes reachability is verified first with a TLS reachability `curl`
+  probe against `https://127.0.0.1:16443/version`, which may return `401` on
+  clusters that reject anonymous API requests, and then with authenticated
   `kubectl --request-timeout=15s version` after kubeconfig installation.
-- After the Tailscale client authenticates, the workflow runs
-  `tailscale set --accept-routes=true` so it can use the subnet route to the
-  Kubernetes API endpoint without conflicting with the action's own login
-  flags.
-- The workflow relies on the repo-owned `homelab-exit-node` connector's
-  advertised `10.1.0.0/24` subnet route for Kubernetes API access, with
-  Tailscale grants limiting the CI runner tags to `10.1.0.199:6443`. It does not
-  select the connector as a full exit node, so public AWS STS/KMS calls keep
-  using the GitHub-hosted runner's normal network path and DNS resolver.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
@@ -123,8 +119,6 @@ contract for Grafana.
 
 References:
 
-- [Tailscale GitHub Action](https://tailscale.com/docs/integrations/github/github-action)
-- [Tailscale grants syntax](https://tailscale.com/docs/reference/syntax/grants)
 - [GitHub OIDC with AWS](https://docs.github.com/en/actions/how-tos/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
 - [GitHub Actions workflow runs REST API](https://docs.github.com/en/rest/actions/workflow-runs)
 - [GitHub issue and pull request search filters](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/filtering-and-searching-issues-and-pull-requests)
@@ -142,7 +136,7 @@ Create two GitHub environments:
 - `homelab-production`: used by post-merge applies. Require reviewers and limit
   deployment branches to `main`.
 
-Add `TS_AUTH_KEY` and `KUBE_CONFIG_B64` to both environments. Add
+Add `OCTELIUM_CI_AUTH_TOKEN` and `KUBE_CONFIG_B64` to both environments. Add
 `AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan`
 lets trusted pull requests render AzureAD application plans, otherwise that PR
 plan phase is skipped with a warning. Repository-level secrets also work, but
@@ -151,7 +145,7 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
-| `TS_AUTH_KEY` | both | Tailscale auth key allowed by tailnet lock and scoped to the CI runner tags. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to publish `kubernetes-api.ci` to the runner loopback listener. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
@@ -166,59 +160,43 @@ has been configured:
 | `AZUREAD_CLIENT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application client ID used by the AzureAD provider. |
 | `AZUREAD_TENANT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra tenant ID used by the AzureAD provider. |
 
-## Tailscale Setup
+## Octelium CI Access Setup
 
-Use separate tags for plan and apply runners:
+The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
+defines:
 
-- `tag:github-actions-terragrunt-plan`
-- `tag:github-actions-terragrunt-apply`
+- workload User `homelab-ci`;
+- Policy `homelab-ci-kubernetes-api-access`;
+- TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
-Create one Tailscale auth key that tailnet lock can admit. The key should be
-ephemeral, pre-approved for tailnet lock, and restricted to the CI tags when the
-admin panel permits tag scoping. In the tailnet policy, grant those tags only
-the cluster API path they need.
+Apply that catalog to the Octelium Cluster after the control plane, portal, and
+API hostnames are reachable:
 
-The repository-owned `homelab-exit-node` Connector is tagged `tag:k8s`, acts as
-the current bootstrap exit node, and advertises `10.1.0.0/24` as the homelab
-LAN route. Auto-approve the subnet route for `tag:k8s` when possible, and use
-grants to keep CI access limited to the Kubernetes API endpoint and port:
-
-```json
-{
-  "autoApprovers": {
-    "exitNode": ["tag:k8s"],
-    "routes": {
-      "10.1.0.0/24": ["tag:k8s"]
-    }
-  },
-  "tagOwners": {
-    "tag:github-actions-terragrunt-plan": ["autogroup:admin"],
-    "tag:github-actions-terragrunt-apply": ["autogroup:admin"],
-    "tag:k8s": ["tag:k8s-operator"]
-  },
-  "grants": [
-    {
-      "src": ["tag:github-actions-terragrunt-plan"],
-      "dst": ["10.1.0.199/32"],
-      "ip": ["tcp:6443"],
-      "via": ["tag:k8s"]
-    },
-    {
-      "src": ["tag:github-actions-terragrunt-apply"],
-      "dst": ["10.1.0.199/32"],
-      "ip": ["tcp:6443"],
-      "via": ["tag:k8s"]
-    }
-  ]
-}
+```sh
+octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
 
-If the bootstrap exit-node fallback needs a broader `autogroup:internet` grant
-to be selectable, treat it as temporary and keep it limited to the two CI tags
-and the `tag:k8s` route path. Do not grant `tag:github-actions-terragrunt-*`
-broad tailnet or SSH access unless a later repository change documents the
-requirement. Rotate `TS_AUTH_KEY` on any failed or suspicious run, after runner
-image changes, and on a regular schedule.
+Create the workload credential outside git and store the printed token as
+`OCTELIUM_CI_AUTH_TOKEN` in both GitHub environments:
+
+```sh
+octeliumctl create cred \
+  --domain stinkyboi.com \
+  --user homelab-ci \
+  --policy homelab-ci-kubernetes-api-access \
+  homelab-ci
+```
+
+Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after runner image changes,
+and on a regular schedule. The workflow still needs `KUBE_CONFIG_B64`; Octelium
+only carries the transport path to the Kubernetes API.
+
+Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
+credential unless a newer Octelium release validates that scoped auth-token
+sessions can publish `kubernetes-api.ci`. On Octelium v0.35, the
+policy-bound workload credential authenticates and is then constrained by the
+attached policy; adding `api:*` or `service:*` scopes causes the client session
+to be denied before the runner can publish the loopback listener.
 
 ## AWS Setup
 

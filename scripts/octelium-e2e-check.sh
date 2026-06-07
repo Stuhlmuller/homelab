@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DOMAIN="octelium.stinkyboi.com"
+DOMAIN="stinkyboi.com"
 CLIENT_NAMESPACE="octelium-client"
 CONTROL_NAMESPACE="octelium"
 CATALOG="docs/examples/octelium/homelab-services.yaml"
 IDP_NAME="entra"
 TEST_PATH="/"
 CLIENT_IMPLEMENTATION="gvisor"
+APP_GATEWAY_SERVICE="homelab-app-gateway.homelab"
 OCTELIUMCTL_TIMEOUT_SECONDS=20
 HOMELAB_KUBECONFIG=""
 HOMELAB_CONTEXT=""
@@ -20,17 +21,15 @@ Usage: scripts/octelium-e2e-check.sh [options]
 
 Validate that Octelium has fully replaced Tailscale for homelab app access.
 The check requires a running Octelium Cluster, an applied homelab service
-catalog, an active octelium-client connector, and a working client tunnel.
-Set OCTELIUM_AUTH_TOKEN to run the final tunnel check noninteractively with an
-authentication token; otherwise the script uses the current local Octelium
-login state.
+catalog, an active octelium-client connector, and clientless WEB access for
+the existing app FQDNs.
 
 Options:
-  --domain DOMAIN             Octelium Cluster domain. Default: octelium.stinkyboi.com
+  --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
   --catalog PATH              Octelium catalog file. Default: docs/examples/octelium/homelab-services.yaml
   --idp-name NAME             Required Octelium IdentityProvider name. Default: entra
   --path PATH                 HTTPS path to probe on each app hostname. Default: /
-  --client-implementation IMPL Octelium client implementation for hostname probes. Default: gvisor
+  --client-implementation IMPL Deprecated; accepted for compatibility.
   --homelab-kubeconfig PATH   Kubeconfig for the homelab cluster. Default: kubectl default
   --homelab-context NAME      Kube context for homelab connector checks. Default: kubectl current context
   --octelium-kubeconfig PATH  Kubeconfig for the Octelium control-plane cluster. Default: kubectl default
@@ -91,42 +90,48 @@ done
 
 API_HOST="octelium-api.${DOMAIN}"
 PORTAL_HOST="portal.${DOMAIN}"
+CONTROL_HOSTS=("${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}")
+if [ "${DOMAIN}" = "stinkyboi.com" ]; then
+  CONTROL_HOSTS+=("octelium.stinkyboi.com")
+fi
 
-APP_TARGETS="
-argocd.stinkyboi.com argocd.homelab 18443
-compass.stinkyboi.com compass.homelab 18444
-deluge.stinkyboi.com deluge.homelab 18445
-grafana.stinkyboi.com grafana.homelab 18446
-kiali.stinkyboi.com kiali.homelab 18447
-litellm.stinkyboi.com litellm.homelab 18448
-n8n.stinkyboi.com n8n.homelab 18449
-octobot.stinkyboi.com octobot.homelab 18450
-openclaw.stinkyboi.com openclaw.homelab 18451
-policy-bot.stinkyboi.com policy-bot.homelab 18452
-prowlarr.stinkyboi.com prowlarr.homelab 18453
-radarr.stinkyboi.com radarr.homelab 18454
-sonarr.stinkyboi.com sonarr.homelab 18455
+APP_HOSTS="
+argocd.stinkyboi.com
+compass.stinkyboi.com
+deluge.stinkyboi.com
+grafana.stinkyboi.com
+kiali.stinkyboi.com
+litellm.stinkyboi.com
+n8n.stinkyboi.com
+octobot.stinkyboi.com
+openclaw.stinkyboi.com
+policy-bot.stinkyboi.com
+prowlarr.stinkyboi.com
+radarr.stinkyboi.com
+sonarr.stinkyboi.com
 "
 
 REQUIRED_SERVICES="
-argocd.homelab
-compass.homelab
-deluge.homelab
-grafana.homelab
+kubernetes-api.ci
+argocd
+compass
+deluge
+grafana
 homelab-demo.homelab
-kiali.homelab
-litellm.homelab
-n8n.homelab
-octobot.homelab
-openclaw.homelab
-policy-bot.homelab
-prowlarr.homelab
-radarr.homelab
-sonarr.homelab
+kiali
+litellm
+n8n
+octobot
+openclaw
+policy-bot
+prowlarr
+radarr
+sonarr
 "
 
 FAILURES=0
-CONNECT_PID=""
+GRPC_READY=1
+SERVICES_JSON=""
 
 note() {
   printf '==> %s\n' "$*"
@@ -179,6 +184,10 @@ kubectl_octelium() {
   fi
 }
 
+octeliumctl_cluster() {
+  octeliumctl --domain "${DOMAIN}" "$@"
+}
+
 run_with_timeout() {
   timeout_seconds="$1"
   shift
@@ -207,10 +216,6 @@ run_with_timeout() {
 cleanup() {
   local cleanup_status
   cleanup_status=$?
-  if [ -n "${CONNECT_PID}" ]; then
-    kill "${CONNECT_PID}" >/dev/null 2>&1 || true
-    wait "${CONNECT_PID}" >/dev/null 2>&1 || true
-  fi
   return "${cleanup_status}"
 }
 trap cleanup EXIT
@@ -219,8 +224,8 @@ note "Checking local tools"
 require_command kubectl
 require_command curl
 require_command dig
-require_command octelium
 require_command octeliumctl
+require_command jq
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Cannot continue without required local tools." >&2
@@ -283,7 +288,7 @@ else
 fi
 
 note "Checking Octelium TLS/API endpoints"
-for HOST in "${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}"; do
+for HOST in "${CONTROL_HOSTS[@]}"; do
   HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-headers.XXXXXX")"
   HTTP_CODE="$(curl -sS -I --max-time 15 -o "${HEADER_FILE}" -w '%{http_code}' "https://${HOST}" || true)"
   SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
@@ -310,6 +315,42 @@ for HOST in "${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}"; do
   esac
 done
 
+GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
+GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
+GRPC_HTTP_CODE="$(
+  curl -sS \
+    -H "content-type: application/grpc" \
+    -H "${GRPC_TRAILERS_HEADER}" \
+    --max-time 15 \
+    -o /dev/null \
+    -D "${GRPC_HEADER_FILE}" \
+    -w '%{http_code}' \
+    "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
+)"
+GRPC_SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
+rm -f "${GRPC_HEADER_FILE}"
+case "${GRPC_HTTP_CODE}" in
+  200|204|400|401|404|405|415|501)
+    pass "https://${API_HOST} accepted a gRPC-shaped request path with HTTP ${GRPC_HTTP_CODE}"
+    ;;
+  403)
+    if [ "${GRPC_SERVER}" = "cloudflare" ]; then
+      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; enable Cloudflare zone gRPC or use a non-public-hostname Tunnel route before Octelium clients can connect from outside the tailnet"
+    else
+      fail "https://${API_HOST} returned HTTP 403 to a gRPC request"
+    fi
+    GRPC_READY=0
+    ;;
+  000|"")
+    fail "https://${API_HOST} did not respond to a gRPC-shaped request"
+    GRPC_READY=0
+    ;;
+  *)
+    fail "https://${API_HOST} returned unexpected HTTP ${GRPC_HTTP_CODE} to a gRPC request"
+    GRPC_READY=0
+    ;;
+esac
+
 note "Checking Octelium service catalog"
 if [ ! -f "${CATALOG}" ]; then
   fail "catalog file is missing: ${CATALOG}"
@@ -317,106 +358,108 @@ else
   pass "catalog file exists: ${CATALOG}"
 fi
 
-if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl get identityprovider "${IDP_NAME}" --domain "${DOMAIN}" >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then
-  pass "Octelium IdentityProvider exists: ${IDP_NAME}"
-else
-  if [ -s /tmp/octelium-idp.err.$$ ]; then
-    fail "Octelium IdentityProvider ${IDP_NAME} is not available: $(tr '\n' ' ' </tmp/octelium-idp.err.$$)"
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get identityprovider >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then
+    if grep -F "${IDP_NAME}" /tmp/octelium-idp.$$ >/dev/null 2>&1; then
+      pass "Octelium IdentityProvider exists: ${IDP_NAME}"
+    else
+      fail "Octelium IdentityProvider is missing: ${IDP_NAME}"
+    fi
   else
-    fail "Octelium IdentityProvider ${IDP_NAME} could not be listed within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    if [ -s /tmp/octelium-idp.err.$$ ]; then
+      fail "Octelium IdentityProvider ${IDP_NAME} is not available: $(tr '\n' ' ' </tmp/octelium-idp.err.$$)"
+    else
+      fail "Octelium IdentityProvider ${IDP_NAME} could not be listed within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
   fi
+else
+  note "Skipping octeliumctl IdentityProvider check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-idp.$$ /tmp/octelium-idp.err.$$
 
-if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl get service --domain "${DOMAIN}" >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
-  for SERVICE in ${REQUIRED_SERVICES}; do
-    if grep -F "${SERVICE}" /tmp/octelium-services.$$ >/dev/null 2>&1; then
-      pass "Octelium Service exists: ${SERVICE}"
-    else
-      fail "Octelium Service is missing: ${SERVICE}"
-    fi
-  done
-else
-  if [ -s /tmp/octelium-services.err.$$ ]; then
-    fail "octeliumctl could not list services for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-services.err.$$)"
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get service -o json >/tmp/octelium-services.$$ 2>/tmp/octelium-services.err.$$; then
+    SERVICES_JSON="$(cat /tmp/octelium-services.$$)"
+    for SERVICE in ${REQUIRED_SERVICES}; do
+      if jq -e --arg service "${SERVICE}" '.items[] | select(.metadata.name == $service or .status.primaryHostname == $service)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+        pass "Octelium Service exists: ${SERVICE}"
+      else
+        fail "Octelium Service is missing: ${SERVICE}"
+      fi
+    done
+    for SERVICE in argocd compass deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+        pass "Octelium Service ${SERVICE} is WEB and public/clientless"
+      else
+        fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
+      fi
+    done
   else
-    fail "octeliumctl could not list services for ${DOMAIN} within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    if [ -s /tmp/octelium-services.err.$$ ]; then
+      fail "octeliumctl could not list services for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-services.err.$$)"
+    else
+      fail "octeliumctl could not list services for ${DOMAIN} within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
   fi
+else
+  note "Skipping octeliumctl Service catalog check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-services.$$ /tmp/octelium-services.err.$$
 
-note "Checking app hostnames over Octelium VPN"
-CONNECT_ARGS=(
-  octelium
-  connect
-  --domain "${DOMAIN}"
-  --implementation="${CLIENT_IMPLEMENTATION}"
-  --no-dns
-)
-
-if [ -n "${OCTELIUM_AUTH_TOKEN:-}" ]; then
-  CONNECT_ARGS+=(--auth-token "${OCTELIUM_AUTH_TOKEN}")
-  CONNECT_ARGS+=(--scope "api:user.MainService/Connect")
-  for SERVICE in ${REQUIRED_SERVICES}; do
-    CONNECT_ARGS+=(--scope "service:${SERVICE}")
-  done
-fi
-
-while read -r HOST SERVICE LOCAL_PORT; do
-  [ -n "${HOST}" ] || continue
-  CONNECT_ARGS+=(--publish "${SERVICE}:127.0.0.1:${LOCAL_PORT}")
-done <<<"${APP_TARGETS}"
-
-"${CONNECT_ARGS[@]}" >/tmp/octelium-connect.$$ 2>/tmp/octelium-connect.err.$$ &
-CONNECT_PID="$!"
-
-sleep 5
-if ! kill -0 "${CONNECT_PID}" >/dev/null 2>&1; then
-  fail "octelium connect exited before app hostname checks; connect log: $(tr '\n' ' ' </tmp/octelium-connect.err.$$)"
-else
-  while read -r HOST SERVICE LOCAL_PORT; do
+note "Checking app hostnames through Octelium clientless WEB access"
+while read -r HOST; do
     [ -n "${HOST}" ] || continue
     HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-app-headers.XXXXXX")"
     CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/octelium-app-curl.XXXXXX")"
-    RESOLVED_IP="$(
+    PRIVATE_IPV4="$(
+      dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
+        awk '/^100\.64\./ {print; exit}'
+    )"
+    PRIVATE_IPV6="$(
       dig +short @1.1.1.1 "${HOST}" AAAA 2>/dev/null |
         awk '/^fdee:b76e:/ {print; exit}'
     )"
-    if [ -z "${RESOLVED_IP}" ]; then
-      fail "https://${HOST}${TEST_PATH} has no public Octelium AAAA record"
+    PUBLIC_IPV4="$(
+      dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
+        awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}'
+    )"
+    if [ -n "${PRIVATE_IPV4}" ] || [ -n "${PRIVATE_IPV6}" ]; then
+      fail "https://${HOST} still resolves to private Octelium service records (${PRIVATE_IPV4:-no A}/${PRIVATE_IPV6:-no AAAA})"
+      rm -f "${HEADER_FILE}" "${CURL_ERR}"
+      continue
+    fi
+    if [ -z "${PUBLIC_IPV4}" ]; then
+      fail "https://${HOST} has no public IPv4 DNS answer"
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
     else
-      pass "https://${HOST} resolves to Octelium service IPv6 ${RESOLVED_IP}"
+      pass "https://${HOST} resolves publicly for clientless access"
     fi
 
     CURL_OUT="$(
-      curl -sS -I --max-time 20 --connect-to "${HOST}:443:127.0.0.1:${LOCAL_PORT}" -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
+      curl -sS -I --max-time 20 -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
     )"
     HTTP_CODE="${CURL_OUT%% *}"
     REMOTE_IP="${CURL_OUT#* }"
     SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
 
     case "${HTTP_CODE}" in
-      200|204|301|302|307|308|401|403|404|405)
-        if [ "${REMOTE_IP}" = "127.0.0.1" ]; then
-          pass "https://${HOST}${TEST_PATH} reached ${SERVICE} through Octelium publish on localhost:${LOCAL_PORT} with HTTP ${HTTP_CODE}"
-        else
-          fail "https://${HOST}${TEST_PATH} connected to ${REMOTE_IP:-unknown}, not the local Octelium publish port"
-        fi
+      200|204|301|302|307|308|401|403|405)
+        pass "https://${HOST}${TEST_PATH} responded through public Octelium clientless path with HTTP ${HTTP_CODE}"
+        ;;
+      404)
+        fail "https://${HOST}${TEST_PATH} returned HTTP 404; Octelium did not route this public app hostname"
         ;;
       000|"")
-        fail "https://${HOST}${TEST_PATH} did not respond via Octelium; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
+        fail "https://${HOST}${TEST_PATH} did not respond publicly; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
         ;;
       *)
-        fail "https://${HOST}${TEST_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} via ${SERVICE}"
+        fail "https://${HOST}${TEST_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} server ${SERVER:-unknown}"
         ;;
     esac
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
-  done <<<"${APP_TARGETS}"
-fi
-rm -f /tmp/octelium-connect.$$ /tmp/octelium-connect.err.$$
+done <<<"${APP_HOSTS}"
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Octelium e2e check failed with ${FAILURES} failure(s)." >&2

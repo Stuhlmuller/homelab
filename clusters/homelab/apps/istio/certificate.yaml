@@ -10,8 +10,8 @@ spec:
   privateKey:
     rotationPolicy: Always
   dnsNames:
+    - stinkyboi.com
     - "*.stinkyboi.com"
-    - "*.octelium.stinkyboi.com"
   issuerRef:
     group: cert-manager.io
     kind: ClusterIssuer

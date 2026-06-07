@@ -86,6 +86,7 @@ stack because Terraform manages the Kubernetes Secret.
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
 | octelium-public | `octelium-public-cloudflared-credentials` | `octelium-public-cloudflared-credentials` | `/homelab/octelium/cloudflare-tunnel-credentials-json`, `/homelab/octelium/cloudflare-tunnel-id` |
+| octelium-public | Cloudflare zone gRPC reconciler | none | `/homelab/octelium/cloudflare-zone-settings-token` |
 | octelium | Octelium native Secret `entra-oidc-client-secret` | Octelium IdentityProvider `entra` | `/homelab/octelium/entra/client-id`, `/homelab/octelium/entra/client-secret`, `/homelab/octelium/entra/issuer-url`, `/homelab/octelium/entra/tenant-id` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
@@ -164,7 +165,7 @@ and bump `homelab.rst.io/octelium-credential-ssm-version` in
 `clusters/homelab/apps/octelium/externalsecret.yaml` so External Secrets
 materializes a fresh Secret from the exact Parameter Store version, and bump
 the same annotation in
-`clusters/homelab/apps/octelium/values.yaml` so the connector pod restarts with
+`clusters/homelab/apps/octelium/connector.yaml` so the connector pod restarts with
 the refreshed environment variable.
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
@@ -181,14 +182,22 @@ The public Octelium control plane uses a Cloudflare Tunnel connector in
 `cloudflared tunnel create homelab-octelium-public` in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and the tunnel UUID in
 `/homelab/octelium/cloudflare-tunnel-id`, then run
-`scripts/octelium-public-dns.sh` to route `octelium.stinkyboi.com`,
-`portal.octelium.stinkyboi.com`, and `octelium-api.octelium.stinkyboi.com`
+`scripts/octelium-public-dns.sh` to route `stinkyboi.com`,
+`octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
+`octelium-api.stinkyboi.com`
 through proxied CNAME records to the tunnel target
 `<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
-API token outside git. Cloudflare edge TLS must cover both
-`octelium.stinkyboi.com` and `*.octelium.stinkyboi.com`; otherwise the nested
-portal and API names reach Cloudflare but fail before the tunnel with an edge
-TLS handshake error.
+API token outside git. Cloudflare edge TLS uses the apex plus first-level
+`*.stinkyboi.com` shape; making `octelium.stinkyboi.com` the cluster domain
+would force the client onto the unsupported nested
+`octelium-api.octelium.stinkyboi.com` hostname.
+
+Octelium CLI and VPN sessions use gRPC against `octelium-api.stinkyboi.com`.
+Store a separate Cloudflare API token with `Zone:Read` and
+`Zone Settings:Edit` for `stinkyboi.com` in
+`/homelab/octelium/cloudflare-zone-settings-token`, then run
+`scripts/octelium-cloudflare-grpc.sh`. The cert-manager DNS-01 token is too
+narrow for this setting and returns Cloudflare error `9109`.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
@@ -229,8 +238,8 @@ configuration. Rotating the client secret means applying the Entra unit so the
 generated password and SSM value update together, then letting External Secrets
 refresh `grafana-azuread-sso`.
 
-The Octelium unit registers `https://octelium.stinkyboi.com/callback` and
-`https://portal.octelium.stinkyboi.com/callback`, writes the client ID,
+The Octelium unit registers `https://stinkyboi.com/callback` and
+`https://portal.stinkyboi.com/callback`, writes the client ID,
 generated one-year client secret, tenant ID, and issuer URL to SSM, and leaves
 the Octelium native IdentityProvider activation to
 `scripts/octelium-entra-oidc.sh`.
