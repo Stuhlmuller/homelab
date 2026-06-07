@@ -14,10 +14,11 @@ are reached through an authenticated Octelium client session.
 ## Secret Contract
 
 `octelium-public-cloudflared-credentials` reads
-`/homelab/octelium/cloudflare-tunnel-credentials-json` from AWS SSM. Store the
-credentials JSON created by `cloudflared tunnel create
-homelab-octelium-public` at that path. Do not commit the JSON file, tunnel
-secret, or Cloudflare API tokens.
+`/homelab/octelium/cloudflare-tunnel-credentials-json` and
+`/homelab/octelium/cloudflare-tunnel-id` from AWS SSM. Store the credentials
+JSON and UUID created by `cloudflared tunnel create homelab-octelium-public`
+at those paths. Do not commit the JSON file, tunnel secret, or Cloudflare API
+tokens.
 
 ## Routing
 
