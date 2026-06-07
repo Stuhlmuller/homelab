@@ -40,12 +40,12 @@ cluster.local/ns/octelium-client/sa/octelium-client
 ```
 
 The Octelium client is configured for `--implementation=tun` with `NET_ADMIN`
-and `MKNOD` so it can create `/dev/net/tun` and generated Octelium service pods
-can reach the connector's served app ports. The connector is pinned to nodes
-with `octelium.com/node-mode-dataplane=` because generated service pods route
-to the connector session through the Octelium dataplane overlay. The
-`octelium-client` namespace is therefore a narrow privileged namespace; it does
-not host the Octelium data plane.
+and `MKNOD` so it can create `/dev/net/tun` when a workload connector is needed.
+The current app access path does not hairpin through that connector: generated
+Octelium service pods forward directly to the in-cluster Istio gateway. The
+connector is pinned to nodes with `octelium.com/node-mode-dataplane=` for any
+future served workload upstreams. The `octelium-client` namespace is therefore a
+narrow privileged namespace; it does not host the Octelium data plane.
 
 ## Octelium Service Catalog
 
@@ -60,24 +60,24 @@ They create:
 - Octelium Namespace `homelab`.
 - Policy `homelab-human-web-access`, allowing authenticated human client
   sessions to app Services in those namespaces.
-- Policy `homelab-workload-web-serve`, allowing only the
-  `homelab-octelium-client` workload User to serve app Services in those
-  namespace.
-- Workload User `homelab-octelium-client`.
+- Policy `homelab-workload-web-serve`, reserved for the
+  `homelab-octelium-client` workload User if future Services need connector
+  served upstreams.
+- Workload User `homelab-octelium-client`, retained for connector bootstrap and
+  future private upstreams.
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/443 Services for the current homelab app routes. The Octelium service
   names remain valid internal names such as `grafana.homelab`, and each service
   carries an `appHostname` attribute such as `grafana.stinkyboi.com`.
-- WEB Service `homelab-demo.homelab` for connector smoke tests.
+- WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 Each app Service forwards TCP/443 to the in-cluster Istio gateway so the
 existing HTTPS hostname, SNI routing, and wildcard certificate remain the app
 contract. Exact Cloudflare records then point those app hostnames at Octelium
 private service IPs, which makes the browser path VPN-only without changing app
-base URLs. The prepared Kubernetes Deployment serves the same explicit list
-through `octelium.serve`, and its workload credential is constrained with
-`--scope=api:user.MainService/Connect` plus matching `--scope=service:<name>`
-flags.
+base URLs. Do not set `spec.config.upstream.user` on these app Services unless
+the route intentionally needs a served workload connector; keeping the upstream
+direct avoids an unnecessary connector-session hop.
 
 Apply the service catalog to the Octelium Cluster:
 
