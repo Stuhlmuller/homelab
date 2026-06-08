@@ -74,13 +74,15 @@ They create:
   such as `https://grafana.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
-Each app `WEB` Service forwards HTTP to the in-cluster Istio gateway while
+Each app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
 setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
-`X-Forwarded-Proto` for the original app hostname. The header block also sets
-`forwardedMode: TRANSPARENT` so Octelium preserves those explicit forwarded
-headers instead of deriving them from the internal upstream. That keeps each
-app's existing Istio `VirtualService` and base URL intact while moving the
-user-facing authentication layer to Octelium clientless access.
+`X-Forwarded-Proto` for the original app hostname. The HTTPS hop avoids the
+gateway's HTTP-to-HTTPS redirect loop for authenticated clientless browser
+requests. The header block also sets `forwardedMode: TRANSPARENT` so Octelium
+preserves those explicit forwarded headers instead of deriving them from the
+internal upstream. That keeps each app's existing Istio `VirtualService` and
+base URL intact while moving the user-facing authentication layer to Octelium
+clientless access.
 
 Apply the service catalog to the Octelium Cluster:
 

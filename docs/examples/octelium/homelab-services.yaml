@@ -92,7 +92,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -119,7 +121,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -146,7 +150,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -173,7 +179,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -211,7 +219,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -248,7 +258,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -275,7 +287,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -302,7 +316,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -329,7 +345,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -356,7 +374,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -383,7 +403,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -410,7 +432,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT
@@ -437,7 +461,9 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: http://istio-ingressgateway.istio-system.svc.cluster.local
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
     http:
       header:
         forwardedMode: TRANSPARENT

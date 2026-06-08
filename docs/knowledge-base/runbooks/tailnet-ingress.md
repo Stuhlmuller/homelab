@@ -24,9 +24,11 @@ preserves the existing Octelium Cluster `VirtualService`.
 
 The Octelium service catalog in `docs/examples/octelium/homelab-services.yaml`
 keeps the existing app URLs by storing each `*.stinkyboi.com` hostname as a
-service attribute and forwarding TCP/443 to the in-cluster Istio gateway. The
-per-app Istio `VirtualService` objects are private backend routes for that
-Octelium path, not public Funnel routes.
+service attribute and forwarding HTTPS to the in-cluster Istio gateway. The
+internal HTTPS hop avoids the gateway's HTTP-to-HTTPS redirect loop for
+authenticated clientless browser requests. The per-app Istio `VirtualService`
+objects are private backend routes for that Octelium path, not public Funnel
+routes.
 
 Octelium is documented under [[octelium]]. It replaces app access only; it does
 not replace the Tailscale exit node, CI route, or reviewed public webhook

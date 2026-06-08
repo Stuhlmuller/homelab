@@ -48,9 +48,11 @@ The Octelium resource catalog for the external Octelium Cluster is
   `https://grafana.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
-Each app `WEB` Service forwards to the in-cluster Istio gateway while setting
-the original app hostname in the HTTP headers. Exact Cloudflare app records are
-proxied CNAMEs to the public tunnel, so users can open the existing
+Each app `WEB` Service forwards over HTTPS to the in-cluster Istio gateway
+while setting the original app hostname in the HTTP headers. This internal
+HTTPS hop avoids the gateway's HTTP-to-HTTPS redirect while preserving the
+existing app `VirtualService` routes. Exact Cloudflare app records are proxied
+CNAMEs to the public tunnel, so users can open the existing
 `https://*.stinkyboi.com` URLs without running `octelium connect`.
 
 The connector manifest runs at one replica after the Octelium Cluster API,
