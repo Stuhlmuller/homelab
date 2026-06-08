@@ -51,7 +51,8 @@ Source: `docs/ci-cd.md`
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Octelium uses a workload credential for User `homelab-ci`. The workflow
   publishes Service `kubernetes-api.ci` to `https://127.0.0.1:16443` with the
-  sudo-backed TUN implementation and no host DNS changes. The policy-bound
+  sudo-backed TUN implementation and Octelium DNS enabled for Service
+  publishing. The policy-bound
   credential is the enforcement boundary; do not add auth-token `--scope` flags
   to this v0.35 connect path because scoped sessions are denied before the
   tunnel is established.
