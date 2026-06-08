@@ -50,14 +50,14 @@ Source: `docs/ci-cd.md`
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Octelium uses a workload credential for User `homelab-ci`. The workflow
-  connects to Service `kubernetes-api.ci` at
-  `https://100.64.1.160:6443` with sudo-backed TUN mode and no Octelium DNS. The
-  policy-bound credential is the enforcement boundary; do not add auth-token
-  `--scope` flags to this v0.35 connect path because scoped sessions are denied
-  before the tunnel is established.
+  publishes Service `kubernetes-api.ci` to `https://127.0.0.1:16443` with the
+  userspace `gvisor` implementation and no Octelium DNS. The policy-bound
+  credential is the enforcement boundary; do not add auth-token `--scope` flags
+  to this v0.35 connect path because scoped sessions are denied before the
+  tunnel is established.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
-  Octelium service address and sets the Kubernetes TLS server name to
+  Octelium-published localhost endpoint and sets the Kubernetes TLS server name to
   `10.1.0.199`.
   The unauthenticated curl readiness check only proves the TLS endpoint is
   reachable and may receive `401`; authenticated `kubectl version` is the real
