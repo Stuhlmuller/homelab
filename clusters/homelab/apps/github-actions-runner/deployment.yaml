@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-actions-runner
+  namespace: github-actions-runner
+  annotations:
+    checkov.io/skip1: CKV_K8S_21=The runner is intentionally mutable while registering itself and running GitHub Actions workspaces.
+    checkov.io/skip2: CKV_K8S_22=The runner writes job workspaces under /home/runner/_work.
+    checkov.io/skip3: CKV_K8S_23=The runner starts as root so install-nix-action can manage /nix.
+    checkov.io/skip4: CKV_K8S_29=Host networking is required so the runner can use node IPv6 routing to reach Octelium gateway hostnames.
+    checkov.io/skip5: CKV_K8S_35=The short-lived registration token is file-mounted from External Secrets for first boot only.
+    checkov.io/skip6: CKV2_K8S_6=Host-networked CI runner egress is intentionally controlled by GitHub environment gates and repository workflow policy rather than Kubernetes NetworkPolicy.
+    checkov.io/skip7: CKV_K8S_8=The GitHub runner has no stable in-container liveness endpoint; GitHub runner online status and Deployment rollout are the health signals.
+    checkov.io/skip8: CKV_K8S_9=The GitHub runner has no stable in-container readiness endpoint; GitHub runner online status and Deployment rollout are the readiness signals.
+    checkov.io/skip9: CKV_K8S_19=Host networking is required because GitHub-hosted runners cannot route to IPv6-only Octelium gateways.
+    checkov.io/skip10: CKV_K8S_40=The runner starts as root so install-nix-action can manage /nix on the runner filesystem.
+    checkov.io/skip11: CKV_K8S_20=install-nix-action invokes sudo, which needs setuid/setgid inside this dedicated CI runner container.
+    checkov.io/skip12: CKV_K8S_25=install-nix-action invokes sudo and needs setuid/setgid plus root filesystem capabilities inside this dedicated CI runner container.
+  labels:
+    app.kubernetes.io/name: github-actions-runner
+    app.kubernetes.io/part-of: homelab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: github-actions-runner
+      app.kubernetes.io/instance: homelab-ci
+  template:
+    metadata:
+      annotations:
+        homelab.rst.io/runner-script-version: "6"
+      labels:
+        app.kubernetes.io/name: github-actions-runner
+        app.kubernetes.io/instance: homelab-ci
+        app.kubernetes.io/part-of: homelab
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: runner
+          image: ghcr.io/actions/actions-runner:2.334.0@sha256:91a87fc7ecea714252b01a1a3f0c64d0f8fe6a05fd466a631b9a51f88f4c7aca
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - AUDIT_WRITE
+                - CHOWN
+                - DAC_OVERRIDE
+                - FOWNER
+                - SETGID
+                - SETUID
+            runAsNonRoot: false
+            runAsUser: 0
+          command:
+            - /bin/bash
+            - /scripts/start-runner.sh
+          env:
+            - name: GITHUB_CONFIG_URL
+              value: https://github.com/Stuhlmuller/homelab
+            - name: RUNNER_LABELS
+              value: homelab-ci
+            - name: RUNNER_NAME_PREFIX
+              value: homelab-ci
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: runner-home
+              mountPath: /home/runner/_work
+            - name: registration
+              mountPath: /var/run/github-runner
+              readOnly: true
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: runner-home
+          emptyDir: {}
+        - name: registration
+          secret:
+            secretName: github-actions-runner-registration
+        - name: scripts
+          configMap:
+            name: github-actions-runner-scripts
+            defaultMode: 0755

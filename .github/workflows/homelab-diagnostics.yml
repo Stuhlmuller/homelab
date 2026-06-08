@@ -12,12 +12,16 @@ env:
   OCTELIUM_DOMAIN: stinkyboi.com
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
-  OCTELIUM_IMPLEMENTATION: tun
-  OCTELIUM_USE_SUDO: "true"
+  OCTELIUM_IMPLEMENTATION: gvisor
+  OCTELIUM_NO_DNS: "false"
+  OCTELIUM_TUNNEL_MODE: wireguard
+  OCTELIUM_USE_SUDO: "false"
 
 jobs:
   grafana:
-    runs-on: ubuntu-24.04
+    runs-on:
+      - self-hosted
+      - homelab-ci
     environment:
       name: homelab-plan
     permissions:
@@ -28,6 +32,20 @@ jobs:
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Nix Store Cache
+        # nix-community/cache-nix-action@v7
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
       - name: Verify Diagnostic Inputs
         env:
@@ -48,15 +66,16 @@ jobs:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
-        run: bash scripts/ci/install-kubeconfig.sh
+        run: nix develop --command bash scripts/ci/install-kubeconfig.sh
 
       - name: Verify Kubernetes API Reachability
         run: |
           curl -kfsS --max-time 10 "${KUBE_API_SERVER_URL}/version" >/dev/null
-          kubectl --request-timeout=15s version
+          nix develop --command kubectl --request-timeout=15s version
 
       - name: Inspect Grafana
         run: |
+          nix develop --command bash <<'EOF'
           set -o pipefail
           kubectl -n monitoring get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
             -l app.kubernetes.io/name=grafana -o wide
@@ -78,6 +97,7 @@ jobs:
             kubectl -n monitoring logs "${pod}" --all-containers --previous --tail=200 || true
             echo "::endgroup::"
           done
+          EOF
 
       - name: Disconnect Octelium
         if: always()

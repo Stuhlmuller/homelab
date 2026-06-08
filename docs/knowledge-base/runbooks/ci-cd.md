@@ -49,15 +49,23 @@ Source: `docs/ci-cd.md`
   closures.
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
-- Octelium uses a workload credential for User `homelab-ci`. The workflow
-  publishes only Service `kubernetes-api.ci` to
-  `https://127.0.0.1:16443` with sudo-backed TUN mode and no Octelium DNS. The
-  policy-bound credential is the enforcement boundary; do not add auth-token
-  `--scope` flags to this v0.35 connect path because scoped sessions are denied
-  before the loopback listener is published.
+- Octelium uses a workload credential for User `homelab-ci`. Live Terragrunt
+  jobs run on the `homelab-ci` self-hosted runner so they can use node routing
+  to reach Octelium Gateway hostnames. The workflow publishes Service
+  `kubernetes-api.ci` to `https://127.0.0.1:16443` with the gVisor userspace
+  implementation, Octelium DNS enabled for Service publishing, and Octelium's
+  `wireguard` tunnel mode. The `_gw-*` Octelium Gateway hostnames must have exact
+  public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
+  otherwise external clients can authenticate but cannot move service traffic
+  through the client dataplane.
+  The policy-bound
+  credential is the enforcement boundary; do not add auth-token `--scope` flags
+  to this v0.35 connect path because scoped sessions are denied before the
+  tunnel is established.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
-  loopback listener and sets the Kubernetes TLS server name to `10.1.0.199`.
+  Octelium-published localhost endpoint and sets the Kubernetes TLS server name to
+  `10.1.0.199`.
   The unauthenticated curl readiness check only proves the TLS endpoint is
   reachable and may receive `401`; authenticated `kubectl version` is the real
   Kubernetes API validation.
