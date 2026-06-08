@@ -177,10 +177,13 @@ billing, but OpenAI Codex can sign in with a ChatGPT plan and store local
 credentials on the OpenClaw PVC.
 
 The pod startup bootstrap enables the bundled `codex` plugin and sets the
-default agent model to the authenticated Codex route, `codex/gpt-5.5`. The
-older `openai-codex/gpt-*` model refs are legacy routes, and
-`openai/gpt-*` routes require a separate OpenAI auth surface that this
-deployment does not manage.
+default agent model to `openai/gpt-5.5` with model-scoped
+`agentRuntime.id: "codex"`. OpenClaw 2026.6.1 routes canonical `openai/gpt-*`
+agent refs through the Codex app-server harness when that runtime policy is
+selected, so the PVC-backed Codex OAuth profile supplies the ChatGPT Pro auth
+without storing an API key in SSM or git. The older `openai-codex/gpt-*` and
+`codex/gpt-*` refs are compatibility routes, not the desired bootstrap default
+for this deployment.
 
 The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
@@ -195,9 +198,10 @@ uses the committed NetworkPolicy and ambient mesh policies, and writes durable
 agent state only under the OpenClaw PVC. If Docker or another sandbox runtime is
 added to the workload later, revisit this setting before enabling it.
 
-During startup, the bootstrap runs OpenClaw's safe doctor repairs when the
-persisted PVC config no longer matches the current OpenClaw schema. This keeps
-version upgrades from blocking on stale runtime config while preserving secrets
+During startup, the bootstrap always runs OpenClaw's safe non-interactive
+doctor repairs before applying desired state. This keeps version upgrades from
+blocking on stale runtime config and gives valid legacy PVC auth/order entries
+a chance to migrate to the canonical `openai` route while preserving secrets
 and OAuth state on the PVC. It also pins `gateway.mode` to `local`, which is
 required for the container-managed gateway process.
 
@@ -205,24 +209,24 @@ Run the interactive login from a tailnet-connected operator machine:
 
 ```sh
 kubectl -n ai exec -it deploy/openclaw -c app -- \
-  openclaw models auth login --provider openai-codex --set-default
+  openclaw models auth login --provider openai --set-default
 ```
 
 For a headless terminal or callback-hostile network, use the device-code flow:
 
 ```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models auth login --provider openai-codex --device-code --set-default
+  openclaw models auth login --provider openai --device-code --set-default
 ```
 
 Then verify the default model and plugin-backed runtime:
 
 ```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models status --plain
+  openclaw models status --json
 
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models list --provider codex
+  openclaw models list --provider openai
 ```
 
 Those OAuth credentials persist on the `/data/openclaw` volume and should not be
