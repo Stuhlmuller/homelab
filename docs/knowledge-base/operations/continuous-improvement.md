@@ -123,13 +123,21 @@ policy`.
 - **Evidence:** June 2026 security audit found remaining structural hardening
   work: the shared Argo CD AppProject can still deploy cluster-scoped RBAC,
   Kiali remains anonymous/view-only on the tailnet, several app-template
-  workloads need explicit restricted container security contexts, and remote
-  Terragrunt catalog modules are still referenced by the mutable `0.4.0` tag.
+  workloads need explicit restricted container security contexts.
 - **Risk:** these are reviewability, reconnaissance, and lateral-movement risks
   that are larger than a single safe patch.
 - **Next step:** split AppProjects, add Kiali identity controls, harden
-  compatible app-template values, and pin or vendor remote modules once the
-  immutable commit for `terragrunt-catalog` tag `0.4.0` can be verified.
+  compatible app-template values, and keep shared platform changes small enough
+  to validate independently.
+- **Status:** fixed
+- **Area:** infrastructure supply chain
+- **Evidence:** The Terragrunt catalog release tag `0.4.0` was verified with
+  `git ls-remote` as commit `19df2cb291eef0084cafb85bed644dcdb082108c`, and
+  the bootstrap/Entra units now pin module sources to that immutable commit.
+- **Risk:** mutable or retargeted module tags can change infrastructure module
+  code outside this repository's review path.
+- **Next step:** keep remote Terragrunt module sources pinned to immutable
+  commits, or vendor the module before using a mutable release tag again.
 - **Status:** fixed
 - **Area:** platform service / Pod Security
 - **Evidence:** June 2026 security audit found privileged namespaces using
