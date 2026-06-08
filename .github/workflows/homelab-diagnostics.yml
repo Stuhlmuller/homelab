@@ -70,7 +70,7 @@ jobs:
 
       - name: Verify Kubernetes API Reachability
         run: |
-          curl -kfsS --max-time 10 "${KUBE_API_SERVER_URL}/version" >/dev/null
+          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
           nix develop --command kubectl --request-timeout=15s version
 
       - name: Inspect Grafana
