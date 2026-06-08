@@ -63,11 +63,15 @@ locals {
     "spec.destination.name",
   ]
   multi_source_computed_fields = length(var.sources) > 1 ? [
-    # Argo CD normalizes multi-source entries after apply, including default path
-    # values and empty nested source blocks. Treat the list as API-computed so
-    # the Kubernetes provider stores Argo CD's returned shape without failing
-    # state reconciliation while still sending the repo-owned sources below.
-    "spec.sources",
+    # Argo CD normalizes default path values for multi-source entries. Keep
+    # those path-only fields API-computed without masking repo-owned fields such
+    # as targetRevision, otherwise temporary branch pins can drift indefinitely.
+    for idx, source in var.sources : "spec.sources[${idx}].path"
+    if try(source.path, null) == null && (
+      try(source.chart, null) != null ||
+      try(source.ref, null) != null ||
+      try(source.directory, null) != null
+    )
   ] : []
   computed_field_defaults = concat(local.default_computed_fields, local.multi_source_computed_fields)
   computed_fields         = var.computed_fields == null ? local.computed_field_defaults : distinct(concat(local.computed_field_defaults, var.computed_fields))
