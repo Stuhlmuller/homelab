@@ -13,7 +13,8 @@ This repository uses GitHub Actions for the review and rollout path:
   a live Terragrunt plan, and updates the managed plan section in the PR
   description. Manifest-only, workflow-only, and docs-only changes skip the
   Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
-  policies. Forked pull requests run Conftest after the live plan skip notice.
+  policies and replace the managed PR plan section with an explicit skip note.
+  Forked pull requests run Conftest after the live plan skip notice.
 - `Terragrunt Apply` runs after changes land on `main` and can also be started
   manually with `workflow_dispatch`. It repeats static checks and Conftest
   before connecting to Octelium and applying the live Terragrunt phases in
@@ -89,7 +90,9 @@ contract for Grafana.
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
   the managed `<!-- terragrunt-plan:start -->` section in the PR description
-  after every successful plan.
+  after every successful plan. Trusted PRs that do not require a live plan
+  replace that same managed section with a skip note so stale plan output is not
+  left behind after a force-push or scope reduction.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`

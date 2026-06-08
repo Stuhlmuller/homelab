@@ -181,17 +181,23 @@ jobs:
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: nix develop --command bash scripts/ci/terragrunt-plan.sh
 
-      - name: Update PR Description With Plan
-        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
+      - name: Write Live Plan Skip Note
+        if: steps.live-plan-scope.outputs.requires-live-plan != 'true'
+        env:
+          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
+        run: |
+          {
+            printf '## Terragrunt Plan Output\n\n'
+            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
+            printf 'Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check.\n'
+          } >"${TERRAGRUNT_PLAN_MARKDOWN}"
+
+      - name: Update PR Description With Plan Or Skip Note
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: bash scripts/ci/update-pr-plan-description.sh
-
-      - name: Explain Live Plan Skip
-        if: steps.live-plan-scope.outputs.requires-live-plan != 'true'
-        run: echo "Live Terragrunt plan was skipped because this pull request did not change IaC, OpenTofu/Terragrunt policy inputs, flake inputs, or live-plan helper scripts."
 
       - name: Run Conftest Policies
         if: ${{ !cancelled() }}

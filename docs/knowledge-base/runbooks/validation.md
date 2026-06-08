@@ -25,7 +25,8 @@ In pull-request CI, the required `Terragrunt Plan` job opens Octelium and runs a
 live OpenTofu/Terragrunt plan only when the diff changes `IaC/**`, flake inputs,
 OpenTofu/Terragrunt policy inputs, or live-plan helper scripts. Manifest-only,
 workflow-only, and docs-only changes still run static checks and rendered
-Conftest policies without requiring the CI Kubernetes access path.
+Conftest policies without requiring the CI Kubernetes access path, and the job
+replaces the managed PR plan section with an explicit skip note.
 
 ## Render And Diff
 

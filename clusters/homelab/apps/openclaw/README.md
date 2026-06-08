@@ -208,14 +208,14 @@ Run the interactive login from a tailnet-connected operator machine:
 
 ```sh
 kubectl -n ai exec -it deploy/openclaw -c app -- \
-  openclaw models auth login --provider openai-codex --set-default
+  openclaw models auth login --provider openai --set-default
 ```
 
 For a headless terminal or callback-hostile network, use the device-code flow:
 
 ```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models auth login --provider openai-codex --device-code --set-default
+  openclaw models auth login --provider openai --device-code --set-default
 ```
 
 Then verify the default model and plugin-backed runtime:
