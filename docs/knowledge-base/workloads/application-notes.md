@@ -122,10 +122,11 @@ client chart plus repo-owned support manifests in
 image by digest and force `--implementation=tun` with `NET_ADMIN` and `MKNOD`
 so the connector can create `/dev/net/tun` when a workload bridge is needed.
 Current app access uses public first-level Octelium `WEB` Services such as
-`grafana` and `argocd`. Each service forwards HTTP to the in-cluster Istio
+`grafana` and `argocd`. Each service forwards HTTPS to the in-cluster Istio
 gateway while setting the original app hostname headers, preserving the
 existing `*.stinkyboi.com` app URLs without requiring users to run
-`octelium connect`. The connector is pinned to nodes with
+`octelium connect` and avoiding the gateway's HTTP-to-HTTPS redirect loop for
+authenticated clientless browser requests. The connector is pinned to nodes with
 `octelium.com/node-mode-dataplane=` for future served workload upstreams.
 
 The connector runs with `replicaCount: 1` after the Octelium API, service

@@ -39,10 +39,12 @@ a separate workload User `homelab-ci`, Policy
 `homelab-ci-kubernetes-api-access`, and TCP Service
 `kubernetes-api.ci -> tcp://10.1.0.199:6443`; GitHub Actions uses that
 Service as the transport path for live Terragrunt plan/apply and diagnostics.
-The app Services forward HTTP to the in-cluster Istio gateway while setting the
-original app hostname headers, preserving existing `https://*.stinkyboi.com`
-URLs and Istio routing while moving browser authentication to Octelium. Keep
-`forwardedMode: TRANSPARENT` on these `WEB` Services whenever they set
+The app Services forward HTTPS to the in-cluster Istio gateway while setting
+the original app hostname headers, preserving existing
+`https://*.stinkyboi.com` URLs and Istio routing while moving browser
+authentication to Octelium. The internal HTTPS hop avoids the gateway's
+HTTP-to-HTTPS redirect loop for authenticated clientless browser requests.
+Keep `forwardedMode: TRANSPARENT` on these `WEB` Services whenever they set
 `X-Forwarded-*` headers; otherwise Octelium can derive forwarded values from
 the internal upstream and confuse apps that build absolute HTTPS URLs. The
 Kubernetes connector scope list is limited to `homelab-demo.homelab`; app

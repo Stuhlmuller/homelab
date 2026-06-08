@@ -393,6 +393,11 @@ if [ "${GRPC_READY}" -eq 1 ]; then
       else
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
+      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.config.upstream.url == "https://istio-ingressgateway.istio-system.svc.cluster.local:443" and .spec.config.tls.insecureSkipVerify == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+        pass "Octelium Service ${SERVICE} uses the non-redirecting Istio HTTPS upstream"
+      else
+        fail "Octelium Service ${SERVICE} is not using the non-redirecting Istio HTTPS upstream"
+      fi
     done
   else
     if [ -s /tmp/octelium-services.err.$$ ]; then

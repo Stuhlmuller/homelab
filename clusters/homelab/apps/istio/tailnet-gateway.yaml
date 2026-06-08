@@ -25,6 +25,7 @@ spec:
       hosts:
         - stinkyboi.com
         - "*.stinkyboi.com"
+        - istio-ingressgateway.istio-system.svc.cluster.local
       tls:
         mode: SIMPLE
         credentialName: stinkyboi-com-tls
