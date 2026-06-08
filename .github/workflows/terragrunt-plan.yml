@@ -32,8 +32,8 @@ env:
   OCTELIUM_DOMAIN: stinkyboi.com
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
-  OCTELIUM_IMPLEMENTATION: gvisor
-  OCTELIUM_USE_SUDO: "false"
+  OCTELIUM_IMPLEMENTATION: tun
+  OCTELIUM_USE_SUDO: "true"
 
 jobs:
   static-policy:
