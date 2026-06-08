@@ -103,6 +103,11 @@ Source: `docs/ci-cd.md`
   `run --all --filter-affected --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+- Protected applies adopt the preseeded
+  `/homelab/github-actions-runner/registration-token` SSM parameter into
+  `IaC/live/aws-ssm-parameters` state before planning. This handles the
+  bootstrap path where a short-lived token was written locally so the runner
+  could come online before GitHub Actions could manage the placeholder itself.
 
 ## Monitoring
 
