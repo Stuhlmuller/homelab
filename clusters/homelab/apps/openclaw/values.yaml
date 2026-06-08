@@ -122,9 +122,8 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
-            if ! openclaw config validate; then
-              openclaw doctor --fix --non-interactive
-            fi
+            openclaw doctor --fix --non-interactive
+            openclaw config validate
 
             openclaw config set --strict-json \
               gateway.mode \

@@ -228,8 +228,10 @@ harness otherwise tries to start a Docker sandbox, while the OpenClaw app image
 does not include Docker and this Kubernetes workload does not run
 Docker-in-Docker. The pod boundary, disabled service account token, NetworkPolicy
 and ambient mesh policies are the runtime containment model for Discord-triggered
-agent work. The bootstrap runs safe `openclaw doctor --fix --non-interactive`
-repairs when the persisted PVC config does not validate against the current
+agent work. The bootstrap always runs safe `openclaw doctor --fix --non-interactive`
+repairs before applying desired state so valid legacy PVC auth/order entries can
+migrate to the canonical `openai` route even when the persisted config still
+validates against the current
 OpenClaw schema, and sets `gateway.mode` to `local` for the container-managed
 gateway process.
 GitHub App identity is SSM-backed: `GITHUB_APP_ID` and

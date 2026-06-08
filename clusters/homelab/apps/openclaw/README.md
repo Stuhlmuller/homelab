@@ -198,9 +198,10 @@ uses the committed NetworkPolicy and ambient mesh policies, and writes durable
 agent state only under the OpenClaw PVC. If Docker or another sandbox runtime is
 added to the workload later, revisit this setting before enabling it.
 
-During startup, the bootstrap runs OpenClaw's safe doctor repairs when the
-persisted PVC config no longer matches the current OpenClaw schema. This keeps
-version upgrades from blocking on stale runtime config while preserving secrets
+During startup, the bootstrap always runs OpenClaw's safe non-interactive
+doctor repairs before applying desired state. This keeps version upgrades from
+blocking on stale runtime config and gives valid legacy PVC auth/order entries
+a chance to migrate to the canonical `openai` route while preserving secrets
 and OAuth state on the PVC. It also pins `gateway.mode` to `local`, which is
 required for the container-managed gateway process.
 
