@@ -36,6 +36,24 @@ deny contains msg if {
 	input.kind == "Namespace"
 	metadata := object.get(input, "metadata", {})
 	labels := object.get(metadata, "labels", {})
+	object.get(labels, "pod-security.kubernetes.io/audit", "") != "restricted"
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("namespace %q must audit Pod Security violations at restricted", [name])
+}
+
+deny contains msg if {
+	input.kind == "Namespace"
+	metadata := object.get(input, "metadata", {})
+	labels := object.get(metadata, "labels", {})
+	object.get(labels, "pod-security.kubernetes.io/warn", "") != "restricted"
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("namespace %q must warn on Pod Security violations at restricted", [name])
+}
+
+deny contains msg if {
+	input.kind == "Namespace"
+	metadata := object.get(input, "metadata", {})
+	labels := object.get(metadata, "labels", {})
 	labels["pod-security.kubernetes.io/enforce"] == "privileged"
 	annotations := object.get(metadata, "annotations", {})
 	not has_nonempty_annotation(annotations, "homelab.rst.io/privileged-namespace-justification")
