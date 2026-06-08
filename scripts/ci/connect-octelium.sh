@@ -6,6 +6,7 @@ set -euo pipefail
 OCTELIUM_DOMAIN="${OCTELIUM_DOMAIN:-stinkyboi.com}"
 OCTELIUM_HOMEDIR="${OCTELIUM_HOMEDIR:-${RUNNER_TEMP:-/tmp}/octelium}"
 OCTELIUM_KUBE_SERVICE="${OCTELIUM_KUBE_SERVICE:-kubernetes-api.ci}"
+OCTELIUM_KUBE_SERVICE_ADDRESS="${OCTELIUM_KUBE_SERVICE_ADDRESS:-}"
 OCTELIUM_KUBE_LOCAL_HOST="${OCTELIUM_KUBE_LOCAL_HOST:-127.0.0.1}"
 OCTELIUM_KUBE_LOCAL_PORT="${OCTELIUM_KUBE_LOCAL_PORT:-16443}"
 OCTELIUM_READY_TIMEOUT_SECONDS="${OCTELIUM_READY_TIMEOUT_SECONDS:-180}"
@@ -41,8 +42,10 @@ connect_cmd=(
   --implementation "${OCTELIUM_IMPLEMENTATION}"
   --ip-mode v4
   --no-dns
-  --publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}"
 )
+if [ -z "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
+  connect_cmd+=(--publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}")
+fi
 if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
   nohup sudo -E "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
 else
@@ -50,8 +53,16 @@ else
 fi
 echo "$!" >"${OCTELIUM_CONNECT_PID_FILE}"
 
+if [ -n "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
+  readiness_url="https://${OCTELIUM_KUBE_SERVICE_ADDRESS}:6443/version"
+  readiness_target="${OCTELIUM_KUBE_SERVICE} at ${OCTELIUM_KUBE_SERVICE_ADDRESS}:6443"
+else
+  readiness_url="https://${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}/version"
+  readiness_target="${OCTELIUM_KUBE_SERVICE} on ${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}"
+fi
+
 deadline=$((SECONDS + OCTELIUM_READY_TIMEOUT_SECONDS))
-until curl -ksS --max-time 5 -o /dev/null "https://${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}/version"; do
+until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
   if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
     sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
     echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
@@ -64,10 +75,10 @@ until curl -ksS --max-time 5 -o /dev/null "https://${OCTELIUM_KUBE_LOCAL_HOST}:$
       "${OCTELIUM_BIN}" --homedir "${OCTELIUM_HOMEDIR}" status || true
     fi
     sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
-    echo "Timed out waiting for ${OCTELIUM_KUBE_SERVICE} on ${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}." >&2
+    echo "Timed out waiting for ${readiness_target}." >&2
     exit 1
   fi
   sleep 2
 done
 
-echo "Octelium published ${OCTELIUM_KUBE_SERVICE} on ${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}."
+echo "Octelium reached ${readiness_target}."

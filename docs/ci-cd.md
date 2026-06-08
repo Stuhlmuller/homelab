@@ -72,18 +72,18 @@ contract for Grafana.
   AWS access keys to this repository.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
   `kubernetes-api.ci`. GitHub-hosted runners connect with sudo-backed TUN mode,
-  disable Octelium DNS, publish only that Service to `127.0.0.1:16443`, and
+  disable Octelium DNS, reach the Service directly at `100.64.1.160:6443`, and
   rely on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
-  current cluster server to `https://127.0.0.1:16443` and sets the TLS server
+  current cluster server to `https://100.64.1.160:6443` and sets the TLS server
   name to `10.1.0.199`, so the Kubernetes API certificate remains valid through
-  the Octelium-published loopback listener.
+  the Octelium tunnel.
 - Kubernetes reachability is verified first with a TLS reachability `curl`
-  probe against `https://127.0.0.1:16443/version`, which may return `401` on
+  probe against `https://100.64.1.160:6443/version`, which may return `401` on
   clusters that reject anonymous API requests, and then with authenticated
   `kubectl --request-timeout=15s version` after kubeconfig installation.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
@@ -154,7 +154,7 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to publish `kubernetes-api.ci` to the runner loopback listener. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to reach `kubernetes-api.ci` at its Octelium service address. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
@@ -205,7 +205,7 @@ credential unless a newer Octelium release validates that scoped auth-token
 sessions can publish `kubernetes-api.ci`. On Octelium v0.35, the
 policy-bound workload credential authenticates and is then constrained by the
 attached policy; adding `api:*` or `service:*` scopes causes the client session
-to be denied before the runner can publish the loopback listener.
+to be denied before the runner can establish the tunnel.
 
 ## AWS Setup
 
