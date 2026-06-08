@@ -165,6 +165,12 @@ rules and tighter rotation:
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
+The production apply script adopts the runner registration-token parameter into
+the `IaC/live/aws-ssm-parameters` state when the token was preseeded during a
+local bootstrap. This keeps the first GitOps apply from overwriting or failing
+on the existing short-lived token while preserving a from-scratch path where
+OpenTofu creates the placeholder.
+
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so
 storing them as environment secrets also works when that is how the repository
