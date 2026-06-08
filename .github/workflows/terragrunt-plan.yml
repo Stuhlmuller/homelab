@@ -32,10 +32,10 @@ env:
   OCTELIUM_DOMAIN: stinkyboi.com
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
-  OCTELIUM_IMPLEMENTATION: tun
+  OCTELIUM_IMPLEMENTATION: gvisor
   OCTELIUM_NO_DNS: "false"
-  OCTELIUM_TUNNEL_MODE: quicv0
-  OCTELIUM_USE_SUDO: "true"
+  OCTELIUM_TUNNEL_MODE: wireguard
+  OCTELIUM_USE_SUDO: "false"
 
 jobs:
   static-policy:
@@ -54,6 +54,7 @@ jobs:
         # cachix/install-nix-action@v31
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
+          enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Nix Store Cache
@@ -76,7 +77,9 @@ jobs:
       cancel-in-progress: false
     needs:
       - static-policy
-    runs-on: ubuntu-24.04
+    runs-on:
+      - self-hosted
+      - homelab-ci
     environment:
       name: homelab-plan
     permissions:
@@ -101,6 +104,7 @@ jobs:
         # cachix/install-nix-action@v31
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
+          enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Nix Store Cache
@@ -169,13 +173,13 @@ jobs:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
-        run: bash scripts/ci/install-kubeconfig.sh
+        run: nix develop --command bash scripts/ci/install-kubeconfig.sh
 
       - name: Verify Kubernetes API Reachability
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         run: |
           curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
-          kubectl --request-timeout=15s version
+          nix develop --command kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
@@ -199,7 +203,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
-        run: bash scripts/ci/update-pr-plan-description.sh
+        run: nix develop --command bash scripts/ci/update-pr-plan-description.sh
 
       - name: Run Conftest Policies
         if: ${{ !cancelled() }}

@@ -94,6 +94,7 @@ external_secret_allowed_prefixes := {
 	"argocd": {"/homelab/argocd/", "/homelab/argocd-image-updater/"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
 	"cert-manager": {"/homelab/cert-manager/"},
+	"github-actions-runner": {"/homelab/github-actions-runner/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
 	"octelium-client": {"/homelab/octelium/"},

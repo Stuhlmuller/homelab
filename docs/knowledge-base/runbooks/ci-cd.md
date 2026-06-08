@@ -49,13 +49,15 @@ Source: `docs/ci-cd.md`
   closures.
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
-- Octelium uses a workload credential for User `homelab-ci`. The workflow
-  publishes Service `kubernetes-api.ci` to `https://127.0.0.1:16443` with the
-  sudo-backed TUN implementation, Octelium DNS enabled for Service publishing,
-  and Octelium's `quicv0` tunnel mode. The `_gw-*` Octelium Gateway hostnames
-  must have exact public AAAA records reconciled by
-  `scripts/octelium-gateway-dns.sh`; otherwise GitHub-hosted runners can
-  authenticate but cannot move service traffic through the client dataplane.
+- Octelium uses a workload credential for User `homelab-ci`. Live Terragrunt
+  jobs run on the `homelab-ci` self-hosted runner so they can use node routing
+  to reach Octelium Gateway hostnames. The workflow publishes Service
+  `kubernetes-api.ci` to `https://127.0.0.1:16443` with the gVisor userspace
+  implementation, Octelium DNS enabled for Service publishing, and Octelium's
+  `wireguard` tunnel mode. The `_gw-*` Octelium Gateway hostnames must have exact
+  public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
+  otherwise external clients can authenticate but cannot move service traffic
+  through the client dataplane.
   The policy-bound
   credential is the enforcement boundary; do not add auth-token `--scope` flags
   to this v0.35 connect path because scoped sessions are denied before the

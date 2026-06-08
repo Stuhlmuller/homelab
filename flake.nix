@@ -27,6 +27,7 @@
           basePackages = with pkgs; [
             awscli2
             conftest
+            gh
             gitleaks
             kubectl
             opentofu
