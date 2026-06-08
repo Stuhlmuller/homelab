@@ -41,7 +41,10 @@ a separate workload User `homelab-ci`, Policy
 Service as the transport path for live Terragrunt plan/apply and diagnostics.
 The app Services forward HTTP to the in-cluster Istio gateway while setting the
 original app hostname headers, preserving existing `https://*.stinkyboi.com`
-URLs and Istio routing while moving browser authentication to Octelium. The
+URLs and Istio routing while moving browser authentication to Octelium. Keep
+`forwardedMode: TRANSPARENT` on these `WEB` Services whenever they set
+`X-Forwarded-*` headers; otherwise Octelium can derive forwarded values from
+the internal upstream and confuse apps that build absolute HTTPS URLs. The
 Kubernetes connector scope list is limited to `homelab-demo.homelab`; app
 traffic uses Cloudflare Tunnel to Octelium public ingress instead of a local
 VPN command.

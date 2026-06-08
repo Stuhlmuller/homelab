@@ -95,6 +95,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: argocd.stinkyboi.com
         addRequestHeaders:
@@ -121,6 +122,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: compass.stinkyboi.com
         addRequestHeaders:
@@ -147,6 +149,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: deluge.stinkyboi.com
         addRequestHeaders:
@@ -173,6 +176,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: grafana.stinkyboi.com
         addRequestHeaders:
@@ -210,6 +214,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: kiali.stinkyboi.com
         addRequestHeaders:
@@ -246,6 +251,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: litellm.stinkyboi.com
         addRequestHeaders:
@@ -272,6 +278,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: n8n.stinkyboi.com
         addRequestHeaders:
@@ -298,6 +305,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: octobot.stinkyboi.com
         addRequestHeaders:
@@ -324,6 +332,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: openclaw.stinkyboi.com
         addRequestHeaders:
@@ -350,6 +359,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: policy-bot.stinkyboi.com
         addRequestHeaders:
@@ -376,6 +386,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: prowlarr.stinkyboi.com
         addRequestHeaders:
@@ -402,6 +413,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: radarr.stinkyboi.com
         addRequestHeaders:
@@ -428,6 +440,7 @@ spec:
       url: http://istio-ingressgateway.istio-system.svc.cluster.local
     http:
       header:
+        forwardedMode: TRANSPARENT
         host:
           value: sonarr.stinkyboi.com
         addRequestHeaders:

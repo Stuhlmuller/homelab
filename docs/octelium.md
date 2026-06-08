@@ -76,9 +76,11 @@ They create:
 
 Each app `WEB` Service forwards HTTP to the in-cluster Istio gateway while
 setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
-`X-Forwarded-Proto` for the original app hostname. That keeps each app's
-existing Istio `VirtualService` and base URL intact while moving the user-facing
-authentication layer to Octelium clientless access.
+`X-Forwarded-Proto` for the original app hostname. The header block also sets
+`forwardedMode: TRANSPARENT` so Octelium preserves those explicit forwarded
+headers instead of deriving them from the internal upstream. That keeps each
+app's existing Istio `VirtualService` and base URL intact while moving the
+user-facing authentication layer to Octelium clientless access.
 
 Apply the service catalog to the Octelium Cluster:
 
