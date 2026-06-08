@@ -7,9 +7,13 @@ This repository uses GitHub Actions for the review and rollout path:
   every PR; the repository-specific blocking checks remain in `Terragrunt Plan`
   and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
-  Checkov first. Trusted same-repository pull requests then connect to the
-  Octelium VPN, run a live Terragrunt plan, and run Conftest policies after the
-  plan step. Forked pull requests run Conftest after the live plan skip notice.
+  Checkov first. Trusted same-repository pull requests then inspect the changed
+  paths. If the change touches `IaC/**`, flake inputs, OpenTofu/Terragrunt
+  policy inputs, or live-plan helper scripts, the job connects to Octelium, runs
+  a live Terragrunt plan, and updates the managed plan section in the PR
+  description. Manifest-only, workflow-only, and docs-only changes skip the
+  Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
+  policies. Forked pull requests run Conftest after the live plan skip notice.
 - `Terragrunt Apply` runs after changes land on `main` and can also be started
   manually with `workflow_dispatch`. It repeats static checks and Conftest
   before connecting to Octelium and applying the live Terragrunt phases in
@@ -70,6 +74,8 @@ contract for Grafana.
   disable Octelium DNS, publish only that Service to `127.0.0.1:16443`, and
   rely on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
+  Trusted pull requests only open this live access path when the diff includes
+  IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
   current cluster server to `https://127.0.0.1:16443` and sets the TLS server

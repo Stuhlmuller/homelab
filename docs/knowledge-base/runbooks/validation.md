@@ -21,6 +21,11 @@ terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -
 
 Expected app-registration plans include the Argo CD Application units affected
 by `main...HEAD`; unaffected units are skipped by the Terragrunt run queue.
+In pull-request CI, the required `Terragrunt Plan` job opens Octelium and runs a
+live OpenTofu/Terragrunt plan only when the diff changes `IaC/**`, flake inputs,
+OpenTofu/Terragrunt policy inputs, or live-plan helper scripts. Manifest-only,
+workflow-only, and docs-only changes still run static checks and rendered
+Conftest policies without requiring the CI Kubernetes access path.
 
 ## Render And Diff
 

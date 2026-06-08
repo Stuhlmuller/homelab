@@ -108,7 +108,32 @@ jobs:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
+      - name: Detect Live Terragrunt Plan Scope
+        id: live-plan-scope
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          requires_live_plan=false
+          while IFS= read -r changed_path; do
+            case "${changed_path}" in
+              IaC/*|flake.nix|flake.lock|policy/*)
+                requires_live_plan=true
+                ;;
+              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
+                requires_live_plan=true
+                ;;
+            esac
+          done < <(git diff --name-only "origin/${BASE_REF}...HEAD")
+
+          echo "requires-live-plan=${requires_live_plan}" >>"${GITHUB_OUTPUT}"
+          if [ "${requires_live_plan}" = "true" ]; then
+            echo "Live Terragrunt plan is required for this pull request."
+          else
+            echo "No live Terragrunt plan inputs changed; skipping Octelium, Kubernetes, and OpenTofu plan steps."
+          fi
+
       - name: Verify Live Plan Inputs
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
@@ -116,6 +141,7 @@ jobs:
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
 
       - name: Configure AWS Credentials
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         # aws-actions/configure-aws-credentials@v6.1.1
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
         with:
@@ -126,14 +152,17 @@ jobs:
           unset-current-credentials: true
 
       - name: Install Octelium Client
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         run: bash scripts/ci/install-octelium-client.sh
 
       - name: Connect To Octelium
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: bash scripts/ci/connect-octelium.sh
 
       - name: Install Kubeconfig
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
@@ -141,28 +170,35 @@ jobs:
         run: bash scripts/ci/install-kubeconfig.sh
 
       - name: Verify Kubernetes API Reachability
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         run: |
           curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
           kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: nix develop --command bash scripts/ci/terragrunt-plan.sh
 
       - name: Update PR Description With Plan
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: bash scripts/ci/update-pr-plan-description.sh
 
+      - name: Explain Live Plan Skip
+        if: steps.live-plan-scope.outputs.requires-live-plan != 'true'
+        run: echo "Live Terragrunt plan was skipped because this pull request did not change IaC, OpenTofu/Terragrunt policy inputs, flake inputs, or live-plan helper scripts."
+
       - name: Run Conftest Policies
         if: ${{ !cancelled() }}
         run: nix develop --command bash scripts/ci/conftest-policies.sh
 
       - name: Disconnect Octelium
-        if: always()
+        if: ${{ always() && steps.live-plan-scope.outputs.requires-live-plan == 'true' }}
         run: bash scripts/ci/disconnect-octelium.sh
 
   fork-plan-skipped:
