@@ -72,11 +72,15 @@ contract for Grafana.
   AWS access keys to this repository.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
   `kubernetes-api.ci`. GitHub-hosted runners use sudo-backed TUN mode, allow
-  Octelium DNS for Service publishing, publish the Service to
-  `127.0.0.1:16443`, and rely on the
+  Octelium DNS for Service publishing, force Octelium's `quicv0` tunnel mode,
+  publish the Service to `127.0.0.1:16443`, and rely on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
+  Reconcile the `_gw-*` gateway AAAA records with
+  `scripts/octelium-gateway-dns.sh` whenever Octelium gateway status changes;
+  GitHub-hosted runners need those exact public gateway hostnames for the
+  client dataplane.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
   current cluster server to `https://127.0.0.1:16443` and sets the TLS server
