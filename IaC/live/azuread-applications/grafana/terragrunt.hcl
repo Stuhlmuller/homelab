@@ -14,7 +14,7 @@ locals {
 }
 
 terraform {
-  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/azuread-application?ref=0.4.0"
+  source = "git::https://github.com/Stuhlmuller/terragrunt-catalog.git//modules/azuread-application?ref=0.4.1"
 }
 
 dependencies {
