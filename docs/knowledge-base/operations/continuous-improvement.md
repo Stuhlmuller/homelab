@@ -140,11 +140,12 @@ policy`.
   commits, or vendor the module before using a mutable release tag again.
 - **Status:** fixed
 - **Area:** platform service / Pod Security
-- **Evidence:** June 2026 security audit found privileged namespaces using
-  `privileged` for `enforce`, `audit`, and `warn`. This change keeps the
-  required `enforce: privileged` exception for Deluge VPN, Istio ingress, and
-  Tailscale operator proxy workloads, but moves `audit` and `warn` to
-  `restricted` so drift is visible during review and sync.
+- **Evidence:** June 2026 security audits found namespaces using weak
+  `audit`/`warn` Pod Security labels. The fixes keep required
+  `enforce: privileged` exceptions for Deluge VPN, Istio ingress, Octelium,
+  Octelium client, Tailscale, and the host-networked GitHub Actions runner,
+  keep baseline enforcement for `finance`, and require repo-owned namespaces to
+  set `audit` and `warn` to `restricted` through Conftest.
 - **Risk:** privileged audit/warn labels hide workloads that could run under a
   tighter profile or accidentally expand the exception blast radius.
 - **Next step:** continue splitting the Deluge VPN privilege exception into a

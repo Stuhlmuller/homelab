@@ -21,6 +21,7 @@ Current enforced controls:
 | Namespace | Reason |
 | --- | --- |
 | `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` |
+| `github-actions-runner` | Self-hosted CI runner uses host networking so jobs can reach Octelium gateway hostnames; containers remain non-privileged |
 | `istio-system` | Istio gateway and dataplane networking |
 | `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`; labels are applied by `scripts/octelium-cluster-bootstrap.sh` after `octops` creates the namespace |
 | `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface |
@@ -29,8 +30,8 @@ Current enforced controls:
 ## Baseline Namespaces
 
 `argocd`, `cert-manager`, `external-secrets`, `ai`, `automation`, `finance`,
-`monitoring`, `octelium-client`, and `storage` are explicitly baseline in
-repo-owned namespace manifests. `octelium-client` is ambient-enrolled so the
+`monitoring`, and `storage` are explicitly baseline in repo-owned namespace
+manifests. `octelium-client` is privileged-enforce and ambient-enrolled so the
 Octelium connector can be allowed as
 `cluster.local/ns/octelium-client/sa/octelium-client` by protected workloads.
 `finance` is not mesh-enrolled; OctoBot's UI is reached through the Octelium

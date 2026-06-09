@@ -95,8 +95,9 @@ Ambient is intentionally not enabled for:
   service-to-service or trading API control path is mesh-enrolled;
 - `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
   API server, webhook, NFS, and controller paths need separate validation;
-- `istio-system` and `tailscale`, because they are privileged networking
-  infrastructure rather than application namespaces.
+- `istio-system`, `octelium`, `octelium-client`, `tailscale`, and
+  `github-actions-runner`, because they are privileged networking or CI
+  infrastructure rather than ordinary application namespaces.
 
 ## Privileged Workloads
 
@@ -106,8 +107,10 @@ workload that needs it.
 | Namespace | Reason | Desired-state owner |
 |-----------|--------|---------------------|
 | `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` for WireGuard. | `clusters/homelab/apps/deluge/namespace.yaml` |
+| `github-actions-runner` | The self-hosted CI runner uses host networking so Octelium gateway hostnames are reachable from GitHub Actions jobs; containers remain non-privileged. | `clusters/homelab/apps/github-actions-runner/namespace.yaml` |
 | `istio-system` | Istio gateway and dataplane components need elevated networking permissions. | `clusters/homelab/apps/istio/namespace.yaml` |
 | `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`. | `scripts/octelium-cluster-bootstrap.sh` |
+| `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface. | `clusters/homelab/apps/octelium/namespace.yaml` |
 | `tailscale` | Tailscale operator proxy Pods need privileged networking for connector and load-balancer devices. | `clusters/homelab/apps/tailscale/namespace.yaml` |
 
 ## Baseline Workloads
@@ -123,7 +126,6 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 | `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
 | `finance` | `clusters/homelab/apps/octobot/namespace.yaml` |
 | `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
-| `octelium-client` | `clusters/homelab/apps/octelium/namespace.yaml` |
 | `storage` | `clusters/homelab/platform/storage/namespace.yaml` |
 
 Do not broaden privileged admission for convenience. If another workload needs
