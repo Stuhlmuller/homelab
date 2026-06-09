@@ -218,7 +218,9 @@ so External Secrets refreshes the Kubernetes Secret.
 ## Microsoft Entra SSO Bootstrap
 
 Grafana and Octelium SSO use Microsoft Entra application registrations managed
-through the Terragrunt catalog `azuread-application` module pinned to `0.4.0`.
+through the Terragrunt catalog `azuread-application` module pinned to commit
+`19df2cb291eef0084cafb85bed644dcdb082108c`, the immutable commit behind the
+reviewed `0.4.0` catalog release.
 
 Bootstrap order:
 
