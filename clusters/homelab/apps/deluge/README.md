@@ -130,6 +130,52 @@ fail closed instead of bypassing the VPN.
 
 ## Troubleshooting
 
+If the Pod is `Ready` and Gluetun is healthy but Deluge is not usable, check
+the daemon before restarting Kubernetes resources:
+
+```sh
+kubectl -n media logs deploy/deluge -c app --tail=120
+kubectl -n media logs deploy/deluge -c port-config --tail=120
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config info
+```
+
+Repeated `libtorrent::libtorrent_exception` messages such as
+`invalid type requested from entry`, together with `port-config` reporting
+connection refusals, usually mean the Deluge daemon cannot restore its
+persisted session state. Preserve torrent metadata and downloaded data; do not
+delete the `.torrent` files under `/config/state` or the `/downloads` tree.
+After explicit operator approval, recover only the session state file:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- /bin/sh -c '
+set -eu
+s6-svc -d /var/run/s6/services/deluged || true
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+cp -a /config/session.state /config/session.state.broken-$stamp
+cp -a /config/session.state.bak /config/session.state
+s6-svc -u /var/run/s6/services/deluged || true
+ls -l /config/session.state /config/session.state.bak /config/session.state.broken-$stamp
+'
+```
+
+Verify the daemon, port settings, directories, and VPN gate after recovery:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config config listen_ports
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config config random_outgoing_ports
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config info
+kubectl -n media exec deploy/deluge -c gluetun -- \
+  /gluetun-entrypoint healthcheck
+```
+
+The expected port state is `listen_ports: (5983, 5983)` and
+`random_outgoing_ports: True`. The archived `session.state.broken-*` file is
+the rollback reference if the backup state is worse.
+
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
 container repeatedly fails startup health checks with DNS lookup timeouts, treat
 that as an unhealthy WireGuard tunnel rather than a missing Kubernetes secret.

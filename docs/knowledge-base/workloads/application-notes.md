@@ -60,6 +60,12 @@ the profile to IPv4 before Gluetun starts. Keep Deluge's AirVPN forwarded port
 fixed only for `listen_ports`; `outgoing_ports` should stay at Deluge's default
 random behavior, otherwise active torrents can report too few outgoing ports
 and fail to establish enough peer connections.
+If Kubernetes and Gluetun are healthy but `deluged` loops with
+`libtorrent::libtorrent_exception` and `port-config` gets connection refused,
+check `clusters/homelab/apps/deluge/README.md` for the narrow
+`session.state` recovery. Archive the broken file and restore
+`session.state.bak`; do not delete `/config/state/*.torrent` or downloaded
+media while repairing this failure mode.
 
 ## Grafana
 
