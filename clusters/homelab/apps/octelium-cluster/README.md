@@ -4,7 +4,8 @@ This app owns the repo-side Octelium Cluster ingress route. `octops init`
 creates and manages the Octelium control-plane workloads in the `octelium`
 namespace, while this Argo CD Application keeps the homelab's Istio bootstrap
 gateway routing the Octelium public hostnames to the Octelium data-plane
-ingress service. It deliberately does not create or manage the `octelium`
+ingress service, plus `console.stinkyboi.com` directly to the Enterprise
+console Service. It deliberately does not create or manage the `octelium`
 namespace because Octelium genesis deletes and recreates that namespace during
 `octops init`. Automated pruning is disabled for this small front-door app so
 the previous repo-owned `Namespace/octelium` object is not pruned during the
@@ -15,6 +16,9 @@ so Istio terminates TLS and proxies HTTP to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`. The paired
 `DestinationRule` forces HTTP/2 upstream traffic to that Octelium dataplane
 Service so CLI gRPC responses keep their trailers.
+The Enterprise console is the exception: `console.stinkyboi.com` routes to the
+package-owned `svc-console-octelium` Service so the public URL stays first-level
+and does not require the nested `console.octelium.stinkyboi.com` hostname.
 
 Client VPN traffic uses Octelium Gateway hostnames generated from the cluster
 domain, such as `_gw-*.stinkyboi.com`, not the Istio front-proxy route. After

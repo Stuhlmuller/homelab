@@ -72,11 +72,13 @@ They create:
   `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.
-- Public `WEB` app-hostname Service `console.homelab`, mapping the Enterprise
-  console hostname `https://console.stinkyboi.com` to the Istio gateway so the
-  package-owned `console.octelium` backend is selected without exposing the
-  nested `console.octelium.stinkyboi.com` hostname.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
+
+The Enterprise console hostname `https://console.stinkyboi.com` is not an
+Octelium app catalog Service. The public tunnel forwards it to the Istio
+gateway, and the `octelium-cluster` `VirtualService` routes it to the
+package-owned `console.octelium` backend without exposing the nested
+`console.octelium.stinkyboi.com` hostname.
 
 Each app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
 setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
@@ -189,11 +191,12 @@ The gate verifies:
 - `stinkyboi.com`, `portal.stinkyboi.com`, `octelium-api.stinkyboi.com`, and
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
-- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
-  including `console.homelab`, exists in the Octelium Cluster;
+- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
+  exists in the Octelium Cluster;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
-  over HTTPS through Octelium clientless access without `octelium connect`.
+  over HTTPS without `octelium connect`; the Enterprise console check must not
+  redirect to `console.octelium.stinkyboi.com`.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
 Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api.ci`
@@ -395,9 +398,10 @@ Argo CD manages:
 - `octelium-cluster`, the Istio `VirtualService` that routes
   `stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
   `octelium-api.stinkyboi.com` to
-  `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`, plus the
-  `DestinationRule` that upgrades Istio-to-Octelium upstream traffic to HTTP/2
-  so Octelium CLI gRPC calls keep response trailers.
+  `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`, routes
+  `console.stinkyboi.com` to `svc-console-octelium`, plus the `DestinationRule`
+  that upgrades Istio-to-Octelium upstream traffic to HTTP/2 so Octelium CLI
+  gRPC calls keep response trailers.
 
 The `octelium-cluster` Application deliberately keeps the `VirtualService` in
 `istio-system` and does not manage the `octelium` namespace. The Octelium
