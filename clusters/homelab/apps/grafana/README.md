@@ -129,6 +129,9 @@ The provisioned rules cover:
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
+- Deluge daemon RPC health missing or failing for 5 minutes, using the
+  `deluge_daemon_rpc_healthy` metric from the Deluge metrics sidecar instead of
+  generic Pod readiness.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.

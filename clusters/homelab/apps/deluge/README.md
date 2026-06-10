@@ -54,6 +54,14 @@ blocking the UI service endpoint. The Pod becomes ready only after Gluetun is
 healthy and the Deluge application container is ready, so traffic still fails
 closed when the VPN healthcheck fails.
 
+A `daemon-metrics` sidecar runs `deluge-console -c /config status` every 30
+seconds and exposes the result on the service `metrics` port as Prometheus text
+format. Prometheus scrapes it through
+`clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
+alerts on `deluge_daemon_rpc_healthy` when the daemon RPC check is missing or
+failing. This catches the failure mode where Kubernetes, Argo CD, and Gluetun
+are healthy but `deluged` cannot restore state or accept console connections.
+
 ## Download Paths
 
 Deluge owns the shared `media-downloads` PVC backed by the QNAP `/media` NFS
@@ -168,6 +176,8 @@ kubectl -n media exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config config random_outgoing_ports
 kubectl -n media exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config info
+kubectl -n media exec deploy/deluge -c daemon-metrics -- \
+  python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=5).read().decode(), end="")'
 kubectl -n media exec deploy/deluge -c gluetun -- \
   /gluetun-entrypoint healthcheck
 ```
