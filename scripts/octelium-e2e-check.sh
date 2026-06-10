@@ -116,7 +116,7 @@ REQUIRED_SERVICES="
 kubernetes-api.ci
 argocd
 compass
-console
+console.homelab
 deluge
 grafana
 homelab-demo.homelab
@@ -389,7 +389,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service is missing: ${SERVICE}"
       fi
     done
-    for SERVICE in argocd compass console deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in argocd compass deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public/clientless"
       else
@@ -401,6 +401,11 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not using the non-redirecting Istio HTTPS upstream"
       fi
     done
+    if jq -e '.items[] | select(.metadata.name == "console.homelab" and .spec.mode == "TCP" and .spec.port == 443 and .spec.attrs.appHostname == "console.stinkyboi.com" and .spec.config.upstream.url == "tcp://istio-ingressgateway.istio-system.svc.cluster.local:443")' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service console.homelab maps console.stinkyboi.com to the Istio HTTPS gateway"
+    else
+      fail "Octelium Service console.homelab is not mapped to console.stinkyboi.com through the Istio HTTPS gateway"
+    fi
   else
     if [ -s /tmp/octelium-services.err.$$ ]; then
       fail "octeliumctl could not list services for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-services.err.$$)"
