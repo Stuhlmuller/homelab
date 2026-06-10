@@ -232,6 +232,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
+    argocd.argoproj.io/sync-options: Replace=true
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
@@ -257,6 +258,7 @@ spec:
       octelium.com/component: logstore
       octelium.com/component-type: cluster
   strategy:
+    rollingUpdate: null
     type: Recreate
   template:
     metadata:
@@ -313,6 +315,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
+    argocd.argoproj.io/sync-options: Replace=true
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
@@ -338,6 +341,7 @@ spec:
       octelium.com/component: metricstore
       octelium.com/component-type: cluster
   strategy:
+    rollingUpdate: null
     type: Recreate
   template:
     metadata:
@@ -698,6 +702,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
+    argocd.argoproj.io/sync-options: Replace=true
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
@@ -723,6 +728,7 @@ spec:
       octelium.com/component: rscstore
       octelium.com/component-type: cluster
   strategy:
+    rollingUpdate: null
     type: Recreate
   template:
     metadata:
