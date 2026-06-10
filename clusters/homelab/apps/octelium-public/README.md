@@ -28,6 +28,13 @@ Istio gateway at `https://istio-ingressgateway.istio-system.svc.cluster.local:44
 while setting the matching origin SNI and Host header. Istio then uses the
 existing `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
+The tunnel uses QUIC for the cloudflared-to-Cloudflare transport because
+Octelium `MainService/Connect` is a long-lived gRPC stream; the previous
+forced HTTP/2 tunnel transport repeatedly ended the public API stream with
+Istio `DR http2.remote_reset` after roughly 125 seconds even though unary API
+calls succeeded. The `cloudflared-egress` NetworkPolicy allows UDP/7844 for
+that QUIC tunnel transport, plus TCP/443 and DNS for Cloudflare API and
+resolver access.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
@@ -59,6 +66,13 @@ kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
 scripts/octelium-public-dns.sh --dry-run
+curl -sS --http2 \
+  -H 'content-type: application/grpc' \
+  -H 'te: trailers' \
+  --data-binary '' \
+  -o /dev/null \
+  -D - \
+  https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
 dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://octelium.stinkyboi.com/

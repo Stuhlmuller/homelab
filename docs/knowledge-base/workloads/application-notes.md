@@ -158,6 +158,10 @@ routes through the Istio gateway to the package-owned
 `svc-console-octelium` Service. Keep the public route on
 `console.stinkyboi.com`; the package canonical
 `console.octelium.stinkyboi.com` name is nested and intentionally not exposed.
+The tunnel transport uses QUIC because the public Octelium API carries
+long-lived gRPC `MainService/Connect` streams; forced HTTP/2 transport
+previously reset those streams after about 125 seconds while short API calls
+continued to pass.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
