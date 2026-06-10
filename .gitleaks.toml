@@ -1,0 +1,12 @@
+title = "homelab gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Octelium Enterprise package hash annotation"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''clusters/homelab/apps/octelium-enterprise/resources\.yaml''']
+regexTarget = "line"
+regexes = ['''octelium\.com/secret-manager-config:\s+[0-9a-f]{64}''']

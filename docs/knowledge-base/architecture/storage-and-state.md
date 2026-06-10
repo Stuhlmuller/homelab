@@ -37,9 +37,10 @@ ready, but they must not be treated as production-ready until:
 ## Stateful Apps
 
 The current stateful set includes Prometheus, Grafana, Deluge, media-postgres,
-n8n-postgres, octelium-storage PostgreSQL/Redis, Prowlarr, Radarr, Sonarr,
-LiteLLM, OpenClaw, n8n, and OctoBot. See [[workloads/inventory]] for ownership
-and dependency notes.
+n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium Enterprise package
+stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. See
+[[workloads/inventory]] for ownership and dependency notes.
 
 ## Source Files
 

@@ -1,0 +1,1801 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  name: octeliumee-cloudman
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: cloudman
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: y7tsqdap
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: cloudman
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: ghcr.io/octelium/octeliumee-cloudman:0.22.0@sha256:66cccf10e7fc91ca2979212bad6e56e72f29fab3c88eafdf2e9d8600c7c1669b
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: cloudman
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip7: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip8: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  name: octeliumee-clusterman
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: clusterman
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: pw1iff3d
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: clusterman
+        octelium.com/component-type: cluster
+    spec:
+      containers:
+      - args:
+        - run
+        env:
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-clusterman:0.22.0@sha256:b35f44142b3201a2446ec43a98066e81762c3e9652b5bc2aab6a4fab0d2071c1
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: clusterman
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: octeliumee-nocturne
+      serviceAccountName: octeliumee-nocturne
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  name: octeliumee-collector
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: collector
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: 2fu8x3u3
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: collector
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - env:
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-collector:0.22.0@sha256:e4497f2029c9ed35af8e8652464a332fd04bd8fd133b14cd5922c5ba03ef6382
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: collector
+        resources:
+          limits:
+            cpu: "4"
+            memory: 3000Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: logstore
+    octelium.com/component-type: cluster
+  name: octeliumee-logstore
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: logstore
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: dd5lbezp
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: logstore
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: ghcr.io/octelium/octeliumee-logstore:0.22.0@sha256:4f8cf484cdc0416649efb52ba184465923ef42e8bda280153146316c798e1406
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: logstore
+        resources:
+          limits:
+            cpu: "4"
+            memory: 3000Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /octelium-data
+          name: octelium
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: octelium
+        persistentVolumeClaim:
+          claimName: octelium-logstore
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: metricstore
+    octelium.com/component-type: cluster
+  name: octeliumee-metricstore
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: metricstore
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: saqwr8de
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: metricstore
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: ghcr.io/octelium/octeliumee-metricstore:0.22.0@sha256:d026839d818634aab28850ded68420a4def0752d0f75cc2b816405ef9a49c3ff
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: metricstore
+        resources:
+          limits:
+            cpu: "4"
+            memory: 3000Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /octelium-data
+          name: octelium
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: octelium
+        persistentVolumeClaim:
+          claimName: octelium-metricstore
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip7: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip8: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  name: octeliumee-nocturne
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: nocturne
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: 4mhwn6ji
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: nocturne
+        octelium.com/component-type: cluster
+    spec:
+      containers:
+      - env:
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-nocturne:0.22.0@sha256:102c907933ed10b992d213a7392a60d9eaa1eac589593d153b6662b9e4c4f201
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: nocturne
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: octeliumee-nocturne
+      serviceAccountName: octeliumee-nocturne
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: policyportal
+    octelium.com/component-type: cluster
+  name: octeliumee-policyportal
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: policyportal
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: rhtss5kc
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: policyportal
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: ghcr.io/octelium/octeliumee-policyportal:0.22.0@sha256:fb77c65f2f0fc4dab9c1835a55083633e847683f3380bf24b0d849d4d7740a4a
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: policyportal
+        resources:
+          limits:
+            cpu: "4"
+            memory: 3000Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_35=Upstream package consumes database SecretRefs as environment variables; secret values are not committed.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: rscserver
+    octelium.com/component-type: cluster
+  name: octeliumee-rscserver
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: rscserver
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: wywq4cig
+        octelium.com/secret-manager-config: 0110977f8e6ce3bad5fb302311003c49f5d82c32263bd45211e189498dee808a
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: rscserver
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - env:
+        - name: OCTELIUM_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgres-password
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              key: host
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_PORT
+          valueFrom:
+            secretKeyRef:
+              key: port
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_NOSSL
+          valueFrom:
+            secretKeyRef:
+              key: no_ssl
+              name: octelium-postgres
+        - name: OCTELIUM_REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: octelium-redis
+        - name: OCTELIUM_REDIS_HOST
+          valueFrom:
+            secretKeyRef:
+              key: host
+              name: octelium-redis
+        - name: OCTELIUM_REDIS_PORT
+          valueFrom:
+            secretKeyRef:
+              key: port
+              name: octelium-redis
+        - name: OCTELIUM_REDIS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: octelium-redis
+        - name: OCTELIUM_REDIS_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database
+              name: octelium-redis
+        - name: OCTELIUM_REDIS_USE_TLS
+          valueFrom:
+            secretKeyRef:
+              key: use_tls
+              name: octelium-redis
+        image: ghcr.io/octelium/octeliumee-rscserver:0.22.0@sha256:7021192b770ae6edf97e7ea4ed09da3f42708869765ea4818f001185de9f1447
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: rscserver
+        readinessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 5
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 4
+        resources:
+          limits:
+            cpu: 1500m
+            memory: 1200Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip7: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: rscstore
+    octelium.com/component-type: cluster
+  name: octeliumee-rscstore
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: rscstore
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: 0zmbr0ms
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: rscstore
+        octelium.com/component-type: cluster
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - image: ghcr.io/octelium/octeliumee-rscstore:0.22.0@sha256:c7d56cc2cc56422f051be8176e7f3220523e9ff1249dbd711e633542ed82e358
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: rscstore
+        resources:
+          limits:
+            cpu: "4"
+            memory: 3000Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /octelium-data
+          name: octelium
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: octelium
+        persistentVolumeClaim:
+          claimName: octelium-rscstore
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_13=Secretman resource sizing follows upstream package defaults for this adoption pass.
+    checkov.io/skip4: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip5: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip6: CKV_K8S_35=Upstream package consumes database SecretRefs as environment variables; secret values are not committed.
+    checkov.io/skip7: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip8: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip9: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip10: CKV_K8S_11=Secretman resource sizing follows upstream package defaults for this adoption pass.
+    checkov.io/skip11: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+  name: octeliumee-secretman
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/app: octeliumee
+      octelium.com/component: secretman
+      octelium.com/component-type: cluster
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        octelium.com/install-uid: b199nqyj
+      labels:
+        app: octelium
+        octelium.com/app: octeliumee
+        octelium.com/component: secretman
+        octelium.com/component-type: cluster
+    spec:
+      containers:
+      - env:
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        - name: OCTELIUM_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              key: username
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgres-password
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              key: host
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_PORT
+          valueFrom:
+            secretKeyRef:
+              key: port
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database
+              name: octelium-postgres
+        - name: OCTELIUM_POSTGRES_NOSSL
+          valueFrom:
+            secretKeyRef:
+              key: no_ssl
+              name: octelium-postgres
+        # checkov:skip=CKV_SECRET_6: Image digest pin, not secret material.
+        image: ghcr.io/octelium/octeliumee-secretman:0.22.0@sha256:e863e39c0234cd8ee1e69bcc220230d0abb9ea8ff24aa91cccf9444938a32a2f
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49090
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: secretman
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /octelium-kek
+          name: sys-init-kek
+          readOnly: true
+          subPath: data
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: octeliumee-secretman
+      serviceAccountName: octeliumee-secretman
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: sys-init-kek
+        secret:
+          defaultMode: 420
+          secretName: sys-init-kek
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_25=Service proxy containers use upstream NET_BIND_SERVICE behavior for Octelium managed services.
+    checkov.io/skip7: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip8: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip9: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+    octelium.com/last-upgrade: "2026-06-10T03:25:05.408927042Z"
+  name: svc-console-octelium
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: octelium
+      octelium.com/svc: console.octelium
+      octelium.com/svc-uid: d023f510-6c9e-44c9-9197-85aacd554952
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: octelium/octelium
+        octelium.com/svc-deployment-id: 038901be4febfc3a603fc3fa0d6b8f44af2d1abd5eb66037d27f22123b2b7441
+        octelium.com/svc-upgrade-uid: ""
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: octelium
+        octelium.com/svc: console.octelium
+        octelium.com/svc-uid: d023f510-6c9e-44c9-9197-85aacd554952
+    spec:
+      containers:
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: d023f510-6c9e-44c9-9197-85aacd554952
+        - name: OCTELIUM_SVC_NAME
+          value: console.octelium
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        - name: OCTELIUM_POD_UID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: OCTELIUM_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49094
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: vigil
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: d023f510-6c9e-44c9-9197-85aacd554952
+        - name: OCTELIUM_SVC_NAME
+          value: console.octelium
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49095
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: managed
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-dataplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_unprivileged_port_start
+          value: "1"
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_25=Service proxy containers use upstream NET_BIND_SERVICE behavior for Octelium managed services.
+    checkov.io/skip7: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip8: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip9: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+    octelium.com/last-upgrade: "2026-06-10T03:25:02.477780723Z"
+  name: svc-dirsync-octelium
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: octelium
+      octelium.com/svc: dirsync.octelium
+      octelium.com/svc-uid: d5e629bd-fffc-47e1-b2a8-f01db2f011c4
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: octelium/octelium
+        octelium.com/svc-deployment-id: 3b45e66aa024a1fba0cc35e45f8d1478a2d66e6de46983e1ec07dcfee0fb12a3
+        octelium.com/svc-upgrade-uid: ""
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: octelium
+        octelium.com/svc: dirsync.octelium
+        octelium.com/svc-uid: d5e629bd-fffc-47e1-b2a8-f01db2f011c4
+    spec:
+      containers:
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: d5e629bd-fffc-47e1-b2a8-f01db2f011c4
+        - name: OCTELIUM_SVC_NAME
+          value: dirsync.octelium
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        - name: OCTELIUM_POD_UID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: OCTELIUM_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49094
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: vigil
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: d5e629bd-fffc-47e1-b2a8-f01db2f011c4
+        - name: OCTELIUM_SVC_NAME
+          value: dirsync.octelium
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-dirsync:0.22.0@sha256:20946aba4ccf6a22d8f9e28a92db054fd70a31609f737843b6d9852a7ccac4b0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49095
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: managed
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-dataplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_unprivileged_port_start
+          value: "1"
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_25=Service proxy containers use upstream NET_BIND_SERVICE behavior for Octelium managed services.
+    checkov.io/skip7: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip8: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip9: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+    octelium.com/last-upgrade: "2026-06-10T03:25:05.442105927Z"
+  name: svc-enterprise-octelium-api
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: octelium-api
+      octelium.com/svc: enterprise.octelium-api
+      octelium.com/svc-uid: d907e880-e823-43b5-9089-fb08d9ccaa64
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: octelium/octelium
+        octelium.com/svc-deployment-id: c410d02063f7e27e0d176a0d66999d7f9cb34f08fee203a8776d04b339625ab3
+        octelium.com/svc-upgrade-uid: ""
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: octelium-api
+        octelium.com/svc: enterprise.octelium-api
+        octelium.com/svc-uid: d907e880-e823-43b5-9089-fb08d9ccaa64
+    spec:
+      containers:
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: d907e880-e823-43b5-9089-fb08d9ccaa64
+        - name: OCTELIUM_SVC_NAME
+          value: enterprise.octelium-api
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        - name: OCTELIUM_POD_UID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: OCTELIUM_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49094
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: vigil
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: d907e880-e823-43b5-9089-fb08d9ccaa64
+        - name: OCTELIUM_SVC_NAME
+          value: enterprise.octelium-api
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-apiserver:0.22.0@sha256:7f05db4fd9b463c134c90e076ec8cd8698c35bb4efc3d7a638a1f73aff15ff94
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49095
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: managed
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-dataplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_unprivileged_port_start
+          value: "1"
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
+    checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
+    checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
+    checkov.io/skip4: CKV_K8S_9=Enterprise components use package-provided gRPC liveness and rollout health as readiness signals.
+    checkov.io/skip5: CKV_K8S_28=Adopts upstream Octelium Enterprise package capability defaults until package-validated hardening is available.
+    checkov.io/skip6: CKV_K8S_25=Service proxy containers use upstream NET_BIND_SERVICE behavior for Octelium managed services.
+    checkov.io/skip7: CKV_K8S_38=Enterprise components with ServiceAccounts use upstream Octelium package token behavior.
+    checkov.io/skip8: CKV_K8S_23=Adopts upstream Octelium Enterprise package root behavior until image users are validated.
+    checkov.io/skip9: CKV2_K8S_6=Octelium Enterprise traffic is governed by the Octelium cluster dataplane and documented service model.
+    octelium.com/last-upgrade: "2026-06-10T03:25:05.473481474Z"
+  name: svc-public-octelium
+  namespace: octelium
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: octelium
+      octelium.com/svc: public.octelium
+      octelium.com/svc-uid: 22abfe04-ea60-433f-b32e-94538ad499bf
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        k8s.v1.cni.cncf.io/networks: octelium/octelium
+        octelium.com/svc-deployment-id: 3b45e66aa024a1fba0cc35e45f8d1478a2d66e6de46983e1ec07dcfee0fb12a3
+        octelium.com/svc-upgrade-uid: ""
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: octelium
+        octelium.com/svc: public.octelium
+        octelium.com/svc-uid: 22abfe04-ea60-433f-b32e-94538ad499bf
+    spec:
+      containers:
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: 22abfe04-ea60-433f-b32e-94538ad499bf
+        - name: OCTELIUM_SVC_NAME
+          value: public.octelium
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        - name: OCTELIUM_POD_UID
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.uid
+        - name: OCTELIUM_POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49094
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: vigil
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      - env:
+        - name: OCTELIUM_SVC_UID
+          value: 22abfe04-ea60-433f-b32e-94538ad499bf
+        - name: OCTELIUM_SVC_NAME
+          value: public.octelium
+        - name: OCTELIUM_REGION_NAME
+          value: default
+        - name: OCTELIUM_REGION_UID
+          value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+        image: ghcr.io/octelium/octeliumee-publicserver:0.22.0@sha256:096c5fdc761e6663f9a52b976056d03e1d0fdb287ad971596c6f66dccc57aa38
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          grpc:
+            port: 49095
+            service: ""
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 4
+        name: managed
+        resources:
+          limits:
+            cpu: 1200m
+            memory: 700Mi
+          requests:
+            cpu: 10m
+            memory: 5Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+          privileged: false
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        octelium.com/node-mode-dataplane: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        sysctls:
+        - name: net.ipv4.ip_unprivileged_port_start
+          value: "1"
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: collector
+    octelium.com/component-type: cluster
+  name: octelium-collector
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: collector
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: logstore
+    octelium.com/component-type: cluster
+  name: octeliumee-logstore
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: logstore
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: metricstore
+    octelium.com/component-type: cluster
+  name: octeliumee-metricstore
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: metricstore
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: policyportal
+    octelium.com/component-type: cluster
+  name: octeliumee-policyportal
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: policyportal
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: rscserver
+    octelium.com/component-type: cluster
+  name: octeliumee-rscserver
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: rscserver
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: rscstore
+    octelium.com/component-type: cluster
+  name: octeliumee-rscstore
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: rscstore
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: secretman
+    octelium.com/component-type: cluster
+  name: octeliumee-secretman
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/app: octeliumee
+    octelium.com/component: secretman
+    octelium.com/component-type: cluster
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-console-octelium
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: octelium
+    octelium.com/svc: console.octelium
+    octelium.com/svc-uid: d023f510-6c9e-44c9-9197-85aacd554952
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-dirsync-octelium
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: octelium
+    octelium.com/svc: dirsync.octelium
+    octelium.com/svc-uid: d5e629bd-fffc-47e1-b2a8-f01db2f011c4
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-enterprise-octelium-api
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: octelium-api
+    octelium.com/svc: enterprise.octelium-api
+    octelium.com/svc-uid: d907e880-e823-43b5-9089-fb08d9ccaa64
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-public-octelium
+  namespace: octelium
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: octelium
+    octelium.com/svc: public.octelium
+    octelium.com/svc-uid: 22abfe04-ea60-433f-b32e-94538ad499bf
+  type: ClusterIP
+---
+apiVersion: v1
+data:
+  uid: d023f510-6c9e-44c9-9197-85aacd554952
+kind: ConfigMap
+metadata:
+  name: svc-console-octelium
+  namespace: octelium
+---
+apiVersion: v1
+data:
+  uid: d5e629bd-fffc-47e1-b2a8-f01db2f011c4
+kind: ConfigMap
+metadata:
+  name: svc-dirsync-octelium
+  namespace: octelium
+---
+apiVersion: v1
+data:
+  uid: d907e880-e823-43b5-9089-fb08d9ccaa64
+kind: ConfigMap
+metadata:
+  name: svc-enterprise-octelium-api
+  namespace: octelium
+---
+apiVersion: v1
+data:
+  uid: 22abfe04-ea60-433f-b32e-94538ad499bf
+kind: ConfigMap
+metadata:
+  name: svc-public-octelium
+  namespace: octelium
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: octeliumee-nocturne
+  namespace: octelium
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: octeliumee-secretman
+  namespace: octelium
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+  name: octelium-logstore
+  namespace: octelium
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5000Mi
+  storageClassName: nfs-default
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+  name: octelium-metricstore
+  namespace: octelium
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5000Mi
+  storageClassName: nfs-default
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false
+  name: octelium-rscstore
+  namespace: octelium
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5000Mi
+  storageClassName: nfs-default

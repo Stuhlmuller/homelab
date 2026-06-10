@@ -303,6 +303,22 @@ The upstream Enterprise README requires `octops` `v0.29.0` or later and an
 existing Octelium Cluster. Commercial or production use requires an Enterprise
 license; license material must stay outside git.
 
+Live homelab state: `octeliumee` `0.22.0` was installed on 2026-06-10 UTC with
+`scripts/octelium-enterprise-package.sh`. The package creates `octeliumee-*`
+Deployments plus Octelium Services such as `console.octelium`,
+`enterprise.octelium-api`, `public.octelium`, and `dirsync.octelium`. It also
+provisions `octelium-rscstore`, `octelium-logstore`, and
+`octelium-metricstore` PVCs on `nfs-default`; preserve or back up those PVCs
+before removing or reinstalling the Enterprise package.
+
+The Kubernetes steady state for those Enterprise resources is now committed in
+`clusters/homelab/apps/octelium-enterprise` and registered by
+`IaC/live/argocd-apps/octelium-enterprise`. The Argo CD Application adopts the
+package Deployments, Services, ConfigMaps, ServiceAccounts, and PVC
+declarations after the initial `octops` package install. Generated Secrets such
+as `sys-init-kek`, database credentials, license material, and kubeconfigs stay
+outside git.
+
 The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
 client use `octelium-api.stinkyboi.com`. The Istio and Cloudflare edge
 certificates only need apex plus first-level `*.stinkyboi.com` coverage.
@@ -327,6 +343,11 @@ scripts/octelium-enterprise-package.sh \
 
 Use `--kubeconfig <path>` when the Octelium Cluster kubeconfig is not the
 default kubeconfig for the operator shell.
+
+After install or upgrade, refresh the GitOps capture in
+`clusters/homelab/apps/octelium-enterprise/resources.yaml`, keep images pinned
+as `tag@sha256:digest`, and sync the `octelium-enterprise` Argo CD
+Application.
 
 ## Full Cluster Bootstrap
 
