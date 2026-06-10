@@ -150,9 +150,12 @@ named tunnel credentials JSON and UUID from
 `/homelab/octelium/cloudflare-tunnel-id`, and forwards only
 `stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`,
 `octelium-api.stinkyboi.com`, and app hostnames such as
-`grafana.stinkyboi.com`. Control-plane hostnames route through the in-cluster
-Istio gateway; app hostnames route directly to the Octelium ingress dataplane
-so Octelium can select the matching public `WEB` Service.
+`grafana.stinkyboi.com` and `console.stinkyboi.com`. Control-plane hostnames
+route through the in-cluster Istio gateway; app hostnames route directly to the
+Octelium ingress dataplane so Octelium can select the matching public `WEB`
+Service. The Enterprise console keeps that clientless browser entry point but
+uses Istio as the backend router to the package-owned `svc-console-octelium`
+Service.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at

@@ -11,9 +11,18 @@ spec:
     - octelium.stinkyboi.com
     - portal.stinkyboi.com
     - octelium-api.stinkyboi.com
+    - console.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
   http:
+    - match:
+        - authority:
+            exact: console.stinkyboi.com
+      route:
+        - destination:
+            host: svc-console-octelium.octelium.svc.cluster.local
+            port:
+              number: 8080
     - match:
         - authority:
             exact: octelium.stinkyboi.com

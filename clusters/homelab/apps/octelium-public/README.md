@@ -8,8 +8,9 @@ outside the tailnet:
 - `octelium.stinkyboi.com`
 - `portal.stinkyboi.com`
 - `octelium-api.stinkyboi.com`
-- `argocd.stinkyboi.com`, `grafana.stinkyboi.com`, and the other app FQDNs
-  declared in `docs/examples/octelium/homelab-services.yaml`
+- `argocd.stinkyboi.com`, `console.stinkyboi.com`,
+  `grafana.stinkyboi.com`, and the other app FQDNs declared in
+  `docs/examples/octelium/homelab-services.yaml`
 
 ## Secret Contract
 
@@ -32,6 +33,10 @@ App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
 original Host headers. Octelium uses that public FQDN to select the matching
 `WEB` Service, enforce login, and then proxy to the existing Istio app route.
+The Enterprise console follows the same browser path: `console.stinkyboi.com`
+enters the Octelium clientless dataplane, then the catalog Service proxies to
+Istio, where `octelium-cluster` routes the backend request to
+`svc-console-octelium`.
 
 The Cloudflare DNS records for the public hostnames and app hostnames must be
 exact proxied CNAMEs to the named tunnel target,
