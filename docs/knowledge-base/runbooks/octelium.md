@@ -104,6 +104,15 @@ the package-adopted rolling-update field. Omit `rollingUpdate`; an explicit
 `rollingUpdate: null` can compare differently from the live object's absent
 field.
 
+The generated Enterprise service-proxy Deployments `svc-console-octelium`,
+`svc-dirsync-octelium`, `svc-enterprise-octelium-api`, and
+`svc-public-octelium` keep digest-pinned images in the committed package
+capture, but the Octelium controller normalizes live `vigil` and `managed`
+container images back to tag-only references. The `octelium-enterprise` Argo CD
+Application ignores exactly those image fields with
+`RespectIgnoreDifferences=true` so automated self-heal does not fight the
+controller-owned values.
+
 The Octelium Cluster domain is `stinkyboi.com`, which makes the client contact
 `octelium-api.stinkyboi.com`. `octelium.stinkyboi.com` is a public alias for
 the Octelium control plane, not the CLI domain. This keeps the public API and
@@ -128,8 +137,9 @@ access to the Octelium Cluster. Keep commercial or production license material
 outside git; add only safe references or secret contracts here.
 After install or upgrade, refresh the GitOps capture, keep all images pinned as
 `tag@sha256:digest`, preserve `Recreate` and resource-level `Replace=true` on
-the three store Deployments, omit `rollingUpdate`, and sync the
-`octelium-enterprise` Argo CD Application.
+the three store Deployments, omit `rollingUpdate`, preserve the generated
+service-proxy image ignore rule, and sync the `octelium-enterprise` Argo CD
+Application.
 
 ## Bootstrap Access
 

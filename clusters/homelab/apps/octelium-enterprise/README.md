@@ -37,14 +37,24 @@ that replacement clears the package-adopted rolling-update field from live
 Deployments. Do not keep an explicit `rollingUpdate: null` field because it can
 compare differently from the live object's absent field.
 
+The `svc-console-octelium`, `svc-dirsync-octelium`,
+`svc-enterprise-octelium-api`, and `svc-public-octelium` Deployments are
+generated service proxies. The committed package capture keeps their images
+pinned as `tag@sha256:digest`, but the Octelium controller normalizes those
+live Deployments back to tag-only image references. The Argo CD Application
+therefore ignores only the `vigil` and `managed` container image fields on
+those four Deployments and uses `RespectIgnoreDifferences=true` so self-heal
+does not fight the controller-owned values.
+
 ## Updating
 
 Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
 images as `tag@sha256:digest`, preserve `Recreate` and resource-level
-`Replace=true` on the three store Deployments, omit `rollingUpdate`, and re-run
-validation.
+`Replace=true` on the three store Deployments, omit `rollingUpdate`, preserve
+the Argo image ignore rule for the four generated service proxy Deployments,
+and re-run validation.
 
 ## Validation
 
