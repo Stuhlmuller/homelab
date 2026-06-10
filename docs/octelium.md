@@ -323,11 +323,11 @@ The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments use `Recreate` because each store opens a
 DuckDB-backed `store.db` on its PVC. Do not change those workloads back to
 rolling updates unless the package moves to a multi-writer-safe storage model.
-Keep `rollingUpdate: null` in the desired state for those Deployments because
-the Application uses server-side apply and must clear the rolling-update field
-from the package-adopted live objects. Also keep resource-level
-`argocd.argoproj.io/sync-options: Replace=true` on those Deployments so Argo
-uses replace semantics for the strategy handoff.
+Keep resource-level `argocd.argoproj.io/sync-options: Replace=true` on those
+Deployments so Argo uses replace semantics for the strategy handoff and clears
+the package-adopted rolling-update field. Omit `rollingUpdate`; an explicit
+`rollingUpdate: null` can compare differently from the live object's absent
+field.
 
 The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
 client use `octelium-api.stinkyboi.com`. The Istio and Cloudflare edge
@@ -356,8 +356,8 @@ default kubeconfig for the operator shell.
 
 After install or upgrade, refresh the GitOps capture in
 `clusters/homelab/apps/octelium-enterprise/resources.yaml`, keep images pinned
-as `tag@sha256:digest`, preserve `Recreate`, `rollingUpdate: null`, and
-resource-level `Replace=true` on the three store Deployments, and sync the
+as `tag@sha256:digest`, preserve `Recreate` and resource-level `Replace=true`
+on the three store Deployments, omit `rollingUpdate`, and sync the
 `octelium-enterprise` Argo CD Application.
 
 ## Full Cluster Bootstrap

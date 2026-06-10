@@ -258,7 +258,6 @@ spec:
       octelium.com/component: logstore
       octelium.com/component-type: cluster
   strategy:
-    rollingUpdate: null
     type: Recreate
   template:
     metadata:
@@ -341,7 +340,6 @@ spec:
       octelium.com/component: metricstore
       octelium.com/component-type: cluster
   strategy:
-    rollingUpdate: null
     type: Recreate
   template:
     metadata:
@@ -728,7 +726,6 @@ spec:
       octelium.com/component: rscstore
       octelium.com/component-type: cluster
   strategy:
-    rollingUpdate: null
     type: Recreate
   template:
     metadata:
