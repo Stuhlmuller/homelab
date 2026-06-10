@@ -30,19 +30,20 @@ The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments intentionally use `Recreate` instead of a
 rolling update. Each process opens a DuckDB-backed `store.db` on its PVC, so a
 second pod against the same volume can fail on the single-writer lock while the
-old pod is still terminating. Keep `rollingUpdate: null` on those strategies;
-the Application uses server-side apply, and the explicit null clears the
-package-adopted rolling-update field from live Deployments. The resource-level
+old pod is still terminating. The resource-level
 `argocd.argoproj.io/sync-options: Replace=true` annotation makes Argo replace
-those adopted Deployments instead of server-side applying the strategy change.
+those adopted Deployments instead of server-side applying the strategy change;
+that replacement clears the package-adopted rolling-update field from live
+Deployments. Do not keep an explicit `rollingUpdate: null` field because it can
+compare differently from the live object's absent field.
 
 ## Updating
 
 Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
-images as `tag@sha256:digest`, preserve `Recreate`, `rollingUpdate: null`, and
-resource-level `Replace=true` on the three store Deployments, and re-run
+images as `tag@sha256:digest`, preserve `Recreate` and resource-level
+`Replace=true` on the three store Deployments, omit `rollingUpdate`, and re-run
 validation.
 
 ## Validation
