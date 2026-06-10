@@ -51,7 +51,8 @@ inputs = {
     }
     sync_options = [
       "CreateNamespace=false",
-      "ServerSideApply=true"
+      "ServerSideApply=true",
+      "RespectIgnoreDifferences=true"
     ]
     retry = {
       limit = "5"
@@ -62,6 +63,45 @@ inputs = {
       }
     }
   }
+
+  ignore_differences = [
+    {
+      group     = "apps"
+      kind      = "Deployment"
+      name      = "svc-console-octelium"
+      namespace = "octelium"
+      jq_path_expressions = [
+        ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+      ]
+    },
+    {
+      group     = "apps"
+      kind      = "Deployment"
+      name      = "svc-dirsync-octelium"
+      namespace = "octelium"
+      jq_path_expressions = [
+        ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+      ]
+    },
+    {
+      group     = "apps"
+      kind      = "Deployment"
+      name      = "svc-enterprise-octelium-api"
+      namespace = "octelium"
+      jq_path_expressions = [
+        ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+      ]
+    },
+    {
+      group     = "apps"
+      kind      = "Deployment"
+      name      = "svc-public-octelium"
+      namespace = "octelium"
+      jq_path_expressions = [
+        ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+      ]
+    }
+  ]
 
   info = [
     {

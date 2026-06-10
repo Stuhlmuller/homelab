@@ -166,7 +166,11 @@ coverage, with `octelium.stinkyboi.com` as an alias. The Enterprise log,
 metric, and resource store Deployments use `Recreate` because their DuckDB
 files on PVCs are single-writer stores; keep resource-level `Replace=true` and
 omit `rollingUpdate` so Argo can clear the adopted rolling-update field without
-a null-vs-absent diff loop.
+a null-vs-absent diff loop. The generated Enterprise service-proxy Deployments
+keep digest-pinned images in the Git package capture, but the Octelium
+controller normalizes live `vigil` and `managed` container images back to tags;
+the Argo CD Application ignores only those image fields with
+`RespectIgnoreDifferences=true`.
 
 Before changing app transport, run `scripts/octelium-e2e-check.sh` and confirm
 the service catalog plus direct HTTPS probes for the existing
