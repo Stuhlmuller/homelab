@@ -92,7 +92,7 @@ controllers:
           VPN_TYPE: wireguard
           FIREWALL: "on"
           FIREWALL_INPUT_PORTS: "8112"
-          FIREWALL_VPN_INPUT_PORTS: &delugeIncomingPort "5983"
+          FIREWALL_VPN_INPUT_PORTS: "5983"
           HEALTH_RESTART_VPN: "on"
         securityContext:
           allowPrivilegeEscalation: false
@@ -149,7 +149,7 @@ controllers:
           repository: lscr.io/linuxserver/deluge
           tag: 18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9
         env:
-          DELUGE_INCOMING_PORT: *delugeIncomingPort
+          DELUGE_INCOMING_PORT: "5983"
         command:
           - /bin/sh
           - -ec
