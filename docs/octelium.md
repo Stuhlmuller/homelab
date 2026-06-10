@@ -68,10 +68,11 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
-  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
+- Public `WEB` Services `argocd`, `compass`, `console`, `deluge`, `grafana`,
+  `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
-  such as `https://grafana.stinkyboi.com`.
+  such as `https://grafana.stinkyboi.com` and the Enterprise console hostname
+  `https://console.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 Each app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
@@ -185,8 +186,8 @@ The gate verifies:
 - `stinkyboi.com`, `portal.stinkyboi.com`, `octelium-api.stinkyboi.com`, and
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
-- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
-  exists in the Octelium Cluster;
+- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
+  including the Enterprise console service, exists in the Octelium Cluster;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS through Octelium clientless access without `octelium connect`.
@@ -286,8 +287,9 @@ scripts/octelium-public-dns.sh
 
 The gateway reconciler prevents `_gw-*` names from falling through to stale
 wildcard records. The public DNS reconciler creates exact proxied CNAME records
-for `stinkyboi.com`, Octelium API/portal aliases, and the app hostnames such as
-`grafana.stinkyboi.com`, all pointing at the named Cloudflare Tunnel target.
+for `stinkyboi.com`, Octelium API/portal aliases, `console.stinkyboi.com`, and
+the app hostnames such as `grafana.stinkyboi.com`, all pointing at the named
+Cloudflare Tunnel target.
 
 ## Octelium Enterprise Package
 

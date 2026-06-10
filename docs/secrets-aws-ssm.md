@@ -184,8 +184,9 @@ The public Octelium control plane uses a Cloudflare Tunnel connector in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and the tunnel UUID in
 `/homelab/octelium/cloudflare-tunnel-id`, then run
 `scripts/octelium-public-dns.sh` to route `stinkyboi.com`,
-`octelium.stinkyboi.com`, `portal.stinkyboi.com`, and
-`octelium-api.stinkyboi.com`
+`octelium.stinkyboi.com`, `portal.stinkyboi.com`,
+`octelium-api.stinkyboi.com`, `console.stinkyboi.com`, and the committed app
+hostnames
 through proxied CNAME records to the tunnel target
 `<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
 API token outside git. Cloudflare edge TLS uses the apex plus first-level
