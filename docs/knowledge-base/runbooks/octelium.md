@@ -152,10 +152,12 @@ Control-plane hostnames forward through the existing Istio `octelium-cluster`
 route; app hostnames forward directly to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080` so Octelium can
 route by public FQDN and enforce clientless login. The Enterprise console then
-proxies back to the Istio gateway and the `octelium-cluster` `VirtualService`
-routes `console.stinkyboi.com` to the package-owned
-`svc-console-octelium` Service. The Cloudflare Tunnel credentials JSON and UUID
-live outside git in
+uses the `console.homelab` app-hostname Service, proxies back to the Istio
+gateway, and the `octelium-cluster` `VirtualService` routes
+`console.stinkyboi.com` to the package-owned `svc-console-octelium` Service.
+Do not expose `console.octelium.stinkyboi.com`; that is the package canonical
+nested hostname and is outside the public certificate/DNS shape. The Cloudflare
+Tunnel credentials JSON and UUID live outside git in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`; both are rendered by the
 `octelium-public-cloudflared-credentials` ExternalSecret. After those SSM values

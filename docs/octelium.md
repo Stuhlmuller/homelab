@@ -68,11 +68,14 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `argocd`, `compass`, `console`, `deluge`, `grafana`,
-  `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
+- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
+  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
-  such as `https://grafana.stinkyboi.com` and the Enterprise console hostname
-  `https://console.stinkyboi.com`.
+  such as `https://grafana.stinkyboi.com`.
+- TCP app-hostname Service `console.homelab`, mapping the Enterprise console
+  hostname `https://console.stinkyboi.com` to the Istio gateway so the
+  package-owned `console.octelium` backend is selected without exposing the
+  nested `console.octelium.stinkyboi.com` hostname.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 Each app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
@@ -187,7 +190,7 @@ The gate verifies:
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
 - every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
-  including the Enterprise console service, exists in the Octelium Cluster;
+  including `console.homelab`, exists in the Octelium Cluster;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS through Octelium clientless access without `octelium connect`.

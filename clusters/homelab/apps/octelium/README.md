@@ -42,11 +42,12 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `argocd`, `compass`, `console`, `deluge`, `grafana`,
-  `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
+- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
+  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`, whose public FQDNs are the existing app hostnames
-  such as `https://grafana.stinkyboi.com` and the Enterprise console hostname
-  `https://console.stinkyboi.com`.
+  such as `https://grafana.stinkyboi.com`.
+- TCP app-hostname Service `console.homelab`, whose public FQDN is the
+  Enterprise console hostname `https://console.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 Each app `WEB` Service forwards over HTTPS to the in-cluster Istio gateway
