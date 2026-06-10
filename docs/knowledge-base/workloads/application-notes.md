@@ -153,10 +153,10 @@ named tunnel credentials JSON and UUID from
 `grafana.stinkyboi.com` and `console.stinkyboi.com`. Control-plane hostnames
 route through the in-cluster Istio gateway; app hostnames route directly to the
 Octelium ingress dataplane so Octelium can select the matching public `WEB`
-Service. The Enterprise console uses public WEB Service `console.homelab` with
-`spec.attrs.appHostname=console.stinkyboi.com`, then Istio routes the backend
-request to the package-owned `svc-console-octelium` Service. Keep the public
-route on `console.stinkyboi.com`; the package canonical
+Service. The Enterprise console is the exception: `console.stinkyboi.com`
+routes through the Istio gateway to the package-owned
+`svc-console-octelium` Service. Keep the public route on
+`console.stinkyboi.com`; the package canonical
 `console.octelium.stinkyboi.com` name is nested and intentionally not exposed.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.

@@ -116,7 +116,6 @@ REQUIRED_SERVICES="
 kubernetes-api.ci
 argocd
 compass
-console.homelab
 deluge
 grafana
 homelab-demo.homelab
@@ -401,11 +400,6 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not using the non-redirecting Istio HTTPS upstream"
       fi
     done
-    if jq -e '.items[] | select(.metadata.name == "console.homelab" and .spec.mode == "WEB" and .spec.isPublic == true and .spec.port == 80 and .spec.authorization.policies[]? == "homelab-human-web-access" and .spec.attrs.appHostname == "console.stinkyboi.com" and .spec.config.upstream.url == "https://istio-ingressgateway.istio-system.svc.cluster.local:443" and .spec.config.tls.insecureSkipVerify == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-      pass "Octelium Service console.homelab maps console.stinkyboi.com through public/clientless WEB access"
-    else
-      fail "Octelium Service console.homelab is not mapped to console.stinkyboi.com through public/clientless WEB access"
-    fi
   else
     if [ -s /tmp/octelium-services.err.$$ ]; then
       fail "octeliumctl could not list services for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-services.err.$$)"
@@ -418,7 +412,7 @@ else
 fi
 rm -f /tmp/octelium-services.$$ /tmp/octelium-services.err.$$
 
-note "Checking app hostnames through Octelium clientless WEB access"
+note "Checking public app and Enterprise console hostnames"
 while read -r HOST; do
     [ -n "${HOST}" ] || continue
     HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-app-headers.XXXXXX")"
@@ -464,10 +458,10 @@ while read -r HOST; do
 
     case "${HTTP_CODE}" in
       200|204|301|302|307|308|401|403|405)
-        pass "https://${HOST}${TEST_PATH} responded through public Octelium clientless path with HTTP ${HTTP_CODE}"
+        pass "https://${HOST}${TEST_PATH} responded through the public access path with HTTP ${HTTP_CODE}"
         ;;
       404)
-        fail "https://${HOST}${TEST_PATH} returned HTTP 404; Octelium did not route this public app hostname"
+        fail "https://${HOST}${TEST_PATH} returned HTTP 404; the public access route did not match this hostname"
         ;;
       000|"")
         fail "https://${HOST}${TEST_PATH} did not respond publicly; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
