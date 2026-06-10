@@ -257,10 +257,7 @@ spec:
       octelium.com/component: logstore
       octelium.com/component-type: cluster
   strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+    type: Recreate
   template:
     metadata:
       annotations:
@@ -341,10 +338,7 @@ spec:
       octelium.com/component: metricstore
       octelium.com/component-type: cluster
   strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+    type: Recreate
   template:
     metadata:
       annotations:
@@ -729,10 +723,7 @@ spec:
       octelium.com/component: rscstore
       octelium.com/component-type: cluster
   strategy:
-    rollingUpdate:
-      maxSurge: 25%
-      maxUnavailable: 25%
-    type: RollingUpdate
+    type: Recreate
   template:
     metadata:
       annotations:
