@@ -164,7 +164,9 @@ domain is `stinkyboi.com`, so clients contact `octelium-api.stinkyboi.com`;
 certificate and bootstrap routing use apex plus first-level `*.stinkyboi.com`
 coverage, with `octelium.stinkyboi.com` as an alias. The Enterprise log,
 metric, and resource store Deployments use `Recreate` because their DuckDB
-files on PVCs are single-writer stores.
+files on PVCs are single-writer stores; keep `rollingUpdate: null` on those
+strategies and resource-level `Replace=true` so Argo can clear the adopted
+rolling-update field.
 
 Before changing app transport, run `scripts/octelium-e2e-check.sh` and confirm
 the service catalog plus direct HTTPS probes for the existing
