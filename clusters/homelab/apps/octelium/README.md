@@ -46,8 +46,8 @@ The Octelium resource catalog for the external Octelium Cluster is
   `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`, whose public FQDNs are the existing app hostnames
   such as `https://grafana.stinkyboi.com`.
-- TCP app-hostname Service `console.homelab`, whose public FQDN is the
-  Enterprise console hostname `https://console.stinkyboi.com`.
+- Public `WEB` app-hostname Service `console.homelab`, whose public FQDN is
+  the Enterprise console hostname `https://console.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 Each app `WEB` Service forwards over HTTPS to the in-cluster Istio gateway

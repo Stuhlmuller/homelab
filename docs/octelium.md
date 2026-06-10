@@ -72,8 +72,8 @@ They create:
   `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.
-- TCP app-hostname Service `console.homelab`, mapping the Enterprise console
-  hostname `https://console.stinkyboi.com` to the Istio gateway so the
+- Public `WEB` app-hostname Service `console.homelab`, mapping the Enterprise
+  console hostname `https://console.stinkyboi.com` to the Istio gateway so the
   package-owned `console.octelium` backend is selected without exposing the
   nested `console.octelium.stinkyboi.com` hostname.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.

@@ -34,8 +34,8 @@ App hostnames forward directly to
 original Host headers. Octelium uses that public FQDN to select the matching
 `WEB` Service, enforce login, and then proxy to the existing Istio app route.
 The Enterprise console follows the same browser path: `console.stinkyboi.com`
-enters the Octelium clientless dataplane through the `console.homelab`
-app-hostname Service, then Istio routes the backend request to
+enters the Octelium clientless dataplane through the public `console.homelab`
+WEB app-hostname Service, then Istio routes the backend request to
 `svc-console-octelium`. Keep this on `console.stinkyboi.com`; the package-owned
 system console's canonical `console.octelium.stinkyboi.com` name is a nested
 hostname and is not part of the public certificate/DNS shape.
