@@ -15,8 +15,10 @@ registration and sources the repository-local
 under `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`.
 
 The current app onboarding runbook includes the requested apps plus support
-Applications. Kiali is the read-only Istio mesh UI, and OctoBot is the current
-finance namespace app.
+Applications. Kiali is the read-only Istio mesh UI, OctoBot is the current
+finance namespace app, and `octelium-enterprise` adopts the Kubernetes steady
+state for the Octelium Enterprise package after `octops` package install or
+upgrade.
 
 ## Support Applications
 

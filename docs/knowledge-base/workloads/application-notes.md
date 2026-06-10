@@ -156,8 +156,10 @@ so Octelium can select the matching public `WEB` Service.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
-desired version `0.22.0`; install or upgrade it against the external Octelium
-Cluster with `scripts/octelium-enterprise-package.sh`. The Octelium Cluster
+desired version `0.22.0`. Install or upgrade it against the Octelium Cluster
+with `scripts/octelium-enterprise-package.sh`, then let the
+`octelium-enterprise` Argo CD Application own the package Kubernetes steady
+state from `clusters/homelab/apps/octelium-enterprise`. The Octelium Cluster
 domain is `stinkyboi.com`, so clients contact `octelium-api.stinkyboi.com`;
 certificate and bootstrap routing use apex plus first-level `*.stinkyboi.com`
 coverage, with `octelium.stinkyboi.com` as an alias.

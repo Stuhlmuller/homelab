@@ -74,10 +74,25 @@ before changing the app service catalog.
 
 Octelium Enterprise is represented by the `octeliumee` package from
 `https://github.com/octelium/octelium-ee`. It installs into an already running
-Octelium Cluster with `octops`; it is not Argo CD-synced Kubernetes desired
-state and it does not replace the `octelium-client` connector in this homelab.
+Octelium Cluster with `octops`; after install, the package's Kubernetes steady
+state is owned by the `octelium-enterprise` Argo CD Application. It does not
+replace the `octelium-client` connector in this homelab.
 
 Current desired package version: `0.22.0`.
+
+Live homelab state: `octeliumee` `0.22.0` was installed on 2026-06-10 UTC with
+`scripts/octelium-enterprise-package.sh`. The package creates `octeliumee-*`
+Deployments, Octelium Services such as `console.octelium`,
+`enterprise.octelium-api`, `public.octelium`, and `dirsync.octelium`, and
+three `nfs-default` PVCs: `octelium-rscstore`, `octelium-logstore`, and
+`octelium-metricstore`. Keep those PVCs in mind for backup, restore, and
+rollback.
+
+GitOps ownership lives at `clusters/homelab/apps/octelium-enterprise` and
+`IaC/live/argocd-apps/octelium-enterprise`. That path commits only non-secret
+package resources and PVC declarations; generated Secrets such as
+`sys-init-kek`, database credentials, license material, and kubeconfigs stay
+outside git.
 
 The Octelium Cluster domain is `stinkyboi.com`, which makes the client contact
 `octelium-api.stinkyboi.com`. `octelium.stinkyboi.com` is a public alias for
@@ -101,6 +116,8 @@ scripts/octelium-enterprise-package.sh \
 The operator workstation needs `octops` `v0.29.0` or later and kubeconfig
 access to the Octelium Cluster. Keep commercial or production license material
 outside git; add only safe references or secret contracts here.
+After install or upgrade, refresh the GitOps capture, keep all images pinned as
+`tag@sha256:digest`, and sync the `octelium-enterprise` Argo CD Application.
 
 ## Bootstrap Access
 

@@ -8,8 +8,8 @@ terraform {
 
 dependencies {
   paths = [
-    "../external-secrets",
-    "../istio"
+    "../octelium-cluster",
+    "../octelium-storage"
   ]
 }
 
@@ -20,7 +20,7 @@ locals {
 
 inputs = {
   metadata = {
-    name      = "octelium"
+    name      = "octelium-enterprise"
     namespace = "argocd"
     labels = {
       "app.kubernetes.io/managed-by" = "terragrunt"
@@ -32,14 +32,14 @@ inputs = {
 
   destination = {
     server    = "https://kubernetes.default.svc"
-    namespace = "octelium-client"
+    namespace = "octelium"
   }
 
   sources = [
     {
       repo_url        = local.repo_url
       target_revision = local.target_revision
-      path            = "clusters/homelab/apps/octelium"
+      path            = "clusters/homelab/apps/octelium-enterprise"
       kustomize       = {}
     }
   ]
@@ -50,7 +50,7 @@ inputs = {
       self_heal = true
     }
     sync_options = [
-      "CreateNamespace=true",
+      "CreateNamespace=false",
       "ServerSideApply=true"
     ]
     retry = {
@@ -65,20 +65,16 @@ inputs = {
 
   info = [
     {
-      name  = "mode"
-      value = "Octelium service catalog is the homelab app access path; app FQDNs use private Istio SNI backend routes"
+      name  = "package"
+      value = "Octelium Enterprise package octeliumee 0.22.0"
     },
     {
-      name  = "services"
-      value = "Serves the explicit homelab service catalog in docs/examples/octelium"
-    },
-    {
-      name  = "enterprise"
-      value = "Enterprise package octeliumee desired version 0.22.0 is adopted by the octelium-enterprise Argo CD Application"
+      name  = "ownership"
+      value = "Argo CD owns the package Kubernetes steady state after octops installation"
     },
     {
       name  = "state"
-      value = "Stateless connector plus in-cluster demo service"
+      value = "Enterprise stores use octelium-rscstore, octelium-logstore, and octelium-metricstore PVCs"
     }
   ]
 }
