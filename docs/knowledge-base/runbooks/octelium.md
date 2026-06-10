@@ -94,6 +94,11 @@ package resources and PVC declarations; generated Secrets such as
 `sys-init-kek`, database credentials, license material, and kubeconfigs stay
 outside git.
 
+The `octeliumee-logstore`, `octeliumee-metricstore`, and
+`octeliumee-rscstore` Deployments use `Recreate` because each store opens a
+DuckDB-backed `store.db` on its PVC. Do not change those workloads back to
+rolling updates unless the package moves to a multi-writer-safe storage model.
+
 The Octelium Cluster domain is `stinkyboi.com`, which makes the client contact
 `octelium-api.stinkyboi.com`. `octelium.stinkyboi.com` is a public alias for
 the Octelium control plane, not the CLI domain. This keeps the public API and
@@ -117,7 +122,8 @@ The operator workstation needs `octops` `v0.29.0` or later and kubeconfig
 access to the Octelium Cluster. Keep commercial or production license material
 outside git; add only safe references or secret contracts here.
 After install or upgrade, refresh the GitOps capture, keep all images pinned as
-`tag@sha256:digest`, and sync the `octelium-enterprise` Argo CD Application.
+`tag@sha256:digest`, preserve `Recreate` on the three store Deployments, and
+sync the `octelium-enterprise` Argo CD Application.
 
 ## Bootstrap Access
 

@@ -26,12 +26,19 @@ shape. Checkov exceptions are scoped per Deployment for that adoption boundary;
 change them only after validating the new runtime constraints against the
 Enterprise package.
 
+The `octeliumee-logstore`, `octeliumee-metricstore`, and
+`octeliumee-rscstore` Deployments intentionally use `Recreate` instead of a
+rolling update. Each process opens a DuckDB-backed `store.db` on its PVC, so a
+second pod against the same volume can fail on the single-writer lock while the
+old pod is still terminating.
+
 ## Updating
 
 Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
-images as `tag@sha256:digest`, and re-run validation.
+images as `tag@sha256:digest`, preserve `Recreate` on the three store
+Deployments, and re-run validation.
 
 ## Validation
 

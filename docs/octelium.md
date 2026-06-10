@@ -319,6 +319,11 @@ declarations after the initial `octops` package install. Generated Secrets such
 as `sys-init-kek`, database credentials, license material, and kubeconfigs stay
 outside git.
 
+The `octeliumee-logstore`, `octeliumee-metricstore`, and
+`octeliumee-rscstore` Deployments use `Recreate` because each store opens a
+DuckDB-backed `store.db` on its PVC. Do not change those workloads back to
+rolling updates unless the package moves to a multi-writer-safe storage model.
+
 The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
 client use `octelium-api.stinkyboi.com`. The Istio and Cloudflare edge
 certificates only need apex plus first-level `*.stinkyboi.com` coverage.
@@ -346,8 +351,8 @@ default kubeconfig for the operator shell.
 
 After install or upgrade, refresh the GitOps capture in
 `clusters/homelab/apps/octelium-enterprise/resources.yaml`, keep images pinned
-as `tag@sha256:digest`, and sync the `octelium-enterprise` Argo CD
-Application.
+as `tag@sha256:digest`, preserve `Recreate` on the three store Deployments,
+and sync the `octelium-enterprise` Argo CD Application.
 
 ## Full Cluster Bootstrap
 

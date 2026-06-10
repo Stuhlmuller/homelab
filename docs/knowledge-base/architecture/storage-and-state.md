@@ -41,6 +41,8 @@ n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium Enterprise package
 stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
 Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. See
 [[workloads/inventory]] for ownership and dependency notes.
+The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
+so their Deployments must use `Recreate` rather than rolling updates.
 
 ## Source Files
 
