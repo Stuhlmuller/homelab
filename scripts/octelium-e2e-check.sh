@@ -401,10 +401,10 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not using the non-redirecting Istio HTTPS upstream"
       fi
     done
-    if jq -e '.items[] | select(.metadata.name == "console.homelab" and .spec.mode == "TCP" and .spec.port == 443 and .spec.attrs.appHostname == "console.stinkyboi.com" and .spec.config.upstream.url == "tcp://istio-ingressgateway.istio-system.svc.cluster.local:443")' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-      pass "Octelium Service console.homelab maps console.stinkyboi.com to the Istio HTTPS gateway"
+    if jq -e '.items[] | select(.metadata.name == "console.homelab" and .spec.mode == "WEB" and .spec.isPublic == true and .spec.port == 80 and .spec.authorization.policies[]? == "homelab-human-web-access" and .spec.attrs.appHostname == "console.stinkyboi.com" and .spec.config.upstream.url == "https://istio-ingressgateway.istio-system.svc.cluster.local:443" and .spec.config.tls.insecureSkipVerify == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service console.homelab maps console.stinkyboi.com through public/clientless WEB access"
     else
-      fail "Octelium Service console.homelab is not mapped to console.stinkyboi.com through the Istio HTTPS gateway"
+      fail "Octelium Service console.homelab is not mapped to console.stinkyboi.com through public/clientless WEB access"
     fi
   else
     if [ -s /tmp/octelium-services.err.$$ ]; then
@@ -454,6 +454,13 @@ while read -r HOST; do
     HTTP_CODE="${CURL_OUT%% *}"
     REMOTE_IP="${CURL_OUT#* }"
     SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
+    LOCATION="$(awk 'tolower($1) == "location:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
+
+    if [ "${HOST}" = "console.stinkyboi.com" ] && printf '%s' "${LOCATION}" | grep -F "console.octelium.stinkyboi.com" >/dev/null 2>&1; then
+      fail "https://${HOST}${TEST_PATH} redirected to unsupported nested console hostname: ${LOCATION}"
+      rm -f "${HEADER_FILE}" "${CURL_ERR}"
+      continue
+    fi
 
     case "${HTTP_CODE}" in
       200|204|301|302|307|308|401|403|405)

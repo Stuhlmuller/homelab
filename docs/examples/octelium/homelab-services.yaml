@@ -142,13 +142,31 @@ metadata:
   name: console.homelab
 spec:
   displayName: Octelium Enterprise Console
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   attrs:
     appHostname: console.stinkyboi.com
   config:
     upstream:
-      url: tcp://istio-ingressgateway.istio-system.svc.cluster.local:443
-  mode: TCP
-  port: 443
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
+    http:
+      header:
+        forwardedMode: TRANSPARENT
+        host:
+          value: console.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: console.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
 ---
 kind: Service
 metadata:
