@@ -172,6 +172,31 @@ token with `Zone:Read` and `Zone Settings:Edit` in
 `/homelab/octelium/cloudflare-zone-settings-token`, then run
 `scripts/octelium-cloudflare-grpc.sh` before the e2e gate. The cert-manager
 DNS-01 token is intentionally too narrow and returns Cloudflare error `9109`.
+The `octelium-public` tunnel uses QUIC rather than forced HTTP/2 for the
+cloudflared-to-Cloudflare transport. Keep that setting unless a newer
+Cloudflare or Octelium release proves otherwise; the HTTP/2 tunnel transport
+accepted unary gRPC requests but caused the long-lived
+`MainService/Connect` stream to reset after about 125 seconds with Istio
+`DR http2.remote_reset` and Octelium API proxy `INTERNAL_ERROR` logs. Keep
+UDP/7844 in the `cloudflared-egress` NetworkPolicy whenever QUIC is enabled.
+
+Verify the public API with a gRPC-shaped request before asking users to retry
+`octelium connect`:
+
+```sh
+curl -sS \
+  --http2 \
+  -H 'content-type: application/grpc' \
+  -H 'te: trailers' \
+  --data-binary '' \
+  -o /dev/null \
+  -D - \
+  https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
+```
+
+Expected unauthenticated output includes HTTP/2, `content-type:
+application/grpc`, and `grpc-status: 16`; a Cloudflare HTTP `403` means the
+zone gRPC setting still needs repair.
 
 If public DNS or VPN access to the Octelium Cluster is not available yet,
 bootstrap the UI and API through a local port-forward to the Octelium Cluster

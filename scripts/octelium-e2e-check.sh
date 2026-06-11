@@ -320,8 +320,10 @@ GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
 GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
 GRPC_HTTP_CODE="$(
   curl -sS \
+    --http2 \
     -H "content-type: application/grpc" \
     -H "${GRPC_TRAILERS_HEADER}" \
+    --data-binary '' \
     --max-time 15 \
     -o /dev/null \
     -D "${GRPC_HEADER_FILE}" \
@@ -332,7 +334,7 @@ GRPC_SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${GRPC_HEADER_FILE}" |
 rm -f "${GRPC_HEADER_FILE}"
 case "${GRPC_HTTP_CODE}" in
   200|204|400|401|404|405|415|501)
-    pass "https://${API_HOST} accepted a gRPC-shaped request path with HTTP ${GRPC_HTTP_CODE}"
+    pass "https://${API_HOST} accepted a POST gRPC-shaped request path with HTTP ${GRPC_HTTP_CODE}"
     ;;
   403)
     if [ "${GRPC_SERVER}" = "cloudflare" ]; then

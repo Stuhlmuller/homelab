@@ -259,8 +259,31 @@ curl -vI https://octelium-api.stinkyboi.com
 
 The TLS certificate must match `octelium-api.stinkyboi.com`, and the
 endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
-`Unimplemented` response. The CLI and VPN path also requires Cloudflare to
-allow gRPC for the zone:
+`Unimplemented` response. The public CLI and VPN path also needs Cloudflare to
+accept gRPC and keep the long-lived `MainService/Connect` stream open. A
+healthy unauthenticated gRPC-shaped probe returns HTTP/2 with
+`content-type: application/grpc` and `grpc-status: 16`, not a Cloudflare HTTP
+`403`:
+
+```sh
+curl -sS \
+  --http2 \
+  -H 'content-type: application/grpc' \
+  -H 'te: trailers' \
+  --data-binary '' \
+  -o /dev/null \
+  -D - \
+  https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
+```
+
+The tunnel transport is pinned to QUIC in `octelium-public`; if
+`kubectl -n istio-system logs deploy/istio-ingressgateway` shows
+`POST /octelium.api.main.user.v1.MainService/Connect` ending with
+`DR http2.remote_reset` after roughly 125 seconds, treat that as a tunnel
+transport regression rather than an Octelium login failure. Keep UDP/7844
+allowed in the `cloudflared-egress` NetworkPolicy while QUIC is enabled.
+
+The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
 
 ```sh
 scripts/octelium-cloudflare-grpc.sh --dry-run
