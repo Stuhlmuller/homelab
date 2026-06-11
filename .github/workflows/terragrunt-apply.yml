@@ -72,9 +72,7 @@ jobs:
     name: Terragrunt Apply
     needs:
       - static-policy
-    runs-on:
-      - self-hosted
-      - homelab-ci
+    runs-on: ubuntu-24.04
     environment:
       name: homelab-production
     permissions:
