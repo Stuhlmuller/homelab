@@ -207,6 +207,33 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: compass-discovery-cordium
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Cordium
+    compass.adinhodovic.com/description: Octelium-backed sandbox platform for users and AI agents.
+    compass.adinhodovic.com/icon: lucide:box
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: ai,sandbox
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: cordium.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: compass-discovery-octobot
   namespace: monitoring
   labels:

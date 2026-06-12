@@ -68,10 +68,13 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
-  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
+- Public `WEB` Services `argocd`, `compass`, `cordium`, `deluge`, `grafana`,
+  `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.
+- Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
+  workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
+  automation through `cordium-agent-api.homelab`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 The Enterprise console hostname `https://console.stinkyboi.com` is not an
@@ -95,6 +98,15 @@ Apply the service catalog to the Octelium Cluster:
 ```sh
 octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
+
+Cordium is bootstrapped by the `cordium` Argo CD Application after that catalog
+exists. The app runs upstream `cordium-genesis init` from a pinned
+`ghcr.io/octelium/cordium-genesis:0.12.7` image, stores separate reviewed
+workspace defaults in `cordium-user-config` and `cordium-agent-config`, and
+routes the public `https://cordium.stinkyboi.com` browser path through the
+Octelium `cordium` WEB Service. Agent automation should use a credential for
+`homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do not
+reuse the human browser identity for automated workspace runs.
 
 ## Microsoft Entra Login
 
@@ -191,7 +203,8 @@ The gate verifies:
 - `stinkyboi.com`, `portal.stinkyboi.com`, `octelium-api.stinkyboi.com`, and
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
-- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
+- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
+  including `cordium` and `cordium-agent-api.homelab`,
   exists in the Octelium Cluster;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds

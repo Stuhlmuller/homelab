@@ -45,6 +45,10 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: compass.stinkyboi.com
+      - hostname: cordium.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: cordium.stinkyboi.com
       - hostname: console.stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:

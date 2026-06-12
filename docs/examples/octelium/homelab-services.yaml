@@ -44,6 +44,21 @@ spec:
             - match: ctx.service.metadata.name in ["kubernetes-api", "kubernetes-api.ci"]
             - match: ctx.service.spec.mode == "TCP"
 ---
+kind: Policy
+metadata:
+  name: homelab-cordium-agent-api-access
+spec:
+  rules:
+    - effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-cordium-agent"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.metadata.name == "cordium-agent-api.homelab"
+            - match: ctx.service.spec.mode == "GRPC"
+---
 kind: Namespace
 metadata:
   name: homelab
@@ -52,6 +67,7 @@ spec:
     policies:
       - homelab-human-web-access
       - homelab-workload-web-serve
+      - homelab-cordium-agent-api-access
 ---
 kind: Namespace
 metadata:
@@ -78,6 +94,22 @@ metadata:
   name: homelab-e2e
 spec:
   type: HUMAN
+---
+kind: User
+metadata:
+  name: homelab-cordium-user
+spec:
+  type: HUMAN
+  groups:
+    - cordium-users
+---
+kind: User
+metadata:
+  name: homelab-cordium-agent
+spec:
+  type: WORKLOAD
+  groups:
+    - cordium-agents
 ---
 kind: Service
 metadata:
@@ -136,6 +168,49 @@ spec:
             value: "443"
           - key: X-Forwarded-Proto
             value: https
+---
+kind: Service
+metadata:
+  name: cordium
+spec:
+  displayName: Cordium
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
+  config:
+    upstream:
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
+    http:
+      header:
+        forwardedMode: TRANSPARENT
+        host:
+          value: cordium.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: cordium.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
+---
+kind: Service
+metadata:
+  name: cordium-agent-api.homelab
+spec:
+  displayName: Cordium agent API
+  mode: GRPC
+  port: 443
+  authorization:
+    policies:
+      - homelab-cordium-agent-api-access
+  config:
+    upstream:
+      url: grpc://default-cordium.octelium-api:8080
 ---
 kind: Service
 metadata:
