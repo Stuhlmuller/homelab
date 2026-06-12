@@ -71,12 +71,12 @@ contract for Grafana.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
-  `kubernetes-api.ci`. Live Terragrunt jobs run on the `homelab-ci`
-  self-hosted runner so they can use node routing to reach Octelium Gateway
-  hostnames. The jobs use gVisor userspace publishing, allow Octelium DNS for
-  Service publishing, force Octelium's `wireguard` tunnel mode, publish the
-  Service to `127.0.0.1:16443`, and rely on the
-  `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
+  `kubernetes-api.ci`. Live Terragrunt jobs run on GitHub-hosted Ubuntu runners
+  and reach the cluster through Octelium userspace Service publishing rather
+  than node routing from a self-hosted runner. The jobs use gVisor userspace
+  publishing, allow Octelium DNS for Service publishing, force Octelium's
+  `wireguard` tunnel mode, publish the Service to `127.0.0.1:16443`, and rely
+  on the `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
   Reconcile the `_gw-*` gateway AAAA records with
