@@ -243,10 +243,10 @@ controllers:
 
             openclaw config set --strict-json \
               agents.defaults.sandbox.mode \
-              '"all"'
+              '"off"'
 
             openclaw config set --strict-json \
-              agents.defaults.tools.fs.workspaceOnly \
+              tools.fs.workspaceOnly \
               'true'
 
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
