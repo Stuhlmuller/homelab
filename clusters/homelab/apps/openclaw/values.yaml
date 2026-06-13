@@ -15,7 +15,7 @@ controllers:
       bootstrap-config:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.6.1@sha256:b12f76a7947e4cdd328bf3ea1045d41a5494b33852c911e9bc4fdd03dde469d5"
+          tag: "2026.6.6@sha256:4826ca6157377e93463786d5c16852e34eede9f4bd4be55e3773cdc509762857"
         resources:
           requests:
             cpu: 500m
@@ -222,7 +222,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.6.1@sha256:b12f76a7947e4cdd328bf3ea1045d41a5494b33852c911e9bc4fdd03dde469d5"
+          tag: "2026.6.6@sha256:4826ca6157377e93463786d5c16852e34eede9f4bd4be55e3773cdc509762857"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -280,7 +280,7 @@ controllers:
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.6.1@sha256:b12f76a7947e4cdd328bf3ea1045d41a5494b33852c911e9bc4fdd03dde469d5"
+          tag: "2026.6.6@sha256:4826ca6157377e93463786d5c16852e34eede9f4bd4be55e3773cdc509762857"
         command:
           - python3
           - -u
