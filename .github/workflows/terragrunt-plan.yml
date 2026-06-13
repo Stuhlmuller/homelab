@@ -22,7 +22,7 @@ permissions: {}
 
 concurrency:
   group: terragrunt-plan-${{ github.event.pull_request.number }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   AWS_REGION: us-east-1
@@ -70,16 +70,9 @@ jobs:
   terragrunt-plan:
     name: Terragrunt Plan
     if: github.event.pull_request.head.repo.full_name == github.repository
-    # The plan reads shared OpenTofu state, so only one trusted PR plan should
-    # hold the backend lock at a time.
-    concurrency:
-      group: terragrunt-plan-live-state
-      cancel-in-progress: false
     needs:
       - static-policy
-    runs-on:
-      - self-hosted
-      - homelab-ci
+    runs-on: ubuntu-24.04
     environment:
       name: homelab-plan
     permissions:
