@@ -15,7 +15,7 @@ controllers:
       operator-toolbox:
         image:
           repository: docker.io/nixos/nix
-          tag: "2.24.11"
+          tag: "2.24.11@sha256:4bfe741027f0bfbef745862cbf3b5f424ee99801c04138146c0000a28759636d"
         env:
           NIXPKGS_REF: github:NixOS/nixpkgs/29916453413845e54a65b8a1cf996842300cd299
         command:
@@ -38,6 +38,7 @@ controllers:
             nix-store -qR /toolbox/profile |
               xargs -r cp -a --target-directory=/nix-shared/store
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
+            chown -R 1000:1000 /nix-shared
             /toolbox/profile/bin/jq --version
             /toolbox/profile/bin/rg --version
             /toolbox/profile/bin/gh --version
@@ -69,6 +70,7 @@ controllers:
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
+          NIX_CONFIG: experimental-features = nix-command flakes
           PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
@@ -271,6 +273,7 @@ controllers:
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
+          NIX_CONFIG: experimental-features = nix-command flakes
           PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
