@@ -8,6 +8,7 @@ metadata:
 spec:
   hosts:
     - cordium.stinkyboi.com
+    - "*.cordium.stinkyboi.com"
   gateways:
     - istio-system/tailnet-gateway
   http:
