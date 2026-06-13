@@ -282,6 +282,16 @@ stay out of git.
 OpenClaw has an explicit agent-heavy resource profile: the app requests `1`
 CPU and `2Gi` memory with a `6Gi` memory cap and no CPU limit, while bootstrap
 gets enough memory to validate config and install channel plugins at startup.
+The OpenClaw pod also builds an operator toolbox before startup. The
+`operator-toolbox` init container uses the pinned `flake.lock` nixpkgs revision
+from a digest-pinned Nix image to populate shared `emptyDir` volumes mounted at
+`/toolbox` and `/nix`, then the app and bootstrap containers prepend
+`/toolbox/profile/bin` to `PATH`. They also export the flake-enabled
+`NIX_CONFIG`, and the init container hands `/nix` to the runtime `node` user so
+agent sessions can extend the Nix store during `nix develop` workflows.
+This keeps common triage and validation CLIs available inside agent sessions:
+`argocd`, `gh`, `jq`, `kubectl`, `nix`, `opentofu`, `pre-commit`, `rg`,
+`talosctl`, and `terragrunt`.
 
 ## Media PostgreSQL
 

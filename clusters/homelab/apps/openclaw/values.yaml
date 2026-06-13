@@ -12,6 +12,48 @@ controllers:
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "1"
         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
+      operator-toolbox:
+        image:
+          repository: docker.io/nixos/nix
+          tag: "2.24.11@sha256:4bfe741027f0bfbef745862cbf3b5f424ee99801c04138146c0000a28759636d"
+        env:
+          NIXPKGS_REF: github:NixOS/nixpkgs/29916453413845e54a65b8a1cf996842300cd299
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            export NIX_CONFIG="experimental-features = nix-command flakes"
+            nix profile install --profile /toolbox/profile \
+              "$NIXPKGS_REF#argocd" \
+              "$NIXPKGS_REF#gh" \
+              "$NIXPKGS_REF#jq" \
+              "$NIXPKGS_REF#kubectl" \
+              "$NIXPKGS_REF#nix" \
+              "$NIXPKGS_REF#opentofu" \
+              "$NIXPKGS_REF#pre-commit" \
+              "$NIXPKGS_REF#ripgrep" \
+              "$NIXPKGS_REF#talosctl" \
+              "$NIXPKGS_REF#terragrunt"
+            mkdir -p /nix-shared/store /nix-shared/var/nix
+            nix-store -qR /toolbox/profile |
+              xargs -r cp -a --target-directory=/nix-shared/store
+            cp -a /nix/var/nix/db /nix-shared/var/nix/db
+            chown -R 1000:1000 /nix-shared
+            /toolbox/profile/bin/jq --version
+            /toolbox/profile/bin/rg --version
+            /toolbox/profile/bin/gh --version
+            /toolbox/profile/bin/kubectl version --client=true
+            /toolbox/profile/bin/argocd version --client --short
+            /toolbox/profile/bin/talosctl version --client
+            /toolbox/profile/bin/terragrunt --version
+            /toolbox/profile/bin/tofu version
+            /toolbox/profile/bin/pre-commit --version
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
+          limits:
+            memory: 6Gi
       bootstrap-config:
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -28,6 +70,8 @@ controllers:
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
+          NIX_CONFIG: experimental-features = nix-command flakes
+          PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
               secretKeyRef:
@@ -229,6 +273,8 @@ controllers:
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
+          NIX_CONFIG: experimental-features = nix-command flakes
+          PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
               secretKeyRef:
@@ -403,6 +449,30 @@ persistence:
           - path: /data/openclaw/extensions
         bootstrap-config:
           - path: /data/openclaw/extensions
+  operator-toolbox:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      openclaw:
+        operator-toolbox:
+          - path: /toolbox
+        app:
+          - path: /toolbox
+            readOnly: true
+        bootstrap-config:
+          - path: /toolbox
+            readOnly: true
+  operator-nix-store:
+    enabled: true
+    type: emptyDir
+    advancedMounts:
+      openclaw:
+        operator-toolbox:
+          - path: /nix-shared
+        app:
+          - path: /nix
+        bootstrap-config:
+          - path: /nix
   github-app-private-key:
     enabled: true
     type: secret
