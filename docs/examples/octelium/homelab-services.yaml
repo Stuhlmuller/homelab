@@ -16,6 +16,24 @@ spec:
 ---
 kind: Policy
 metadata:
+  name: homelab-cordium-user-web-access
+spec:
+  rules:
+    - effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-cordium-user"
+            - match: ctx.user.spec.type == "HUMAN"
+            - match: ctx.service.metadata.name == "cordium"
+            - match: ctx.service.spec.mode == "WEB"
+            - any:
+                of:
+                  - match: ctx.session.status.type == "CLIENT"
+                  - match: ctx.session.status.type == "CLIENTLESS" && ctx.session.status.isBrowser
+---
+kind: Policy
+metadata:
   name: homelab-workload-web-serve
 spec:
   rules:
@@ -66,6 +84,7 @@ spec:
   authorization:
     policies:
       - homelab-human-web-access
+      - homelab-cordium-user-web-access
       - homelab-workload-web-serve
       - homelab-cordium-agent-api-access
 ---
@@ -179,7 +198,7 @@ spec:
   port: 80
   authorization:
     policies:
-      - homelab-human-web-access
+      - homelab-cordium-user-web-access
   config:
     upstream:
       url: https://istio-ingressgateway.istio-system.svc.cluster.local:443

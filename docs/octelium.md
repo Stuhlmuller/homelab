@@ -57,6 +57,9 @@ They create:
   transport.
 - Policy `homelab-human-web-access`, allowing authenticated human client
   sessions and clientless browser sessions to app `WEB` Services.
+- Policy `homelab-cordium-user-web-access`, allowing only the dedicated
+  `homelab-cordium-user` HUMAN identity to reach the public Cordium `WEB`
+  Service.
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
@@ -103,12 +106,13 @@ Cordium is bootstrapped by the `cordium` Argo CD Application after that catalog
 exists. The app runs upstream `cordium-genesis init` from a pinned
 `ghcr.io/octelium/cordium-genesis:0.12.7` image and routes the public
 `https://cordium.stinkyboi.com` browser path plus workspace app subdomains under
-`*.cordium.stinkyboi.com` through the Octelium `cordium` WEB Service. Agent
-automation should use a credential for `homelab-cordium-agent` scoped to
-`homelab-cordium-agent-api-access`; do not reuse the human browser identity for
-automated workspace runs. Workspace defaults stay with upstream Cordium until
-this repository adds a reviewed Cordium-native workspace configuration
-resource.
+`*.cordium.stinkyboi.com` through the Octelium `cordium` WEB Service. Browser
+access is scoped to the dedicated `homelab-cordium-user` HUMAN identity through
+`homelab-cordium-user-web-access`. Agent automation should use a credential for
+`homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do not
+reuse the human browser identity for automated workspace runs. Workspace
+defaults stay with upstream Cordium until this repository adds a reviewed
+Cordium-native workspace configuration resource.
 
 ## Microsoft Entra Login
 

@@ -8,7 +8,8 @@ created from the same reviewed desired-state path as the rest of the homelab.
 The deployed runtime is split intentionally:
 
 - Human access uses the Octelium `homelab-cordium-user` HUMAN identity and the
-  public `cordium` WEB Service at `https://cordium.stinkyboi.com`.
+  public `cordium` WEB Service at `https://cordium.stinkyboi.com`, scoped by the
+  dedicated `homelab-cordium-user-web-access` policy.
 - Agent access uses the Octelium `homelab-cordium-agent` WORKLOAD identity and
   the `cordium-agent-api.homelab` gRPC Service for automation.
 - Workspace defaults stay with upstream Cordium until this repository adds a
