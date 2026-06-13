@@ -101,12 +101,14 @@ octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services
 
 Cordium is bootstrapped by the `cordium` Argo CD Application after that catalog
 exists. The app runs upstream `cordium-genesis init` from a pinned
-`ghcr.io/octelium/cordium-genesis:0.12.7` image, stores separate reviewed
-workspace defaults in `cordium-user-config` and `cordium-agent-config`, and
-routes the public `https://cordium.stinkyboi.com` browser path through the
-Octelium `cordium` WEB Service. Agent automation should use a credential for
-`homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do not
-reuse the human browser identity for automated workspace runs.
+`ghcr.io/octelium/cordium-genesis:0.12.7` image and routes the public
+`https://cordium.stinkyboi.com` browser path plus workspace app subdomains under
+`*.cordium.stinkyboi.com` through the Octelium `cordium` WEB Service. Agent
+automation should use a credential for `homelab-cordium-agent` scoped to
+`homelab-cordium-agent-api-access`; do not reuse the human browser identity for
+automated workspace runs. Workspace defaults stay with upstream Cordium until
+this repository adds a reviewed Cordium-native workspace configuration
+resource.
 
 ## Microsoft Entra Login
 

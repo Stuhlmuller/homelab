@@ -204,8 +204,10 @@ service-proxy path.
 Cordium runs on top of the self-hosted Octelium Cluster. The `cordium` Argo CD
 Application owns the reviewed bootstrap material in
 `clusters/homelab/apps/cordium`: a pinned `cordium-genesis` sync hook, narrow
-bootstrap RBAC, the `cordium.stinkyboi.com` backend route, and separate
-ConfigMaps for human and agent workspace defaults.
+bootstrap RBAC, a scoped egress policy for Kubernetes API access, and the
+`cordium.stinkyboi.com` backend route. Workspace defaults currently stay with
+upstream Cordium until the repo adds a real Cordium-native workspace
+configuration resource.
 
 The Octelium catalog keeps identities separate. `homelab-cordium-user` is a
 HUMAN user for browser workspace access through the public `cordium` WEB

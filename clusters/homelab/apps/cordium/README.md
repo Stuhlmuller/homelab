@@ -11,14 +11,14 @@ The deployed runtime is split intentionally:
   public `cordium` WEB Service at `https://cordium.stinkyboi.com`.
 - Agent access uses the Octelium `homelab-cordium-agent` WORKLOAD identity and
   the `cordium-agent-api.homelab` gRPC Service for automation.
-- Workspace defaults are stored in separate ConfigMaps:
-  `cordium-user-config` and `cordium-agent-config`.
+- Workspace defaults stay with upstream Cordium until this repository adds a
+  reviewed Cordium-native workspace configuration resource.
 
 The hook image is pinned to Cordium `0.12.7`. Upstream genesis creates the
 long-running Cordium `nocturne` and `rscserver` Deployments and registers the
 `apiserver` and `portal` managed services with Octelium. The Argo CD app keeps
-the hook, RBAC, and configuration material visible in git; the generated
-Octelium/Cordium runtime resources remain owned by Octelium controllers.
+the hook and RBAC visible in git; the generated Octelium/Cordium runtime
+resources remain owned by Octelium controllers.
 
 ## Activation
 

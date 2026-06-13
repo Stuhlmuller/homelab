@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cordium-genesis
+  namespace: octelium
+  labels:
+    app.kubernetes.io/name: cordium
+    app.kubernetes.io/component: genesis
+    app.kubernetes.io/part-of: homelab
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cordium
+      app.kubernetes.io/component: genesis
+      app.kubernetes.io/part-of: homelab
+  policyTypes:
+    - Ingress
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/8
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
