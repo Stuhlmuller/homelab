@@ -138,6 +138,7 @@ hostnames=(
   "octelium-api.${domain}"
   "argocd.${domain}"
   "compass.${domain}"
+  "cordium.${domain}"
   "console.${domain}"
   "deluge.${domain}"
   "grafana.${domain}"

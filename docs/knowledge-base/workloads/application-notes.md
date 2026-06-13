@@ -199,6 +199,32 @@ the service catalog plus direct HTTPS probes for the existing
 The `homelab-demo.homelab` service is only a smoke-test target for the
 service-proxy path.
 
+## Cordium
+
+Cordium runs on top of the self-hosted Octelium Cluster. The `cordium` Argo CD
+Application owns the reviewed bootstrap material in
+`clusters/homelab/apps/cordium`: a pinned `cordium-genesis` sync hook, narrow
+bootstrap RBAC, a scoped egress policy for Kubernetes API access, and the
+`cordium.stinkyboi.com` backend route. Workspace defaults currently stay with
+upstream Cordium until the repo adds a real Cordium-native workspace
+configuration resource.
+
+The Octelium catalog keeps identities separate. `homelab-cordium-user` is a
+HUMAN user for browser workspace access through the public `cordium` WEB
+Service. `homelab-cordium-agent` is a WORKLOAD user for automation through the
+`cordium-agent-api.homelab` gRPC Service and the
+`homelab-cordium-agent-api-access` policy. Do not share human browser
+credentials with agent automation.
+
+The upstream genesis hook generates the long-running Cordium controllers and
+managed Services in the `octelium` namespace. Validate with:
+
+```sh
+kubectl -n octelium get job cordium-genesis
+kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
+curl -I https://cordium.stinkyboi.com
+```
+
 ## OctoBot
 
 OctoBot is the finance namespace trading bot with a real web UI. It runs from

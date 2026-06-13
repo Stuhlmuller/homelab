@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cordium-genesis
+  namespace: octelium
+  labels:
+    app.kubernetes.io/name: cordium
+    app.kubernetes.io/component: genesis
+    app.kubernetes.io/part-of: homelab
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cordium-genesis
+  labels:
+    app.kubernetes.io/name: cordium
+    app.kubernetes.io/component: genesis
+    app.kubernetes.io/part-of: homelab
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - namespaces
+      - secrets
+      - serviceaccounts
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - clusterrolebindings
+      - roles
+      - rolebindings
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cordium-genesis
+  labels:
+    app.kubernetes.io/name: cordium
+    app.kubernetes.io/component: genesis
+    app.kubernetes.io/part-of: homelab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cordium-genesis
+subjects:
+  - kind: ServiceAccount
+    name: cordium-genesis
+    namespace: octelium
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cordium-genesis
+  namespace: octelium
+  labels:
+    app.kubernetes.io/name: cordium
+    app.kubernetes.io/component: genesis
+    app.kubernetes.io/part-of: homelab
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    checkov.io/skip1: CKV_K8S_22=The upstream genesis command writes temporary bootstrap state while creating Cordium managed services.
+    checkov.io/skip2: CKV_K8S_38=The bootstrap job needs a Kubernetes service-account token to create Cordium controller resources.
+    checkov.io/skip3: CKV_K8S_40=The upstream image runs as its bundled non-root octelium user.
+    homelab.rst.io/cordium-genesis-revision: "1"
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cordium
+        app.kubernetes.io/component: genesis
+        app.kubernetes.io/part-of: homelab
+      annotations:
+        homelab.rst.io/cordium-genesis-revision: "1"
+    spec:
+      serviceAccountName: cordium-genesis
+      restartPolicy: OnFailure
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: genesis
+          image: ghcr.io/octelium/cordium-genesis:0.12.7@sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401
+          imagePullPolicy: IfNotPresent
+          args:
+            - init
+            - --ingress-front-proxy
+          env:
+            - name: OCTELIUM_REGION_NAME
+              value: default
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true

@@ -98,6 +98,7 @@ fi
 APP_HOSTS="
 argocd.stinkyboi.com
 compass.stinkyboi.com
+cordium.stinkyboi.com
 console.stinkyboi.com
 deluge.stinkyboi.com
 grafana.stinkyboi.com
@@ -116,6 +117,7 @@ REQUIRED_SERVICES="
 kubernetes-api.ci
 argocd
 compass
+cordium
 deluge
 grafana
 homelab-demo.homelab
@@ -390,7 +392,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service is missing: ${SERVICE}"
       fi
     done
-    for SERVICE in argocd compass deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public/clientless"
       else
