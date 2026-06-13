@@ -245,6 +245,10 @@ controllers:
               agents.defaults.sandbox.mode \
               '"off"'
 
+            openclaw config set --strict-json \
+              tools.fs.workspaceOnly \
+              'true'
+
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
             else
