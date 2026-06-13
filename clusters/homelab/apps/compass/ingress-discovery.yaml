@@ -17,6 +17,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Argo CD
+    compass.adinhodovic.com/urls: "Argo CD=https://argocd.stinkyboi.com"
     compass.adinhodovic.com/description: GitOps control plane and application sync status.
     compass.adinhodovic.com/icon: selfhst:argo-cd
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -24,7 +25,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: argocd.homelab
+    - host: argocd.stinkyboi.com
       http:
         paths:
           - path: /
@@ -44,6 +45,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Compass
+    compass.adinhodovic.com/urls: "Compass=https://compass.stinkyboi.com"
     compass.adinhodovic.com/description: Homelab service catalog and operator launchpad.
     compass.adinhodovic.com/icon: lucide:compass
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -51,7 +53,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: compass.homelab
+    - host: compass.stinkyboi.com
       http:
         paths:
           - path: /
@@ -71,6 +73,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Deluge
+    compass.adinhodovic.com/urls: "Deluge=https://deluge.stinkyboi.com"
     compass.adinhodovic.com/description: Torrent client reached through the Octelium app access plane.
     compass.adinhodovic.com/icon: selfhst:deluge
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -78,7 +81,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: deluge.homelab
+    - host: deluge.stinkyboi.com
       http:
         paths:
           - path: /
@@ -98,6 +101,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Grafana
+    compass.adinhodovic.com/urls: "Grafana=https://grafana.stinkyboi.com"
     compass.adinhodovic.com/description: Dashboards, alerts, and homelab observability.
     compass.adinhodovic.com/icon: selfhst:grafana
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -105,7 +109,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: grafana.homelab
+    - host: grafana.stinkyboi.com
       http:
         paths:
           - path: /
@@ -125,6 +129,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Kiali
+    compass.adinhodovic.com/urls: "Kiali=https://kiali.stinkyboi.com"
     compass.adinhodovic.com/description: Read-only Istio mesh topology and traffic view.
     compass.adinhodovic.com/icon: selfhst:kiali
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -132,7 +137,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: kiali.homelab
+    - host: kiali.stinkyboi.com
       http:
         paths:
           - path: /
@@ -152,6 +157,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: LiteLLM
+    compass.adinhodovic.com/urls: "LiteLLM=https://litellm.stinkyboi.com"
     compass.adinhodovic.com/description: AI model gateway used by homelab agents.
     compass.adinhodovic.com/icon: selfhst:litellm
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -159,7 +165,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: litellm.homelab
+    - host: litellm.stinkyboi.com
       http:
         paths:
           - path: /
@@ -179,6 +185,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: n8n
+    compass.adinhodovic.com/urls: "n8n=https://n8n.stinkyboi.com"
     compass.adinhodovic.com/description: Workflow automation editor and execution UI.
     compass.adinhodovic.com/icon: selfhst:n8n
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -186,7 +193,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: n8n.homelab
+    - host: n8n.stinkyboi.com
       http:
         paths:
           - path: /
@@ -206,6 +213,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: OctoBot
+    compass.adinhodovic.com/urls: "OctoBot=https://octobot.stinkyboi.com"
     compass.adinhodovic.com/description: Finance bot UI for reviewed trading experiments.
     compass.adinhodovic.com/icon: selfhst:octobot
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -213,7 +221,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: octobot.homelab
+    - host: octobot.stinkyboi.com
       http:
         paths:
           - path: /
@@ -233,6 +241,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: OpenClaw
+    compass.adinhodovic.com/urls: "OpenClaw=https://openclaw.stinkyboi.com"
     compass.adinhodovic.com/description: Local agent gateway and homelab assistant runtime.
     compass.adinhodovic.com/icon: lucide:bot
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -240,7 +249,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: openclaw.homelab
+    - host: openclaw.stinkyboi.com
       http:
         paths:
           - path: /
@@ -260,6 +269,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Policy Bot
+    compass.adinhodovic.com/urls: "Policy Bot=https://policy-bot.stinkyboi.com"
     compass.adinhodovic.com/description: GitHub App policy evaluator and webhook receiver.
     compass.adinhodovic.com/icon: lucide:shield-check
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -267,7 +277,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: policy-bot.homelab
+    - host: policy-bot.stinkyboi.com
       http:
         paths:
           - path: /
@@ -287,6 +297,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Prowlarr
+    compass.adinhodovic.com/urls: "Prowlarr=https://prowlarr.stinkyboi.com"
     compass.adinhodovic.com/description: Indexer manager for the media stack.
     compass.adinhodovic.com/icon: selfhst:prowlarr
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -294,7 +305,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: prowlarr.homelab
+    - host: prowlarr.stinkyboi.com
       http:
         paths:
           - path: /
@@ -314,6 +325,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Radarr
+    compass.adinhodovic.com/urls: "Radarr=https://radarr.stinkyboi.com"
     compass.adinhodovic.com/description: Movie library automation.
     compass.adinhodovic.com/icon: selfhst:radarr
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -321,7 +333,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: radarr.homelab
+    - host: radarr.stinkyboi.com
       http:
         paths:
           - path: /
@@ -341,6 +353,7 @@ metadata:
     compass.adinhodovic.com/enabled: "true"
   annotations:
     compass.adinhodovic.com/name: Sonarr
+    compass.adinhodovic.com/urls: "Sonarr=https://sonarr.stinkyboi.com"
     compass.adinhodovic.com/description: TV library automation.
     compass.adinhodovic.com/icon: selfhst:sonarr
     compass.adinhodovic.com/primary-tag: kubernetes
@@ -348,7 +361,7 @@ metadata:
 spec:
   ingressClassName: compass-discovery
   rules:
-    - host: sonarr.homelab
+    - host: sonarr.stinkyboi.com
       http:
         paths:
           - path: /

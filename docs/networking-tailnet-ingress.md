@@ -79,14 +79,15 @@ Services separate: the n8n and Policy Bot webhook paths remain Tailscale
 Funnel exceptions unless a later PR explicitly redesigns those callbacks
 through Octelium.
 
-Use `octobot.homelab` through Octelium for private setup, paper trading, and
-operator-reviewed live trading; exchange credentials and strategy state are
-configured through OctoBot and persist on its NFS-backed volumes, not in public
-repository files.
+Use `https://octobot.stinkyboi.com` through Octelium for private setup, paper
+trading, and operator-reviewed live trading; exchange credentials and strategy
+state are configured through OctoBot and persist on its NFS-backed volumes, not
+in public repository files.
 
-Compass launch links and discovery-only entries point at Octelium service names.
-It discovers Kubernetes ingress and Gateway API routes with read-only RBAC,
-disables operator debug routes, and does not persist application state.
+Compass launch links and discovery-only entries point at the public
+Octelium-fronted `*.stinkyboi.com` app URLs. It discovers Kubernetes ingress
+and Gateway API routes with read-only RBAC, disables operator debug routes, and
+does not persist application state.
 
 Because the homelab's reviewed ingress path is still Istio `VirtualService`,
 Compass also owns discovery-only `Ingress` resources in the `monitoring`
@@ -153,8 +154,8 @@ Data exposed: webhook request body and headers sent by GitHub.
 ```
 
 The Policy Bot UI, details routes, static assets, OAuth callback, and root path
-target `policy-bot.homelab` through Octelium. Only `/api/github/hook` is
-exposed through Funnel.
+target `https://policy-bot.stinkyboi.com` through Octelium. Only
+`/api/github/hook` is exposed through Funnel.
 
 ## n8n Webhook Funnel Exception
 
@@ -172,10 +173,10 @@ Rollback command: revert clusters/homelab/apps/n8n/ingress-funnel.yaml, clusters
 Data exposed: request bodies and headers sent to active n8n webhook workflows.
 ```
 
-The n8n editor, REST API, static assets, and root path target `n8n.homelab`
-through Octelium. The Funnel Ingress forwards only webhook path prefixes to the
-Istio gateway, and the n8n VirtualService only routes those prefixes on the
-public webhook gateway.
+The n8n editor, REST API, static assets, and root path target
+`https://n8n.stinkyboi.com` through Octelium. The Funnel Ingress forwards only
+webhook path prefixes to the Istio gateway, and the n8n VirtualService only
+routes those prefixes on the public webhook gateway.
 
 ## Future Funnel Webhook Exception Template
 

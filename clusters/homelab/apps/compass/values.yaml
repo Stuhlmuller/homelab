@@ -12,13 +12,13 @@ config: |
 
   header_links:
     - label: Grafana
-      url: http://grafana.homelab
+      url: https://grafana.stinkyboi.com
       icon: selfhst:grafana
     - label: Argo CD
-      url: http://argocd.homelab
+      url: https://argocd.stinkyboi.com
       icon: selfhst:argo-cd
     - label: Kiali
-      url: http://kiali.homelab
+      url: https://kiali.stinkyboi.com
       icon: selfhst:kiali
 
   services:
