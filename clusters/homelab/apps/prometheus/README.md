@@ -28,6 +28,12 @@ the `argocd` namespace. The matching services are enabled by the Argo CD
 bootstrap stack at `IaC/bootstrap/argocd`; the ServiceMonitors live here so
 Prometheus Operator CRDs are installed before this scrape wiring is applied.
 
+`deluge-servicemonitor.yaml` scrapes the Deluge metrics sidecar in the `media`
+namespace. That sidecar exposes `deluge_daemon_rpc_healthy`, which checks
+whether `deluge-console status` can reach `deluged`. This catches Deluge daemon
+state-restore failures that do not make the Kubernetes Pod or Argo CD
+Application unhealthy.
+
 - Backup: covered by the NFS backup gate in `docs/storage-nfs.md`.
 - Restore: restore Prometheus and Alertmanager PVCs before relying on retained
   metrics.

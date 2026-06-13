@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: deluge
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: deluge
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  namespaceSelector:
+    matchNames:
+      - media
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: deluge
+      app.kubernetes.io/name: deluge
+      app.kubernetes.io/service: deluge
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      honorLabels: false

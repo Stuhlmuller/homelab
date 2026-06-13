@@ -54,6 +54,14 @@ blocking the UI service endpoint. The Pod becomes ready only after Gluetun is
 healthy and the Deluge application container is ready, so traffic still fails
 closed when the VPN healthcheck fails.
 
+A `daemon-metrics` sidecar runs `deluge-console -c /config status` every 30
+seconds and exposes the result on the service `metrics` port as Prometheus text
+format. Prometheus scrapes it through
+`clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
+alerts on `deluge_daemon_rpc_healthy` when the daemon RPC check is missing or
+failing. This catches the failure mode where Kubernetes, Argo CD, and Gluetun
+are healthy but `deluged` cannot restore state or accept console connections.
+
 ## Download Paths
 
 Deluge owns the shared `media-downloads` PVC backed by the QNAP `/media` NFS
@@ -129,6 +137,54 @@ If Gluetun is unhealthy, Deluge should lose readiness and torrent traffic should
 fail closed instead of bypassing the VPN.
 
 ## Troubleshooting
+
+If the Pod is `Ready` and Gluetun is healthy but Deluge is not usable, check
+the daemon before restarting Kubernetes resources:
+
+```sh
+kubectl -n media logs deploy/deluge -c app --tail=120
+kubectl -n media logs deploy/deluge -c port-config --tail=120
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config info
+```
+
+Repeated `libtorrent::libtorrent_exception` messages such as
+`invalid type requested from entry`, together with `port-config` reporting
+connection refusals, usually mean the Deluge daemon cannot restore its
+persisted session state. Preserve torrent metadata and downloaded data; do not
+delete the `.torrent` files under `/config/state` or the `/downloads` tree.
+After explicit operator approval, recover only the session state file:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- /bin/sh -c '
+set -eu
+s6-svc -d /var/run/s6/services/deluged || true
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+cp -a /config/session.state /config/session.state.broken-$stamp
+cp -a /config/session.state.bak /config/session.state
+s6-svc -u /var/run/s6/services/deluged || true
+ls -l /config/session.state /config/session.state.bak /config/session.state.broken-$stamp
+'
+```
+
+Verify the daemon, port settings, directories, and VPN gate after recovery:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config config listen_ports
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config config random_outgoing_ports
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 10s deluge-console -c /config info
+kubectl -n media exec deploy/deluge -c daemon-metrics -- \
+  python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=5).read().decode(), end="")'
+kubectl -n media exec deploy/deluge -c gluetun -- \
+  /gluetun-entrypoint healthcheck
+```
+
+The expected port state is `listen_ports: (5983, 5983)` and
+`random_outgoing_ports: True`. The archived `session.state.broken-*` file is
+the rollback reference if the backup state is worse.
 
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
 container repeatedly fails startup health checks with DNS lookup timeouts, treat

@@ -60,6 +60,16 @@ the profile to IPv4 before Gluetun starts. Keep Deluge's AirVPN forwarded port
 fixed only for `listen_ports`; `outgoing_ports` should stay at Deluge's default
 random behavior, otherwise active torrents can report too few outgoing ports
 and fail to establish enough peer connections.
+If Kubernetes and Gluetun are healthy but `deluged` loops with
+`libtorrent::libtorrent_exception` and `port-config` gets connection refused,
+check `clusters/homelab/apps/deluge/README.md` for the narrow
+`session.state` recovery. Archive the broken file and restore
+`session.state.bak`; do not delete `/config/state/*.torrent` or downloaded
+media while repairing this failure mode.
+The `daemon-metrics` sidecar exports `deluge_daemon_rpc_healthy` from
+`deluge-console status`; Prometheus scrapes it through the monitoring-owned
+Deluge ServiceMonitor, and Grafana alerts when the metric is absent or zero so
+future daemon-only failures do not hide behind healthy Pod and Argo CD status.
 
 ## Grafana
 
@@ -76,6 +86,8 @@ SQLite/PVC state cannot keep retrying removed integrations.
 Alerting-only provisioning changes bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and applies
 rule additions, updates, and deletions.
+The Deluge daemon RPC rule depends on the Deluge `daemon-metrics` sidecar and
+Prometheus `deluge` ServiceMonitor rather than generic Kubernetes readiness.
 The GitHub dashboard uses unauthenticated public REST API reads against
 `Stuhlmuller/homelab`. GitHub Actions failure and timeout alerts are deleted
 from provisioning until Grafana has a token-backed GitHub API secret contract;
