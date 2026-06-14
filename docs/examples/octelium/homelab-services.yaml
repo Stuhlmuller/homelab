@@ -34,7 +34,20 @@ metadata:
   name: homelab-ci-kubernetes-api-access
 spec:
   rules:
-    - effect: ALLOW
+    - name: connect-api
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-ci"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.namespace.metadata.name == "octelium-api"
+            - match: ctx.service.spec.mode == "GRPC"
+            - match: ctx.request.grpc.serviceFullName == "octelium.api.main.user.v1.MainService"
+            - match: ctx.request.grpc.method == "Connect"
+    - name: kubernetes-api-service
+      effect: ALLOW
       condition:
         all:
           of:

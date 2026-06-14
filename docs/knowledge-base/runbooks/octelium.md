@@ -261,10 +261,11 @@ GitHub Actions CI uses a separate Octelium workload credential for User
 credential as GitHub environment secret `OCTELIUM_CI_AUTH_TOKEN` in both
 `homelab-plan` and `homelab-production`; do not store it in AWS SSM unless a
 future repo-owned workflow needs to materialize it in-cluster. The credential
-must only publish Service `kubernetes-api.ci` to the runner loopback
-listener. Do not add Octelium `--scope` flags to this v0.35 auth-token connect
-path; the workload policy is the hard access boundary and scoped sessions are
-denied before publish starts.
+must only open the Octelium client session and publish Service
+`kubernetes-api.ci` to the runner loopback listener. The workload policy is the
+hard access boundary; it includes separate allow rules for the Octelium user API
+`Connect` method and the Kubernetes API TCP Service. Do not add auth-token
+`--scope` flags to this v0.35 connect path.
 
 ## Isolation
 
@@ -321,10 +322,15 @@ temporary bootstrap file from the Kubernetes Secret, runs `octops init` with
 Octelium ingress front-proxy mode, labels the `octelium` namespace with the
 privileged Pod Security profile required by the Octelium data plane, and waits
 for the namespace workloads. When an Octelium deployment already exists, the
-same wrapper runs `octops upgrade`, answers the upgrade confirmation, waits for
-the newly created `octelium-genesis-upgrade-*` Job to complete, and then waits
-on Kubernetes rollout status; it does not use Octelium's portal-authenticated
-`octops upgrade --wait` mode.
+same wrapper first reads the full current `ClusterConfig` with `octeliumctl`,
+sets `spec.network.quicv0.enable=true` without dropping the rest of the spec,
+applies the updated config back to the Cluster, runs `octops upgrade`, answers
+the upgrade confirmation, waits for the newly created
+`octelium-genesis-upgrade-*` Job to complete, and then waits on Kubernetes
+rollout status; it does not use the portal-authenticated
+`octops upgrade --wait` mode. Existing Cluster upgrades therefore need
+`octeliumctl`, `jq`, and an Octelium admin login in addition to the Kubernetes
+access used by `octops`.
 - `scripts/octelium-gateway-dns.sh`, which reads the Cloudflare API token from
   SSM and reconciles exact `_gw-*` AAAA records from Octelium Gateway status so
   client VPN traffic does not fall through to the tailnet wildcard record.

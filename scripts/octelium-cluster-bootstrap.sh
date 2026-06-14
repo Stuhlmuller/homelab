@@ -37,6 +37,8 @@ Prerequisites:
   - octelium-storage Argo CD Application synced and healthy
   - IaC/live/kubernetes-node-labels applied
   - octops, kubectl, and base64 installed locally
+  - octeliumctl and jq installed locally when upgrading an existing Cluster
+  - Octelium admin login available to octeliumctl when upgrading
 USAGE
 }
 
@@ -185,6 +187,24 @@ wait_for_upgrade_job() {
   fi
 }
 
+apply_quic_cluster_config() {
+  require_command octeliumctl
+  require_command jq
+
+  cluster_config_file="$(mktemp "${TMPDIR:-/tmp}/octelium-cluster-config.XXXXXX.json")"
+  chmod 0600 "$cluster_config_file"
+
+  echo "Reconciling Octelium ClusterConfig QUIC setting..."
+  if ! octeliumctl get clusterconfig --domain "$domain" -o json \
+    | jq '.kind = "ClusterConfig" | .spec.network.quicv0.enable = true | del(.status)' \
+      >"$cluster_config_file"; then
+    echo "error: failed to render updated Octelium ClusterConfig" >&2
+    exit 1
+  fi
+
+  octeliumctl apply --domain "$domain" "$cluster_config_file"
+}
+
 echo "Checking Octelium bootstrap prerequisites..."
 "${kubectl_cmd[@]}" get crd network-attachment-definitions.k8s.cni.cncf.io >/dev/null
 "${kubectl_cmd[@]}" -n kube-system rollout status daemonset/kube-multus-ds --timeout="${wait_timeout}"
@@ -210,14 +230,21 @@ for secret_name in POSTGRES_PASSWORD REDIS_PASSWORD; do
 done
 
 bootstrap_file="$(mktemp "${TMPDIR:-/tmp}/octelium-bootstrap.XXXXXX")"
+cluster_config_file=""
 cleanup() {
   rm -f "$bootstrap_file"
+  if [[ -n "$cluster_config_file" ]]; then
+    rm -f "$cluster_config_file"
+  fi
 }
 trap cleanup EXIT
 
 chmod 0600 "$bootstrap_file"
 cat >"$bootstrap_file" <<EOF
 spec:
+  network:
+    quicv0:
+      enable: true
   primaryStorage:
     postgresql:
       username: octelium
@@ -238,6 +265,7 @@ EOF
 
 previous_upgrade_job=""
 if [[ -n "$("${kubectl_cmd[@]}" -n octelium get deploy -o name 2>/dev/null || true)" ]]; then
+  apply_quic_cluster_config
   previous_upgrade_job="$(latest_upgrade_job)"
   action=(upgrade "$domain")
 else
