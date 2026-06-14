@@ -8,12 +8,13 @@ This repository uses GitHub Actions for the review and rollout path:
   and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repository pull requests then inspect the changed
-  paths. If the change touches `IaC/**`, flake inputs, OpenTofu/Terragrunt
-  policy inputs, or live-plan helper scripts, the job connects to Octelium, runs
-  a live Terragrunt plan, and updates the managed plan section in the PR
-  description. Manifest-only, workflow-only, and docs-only changes skip the
-  Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
-  policies and replace the managed PR plan section with an explicit skip note.
+  paths. If the change touches `IaC/**`, Terragrunt workflow definitions, flake
+  inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts, the
+  job connects to Octelium, runs a live Terragrunt plan, and updates the managed
+  plan section in the PR description. Manifest-only, non-Terragrunt workflow,
+  and docs-only changes skip the Octelium/Kubernetes/OpenTofu live-plan steps
+  but still run rendered Conftest policies and replace the managed PR plan
+  section with an explicit skip note.
   Forked pull requests run Conftest after the live plan skip notice.
 - `Terragrunt Apply` runs after changes land on `main` and can also be started
   manually with `workflow_dispatch`. It repeats static checks and Conftest
@@ -78,7 +79,8 @@ contract for Grafana.
   `quicv0` tunnel mode, publish the Service to `127.0.0.1:16443`, and rely
   on the `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
-  IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
+  IaC, Terragrunt workflow definitions, flake, OpenTofu/Terragrunt policy, or
+  live-plan helper inputs.
   Reconcile the `_gw-*` gateway AAAA records with
   `scripts/octelium-gateway-dns.sh` whenever Octelium gateway status changes;
   external clients need those exact public gateway hostnames for human

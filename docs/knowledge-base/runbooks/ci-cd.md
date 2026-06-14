@@ -11,14 +11,14 @@ Source: `docs/ci-cd.md`
   `Terragrunt Plan` and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repo PRs inspect changed paths before opening the
-  CI Kubernetes access path. Changes to `IaC/**`, flake inputs,
-  OpenTofu/Terragrunt policy inputs, or live-plan helper scripts connect to
-  Octelium, run a live Terragrunt plan, validate rendered Terraform plan JSON
-  with Conftest, and update the managed PR plan section. Manifest-only,
-  workflow-only, and docs-only changes skip Octelium/Kubernetes/OpenTofu live
-  planning, still run rendered Conftest policies, and replace the managed PR
-  plan section with an explicit skip note. Forked PRs run static Conftest after
-  the live plan skip notice.
+  CI Kubernetes access path. Changes to `IaC/**`, Terragrunt workflow
+  definitions, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan
+  helper scripts connect to Octelium, run a live Terragrunt plan, validate
+  rendered Terraform plan JSON with Conftest, and update the managed PR plan
+  section. Manifest-only, non-Terragrunt workflow, and docs-only changes skip
+  Octelium/Kubernetes/OpenTofu live planning, still run rendered Conftest
+  policies, and replace the managed PR plan section with an explicit skip note.
+  Forked PRs run static Conftest after the live plan skip notice.
 - `Terragrunt Apply` runs after merge to `main` and through
   `workflow_dispatch`. It repeats static checks and Conftest, connects to
   Octelium, and applies the live Terragrunt phases in order: Argo CD bootstrap,
