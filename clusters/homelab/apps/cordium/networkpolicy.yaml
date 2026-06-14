@@ -33,4 +33,6 @@ spec:
         - protocol: TCP
           port: 443
         - protocol: TCP
+          port: 8080
+        - protocol: TCP
           port: 6443
