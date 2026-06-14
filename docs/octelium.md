@@ -468,10 +468,14 @@ The wrapper sets `OCTELIUM_INGRESS_FRONT_PROXY=true` for Octelium v0.35 and also
 sets the older `OCTELIUM_FRONT_PROXY_MODE=true` name for documentation
 compatibility. The wrapper also labels the `octelium` namespace with the
 privileged Pod Security profile that Octelium data-plane workloads require. If
-an Octelium deployment already exists, the same wrapper runs `octops upgrade`,
-answers the upgrade confirmation, and waits for the newly created
-`octelium-genesis-upgrade-*` Job and Kubernetes workloads to roll out instead of
-using Octelium's portal-authenticated wait mode.
+an Octelium deployment already exists, the same wrapper reads the full current
+`ClusterConfig` with `octeliumctl`, sets only
+`spec.network.quicv0.enable=true`, applies the full updated config back to the
+Cluster, runs `octops upgrade`, answers the upgrade confirmation, and waits for
+the newly created `octelium-genesis-upgrade-*` Job and Kubernetes workloads to
+roll out instead of using Octelium's portal-authenticated wait mode. Existing
+Cluster upgrades therefore require `octeliumctl`, `jq`, and an Octelium admin
+login in addition to the Kubernetes access used by `octops`.
 
 Then reconcile public DNS:
 
