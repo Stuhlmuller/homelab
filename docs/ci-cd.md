@@ -80,8 +80,7 @@ contract for Grafana.
   publish the Service to `127.0.0.1:16443`, and rely on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
-  IaC, Terragrunt workflow definitions, flake, OpenTofu/Terragrunt policy, or
-  live-plan helper inputs.
+  IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration; reconcile the `_gw-*` gateway AAAA records with
   `scripts/octelium-gateway-dns.sh` whenever Octelium gateway status changes.
