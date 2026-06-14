@@ -75,18 +75,18 @@ contract for Grafana.
   `kubernetes-api.ci`. Live Terragrunt jobs run on GitHub-hosted Ubuntu runners
   and reach the cluster through Octelium userspace Service publishing rather
   than node routing from a self-hosted runner. The jobs use gVisor userspace
-  publishing, allow Octelium DNS for Service publishing, prefer Octelium's
-  `quicv0` tunnel mode with a WireGuard fallback while cluster rollout catches
-  up, publish the Service to `127.0.0.1:16443`, and rely on the
+  publishing, allow Octelium DNS for Service publishing, keep Octelium's
+  `wireguard` tunnel mode until the cluster-side QUIC rollout is applied,
+  publish the Service to `127.0.0.1:16443`, and rely on the
   `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, Terragrunt workflow definitions, flake, OpenTofu/Terragrunt policy, or
   live-plan helper inputs.
-  The Octelium Cluster bootstrap enables `network.quicv0.enable`; reconcile the
-  `_gw-*` gateway AAAA records with `scripts/octelium-gateway-dns.sh` whenever
-  Octelium gateway status changes. External clients need those exact public
-  gateway hostnames for both hosted CI QUIC sessions and human WireGuard client
-  dataplane sessions.
+  The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
+  hosted CI QUIC migration; reconcile the `_gw-*` gateway AAAA records with
+  `scripts/octelium-gateway-dns.sh` whenever Octelium gateway status changes.
+  External clients need those exact public gateway hostnames for both hosted CI
+  QUIC sessions and human WireGuard client dataplane sessions.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
   current cluster server to `https://127.0.0.1:16443` and sets the TLS server
