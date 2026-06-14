@@ -560,7 +560,6 @@ octelium connect \
   --domain stinkyboi.com \
   --implementation gvisor \
   --ip-mode=v4 \
-  --no-dns \
   --publish kubernetes-api.ci:127.0.0.1:16443
 curl -kfsS https://127.0.0.1:16443/version
 ```

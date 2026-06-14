@@ -75,10 +75,9 @@ contract for Grafana.
   `kubernetes-api.ci`. Live Terragrunt jobs run on GitHub-hosted Ubuntu runners
   and reach the cluster through Octelium userspace Service publishing rather
   than node routing from a self-hosted runner. The jobs use gVisor userspace
-  publishing, skip Octelium DNS changes because they publish only the explicit
-  `kubernetes-api.ci` Service, force Octelium's `wireguard` tunnel mode, publish
-  the Service to `127.0.0.1:16443`, and rely on the
-  `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
+  publishing, allow Octelium DNS for Service publishing, force Octelium's
+  `wireguard` tunnel mode, publish the Service to `127.0.0.1:16443`, and rely
+  on the `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, Terragrunt workflow definitions, flake, OpenTofu/Terragrunt policy, or
   live-plan helper inputs.
