@@ -54,7 +54,8 @@ Source: `docs/ci-cd.md`
   Octelium userspace Service publishing rather than node routing from a
   self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
   `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
-  DNS enabled for Service publishing, and Octelium's `quicv0` tunnel mode.
+  DNS enabled for Service publishing, and Octelium's `quicv0` tunnel mode with
+  a WireGuard fallback while cluster rollout catches up.
   The Octelium Cluster bootstrap enables `network.quicv0.enable`, and the
   `_gw-*` Octelium Gateway hostnames must have exact public AAAA records
   reconciled by `scripts/octelium-gateway-dns.sh`; otherwise hosted CI QUIC

@@ -36,30 +36,36 @@ fi
 
 install -m 0700 -d "${OCTELIUM_HOMEDIR}"
 
-connect_cmd=(
-  "${OCTELIUM_BIN}"
-  --homedir "${OCTELIUM_HOMEDIR}"
-  connect
-  --domain "${OCTELIUM_DOMAIN}"
-  --auth-token "${OCTELIUM_AUTH_TOKEN}"
-  --implementation "${OCTELIUM_IMPLEMENTATION}"
-  --ip-mode v4
-)
-if [ "${OCTELIUM_NO_DNS}" = "true" ]; then
-  connect_cmd+=(--no-dns)
-fi
-if [ -n "${OCTELIUM_TUNNEL_MODE}" ]; then
-  connect_cmd+=(--tunnel-mode "${OCTELIUM_TUNNEL_MODE}")
-fi
-if [ -z "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
-  connect_cmd+=(--publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}")
-fi
-if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
-  nohup sudo -E "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
-else
-  nohup "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
-fi
-echo "$!" >"${OCTELIUM_CONNECT_PID_FILE}"
+start_connect() {
+  local -a connect_cmd
+
+  connect_cmd=(
+    "${OCTELIUM_BIN}"
+    --homedir "${OCTELIUM_HOMEDIR}"
+    connect
+    --domain "${OCTELIUM_DOMAIN}"
+    --auth-token "${OCTELIUM_AUTH_TOKEN}"
+    --implementation "${OCTELIUM_IMPLEMENTATION}"
+    --ip-mode v4
+  )
+  if [ "${OCTELIUM_NO_DNS}" = "true" ]; then
+    connect_cmd+=(--no-dns)
+  fi
+  if [ -n "${OCTELIUM_TUNNEL_MODE}" ]; then
+    connect_cmd+=(--tunnel-mode "${OCTELIUM_TUNNEL_MODE}")
+  fi
+  if [ -z "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
+    connect_cmd+=(--publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}")
+  fi
+  if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
+    nohup sudo -E "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
+  else
+    nohup "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
+  fi
+  echo "$!" >"${OCTELIUM_CONNECT_PID_FILE}"
+}
+
+start_connect
 
 if [ -n "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
   readiness_url="https://${OCTELIUM_KUBE_SERVICE_ADDRESS}:6443/version"
@@ -70,6 +76,7 @@ else
 fi
 
 deadline=$((SECONDS + OCTELIUM_READY_TIMEOUT_SECONDS))
+quic_fallback_attempted=false
 run_status() {
   local status_cmd
 
@@ -87,6 +94,14 @@ run_status() {
 
 until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
   if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
+    if [ "${OCTELIUM_TUNNEL_MODE}" = "quicv0" ] && [ "${quic_fallback_attempted}" = "false" ] && grep -qi "PermissionDenied" "${OCTELIUM_CONNECT_LOG}"; then
+      echo "Octelium quicv0 connect was denied; retrying with wireguard." >&2
+      quic_fallback_attempted=true
+      OCTELIUM_TUNNEL_MODE=wireguard
+      : >"${OCTELIUM_CONNECT_LOG}"
+      start_connect
+      continue
+    fi
     sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
     echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
     exit 1
