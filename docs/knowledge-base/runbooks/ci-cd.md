@@ -54,17 +54,16 @@ Source: `docs/ci-cd.md`
   Octelium userspace Service access rather than node routing from a
   self-hosted runner. The workflow reaches Service `kubernetes-api.ci` at
   `https://kubernetes-api.ci:6443` with the gVisor userspace implementation,
-  Octelium DNS enabled for Service resolution, and Octelium's `wireguard`
-  tunnel mode.
+  Octelium DNS enabled for Service resolution, Octelium's `wireguard` tunnel
+  mode, and scopes limited to `api:user.MainService/Connect` plus
+  `service:kubernetes-api.ci`.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration, and the `_gw-*` Octelium Gateway hostnames must have
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
   otherwise hosted CI QUIC sessions and human WireGuard clients can authenticate
   but cannot move service traffic through the client dataplane.
-  The policy-bound
-  credential is the enforcement boundary; do not add auth-token `--scope` flags
-  to this v0.35 connect path because scoped sessions are denied before the
-  tunnel is established.
+  The policy-bound credential is the server-side enforcement boundary; keep the
+  committed CI scopes limited to the connect API and Kubernetes API Service.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
   Octelium Service DNS endpoint and sets the Kubernetes TLS server name to

@@ -76,8 +76,10 @@ contract for Grafana.
   and reach the cluster through Octelium userspace Service access rather
   than node routing from a self-hosted runner. The jobs use gVisor userspace
   networking, allow Octelium DNS for Service resolution, force Octelium's
-  `wireguard` tunnel mode, and reach `https://kubernetes-api.ci:6443` directly
-  through the `homelab-ci-kubernetes-api-access` policy boundary.
+  `wireguard` tunnel mode, request only
+  `api:user.MainService/Connect` and `service:kubernetes-api.ci` scopes, and
+  reach `https://kubernetes-api.ci:6443` directly through the
+  `homelab-ci-kubernetes-api-access` policy boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, Terragrunt workflow definitions, flake, OpenTofu/Terragrunt policy, or
   live-plan helper inputs.
@@ -217,12 +219,11 @@ Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after runner image changes,
 and on a regular schedule. The workflow still needs `KUBE_CONFIG_B64`; Octelium
 only carries the transport path to the Kubernetes API.
 
-Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
-credential unless a newer Octelium release validates that scoped auth-token
-sessions can publish `kubernetes-api.ci`. On Octelium v0.35, the
-policy-bound workload credential authenticates and is then constrained by the
-attached policy; adding `api:*` or `service:*` scopes causes the client session
-to be denied before the runner can establish the tunnel.
+Keep `scripts/ci/connect-octelium.sh` scoped to
+`api:user.MainService/Connect` and `service:kubernetes-api.ci` for this
+credential. The `homelab-ci-kubernetes-api-access` policy remains the
+server-side enforcement boundary; the client scopes keep the token from opening
+broader API or Service sessions.
 
 ## AWS Setup
 

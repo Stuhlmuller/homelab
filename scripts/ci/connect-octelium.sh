@@ -12,6 +12,7 @@ OCTELIUM_KUBE_LOCAL_PORT="${OCTELIUM_KUBE_LOCAL_PORT:-16443}"
 OCTELIUM_READY_TIMEOUT_SECONDS="${OCTELIUM_READY_TIMEOUT_SECONDS:-180}"
 OCTELIUM_IMPLEMENTATION="${OCTELIUM_IMPLEMENTATION:-gvisor}"
 OCTELIUM_NO_DNS="${OCTELIUM_NO_DNS:-false}"
+OCTELIUM_SCOPES="${OCTELIUM_SCOPES:-}"
 OCTELIUM_TUNNEL_MODE="${OCTELIUM_TUNNEL_MODE:-}"
 OCTELIUM_USE_SUDO="${OCTELIUM_USE_SUDO:-false}"
 OCTELIUM_STATUS_TIMEOUT_SECONDS="${OCTELIUM_STATUS_TIMEOUT_SECONDS:-10}"
@@ -47,6 +48,12 @@ connect_cmd=(
 )
 if [ "${OCTELIUM_NO_DNS}" = "true" ]; then
   connect_cmd+=(--no-dns)
+fi
+if [ -n "${OCTELIUM_SCOPES}" ]; then
+  while IFS= read -r scope; do
+    [ -n "${scope}" ] || continue
+    connect_cmd+=(--scope "${scope}")
+  done <<<"${OCTELIUM_SCOPES}"
 fi
 if [ -n "${OCTELIUM_TUNNEL_MODE}" ]; then
   connect_cmd+=(--tunnel-mode "${OCTELIUM_TUNNEL_MODE}")
@@ -88,7 +95,7 @@ run_status() {
 until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
   if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
     sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
-    echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
+    echo "Octelium exited before reaching ${readiness_target}." >&2
     exit 1
   fi
   if [ "${SECONDS}" -ge "${deadline}" ]; then
