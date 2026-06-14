@@ -55,9 +55,10 @@ Source: `docs/ci-cd.md`
   self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
   `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
   DNS enabled for Service publishing, and Octelium's `quicv0` tunnel mode.
-  The `_gw-*` Octelium Gateway hostnames must have exact
-  public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
-  otherwise human WireGuard clients can authenticate but cannot move service
+  The Octelium Cluster bootstrap enables `network.quicv0.enable`, and the
+  `_gw-*` Octelium Gateway hostnames must have exact public AAAA records
+  reconciled by `scripts/octelium-gateway-dns.sh`; otherwise hosted CI QUIC
+  sessions and human WireGuard clients can authenticate but cannot move service
   traffic through the client dataplane.
   The policy-bound
   credential is the enforcement boundary; do not add auth-token `--scope` flags

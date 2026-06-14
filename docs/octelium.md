@@ -460,16 +460,17 @@ scripts/octelium-cluster-bootstrap.sh \
 ```
 
 The wrapper reads the generated storage credentials from
-`octelium-storage-auth`, writes a temporary bootstrap file outside git, and runs
-`octops init` with Octelium ingress front-proxy mode so the existing Istio
-gateway terminates TLS. The wrapper sets `OCTELIUM_INGRESS_FRONT_PROXY=true`
-for Octelium v0.35 and also sets the older `OCTELIUM_FRONT_PROXY_MODE=true`
-name for documentation compatibility. The wrapper also labels the `octelium`
-namespace with the privileged Pod Security profile that Octelium data-plane
-workloads require. If an Octelium deployment already exists, the same wrapper
-runs `octops upgrade`, answers the upgrade confirmation, and waits for the
-newly created `octelium-genesis-upgrade-*` Job and Kubernetes workloads to roll
-out instead of using Octelium's portal-authenticated wait mode.
+`octelium-storage-auth`, writes a temporary bootstrap file outside git, enables
+`network.quicv0.enable` for hosted CI tunnels, and runs `octops init` with
+Octelium ingress front-proxy mode so the existing Istio gateway terminates TLS.
+The wrapper sets `OCTELIUM_INGRESS_FRONT_PROXY=true` for Octelium v0.35 and also
+sets the older `OCTELIUM_FRONT_PROXY_MODE=true` name for documentation
+compatibility. The wrapper also labels the `octelium` namespace with the
+privileged Pod Security profile that Octelium data-plane workloads require. If
+an Octelium deployment already exists, the same wrapper runs `octops upgrade`,
+answers the upgrade confirmation, and waits for the newly created
+`octelium-genesis-upgrade-*` Job and Kubernetes workloads to roll out instead of
+using Octelium's portal-authenticated wait mode.
 
 Then reconcile public DNS:
 

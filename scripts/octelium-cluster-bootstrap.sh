@@ -218,6 +218,9 @@ trap cleanup EXIT
 chmod 0600 "$bootstrap_file"
 cat >"$bootstrap_file" <<EOF
 spec:
+  network:
+    quicv0:
+      enable: true
   primaryStorage:
     postgresql:
       username: octelium
