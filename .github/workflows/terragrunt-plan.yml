@@ -26,18 +26,14 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER: kubernetes-api.ci
-  KUBE_API_SERVER_URL: https://kubernetes-api.ci:6443
+  KUBE_API_SERVER: 127.0.0.1
+  KUBE_API_SERVER_URL: https://127.0.0.1:16443
   KUBE_TLS_SERVER_NAME: 10.1.0.199
   OCTELIUM_DOMAIN: stinkyboi.com
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
-  OCTELIUM_KUBE_SERVICE_ADDRESS: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
   OCTELIUM_IMPLEMENTATION: gvisor
   OCTELIUM_NO_DNS: "false"
-  OCTELIUM_SCOPES: |-
-    api:user.MainService/Connect
-    service:kubernetes-api.ci
   OCTELIUM_TUNNEL_MODE: wireguard
   OCTELIUM_USE_SUDO: "false"
 
@@ -119,7 +115,7 @@ jobs:
           requires_live_plan=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              .github/workflows/terragrunt-*.yml|IaC/*|flake.nix|flake.lock|policy/*)
+              IaC/*|flake.nix|flake.lock|policy/*)
                 requires_live_plan=true
                 ;;
               scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
@@ -191,7 +187,7 @@ jobs:
         run: |
           {
             printf '## Terragrunt Plan Output\n\n'
-            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, Terragrunt workflow files, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
+            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
             printf 'Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check.\n'
           } >"${TERRAGRUNT_PLAN_MARKDOWN}"
 

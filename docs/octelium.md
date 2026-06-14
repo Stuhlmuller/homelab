@@ -560,14 +560,15 @@ octelium connect \
   --domain stinkyboi.com \
   --implementation gvisor \
   --ip-mode=v4 \
-  --scope=api:user.MainService/Connect \
-  --scope=service:kubernetes-api.ci
-curl -kfsS https://kubernetes-api.ci:6443/version
+  --no-dns \
+  --publish kubernetes-api.ci:127.0.0.1:16443
+curl -kfsS https://127.0.0.1:16443/version
 ```
 
-The `homelab-ci-kubernetes-api-access` policy is the server-side enforcement
-boundary for this workload credential. Keep client-requested scopes limited to
-`api:user.MainService/Connect` and `service:kubernetes-api.ci`.
+The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
+this workload credential. Do not add Octelium `--scope` flags to this CI
+connection on v0.35; scoped auth-token sessions are denied before the
+Kubernetes API listener is published.
 
 ## Rollback
 

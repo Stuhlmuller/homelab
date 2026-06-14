@@ -11,14 +11,14 @@ Source: `docs/ci-cd.md`
   `Terragrunt Plan` and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repo PRs inspect changed paths before opening the
-  CI Kubernetes access path. Changes to `IaC/**`, Terragrunt workflow
-  definitions, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan
-  helper scripts connect to Octelium, run a live Terragrunt plan, validate
-  rendered Terraform plan JSON with Conftest, and update the managed PR plan
-  section. Manifest-only, non-Terragrunt workflow, and docs-only changes skip
-  Octelium/Kubernetes/OpenTofu live planning, still run rendered Conftest
-  policies, and replace the managed PR plan section with an explicit skip note.
-  Forked PRs run static Conftest after the live plan skip notice.
+  CI Kubernetes access path. Changes to `IaC/**`, flake inputs,
+  OpenTofu/Terragrunt policy inputs, or live-plan helper scripts connect to
+  Octelium, run a live Terragrunt plan, validate rendered Terraform plan JSON
+  with Conftest, and update the managed PR plan section. Manifest-only,
+  workflow-only, and docs-only changes skip Octelium/Kubernetes/OpenTofu live
+  planning, still run rendered Conftest policies, and replace the managed PR
+  plan section with an explicit skip note. Forked PRs run static Conftest after
+  the live plan skip notice.
 - `Terragrunt Apply` runs after merge to `main` and through
   `workflow_dispatch`. It repeats static checks and Conftest, connects to
   Octelium, and applies the live Terragrunt phases in order: Argo CD bootstrap,
@@ -51,22 +51,22 @@ Source: `docs/ci-cd.md`
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Octelium uses a workload credential for User `homelab-ci`. Live Terragrunt
   jobs run on GitHub-hosted Ubuntu runners and reach the cluster through
-  Octelium userspace Service access rather than node routing from a
-  self-hosted runner. The workflow reaches Service `kubernetes-api.ci` at
-  `https://kubernetes-api.ci:6443` with the gVisor userspace implementation,
-  Octelium DNS enabled for Service resolution, Octelium's `wireguard` tunnel
-  mode, and scopes limited to `api:user.MainService/Connect` plus
-  `service:kubernetes-api.ci`.
+  Octelium userspace Service publishing rather than node routing from a
+  self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
+  `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
+  DNS enabled for Service publishing, and Octelium's `wireguard` tunnel mode.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration, and the `_gw-*` Octelium Gateway hostnames must have
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
   otherwise hosted CI QUIC sessions and human WireGuard clients can authenticate
   but cannot move service traffic through the client dataplane.
-  The policy-bound credential is the server-side enforcement boundary; keep the
-  committed CI scopes limited to the connect API and Kubernetes API Service.
+  The policy-bound
+  credential is the enforcement boundary; do not add auth-token `--scope` flags
+  to this v0.35 connect path because scoped sessions are denied before the
+  tunnel is established.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
-  Octelium Service DNS endpoint and sets the Kubernetes TLS server name to
+  Octelium-published localhost endpoint and sets the Kubernetes TLS server name to
   `10.1.0.199`.
   The unauthenticated curl readiness check only proves the TLS endpoint is
   reachable and may receive `401`; authenticated `kubectl version` is the real
