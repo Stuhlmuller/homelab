@@ -54,11 +54,11 @@ Source: `docs/ci-cd.md`
   Octelium userspace Service publishing rather than node routing from a
   self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
   `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
-  DNS enabled for Service publishing, and Octelium's `wireguard` tunnel mode.
+  DNS enabled for Service publishing, and Octelium's `quicv0` tunnel mode.
   The `_gw-*` Octelium Gateway hostnames must have exact
   public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
-  otherwise external clients can authenticate but cannot move service traffic
-  through the client dataplane.
+  otherwise human WireGuard clients can authenticate but cannot move service
+  traffic through the client dataplane.
   The policy-bound
   credential is the enforcement boundary; do not add auth-token `--scope` flags
   to this v0.35 connect path because scoped sessions are denied before the
