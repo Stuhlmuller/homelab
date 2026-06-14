@@ -88,7 +88,7 @@ run_status() {
 until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
   if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
     sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
-    echo "Octelium exited before publishing ${readiness_target}." >&2
+    echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
     exit 1
   fi
   if [ "${SECONDS}" -ge "${deadline}" ]; then
