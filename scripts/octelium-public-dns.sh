@@ -139,6 +139,7 @@ hostnames=(
   "argocd.${domain}"
   "compass.${domain}"
   "cordium.${domain}"
+  "*.cordium.${domain}"
   "console.${domain}"
   "deluge.${domain}"
   "grafana.${domain}"
