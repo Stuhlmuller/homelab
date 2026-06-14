@@ -73,11 +73,11 @@ contract for Grafana.
   AWS access keys to this repository.
 - Octelium access uses a workload credential for User `homelab-ci` and Service
   `kubernetes-api.ci`. Live Terragrunt jobs run on GitHub-hosted Ubuntu runners
-  and reach the cluster through Octelium userspace Service publishing rather
+  and reach the cluster through Octelium userspace Service access rather
   than node routing from a self-hosted runner. The jobs use gVisor userspace
-  publishing, allow Octelium DNS for Service publishing, force Octelium's
-  `wireguard` tunnel mode, publish the Service to `127.0.0.1:16443`, and rely
-  on the `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
+  networking, allow Octelium DNS for Service resolution, force Octelium's
+  `wireguard` tunnel mode, and reach `https://kubernetes-api.ci:6443` directly
+  through the `homelab-ci-kubernetes-api-access` policy boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, Terragrunt workflow definitions, flake, OpenTofu/Terragrunt policy, or
   live-plan helper inputs.
@@ -88,13 +88,14 @@ contract for Grafana.
   sessions and human WireGuard client dataplane sessions.
 - The kubeconfig is injected only from GitHub environment secrets and written to
   `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
-  current cluster server to `https://127.0.0.1:16443` and sets the TLS server
-  name to `10.1.0.199`, so the Kubernetes API certificate remains valid through
-  the Octelium tunnel.
+  current cluster server to `https://kubernetes-api.ci:6443` and sets the TLS
+  server name to `10.1.0.199`, so the Kubernetes API certificate remains valid
+  through the Octelium tunnel.
 - Kubernetes reachability is verified first with a TLS reachability `curl`
-  probe against `https://127.0.0.1:16443/version`, which may return `401` on
-  clusters that reject anonymous API requests, and then with authenticated
-  `kubectl --request-timeout=15s version` after kubeconfig installation.
+  probe against `https://kubernetes-api.ci:6443/version`, which may return
+  `401` on clusters that reject anonymous API requests, and then with
+  authenticated `kubectl --request-timeout=15s version` after kubeconfig
+  installation.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace

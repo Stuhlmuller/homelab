@@ -559,9 +559,8 @@ Check the CI Kubernetes API service through Octelium from a client machine:
 octelium connect \
   --domain stinkyboi.com \
   --implementation gvisor \
-  --ip-mode=v4 \
-  --publish kubernetes-api.ci:127.0.0.1:16443
-curl -kfsS https://127.0.0.1:16443/version
+  --ip-mode=v4
+curl -kfsS https://kubernetes-api.ci:6443/version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for

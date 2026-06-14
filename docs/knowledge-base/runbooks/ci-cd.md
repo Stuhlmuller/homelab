@@ -51,10 +51,11 @@ Source: `docs/ci-cd.md`
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Octelium uses a workload credential for User `homelab-ci`. Live Terragrunt
   jobs run on GitHub-hosted Ubuntu runners and reach the cluster through
-  Octelium userspace Service publishing rather than node routing from a
-  self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
-  `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
-  DNS enabled for Service publishing, and Octelium's `wireguard` tunnel mode.
+  Octelium userspace Service access rather than node routing from a
+  self-hosted runner. The workflow reaches Service `kubernetes-api.ci` at
+  `https://kubernetes-api.ci:6443` with the gVisor userspace implementation,
+  Octelium DNS enabled for Service resolution, and Octelium's `wireguard`
+  tunnel mode.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration, and the `_gw-*` Octelium Gateway hostnames must have
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
@@ -66,7 +67,7 @@ Source: `docs/ci-cd.md`
   tunnel is established.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
-  Octelium-published localhost endpoint and sets the Kubernetes TLS server name to
+  Octelium Service DNS endpoint and sets the Kubernetes TLS server name to
   `10.1.0.199`.
   The unauthenticated curl readiness check only proves the TLS endpoint is
   reachable and may receive `401`; authenticated `kubectl version` is the real

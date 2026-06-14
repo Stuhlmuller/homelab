@@ -24,11 +24,12 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER: 127.0.0.1
-  KUBE_API_SERVER_URL: https://127.0.0.1:16443
+  KUBE_API_SERVER: kubernetes-api.ci
+  KUBE_API_SERVER_URL: https://kubernetes-api.ci:6443
   KUBE_TLS_SERVER_NAME: 10.1.0.199
   OCTELIUM_DOMAIN: stinkyboi.com
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
+  OCTELIUM_KUBE_SERVICE_ADDRESS: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
   OCTELIUM_IMPLEMENTATION: gvisor
   OCTELIUM_NO_DNS: "false"
