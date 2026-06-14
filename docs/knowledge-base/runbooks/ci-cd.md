@@ -53,9 +53,9 @@ Source: `docs/ci-cd.md`
   jobs run on GitHub-hosted Ubuntu runners and reach the cluster through
   Octelium userspace Service publishing rather than node routing from a
   self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
-  `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
-  DNS enabled for Service publishing, and Octelium's `wireguard` tunnel mode
-  until the cluster-side QUIC rollout is applied.
+  `https://127.0.0.1:16443` with the gVisor userspace implementation, skips
+  Octelium DNS changes for the explicit publish-only path, and uses Octelium's
+  `wireguard` tunnel mode.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration, and the `_gw-*` Octelium Gateway hostnames must have
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
