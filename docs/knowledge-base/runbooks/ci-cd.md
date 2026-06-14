@@ -60,14 +60,13 @@ Source: `docs/ci-cd.md`
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
   otherwise hosted CI QUIC sessions and human WireGuard clients can authenticate
   but cannot move service traffic through the client dataplane.
-  The policy-bound
-  credential is the enforcement boundary; do not add auth-token `--scope` flags
-  to this v0.35 connect path because scoped sessions are denied before the
-  tunnel is established.
+  The policy-bound credential is the enforcement boundary; do not add
+  auth-token `--scope` flags to this v0.35 connect path because scoped
+  sessions are denied before the tunnel is established.
 - Kubeconfig is injected only from GitHub environment secrets and written
   locally with mode `0600`; CI rewrites the current cluster server to the
-  Octelium-published localhost endpoint and sets the Kubernetes TLS server name to
-  `10.1.0.199`.
+  Octelium-published localhost endpoint and sets the Kubernetes TLS server name
+  to `10.1.0.199`.
   The unauthenticated curl readiness check only proves the TLS endpoint is
   reachable and may receive `401`; authenticated `kubectl version` is the real
   Kubernetes API validation.
@@ -154,7 +153,8 @@ The Octelium catalog in `docs/examples/octelium/homelab-services.yaml` owns
 the CI transport contract:
 
 - workload User `homelab-ci`;
-- Policy `homelab-ci-kubernetes-api-access`;
+- Policy `homelab-ci-kubernetes-api-access`, which allows only the Octelium
+  user API `Connect` method and the Kubernetes API TCP Service;
 - TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
 Apply the catalog with `octeliumctl apply --domain stinkyboi.com
@@ -163,10 +163,10 @@ docs/examples/octelium/homelab-services.yaml`, then create the credential with
 --policy homelab-ci-kubernetes-api-access homelab-ci`. Store only the printed
 credential token in GitHub environments as `OCTELIUM_CI_AUTH_TOKEN`.
 
-The CI connector intentionally does not pass Octelium `--scope` flags. The
-`homelab-ci-kubernetes-api-access` policy is attached to the workload
-credential and limits access to the Kubernetes API Service; scoped auth-token
-sessions on Octelium v0.35 are denied during session creation.
+The CI connector does not pass Octelium `--scope` flags on v0.35. The
+`homelab-ci-kubernetes-api-access` policy must be applied before the token is
+used because the credential policy authorizes the Connect API call and the
+Kubernetes API Service access separately.
 
 GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
 public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using

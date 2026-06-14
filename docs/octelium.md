@@ -64,7 +64,8 @@ They create:
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the
-  `homelab-ci` workload User to access the Kubernetes API Service.
+  `homelab-ci` workload User to create an Octelium client session and access
+  the Kubernetes API Service.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.

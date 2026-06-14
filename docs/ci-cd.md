@@ -161,7 +161,7 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to publish `kubernetes-api.ci` to the CI runner localhost endpoint. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to create a policy-bound client session for `MainService/Connect` and Service `kubernetes-api.ci`. |
 | `/homelab/github-actions-runner/registration-token` | SSM | Short-lived GitHub self-hosted runner registration token. Refresh it before recreating the `github-actions-runner` pod. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
@@ -189,7 +189,8 @@ The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
 
 - workload User `homelab-ci`;
-- Policy `homelab-ci-kubernetes-api-access`;
+- Policy `homelab-ci-kubernetes-api-access`, which allows only the Octelium
+  user API `Connect` method and the Kubernetes API TCP Service;
 - TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
 Apply that catalog to the Octelium Cluster after the control plane, portal, and
