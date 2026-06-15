@@ -42,9 +42,9 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `argocd`, `compass`, `deluge`, `grafana`, `kiali`,
-  `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
-  `radarr`, and `sonarr`, whose public FQDNs are the existing app hostnames
+- Public `WEB` Services `argocd`, `compass`, `deluge`, `dispatcharr`,
+  `grafana`, `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
+  `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the existing app hostnames
   such as `https://grafana.stinkyboi.com`.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
@@ -311,9 +311,9 @@ To remove the external Octelium resources:
 
 ```sh
 for service in \
-  argocd.homelab compass.homelab deluge.homelab grafana.homelab \
-  homelab-demo.homelab kiali.homelab litellm.homelab n8n.homelab \
-  octobot.homelab openclaw.homelab policy-bot.homelab \
+  argocd.homelab compass.homelab deluge.homelab dispatcharr.homelab \
+  grafana.homelab homelab-demo.homelab kiali.homelab litellm.homelab \
+  n8n.homelab octobot.homelab openclaw.homelab policy-bot.homelab \
   prowlarr.homelab radarr.homelab sonarr.homelab; do
   octeliumctl delete svc "${service}"
 done

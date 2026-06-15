@@ -27,10 +27,10 @@ catalog. It creates Namespace `homelab` for the demo, Namespace `ci` for
 CI-only transport, Policy `homelab-human-web-access`, Policy
 `homelab-workload-web-serve`, workload User `homelab-octelium-client`, human
 e2e User `homelab-e2e`, public `WEB` Services for Argo CD, Compass, Deluge,
-Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
-and Sonarr, plus WEB Service `homelab-demo.homelab`. The app service primary
-hostnames are first-level names such as `grafana`, which publish as existing
-FQDNs such as `https://grafana.stinkyboi.com`.
+Dispatcharr, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot,
+Prowlarr, Radarr, and Sonarr, plus WEB Service `homelab-demo.homelab`. The app
+service primary hostnames are first-level names such as `grafana`, which
+publish as existing FQDNs such as `https://grafana.stinkyboi.com`.
 
 The policy allows authenticated human client sessions and clientless browser
 sessions to app WEB Services. The workload policy allows the single

@@ -36,9 +36,9 @@ exceptions.
 
 ## Current Route Rules
 
-- Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,
-  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI use
-  Octelium-backed `*.stinkyboi.com` app hostnames.
+- Argo CD, Grafana, Kiali, Deluge, Dispatcharr, Prowlarr, Radarr, Sonarr,
+  LiteLLM, OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and
+  OctoBot UI use Octelium-backed `*.stinkyboi.com` app hostnames.
 - n8n webhooks are a reviewed public Funnel exception:
   `https://n8n-webhook.tail67beb.ts.net` for `/webhook`, `/webhook-test`, and
   `/webhook-waiting` only.

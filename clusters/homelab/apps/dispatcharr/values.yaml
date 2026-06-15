@@ -1,0 +1,71 @@
+serviceAccount:
+  dispatcharr: {}
+controllers:
+  dispatcharr:
+    serviceAccount:
+      identifier: dispatcharr
+    strategy: Recreate
+    pod:
+      automountServiceAccountToken: false
+      annotations:
+        homelab.rst.io/access-mode: "octelium"
+    containers:
+      app:
+        image:
+          repository: ghcr.io/dispatcharr/dispatcharr
+          tag: latest@sha256:9275b0c1f5319a84b412af6839a1364ef25b61d8d6ff0d2130a6c2b2504a8b07
+        env:
+          TZ: America/Los_Angeles
+          DISPATCHARR_ENV: aio
+          REDIS_HOST: localhost
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          DISPATCHARR_LOG_LEVEL: info
+          DISPATCHARR_ENABLE_IP_LOOKUP: "false"
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 9191
+              failureThreshold: 12
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 9191
+              failureThreshold: 6
+              periodSeconds: 30
+              timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            memory: 4Gi
+service:
+  app:
+    controller: dispatcharr
+    ports:
+      http:
+        port: 9191
+persistence:
+  data:
+    enabled: true
+    storageClass: nfs-default
+    size: 20Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /data
+  shm:
+    enabled: true
+    type: emptyDir
+    medium: Memory
+    sizeLimit: 512Mi
+    globalMounts:
+      - path: /dev/shm
