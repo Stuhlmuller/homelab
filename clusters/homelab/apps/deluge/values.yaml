@@ -198,11 +198,11 @@ controllers:
                 healthy=1
                 total="$(
                   printf "%s\n" "$status_output" |
-                    awk -F: '/^[[:space:]]*Total torrents:/ {gsub(/^[[:space:]]+/, "", $2); print $2; exit}'
+                    awk -F: '/^[ \t]*Total torrents:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
                 )"
                 errors="$(
                   printf "%s\n" "$status_output" |
-                    awk -F: '/^[[:space:]]*Error:/ {gsub(/^[[:space:]]+/, "", $2); print $2; exit}'
+                    awk -F: '/^[ \t]*Error:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
                 )"
               fi
               total="${total:-0}"

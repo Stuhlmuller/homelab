@@ -150,3 +150,18 @@ policy`.
   tighter profile or accidentally expand the exception blast radius.
 - **Next step:** continue splitting the Deluge VPN privilege exception into a
   dedicated namespace once the media workloads can stay restricted.
+- **Status:** open
+- **Area:** workload reliability / Deluge
+- **Evidence:** On 2026-06-15 UTC, Deluge was Kubernetes-ready and Argo CD
+  `Synced/Healthy`, but `deluged` was repeatedly crashing with
+  `libtorrent::libtorrent_exception: invalid type requested from entry`.
+  `deluge_daemon_rpc_healthy` was `0` until the documented
+  `session.state` recovery restored `/config/session.state.bak` and archived
+  the broken state file as `session.state.broken-20260615T040836Z`.
+- **Risk:** Deluge can be unavailable while Kubernetes readiness, Gluetun, and
+  Argo CD still look healthy, and the same persisted-state corruption may
+  recur after future pod or daemon restarts.
+- **Next step:** investigate a durable fix for recurring Deluge
+  `session.state` corruption, such as a safer shutdown path, a newer Deluge or
+  libtorrent image, or an automated guarded recovery that preserves
+  `/config/state/*.torrent` and `/downloads`.
