@@ -197,8 +197,8 @@ app has acceptable backup and restore coverage.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
 - Persistent app Terragrunt units were checked on 2026-05-24 and refreshed for
-  OctoBot on 2026-05-26. Prometheus, Grafana, Deluge, Prowlarr, Radarr, Sonarr,
-  LiteLLM, OpenClaw, n8n, and OctoBot each explicitly depend on
+  OctoBot on 2026-05-26. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
+  Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot each explicitly depend on
   `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
