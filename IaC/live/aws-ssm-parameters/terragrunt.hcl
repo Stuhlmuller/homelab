@@ -187,6 +187,14 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/dispatcharr/postgres-app-password" = {
+      description = "Dedicated PostgreSQL password for Dispatcharr."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/openclaw/app-secret" = {
       description = "OpenClaw application secret."
       generated = {
