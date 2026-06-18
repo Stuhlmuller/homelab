@@ -32,9 +32,10 @@ The tunnel uses QUIC for the cloudflared-to-Cloudflare transport because
 Octelium `MainService/Connect` is a long-lived gRPC stream; the previous
 forced HTTP/2 tunnel transport repeatedly ended the public API stream with
 Istio `DR http2.remote_reset` after roughly 125 seconds even though unary API
-calls succeeded. The `cloudflared-egress` NetworkPolicy allows UDP/7844 for
-that QUIC tunnel transport, plus TCP/443 and DNS for Cloudflare API and
-resolver access.
+calls succeeded. The `cloudflared-egress` NetworkPolicy allows public IPv4
+UDP/7844 for that QUIC tunnel transport, public IPv4 TCP/443 for Cloudflare API
+access, and DNS only to cluster DNS; private and link-local IPv4 ranges stay
+excluded from the public egress rule.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
