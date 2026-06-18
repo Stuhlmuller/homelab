@@ -253,7 +253,7 @@ controllers:
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
             else
               echo "DISCORD_BOT_TOKEN is populated; installing and enabling the Discord channel plugin"
-              openclaw_version="$(openclaw --version | awk 'NR == 1 {print $2}')"
+              openclaw_version="$(openclaw --version | awk 'NR == 1 {print $NF}')"
               : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
               discord_plugin_spec="clawhub:@openclaw/discord@${openclaw_version}"
               openclaw plugins install "$discord_plugin_spec" --force
