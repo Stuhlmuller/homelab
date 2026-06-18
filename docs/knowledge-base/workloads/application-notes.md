@@ -76,8 +76,9 @@ future daemon-only failures do not hide behind healthy Pod and Argo CD status.
 Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
 `https://dispatcharr.stinkyboi.com` through the Octelium app access plane. Its
 `data` PVC stores file-backed runtime data and operator-configured IPTV sources,
-while database state lives in the shared `media-postgres` instance. Playlist
-URLs, provider credentials, and guide source secrets must not be committed;
+while database state lives in the dedicated `dispatcharr-postgres` StatefulSet
+and PVC. Playlist URLs, provider credentials, and guide source secrets must not be
+committed;
 configure them through the UI or a future ExternalSecret-backed integration.
 Do not switch this app to upstream all-in-one mode on `nfs-default`; the AIO
 PostgreSQL init path recursively `chown`s `/data/db`, which is incompatible
