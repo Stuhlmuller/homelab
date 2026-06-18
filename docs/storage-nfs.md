@@ -177,7 +177,8 @@ app has acceptable backup and restore coverage.
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus repo-owned dashboard and alerting config in `clusters/homelab/apps/grafana` | Restore PVC and re-sync Grafana desired state | Preserve PVC |
 | deluge | config on `nfs-default`, shared downloads on `media-downloads` backed by `/media` | `nfs-default` plus static `/media` PV | NFS backup for config and `/media/downloads` | Restore config PVC and `/media/downloads` before app sync | Preserve PVCs and `/media/downloads` |
-| media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | `nfs-default` | NFS backup plus `pg_dump` logical dumps before upgrades | Restore PostgreSQL PVC or logical dumps before media app sync | Preserve PVC unless intentionally rebuilding from dumps |
+| dispatcharr | file-backed runtime data on `nfs-default`, database in `media-postgres` | `nfs-default` | NFS backup for data PVC plus PostgreSQL logical dump | Restore data PVC and `dispatcharr` database before app sync | Preserve PVC and database unless intentionally resetting IPTV state |
+| media-postgres | Sonarr, Radarr, Prowlarr, and Dispatcharr PostgreSQL databases | `nfs-default` | NFS backup plus `pg_dump` logical dumps before upgrades | Restore PostgreSQL PVC or logical dumps before media app sync | Preserve PVC unless intentionally rebuilding from dumps |
 | prowlarr | config, indexer refs, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases before app sync and re-test app integrations | Preserve PVCs |
 | radarr | config and PostgreSQL refs on `nfs-default`, movies on `media-movies`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/movies`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/movies` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
 | sonarr | config and PostgreSQL refs on `nfs-default`, TV on `media-tv`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/tv`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/tv` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
@@ -197,8 +198,8 @@ app has acceptable backup and restore coverage.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
 - Persistent app Terragrunt units were checked on 2026-05-24 and refreshed for
-  OctoBot on 2026-05-26. Prometheus, Grafana, Deluge, Prowlarr, Radarr, Sonarr,
-  LiteLLM, OpenClaw, n8n, and OctoBot each explicitly depend on
+  OctoBot on 2026-05-26. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
+  Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot each explicitly depend on
   `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.
