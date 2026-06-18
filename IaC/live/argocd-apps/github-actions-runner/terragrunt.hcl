@@ -50,7 +50,6 @@ inputs = {
       self_heal   = true
     }
     sync_options = [
-      "CreateNamespace=true",
       "ServerSideApply=true"
     ]
     retry = {
