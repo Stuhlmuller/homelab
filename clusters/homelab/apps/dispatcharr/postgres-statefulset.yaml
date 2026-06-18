@@ -43,7 +43,7 @@ spec:
             - |
               password="$(cat /run/secrets/dispatcharr-postgres/POSTGRES_PASSWORD)"
               if [ -z "$password" ]; then
-                echo "dispatcharr-postgres password is empty; update /homelab/dispatcharr/postgres-app-password in SSM" >&2
+                echo "dispatcharr-postgres password is empty; update /homelab/media-postgres/dispatcharr-app-password in SSM" >&2
                 exit 1
               fi
               if [ "$password" = "REPLACE_ME" ]; then
