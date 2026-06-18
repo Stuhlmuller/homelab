@@ -4,7 +4,7 @@ metadata:
   name: dispatcharr-postgres
   namespace: media
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "-1"
     checkov.io/skip1: CKV_K8S_40=The pod runs as the QNAP NFS anonymous UID 65534 so PostgreSQL owns the squashed data directory without root.
     checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
     checkov.io/skip3: CKV_K8S_43=Image tag and digest are pinned for GitOps review.
