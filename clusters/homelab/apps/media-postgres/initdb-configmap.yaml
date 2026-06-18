@@ -21,3 +21,6 @@ data:
     WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'prowlarr-main')\gexec
     SELECT 'CREATE DATABASE "prowlarr-log" OWNER media_apps'
     WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'prowlarr-log')\gexec
+
+    SELECT 'CREATE DATABASE "dispatcharr" OWNER media_apps'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'dispatcharr')\gexec
