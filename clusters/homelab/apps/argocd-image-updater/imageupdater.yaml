@@ -49,6 +49,41 @@ spec:
             helm:
               name: controllers.deluge.containers.port-config.image.repository
               tag: controllers.deluge.containers.port-config.image.tag
+    - namePattern: dispatcharr
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: helmvalues:/clusters/homelab/apps/dispatcharr/values.yaml
+          pullRequest:
+            github: {}
+      images:
+        - alias: dispatcharr
+          imageName: ghcr.io/dispatcharr/dispatcharr
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^[0-9a-f]{40}$
+          manifestTargets:
+            helm:
+              name: controllers.dispatcharr.containers.app.image.repository
+              tag: controllers.dispatcharr.containers.app.image.tag
+        - alias: dispatcharrCelery
+          imageName: ghcr.io/dispatcharr/dispatcharr
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^[0-9a-f]{40}$
+          manifestTargets:
+            helm:
+              name: controllers.dispatcharr.containers.celery.image.repository
+              tag: controllers.dispatcharr.containers.celery.image.tag
+        - alias: dispatcharrRedis
+          imageName: redis:7.x
+          manifestTargets:
+            helm:
+              name: controllers.dispatcharr.containers.redis.image.repository
+              tag: controllers.dispatcharr.containers.redis.image.tag
     - namePattern: octobot
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
