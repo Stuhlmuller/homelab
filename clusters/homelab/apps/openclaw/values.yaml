@@ -252,10 +252,11 @@ controllers:
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
             else
-              echo "DISCORD_BOT_TOKEN is populated; installing and enabling the Discord channel plugin"
-              if ! openclaw plugins info discord >/dev/null 2>&1; then
-                openclaw plugins install clawhub:@openclaw/discord
-              fi
+              echo "DISCORD_BOT_TOKEN is populated; installing the pinned Discord channel plugin"
+              openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
+              : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
+              discord_plugin_spec="clawhub:@openclaw/discord@${openclaw_version}"
+              openclaw plugins install "$discord_plugin_spec" --force
               openclaw plugins enable discord
               openclaw config set --strict-json \
                 channels.discord.enabled \

@@ -79,8 +79,9 @@ The `openclaw-secrets` ExternalSecret reads the Discord bot token from
 
 On pod startup, the `bootstrap-config` init container keeps the Control UI
 origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, it installs
-the official `@openclaw/discord` channel plugin into pod-local plugin storage,
-enables the plugin, and stores a SecretRef to the environment-backed token.
+the official `@openclaw/discord` channel plugin pinned to the running OpenClaw
+image version in pod-local plugin storage, enables the plugin, and stores a
+SecretRef to the environment-backed token.
 The npm cache and extension directory are intentionally not on the NFS-backed
 state PVC because OpenClaw rejects code plugins owned by the QNAP NFS `nobody`
 mapping.
