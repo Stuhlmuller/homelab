@@ -253,8 +253,11 @@ controllers:
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
             else
               echo "DISCORD_BOT_TOKEN is populated; installing and enabling the Discord channel plugin"
+              discord_plugin_spec="clawhub:@openclaw/discord@2026.6.6"
               if ! openclaw plugins info discord >/dev/null 2>&1; then
-                openclaw plugins install clawhub:@openclaw/discord
+                openclaw plugins install "$discord_plugin_spec"
+              else
+                openclaw plugins update "$discord_plugin_spec"
               fi
               openclaw plugins enable discord
               openclaw config set --strict-json \
