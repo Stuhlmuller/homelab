@@ -95,9 +95,9 @@ Ambient is intentionally not enabled for:
   service-to-service or trading API control path is mesh-enrolled;
 - `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
   API server, webhook, NFS, and controller paths need separate validation;
-- `istio-system`, `octelium`, `octelium-client`, `tailscale`, and
-  `github-actions-runner`, because they are privileged networking or CI
-  infrastructure rather than ordinary application namespaces.
+- `istio-system`, `octelium`, `octelium-client`, and `tailscale`, because they
+  are privileged networking infrastructure rather than ordinary application
+  namespaces.
 
 ## Privileged Workloads
 
