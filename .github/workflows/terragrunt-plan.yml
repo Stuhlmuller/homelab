@@ -26,8 +26,13 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER: 10.1.0.199
-  TAILSCALE_VERSION: 1.98.3
+  KUBE_API_SERVER: 127.0.0.1
+  KUBE_API_SERVER_URL: https://127.0.0.1:16443
+  KUBE_TLS_SERVER_NAME: 10.1.0.199
+  OCTELIUM_DOMAIN: stinkyboi.com
+  OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
+  OCTELIUM_KUBE_LOCAL_PORT: 16443
+  OCTELIUM_IMPLEMENTATION: gvisor
 
 jobs:
   static-policy:
@@ -120,13 +125,16 @@ jobs:
           if [ "${requires_live_plan}" = "true" ]; then
             echo "Live Terragrunt plan is required for this pull request."
           else
-            echo "No live Terragrunt plan inputs changed; skipping Tailscale, Kubernetes, and OpenTofu plan steps."
+            echo "No live Terragrunt plan inputs changed; skipping Octelium, Kubernetes, and OpenTofu plan steps."
           fi
 
       - name: Verify Live Plan Inputs
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
+        env:
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
+          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
 
       - name: Configure AWS Credentials
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
@@ -139,29 +147,28 @@ jobs:
           role-to-assume: ${{ env.AWS_PLAN_ROLE_ARN }}
           unset-current-credentials: true
 
-      - name: Connect To Tailnet
+      - name: Install Octelium Client
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
-        # tailscale/github-action@v4
-        uses: tailscale/github-action@306e68a486fd2350f2bfc3b19fcd143891a4a2d8
-        with:
-          authkey: ${{ secrets.TS_AUTH_KEY }}
-          tags: tag:github-actions-terragrunt-plan
-          version: ${{ env.TAILSCALE_VERSION }}
+        run: bash scripts/ci/install-octelium-client.sh
 
-      - name: Accept Tailnet Subnet Routes
+      - name: Connect To Octelium
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
-        run: sudo tailscale set --accept-routes=true
+        env:
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: bash scripts/ci/connect-octelium.sh
 
       - name: Install Kubeconfig
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
         run: nix develop --command bash scripts/ci/install-kubeconfig.sh
 
       - name: Verify Kubernetes API Reachability
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         run: |
-          ip route get "${KUBE_API_SERVER}"
+          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
           nix develop --command kubectl --request-timeout=15s version
 
       - name: Run Terragrunt Plan
