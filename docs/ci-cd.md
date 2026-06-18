@@ -166,7 +166,6 @@ rules and tighter rotation:
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to create a policy-bound client session for `MainService/Connect` and Service `kubernetes-api.ci`. |
-| `/homelab/github-actions-runner/registration-token` | SSM | Short-lived GitHub self-hosted runner registration token. Refresh it before recreating the `github-actions-runner` pod. |
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
