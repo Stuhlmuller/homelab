@@ -21,7 +21,7 @@ Funnel exceptions.
 | `platform-multus` | support | `kube-system` | `clusters/homelab/platform/multus` | `IaC/live/argocd-apps/platform-multus` | Octelium data-plane prerequisites |
 | `platform-storage` | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | QNAP NFS export |
 | `octelium-storage` | support | `octelium-storage` | `clusters/homelab/apps/octelium-storage` | `IaC/live/argocd-apps/octelium-storage` | external-secrets, platform-storage |
-| `github-actions-runner` | support | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | external-secrets |
+| `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none |
 | `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
 | `n8n-postgres` | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | external-secrets, platform-storage |
 
