@@ -93,9 +93,8 @@ controllers:
 
               tolower($1) ~ /^[[:space:]]*address[[:space:]]*$/ {
                 ipv4_addresses = ipv4_cidr_list($2)
-                if (ipv4_addresses == "") {
-                  print "WireGuard config must contain an IPv4 Address entry" > "/dev/stderr"
-                  exit 1
+                if (ipv4_addresses == "" || address_done) {
+                  next
                 }
                 print "Address = " ipv4_addresses
                 address_done=1
@@ -104,9 +103,8 @@ controllers:
 
               tolower($1) ~ /^[[:space:]]*allowedips[[:space:]]*$/ {
                 ipv4_allowed_ips = ipv4_cidr_list($2)
-                if (ipv4_allowed_ips == "") {
-                  print "WireGuard config must contain IPv4 AllowedIPs" > "/dev/stderr"
-                  exit 1
+                if (ipv4_allowed_ips == "" || allowed_ips_done) {
+                  next
                 }
                 print "AllowedIPs = " ipv4_allowed_ips
                 allowed_ips_done=1
@@ -115,7 +113,16 @@ controllers:
 
               { print }
               END {
-                if (!done || !address_done || !allowed_ips_done) {
+                if (!done) {
+                  print "WireGuard config must contain Endpoint = host:port" > "/dev/stderr"
+                  exit 1
+                }
+                if (!address_done) {
+                  print "WireGuard config must contain an IPv4 Address entry" > "/dev/stderr"
+                  exit 1
+                }
+                if (!allowed_ips_done) {
+                  print "WireGuard config must contain IPv4 AllowedIPs" > "/dev/stderr"
                   exit 1
                 }
               }
