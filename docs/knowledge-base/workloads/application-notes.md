@@ -56,10 +56,16 @@ updating that SSM value and bumping
 `homelab.rst.io/wireguard-profile-ssm-version` on both the `deluge-vpn`
 ExternalSecret and Deluge pod template so External Secrets rereads SSM and
 Gluetun restarts with the new profile. The pod resolves endpoint DNS names in
-the profile to IPv4 before Gluetun starts. Keep Deluge's AirVPN forwarded port
-fixed only for `listen_ports`; `outgoing_ports` should stay at Deluge's default
-random behavior, otherwise active torrents can report too few outgoing ports
-and fail to establish enough peer connections.
+the profile to IPv4 before Gluetun starts and strips IPv6 `Address` and
+`AllowedIPs` entries so Gluetun does not install IPv6 routing rules in this
+IPv4-only deployment. Keep Deluge's AirVPN forwarded port fixed only for
+`listen_ports`; `outgoing_ports` should stay at Deluge's default random
+behavior, otherwise active torrents can report too few outgoing ports and fail
+to establish enough peer connections.
+If Gluetun loops on `adding IPv6 rule ... file exists`, the public service can
+be down even while `deluged` still answers local RPC; roll a rendered
+IPv4-only profile through the repo-owned pod-template annotations instead of
+only checking torrent status.
 If Kubernetes and Gluetun are healthy but `deluged` loops with
 `libtorrent::libtorrent_exception` and `port-config` gets connection refused,
 check `clusters/homelab/apps/deluge/README.md` for the narrow
