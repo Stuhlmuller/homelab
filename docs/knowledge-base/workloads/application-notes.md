@@ -266,8 +266,9 @@ hook token is populated, bootstrap expands `GRAFANA_ALERT_HOOK_TOKEN` from the
 mounted Secret, JSON-encodes the runtime value, and stores it as a plain string
 because OpenClaw rejects SecretRef objects for that hook-token surface. When
 `/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
-installs and enables the official `@openclaw/discord` plugin and writes a
-SecretRef to `DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory
+force-installs the official `@openclaw/discord` plugin pinned to the running
+OpenClaw image version, enables it, and writes a SecretRef to
+`DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory
 are `emptyDir` mounts at `/data/openclaw/npm` and
 `/data/openclaw/extensions` because QNAP NFS maps PVC writes to `nobody`, and
 OpenClaw blocks code plugins with suspicious ownership. ChatGPT Pro access uses
