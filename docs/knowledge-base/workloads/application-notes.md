@@ -156,8 +156,8 @@ WEB access separate from the reserved workload WEB-serving rule for
 the public Octelium ingress.
 
 The public Octelium control-plane path is a separate `octelium-public`
-Application. It runs two `cloudflared` replicas in `octelium-public`, reads the
-named tunnel credentials JSON and UUID from
+Application. It runs two digest-pinned `cloudflared` replicas in
+`octelium-public`, reads the named tunnel credentials JSON and UUID from
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`, and forwards only
 `stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`,
@@ -173,7 +173,10 @@ routes through the Istio gateway to the package-owned
 The tunnel transport uses QUIC because the public Octelium API carries
 long-lived gRPC `MainService/Connect` streams; forced HTTP/2 transport
 previously reset those streams after about 125 seconds while short API calls
-continued to pass.
+continued to pass. During the 2026-06-18 public outage, Cloudflare reported
+zero active connections for the named tunnel, so the repo-owned recovery lever
+was a pod-template rollout of `octelium-public` while preserving QUIC and
+UDP/7844.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
