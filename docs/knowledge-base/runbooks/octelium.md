@@ -265,7 +265,10 @@ must only open the Octelium client session and publish Service
 `kubernetes-api.ci` to the runner loopback listener. The workload policy is the
 hard access boundary; it includes separate allow rules for the Octelium user API
 `Connect` method and the Kubernetes API TCP Service. Do not add auth-token
-`--scope` flags to this v0.35 connect path.
+`--scope` flags to this v0.35 connect path. Use
+`scripts/octelium-ci-credential.sh` from an authenticated Octelium admin shell
+to reapply the catalog and rotate the GitHub environment secrets after policy
+changes or `PermissionDenied` CI connection failures.
 
 ## Isolation
 

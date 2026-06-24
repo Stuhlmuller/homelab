@@ -202,26 +202,30 @@ defines:
 - TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
 Apply that catalog to the Octelium Cluster after the control plane, portal, and
-API hostnames are reachable:
+API hostnames are reachable, then create or rotate the GitHub environment
+secret in both CI environments:
 
 ```sh
-octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
+scripts/octelium-ci-credential.sh
 ```
 
-Create the workload credential outside git and store the printed token as
-`OCTELIUM_CI_AUTH_TOKEN` in both GitHub environments:
+The helper requires an authenticated Octelium admin session for `octeliumctl`
+and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
+or rotates the `homelab-ci` credential, pipes the generated token directly into
+the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
+`homelab-production`, and removes the temporary token file before exit.
 
-```sh
-octeliumctl create cred \
-  --domain stinkyboi.com \
-  --user homelab-ci \
-  --policy homelab-ci-kubernetes-api-access \
-  homelab-ci
-```
+Avoid running raw `octeliumctl create cred` in shared terminals or CI logs
+because it can print the generated token. If the helper cannot reach GitHub,
+fix `gh auth status` or the target environment permissions, then rerun the
+helper so the token is captured and stored without being displayed.
 
-Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after runner image changes,
-and on a regular schedule. The workflow still needs `KUBE_CONFIG_B64`; Octelium
-only carries the transport path to the Kubernetes API.
+Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after catalog policy
+changes, after runner image changes, and on a regular schedule. The workflow
+still needs `KUBE_CONFIG_B64`; Octelium only carries the transport path to the
+Kubernetes API. If CI logs show `gRPC error PermissionDenied` before
+`kubernetes-api.ci` is published, reapply the catalog and rotate the credential
+with `scripts/octelium-ci-credential.sh`.
 
 Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
 credential unless a newer Octelium release validates that scoped auth-token

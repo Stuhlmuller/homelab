@@ -165,16 +165,20 @@ the CI transport contract:
   user API `Connect` method and the Kubernetes API TCP Service;
 - TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
-Apply the catalog with `octeliumctl apply --domain stinkyboi.com
-docs/examples/octelium/homelab-services.yaml`, then create the credential with
-`octeliumctl create cred --domain stinkyboi.com --user homelab-ci
---policy homelab-ci-kubernetes-api-access homelab-ci`. Store only the printed
-credential token in GitHub environments as `OCTELIUM_CI_AUTH_TOKEN`.
+Apply the catalog and create or rotate the credential with
+`scripts/octelium-ci-credential.sh` after authenticating `octeliumctl` as an
+Octelium admin. The helper applies
+`docs/examples/octelium/homelab-services.yaml`, creates or rotates the
+`homelab-ci` credential, and updates `OCTELIUM_CI_AUTH_TOKEN` in the
+`homelab-plan` and `homelab-production` GitHub environments without printing
+the generated token.
 
 The CI connector does not pass Octelium `--scope` flags on v0.35. The
 `homelab-ci-kubernetes-api-access` policy must be applied before the token is
 used because the credential policy authorizes the Connect API call and the
-Kubernetes API Service access separately.
+Kubernetes API Service access separately. If CI logs show `gRPC error
+PermissionDenied` before `kubernetes-api.ci` is published, reapply the catalog
+and rotate this credential before debugging the Kubernetes API itself.
 
 GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
 public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using
