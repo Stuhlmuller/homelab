@@ -500,6 +500,13 @@ octeliumctl create cred \
 Store the printed credential in `/homelab/octelium/client-auth-token`, sync the
 `octelium` Argo CD Application, and run `scripts/octelium-e2e-check.sh`.
 
+Cordium genesis `0.12.7` declares the non-root image user by name
+(`octelium`). Kubelet cannot verify that named user when `runAsNonRoot` is set,
+so the hook pins the image's numeric runtime identity (`runAsUser: 100`,
+`runAsGroup: 65533`). Bump
+`homelab.rst.io/cordium-genesis-revision` when the hook template needs to be
+recreated.
+
 ## Validation
 
 Before rollout:

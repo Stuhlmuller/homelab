@@ -388,3 +388,8 @@ During full Cluster bootstrap, Multus must stay ready on every node that can
 host Octelium service pods. A 50Mi daemon limit OOMKilled Multus on
 `zimaboard-0` while it processed Octelium network attachments; the platform
 manifest now uses a 128Mi request and 256Mi limit.
+
+Cordium genesis `0.12.7` uses the named image user `octelium`. Kubelet cannot
+prove a named user is non-root when `runAsNonRoot` is set, so the hook pins the
+image's numeric identity (`runAsUser: 100`, `runAsGroup: 65533`) and bumps
+`homelab.rst.io/cordium-genesis-revision` when the hook must be recreated.
