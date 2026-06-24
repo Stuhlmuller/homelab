@@ -36,20 +36,6 @@ fi
 
 install -m 0700 -d "${OCTELIUM_HOMEDIR}"
 
-redact_connect_log() {
-  sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
-}
-
-explain_connect_failure() {
-  if grep -q 'PermissionDenied' "${OCTELIUM_CONNECT_LOG}" 2>/dev/null; then
-    cat >&2 <<'MSG'
-Octelium denied the client session. Verify the committed catalog has been
-applied and rotate OCTELIUM_CI_AUTH_TOKEN with scripts/octelium-ci-credential.sh
-after authenticating octeliumctl as an Octelium admin.
-MSG
-  fi
-}
-
 connect_cmd=(
   "${OCTELIUM_BIN}"
   --homedir "${OCTELIUM_HOMEDIR}"
@@ -101,15 +87,13 @@ run_status() {
 
 until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
   if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
-    redact_connect_log
-    explain_connect_failure
+    sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
     echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
     exit 1
   fi
   if [ "${SECONDS}" -ge "${deadline}" ]; then
     run_status
-    redact_connect_log
-    explain_connect_failure
+    sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
     echo "Timed out waiting for ${readiness_target}." >&2
     exit 1
   fi
