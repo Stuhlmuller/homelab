@@ -38,6 +38,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: finance
     - server: https://kubernetes.default.svc
+      namespace: github-actions-runner
+    - server: https://kubernetes.default.svc
       namespace: istio-system
     - server: https://kubernetes.default.svc
       namespace: kube-system

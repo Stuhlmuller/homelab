@@ -172,6 +172,14 @@ local bootstrap. This keeps the first GitOps apply from overwriting or failing
 on the existing short-lived token while preserving a from-scratch path where
 OpenTofu creates the placeholder.
 
+The `github-actions-runner` Argo CD Application targets the
+`github-actions-runner` namespace, so that namespace must stay in the
+`homelab` AppProject destination allow-list. If the runner pod crash loops
+while configuring itself and logs `POST
+https://api.github.com/actions/runner-registration` with HTTP `404`, refresh
+`/homelab/github-actions-runner/registration-token` with a newly minted GitHub
+self-hosted runner registration token before recreating or waiting for the pod.
+
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so
 storing them as environment secrets also works when that is how the repository

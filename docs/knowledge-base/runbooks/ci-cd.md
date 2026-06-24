@@ -109,6 +109,14 @@ Source: `docs/ci-cd.md`
   `IaC/live/aws-ssm-parameters` state before planning. This handles the
   bootstrap path where a short-lived token was written locally so the runner
   could come online before GitHub Actions could manage the placeholder itself.
+- The `github-actions-runner` Argo CD Application needs the
+  `github-actions-runner` namespace in the `homelab` AppProject destination
+  allow-list. Runner pod logs that show HTTP `404` from
+  `POST https://api.github.com/actions/runner-registration` usually mean the
+  mounted short-lived registration token is stale or invalid; refresh
+  `/homelab/github-actions-runner/registration-token` in SSM with a newly
+  minted GitHub runner registration token before waiting for the pod to
+  register.
 
 ## Monitoring
 
