@@ -591,7 +591,9 @@ so auth-token sessions do not accumulate. The self-hosted runner maps
 `octelium-api.stinkyboi.com` to the Istio ingress gateway ClusterIP with
 `OCTELIUM_API_HOST_ALIAS`; keep that alias on CI paths because the public
 Cloudflare hostname can answer unauthenticated gRPC probes while authenticated
-CLI success responses still lose required trailers. If the `homelab-ci` user hits the
+CLI success responses still lose required trailers. CI keeps `--no-dns` enabled
+because it only needs the localhost `kubernetes-api.ci` publish and later Nix
+or Kubernetes commands should keep the runner's normal DNS resolver. If the `homelab-ci` user hits the
 Octelium server-side active-session cap, use the credential helper's
 `--delete-user-sessions-only` mode to clear only those workload sessions before
 rerunning CI.

@@ -56,8 +56,8 @@ Source: `docs/ci-cd.md`
   the Istio ingress gateway ClusterIP through `OCTELIUM_API_HOST_ALIAS` so
   authenticated CLI calls preserve gRPC trailers. The workflow publishes
   Service `kubernetes-api.ci` to `https://127.0.0.1:16443` with the gVisor
-  userspace implementation, Octelium DNS enabled for Service publishing, and
-  Octelium's `wireguard` tunnel mode.
+  userspace implementation, Octelium DNS changes disabled because CI only needs
+  the localhost publish, and Octelium's `wireguard` tunnel mode.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration, and the `_gw-*` Octelium Gateway hostnames must have
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
