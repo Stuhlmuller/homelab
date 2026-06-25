@@ -213,19 +213,28 @@ if [[ "$dry_run" == "true" ]]; then
 fi
 
 preflight_github_secret_targets() {
+  local delete_path
   local env_name
+  local preflight_secret_name
+  local preflight_secret_value="ok"
 
   if [[ "$update_github" != "true" || "$rotate_credential" != "true" ]]; then
     return 0
   fi
 
-  echo "Verifying GitHub environment secret access for ${github_repo}..."
+  preflight_secret_name="OCTELIUM_CI_PREFLIGHT_$$_${RANDOM}"
+  echo "Verifying GitHub environment secret write access for ${github_repo}..."
   gh auth status >/dev/null
   for env_name in "${environments[@]}"; do
+    printf '%s' "$preflight_secret_value" |
+      gh secret set "$preflight_secret_name" --repo "$github_repo" --env "$env_name" \
+        >/dev/null
+    delete_path="repos/${github_repo}/environments/${env_name}/secrets/${preflight_secret_name}"
     gh api \
-      "repos/${github_repo}/environments/${env_name}/secrets/public-key" \
+      --method DELETE \
+      "$delete_path" \
       >/dev/null
-    echo "Verified GitHub environment ${env_name} accepts secret updates."
+    echo "Verified GitHub environment ${env_name} accepts secret writes."
   done
 }
 

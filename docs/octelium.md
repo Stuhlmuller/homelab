@@ -594,10 +594,11 @@ Cloudflare hostname can answer unauthenticated gRPC probes while authenticated
 CLI success responses still lose required trailers. CI keeps `--no-dns` enabled
 because it only needs the localhost `kubernetes-api.ci` publish and later Nix
 or Kubernetes commands should keep the runner's normal DNS resolver. The
-credential helper verifies the GitHub environment secret targets, refreshes an
-existing Credential's User and Policy binding, and refuses existing-credential
-rotation when GitHub secret updates are disabled. If the `homelab-ci` user hits
-the Octelium server-side active-session cap, use the credential helper's
+credential helper verifies GitHub environment secret write access with a
+temporary write/delete, refreshes an existing Credential's User and Policy
+binding, and refuses existing-credential rotation when GitHub secret updates are
+disabled. If the `homelab-ci` user hits the Octelium server-side active-session
+cap, use the credential helper's
 `--delete-user-sessions-only` mode to clear only those workload sessions before
 rerunning CI.
 

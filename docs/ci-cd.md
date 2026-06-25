@@ -218,8 +218,9 @@ and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
 or rotates the `homelab-ci` credential, pipes the generated token directly into
 the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 `homelab-production`, and removes the temporary token file before exit.
-For existing credentials, the helper verifies GitHub environment secret access,
-reconciles the credential binding to User `homelab-ci` and Policy
+For existing credentials, the helper verifies GitHub environment secret write
+access by writing and deleting a temporary preflight secret, reconciles the
+credential binding to User `homelab-ci` and Policy
 `homelab-ci-kubernetes-api-access`, then rotates the token. It refuses to
 rotate an existing credential when GitHub secret updates are disabled, because
 that would invalidate the old CI token without storing the replacement.
