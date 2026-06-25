@@ -53,7 +53,7 @@ Source: `docs/ci-cd.md`
   jobs run on the repo-owned self-hosted `homelab-ci` runner and reach the
   cluster through Octelium userspace Service publishing rather than direct
   Kubernetes routing. The connect helper maps `octelium-api.stinkyboi.com` to
-  the in-cluster Istio gateway through `OCTELIUM_API_HOST_ALIAS` so
+  the Istio ingress gateway ClusterIP through `OCTELIUM_API_HOST_ALIAS` so
   authenticated CLI calls preserve gRPC trailers. The workflow publishes
   Service `kubernetes-api.ci` to `https://127.0.0.1:16443` with the gVisor
   userspace implementation, Octelium DNS enabled for Service publishing, and
@@ -190,9 +190,9 @@ GitHub environment secret is rotated. `scripts/ci/connect-octelium.sh` enables
 Octelium logout on normal process exit, and
 `scripts/ci/disconnect-octelium.sh` runs `octelium disconnect` and
 `octelium logout` against the same ephemeral homedir during teardown. Keep
-`OCTELIUM_API_HOST_ALIAS` on the self-hosted runner path; public Cloudflare
-probes can be healthy while authenticated CLI success responses still lose
-trailers. If the
+`OCTELIUM_API_HOST_ALIAS` pointed at the live Istio ingress gateway ClusterIP on
+the self-hosted runner path; public Cloudflare probes can be healthy while
+authenticated CLI success responses still lose trailers. If the
 `homelab-ci` workload user reaches the Octelium server's active-session cap,
 clear only that user's active sessions with the repo-owned admin helper:
 

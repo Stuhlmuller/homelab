@@ -588,7 +588,7 @@ freshly rotated `OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
 logout-on-exit and the `if: always()` disconnect helper calls both
 `octelium disconnect` and `octelium logout` against the same ephemeral homedir
 so auth-token sessions do not accumulate. The self-hosted runner maps
-`octelium-api.stinkyboi.com` to the in-cluster Istio gateway with
+`octelium-api.stinkyboi.com` to the Istio ingress gateway ClusterIP with
 `OCTELIUM_API_HOST_ALIAS`; keep that alias on CI paths because the public
 Cloudflare hostname can answer unauthenticated gRPC probes while authenticated
 CLI success responses still lose required trailers. If the `homelab-ci` user hits the

@@ -74,7 +74,7 @@ contract for Grafana.
   `kubernetes-api.ci`. Live Terragrunt jobs run on the repo-owned self-hosted
   `homelab-ci` runner and reach the cluster through Octelium userspace Service
   publishing rather than direct Kubernetes routing. The connect helper maps
-  `octelium-api.stinkyboi.com` to the in-cluster Istio gateway with
+  `octelium-api.stinkyboi.com` to the Istio ingress gateway ClusterIP with
   `OCTELIUM_API_HOST_ALIAS` so authenticated Octelium API calls preserve gRPC
   trailers instead of crossing the public Cloudflare hostname path. The jobs use
   gVisor userspace publishing, allow Octelium DNS for Service publishing, force
@@ -241,10 +241,10 @@ after the GitHub environment secret has been rotated. The helper also asks
 Octelium to log out when the background `connect` process exits, and the
 paired disconnect helper runs `octelium disconnect` plus `octelium logout`
 against that same ephemeral homedir during `if: always()` teardown.
-Keep `OCTELIUM_API_HOST_ALIAS` pointed at the in-cluster Istio gateway on
-self-hosted runners; the public Cloudflare hostname is still useful for browser
-and unauthenticated gRPC probes, but authenticated CLI calls need preserved
-gRPC trailers.
+Keep `OCTELIUM_API_HOST_ALIAS` pointed at the live Istio ingress gateway
+ClusterIP on self-hosted runners; the public Cloudflare hostname is still
+useful for browser and unauthenticated gRPC probes, but authenticated CLI calls
+need preserved gRPC trailers.
 If CI logs show `gRPC error PermissionDenied` before `kubernetes-api.ci` is
 published and `octeliumctl get sessions --user homelab-ci -o json` shows the
 server-side session cap is full, clear only that workload user's active
