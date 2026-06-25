@@ -4,6 +4,8 @@ set -euo pipefail
 : "${OCTELIUM_AUTH_TOKEN:?OCTELIUM_AUTH_TOKEN must contain the homelab-ci Octelium credential}"
 
 OCTELIUM_DOMAIN="${OCTELIUM_DOMAIN:-stinkyboi.com}"
+OCTELIUM_API_HOSTNAME="${OCTELIUM_API_HOSTNAME:-octelium-api.${OCTELIUM_DOMAIN}}"
+OCTELIUM_API_HOST_ALIAS="${OCTELIUM_API_HOST_ALIAS:-}"
 octelium_default_homedir="${RUNNER_TEMP:-/tmp}/octelium"
 if [ -n "${GITHUB_RUN_ID:-}" ]; then
   octelium_default_homedir="${RUNNER_TEMP:-/tmp}/octelium-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
@@ -38,6 +40,58 @@ if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
     exit 1
   }
 fi
+
+configure_octelium_api_host_alias() {
+  local alias_ip=""
+
+  if [ -z "${OCTELIUM_API_HOST_ALIAS}" ]; then
+    return 0
+  fi
+
+  if [[ "${OCTELIUM_API_HOST_ALIAS}" =~ ^[0-9]+(\.[0-9]+){3}$ || "${OCTELIUM_API_HOST_ALIAS}" == *:* ]]; then
+    alias_ip="${OCTELIUM_API_HOST_ALIAS}"
+  else
+    command -v getent >/dev/null 2>&1 || {
+      echo "getent is required to resolve OCTELIUM_API_HOST_ALIAS=${OCTELIUM_API_HOST_ALIAS}." >&2
+      exit 1
+    }
+    alias_ip="$(
+      getent ahosts "${OCTELIUM_API_HOST_ALIAS}" |
+        awk '$1 ~ /^[0-9]+(\.[0-9]+){3}$/ { print $1; exit }'
+    )"
+  fi
+
+  if [ -z "${alias_ip}" ]; then
+    echo "Could not resolve OCTELIUM_API_HOST_ALIAS=${OCTELIUM_API_HOST_ALIAS}." >&2
+    exit 1
+  fi
+
+  if awk -v host="${OCTELIUM_API_HOSTNAME}" '
+    $1 !~ /^#/ {
+      for (i = 2; i <= NF; i++) {
+        if ($i == host) {
+          found = 1
+        }
+      }
+    }
+    END { exit found ? 0 : 1 }
+  ' /etc/hosts; then
+    echo "/etc/hosts already has an entry for ${OCTELIUM_API_HOSTNAME}."
+    return 0
+  fi
+
+  if [ -w /etc/hosts ]; then
+    printf '%s\t%s\n' "${alias_ip}" "${OCTELIUM_API_HOSTNAME}" >>/etc/hosts
+  elif command -v sudo >/dev/null 2>&1; then
+    printf '%s\t%s\n' "${alias_ip}" "${OCTELIUM_API_HOSTNAME}" | sudo tee -a /etc/hosts >/dev/null
+  else
+    echo "Cannot write /etc/hosts and sudo is not available." >&2
+    exit 1
+  fi
+  echo "Mapped ${OCTELIUM_API_HOSTNAME} to ${alias_ip} for Octelium CLI control-plane calls."
+}
+
+configure_octelium_api_host_alias
 
 install -m 0700 -d "${OCTELIUM_HOMEDIR}"
 

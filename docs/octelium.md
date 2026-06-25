@@ -587,7 +587,11 @@ on self-hosted runners so a stale local OcteliumDB refresh token cannot bypass a
 freshly rotated `OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
 logout-on-exit and the `if: always()` disconnect helper calls both
 `octelium disconnect` and `octelium logout` against the same ephemeral homedir
-so auth-token sessions do not accumulate. If the `homelab-ci` user hits the
+so auth-token sessions do not accumulate. The self-hosted runner maps
+`octelium-api.stinkyboi.com` to the in-cluster Istio gateway with
+`OCTELIUM_API_HOST_ALIAS`; keep that alias on CI paths because the public
+Cloudflare hostname can answer unauthenticated gRPC probes while authenticated
+CLI success responses still lose required trailers. If the `homelab-ci` user hits the
 Octelium server-side active-session cap, use the credential helper's
 `--delete-user-sessions-only` mode to clear only those workload sessions before
 rerunning CI.

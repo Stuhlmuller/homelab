@@ -107,7 +107,7 @@ workload that needs it.
 | Namespace | Reason | Desired-state owner |
 |-----------|--------|---------------------|
 | `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` for WireGuard. | `clusters/homelab/apps/deluge/namespace.yaml` |
-| `github-actions-runner` | The self-hosted CI runner uses host networking so Octelium gateway hostnames are reachable from GitHub Actions jobs; containers remain non-privileged. | `clusters/homelab/apps/github-actions-runner/namespace.yaml` |
+| `github-actions-runner` | The self-hosted CI runner uses host networking so Octelium gateway hostnames and the in-cluster Istio gateway are reachable from GitHub Actions jobs; containers remain non-privileged. | `clusters/homelab/apps/github-actions-runner/namespace.yaml` |
 | `istio-system` | Istio gateway and dataplane components need elevated networking permissions. | `clusters/homelab/apps/istio/namespace.yaml` |
 | `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`. | `scripts/octelium-cluster-bootstrap.sh` |
 | `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface. | `clusters/homelab/apps/octelium/namespace.yaml` |
