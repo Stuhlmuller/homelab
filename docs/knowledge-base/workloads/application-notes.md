@@ -274,13 +274,16 @@ keeps the tailnet Control UI origin allow-list in config and stores
 hook token is populated, bootstrap expands `GRAFANA_ALERT_HOOK_TOKEN` from the
 mounted Secret, JSON-encodes the runtime value, and stores it as a plain string
 because OpenClaw rejects SecretRef objects for that hook-token surface. When
-`/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
-force-installs the official `@openclaw/discord` plugin pinned to the running
-OpenClaw image version, enables it, and writes a SecretRef to
-`DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory
-are `emptyDir` mounts at `/data/openclaw/npm` and
-`/data/openclaw/extensions` because QNAP NFS maps PVC writes to `nobody`, and
-OpenClaw blocks code plugins with suspicious ownership. ChatGPT Pro access uses
+`/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap first
+tries to force-install the official `@openclaw/discord` plugin pinned to the
+running OpenClaw image version. If ClawHub has not published that exact plugin
+version yet, bootstrap falls back to the current official Discord plugin so a
+registry/version skew does not keep the pod in an init crash loop. Bootstrap
+then enables the plugin and writes a SecretRef to `DISCORD_BOT_TOKEN`. The
+plugin npm cache and extension directory are `emptyDir` mounts at
+`/data/openclaw/npm` and `/data/openclaw/extensions` because QNAP NFS maps PVC
+writes to `nobody`, and OpenClaw blocks code plugins with suspicious ownership.
+ChatGPT Pro access uses
 interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
 secret or committed API key. The bootstrap also enables the bundled `codex`
 plugin and sets the default agent model to `openai/gpt-5.5` with
