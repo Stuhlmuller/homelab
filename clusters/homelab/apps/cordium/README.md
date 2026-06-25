@@ -17,9 +17,11 @@ The deployed runtime is split intentionally:
 
 The hook image is pinned to Cordium `0.12.7`. Upstream genesis creates the
 long-running Cordium `nocturne` and `rscserver` Deployments and registers the
-`apiserver` and `portal` managed services with Octelium. The Argo CD app keeps
-the hook and RBAC visible in git; the generated Octelium/Cordium runtime
-resources remain owned by Octelium controllers.
+`apiserver` and `portal` managed services with Octelium. The image declares the
+non-root user by name, so the hook pins `runAsUser: 100` and
+`runAsGroup: 65533` to satisfy kubelet's `runAsNonRoot` verification. The
+Argo CD app keeps the hook and RBAC visible in git; the generated
+Octelium/Cordium runtime resources remain owned by Octelium controllers.
 
 ## Activation
 

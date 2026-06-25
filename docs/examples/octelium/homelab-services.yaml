@@ -127,6 +127,16 @@ metadata:
 spec:
   type: HUMAN
 ---
+kind: Group
+metadata:
+  name: cordium-users
+spec: {}
+---
+kind: Group
+metadata:
+  name: cordium-agents
+spec: {}
+---
 kind: User
 metadata:
   name: homelab-cordium-user

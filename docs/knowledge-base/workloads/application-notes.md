@@ -219,11 +219,11 @@ upstream Cordium until the repo adds a real Cordium-native workspace
 configuration resource.
 
 The Octelium catalog keeps identities separate. `homelab-cordium-user` is a
-HUMAN user for browser workspace access through the public `cordium` WEB
-Service. `homelab-cordium-agent` is a WORKLOAD user for automation through the
-`cordium-agent-api.homelab` gRPC Service and the
-`homelab-cordium-agent-api-access` policy. Do not share human browser
-credentials with agent automation.
+HUMAN user in Group `cordium-users` for browser workspace access through the
+public `cordium` WEB Service. `homelab-cordium-agent` is a WORKLOAD user in
+Group `cordium-agents` for automation through the `cordium-agent-api.homelab`
+gRPC Service and the `homelab-cordium-agent-api-access` policy. Do not share
+human browser credentials with agent automation.
 
 The upstream genesis hook generates the long-running Cordium controllers and
 managed Services in the `octelium` namespace. Validate with:
