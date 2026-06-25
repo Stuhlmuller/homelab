@@ -157,31 +157,28 @@ jobs:
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         run: bash scripts/ci/install-octelium-client.sh
 
-      - name: Connect To Octelium
+      - name: Run Live Terragrunt Plan
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: bash scripts/ci/connect-octelium.sh
-
-      - name: Install Kubeconfig
-        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
-        env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
-        run: nix develop --command bash scripts/ci/install-kubeconfig.sh
-
-      - name: Verify Kubernetes API Reachability
-        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
-        run: |
-          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
-          nix develop --command kubectl --request-timeout=15s version
-
-      - name: Run Terragrunt Plan
-        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
-        env:
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
-        run: nix develop --command bash scripts/ci/terragrunt-plan.sh
+        run: |
+          nix develop --command bash <<'EOF'
+          set -euo pipefail
+          cleanup() {
+            bash scripts/ci/disconnect-octelium.sh
+          }
+          trap cleanup EXIT
+
+          bash scripts/ci/connect-octelium.sh
+          bash scripts/ci/install-kubeconfig.sh
+          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
+          kubectl --request-timeout=15s version
+          bash scripts/ci/terragrunt-plan.sh
+          EOF
 
       - name: Write Live Plan Skip Note
         if: steps.live-plan-scope.outputs.requires-live-plan != 'true'

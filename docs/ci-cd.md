@@ -245,6 +245,8 @@ Keep `OCTELIUM_API_HOST_ALIAS` pointed at the live Istio ingress gateway
 ClusterIP on self-hosted runners; the public Cloudflare hostname is still
 useful for browser and unauthenticated gRPC probes, but authenticated CLI calls
 need preserved gRPC trailers.
+Live jobs enter the Nix shell before starting `octelium connect`; do not add
+new `nix develop` invocations after the tunnel is open.
 If CI logs show `gRPC error PermissionDenied` before `kubernetes-api.ci` is
 published and `octeliumctl get sessions --user homelab-ci -o json` shows the
 server-side session cap is full, clear only that workload user's active

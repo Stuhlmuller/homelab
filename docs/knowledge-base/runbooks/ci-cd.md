@@ -192,7 +192,9 @@ Octelium logout on normal process exit, and
 `octelium logout` against the same ephemeral homedir during teardown. Keep
 `OCTELIUM_API_HOST_ALIAS` pointed at the live Istio ingress gateway ClusterIP on
 the self-hosted runner path; public Cloudflare probes can be healthy while
-authenticated CLI success responses still lose trailers. If the
+authenticated CLI success responses still lose trailers. Live jobs enter the
+Nix shell before starting `octelium connect`; avoid adding post-connect
+`nix develop` invocations. If the
 `homelab-ci` workload user reaches the Octelium server's active-session cap,
 clear only that user's active sessions with the repo-owned admin helper:
 
