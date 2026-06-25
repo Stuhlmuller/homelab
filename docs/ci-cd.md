@@ -214,6 +214,11 @@ and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
 or rotates the `homelab-ci` credential, pipes the generated token directly into
 the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 `homelab-production`, and removes the temporary token file before exit.
+When recovering through a temporary Octelium CLI session, pass that session
+directory with `--homedir /tmp/octelium-admin`. If the public Octelium API path
+is not carrying authenticated admin CLI calls reliably, point `--octelium-proxy`
+at a local CONNECT proxy that forwards `octelium-api.stinkyboi.com:443` to the
+in-cluster Istio gateway.
 
 Avoid running raw `octeliumctl create cred` in shared terminals or CI logs
 because it can print the generated token. If the helper cannot reach GitHub,

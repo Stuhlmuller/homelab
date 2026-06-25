@@ -171,7 +171,9 @@ Octelium admin. The helper applies
 `docs/examples/octelium/homelab-services.yaml`, creates or rotates the
 `homelab-ci` credential, and updates `OCTELIUM_CI_AUTH_TOKEN` in the
 `homelab-plan` and `homelab-production` GitHub environments without printing
-the generated token.
+the generated token. Pass `--homedir /tmp/octelium-admin` when using a
+temporary bootstrap recovery login, and `--octelium-proxy` when that recovery
+session reaches the Octelium API through a local CONNECT proxy.
 
 The CI connector does not pass Octelium `--scope` flags on v0.35. The
 `homelab-ci-kubernetes-api-access` policy must be applied before the token is

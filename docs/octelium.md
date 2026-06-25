@@ -78,7 +78,8 @@ They create:
   such as `https://grafana.stinkyboi.com`.
 - Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
   workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
-  automation through `cordium-agent-api.homelab`.
+  automation through `cordium-agent-api.homelab`, plus the matching
+  `cordium-users` and `cordium-agents` Groups those Users reference.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 The Enterprise console hostname `https://console.stinkyboi.com` is not an

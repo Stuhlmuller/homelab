@@ -8,6 +8,8 @@ credential_name="homelab-ci"
 user_name="homelab-ci"
 policy_name="homelab-ci-kubernetes-api-access"
 secret_name="OCTELIUM_CI_AUTH_TOKEN"
+octelium_homedir=""
+octelium_proxy=""
 apply_catalog="true"
 update_github="true"
 dry_run="false"
@@ -36,6 +38,10 @@ Options:
                                Default: homelab-ci-kubernetes-api-access
   --secret-name NAME           GitHub environment secret name.
                                Default: OCTELIUM_CI_AUTH_TOKEN
+  --homedir PATH               Octelium CLI homedir to use for authentication.
+                               Useful for bootstrap recovery sessions.
+  --octelium-proxy URL         Proxy URL used only for octeliumctl commands.
+                               Useful with a local CONNECT proxy during recovery.
   --env NAME                   GitHub environment to update. May be repeated.
                                Defaults: homelab-plan, homelab-production
   --skip-catalog               Do not apply the catalog before rotating.
@@ -75,6 +81,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --secret-name)
       secret_name="$2"
+      shift 2
+      ;;
+    --homedir)
+      octelium_homedir="$2"
+      shift 2
+      ;;
+    --octelium-proxy)
+      octelium_proxy="$2"
       shift 2
       ;;
     --env)
@@ -131,6 +145,20 @@ if [[ "$update_github" == "true" ]]; then
   require_command gh
 fi
 
+octeliumctl_cmd=(octeliumctl)
+if [[ -n "$octelium_homedir" ]]; then
+  octeliumctl_cmd+=(--homedir "$octelium_homedir")
+fi
+
+run_octeliumctl() {
+  if [[ -n "$octelium_proxy" ]]; then
+    HTTPS_PROXY="$octelium_proxy" ALL_PROXY="$octelium_proxy" NO_PROXY= \
+      "${octeliumctl_cmd[@]}" "$@"
+  else
+    "${octeliumctl_cmd[@]}" "$@"
+  fi
+}
+
 if [[ ! -f "$catalog" ]]; then
   echo "error: catalog does not exist: ${catalog}" >&2
   exit 1
@@ -162,8 +190,17 @@ if [[ "$dry_run" == "true" ]]; then
 fi
 
 if [[ "$apply_catalog" == "true" ]]; then
+  apply_output=""
   echo "Applying Octelium catalog ${catalog} to ${domain}..."
-  octeliumctl apply --domain "$domain" "$catalog"
+  if ! apply_output="$(run_octeliumctl apply --domain "$domain" "$catalog" 2>&1)"; then
+    printf '%s\n' "$apply_output" >&2
+    exit 1
+  fi
+  printf '%s\n' "$apply_output"
+  if grep -Eq '(^|[[:space:]])Could not (create|update|apply)|gRPC error' <<<"$apply_output"; then
+    echo "error: octeliumctl reported one or more failed catalog changes" >&2
+    exit 1
+  fi
 fi
 
 credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
@@ -181,14 +218,14 @@ create_args=(
   --out json
 )
 
-if octeliumctl get cred "$credential_name" --domain "$domain" >/dev/null 2>&1; then
+if run_octeliumctl get cred "$credential_name" --domain "$domain" >/dev/null 2>&1; then
   echo "Rotating existing Octelium credential ${credential_name}..."
   create_args+=(--rotate)
 else
   echo "Creating Octelium credential ${credential_name}..."
 fi
 
-octeliumctl "${create_args[@]}" "$credential_name" >"$credential_json"
+run_octeliumctl "${create_args[@]}" "$credential_name" >"$credential_json"
 
 credential_token="$(
   jq -er '
