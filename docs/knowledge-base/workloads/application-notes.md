@@ -283,11 +283,17 @@ then enables the plugin and writes a SecretRef to `DISCORD_BOT_TOKEN`. The
 plugin npm cache and extension directory are `emptyDir` mounts at
 `/data/openclaw/npm` and `/data/openclaw/extensions` because QNAP NFS maps PVC
 writes to `nobody`, and OpenClaw blocks code plugins with suspicious ownership.
+
+Keep the OpenClaw image new enough for the current official Discord plugin API:
+the 2026-06-24 recovery moved the app, proxy, and bootstrap images to
+`2026.6.10` because ClawHub's current Discord plugin requires plugin API
+`2026.6.10` or newer and rejected the older `2026.6.6` runtime.
+
 ChatGPT Pro access uses
 interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
 secret or committed API key. The bootstrap also enables the bundled `codex`
 plugin and sets the default agent model to `openai/gpt-5.5` with
-`agentRuntime.id: "codex"` on that model. OpenClaw 2026.6.1 treats canonical
+`agentRuntime.id: "codex"` on that model. OpenClaw 2026.6.10 treats canonical
 `openai/gpt-*` agent refs plus the Codex runtime policy as the subscription
 backed app-server route; legacy `openai-codex/gpt-*` and `codex/gpt-*` refs are
 not the desired bootstrap default. The bootstrap enables the bundled
