@@ -4,7 +4,11 @@ set -euo pipefail
 : "${OCTELIUM_AUTH_TOKEN:?OCTELIUM_AUTH_TOKEN must contain the homelab-ci Octelium credential}"
 
 OCTELIUM_DOMAIN="${OCTELIUM_DOMAIN:-stinkyboi.com}"
-OCTELIUM_HOMEDIR="${OCTELIUM_HOMEDIR:-${RUNNER_TEMP:-/tmp}/octelium}"
+octelium_default_homedir="${RUNNER_TEMP:-/tmp}/octelium"
+if [ -n "${GITHUB_RUN_ID:-}" ]; then
+  octelium_default_homedir="${RUNNER_TEMP:-/tmp}/octelium-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
+fi
+OCTELIUM_HOMEDIR="${OCTELIUM_HOMEDIR:-${octelium_default_homedir}}"
 OCTELIUM_KUBE_SERVICE="${OCTELIUM_KUBE_SERVICE:-kubernetes-api.ci}"
 OCTELIUM_KUBE_SERVICE_ADDRESS="${OCTELIUM_KUBE_SERVICE_ADDRESS:-}"
 OCTELIUM_KUBE_LOCAL_HOST="${OCTELIUM_KUBE_LOCAL_HOST:-127.0.0.1}"

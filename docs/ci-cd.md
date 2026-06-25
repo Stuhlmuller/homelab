@@ -231,6 +231,9 @@ still needs `KUBE_CONFIG_B64`; Octelium only carries the transport path to the
 Kubernetes API. If CI logs show `gRPC error PermissionDenied` before
 `kubernetes-api.ci` is published, reapply the catalog and rotate the credential
 with `scripts/octelium-ci-credential.sh`.
+The CI connect helper uses a per-GitHub-run Octelium homedir by default so a
+self-hosted runner cannot silently refresh an older local OcteliumDB session
+after the GitHub environment secret has been rotated.
 
 Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
 credential unless a newer Octelium release validates that scoped auth-token

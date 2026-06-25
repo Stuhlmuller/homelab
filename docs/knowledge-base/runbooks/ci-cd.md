@@ -181,6 +181,9 @@ used because the credential policy authorizes the Connect API call and the
 Kubernetes API Service access separately. If CI logs show `gRPC error
 PermissionDenied` before `kubernetes-api.ci` is published, reapply the catalog
 and rotate this credential before debugging the Kubernetes API itself.
+The connect/disconnect helpers default to a per-GitHub-run Octelium homedir so
+self-hosted runners cannot reuse a stale OcteliumDB refresh session after the
+GitHub environment secret is rotated.
 
 GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
 public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using

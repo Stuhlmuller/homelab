@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OCTELIUM_HOMEDIR="${OCTELIUM_HOMEDIR:-${RUNNER_TEMP:-/tmp}/octelium}"
+octelium_default_homedir="${RUNNER_TEMP:-/tmp}/octelium"
+if [ -n "${GITHUB_RUN_ID:-}" ]; then
+  octelium_default_homedir="${RUNNER_TEMP:-/tmp}/octelium-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT:-1}"
+fi
+OCTELIUM_HOMEDIR="${OCTELIUM_HOMEDIR:-${octelium_default_homedir}}"
 OCTELIUM_CONNECT_PID_FILE="${OCTELIUM_CONNECT_PID_FILE:-${OCTELIUM_HOMEDIR}/connect.pid}"
 
 if [ ! -f "${OCTELIUM_CONNECT_PID_FILE}" ]; then

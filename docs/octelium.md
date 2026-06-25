@@ -582,6 +582,9 @@ The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
 this workload credential. Do not add Octelium `--scope` flags to this CI
 connection on v0.35; scoped auth-token sessions are denied before the
 Kubernetes API listener is published.
+The CI helper defaults to a per-GitHub-run Octelium homedir. Keep that behavior
+on self-hosted runners so a stale local OcteliumDB refresh token cannot bypass a
+freshly rotated `OCTELIUM_CI_AUTH_TOKEN`.
 
 ## Rollback
 
