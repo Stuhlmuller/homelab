@@ -183,7 +183,19 @@ PermissionDenied` before `kubernetes-api.ci` is published, reapply the catalog
 and rotate this credential before debugging the Kubernetes API itself.
 The connect/disconnect helpers default to a per-GitHub-run Octelium homedir so
 self-hosted runners cannot reuse a stale OcteliumDB refresh session after the
-GitHub environment secret is rotated.
+GitHub environment secret is rotated. `scripts/ci/connect-octelium.sh` enables
+Octelium logout on normal process exit, and
+`scripts/ci/disconnect-octelium.sh` runs `octelium disconnect` and
+`octelium logout` against the same ephemeral homedir during teardown. If the
+`homelab-ci` workload user reaches the Octelium server's active-session cap,
+clear only that user's active sessions with the repo-owned admin helper:
+
+```sh
+scripts/octelium-ci-credential.sh --delete-user-sessions-only
+```
+
+Pass the same `--homedir` and `--octelium-proxy` recovery flags when the admin
+session reaches the Octelium API through a local bootstrap proxy.
 
 GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
 public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using

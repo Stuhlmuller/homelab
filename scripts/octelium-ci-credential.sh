@@ -12,6 +12,8 @@ octelium_homedir=""
 octelium_proxy=""
 apply_catalog="true"
 update_github="true"
+rotate_credential="true"
+delete_user_sessions="false"
 dry_run="false"
 environments=("homelab-plan" "homelab-production")
 
@@ -42,6 +44,11 @@ Options:
                                Useful for bootstrap recovery sessions.
   --octelium-proxy URL         Proxy URL used only for octeliumctl commands.
                                Useful with a local CONNECT proxy during recovery.
+  --delete-user-sessions       Delete active Octelium sessions for --user before
+                               rotating the credential.
+  --delete-user-sessions-only  Delete active Octelium sessions for --user without
+                               applying the catalog, rotating a credential, or
+                               updating GitHub.
   --env NAME                   GitHub environment to update. May be repeated.
                                Defaults: homelab-plan, homelab-production
   --skip-catalog               Do not apply the catalog before rotating.
@@ -90,6 +97,17 @@ while [[ $# -gt 0 ]]; do
     --octelium-proxy)
       octelium_proxy="$2"
       shift 2
+      ;;
+    --delete-user-sessions)
+      delete_user_sessions="true"
+      shift
+      ;;
+    --delete-user-sessions-only)
+      delete_user_sessions="true"
+      apply_catalog="false"
+      update_github="false"
+      rotate_credential="false"
+      shift
       ;;
     --env)
       if [[ "$custom_envs" == "false" ]]; then
@@ -141,7 +159,7 @@ validate_name() {
 
 require_command octeliumctl
 require_command jq
-if [[ "$update_github" == "true" ]]; then
+if [[ "$update_github" == "true" && "$rotate_credential" == "true" ]]; then
   require_command gh
 fi
 
@@ -180,7 +198,12 @@ if [[ "$dry_run" == "true" ]]; then
   if [[ "$apply_catalog" == "true" ]]; then
     echo "DRY-RUN would apply ${catalog} to ${domain}"
   fi
-  echo "DRY-RUN would create or rotate Octelium credential ${credential_name} for User ${user_name} with Policy ${policy_name}"
+  if [[ "$delete_user_sessions" == "true" ]]; then
+    echo "DRY-RUN would delete active Octelium sessions for User ${user_name}"
+  fi
+  if [[ "$rotate_credential" == "true" ]]; then
+    echo "DRY-RUN would create or rotate Octelium credential ${credential_name} for User ${user_name} with Policy ${policy_name}"
+  fi
   if [[ "$update_github" == "true" ]]; then
     printf 'DRY-RUN would update GitHub secret %s in environments:' "$secret_name"
     printf ' %s' "${environments[@]}"
@@ -201,6 +224,62 @@ if [[ "$apply_catalog" == "true" ]]; then
     echo "error: octeliumctl reported one or more failed catalog changes" >&2
     exit 1
   fi
+fi
+
+delete_active_user_sessions() {
+  local sessions_json
+  local session_name
+  local active_session_names=()
+
+  sessions_json="$(
+    run_octeliumctl get sessions \
+      --user "$user_name" \
+      --items-per-page 1000 \
+      --domain "$domain" \
+      -o json
+  )"
+
+  if grep -Eq '^No Sessions found$' <<<"$sessions_json"; then
+    echo "No active Octelium sessions found for User ${user_name}."
+    return 0
+  fi
+  if ! jq -e . >/dev/null 2>&1 <<<"$sessions_json"; then
+    echo "error: octeliumctl returned non-JSON session output" >&2
+    printf '%s\n' "$sessions_json" >&2
+    exit 1
+  fi
+
+  while IFS= read -r session_name; do
+    if [[ -n "$session_name" ]]; then
+      active_session_names+=("$session_name")
+    fi
+  done < <(
+    jq -r '
+      .items[]? |
+      select(.spec.state == "ACTIVE") |
+      .metadata.name
+    ' <<<"$sessions_json"
+  )
+
+  if [[ "${#active_session_names[@]}" -eq 0 ]]; then
+    echo "No active Octelium sessions found for User ${user_name}."
+    return 0
+  fi
+
+  echo "Deleting ${#active_session_names[@]} active Octelium sessions for User ${user_name}..."
+  for session_name in "${active_session_names[@]}"; do
+    run_octeliumctl delete session "$session_name" --domain "$domain" >/dev/null
+    echo "Deleted Octelium session ${session_name}"
+  done
+}
+
+if [[ "$delete_user_sessions" == "true" ]]; then
+  delete_active_user_sessions
+fi
+
+if [[ "$rotate_credential" != "true" ]]; then
+  echo "Octelium user session cleanup complete."
+  exit 0
 fi
 
 credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"

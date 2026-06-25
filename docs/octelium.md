@@ -584,7 +584,13 @@ connection on v0.35; scoped auth-token sessions are denied before the
 Kubernetes API listener is published.
 The CI helper defaults to a per-GitHub-run Octelium homedir. Keep that behavior
 on self-hosted runners so a stale local OcteliumDB refresh token cannot bypass a
-freshly rotated `OCTELIUM_CI_AUTH_TOKEN`.
+freshly rotated `OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
+logout-on-exit and the `if: always()` disconnect helper calls both
+`octelium disconnect` and `octelium logout` against the same ephemeral homedir
+so auth-token sessions do not accumulate. If the `homelab-ci` user hits the
+Octelium server-side active-session cap, use the credential helper's
+`--delete-user-sessions-only` mode to clear only those workload sessions before
+rerunning CI.
 
 ## Rollback
 

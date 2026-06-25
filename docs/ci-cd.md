@@ -233,7 +233,21 @@ Kubernetes API. If CI logs show `gRPC error PermissionDenied` before
 with `scripts/octelium-ci-credential.sh`.
 The CI connect helper uses a per-GitHub-run Octelium homedir by default so a
 self-hosted runner cannot silently refresh an older local OcteliumDB session
-after the GitHub environment secret has been rotated.
+after the GitHub environment secret has been rotated. The helper also asks
+Octelium to log out when the background `connect` process exits, and the
+paired disconnect helper runs `octelium disconnect` plus `octelium logout`
+against that same ephemeral homedir during `if: always()` teardown.
+If CI logs show `gRPC error PermissionDenied` before `kubernetes-api.ci` is
+published and `octeliumctl get sessions --user homelab-ci -o json` shows the
+server-side session cap is full, clear only that workload user's active
+sessions through the repo-owned admin helper:
+
+```sh
+scripts/octelium-ci-credential.sh --delete-user-sessions-only
+```
+
+Use the same `--homedir` and `--octelium-proxy` recovery flags with that
+cleanup mode when the admin CLI session is using the local bootstrap proxy.
 
 Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
 credential unless a newer Octelium release validates that scoped auth-token
