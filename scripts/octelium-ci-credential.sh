@@ -212,6 +212,23 @@ if [[ "$dry_run" == "true" ]]; then
   exit 0
 fi
 
+preflight_github_secret_targets() {
+  local env_name
+
+  if [[ "$update_github" != "true" || "$rotate_credential" != "true" ]]; then
+    return 0
+  fi
+
+  echo "Verifying GitHub environment secret access for ${github_repo}..."
+  gh auth status >/dev/null
+  for env_name in "${environments[@]}"; do
+    gh api \
+      "repos/${github_repo}/environments/${env_name}/secrets/public-key" \
+      >/dev/null
+    echo "Verified GitHub environment ${env_name} accepts secret updates."
+  done
+}
+
 if [[ "$apply_catalog" == "true" ]]; then
   apply_output=""
   echo "Applying Octelium catalog ${catalog} to ${domain}..."
@@ -225,6 +242,8 @@ if [[ "$apply_catalog" == "true" ]]; then
     exit 1
   fi
 fi
+
+preflight_github_secret_targets
 
 delete_active_user_sessions() {
   local sessions_json
@@ -289,15 +308,71 @@ cleanup() {
 trap cleanup EXIT
 chmod 0600 "$credential_json"
 
+credential_exists="false"
+existing_credential_json=""
+ensure_existing_credential_spec() {
+  local credential_spec
+  local spec_output
+
+  if [[ "$credential_exists" != "true" ]]; then
+    return 0
+  fi
+
+  if jq -e \
+    --arg user "$user_name" \
+    --arg policy "$policy_name" \
+    '
+      .spec.user == $user and
+      .spec.sessionType == "CLIENT" and
+      (.spec.authorization.policies // []) == [$policy]
+    ' <<<"$existing_credential_json" >/dev/null; then
+    echo "Existing Octelium credential ${credential_name} already targets User ${user_name} with Policy ${policy_name}."
+    return 0
+  fi
+
+  credential_spec="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential-spec.XXXXXX.yaml")"
+  {
+    printf 'kind: Credential\n'
+    printf 'metadata:\n'
+    printf '  name: %s\n' "$credential_name"
+    printf 'spec:\n'
+    printf '  type: AUTH_TOKEN\n'
+    printf '  user: %s\n' "$user_name"
+    printf '  sessionType: CLIENT\n'
+    printf '  authorization:\n'
+    printf '    policies:\n'
+    printf '      - %s\n' "$policy_name"
+  } >"$credential_spec"
+
+  echo "Updating existing Octelium credential ${credential_name} binding before rotation..."
+  if ! spec_output="$(run_octeliumctl apply --domain "$domain" "$credential_spec" 2>&1)"; then
+    rm -f "$credential_spec"
+    printf '%s\n' "$spec_output" >&2
+    exit 1
+  fi
+  rm -f "$credential_spec"
+  printf '%s\n' "$spec_output"
+  if grep -Eq '(^|[[:space:]])Could not (create|update|apply)|gRPC error' <<<"$spec_output"; then
+    echo "error: octeliumctl reported a failed credential binding update" >&2
+    exit 1
+  fi
+}
+
 create_args=(
   create cred
   --domain "$domain"
   --user "$user_name"
   --policy "$policy_name"
-  --out json
+  -o json
 )
 
-if run_octeliumctl get cred "$credential_name" --domain "$domain" >/dev/null 2>&1; then
+if existing_credential_json="$(run_octeliumctl get cred "$credential_name" --domain "$domain" -o json 2>/dev/null)"; then
+  credential_exists="true"
+  if [[ "$update_github" != "true" ]]; then
+    echo "error: refusing to rotate existing credential ${credential_name} while GitHub secret update is disabled" >&2
+    exit 1
+  fi
+  ensure_existing_credential_spec
   echo "Rotating existing Octelium credential ${credential_name}..."
   create_args+=(--rotate)
 else

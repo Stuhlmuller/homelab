@@ -184,6 +184,11 @@ used because the credential policy authorizes the Connect API call and the
 Kubernetes API Service access separately. If CI logs show `gRPC error
 PermissionDenied` before `kubernetes-api.ci` is published, reapply the catalog
 and rotate this credential before debugging the Kubernetes API itself.
+The rotation helper preflights GitHub environment secret access and reconciles
+an existing Credential back to User `homelab-ci` with only Policy
+`homelab-ci-kubernetes-api-access` before generating a new token. It refuses
+unsafe existing-credential rotations when GitHub secret updates are disabled,
+so recovery does not invalidate the old token without storing the replacement.
 The connect/disconnect helpers default to a per-GitHub-run Octelium homedir so
 self-hosted runners cannot reuse a stale OcteliumDB refresh session after the
 GitHub environment secret is rotated. `scripts/ci/connect-octelium.sh` enables

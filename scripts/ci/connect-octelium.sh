@@ -43,6 +43,8 @@ fi
 
 configure_octelium_api_host_alias() {
   local alias_ip=""
+  local hosts_entry_state=""
+  local hosts_tmp=""
 
   if [ -z "${OCTELIUM_API_HOST_ALIAS}" ]; then
     return 0
@@ -66,29 +68,76 @@ configure_octelium_api_host_alias() {
     exit 1
   fi
 
-  if awk -v host="${OCTELIUM_API_HOSTNAME}" '
+  hosts_entry_state="$(
+    awk -v host="${OCTELIUM_API_HOSTNAME}" -v alias_ip="${alias_ip}" '
+      $1 !~ /^#/ {
+        for (i = 2; i <= NF; i++) {
+          if ($i == host) {
+            if ($1 == alias_ip) {
+              current = 1
+            } else {
+              stale = 1
+            }
+          }
+        }
+      }
+      END {
+        if (current && !stale) {
+          print "current"
+        } else if (current || stale) {
+          print "replace"
+        } else {
+          print "missing"
+        }
+      }
+    ' /etc/hosts
+  )"
+  if [ "${hosts_entry_state}" = "current" ]; then
+    echo "/etc/hosts already maps ${OCTELIUM_API_HOSTNAME} to ${alias_ip}."
+    return 0
+  fi
+
+  hosts_tmp="$(mktemp "${TMPDIR:-/tmp}/octelium-hosts.XXXXXX")"
+  awk -v host="${OCTELIUM_API_HOSTNAME}" -v alias_ip="${alias_ip}" '
+    BEGIN { wrote = 0 }
     $1 !~ /^#/ {
+      found = 0
       for (i = 2; i <= NF; i++) {
         if ($i == host) {
           found = 1
         }
       }
+      if (found) {
+        if (!wrote) {
+          printf "%s\t%s\n", alias_ip, host
+          wrote = 1
+        }
+        next
+      }
     }
-    END { exit found ? 0 : 1 }
-  ' /etc/hosts; then
-    echo "/etc/hosts already has an entry for ${OCTELIUM_API_HOSTNAME}."
-    return 0
-  fi
+    { print }
+    END {
+      if (!wrote) {
+        printf "%s\t%s\n", alias_ip, host
+      }
+    }
+  ' /etc/hosts >"${hosts_tmp}"
 
   if [ -w /etc/hosts ]; then
-    printf '%s\t%s\n' "${alias_ip}" "${OCTELIUM_API_HOSTNAME}" >>/etc/hosts
+    cat "${hosts_tmp}" >/etc/hosts
   elif command -v sudo >/dev/null 2>&1; then
-    printf '%s\t%s\n' "${alias_ip}" "${OCTELIUM_API_HOSTNAME}" | sudo tee -a /etc/hosts >/dev/null
+    sudo tee /etc/hosts <"${hosts_tmp}" >/dev/null
   else
+    rm -f "${hosts_tmp}"
     echo "Cannot write /etc/hosts and sudo is not available." >&2
     exit 1
   fi
-  echo "Mapped ${OCTELIUM_API_HOSTNAME} to ${alias_ip} for Octelium CLI control-plane calls."
+  rm -f "${hosts_tmp}"
+  if [ "${hosts_entry_state}" = "replace" ]; then
+    echo "Refreshed ${OCTELIUM_API_HOSTNAME} to ${alias_ip} for Octelium CLI control-plane calls."
+  else
+    echo "Mapped ${OCTELIUM_API_HOSTNAME} to ${alias_ip} for Octelium CLI control-plane calls."
+  fi
 }
 
 configure_octelium_api_host_alias
