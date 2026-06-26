@@ -56,10 +56,16 @@ updating that SSM value and bumping
 `homelab.rst.io/wireguard-profile-ssm-version` on both the `deluge-vpn`
 ExternalSecret and Deluge pod template so External Secrets rereads SSM and
 Gluetun restarts with the new profile. The pod resolves endpoint DNS names in
-the profile to IPv4 before Gluetun starts. Keep Deluge's AirVPN forwarded port
-fixed only for `listen_ports`; `outgoing_ports` should stay at Deluge's default
-random behavior, otherwise active torrents can report too few outgoing ports
-and fail to establish enough peer connections.
+the profile to IPv4 before Gluetun starts and strips IPv6 `Address` and
+`AllowedIPs` entries so Gluetun does not install IPv6 routing rules in this
+IPv4-only deployment. Keep Deluge's AirVPN forwarded port fixed only for
+`listen_ports`; `outgoing_ports` should stay at Deluge's default random
+behavior, otherwise active torrents can report too few outgoing ports and fail
+to establish enough peer connections.
+If Gluetun loops on `adding IPv6 rule ... file exists`, the public service can
+be down even while `deluged` still answers local RPC; roll a rendered
+IPv4-only profile through the repo-owned pod-template annotations instead of
+only checking torrent status.
 If Kubernetes and Gluetun are healthy but `deluged` loops with
 `libtorrent::libtorrent_exception` and `port-config` gets connection refused,
 check `clusters/homelab/apps/deluge/README.md` for the narrow
@@ -170,8 +176,8 @@ rule for
 the public Octelium ingress.
 
 The public Octelium control-plane path is a separate `octelium-public`
-Application. It runs two `cloudflared` replicas in `octelium-public`, reads the
-named tunnel credentials JSON and UUID from
+Application. It runs two digest-pinned `cloudflared` replicas in
+`octelium-public`, reads the named tunnel credentials JSON and UUID from
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`, and forwards only
 `stinkyboi.com`, `octelium.stinkyboi.com`, `portal.stinkyboi.com`,
@@ -187,7 +193,10 @@ routes through the Istio gateway to the package-owned
 The tunnel transport uses QUIC because the public Octelium API carries
 long-lived gRPC `MainService/Connect` streams; forced HTTP/2 transport
 previously reset those streams after about 125 seconds while short API calls
-continued to pass.
+continued to pass. During the 2026-06-18 public outage, Cloudflare reported
+zero active connections for the named tunnel, so the repo-owned recovery lever
+was a pod-template rollout of `octelium-public` while preserving QUIC and
+UDP/7844.
 Protected ambient workloads allow
 `cluster.local/ns/octelium-client/sa/octelium-client` as a narrow source.
 Octelium Enterprise is tracked separately as the `octeliumee` package at
@@ -224,11 +233,11 @@ upstream Cordium until the repo adds a real Cordium-native workspace
 configuration resource.
 
 The Octelium catalog keeps identities separate. `homelab-cordium-user` is a
-HUMAN user for browser workspace access through the public `cordium` WEB
-Service. `homelab-cordium-agent` is a WORKLOAD user for automation through the
-`cordium-agent-api.homelab` gRPC Service and the
-`homelab-cordium-agent-api-access` policy. Do not share human browser
-credentials with agent automation.
+HUMAN user in Group `cordium-users` for browser workspace access through the
+public `cordium` WEB Service. `homelab-cordium-agent` is a WORKLOAD user in
+Group `cordium-agents` for automation through the `cordium-agent-api.homelab`
+gRPC Service and the `homelab-cordium-agent-api-access` policy. Do not share
+human browser credentials with agent automation.
 
 The upstream genesis hook generates the long-running Cordium controllers and
 managed Services in the `octelium` namespace. Validate with:
@@ -279,16 +288,26 @@ keeps the tailnet Control UI origin allow-list in config and stores
 hook token is populated, bootstrap expands `GRAFANA_ALERT_HOOK_TOKEN` from the
 mounted Secret, JSON-encodes the runtime value, and stores it as a plain string
 because OpenClaw rejects SecretRef objects for that hook-token surface. When
-`/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap
-installs and enables the official `@openclaw/discord` plugin and writes a
-SecretRef to `DISCORD_BOT_TOKEN`. The plugin npm cache and extension directory
-are `emptyDir` mounts at `/data/openclaw/npm` and
-`/data/openclaw/extensions` because QNAP NFS maps PVC writes to `nobody`, and
-OpenClaw blocks code plugins with suspicious ownership. ChatGPT Pro access uses
+`/homelab/openclaw/discord-bot-token` has been replaced in SSM, bootstrap first
+tries to force-install the official `@openclaw/discord` plugin pinned to the
+running OpenClaw image version. If ClawHub has not published that exact plugin
+version yet, bootstrap falls back to the current official Discord plugin so a
+registry/version skew does not keep the pod in an init crash loop. Bootstrap
+then enables the plugin and writes a SecretRef to `DISCORD_BOT_TOKEN`. The
+plugin npm cache and extension directory are `emptyDir` mounts at
+`/data/openclaw/npm` and `/data/openclaw/extensions` because QNAP NFS maps PVC
+writes to `nobody`, and OpenClaw blocks code plugins with suspicious ownership.
+
+Keep the OpenClaw image new enough for the current official Discord plugin API:
+the 2026-06-24 recovery moved the app, proxy, and bootstrap images to
+`2026.6.10` because ClawHub's current Discord plugin requires plugin API
+`2026.6.10` or newer and rejected the older `2026.6.6` runtime.
+
+ChatGPT Pro access uses
 interactive OpenAI Codex OAuth stored on the PVC; do not model that as an SSM
 secret or committed API key. The bootstrap also enables the bundled `codex`
 plugin and sets the default agent model to `openai/gpt-5.5` with
-`agentRuntime.id: "codex"` on that model. OpenClaw 2026.6.1 treats canonical
+`agentRuntime.id: "codex"` on that model. OpenClaw 2026.6.10 treats canonical
 `openai/gpt-*` agent refs plus the Codex runtime policy as the subscription
 backed app-server route; legacy `openai-codex/gpt-*` and `codex/gpt-*` refs are
 not the desired bootstrap default. The bootstrap enables the bundled

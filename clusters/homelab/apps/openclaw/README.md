@@ -78,12 +78,21 @@ The `openclaw-secrets` ExternalSecret reads the Discord bot token from
 `DISCORD_BOT_TOKEN`.
 
 On pod startup, the `bootstrap-config` init container keeps the Control UI
-origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, it installs
-the official `@openclaw/discord` channel plugin into pod-local plugin storage,
-enables the plugin, and stores a SecretRef to the environment-backed token.
+origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, it first tries
+to install the official `@openclaw/discord` channel plugin pinned to the running
+OpenClaw image version in pod-local plugin storage. If ClawHub has not published
+that exact plugin version yet, bootstrap falls back to the current official
+Discord plugin so the pod can finish starting instead of crash-looping on a
+missing registry version. Bootstrap then enables the plugin and stores a
+SecretRef to the environment-backed token.
 The npm cache and extension directory are intentionally not on the NFS-backed
 state PVC because OpenClaw rejects code plugins owned by the QNAP NFS `nobody`
 mapping.
+
+Keep the OpenClaw image new enough for the current official Discord plugin API.
+The 2026-06-24 recovery moved the app, proxy, and bootstrap images to
+`2026.6.10` because the current ClawHub Discord plugin requires plugin API
+`2026.6.10` or newer and rejected the older `2026.6.6` runtime.
 
 Discord bootstrap is skipped when the SSM value is still `REPLACE_ME`, so the
 app can start before the real Discord bot token exists. After replacing the SSM
@@ -178,7 +187,7 @@ credentials on the OpenClaw PVC.
 
 The pod startup bootstrap enables the bundled `codex` plugin and sets the
 default agent model to `openai/gpt-5.5` with model-scoped
-`agentRuntime.id: "codex"`. OpenClaw 2026.6.1 routes canonical `openai/gpt-*`
+`agentRuntime.id: "codex"`. OpenClaw 2026.6.10 routes canonical `openai/gpt-*`
 agent refs through the Codex app-server harness when that runtime policy is
 selected, so the PVC-backed Codex OAuth profile supplies the ChatGPT Pro auth
 without storing an API key in SSM or git. The older `openai-codex/gpt-*` and

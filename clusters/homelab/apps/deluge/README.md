@@ -28,8 +28,11 @@ exact AirVPN peer instead of selecting a random AirVPN server from provider
 metadata. Gluetun's custom WireGuard path still requires the endpoint host to
 be an IP address at startup, while AirVPN profiles can contain an endpoint DNS
 name. A `config-wireguard` init container reads the secret profile, resolves a
-DNS endpoint to its first IPv4 address when needed, and writes the normalized
-profile into an in-memory volume mounted at `/gluetun/wireguard/wg0.conf`.
+DNS endpoint to its first IPv4 address when needed, strips IPv6 `Address` and
+`AllowedIPs` entries, and writes the normalized profile into an in-memory
+volume mounted at `/gluetun/wireguard/wg0.conf`. Keep
+`homelab.rst.io/wireguard-profile-renderer-revision` in the pod template so
+renderer-only changes roll the singleton and clear stale Gluetun network rules.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
@@ -194,3 +197,9 @@ The usual repair is to generate a fresh AirVPN WireGuard profile, replace
 `homelab.rst.io/wireguard-profile-ssm-version` in both `externalsecret.yaml`
 and `values.yaml` so External Secrets renders the new Secret and Argo CD rolls
 the Pod. Do not patch or restart the live Pod as the durable fix.
+
+If Gluetun loops on `adding IPv6 rule ... file exists`, verify the rendered
+profile is still IPv4-only. AirVPN profiles can include IPv6 interface and
+allowed-route entries even when the homelab only needs IPv4; passing those
+through can leave the restartable Gluetun init sidecar stuck in the same pod
+network namespace while Deluge's daemon itself still answers RPC.

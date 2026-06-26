@@ -50,11 +50,14 @@ Source: `docs/ci-cd.md`
 - GitHub token permissions default to none.
 - AWS access uses GitHub OIDC and short-lived role sessions.
 - Octelium uses a workload credential for User `homelab-ci`. Live Terragrunt
-  jobs run on GitHub-hosted Ubuntu runners and reach the cluster through
-  Octelium userspace Service publishing rather than node routing from a
-  self-hosted runner. The workflow publishes Service `kubernetes-api.ci` to
-  `https://127.0.0.1:16443` with the gVisor userspace implementation, Octelium
-  DNS enabled for Service publishing, and Octelium's `wireguard` tunnel mode.
+  jobs run on the repo-owned self-hosted `homelab-ci` runner and reach the
+  cluster through Octelium userspace Service publishing rather than direct
+  Kubernetes routing. The connect helper maps `octelium-api.stinkyboi.com` to
+  the Istio ingress gateway ClusterIP through `OCTELIUM_API_HOST_ALIAS` so
+  authenticated CLI calls preserve gRPC trailers. The workflow publishes
+  Service `kubernetes-api.ci` to `https://127.0.0.1:16443` with the gVisor
+  userspace implementation, Octelium DNS changes disabled because CI only needs
+  the localhost publish, and Octelium's `wireguard` tunnel mode.
   The Octelium Cluster bootstrap enables `network.quicv0.enable` for a later
   hosted CI QUIC migration, and the `_gw-*` Octelium Gateway hostnames must have
   exact public AAAA records reconciled by `scripts/octelium-gateway-dns.sh`;
@@ -109,6 +112,14 @@ Source: `docs/ci-cd.md`
   `IaC/live/aws-ssm-parameters` state before planning. This handles the
   bootstrap path where a short-lived token was written locally so the runner
   could come online before GitHub Actions could manage the placeholder itself.
+- The `github-actions-runner` Argo CD Application needs the
+  `github-actions-runner` namespace in the `homelab` AppProject destination
+  allow-list. Runner pod logs that show HTTP `404` from
+  `POST https://api.github.com/actions/runner-registration` usually mean the
+  mounted short-lived registration token is stale or invalid; refresh
+  `/homelab/github-actions-runner/registration-token` in SSM with a newly
+  minted GitHub runner registration token before waiting for the pod to
+  register.
 
 ## Monitoring
 
@@ -157,16 +168,48 @@ the CI transport contract:
   user API `Connect` method and the Kubernetes API TCP Service;
 - TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
-Apply the catalog with `octeliumctl apply --domain stinkyboi.com
-docs/examples/octelium/homelab-services.yaml`, then create the credential with
-`octeliumctl create cred --domain stinkyboi.com --user homelab-ci
---policy homelab-ci-kubernetes-api-access homelab-ci`. Store only the printed
-credential token in GitHub environments as `OCTELIUM_CI_AUTH_TOKEN`.
+Apply the catalog and create or rotate the credential with
+`scripts/octelium-ci-credential.sh` after authenticating `octeliumctl` as an
+Octelium admin. The helper applies
+`docs/examples/octelium/homelab-services.yaml`, creates or rotates the
+`homelab-ci` credential, and updates `OCTELIUM_CI_AUTH_TOKEN` in the
+`homelab-plan` and `homelab-production` GitHub environments without printing
+the generated token. Pass `--homedir /tmp/octelium-admin` when using a
+temporary bootstrap recovery login, and `--octelium-proxy` when that recovery
+session reaches the Octelium API through a local CONNECT proxy.
 
 The CI connector does not pass Octelium `--scope` flags on v0.35. The
 `homelab-ci-kubernetes-api-access` policy must be applied before the token is
 used because the credential policy authorizes the Connect API call and the
-Kubernetes API Service access separately.
+Kubernetes API Service access separately. If CI logs show `gRPC error
+PermissionDenied` before `kubernetes-api.ci` is published, reapply the catalog
+and rotate this credential before debugging the Kubernetes API itself.
+The rotation helper preflights GitHub environment secret write access with a
+temporary write/delete and reconciles an existing Credential back to User
+`homelab-ci` with only Policy `homelab-ci-kubernetes-api-access` before
+generating a new token. It refuses unsafe existing-credential rotations when
+GitHub secret updates are disabled, so recovery does not invalidate the old
+token without storing the replacement.
+The connect/disconnect helpers default to a per-GitHub-run Octelium homedir so
+self-hosted runners cannot reuse a stale OcteliumDB refresh session after the
+GitHub environment secret is rotated. `scripts/ci/connect-octelium.sh` enables
+Octelium logout on normal process exit, and
+`scripts/ci/disconnect-octelium.sh` runs `octelium disconnect` and
+`octelium logout` against the same ephemeral homedir during teardown. Keep
+`OCTELIUM_API_HOST_ALIAS` pointed at the live Istio ingress gateway ClusterIP on
+the self-hosted runner path; public Cloudflare probes can be healthy while
+authenticated CLI success responses still lose trailers. Live jobs enter the
+Nix shell before starting `octelium connect`; avoid adding post-connect
+`nix develop` invocations. If the
+`homelab-ci` workload user reaches the Octelium server's active-session cap,
+clear only that user's active sessions with the repo-owned admin helper:
+
+```sh
+scripts/octelium-ci-credential.sh --delete-user-sessions-only
+```
+
+Pass the same `--homedir` and `--octelium-proxy` recovery flags when the admin
+session reaches the Octelium API through a local bootstrap proxy.
 
 GitHub-hosted runners must reach `octelium-api.stinkyboi.com` from the
 public Internet. Keep the Octelium cluster domain as `stinkyboi.com`; using
