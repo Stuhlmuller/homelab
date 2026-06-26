@@ -6,9 +6,10 @@ Source: `docs/ci-cd.md`
 
 ## Pipeline Shape
 
-- `Lint` runs on pull requests with Super-Linter against changed files. It is an
-  advisory shared lint signal; repository-specific blocking checks stay in
-  `Terragrunt Plan` and `validate`.
+- `Lint` runs on pull requests and checks changed files for whitespace errors,
+  YAML parse failures, and shell syntax failures. It is an advisory shared lint
+  signal; repository-specific blocking checks stay in `Terragrunt Plan` and
+  `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repo PRs inspect changed paths before opening the
   CI Kubernetes access path. Changes to `IaC/**`, flake inputs,
@@ -227,8 +228,8 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
 
-The pre-commit run is the closest local equivalent to the Super-Linter PR
-check. GitHub Actions remains the source for the exact lint status contexts.
+The pre-commit run covers the broader repository hook set. GitHub Actions
+remains the source for the exact changed-file lint status context.
 
 Local runs use the current `main` ref for Terragrunt's affected-unit
 comparison. Refresh `main` before reproducing a GitHub plan or apply diff.

@@ -2,10 +2,10 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
-- `Lint` runs on pull requests and invokes Super-Linter against changed files
-  with advisory status reporting. It is the shared lightweight lint signal for
-  every PR; the repository-specific blocking checks remain in `Terragrunt Plan`
-  and `validate`.
+- `Lint` runs on pull requests and checks changed files for whitespace errors,
+  YAML parse failures, and shell syntax failures. It is the shared lightweight
+  lint signal for every PR; the repository-specific blocking checks remain in
+  `Terragrunt Plan` and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repository pull requests then inspect the changed
   paths. If the change touches `IaC/**`, flake inputs, OpenTofu/Terragrunt
@@ -348,9 +348,8 @@ nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 ```
 
-The local pre-commit run is the closest repository-owned equivalent to the
-Super-Linter PR check; GitHub Actions remains the source for the exact
-Super-Linter status contexts.
+The local pre-commit run covers the broader repository hook set. The PR `Lint`
+workflow remains the source for the exact changed-file lint status context.
 
 The PR plan script intentionally skips the privileged SSM declaration and
 Kubernetes secret materialization stacks. To review those locally, assume the
