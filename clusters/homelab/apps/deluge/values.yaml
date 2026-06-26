@@ -9,6 +9,7 @@ controllers:
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
+        homelab.rst.io/wireguard-profile-renderer-revision: "strip-ipv6-routes-v1"
         homelab.rst.io/wireguard-profile-ssm-version: "4"
     strategy: Recreate
     initContainers:
@@ -66,15 +67,62 @@ controllers:
                 exit 1
               fi
             fi
-            awk -v replacement="Endpoint = ${endpoint_ip}:${port}" '
+            awk -F= -v replacement="Endpoint = ${endpoint_ip}:${port}" '
+              function trim(value) {
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+                return value
+              }
+
+              function ipv4_cidr_list(value, parts, count, output, item, i) {
+                count = split(value, parts, ",")
+                output = ""
+                for (i = 1; i <= count; i++) {
+                  item = trim(parts[i])
+                  if (item ~ /^[0-9]+([.][0-9]+){3}\/[0-9]+$/) {
+                    output = output (output == "" ? "" : ", ") item
+                  }
+                }
+                return output
+              }
+
               /^[[:space:]]*Endpoint[[:space:]]*=/ && !done {
                 print replacement
                 done=1
                 next
               }
+
+              tolower($1) ~ /^[[:space:]]*address[[:space:]]*$/ {
+                ipv4_addresses = ipv4_cidr_list($2)
+                if (ipv4_addresses == "" || address_done) {
+                  next
+                }
+                print "Address = " ipv4_addresses
+                address_done=1
+                next
+              }
+
+              tolower($1) ~ /^[[:space:]]*allowedips[[:space:]]*$/ {
+                ipv4_allowed_ips = ipv4_cidr_list($2)
+                if (ipv4_allowed_ips == "" || allowed_ips_done) {
+                  next
+                }
+                print "AllowedIPs = " ipv4_allowed_ips
+                allowed_ips_done=1
+                next
+              }
+
               { print }
               END {
                 if (!done) {
+                  print "WireGuard config must contain Endpoint = host:port" > "/dev/stderr"
+                  exit 1
+                }
+                if (!address_done) {
+                  print "WireGuard config must contain an IPv4 Address entry" > "/dev/stderr"
+                  exit 1
+                }
+                if (!allowed_ips_done) {
+                  print "WireGuard config must contain IPv4 AllowedIPs" > "/dev/stderr"
                   exit 1
                 }
               }
@@ -198,11 +246,11 @@ controllers:
                 healthy=1
                 total="$(
                   printf "%s\n" "$status_output" |
-                    awk -F: '/^[[:space:]]*Total torrents:/ {gsub(/^[[:space:]]+/, "", $2); print $2; exit}'
+                    awk -F: '/^[ \t]*Total torrents:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
                 )"
                 errors="$(
                   printf "%s\n" "$status_output" |
-                    awk -F: '/^[[:space:]]*Error:/ {gsub(/^[[:space:]]+/, "", $2); print $2; exit}'
+                    awk -F: '/^[ \t]*Error:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
                 )"
               fi
               total="${total:-0}"

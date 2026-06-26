@@ -10,10 +10,11 @@ env:
   KUBE_API_SERVER_URL: https://127.0.0.1:16443
   KUBE_TLS_SERVER_NAME: 10.1.0.199
   OCTELIUM_DOMAIN: stinkyboi.com
+  OCTELIUM_API_HOST_ALIAS: 10.101.66.84
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
   OCTELIUM_IMPLEMENTATION: gvisor
-  OCTELIUM_NO_DNS: "false"
+  OCTELIUM_NO_DNS: "true"
   OCTELIUM_TUNNEL_MODE: wireguard
   OCTELIUM_USE_SUDO: "false"
 
@@ -56,27 +57,24 @@ jobs:
       - name: Install Octelium Client
         run: bash scripts/ci/install-octelium-client.sh
 
-      - name: Connect To Octelium
+      - name: Run Grafana Diagnostics Through Octelium
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: bash scripts/ci/connect-octelium.sh
-
-      - name: Install Kubeconfig
-        env:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
-        run: nix develop --command bash scripts/ci/install-kubeconfig.sh
-
-      - name: Verify Kubernetes API Reachability
-        run: |
-          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
-          nix develop --command kubectl --request-timeout=15s version
-
-      - name: Inspect Grafana
         run: |
           nix develop --command bash <<'EOF'
-          set -o pipefail
+          set -euo pipefail
+          cleanup() {
+            bash scripts/ci/disconnect-octelium.sh
+          }
+          trap cleanup EXIT
+
+          bash scripts/ci/connect-octelium.sh
+          bash scripts/ci/install-kubeconfig.sh
+          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
+          kubectl --request-timeout=15s version
           kubectl -n monitoring get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
             -l app.kubernetes.io/name=grafana -o wide
           kubectl -n monitoring describe deployment grafana

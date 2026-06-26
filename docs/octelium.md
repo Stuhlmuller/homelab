@@ -78,7 +78,8 @@ They create:
   such as `https://grafana.stinkyboi.com`.
 - Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
   workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
-  automation through `cordium-agent-api.homelab`.
+  automation through `cordium-agent-api.homelab`, plus the matching
+  `cordium-users` and `cordium-agents` Groups those Users reference.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 The Enterprise console hostname `https://console.stinkyboi.com` is not an
@@ -500,6 +501,13 @@ octeliumctl create cred \
 Store the printed credential in `/homelab/octelium/client-auth-token`, sync the
 `octelium` Argo CD Application, and run `scripts/octelium-e2e-check.sh`.
 
+Cordium genesis `0.12.7` declares the non-root image user by name
+(`octelium`). Kubelet cannot verify that named user when `runAsNonRoot` is set,
+so the hook pins the image's numeric runtime identity (`runAsUser: 100`,
+`runAsGroup: 65533`). Bump
+`homelab.rst.io/cordium-genesis-revision` when the hook template needs to be
+recreated.
+
 ## Validation
 
 Before rollout:
@@ -574,6 +582,25 @@ The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
 this workload credential. Do not add Octelium `--scope` flags to this CI
 connection on v0.35; scoped auth-token sessions are denied before the
 Kubernetes API listener is published.
+The CI helper defaults to a per-GitHub-run Octelium homedir. Keep that behavior
+on self-hosted runners so a stale local OcteliumDB refresh token cannot bypass a
+freshly rotated `OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
+logout-on-exit and the `if: always()` disconnect helper calls both
+`octelium disconnect` and `octelium logout` against the same ephemeral homedir
+so auth-token sessions do not accumulate. The self-hosted runner maps
+`octelium-api.stinkyboi.com` to the Istio ingress gateway ClusterIP with
+`OCTELIUM_API_HOST_ALIAS`; keep that alias on CI paths because the public
+Cloudflare hostname can answer unauthenticated gRPC probes while authenticated
+CLI success responses still lose required trailers. CI keeps `--no-dns` enabled
+because it only needs the localhost `kubernetes-api.ci` publish and later Nix
+or Kubernetes commands should keep the runner's normal DNS resolver. The
+credential helper verifies GitHub environment secret write access with a
+temporary write/delete, refreshes an existing Credential's User and Policy
+binding, and refuses existing-credential rotation when GitHub secret updates are
+disabled. If the `homelab-ci` user hits the Octelium server-side active-session
+cap, use the credential helper's
+`--delete-user-sessions-only` mode to clear only those workload sessions before
+rerunning CI.
 
 ## Rollback
 
