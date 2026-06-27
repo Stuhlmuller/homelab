@@ -396,3 +396,8 @@ Cordium genesis `0.12.7` uses the named image user `octelium`. Kubelet cannot
 prove a named user is non-root when `runAsNonRoot` is set, so the hook pins the
 image's numeric identity (`runAsUser: 100`, `runAsGroup: 65533`) and bumps
 `homelab.rst.io/cordium-genesis-revision` when the hook must be recreated.
+The genesis service account also needs the RBAC special verbs `bind` and
+`escalate` on Roles and ClusterRoles because upstream genesis creates privileged
+Cordium ClusterRoles such as `cordium-nocturne`; without those verbs, Kubernetes
+blocks the install with a privilege-escalation error before the Cordium
+controllers are created.

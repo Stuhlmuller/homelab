@@ -17,6 +17,8 @@ metadata:
     app.kubernetes.io/name: cordium
     app.kubernetes.io/component: genesis
     app.kubernetes.io/part-of: homelab
+  annotations:
+    checkov.io/skip1: CKV_K8S_158=Upstream Cordium genesis creates its managed ClusterRoles and needs Kubernetes RBAC escalation only for bootstrap.
 rules:
   - apiGroups:
       - ""
@@ -56,6 +58,14 @@ rules:
       - create
       - update
       - patch
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - roles
+    verbs:
+      - bind
+      - escalate
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
@@ -112,7 +122,7 @@ metadata:
     checkov.io/skip2: CKV_K8S_38=The bootstrap job needs a Kubernetes service-account token to create Cordium controller resources.
     checkov.io/skip3: CKV_K8S_40=The upstream image runs as its bundled non-root octelium user with UID 100.
     checkov.io/skip4: CKV2_K8S_6=cordium-genesis is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
-    homelab.rst.io/cordium-genesis-revision: "2"
+    homelab.rst.io/cordium-genesis-revision: "3"
 spec:
   backoffLimit: 2
   ttlSecondsAfterFinished: 86400
@@ -123,7 +133,7 @@ spec:
         app.kubernetes.io/component: genesis
         app.kubernetes.io/part-of: homelab
       annotations:
-        homelab.rst.io/cordium-genesis-revision: "2"
+        homelab.rst.io/cordium-genesis-revision: "3"
     spec:
       serviceAccountName: cordium-genesis
       restartPolicy: OnFailure
