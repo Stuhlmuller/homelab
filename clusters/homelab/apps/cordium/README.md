@@ -20,8 +20,11 @@ long-running Cordium `nocturne` and `rscserver` Deployments and registers the
 `apiserver` and `portal` managed services with Octelium. The image declares the
 non-root user by name, so the hook pins `runAsUser: 100` and
 `runAsGroup: 65533` to satisfy kubelet's `runAsNonRoot` verification. The
-Argo CD app keeps the hook and RBAC visible in git; the generated
-Octelium/Cordium runtime resources remain owned by Octelium controllers.
+bootstrap service account also needs Kubernetes' `bind` and `escalate` RBAC
+verbs because upstream genesis creates ClusterRoles with permissions the
+service account does not otherwise hold directly. The Argo CD app keeps the
+hook and RBAC visible in git; the generated Octelium/Cordium runtime resources
+remain owned by Octelium controllers.
 
 ## Activation
 
