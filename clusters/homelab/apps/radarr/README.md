@@ -28,16 +28,16 @@ Secrets. Do not commit it to this repository.
 
 The startup `configure-postgres` init container also sets
 `<AuthenticationMethod>External</AuthenticationMethod>` and
-`<AuthenticationType>DisabledForLocalAddresses</AuthenticationType>` plus
 `<AuthenticationRequired>DisabledForLocalAddresses</AuthenticationRequired>` in
-`/config/config.xml`. The Servarr FAQ documents `AuthenticationType` as the
-config-file equivalent for this setting, while the environment variable table
-uses `AuthenticationRequired`, so the startup reset writes both names.
+`/config/config.xml`. The init container removes stale
+`AuthenticationEnabled` and `AuthenticationType` entries first, then rewrites
+the target tags so exactly one copy remains. This matters because old
+`AuthenticationEnabled=true` config forces Forms authentication before Radarr
+reads `AuthenticationMethod`, and duplicate XML tags are treated by Radarr as
+missing values.
+
 The Radarr app container also sets `RADARR__AUTH__METHOD=External` and
-`RADARR__AUTH__REQUIRED=DisabledForLocalAddresses`, because Radarr environment
-variables override persisted `config.xml` entries at startup and keep the
-running process aligned if the PVC copy drifts back to Forms authentication or
-password-required mode.
+`RADARR__AUTH__REQUIRED=DisabledForLocalAddresses` as a secondary runtime guard.
 Radarr targets Octelium as the external access boundary. The stable
 `https://radarr.stinkyboi.com` hostname resolves to the Octelium service
 address, Funnel stays disabled, and Radarr's own password prompt is
@@ -50,6 +50,22 @@ authentication or add a dedicated forward auth layer before rollout. Upstream
 documents `External` as the config-file-only mode for deployments protected by
 external authentication:
 <https://wiki.servarr.com/radarr/faq#authentication-method>.
+
+The app has startup, readiness, and liveness probes against
+`/initialize.json`. That endpoint is the UI bootstrap path and includes the
+runtime API key in its response body, so validation commands must discard the
+body:
+
+```sh
+kubectl -n media exec deploy/radarr -c app -- \
+  sh -c 'curl -fsS -o /dev/null http://127.0.0.1:7878/initialize.json'
+kubectl -n media exec deploy/radarr -c app -- \
+  sh -c 'grep -nE "<Authentication(Enabled|Method|Required|Type)>" /config/config.xml || true'
+```
+
+Expected config output contains only one `AuthenticationMethod=External` line
+and one `AuthenticationRequired=DisabledForLocalAddresses` line. Do not print
+`/initialize.json`; it contains the live Radarr API key.
 
 ## Media Storage
 
