@@ -6,12 +6,11 @@ Source: `docs/octelium.md`
 
 ## Model
 
-Octelium is the replacement target for human access to homelab applications.
-The current app registration is `octelium`, the Kubernetes namespace is
-`octelium-client`, and app UI routes now use Octelium-backed
-`*.stinkyboi.com` hostnames. Tailscale can still have separate non-app duties,
-such as CI cluster reachability or reviewed public webhook exceptions, until
-those are replaced in their own change.
+Octelium is the primary access backbone for homelab applications, VPN sessions,
+CI cluster reachability, and reviewed external callbacks. The current app
+registration is `octelium`, the Kubernetes namespace is `octelium-client`, and
+app UI routes now use Octelium-backed `*.stinkyboi.com` hostnames. Tailscale
+remains only for secondary LAN and exit-node use cases.
 
 The Argo CD Application installs repo-owned support manifests, including the
 `octelium-client` connector Deployment. The connector runs in TUN mode with
@@ -26,11 +25,11 @@ the Istio gateway ClusterIP in `hostAliases`.
 catalog. It creates Namespace `homelab` for the demo, Namespace `ci` for
 CI-only transport, Policy `homelab-human-web-access`, Policy
 `homelab-workload-web-serve`, workload User `homelab-octelium-client`, human
-e2e User `homelab-e2e`, public `WEB` Services for Argo CD, Compass, Deluge,
-Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr, Radarr,
-and Sonarr, plus WEB Service `homelab-demo.homelab`. The app service primary
-hostnames are first-level names such as `grafana`, which publish as existing
-FQDNs such as `https://grafana.stinkyboi.com`.
+e2e User `homelab-e2e`, public `WEB` Services for Argo CD, Compass, Cordium,
+Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy Bot, Prowlarr,
+Radarr, and Sonarr, plus WEB Service `homelab-demo.homelab`. The app service
+primary hostnames are first-level names such as `grafana`, which publish as
+existing FQDNs such as `https://grafana.stinkyboi.com`.
 
 The policy allows authenticated human client sessions and clientless browser
 sessions to app WEB Services. The workload policy allows the single
@@ -161,9 +160,12 @@ Tunnel credentials JSON and UUID live outside git in
 `/homelab/octelium/cloudflare-tunnel-credentials-json` and
 `/homelab/octelium/cloudflare-tunnel-id`; both are rendered by the
 `octelium-public-cloudflared-credentials` ExternalSecret. After those SSM values
-exist, run `scripts/octelium-public-dns.sh` to replace the old tailnet DNS
-answers with exact proxied CNAMEs to the Cloudflare Tunnel target. Cloudflare
-edge TLS only needs the apex plus first-level `*.stinkyboi.com` names.
+exist, run `scripts/octelium-public-dns.sh` to replace the old tailnet or
+private-service DNS answers with exact proxied CNAMEs to the Cloudflare Tunnel
+target. The same reconciler publishes app UI hostnames and reviewed callback
+hostnames such as `n8n-webhook.stinkyboi.com` and
+`policy-bot-hook.stinkyboi.com`. Cloudflare edge TLS only needs the apex plus
+first-level `*.stinkyboi.com` names.
 
 Octelium CLI and VPN sessions use gRPC on `octelium-api.stinkyboi.com`.
 Cloudflare returns HTTP `403` to gRPC requests when zone gRPC is disabled, and
@@ -231,7 +233,8 @@ responses from the Cluster/API/portal hostnames, every homelab app Service in
 the Octelium catalog, public DNS for each existing app hostname, and HTTPS
 access to each app through Octelium clientless WEB access. It fails if any app
 hostname still resolves to private Octelium service IPs or if a public app
-hostname returns a routing 404.
+hostname returns a routing 404. It also checks the reviewed callback hostnames
+`n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`.
 
 When the Octelium control plane is external to homelab, run the gate with
 separate `--octelium-context` and `--homelab-context` values so the
@@ -309,8 +312,8 @@ the Octelium-native `octops init` command. The steady-state prerequisites are:
   traffic to HTTP/2 so Octelium CLI gRPC calls keep their response trailers.
 - `octelium-public` in `clusters/homelab/apps/octelium-public` for the
   Cloudflare Tunnel connector that exposes the Octelium control-plane,
-  portal, and API hostnames outside the tailnet without exposing the app
-  service hostnames.
+  portal, API, app UI, Enterprise console, and reviewed callback hostnames
+  outside the tailnet.
 
 The `octelium-cluster` Argo CD Application must not own the `octelium`
 namespace. Octelium genesis deletes and recreates that namespace during
@@ -337,10 +340,10 @@ access used by `octops`.
 - `scripts/octelium-gateway-dns.sh`, which reads the Cloudflare API token from
   SSM and reconciles exact `_gw-*` AAAA records from Octelium Gateway status so
   client VPN traffic does not fall through to the tailnet wildcard record.
-- `scripts/octelium-app-dns.sh`, which reads Octelium Service status and
-  reconciles exact app `A` and `AAAA` records like
-  `grafana.stinkyboi.com -> 100.64.1.x/fdee:b76e:...` to the shared app
-  gateway so existing app hostnames route through Octelium VPN access.
+- `scripts/octelium-app-dns.sh`, which is now only a compatibility wrapper
+  around `scripts/octelium-public-dns.sh`; app hostnames must publish as
+  proxied Cloudflare Tunnel CNAMEs to the `octelium-public` connector, not
+  private Octelium gateway A/AAAA records.
 
 ## Validation
 
@@ -400,4 +403,6 @@ The genesis service account also needs the RBAC special verbs `bind` and
 `escalate` on Roles and ClusterRoles because upstream genesis creates privileged
 Cordium ClusterRoles such as `cordium-nocturne`; without those verbs, Kubernetes
 blocks the install with a privilege-escalation error before the Cordium
-controllers are created.
+controllers are created. Keep those verbs scoped to the `cordium-genesis`
+bootstrap ClusterRole, and bump the hook revision whenever that RBAC changes so
+Argo recreates the Job.

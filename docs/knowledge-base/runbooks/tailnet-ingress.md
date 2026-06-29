@@ -6,21 +6,21 @@ Source: `docs/networking-tailnet-ingress.md`
 
 ## Model
 
-Octelium is the access plane for human app access. App hostnames stay on
-`*.stinkyboi.com`, but exact DNS records resolve them to Octelium private
-service addresses instead of the old Tailscale wildcard route. Public Tailscale
-Funnel is reserved for reviewed webhook paths that external SaaS systems must
-reach.
+Octelium is the primary access plane for app UIs, VPN sessions, CI Kubernetes
+API reachability, and external callbacks. App hostnames stay on
+`*.stinkyboi.com`, but exact DNS records resolve as proxied Cloudflare Tunnel
+CNAMEs to the repo-owned `octelium-public` connector instead of Octelium
+private service addresses or the old Tailscale wildcard route. Tailscale Funnel
+is no longer an approved external-service backbone in steady state.
 
-The Octelium control-plane names are the narrow public exception and do not use
-Tailscale Funnel. `stinkyboi.com`, `octelium.stinkyboi.com`,
-`portal.stinkyboi.com`, and `octelium-api.stinkyboi.com` are proxied
-Cloudflare CNAMEs to the
-`homelab-octelium-public` Cloudflare Tunnel target. Public DNS returns
-Cloudflare anycast addresses, while the Cloudflare zone metadata keeps the
-`<tunnel-uuid>.cfargotunnel.com` target. The in-cluster `octelium-public` app
-runs `cloudflared` and forwards those hostnames to the Istio gateway, which
-preserves the existing Octelium Cluster `VirtualService`.
+The Octelium control-plane names, app hostnames, and reviewed callback names
+all use proxied Cloudflare CNAMEs to the `homelab-octelium-public` Cloudflare
+Tunnel target. Public DNS returns Cloudflare anycast addresses, while the
+Cloudflare zone metadata keeps the `<tunnel-uuid>.cfargotunnel.com` target.
+The in-cluster `octelium-public` app runs `cloudflared`; app UI hostnames go to
+the Octelium ingress dataplane for clientless login, while control-plane,
+Enterprise console, and unauthenticated callback hostnames go to the Istio
+gateway with explicit `VirtualService` routing.
 
 The Octelium service catalog in `docs/examples/octelium/homelab-services.yaml`
 keeps the existing app URLs by storing each `*.stinkyboi.com` hostname as a
@@ -30,28 +30,30 @@ authenticated clientless browser requests. The per-app Istio `VirtualService`
 objects are private backend routes for that Octelium path, not public Funnel
 routes.
 
-Octelium is documented under [[octelium]]. It replaces app access only; it does
-not replace the Tailscale exit node, CI route, or reviewed public webhook
-exceptions.
+Octelium is documented under [[octelium]]. It is the primary app, callback,
+VPN, and CI access backbone. Tailscale remains only for the secondary exit-node
+and LAN route use cases documented below.
 
 ## Current Route Rules
 
 - Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,
   OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI use
   Octelium-backed `*.stinkyboi.com` app hostnames.
-- n8n webhooks are a reviewed public Funnel exception:
-  `https://n8n-webhook.tail67beb.ts.net` for `/webhook`, `/webhook-test`, and
-  `/webhook-waiting` only.
-- Policy Bot GitHub webhook is another reviewed public Funnel exception:
-  `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
+- n8n webhooks use the reviewed Octelium-public callback host
+  `https://n8n-webhook.stinkyboi.com` for `/webhook`, `/webhook-test`, and
+  `/webhook-waiting` only. External callers using the retired Funnel hostname
+  must be updated after rollout.
+- Policy Bot GitHub webhook uses the reviewed Octelium-public callback host
+  `https://policy-bot-hook.stinkyboi.com/api/github/hook`; update the GitHub
+  App webhook URL after rollout.
 - Prometheus is intentionally not exposed; Grafana is the metrics UI and Kiali
   is the read-only mesh UI.
 - OctoBot uses `https://octobot.stinkyboi.com` through Octelium. Its exchange
   credentials and strategy state live on PVC-backed runtime
   configuration, not in public repository files.
-- Octelium serves private app Services from
-  `docs/examples/octelium/homelab-services.yaml`; public webhook callbacks stay
-  on their reviewed Tailscale Funnel exceptions until separately redesigned.
+- Octelium serves app UI Services from
+  `docs/examples/octelium/homelab-services.yaml`; public webhook callbacks use
+  path-limited Istio routes reached through `octelium-public`.
 - Octelium control-plane/API/portal access is public through Cloudflare Tunnel
   so users can log in and start the VPN without already being on Tailscale.
 
@@ -66,10 +68,12 @@ External Secrets. That certificate covers the Octelium domain
 ## Homelab Exit Node
 
 The `tailscale` Application installs the Tailscale operator and the
-`homelab-exit-node` Connector. The connector advertises itself as an exit node
-with tag `tag:k8s` and advertises `10.1.0.0/24` so tailnet clients can reach
-the homelab LAN. CI grants stay limited to `10.1.0.199:6443` for Kubernetes API
-access.
+`homelab-exit-node` Connector. This is a secondary LAN/egress utility, not the
+primary app, callback, VPN, or GitHub Actions backbone. The connector
+advertises itself as an exit node with tag `tag:k8s` and advertises
+`10.1.0.0/24` so tailnet clients can reach the homelab LAN when Octelium is
+unavailable or a local-LAN workflow has not moved. GitHub Actions uses
+Octelium Service `kubernetes-api.ci`.
 
 Validation:
 
@@ -79,11 +83,13 @@ kubectl wait connector homelab-exit-node --for=condition=ConnectorReady=true --t
 kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=homelab-exit-node
 ```
 
-## Funnel Exception Template
+## Callback Template
 
-Every future public route needs owner, path, purpose, source system,
-authentication or signature check, Funnel hostname, rollback command, and data
-exposure.
+Every future public callback route needs owner, path, purpose, source system,
+authentication or signature check, public callback hostname, backbone, rollback
+command, and data exposure. Rendered resources must pass the Conftest rule that
+rejects Tailscale Funnel and requires `homelab.rst.io/access-plane: octelium`
+for public routes.
 
 ## Related Notes
 

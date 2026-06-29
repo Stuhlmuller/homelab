@@ -21,10 +21,12 @@ long-running Cordium `nocturne` and `rscserver` Deployments and registers the
 non-root user by name, so the hook pins `runAsUser: 100` and
 `runAsGroup: 65533` to satisfy kubelet's `runAsNonRoot` verification. The
 bootstrap service account also needs Kubernetes' `bind` and `escalate` RBAC
-verbs because upstream genesis creates ClusterRoles with permissions the
-service account does not otherwise hold directly. The Argo CD app keeps the
-hook and RBAC visible in git; the generated Octelium/Cordium runtime resources
-remain owned by Octelium controllers.
+verbs because upstream genesis creates privileged ClusterRoles such as
+`cordium-nocturne` with permissions the service account does not otherwise hold
+directly. Keep those verbs scoped to this hook instead of granting broad
+privileges to long-running workloads. The Argo CD app keeps the hook and RBAC
+visible in git; the generated Octelium/Cordium runtime resources remain owned
+by Octelium controllers.
 
 ## Activation
 
@@ -35,7 +37,7 @@ octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services
 ```
 
 Argo CD then syncs the `cordium` Application and runs the genesis hook. If the
-hook needs to be rerun after a Cordium upgrade, bump
+hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change, bump
 `homelab.rst.io/cordium-genesis-revision` on the Job template.
 
 Create a workload credential for automation after the `homelab-cordium-agent`
@@ -50,6 +52,10 @@ octeliumctl create cred \
 
 Store that token outside git wherever the caller that drives agent workspaces
 expects it. Do not reuse a human browser session token for agent automation.
+Developer shell access should enter through `https://cordium.stinkyboi.com`
+and workspace subdomains under `*.cordium.stinkyboi.com`; do not bypass the
+Octelium-backed Cordium route with a direct Service, port-forward, or
+Tailscale-only URL.
 
 ## Validation
 

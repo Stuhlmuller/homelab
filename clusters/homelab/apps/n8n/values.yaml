@@ -61,7 +61,7 @@ controllers:
           N8N_PROXY_HOPS: "1"
           N8N_SECURE_COOKIE: "true"
           N8N_EDITOR_BASE_URL: https://n8n.stinkyboi.com
-          WEBHOOK_URL: https://n8n-webhook.tail67beb.ts.net/
+          WEBHOOK_URL: https://n8n-webhook.stinkyboi.com/
           DB_TYPE: postgresdb
           DB_POSTGRESDB_HOST: n8n-postgres.automation.svc.cluster.local
           DB_POSTGRESDB_PORT: "5432"

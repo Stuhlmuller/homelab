@@ -8,10 +8,10 @@ units as the source of truth when they disagree with this note.
 
 ## Import Note
 
-This note reflects the current working tree. Human app access for the
-`*.stinkyboi.com` app hostnames is through Octelium; Tailscale remains only for
-separately reviewed non-app paths such as CI/LAN reachability and webhook
-Funnel exceptions.
+This note reflects the current working tree. Human app access, Octelium VPN,
+GitHub Actions Kubernetes API transport, and public callback hostnames use
+Octelium as the backbone. Tailscale remains only as a secondary LAN/egress
+utility, not as an app, callback, or CI access path.
 
 ## Platform And Support Applications
 
@@ -50,8 +50,8 @@ Funnel exceptions.
 | `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config and PostgreSQL databases on `nfs-default`; TV and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, SSM-backed gateway auth, Discord channel config, SSM-backed GitHub App credentials, Codex OAuth credentials on PVC, and explicit agent resource profile | external-secrets, cert-manager, istio, litellm, platform-storage |
-| `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public Funnel is limited to webhook prefixes | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
-| `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
+| `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public callbacks use `https://n8n-webhook.stinkyboi.com` through `octelium-public` and are limited to webhook prefixes | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |
+| `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public` | external-secrets, cert-manager, istio |
 | `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and Octelium-targeted UI access | cert-manager, istio, platform-storage |
 
 ## Mesh Policy Summary
@@ -65,12 +65,12 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   principal reserved for future served upstreams, Alertmanager to reach
   OpenClaw `/hooks/agent`, and OpenClaw to reach LiteLLM.
 - `automation` currently restricts `n8n` workload access to the Istio gateway;
-  the reviewed public n8n webhook Funnel forwards into that gateway instead of
-  directly to the workload. `n8n-postgres` has a NetworkPolicy that documents
-  n8n-only database access, but the current flannel CNI does not enforce
-  NetworkPolicy yet. The namespace is not default-denied because Policy Bot
-  Funnel traffic and database source-identity validation still need live
-  validation after rollout.
+  the reviewed public n8n and Policy Bot callback hosts forward through the
+  `octelium-public` tunnel into that gateway instead of directly to the
+  workloads. `n8n-postgres` has a NetworkPolicy that documents n8n-only
+  database access, but the current flannel CNI does not enforce NetworkPolicy
+  yet. The namespace is not default-denied because callback traffic and
+  database source-identity validation still need live validation after rollout.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
   kube-state-metrics by service account. Compass allows only the Istio gateway
   path used by Octelium service proxies, Prometheus scraper, and Octelium

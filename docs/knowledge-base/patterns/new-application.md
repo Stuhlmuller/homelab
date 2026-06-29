@@ -30,9 +30,11 @@ Use this checklist before adding a new runtime application.
 
 ## Ingress Rule
 
-Tailnet-only ingress is the default. Public Funnel or public HTTP exposure must
-be intentional, reviewed, and documented with authentication or signature
-checks, data exposure, and rollback steps.
+Octelium-backed ingress is the default for app UIs. Public callbacks that cannot
+complete an Octelium browser login must use reviewed first-level callback
+hostnames through `octelium-public`, carry `homelab.rst.io/public-callback`
+annotations, and document authentication or signature checks, data exposure,
+and rollback steps. Do not add Tailscale Funnel for app or callback access.
 
 ## Knowledge-Base Update
 
