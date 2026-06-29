@@ -11,7 +11,7 @@ controllers:
       wait-for-postgres:
         image:
           repository: postgres
-          tag: 18.4-bookworm@sha256:efef99e1558f86089bc84bece29208c0777a185ff717ec7fa288a652ce2d0adf
+          tag: 18.4-bookworm@sha256:9479eac93922431e8a512b016d7362ae264f4ba139f840891b51f02931e450db
         env:
           DB_POSTGRESDB_PASSWORD_FILE: /run/secrets/n8n-postgres/DB_POSTGRESDB_PASSWORD
         command:
