@@ -31,7 +31,9 @@ Current enforced controls:
 
 `argocd`, `cert-manager`, `external-secrets`, `ai`, `automation`, `finance`,
 `monitoring`, and `storage` are explicitly baseline in repo-owned namespace
-manifests. `octelium-client` is privileged-enforce and ambient-enrolled so the
+manifests. CI and diagnostics run on GitHub-hosted runners through the Octelium
+workload credential path, so there is no in-cluster general-purpose GitHub
+Actions runner namespace. `octelium-client` is privileged-enforce and ambient-enrolled so the
 Octelium connector can be allowed as
 `cluster.local/ns/octelium-client/sa/octelium-client` by protected workloads.
 `finance` is not mesh-enrolled; OctoBot's UI is reached through the Octelium

@@ -63,12 +63,6 @@ roles need identity-based KMS permissions for both keys.
   because OpenClaw rejects SecretRef objects for that hook-token surface.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
-- The `github-actions-runner` app uses the
-  `github-actions-runner-registration` ExternalSecret, sourced from
-  `/homelab/github-actions-runner/registration-token`, to bootstrap the
-  self-hosted runner. The registration token is short-lived and is only needed
-  when recreating runner registration state; the runner workspace is ephemeral
-  and stores no durable token material.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token

@@ -45,11 +45,11 @@ inputs = {
 
   sync_policy = {
     automated = {
-      prune     = true
-      self_heal = true
+      allow_empty = true
+      prune       = true
+      self_heal   = true
     }
     sync_options = [
-      "CreateNamespace=true",
       "ServerSideApply=true"
     ]
     retry = {

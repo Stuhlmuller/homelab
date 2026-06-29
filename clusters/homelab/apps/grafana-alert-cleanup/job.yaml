@@ -25,11 +25,12 @@ spec:
     - Egress
   egress:
     - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: grafana
       ports:
         - protocol: TCP
-          port: 443
+          port: 3000
     - to:
         - namespaceSelector:
             matchLabels:
@@ -76,7 +77,7 @@ spec:
           image: python:3.13-alpine@sha256:420cd0bf0f3998275875e02ecd5808168cf0843cbb4d3c536432f729247b2acc
           env:
             - name: GRAFANA_URL
-              value: https://grafana.stinkyboi.com
+              value: http://grafana.monitoring.svc.cluster.local
             - name: PYTHONUNBUFFERED
               value: "1"
           command:

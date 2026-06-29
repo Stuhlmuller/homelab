@@ -311,7 +311,9 @@ The tunnel transport is pinned to QUIC in `octelium-public`; if
 `POST /octelium.api.main.user.v1.MainService/Connect` ending with
 `DR http2.remote_reset` after roughly 125 seconds, treat that as a tunnel
 transport regression rather than an Octelium login failure. Keep UDP/7844
-allowed in the `cloudflared-egress` NetworkPolicy while QUIC is enabled.
+allowed to public IPv4 destinations in the `cloudflared-egress` NetworkPolicy
+while QUIC is enabled. Keep private and link-local IPv4 ranges excluded and DNS
+scoped to cluster DNS.
 
 The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
 

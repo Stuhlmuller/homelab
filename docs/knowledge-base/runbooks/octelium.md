@@ -180,7 +180,9 @@ Cloudflare or Octelium release proves otherwise; the HTTP/2 tunnel transport
 accepted unary gRPC requests but caused the long-lived
 `MainService/Connect` stream to reset after about 125 seconds with Istio
 `DR http2.remote_reset` and Octelium API proxy `INTERNAL_ERROR` logs. Keep
-UDP/7844 in the `cloudflared-egress` NetworkPolicy whenever QUIC is enabled.
+public IPv4 UDP/7844 in the `cloudflared-egress` NetworkPolicy whenever QUIC
+is enabled, but keep private and link-local IPv4 ranges excluded and DNS scoped
+to cluster DNS.
 
 Verify the public API with a gRPC-shaped request before asking users to retry
 `octelium connect`:

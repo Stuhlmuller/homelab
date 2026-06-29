@@ -83,7 +83,6 @@ stack because Terraform manages the Kubernetes Secret.
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
-| github-actions-runner | `github-actions-runner-registration` | `github-actions-runner-registration` | `/homelab/github-actions-runner/registration-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
 | octelium-public | `octelium-public-cloudflared-credentials` | `octelium-public-cloudflared-credentials` | `/homelab/octelium/cloudflare-tunnel-credentials-json`, `/homelab/octelium/cloudflare-tunnel-id` |
