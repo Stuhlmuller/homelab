@@ -1,0 +1,25 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: policy-bot-webhook-octelium
+  namespace: automation
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "GitHub webhook deliveries to policy-bot only."
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - policy-bot-hook.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /api/github/hook
+      route:
+        - destination:
+            host: policy-bot.automation.svc.cluster.local
+            port:
+              number: 8080

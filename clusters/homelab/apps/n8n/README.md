@@ -29,30 +29,20 @@ persisted settings file instead of crashlooping on an accidental mismatch.
 
 - Editor/UI target: `https://n8n.stinkyboi.com` through Octelium service
   `n8n.homelab`
-- Public webhook Funnel host: `https://n8n-webhook.tail67beb.ts.net`
+- Public webhook host:
+  `https://n8n-webhook.stinkyboi.com` through the `octelium-public` tunnel
 - Public webhook paths: `/webhook`, `/webhook-test`, and `/webhook-waiting`
 
-`WEBHOOK_URL` is set to the public Funnel host so n8n advertises externally
+`WEBHOOK_URL` is set to the public callback host so n8n advertises externally
 reachable webhook URLs. The editor base URL stays on `n8n.stinkyboi.com`, but
 that app hostname is reached through Octelium rather than the public webhook
-Funnel. The Funnel route is declared as a Tailscale Ingress in `istio-system`
-and forwards only the webhook path prefixes to the Istio gateway, which then
-routes to the n8n service. Do not add the root path, editor routes, static
-assets, or API routes to the Funnel Ingress.
-
-The Tailscale tailnet policy must allow the operator proxy tag, currently
-`tag:k8s`, to use Funnel:
-
-```json
-{
-  "nodeAttrs": [
-    {
-      "target": ["tag:k8s"],
-      "attr": ["funnel"]
-    }
-  ]
-}
-```
+callback. The public callback route is a narrow Istio `VirtualService` reached
+through the repo-owned `octelium-public` Cloudflare Tunnel connector. It routes
+only the webhook path prefixes to the n8n service. Do not add the root path,
+editor routes, static assets, or API routes to the public callback host.
+After rollout, update external callers that still use the retired
+`n8n-webhook.tail67beb.ts.net` Funnel URL to the new
+`n8n-webhook.stinkyboi.com` host.
 
 ## Database Readiness
 
@@ -70,23 +60,27 @@ credentials before rollout if the existing SQLite contents must be preserved.
 
 ```sh
 kubectl kustomize clusters/homelab/apps/n8n
-kubectl -n automation get deploy,svc,externalsecret n8n n8n-secrets
-kubectl -n istio-system get gateway n8n-webhook-funnel
-kubectl -n istio-system get ingress n8n-webhook-funnel
-kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=n8n-webhook-funnel
+kubectl -n automation get deploy/n8n svc/n8n externalsecret/n8n-secrets
+kubectl -n automation get virtualservice/n8n-octelium virtualservice/n8n-webhook-octelium
+kubectl -n octelium-public get deploy cloudflared
 curl -I https://n8n.stinkyboi.com/
-curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
+curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.stinkyboi.com/webhook/__missing__
+grep -i webhook /tmp/n8n-webhook-body.txt
 ```
 
 Expected route behavior: the editor host serves n8n through Octelium, the
-Funnel host reaches n8n only under the webhook prefixes, and an unknown webhook
-path returns an n8n not-found response until a workflow registers that webhook.
+callback host reaches n8n only under the webhook prefixes, and an unknown
+webhook path returns an n8n not-found response until a workflow registers that
+webhook. A generic 404 without n8n webhook text means the request may still be
+stopping at the Cloudflare tunnel catch-all or Istio gateway instead of the n8n
+backend.
 
 ## Rollback
 
 Rollback removes public webhook exposure first by removing
-`ingress-funnel.yaml` and `gateway-funnel.yaml` from the kustomization and
-restoring `WEBHOOK_URL` to the editor host if webhook publishing is no longer
-desired. Then sync the n8n Argo CD Application. Preserve both the n8n PVC and
-`n8n-postgres` PVC unless the operator explicitly chooses to rebuild from
-exports.
+`virtualservice.yaml` from the kustomization and restoring `WEBHOOK_URL` to the
+editor host if webhook publishing is no longer desired. Then sync the n8n Argo
+CD Application and remove `n8n-webhook.stinkyboi.com` from the
+`octelium-public` tunnel/DNS reconciler in the same PR. Preserve both the n8n
+PVC and `n8n-postgres` PVC unless the operator explicitly chooses to rebuild
+from exports.

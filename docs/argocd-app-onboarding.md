@@ -35,8 +35,8 @@ requested workloads.
 | sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
 | litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, platform-storage |
 | openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, litellm, platform-storage |
-| n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
-| policy-bot | requested | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | Yes | external-secrets, cert-manager, istio, tailscale |
+| n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |
+| policy-bot | requested | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | Yes | external-secrets, cert-manager, istio |
 | octobot | requested | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | Yes | cert-manager, istio, platform-storage |
 
 ## Dependency Readiness

@@ -4,6 +4,7 @@ metadata:
   name: tailnet-gateway
   namespace: istio-system
   annotations:
+    homelab.rst.io/access-plane: octelium
     homelab.rst.io/public-funnel: "false"
 spec:
   selector:

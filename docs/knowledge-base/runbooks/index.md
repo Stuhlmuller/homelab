@@ -17,7 +17,7 @@ what to read, what facts matter, and what must be updated with future changes.
 4. [[storage-nfs]] before any stateful workload is treated as ready.
 5. [[secrets-aws-ssm]] before any ExternalSecret or runtime credential contract
    is added.
-6. [[tailnet-ingress]] before any app route, Funnel exception, or ingress host
+6. [[tailnet-ingress]] before any app route, public callback, or ingress host
    is added.
 7. [[octelium]] before changing the Octelium client bridge or service catalog.
 8. [[validation]] before any live mutation or rollout.

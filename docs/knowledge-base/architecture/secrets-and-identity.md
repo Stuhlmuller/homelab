@@ -80,7 +80,10 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-  homelab-octelium-public`.
+  homelab-octelium-public`. The same tunnel is the external callback backbone
+  for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
+  routes remain unauthenticated at Octelium but path-limited in Istio and
+  validated by the receiving application credentials or signatures.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -137,7 +140,11 @@ roles need identity-based KMS permissions for both keys.
   `GITHUB_APP_PRIVATE_KEY_PATH`.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
-  [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]].
+  [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]]. Configure
+  the GitHub App webhook URL to
+  `https://policy-bot-hook.stinkyboi.com/api/github/hook` after the
+  `octelium-public` DNS/tunnel route is live; keep the webhook secret in
+  `/homelab/policy-bot/github-app/webhook-secret`.
 - OctoBot currently has no repository-owned SSM contract. Its first-run setup,
   exchange credentials, tentacles, and strategy state live on the finance
   namespace PVCs and are summarized in [[runbooks/secrets-aws-ssm]] and

@@ -4,6 +4,6 @@ resources:
   - deployment.yaml
   - service.yaml
   - externalsecret.yaml
-  - ingress-funnel.yaml
   - networkpolicy.yaml
   - virtualservice.yaml
+  - virtualservice-webhook.yaml

@@ -65,10 +65,37 @@ deny contains msg if {
 	metadata := object.get(input, "metadata", {})
 	annotations := object.get(metadata, "annotations", {})
 	truthy(object.get(annotations, "homelab.rst.io/public-funnel", "false"))
-	not truthy(object.get(annotations, "homelab.rst.io/public-funnel-reviewed", "false"))
 	kind := object.get(input, "kind", "<unknown>")
 	name := object.get(metadata, "name", "<unknown>")
-	msg := sprintf("%s %q enables Tailscale Funnel without homelab.rst.io/public-funnel-reviewed=true", [kind, name])
+	msg := sprintf("%s %q enables Tailscale Funnel; external callbacks must use the Octelium public connector path instead", [kind, name])
+}
+
+deny contains msg if {
+	metadata := object.get(input, "metadata", {})
+	annotations := object.get(metadata, "annotations", {})
+	truthy(object.get(annotations, "homelab.rst.io/public-callback", "false"))
+	not truthy(object.get(annotations, "homelab.rst.io/public-callback-reviewed", "false"))
+	kind := object.get(input, "kind", "<unknown>")
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("%s %q exposes an unauthenticated callback path without homelab.rst.io/public-callback-reviewed=true", [kind, name])
+}
+
+deny contains msg if {
+	metadata := object.get(input, "metadata", {})
+	annotations := object.get(metadata, "annotations", {})
+	truthy(object.get(annotations, "homelab.rst.io/public-callback", "false"))
+	not has_nonempty_annotation(annotations, "homelab.rst.io/public-callback-purpose")
+	kind := object.get(input, "kind", "<unknown>")
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("%s %q exposes an unauthenticated callback path without homelab.rst.io/public-callback-purpose", [kind, name])
+}
+
+deny contains msg if {
+	public_external_route
+	not octelium_access_plane
+	kind := object.get(input, "kind", "<unknown>")
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("%s %q exposes a public route and must declare homelab.rst.io/access-plane=octelium", [kind, name])
 }
 
 deny contains msg if {
@@ -105,6 +132,66 @@ has_nonempty_label(labels, key) if {
 
 truthy(value) if {
 	lower(sprintf("%v", [value])) == "true"
+}
+
+octelium_access_plane if {
+	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
+	object.get(annotations, "homelab.rst.io/access-plane", "") == "octelium"
+}
+
+public_external_route if {
+	input.kind == "VirtualService"
+	host := object.get(object.get(input, "spec", {}), "hosts", [])[_]
+	public_hostname(host)
+}
+
+public_external_route if {
+	input.kind == "Gateway"
+	server := object.get(object.get(input, "spec", {}), "servers", [])[_]
+	host := object.get(server, "hosts", [])[_]
+	public_hostname(host)
+}
+
+public_external_route if {
+	input.kind == "Ingress"
+	object.get(object.get(input, "spec", {}), "ingressClassName", "") == "tailscale"
+}
+
+public_external_route if {
+	input.kind == "Ingress"
+	object.get(object.get(input, "spec", {}), "ingressClassName", "") != "compass-discovery"
+	host := ingress_hosts(input)[_]
+	public_hostname(host)
+}
+
+public_hostname(host) if {
+	clean := trim(lower(sprintf("%v", [host])), "*.")
+	clean == "stinkyboi.com"
+}
+
+public_hostname(host) if {
+	clean := trim(lower(sprintf("%v", [host])), "*.")
+	endswith(clean, ".stinkyboi.com")
+}
+
+public_hostname(host) if {
+	clean := trim(lower(sprintf("%v", [host])), "*.")
+	endswith(clean, ".ts.net")
+}
+
+ingress_hosts(ingress) := hosts if {
+	spec := object.get(ingress, "spec", {})
+	rule_hosts := [host |
+		rule := object.get(spec, "rules", [])[_]
+		host := object.get(rule, "host", "")
+		host != ""
+	]
+	tls_hosts := [host |
+		tls := object.get(spec, "tls", [])[_]
+		host := object.get(tls, "hosts", [])[_]
+		host != ""
+	]
+	hosts := array.concat(rule_hosts, tls_hosts)
 }
 
 external_secret_allowed_prefixes := {

@@ -5,7 +5,7 @@ the PR.
 
 GitHub Actions now runs the same validation path for pull requests and
 post-merge applies. See `docs/ci-cd.md` for required GitHub environment
-secrets, Tailscale identity setup, and AWS OIDC role boundaries.
+secrets, Octelium CI identity setup, and AWS OIDC role boundaries.
 
 ## Pre-Mutation Checks
 
@@ -93,11 +93,12 @@ clusters.
 Expected result: the Octelium control plane exists, `octelium-client` has a
 ready replica, the Cluster/API/portal hostnames are serving Octelium instead of
 generic Istio 404 responses, every homelab app Service is present in the
-Octelium catalog, and each existing `*.stinkyboi.com` app hostname resolves to
-the shared Octelium private app-gateway address and responds over HTTPS through
-its matching Octelium published service with the real URL and SNI preserved. If any
-probe fails, the gate should print one or more `FAIL:` lines and exit nonzero;
-a quiet early exit is a validation harness bug.
+Octelium catalog, each existing `*.stinkyboi.com` app hostname resolves
+publicly through Cloudflare into the `octelium-public` tunnel, and each app
+responds over HTTPS through its matching Octelium published service with the
+real URL and SNI preserved. The gate also probes the reviewed public callback
+hosts. If any probe fails, the gate should print one or more `FAIL:` lines and
+exit nonzero; a quiet early exit is a validation harness bug.
 
 For image automation, confirm the controller and selector CR exist before
 relying on update pull requests:
@@ -113,16 +114,16 @@ webhook URL:
 
 ```sh
 argocd app get policy-bot
-kubectl -n automation get deploy,svc,ingress,externalsecret policy-bot policy-bot-hook-funnel policy-bot-config
-kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=policy-bot-hook-funnel
+kubectl -n automation get deploy/policy-bot svc/policy-bot virtualservice/policy-bot-octelium virtualservice/policy-bot-webhook-octelium externalsecret/policy-bot-config
+kubectl -n octelium-public get deploy cloudflared
 curl -I https://policy-bot.stinkyboi.com/
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
-curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
+curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.stinkyboi.com/api/github/hook
 ```
 
 Expected result: the internal host serves normal Policy Bot UI routes, details
 redirect to `/api/github/auth`, the public hook returns `400` for an unsigned
-empty request, and the Funnel root is not routed.
+empty request, and the callback root is not routed.
 
 Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
@@ -150,16 +151,18 @@ the PVC, and an authenticated connection to the `n8n` database documented in
 `clusters/homelab/apps/n8n-postgres/README.md` before treating n8n as migrated
 to PostgreSQL.
 
-n8n webhooks use the reviewed Tailscale Funnel route at
-`https://n8n-webhook.tail67beb.ts.net`. After sync, verify the Tailscale
-Ingress and operator proxy exist, then check that the Octelium-backed editor
-host works and the public host only reaches n8n under webhook path prefixes:
+n8n webhooks use the reviewed Octelium-public callback route at
+`https://n8n-webhook.stinkyboi.com`. After sync, verify the callback
+VirtualService and `octelium-public` tunnel exist, then check that the
+Octelium-backed editor host works and the public host only reaches n8n under
+webhook path prefixes:
 
 ```sh
-kubectl -n istio-system get gateway,ingress n8n-webhook-funnel
-kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=n8n-webhook-funnel
+kubectl -n automation get virtualservice n8n-webhook-octelium
+kubectl -n octelium-public get deploy cloudflared
 curl -I https://n8n.stinkyboi.com/
-curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
+curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.stinkyboi.com/webhook/__missing__
+grep -i webhook /tmp/n8n-webhook-body.txt
 ```
 
 ## Current Validation Record
@@ -184,9 +187,10 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/w
 - Repository secret scan found no raw secret material. Matches were expected
   ExternalSecret names, AWS SSM paths, documentation references, and existing
   placeholder environment variable names.
-- First-rollout Funnel review found no enabled public Funnel paths. Later
-  reviewed exceptions must carry `homelab.rst.io/public-funnel: "true"` and
-  `homelab.rst.io/public-funnel-reviewed: "true"` and be documented in
+- First-rollout Funnel review found no enabled public Funnel paths. Current
+  rendered policy rejects Tailscale Funnel; reviewed external callbacks must
+  use Octelium-public first-level hostnames with
+  `homelab.rst.io/public-callback-reviewed: "true"` and be documented in
   `docs/networking-tailnet-ingress.md`.
 - Prometheus direct tailnet ingress is intentionally absent from desired state;
   Grafana is the reviewed operator-facing metrics UI.
@@ -236,8 +240,8 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/w
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
-| Tailscale unavailable | Do not mark Funnel webhook exceptions or LAN/CI tailnet routes as ready, even if workloads are healthy. |
-| Policy Bot webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `policy-bot-hook-funnel` Ingress and the operator-managed proxy Pod; do not expose additional Funnel routes. |
-| n8n webhook unreachable | Confirm the Tailscale `funnel` node attribute for `tag:k8s`, then inspect the `n8n-webhook-funnel` Ingress, Gateway, VirtualService, and operator-managed proxy Pod; keep editor/API routes off Funnel. |
+| Tailscale unavailable | Do not mark secondary LAN/egress as ready, but app, callback, CI, and VPN readiness should be evaluated through Octelium. |
+| Policy Bot webhook unreachable | Inspect the `policy-bot-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and Policy Bot webhook HMAC handling; do not expose additional Funnel routes. |
+| n8n webhook unreachable | Inspect the `n8n-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and n8n webhook path config; keep editor/API routes off the callback host. |
 | Image updater misconfiguration | Remove the affected `applicationRefs` image entry or write-back target from `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`, then fix the repository desired state. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

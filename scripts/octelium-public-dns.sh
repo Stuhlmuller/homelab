@@ -12,8 +12,8 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-public-dns.sh [options]
 
-Reconcile Cloudflare DNS records for the public Octelium control plane and
-clientless app hostnames.
+Reconcile Cloudflare DNS records for the public Octelium control plane,
+clientless app hostnames, and reviewed callback hostnames.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
 SSM Parameter Store, removes exact A/AAAA records for the Octelium control-plane
@@ -146,9 +146,11 @@ hostnames=(
   "kiali.${domain}"
   "litellm.${domain}"
   "n8n.${domain}"
+  "n8n-webhook.${domain}"
   "octobot.${domain}"
   "openclaw.${domain}"
   "policy-bot.${domain}"
+  "policy-bot-hook.${domain}"
   "prowlarr.${domain}"
   "radarr.${domain}"
   "sonarr.${domain}"

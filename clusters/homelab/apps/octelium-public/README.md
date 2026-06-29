@@ -11,6 +11,8 @@ outside the tailnet:
 - `argocd.stinkyboi.com`, `console.stinkyboi.com`,
   `grafana.stinkyboi.com`, and the other app FQDNs declared in
   `docs/examples/octelium/homelab-services.yaml`
+- `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com` for
+  reviewed external callbacks that cannot complete an Octelium browser login
 
 ## Secret Contract
 
@@ -47,8 +49,8 @@ directly to the Istio gateway with its original Host header, and
 `console.octelium.stinkyboi.com` name is a nested hostname and is not part of
 the public certificate/DNS shape.
 
-The Cloudflare DNS records for the public hostnames and app hostnames must be
-exact proxied CNAMEs to the named tunnel target,
+The Cloudflare DNS records for the public hostnames, app hostnames, and
+callback hostnames must be exact proxied CNAMEs to the named tunnel target,
 `<tunnel-uuid>.cfargotunnel.com`. Reconcile them with
 `scripts/octelium-public-dns.sh` after the tunnel UUID is stored in SSM. Public
 resolvers should return Cloudflare anycast A/AAAA records, not private Octelium
