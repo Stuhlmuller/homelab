@@ -12,6 +12,8 @@ The database password lives in AWS SSM Parameter Store at
 ExternalSecret creates the credentials consumed by the StatefulSet, and the
 `media-postgres-arr-env` ExternalSecret creates the PostgreSQL settings used by
 the `configure-postgres` init containers for Sonarr, Radarr, and Prowlarr.
+Dispatcharr uses a dedicated PostgreSQL 17 StatefulSet in the Dispatcharr app
+overlay because upstream modular mode expects PostgreSQL 17-compatible storage.
 
 Terragrunt generates this value and writes it to SSM. The pod includes a
 `require-real-password` init container that fails when `POSTGRES_PASSWORD` is
@@ -32,11 +34,10 @@ directory.
 The init script creates the logical databases that Servarr expects:
 
 | App | Main database | Log database |
-|-----|---------------|--------------|
+| --- | --- | --- |
 | Sonarr | `sonarr-main` | `sonarr-log` |
 | Radarr | `radarr-main` | `radarr-log` |
 | Prowlarr | `prowlarr-main` | `prowlarr-log` |
-
 The init script runs only when PostgreSQL initializes an empty data directory.
 Changing database names after first boot requires an explicit migration plan.
 
@@ -88,5 +89,5 @@ kubectl -n media exec statefulset/media-postgres -- pg_dump -U media_apps prowla
 ```
 
 For a full restore, restore the PostgreSQL PVC or recreate the databases from
-logical dumps, restore each app's `/config` PVC backup, then re-sync Sonarr,
-Radarr, and Prowlarr through Argo CD.
+logical dumps, restore each app's PVC backup, then re-sync Sonarr, Radarr,
+and Prowlarr through Argo CD.

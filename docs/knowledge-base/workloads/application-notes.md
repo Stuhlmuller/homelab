@@ -78,6 +78,19 @@ The `daemon-metrics` sidecar exports `deluge_daemon_rpc_healthy` from
 Deluge ServiceMonitor, and Grafana alerts when the metric is absent or zero so
 future daemon-only failures do not hide behind healthy Pod and Argo CD status.
 
+## Dispatcharr
+
+Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
+`https://dispatcharr.stinkyboi.com` through the Octelium app access plane. Its
+`data` PVC stores file-backed runtime data and operator-configured IPTV sources,
+while database state lives in the dedicated `dispatcharr-postgres` StatefulSet
+and PVC. Playlist URLs, provider credentials, and guide source secrets must not be
+committed;
+configure them through the UI or a future ExternalSecret-backed integration.
+Do not switch this app to upstream all-in-one mode on `nfs-default`; the AIO
+PostgreSQL init path recursively `chown`s `/data/db`, which is incompatible
+with the QNAP export's squashed UID behavior.
+
 ## Grafana
 
 Grafana is the reviewed metrics UI. It uses Microsoft Entra SSO from
@@ -152,9 +165,10 @@ The connector runs with `replicaCount: 1` after the Octelium API, service
 catalog, and workload credential are verified, but the current app Services are
 direct upstreams rather than connector-served upstreams. The explicit app
 Service catalog in `docs/examples/octelium/homelab-services.yaml` covers Argo
-CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy
-Bot, Prowlarr, Radarr, Sonarr, and the Podinfo demo. The catalog keeps human
-WEB access separate from the reserved workload WEB-serving rule for
+CD, Compass, Deluge, Dispatcharr, Grafana, Kiali, LiteLLM, n8n, OctoBot,
+OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the Podinfo demo. The
+catalog keeps human WEB access separate from the reserved workload WEB-serving
+rule for
 `homelab-octelium-client`. The matching workload credential lives in SSM at
 `/homelab/octelium/client-auth-token` and renders through
 `octelium-client-auth` to the versioned target Secret

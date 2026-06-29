@@ -36,9 +36,9 @@ and LAN route use cases documented below.
 
 ## Current Route Rules
 
-- Argo CD, Grafana, Kiali, Deluge, Prowlarr, Radarr, Sonarr, LiteLLM,
-  OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and OctoBot UI use
-  Octelium-backed `*.stinkyboi.com` app hostnames.
+- Argo CD, Grafana, Kiali, Deluge, Dispatcharr, Prowlarr, Radarr, Sonarr,
+  LiteLLM, OpenClaw, n8n editor/UI, Policy Bot UI and normal routes, and
+  OctoBot UI use Octelium-backed `*.stinkyboi.com` app hostnames.
 - n8n webhooks use the reviewed Octelium-public callback host
   `https://n8n-webhook.stinkyboi.com` for `/webhook`, `/webhook-test`, and
   `/webhook-waiting` only. External callers using the retired Funnel hostname

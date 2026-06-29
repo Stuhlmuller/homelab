@@ -142,6 +142,7 @@ hostnames=(
   "*.cordium.${domain}"
   "console.${domain}"
   "deluge.${domain}"
+  "dispatcharr.${domain}"
   "grafana.${domain}"
   "kiali.${domain}"
   "litellm.${domain}"
