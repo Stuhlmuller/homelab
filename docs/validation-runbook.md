@@ -144,6 +144,23 @@ the persistent `/config/config.xml` contains the Servarr-documented
 `PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
 migration.
 
+For Radarr access lockout checks, validate that the auth-normalized
+`config.xml` contains exactly one `AuthenticationMethod=External` entry and
+one `AuthenticationRequired=DisabledForLocalAddresses` entry, with no
+`AuthenticationEnabled` or `AuthenticationType` entries. Also verify the UI
+bootstrap endpoint returns success while discarding the response body:
+
+```sh
+kubectl -n media exec deploy/radarr -c app -- \
+  sh -c 'grep -nE "<Authentication(Enabled|Method|Required|Type)>" /config/config.xml || true'
+kubectl -n media exec deploy/radarr -c app -- \
+  sh -c 'curl -fsS -o /dev/null http://127.0.0.1:7878/initialize.json'
+```
+
+Do not print `/initialize.json`; it contains the live Radarr API key. A bare
+`/api/v3/...` request without that key may still return `401` and is not, by
+itself, a lockout signal.
+
 n8n must also wait for `n8n-postgres` to sync and become healthy. Verify the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, the StatefulSet,
 the PVC, and an authenticated connection to the `n8n` database documented in
