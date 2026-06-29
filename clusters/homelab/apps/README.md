@@ -24,12 +24,12 @@ opens pull requests for those values instead of relying on live-only overrides.
 
 Human app access targets the Octelium `.homelab` service catalog in
 `docs/examples/octelium/homelab-services.yaml`. App `VirtualService` objects are
-the private Istio backend routing layer for Octelium TCP/443 Services; they must
+the private Istio backend routing layer for Octelium `WEB` Services; they must
 stay annotated with `homelab.rst.io/access-plane: octelium` and
-`homelab.rst.io/public-funnel: "false"`. Public Tailscale Funnel routes must
-stay limited to reviewed webhook exceptions such as n8n's webhook prefixes and
-Policy Bot's `/api/github/hook` route, and every exception must be documented in
-`docs/networking-tailnet-ingress.md`.
+`homelab.rst.io/public-funnel: "false"`. External callbacks that cannot use
+Octelium browser login must use reviewed first-level callback hostnames through
+the `octelium-public` tunnel and carry `homelab.rst.io/public-callback`
+annotations. Do not add Tailscale Funnel routes for app UI or callback traffic.
 
 Do not add a route just because an upstream chart exposes a web UI. Prefer the
 least direct reviewed access path. For example, Grafana is the operator-facing

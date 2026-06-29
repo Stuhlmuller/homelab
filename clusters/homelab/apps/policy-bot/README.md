@@ -21,31 +21,18 @@ approvals so matching Stuhlmuller approvals are not ignored as disqualified.
 
 ## Routes
 
-- Tailnet operator UI, details pages, static assets, OAuth callback, and normal
+- Octelium-backed operator UI, details pages, static assets, OAuth callback, and normal
   Policy Bot page routes: `https://policy-bot.stinkyboi.com`.
 - Public GitHub webhook:
-  `https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook`.
+  `https://policy-bot-hook.stinkyboi.com/api/github/hook`.
 
-The public webhook uses a dedicated Tailscale `Ingress` with
-`tailscale.com/funnel: "true"`. Tailscale Operator currently treats Ingress
-paths as prefix matches, so the reviewed public surface is the
-`/api/github/hook` prefix and the backend must continue to reject unrelated
-paths itself. Do not add the Policy Bot UI host or root route to the Funnel
-Ingress.
-
-The tailnet policy must allow the operator proxy tag, currently `tag:k8s`, to
-use Funnel:
-
-```json
-{
-  "nodeAttrs": [
-    {
-      "target": ["tag:k8s"],
-      "attr": ["funnel"]
-    }
-  ]
-}
-```
+The public webhook uses a dedicated Istio `VirtualService` reached through the
+repo-owned `octelium-public` Cloudflare Tunnel connector. The reviewed public
+surface is the `/api/github/hook` prefix, and Policy Bot still validates the
+GitHub webhook HMAC secret before accepting a delivery. Do not add the Policy
+Bot UI host or root route to the public callback hostname.
+After rollout, update the GitHub App webhook URL to
+`https://policy-bot-hook.stinkyboi.com/api/github/hook`.
 
 ## Secrets
 
@@ -79,21 +66,23 @@ rendered again.
 
 ```sh
 kubectl kustomize clusters/homelab/apps/policy-bot
-kubectl -n automation get deploy,pod,svc,ingress,externalsecret policy-bot policy-bot-hook-funnel policy-bot-config
-kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=policy-bot-hook-funnel
+kubectl -n automation get deploy/policy-bot svc/policy-bot virtualservice/policy-bot-octelium virtualservice/policy-bot-webhook-octelium externalsecret/policy-bot-config
+kubectl -n octelium-public get deploy cloudflared
 curl -I https://policy-bot.stinkyboi.com/
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
-curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
+curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.stinkyboi.com/api/github/hook
 ```
 
 Expected workload behavior: the Deployment has one available replica. Expected
 route behavior: the internal host serves the normal Policy Bot UI paths, the
 details URL redirects to `/api/github/auth`, the public hook returns `400` for
 an unsigned empty request, and
-`https://policy-bot-hook.<tailnet-name>.ts.net/` is not routed.
+`https://policy-bot-hook.stinkyboi.com/` is not routed.
 
 ## Rollback
 
-Rollback removes the public Funnel route first by reverting this app or removing
-`ingress-funnel.yaml` from the kustomization in a PR, then syncing the Argo CD
-Application. The app is stateless, so there are no PVCs to preserve.
+Rollback removes the public callback route first by reverting this app or
+removing `virtualservice-webhook.yaml` from the kustomization in a PR, then
+syncing the Argo CD Application and removing `policy-bot-hook.stinkyboi.com`
+from the `octelium-public` tunnel/DNS reconciler. The app is stateless, so
+there are no PVCs to preserve.

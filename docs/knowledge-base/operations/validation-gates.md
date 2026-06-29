@@ -99,7 +99,21 @@ workload credential, ready connector replica, Cluster/API/portal TLS responses,
 the complete homelab WEB Service catalog, public DNS for each existing
 `*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
 Octelium clientless WEB access. App hostnames must not resolve to private
-Octelium service IPs or the old Tailscale wildcard.
+Octelium service IPs or the old Tailscale wildcard. The same script probes the
+reviewed callback hostnames for public DNS and path-limited reachability; the
+n8n expected-negative webhook probe must see an n8n webhook response body, not
+only a generic HTTP 404 from Cloudflare or the Istio gateway, while the Policy
+Bot webhook probe must use the POST shape GitHub sends and require the app-level
+HTTP 400 webhook validation response, not just any non-404 response.
+
+Rendered Kubernetes policy also enforces the access contract:
+`policy/kubernetes.rego` rejects Tailscale Funnel, requires public
+`VirtualService`, `Gateway`, and non-discovery `Ingress` resources to declare
+`homelab.rst.io/access-plane: octelium`, and requires reviewed
+`homelab.rst.io/public-callback-*` annotations for unauthenticated callback
+hosts such as `n8n-webhook.stinkyboi.com` and
+`policy-bot-hook.stinkyboi.com`. Run `scripts/ci/conftest-policies.sh` after
+changing route manifests or the Octelium public tunnel/DNS host list.
 
 The script must report failed probes as `FAIL:` lines and finish with a nonzero
 exit code when any check fails. Keep expected-negative probes inside guarded

@@ -80,6 +80,11 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: n8n.stinkyboi.com
+      - hostname: n8n-webhook.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: n8n-webhook.stinkyboi.com
+          httpHostHeader: n8n-webhook.stinkyboi.com
       - hostname: octobot.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
@@ -92,6 +97,11 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: policy-bot.stinkyboi.com
+      - hostname: policy-bot-hook.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: policy-bot-hook.stinkyboi.com
+          httpHostHeader: policy-bot-hook.stinkyboi.com
       - hostname: prowlarr.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:

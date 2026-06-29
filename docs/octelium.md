@@ -114,7 +114,13 @@ through `homelab-cordium-user-access`. Agent automation should use a credential
 for `homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do
 not reuse the human browser identity for automated workspace runs. Workspace
 defaults stay with upstream Cordium until this repository adds a reviewed
-Cordium-native workspace configuration resource.
+Cordium-native workspace configuration resource. The genesis hook pins the
+image's numeric non-root identity and carries bootstrap-only RBAC `bind` and
+`escalate` on Roles and ClusterRoles because upstream Cordium creates managed
+RBAC such as `cordium-nocturne` before the long-running controllers exist.
+Developer shell access should use the Octelium-backed Cordium browser route and
+workspace subdomains, while agent automation uses the separate workload
+identity and `cordium-agent-api.homelab` Service.
 
 ## Microsoft Entra Login
 
@@ -217,13 +223,16 @@ The gate verifies:
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS without `octelium connect`; the Enterprise console check must not
-  redirect to `console.octelium.stinkyboi.com`.
+  redirect to `console.octelium.stinkyboi.com`;
+- reviewed callback hostnames `n8n-webhook.stinkyboi.com` and
+  `policy-bot-hook.stinkyboi.com` resolve publicly and reach their path-limited
+  callback routes.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
 Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api.ci`
-Octelium Service; keep only separately reviewed Tailscale-specific non-app
-exceptions such as webhooks. If the gate fails, treat the failure output as the
-repair work queue.
+Octelium Service, and reviewed external callbacks use the `octelium-public`
+tunnel with path-limited Istio routes. If the gate fails, treat the failure
+output as the repair work queue.
 
 ## Bootstrap UI Access
 
@@ -325,8 +334,8 @@ run `scripts/octelium-e2e-check.sh`.
 
 After the Octelium Gateways report public addresses, reconcile exact Cloudflare
 DNS records for their `_gw-*` hostnames when gateway hostnames are needed, then
-publish the control-plane and app hostnames through the public Cloudflare
-Tunnel:
+publish the control-plane, app, and external callback hostnames through the
+public Cloudflare Tunnel:
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
@@ -337,9 +346,10 @@ scripts/octelium-public-dns.sh
 
 The gateway reconciler prevents `_gw-*` names from falling through to stale
 wildcard records. The public DNS reconciler creates exact proxied CNAME records
-for `stinkyboi.com`, Octelium API/portal aliases, `console.stinkyboi.com`, and
-the app hostnames such as `grafana.stinkyboi.com`, all pointing at the named
-Cloudflare Tunnel target.
+for `stinkyboi.com`, Octelium API/portal aliases, `console.stinkyboi.com`, app
+hostnames such as `grafana.stinkyboi.com`, and callback hostnames such as
+`n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`, all pointing
+at the named Cloudflare Tunnel target.
 
 ## Octelium Enterprise Package
 
@@ -555,16 +565,16 @@ octelium connect --domain stinkyboi.com --ip-mode=v4
 curl -I https://grafana.stinkyboi.com/
 ```
 
-The app hostnames publish exact `A` and `AAAA` records that point at the shared
-Octelium private app gateway, so a human client session can use `--ip-mode=v4`,
-`--ip-mode=v6`, or `--ip-mode=both` depending on the client network.
+The app hostnames publish exact proxied Cloudflare Tunnel CNAMEs, so human
+browser access can reach Octelium clientless `WEB` Services without first
+running `octelium connect`. CLI VPN sessions still use
+`octelium-api.stinkyboi.com` and the Octelium Gateway records.
 
-Cloudflare Tunnel public hostname routes can serve the Octelium portal, but
-Cloudflare currently documents gRPC over Tunnel as supported through private
-subnet routing rather than public hostname deployments. If
-`scripts/octelium-e2e-check.sh` reports Cloudflare HTTP `403` for the
-`octelium-api.stinkyboi.com` gRPC probe, outside-tailnet Octelium CLI sessions
-will not be reliable until the API is published through a gRPC-capable route.
+The `octelium-public` tunnel is also the reviewed backbone for unauthenticated
+external callbacks that cannot complete an Octelium browser login, currently
+`n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`. Keep those
+callback `VirtualService` objects path-limited and annotated with
+`homelab.rst.io/public-callback: "true"` plus a reviewed purpose.
 
 Check the CI Kubernetes API service through Octelium from a client machine:
 
@@ -582,6 +592,8 @@ The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
 this workload credential. Do not add Octelium `--scope` flags to this CI
 connection on v0.35; scoped auth-token sessions are denied before the
 Kubernetes API listener is published.
+The workflow value `OCTELIUM_TUNNEL_MODE=wireguard` selects the Octelium
+client's WireGuard dataplane mode; it is not a Tailscale fallback path.
 The CI helper defaults to a per-GitHub-run Octelium homedir. Keep that behavior
 on self-hosted runners so a stale local OcteliumDB refresh token cannot bypass a
 freshly rotated `OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
@@ -605,14 +617,16 @@ rerunning CI.
 ## Rollback
 
 Set the connector Deployment replicas to `0` and sync the `octelium` Argo CD
-Application. That stops the connector while leaving Tailscale untouched.
+Application. That stops the connector without restoring Tailscale Funnel.
 
 If the external resources are no longer wanted, delete the homelab Services,
 the `homelab-octelium-client` User, the `homelab-ci` User, and the
 homelab Policies
-from the Octelium Cluster with `octeliumctl`. Do not delete or change Tailscale
-resources as part of Octelium rollback unless a later migration PR explicitly
-replaces the remaining webhook and LAN tailnet model.
+from the Octelium Cluster with `octeliumctl`. Do not reintroduce Tailscale
+Funnel during rollback; external callback routes should either stay on
+`octelium-public` or be removed until a replacement is reviewed. The Tailscale
+LAN/exit-node utility is separate from the Octelium app, callback, VPN, and CI
+backbone.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before

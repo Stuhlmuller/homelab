@@ -16,9 +16,6 @@ spec:
               kubernetes.io/metadata.name: istio-system
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: tailscale
-        - namespaceSelector:
-            matchLabels:
               kubernetes.io/metadata.name: octelium-client
       ports:
         - protocol: TCP

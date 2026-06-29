@@ -49,11 +49,12 @@ PostgreSQL. Preserve both the PostgreSQL PVC and n8n PVC unless intentionally
 rebuilding from exports.
 
 n8n public webhook exposure is independent of stored workflow data. Remove
-`n8n-webhook-funnel`, its Gateway, and the public `WEBHOOK_URL` before rolling
-back the app.
+`n8n-webhook-octelium`, its `octelium-public` tunnel/DNS hostname, and the
+public `WEBHOOK_URL` before rolling back the app.
 
 Policy Bot is stateless. Roll back its public exposure by removing
-`policy-bot-hook-funnel` first.
+`policy-bot-webhook-octelium` and its `octelium-public` tunnel/DNS hostname
+first.
 
 Kiali is stateless. Remove the Kiali CR before removing the operator chart so
 the operator can clean up its managed server resources.

@@ -1,42 +1,44 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: n8n-webhook-funnel
+  name: n8n-webhook-octelium
   namespace: automation
   annotations:
-    homelab.rst.io/public-funnel: "true"
-    homelab.rst.io/public-funnel-reviewed: "true"
-    homelab.rst.io/public-funnel-purpose: "n8n external webhook deliveries only."
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "n8n external webhook deliveries only."
+    homelab.rst.io/public-funnel: "false"
 spec:
   hosts:
-    - n8n-webhook.tail67beb.ts.net
+    - n8n-webhook.stinkyboi.com
   gateways:
-    - istio-system/n8n-webhook-funnel
+    - istio-system/tailnet-gateway
   http:
     - name: public-webhooks
       match:
         - gateways:
-            - istio-system/n8n-webhook-funnel
+            - istio-system/tailnet-gateway
           uri:
             exact: /webhook
         - gateways:
-            - istio-system/n8n-webhook-funnel
+            - istio-system/tailnet-gateway
           uri:
             prefix: /webhook/
         - gateways:
-            - istio-system/n8n-webhook-funnel
+            - istio-system/tailnet-gateway
           uri:
             exact: /webhook-test
         - gateways:
-            - istio-system/n8n-webhook-funnel
+            - istio-system/tailnet-gateway
           uri:
             prefix: /webhook-test/
         - gateways:
-            - istio-system/n8n-webhook-funnel
+            - istio-system/tailnet-gateway
           uri:
             exact: /webhook-waiting
         - gateways:
-            - istio-system/n8n-webhook-funnel
+            - istio-system/tailnet-gateway
           uri:
             prefix: /webhook-waiting/
       route:

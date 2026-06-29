@@ -10,8 +10,7 @@ dependencies {
   paths = [
     "../external-secrets",
     "../cert-manager",
-    "../istio",
-    "../tailscale"
+    "../istio"
   ]
 }
 
@@ -68,7 +67,7 @@ inputs = {
   info = [
     {
       name  = "public-webhook"
-      value = "Policy Bot UI targets policy-bot.homelab via Octelium; only /api/github/hook remains a Tailscale Funnel exception until separately replaced"
+      value = "Policy Bot UI targets policy-bot.homelab via Octelium; /api/github/hook uses policy-bot-hook.stinkyboi.com through octelium-public"
     }
   ]
 }

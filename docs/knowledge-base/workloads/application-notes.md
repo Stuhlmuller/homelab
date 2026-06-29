@@ -18,8 +18,9 @@ certificate material, private kubeconfigs, or private hostnames.
 Human app access targets Octelium clientless `WEB` Services. Existing
 `*.stinkyboi.com` app hostnames resolve to Cloudflare Tunnel records and are
 authenticated by Octelium before proxying to the existing Istio app routes.
-Public Funnel is limited to reviewed webhook exceptions such as n8n's webhook
-prefixes and Policy Bot's `/api/github/hook`.
+External webhook callbacks use path-limited first-level `*.stinkyboi.com`
+callback hostnames through the same `octelium-public` tunnel; Tailscale Funnel
+is not part of the steady-state app or callback access model.
 
 ## Platform DNS
 
@@ -403,11 +404,10 @@ rollout when existing SQLite contents must be preserved.
 
 n8n targets editor and API access through Octelium as `n8n.homelab`, while the
 stable editor URL remains `https://n8n.stinkyboi.com`. It advertises workflow
-webhook URLs through
-`https://n8n-webhook.tail67beb.ts.net`. The Funnel route is limited to
-`/webhook`, `/webhook-test`, and
-`/webhook-waiting`, and forwards through the Istio ingress gateway so the n8n
-workload AuthorizationPolicy can continue allowing only the gateway service
+webhook URLs through `https://n8n-webhook.stinkyboi.com`. The public callback
+route is limited to `/webhook`, `/webhook-test`, and `/webhook-waiting`, and
+forwards through the `octelium-public` tunnel and Istio ingress gateway so the
+n8n workload AuthorizationPolicy can continue allowing only the gateway service
 account.
 
 ## Policy Bot
@@ -419,11 +419,12 @@ static assets, and OAuth callback.
 The public GitHub webhook is:
 
 ```text
-https://policy-bot-hook.<tailnet-name>.ts.net/api/github/hook
+https://policy-bot-hook.stinkyboi.com/api/github/hook
 ```
 
-Only the webhook route is public. The public route depends on Tailscale Funnel
-for `tag:k8s` and Policy Bot's own webhook HMAC validation.
+Only the webhook route is public. The public route depends on the
+`octelium-public` tunnel, path-limited Istio routing, and Policy Bot's own
+webhook HMAC validation.
 
 The Deployment runs one replica after the GitHub App ID, private key, OAuth
 client ID, and OAuth client secret placeholders are replaced in SSM. Scale it

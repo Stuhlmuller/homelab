@@ -19,7 +19,8 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-e2e-check.sh [options]
 
-Validate that Octelium has fully replaced Tailscale for homelab app access.
+Validate that Octelium is the homelab backbone for app access, CI reachability,
+VPN entry points, and reviewed public callbacks.
 The check requires a running Octelium Cluster, an applied homelab service
 catalog, an active octelium-client connector, and clientless WEB access for
 the existing app FQDNs.
@@ -113,6 +114,11 @@ radarr.stinkyboi.com
 sonarr.stinkyboi.com
 "
 
+CALLBACK_PROBES="
+n8n-webhook.stinkyboi.com /webhook/__octelium_e2e_missing__ expect-n8n-404 GET
+policy-bot-hook.stinkyboi.com /api/github/hook expect-policy-bot-400 POST
+"
+
 REQUIRED_SERVICES="
 kubernetes-api.ci
 argocd
@@ -188,7 +194,7 @@ kubectl_octelium() {
 }
 
 octeliumctl_cluster() {
-  octeliumctl --domain "${DOMAIN}" "$@"
+  octeliumctl "$@" --domain "${DOMAIN}"
 }
 
 run_with_timeout() {
@@ -477,6 +483,75 @@ while read -r HOST; do
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
 done <<<"${APP_HOSTS}"
+
+note "Checking public callback hostnames"
+while read -r HOST CALLBACK_PATH MODE METHOD; do
+    [ -n "${HOST}" ] || continue
+    METHOD="${METHOD:-GET}"
+    HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-callback-headers.XXXXXX")"
+    BODY_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-callback-body.XXXXXX")"
+    CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/octelium-callback-curl.XXXXXX")"
+    PRIVATE_IPV4="$(
+      dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
+        awk '/^100\.64\./ {print; exit}'
+    )"
+    PRIVATE_IPV6="$(
+      dig +short @1.1.1.1 "${HOST}" AAAA 2>/dev/null |
+        awk '/^fdee:b76e:/ {print; exit}'
+    )"
+    PUBLIC_IPV4="$(
+      dig +short @1.1.1.1 "${HOST}" A 2>/dev/null |
+        awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}'
+    )"
+    if [ -n "${PRIVATE_IPV4}" ] || [ -n "${PRIVATE_IPV6}" ]; then
+      fail "https://${HOST} still resolves to private Octelium service records (${PRIVATE_IPV4:-no A}/${PRIVATE_IPV6:-no AAAA})"
+      rm -f "${HEADER_FILE}" "${BODY_FILE}" "${CURL_ERR}"
+      continue
+    fi
+    if [ -z "${PUBLIC_IPV4}" ]; then
+      fail "https://${HOST} has no public IPv4 DNS answer"
+      rm -f "${HEADER_FILE}" "${BODY_FILE}" "${CURL_ERR}"
+      continue
+    else
+      pass "https://${HOST} resolves publicly for callback access"
+    fi
+
+    CURL_OUT="$(
+      curl -sS -X "${METHOD}" --max-time 20 -D "${HEADER_FILE}" -o "${BODY_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${CALLBACK_PATH}" 2>"${CURL_ERR}" || true
+    )"
+    HTTP_CODE="${CURL_OUT%% *}"
+    REMOTE_IP="${CURL_OUT#* }"
+    SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
+
+    case "${HTTP_CODE}" in
+      200|204|301|302|307|308|400|401|403|405)
+        if [ "${MODE}" = "expect-policy-bot-400" ]; then
+          if [ "${HTTP_CODE}" = "400" ]; then
+            pass "${METHOD} https://${HOST}${CALLBACK_PATH} reached the Policy Bot webhook handler with HTTP 400"
+          else
+            fail "${METHOD} https://${HOST}${CALLBACK_PATH} returned HTTP ${HTTP_CODE}; expected Policy Bot webhook validation HTTP 400"
+          fi
+        else
+          pass "${METHOD} https://${HOST}${CALLBACK_PATH} reached the callback route with HTTP ${HTTP_CODE}"
+        fi
+        ;;
+      404)
+        if [ "${MODE}" = "expect-n8n-404" ] && grep -qi 'webhook' "${BODY_FILE}"; then
+          pass "${METHOD} https://${HOST}${CALLBACK_PATH} reached the callback host with expected app-level HTTP 404"
+        else
+          fail "${METHOD} https://${HOST}${CALLBACK_PATH} returned HTTP 404 without an expected app response; the callback route may be hitting an edge or gateway catch-all"
+        fi
+        ;;
+      000|"")
+        fail "${METHOD} https://${HOST}${CALLBACK_PATH} did not respond publicly; curl: $(tr '\n' ' ' <"${CURL_ERR}")"
+        ;;
+      *)
+        fail "${METHOD} https://${HOST}${CALLBACK_PATH} returned unexpected HTTP ${HTTP_CODE} from ${REMOTE_IP:-unknown} server ${SERVER:-unknown}"
+        ;;
+    esac
+
+    rm -f "${HEADER_FILE}" "${BODY_FILE}" "${CURL_ERR}"
+done <<<"${CALLBACK_PROBES}"
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Octelium e2e check failed with ${FAILURES} failure(s)." >&2

@@ -14,8 +14,9 @@ than a reliable isolation control.
 
 Current enforced controls are therefore:
 
-- Octelium app access through the Istio ingress gateway and reviewed webhook
-  Funnel exceptions in `docs/networking-tailnet-ingress.md`;
+- Octelium app access and reviewed public callback routes through the
+  `octelium-public` tunnel and Istio ingress gateway, as documented in
+  `docs/networking-tailnet-ingress.md`;
 - workload-scoped Istio policy only where the namespace is explicitly
   mesh-enrolled and the gateway path is proven to keep working;
 - namespace Pod Security labels that are explicit in repo-owned namespace
@@ -37,9 +38,9 @@ is known well enough to enforce with Layer 4 identity policy:
   workload allow rules below should accept inbound mesh traffic.
 - `automation` and `monitoring` are ambient-enrolled, but enforcement starts
   with selected workload policies instead of a namespace default-deny. Policy
-  Bot Funnel traffic, monitoring operator webhooks, and other controller paths
-  need live source-identity validation before those namespaces move to full
-  default-deny.
+  Bot callback traffic, monitoring operator webhooks, and other controller
+  paths need live source-identity validation before those namespaces move to
+  full default-deny.
 - `octelium-client` is ambient-enrolled so future connector-served upstreams
   have a stable service-account principal. Current app Services forward through
   generated Octelium service proxies into the Istio ingress gateway.
@@ -54,7 +55,7 @@ The current service access contract is:
 | `openclaw` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |
 | `openclaw` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `openclaw` | `ai` | `cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager` | Alertmanager direct `/hooks/agent` delivery. |
-| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access and reviewed n8n webhook Funnel traffic forwarded through the Istio gateway. |
+| `n8n` | `automation` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access and reviewed n8n webhook callback traffic forwarded through the Istio gateway. |
 | `n8n` | `automation` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `grafana` | `monitoring` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |
 | `grafana` | `monitoring` | `cluster.local/ns/monitoring/sa/kiali-service-account` | Kiali dashboard links and health checks. |
