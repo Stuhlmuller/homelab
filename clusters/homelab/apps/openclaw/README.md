@@ -198,14 +198,20 @@ The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
 after the synced pod restarts if those views still show an enable-plugin prompt.
 
-Startup bootstrap pins `agents.defaults.sandbox.mode` to `off`. The Codex
-harness otherwise tries to create a Docker-backed sandbox for every Discord
-agent run, but the OpenClaw application image does not ship Docker and this pod
-does not run Docker-in-Docker. The containment boundary for this deployment is
-the Kubernetes workload itself: the pod has its service account token disabled,
-uses the committed NetworkPolicy and ambient mesh policies, and writes durable
-agent state only under the OpenClaw PVC. If Docker or another sandbox runtime is
-added to the workload later, revisit this setting before enabling it.
+Startup bootstrap pins `agents.defaults.sandbox.mode` to `non-main`. The main
+personal-assistant agent keeps the Kubernetes workload itself as its operator
+boundary so homelab remediation can still use the persistent workspace, toolbox,
+and GitHub App credentials. Non-main agents, including group-triggered and
+spawned work, use OpenClaw's sandbox policy where supported instead of
+inheriting the full main-agent trust model.
+
+The OpenClaw application image still does not run Docker-in-Docker, so sandbox
+backend availability depends on the runtime OpenClaw supplies for the session.
+Keep the pod-level controls in place: the service account token is disabled,
+the committed NetworkPolicy and ambient mesh policies limit traffic, and durable
+agent state writes stay under the OpenClaw PVC. If Docker or another explicit
+sandbox backend is added to the workload later, document the backend and retest
+the default before changing the main-agent policy.
 
 During startup, the bootstrap always runs OpenClaw's safe non-interactive
 doctor repairs before applying desired state. This keeps version upgrades from
