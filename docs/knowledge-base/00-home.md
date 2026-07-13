@@ -19,8 +19,8 @@ in the same change.
 - [[architecture/storage-and-state]] tracks durable state and backup gates.
 - [[architecture/secrets-and-identity]] records secret and identity boundaries.
 - [[workloads/inventory]] lists app ownership, paths, dependencies, and state.
-- [[workloads/application-notes]] collects app-specific operational notes from
-  workload READMEs.
+- [[workloads/application-notes]] points to workload READMEs and keeps only
+  shared cross-application rules.
 - [[runbooks/index]] maps the top-level onboarding and operations runbooks into
   vault notes.
 - [[operations/continuous-improvement]] records the standing stewardship loop

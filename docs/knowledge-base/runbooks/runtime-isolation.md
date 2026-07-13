@@ -1,61 +1,11 @@
 # Runtime Isolation
 
-Tags: #runbooks #security #pod-security #network-policy
+Tags: #runbook #security #kubernetes
 
-Source: `docs/runtime-isolation.md`
+Canonical runbook: [`docs/runtime-isolation.md`](../../runtime-isolation.md)
 
-## Current Boundary
+Pod Security, service accounts, Istio authorization, and workload security
+contexts are enforced desired state. NetworkPolicy objects remain intent-only
+where the current flannel data plane cannot enforce them.
 
-The 2026-05-24 audit found kube-flannel as the only CNI DaemonSet. Flannel does
-not enforce Kubernetes `NetworkPolicy`, so `NetworkPolicy` manifests are
-documentation placeholders until an enforcing CNI or policy engine exists.
-
-Current enforced controls:
-
-- Octelium service-proxy access to app UIs through the Istio gateway;
-- workload-scoped Istio policy only where namespace mesh enrollment is proven;
-- explicit namespace Pod Security labels.
-
-## Privileged Namespaces
-
-| Namespace | Reason |
-| --- | --- |
-| `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` |
-| `github-actions-runner` | Self-hosted CI runner uses host networking so jobs can reach Octelium gateway hostnames and the Istio ingress gateway ClusterIP; containers remain non-privileged |
-| `istio-system` | Istio gateway and dataplane networking |
-| `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`; labels are applied by `scripts/octelium-cluster-bootstrap.sh` after `octops` creates the namespace |
-| `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface |
-| `tailscale` | Tailscale operator proxy Pods need privileged networking |
-
-## Baseline Namespaces
-
-`argocd`, `cert-manager`, `external-secrets`, `ai`, `automation`, `finance`,
-`monitoring`, and `storage` are explicitly baseline in repo-owned namespace
-manifests. `octelium-client` is privileged-enforce and ambient-enrolled so the
-Octelium connector can be allowed as
-`cluster.local/ns/octelium-client/sa/octelium-client` by protected workloads.
-`finance` is not mesh-enrolled; OctoBot's UI is reached through the Octelium
-service-proxy path and does not expose trading API access directly.
-
-## Network Policy Gate
-
-Before expecting `NetworkPolicy` enforcement, first add a repo-owned enforcing
-CNI migration or policy-engine installation with rollback notes. After that,
-start with namespace default-deny policies and add narrow allow rules for DNS,
-ingress gateway traffic, metrics, and app dependencies.
-
-`n8n-postgres` now includes a NetworkPolicy that documents n8n-only PostgreSQL
-access in the `automation` namespace. It is desired-state intent, not an
-enforced boundary, until the NetworkPolicy gate above is satisfied or an Istio
-authorization policy for the database path is added and validated.
-
-Octelium-serving paths use Istio `AuthorizationPolicy` for ambient-enrolled
-destinations and Kubernetes `NetworkPolicy` intent for workloads that already
-have NetworkPolicy manifests. The Octelium connector should stay scoped to the
-explicit service catalog in `docs/examples/octelium/homelab-services.yaml`.
-
-n8n additionally allows its own
-`cluster.local/ns/automation/sa/n8n` principal so authenticated workflows can
-call `http://n8n.automation.svc.cluster.local:5678/api/v1` without routing an
-unattended request through Octelium. This is a self-call exception, not a
-general namespace allow.
+See [[../operations/validation-gates]] and [[../workloads/inventory]].
