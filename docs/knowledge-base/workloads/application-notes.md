@@ -19,7 +19,11 @@ CD rather than direct cluster mutation.
 Human application access uses Octelium clientless `WEB` Services. Reviewed
 callback hosts use the public Octelium tunnel with explicit path restrictions.
 Tailscale is secondary LAN and egress infrastructure, not the primary app
-access plane.
+access plane. `cloudflared` loads its mounted hostname map only at pod startup,
+so every `octelium-public/configmap.yaml` routing change must also advance the
+Deployment's `homelab.rst.io/cloudflared-config-revision` annotation. Without
+that rollout trigger, a new public hostname reaches the tunnel but falls through
+to the edge HTTP 404.
 
 Persistent state, migration, backup, and restore behavior belong in each
 workload README and [[../architecture/storage-and-state]]. Secret values stay
