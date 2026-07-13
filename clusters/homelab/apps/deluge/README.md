@@ -53,17 +53,18 @@ AirVPN port fixed only for incoming connections; pinning outgoing connections
 to the same single port can leave torrents unable to make enough peer
 connections. If the sidecar cannot connect to Deluge and apply the port
 configuration immediately, it keeps retrying in the background instead of
-blocking the UI service endpoint. The Pod becomes ready only after Gluetun is
-healthy and the Deluge application container is ready, so traffic still fails
-closed when the VPN healthcheck fails.
+blocking the UI service endpoint. Pod readiness is gated by Gluetun, so traffic
+still fails closed when the VPN healthcheck fails. Deluge daemon health is
+covered separately by the app liveness probe and exported RPC metric.
 
-A `daemon-metrics` sidecar runs `deluge-console -c /config status` every 30
-seconds and exposes the result on the service `metrics` port as Prometheus text
-format. Prometheus scrapes it through
+A `daemon-metrics` sidecar runs `deluge-console -c /config status` and probes
+Gluetun's local health endpoint every 30 seconds. It exposes
+`deluge_daemon_rpc_healthy` and `deluge_vpn_healthy` on the service `metrics`
+port as Prometheus text format. Prometheus scrapes them through
 `clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
-alerts on `deluge_daemon_rpc_healthy` when the daemon RPC check is missing or
-failing. This catches the failure mode where Kubernetes, Argo CD, and Gluetun
-are healthy but `deluged` cannot restore state or accept console connections.
+alerts when either metric is missing or failing. This catches both a failed VPN
+sidecar and the case where Kubernetes and Gluetun look healthy but `deluged`
+cannot restore state or accept console connections.
 
 ## Download Paths
 
@@ -103,6 +104,12 @@ Deluge uses a `Recreate` rollout strategy because the app and helper sidecar
 share a single `ReadWriteOnce` config PVC. Kubernetes should stop the old
 singleton before starting the replacement so two Deluge daemons do not write the
 same restored config volume at the same time.
+
+The app asks s6 to stop the Deluge daemon during its Kubernetes `preStop` hook
+and waits up to 20 seconds so libtorrent can write clean state without s6
+restarting the daemon before `/init` receives termination. Abrupt node power
+loss can still interrupt a write, so startup validation and automatic backup
+recovery remain the final safety net.
 
 ## Mesh Policy
 
@@ -158,10 +165,21 @@ kubectl -n media exec deploy/deluge -c app -- \
 
 Repeated `libtorrent::libtorrent_exception` messages such as
 `invalid type requested from entry`, together with `port-config` reporting
-connection refusals, usually mean the Deluge daemon cannot restore its
-persisted session state. Preserve torrent metadata and downloaded data; do not
-delete the `.torrent` files under `/config/state` or the `/downloads` tree.
-After explicit operator approval, recover only the session state file:
+connection refusals, mean the Deluge daemon could not restore its persisted
+session state. Deluge 2.0.5 attempts to load both `session.state` and
+`session.state.bak`; individually valid files can still be incompatible when
+loaded sequentially. The liveness probe restarts the app container after three
+failed RPC checks. Startup reproduces Deluge's sequential load, archives an
+invalid current file or incompatible backup, and restores or refreshes only
+from a state file that passes libtorrent validation. This leaves `.torrent`
+files and downloaded data untouched. When neither state file exists on a new
+config volume, the wrapper lets Deluge perform its normal first-run setup.
+
+If automatic recovery cannot validate the backup, the app container stops
+instead of overwriting more state. Preserve torrent metadata and downloaded
+data; do not delete the `.torrent` files under `/config/state` or the
+`/downloads` tree. After explicit operator approval, inspect the archived files
+before using the manual fallback:
 
 ```sh
 kubectl -n media exec deploy/deluge -c app -- /bin/sh -c '
@@ -191,8 +209,9 @@ kubectl -n media exec deploy/deluge -c gluetun -- \
 ```
 
 The expected port state is `listen_ports: (5983, 5983)` and
-`random_outgoing_ports: True`. The archived `session.state.broken-*` file is
-the rollback reference if the backup state is worse.
+`random_outgoing_ports: True`. Both `deluge_daemon_rpc_healthy` and
+`deluge_vpn_healthy` should be `1`. The archived `session.state.broken-*` file
+is the rollback reference if the backup state is worse.
 
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
 container repeatedly fails startup health checks with DNS lookup timeouts, treat
