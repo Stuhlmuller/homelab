@@ -175,6 +175,12 @@ from a state file that passes libtorrent validation. This leaves `.torrent`
 files and downloaded data untouched. When neither state file exists on a new
 config volume, the wrapper lets Deluge perform its normal first-run setup.
 
+Before Deluge Web starts, the same wrapper normalizes legacy daemon hostlist
+entries from `localhost` to Deluge's default `127.0.0.1`. Sonarr's Deluge
+adapter selects the local daemon by that literal address; leaving the legacy
+alias in place lets Sonarr authenticate to Deluge Web but prevents it from
+connecting Web to the healthy daemon.
+
 If automatic recovery cannot validate the backup, the app container stops
 instead of overwriting more state. Preserve torrent metadata and downloaded
 data; do not delete the `.torrent` files under `/config/state` or the

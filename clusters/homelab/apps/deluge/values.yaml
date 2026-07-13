@@ -210,6 +210,27 @@ controllers:
             PY
             }
 
+            normalize_web_daemon_host() {
+              python3 - <<'PY'
+            import os
+            from deluge.config import Config
+
+            if os.path.exists("/config/hostlist.conf"):
+                config = Config("hostlist.conf", config_dir="/config")
+                hosts = config.get("hosts", [])
+                changed = False
+                for host in hosts:
+                    if isinstance(host, list) and len(host) > 1 and host[1] == "localhost":
+                        host[1] = "127.0.0.1"
+                        changed = True
+                if changed:
+                    config["hosts"] = hosts
+                    if not config.save():
+                        raise RuntimeError("Unable to save normalized Deluge hostlist")
+                    print("Normalized Deluge Web daemon host to 127.0.0.1")
+            PY
+            }
+
             state=/config/session.state
             backup=${state}.bak
             timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -235,6 +256,7 @@ controllers:
               fi
             fi
 
+            normalize_web_daemon_host
             exec /init
         env:
           TZ: America/Los_Angeles
