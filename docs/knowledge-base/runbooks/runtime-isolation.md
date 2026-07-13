@@ -53,3 +53,9 @@ Octelium-serving paths use Istio `AuthorizationPolicy` for ambient-enrolled
 destinations and Kubernetes `NetworkPolicy` intent for workloads that already
 have NetworkPolicy manifests. The Octelium connector should stay scoped to the
 explicit service catalog in `docs/examples/octelium/homelab-services.yaml`.
+
+n8n additionally allows its own
+`cluster.local/ns/automation/sa/n8n` principal so authenticated workflows can
+call `http://n8n.automation.svc.cluster.local:5678/api/v1` without routing an
+unattended request through Octelium. This is a self-call exception, not a
+general namespace allow.

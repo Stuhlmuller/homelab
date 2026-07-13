@@ -50,7 +50,7 @@ utility, not as an app, callback, or CI access path.
 | `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config and PostgreSQL databases on `nfs-default`; TV and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, SSM-backed gateway auth, Discord channel config, SSM-backed GitHub App credentials, Codex OAuth credentials on PVC, and explicit agent resource profile | external-secrets, cert-manager, istio, litellm, platform-storage |
-| `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public callbacks use `https://n8n-webhook.stinkyboi.com` through `octelium-public` and are limited to webhook prefixes | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |
+| `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public callbacks use `https://n8n-webhook.stinkyboi.com` through `octelium-public` and are limited to webhook prefixes; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public` | external-secrets, cert-manager, istio |
 | `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and Octelium-targeted UI access | cert-manager, istio, platform-storage |
 
@@ -64,10 +64,11 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   Istio gateway path used by Octelium service proxies, the Octelium connector
   principal reserved for future served upstreams, Alertmanager to reach
   OpenClaw `/hooks/agent`, and OpenClaw to reach LiteLLM.
-- `automation` currently restricts `n8n` workload access to the Istio gateway;
-  the reviewed public n8n and Policy Bot callback hosts forward through the
-  `octelium-public` tunnel into that gateway instead of directly to the
-  workloads. `n8n-postgres` has a NetworkPolicy that documents n8n-only
+- `automation` currently restricts `n8n` workload access to the Istio gateway,
+  the Octelium client bridge, and n8n's own service account for authenticated
+  self-API calls; the reviewed public n8n and Policy Bot callback hosts forward
+  through the `octelium-public` tunnel into that gateway instead of directly
+  to the workloads. `n8n-postgres` has a NetworkPolicy that documents n8n-only
   database access, but the current flannel CNI does not enforce NetworkPolicy
   yet. The namespace is not default-denied because callback traffic and
   database source-identity validation still need live validation after rollout.
