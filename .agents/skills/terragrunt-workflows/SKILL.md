@@ -39,7 +39,7 @@ Use these source docs when command behavior might have drifted:
 - Keep desired-state inputs in committed HCL or non-secret data. Do not introduce `get_env`, `TF_VAR_*`, shell-exported values, or hidden local inputs for normal configuration.
 - Keep secrets out of git. Commit safe references, templates, encrypted material, or external-secret contracts only.
 - Include `IaC/root.hcl` from every normal unit so shared providers, remote state, tags, and catalog settings stay consistent.
-- For Argo CD Application registrations, follow `IaC/live/argocd-apps/<app>/terragrunt.hcl`: include `root`, include `argocd-provider.hcl`, source the pinned catalog module, and declare upstream ordering with `dependencies`.
+- For Argo CD Application registrations, follow `IaC/live/argocd-apps/<app>/terragrunt.hcl`: include `root`, include `kubernetes-provider.hcl`, source the repository-local module, and declare upstream ordering with `dependencies`.
 - Keep Git-backed Argo CD `target_revision` values on `main` unless a temporary non-default revision is explicitly documented.
 - Pin remote catalog module sources by tag or commit. Do not point production units at an unpinned branch.
 - Add or update docs when changing architecture, bootstrap flow, storage, secrets, networking, or operational assumptions.
