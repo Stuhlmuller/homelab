@@ -427,12 +427,16 @@ Argo CD sync before the rendered Kubernetes Secret changes.
 The runtime config reads repository-local `.policy.yml` files before falling
 back to shared `.github/policy.yml`. Homelab's local policy keeps the shared
 review approval choices and adds a Policy Bot condition requiring every PR
-commit to have a GitHub-verified signature. The explicit comment approval path
-counts only a `👍` comment from `rstuhlmuller`, including PRs opened by
-`rodman` and PRs where `rstuhlmuller` authored or committed changes, and does
-not count PR body text or other users' comments. The organization-member rule
-also opts into author and contributor approvals so matching Stuhlmuller
-approvals are not ignored as disqualified.
+commit to have a GitHub-verified signature. The Codex approval path counts only
+the exact top-level `👍` comment from `chatgpt-codex-connector[bot]` that
+`AGENTS.md` requires after a passing review with no P0 or P1 alerts. A later
+push invalidates that approval, so auto-merge remains queued until Policy Bot
+observes the pass signal for the latest changes. The human comment path counts
+only a `👍` comment from `rstuhlmuller`, including PRs opened by `rodman` and PRs
+where `rstuhlmuller` authored or committed changes, and does not count PR body
+text or other users' comments. The organization-member rule also opts into
+author and contributor approvals so matching Stuhlmuller approvals are not
+ignored as disqualified.
 
 ## Prometheus
 

@@ -36,7 +36,11 @@ Source: `docs/ci-cd.md`
   stale lint runs for the same pull request.
 - Policy Bot reads this repository's `.policy.yml` and requires every PR commit
   to have a GitHub-verified signature before normal review approval can satisfy
-  the `policy-bot: main` branch protection check. The explicit comment path
+  the `policy-bot: main` branch protection check. The Codex path accepts only
+  the exact top-level `👍` comment from `chatgpt-codex-connector[bot]` that
+  `AGENTS.md` requires after a passing review with no P0 or P1 alerts. A later
+  push invalidates that approval, so auto-merge remains queued until Policy Bot
+  observes the pass signal for the latest changes. The human comment path
   accepts only a `👍` comment from `rstuhlmuller`, including PRs opened by
   `rodman` and PRs where `rstuhlmuller` authored or committed changes; it does
   not read PR body text or other users' comments. The organization-member rule
