@@ -195,10 +195,70 @@ controllers:
         image:
           repository: lscr.io/linuxserver/deluge
           tag: 18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            validate_session_states() {
+              timeout 15s python3 - "$@" <<'PY'
+            import libtorrent as lt, sys
+            session = lt.session()
+            for path in sys.argv[1:]:
+                with open(path, "rb") as state_file:
+                    state = lt.bdecode(state_file.read())
+                session.load_state(state)
+            PY
+            }
+
+            state=/config/session.state
+            backup=${state}.bak
+            timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+
+            if ! [ -s "$state" ] || ! validate_session_states "$state"; then
+              test -s "$backup"
+              validate_session_states "$backup"
+              if [ -e "$state" ]; then
+                archive="${state}.broken-${timestamp}"
+                cp -a "$state" "$archive"
+                echo "Archived invalid session state at $archive"
+              fi
+              cp -a "$backup" "$state"
+              echo "Restored validated session state backup"
+            elif [ -e "$backup" ]; then
+              if ! [ -s "$backup" ] || ! validate_session_states "$state" "$backup"; then
+                archive="${backup}.broken-${timestamp}"
+                cp -a "$backup" "$archive"
+                cp -a "$state" "$backup"
+                echo "Archived incompatible session state backup at $archive and refreshed it from current state"
+              fi
+            fi
+
+            exec /init
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - s6-svc -d /var/run/s6/services/deluged && timeout 20s s6-svwait -d /var/run/s6/services/deluged || true
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - timeout 10s deluge-console -c /config status >/dev/null 2>&1
+              failureThreshold: 3
+              initialDelaySeconds: 60
+              periodSeconds: 30
+              timeoutSeconds: 12
       port-config:
         image:
           repository: lscr.io/linuxserver/deluge
@@ -247,6 +307,7 @@ controllers:
 
             write_metrics() {
               healthy=0
+              vpn_healthy=0
               total=0
               errors=0
               if status_output="$(timeout 10s deluge-console -c /config status 2>&1)"; then
@@ -260,12 +321,18 @@ controllers:
                     awk -F: '/^[ \t]*Error:/ {gsub(/^[ \t]+/, "", $2); print $2; exit}'
                 )"
               fi
+              if curl --fail --silent --max-time 5 http://127.0.0.1:9999/ >/dev/null; then
+                vpn_healthy=1
+              fi
               total="${total:-0}"
               errors="${errors:-0}"
               cat >"${metrics}.tmp" <<EOF
             # HELP deluge_daemon_rpc_healthy Whether deluge-console can query the Deluge daemon.
             # TYPE deluge_daemon_rpc_healthy gauge
             deluge_daemon_rpc_healthy ${healthy}
+            # HELP deluge_vpn_healthy Whether the Gluetun VPN health endpoint is healthy.
+            # TYPE deluge_vpn_healthy gauge
+            deluge_vpn_healthy ${vpn_healthy}
             # HELP deluge_torrents_total Number of torrents reported by Deluge.
             # TYPE deluge_torrents_total gauge
             deluge_torrents_total ${total}
