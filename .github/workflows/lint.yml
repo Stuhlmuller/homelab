@@ -1,6 +1,6 @@
 ---
 name: Lint
-on:  # yamllint disable-line rule:truthy
+on:
   pull_request:
 permissions: {}
 concurrency:
