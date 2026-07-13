@@ -405,8 +405,12 @@ stable editor URL remains `https://n8n.stinkyboi.com`. It advertises workflow
 webhook URLs through `https://n8n-webhook.stinkyboi.com`. The public callback
 route is limited to `/webhook`, `/webhook-test`, and `/webhook-waiting`, and
 forwards through the `octelium-public` tunnel and Istio ingress gateway so the
-n8n workload AuthorizationPolicy can continue allowing only the gateway service
-account.
+n8n workload AuthorizationPolicy can keep public traffic limited to the gateway
+service account. Authenticated workflows that call the same n8n instance use
+`http://n8n.automation.svc.cluster.local:5678/api/v1`; the policy separately
+allows only `cluster.local/ns/automation/sa/n8n` for that self-call path. The
+Service is plain HTTP because TLS terminates at ingress, and the external editor
+URL requires interactive Octelium authentication.
 
 ## Policy Bot
 
