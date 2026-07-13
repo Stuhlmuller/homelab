@@ -42,6 +42,11 @@ App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
 original Host headers. Octelium uses that public FQDN to select the matching
 `WEB` Service, enforce login, and then proxy to the existing Istio app route.
+`cloudflared` reads this routing table only when the pod starts. Whenever
+`configmap.yaml` changes, update the
+`homelab.rst.io/cloudflared-config-revision` pod-template annotation in
+`deployment.yaml` in the same change so Argo CD performs a rolling restart and
+the tunnel replicas load the new hostnames.
 The Enterprise console is the exception: `console.stinkyboi.com` forwards
 directly to the Istio gateway with its original Host header, and
 `octelium-cluster` routes it to `svc-console-octelium`. Keep this on

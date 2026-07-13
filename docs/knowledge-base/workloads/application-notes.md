@@ -172,7 +172,12 @@ Application. It runs two digest-pinned `cloudflared` replicas in
 `grafana.stinkyboi.com` and `console.stinkyboi.com`. Control-plane hostnames
 route through the in-cluster Istio gateway; app hostnames route directly to the
 Octelium ingress dataplane so Octelium can select the matching public `WEB`
-Service. The Enterprise console is the exception: `console.stinkyboi.com`
+Service. Because `cloudflared` loads the mounted ingress map only at startup,
+every `octelium-public/configmap.yaml` routing change must also advance the
+Deployment's `homelab.rst.io/cloudflared-config-revision` pod-template
+annotation; otherwise DNS reaches the tunnel but a newly added hostname falls
+through to the edge HTTP 404 until the tunnel pods are rolled. The Enterprise
+console is the exception: `console.stinkyboi.com`
 routes through the Istio gateway to the package-owned
 `svc-console-octelium` Service. Keep the public route on
 `console.stinkyboi.com`; the package canonical
