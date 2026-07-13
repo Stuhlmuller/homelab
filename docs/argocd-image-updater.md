@@ -9,6 +9,9 @@ The `homelab-managed-images` `ImageUpdater` resource in
 container image that this repository declares directly in workload Helm values
 or raw manifests:
 
+- `affine`: AFFiNE server/migration, pgvector PostgreSQL, and Redis images;
+  updates remain within AFFiNE `0.26`, pgvector `0.8` on PostgreSQL 16, and
+  Redis `8.2` until their stateful upgrade paths are reviewed.
 - `deluge`: BusyBox, Gluetun, and Deluge containers.
 - `litellm`: LiteLLM database container.
 - `media-postgres`: PostgreSQL StatefulSet image.

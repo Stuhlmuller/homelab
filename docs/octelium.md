@@ -72,7 +72,7 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `argocd`, `compass`, `cordium`, `deluge`, `grafana`,
+- Public `WEB` Services `affine`, `argocd`, `compass`, `cordium`, `deluge`, `grafana`,
   `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.

@@ -1,0 +1,117 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: affine-migration
+  namespace: affine
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "5"
+    checkov.io/skip1: CKV_K8S_8=The bounded migration Job exits on completion and does not need a liveness probe.
+    checkov.io/skip2: CKV_K8S_9=The bounded migration Job exits on completion and does not need a readiness probe.
+    checkov.io/skip3: CKV_K8S_22=AFFiNE migration requires writable image-managed runtime paths plus the retained config and storage PVCs.
+    checkov.io/skip4: CKV_K8S_40=The upstream AFFiNE self-host image writes under /root/.affine and does not publish a non-root runtime contract.
+    checkov.io/skip5: CKV_K8S_43=The image is pinned to an immutable linux-amd64 digest.
+    checkov.io/skip6: CKV2_K8S_6=The migration Job is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+    checkov.io/skip7: CKV_K8S_23=The upstream migration command requires the root-owned /root/.affine paths; privilege escalation and Linux capabilities remain disabled.
+    checkov.io/skip8: CKV_K8S_35=The upstream migration command accepts database, Redis, and signing-key credentials through environment configuration; values come from External Secrets.
+  labels:
+    app.kubernetes.io/name: affine
+    app.kubernetes.io/component: migration
+    app.kubernetes.io/part-of: homelab-productivity
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: affine
+        app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: homelab-productivity
+    spec:
+      serviceAccountName: affine
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migration
+          image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              test -n "${DATABASE_PASSWORD}"
+              test -n "${REDIS_SERVER_PASSWORD}"
+              test -n "${AFFINE_PRIVATE_KEY}"
+              exec node ./scripts/self-host-predeploy.js
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: postgresql://affine:$(DATABASE_PASSWORD)@affine-postgres.affine.svc.cluster.local:5432/affine
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.affine.svc.cluster.local
+            - name: REDIS_SERVER_PORT
+              value: "6379"
+            - name: REDIS_SERVER_DATABASE
+              value: "0"
+            - name: REDIS_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: REDIS_PASSWORD
+            - name: AFFINE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: AFFINE_PRIVATE_KEY
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.stinkyboi.com
+            - name: AFFINE_SERVER_HOST
+              value: affine.stinkyboi.com
+            - name: AFFINE_SERVER_HTTPS
+              value: "true"
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: NODE_ENV
+              value: production
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.affine/storage
+            - name: config
+              mountPath: /root/.affine/config
+            - name: config-source
+              mountPath: /root/.affine/config/config.json
+              subPath: config.json
+              readOnly: true
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: affine-storage
+        - name: config
+          persistentVolumeClaim:
+            claimName: affine-config
+        - name: config-source
+          configMap:
+            name: affine-config

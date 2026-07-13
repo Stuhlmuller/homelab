@@ -136,6 +136,7 @@ hostnames=(
   "$domain"
   "portal.${domain}"
   "octelium-api.${domain}"
+  "affine.${domain}"
   "argocd.${domain}"
   "compass.${domain}"
   "cordium.${domain}"

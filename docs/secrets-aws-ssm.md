@@ -80,6 +80,7 @@ stack because Terraform manages the Kubernetes Secret.
 |-----|----------------|---------------|----------------|
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
 | argocd-image-updater | `argocd-image-updater-git` | `argocd-image-updater-git` | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` |
+| affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
@@ -107,6 +108,9 @@ in `IaC/bootstrap/argocd/terragrunt.hcl`; do not reset it to `REPLACE_ME`.
 
 Terragrunt-generated internal values:
 
+- `/homelab/affine/postgres-password`
+- `/homelab/affine/redis-password`
+- `/homelab/affine/private-key` (P-256 ECDSA PEM)
 - `/homelab/litellm/master-key`
 - `/homelab/media-postgres/app-password`
 - `/homelab/n8n/encryption-key`
@@ -119,6 +123,12 @@ Terragrunt-generated internal values:
 
 `/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
 until a repository-managed LiteLLM virtual-key workflow exists.
+
+AFFiNE receives separate generated PostgreSQL and Redis passwords plus a
+generated P-256 ECDSA private key. The signing key is stored as a KMS-encrypted
+SSM SecureString and must remain stable across restarts because AFFiNE derives
+token signatures and application-data encryption from it. Rotate it only with
+a documented session invalidation and encrypted-data recovery plan.
 
 OpenClaw reads `/homelab/openclaw/app-secret` as `APP_SECRET` and
 `OPENCLAW_GATEWAY_TOKEN`. Bootstrap stores `gateway.auth.token` as an

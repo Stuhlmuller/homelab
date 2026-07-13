@@ -3,6 +3,7 @@ variable "parameters" {
   type = map(object({
     description = string
     generated = optional(object({
+      kind             = optional(string, "password")
       length           = optional(number, 48)
       override_special = optional(string)
       prefix           = optional(string, "")
@@ -12,6 +13,22 @@ variable "parameters" {
     initial_value = optional(string, "REPLACE_ME")
     tier          = optional(string, "Standard")
   }))
+
+  validation {
+    condition = alltrue([
+      for parameter in values(var.parameters) :
+      contains(["password", "ecdsa_private_key"], try(parameter.generated.kind, "password"))
+    ])
+    error_message = "Generated SSM parameters must use kind password or ecdsa_private_key."
+  }
+
+  validation {
+    condition = alltrue([
+      for parameter in values(var.parameters) :
+      try(parameter.generated.source_parameter, null) == null || try(parameter.generated.kind, "password") == "password"
+    ])
+    error_message = "source_parameter is supported only for generated password values."
+  }
 }
 
 variable "parameter_reader_iam_user_names" {

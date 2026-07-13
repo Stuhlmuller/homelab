@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: affine-config
+  namespace: affine
+  labels:
+    app.kubernetes.io/name: affine
+    app.kubernetes.io/part-of: homelab-productivity
+data:
+  config.json: |
+    {
+      "$schema": "https://github.com/toeverything/AFFiNE/releases/download/v0.26.3/config.schema.json",
+      "server": {
+        "name": "AFFiNE Homelab",
+        "externalUrl": "https://affine.stinkyboi.com",
+        "https": true,
+        "host": "affine.stinkyboi.com",
+        "hosts": ["affine.stinkyboi.com"],
+        "listenAddr": "0.0.0.0",
+        "port": 3010
+      },
+      "auth": {
+        "allowSignup": true,
+        "allowSignupForOauth": false,
+        "requireEmailDomainVerification": false,
+        "requireEmailVerification": false,
+        "passwordRequirements": {
+          "min": 12,
+          "max": 128
+        },
+        "session.ttl": 1209600,
+        "session.ttr": 86400
+      },
+      "storages": {
+        "avatar.storage": {
+          "provider": "fs",
+          "bucket": "avatars",
+          "config": {
+            "path": "/root/.affine/storage"
+          }
+        },
+        "blob.storage": {
+          "provider": "fs",
+          "bucket": "blobs",
+          "config": {
+            "path": "/root/.affine/storage"
+          }
+        }
+      },
+      "copilot": {
+        "enabled": false,
+        "storage": {
+          "provider": "fs",
+          "bucket": "copilot",
+          "config": {
+            "path": "/root/.affine/storage"
+          }
+        }
+      },
+      "throttle": {
+        "enabled": true,
+        "throttlers.default": {
+          "ttl": 60,
+          "limit": 120
+        },
+        "throttlers.strict": {
+          "ttl": 60,
+          "limit": 20
+        }
+      },
+      "websocket": {
+        "transports": ["websocket", "polling"],
+        "maxHttpBufferSize": 25000000
+      },
+      "telemetry": {
+        "allowedOrigin": ["affine.stinkyboi.com"]
+      },
+      "worker": {
+        "allowedOrigin": ["affine.stinkyboi.com"]
+      },
+      "metrics": {
+        "enabled": false
+      }
+    }

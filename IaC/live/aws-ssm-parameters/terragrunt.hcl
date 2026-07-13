@@ -62,6 +62,29 @@ inputs = {
       description   = "GitHub App private key used by Argo CD Image Updater to open image update pull requests."
       initial_value = local.placeholder
     }
+    "/homelab/affine/postgres-password" = {
+      description = "AFFiNE dedicated PostgreSQL application password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/affine/redis-password" = {
+      description = "AFFiNE dedicated Redis authentication password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/affine/private-key" = {
+      description = "AFFiNE P-256 ECDSA private key used for signing tokens and encrypting application data."
+      generated = {
+        kind = "ecdsa_private_key"
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/cert-manager/cloudflare-api-token" = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder

@@ -77,6 +77,11 @@ Octelium serves the app UI set through
 Octelium browser login use explicit first-level callback hostnames through the
 same `octelium-public` tunnel, not Tailscale Funnel.
 
+AFFiNE uses `https://affine.stinkyboi.com` through the public/clientless
+Octelium `affine` WEB Service. The Cloudflare Tunnel forwards that hostname to
+the Octelium ingress dataplane, which authenticates the browser before the
+request reaches the Istio route and `affine` namespace Service.
+
 Use `https://octobot.stinkyboi.com` through Octelium for private setup, paper
 trading, and operator-reviewed live trading; exchange credentials and strategy
 state are configured through OctoBot and persist on its NFS-backed volumes, not

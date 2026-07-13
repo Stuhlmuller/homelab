@@ -152,7 +152,7 @@ The connector runs with `replicaCount: 1` after the Octelium API, service
 catalog, and workload credential are verified, but the current app Services are
 direct upstreams rather than connector-served upstreams. The explicit app
 Service catalog in `docs/examples/octelium/homelab-services.yaml` covers Argo
-CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy
+AFFiNE, Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy
 Bot, Prowlarr, Radarr, Sonarr, and the Podinfo demo. The catalog keeps human
 WEB access separate from the reserved workload WEB-serving rule for
 `homelab-octelium-client`. The matching workload credential lives in SSM at
@@ -234,6 +234,17 @@ kubectl -n octelium get job cordium-genesis
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 curl -I https://cordium.stinkyboi.com
 ```
+
+## AFFiNE
+
+AFFiNE is a self-hosted collaborative knowledge base in the `affine` namespace.
+It uses a dedicated pgvector/PostgreSQL 16 StatefulSet, authenticated Redis with
+append-only persistence, retained NFS claims for blobs and config, and an Argo
+CD migration hook. Human access is `https://affine.stinkyboi.com` through the
+public/clientless Octelium `affine` WEB Service; the application itself has no
+unauthenticated public route. Its generated ECDSA key must remain stable across
+restores. Copilot and SMTP remain disabled until complete provider contracts
+are added. Source: `clusters/homelab/apps/affine/README.md`.
 
 ## OctoBot
 
