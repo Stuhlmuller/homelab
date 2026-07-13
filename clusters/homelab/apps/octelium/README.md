@@ -243,7 +243,7 @@ kubectl kustomize clusters/homelab/apps/octelium
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
 bash -n scripts/octelium-cloudflare-grpc.sh
-bash -n scripts/octelium-app-dns.sh scripts/octelium-gateway-dns.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
 
@@ -255,7 +255,7 @@ kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-app-dns.sh --dry-run
+scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
