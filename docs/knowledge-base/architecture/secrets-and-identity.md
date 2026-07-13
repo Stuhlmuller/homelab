@@ -29,6 +29,15 @@ roles need identity-based KMS permissions for both keys.
   ClusterSecretStore namespace allow-list.
 - Add a namespace to that allow-list in the same change that adds its first
   ExternalSecret.
+- The External Secrets IAM reader keeps exact parameter ARNs in sorted,
+  deterministic customer-managed policy chunks of at most 25 names; it does
+  not use a `/homelab/*` wildcard.
+- Reader policy preconditions enforce AWS IAM's 6,144-character limit per
+  customer-managed policy and 10 managed policies per group. The expanding
+  parameter list is not split into group inline policies because their combined
+  aggregate limit is 5,120 characters; the existing fixed-size inline policy
+  retains only exact KMS-key permissions and is updated after the managed
+  policies are attached.
 
 ## Identity Notes
 
