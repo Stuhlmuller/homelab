@@ -243,7 +243,7 @@ controllers:
 
             openclaw config set --strict-json \
               agents.defaults.sandbox.mode \
-              '"off"'
+              '"non-main"'
 
             openclaw config set --strict-json \
               tools.fs.workspaceOnly \
