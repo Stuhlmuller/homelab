@@ -58,8 +58,9 @@ They create:
 - Policy `homelab-human-web-access`, allowing authenticated human client
   sessions and clientless browser sessions to app `WEB` Services.
 - Policy `homelab-cordium-user-access`, allowing only the dedicated
-  `homelab-cordium-user` HUMAN identity to reach the public Cordium `WEB`
-  Service.
+  `homelab-cordium-user` HUMAN identity to reach Cordium's package-managed
+  `default.cordium` public `WEB` Service. The catalog attaches this policy to
+  that dedicated repo-owned User because the system Service cannot be edited.
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
@@ -72,10 +73,14 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `affine`, `argocd`, `compass`, `cordium`, `deluge`, `grafana`,
+- Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `grafana`,
   `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.
+- Package-managed public `WEB` Service `default.cordium`, created by Cordium
+  genesis with primary hostname `cordium`. Do not also declare a `cordium`
+  Service in Octelium's default Namespace; both derive
+  `cordium.stinkyboi.com` and make the ingress reject its routing snapshot.
 - Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
   workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
   automation through `cordium-agent-api.homelab`, plus the matching
@@ -88,7 +93,7 @@ gateway, and the `octelium-cluster` `VirtualService` routes it to the
 package-owned `console.octelium` backend without exposing the nested
 `console.octelium.stinkyboi.com` hostname.
 
-Each app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
+Each repo-defined app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
 setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
 `X-Forwarded-Proto` for the original app hostname. The HTTPS hop avoids the
 gateway's HTTP-to-HTTPS redirect loop for authenticated clientless browser
@@ -96,7 +101,8 @@ requests. The header block also sets `forwardedMode: TRANSPARENT` so Octelium
 preserves those explicit forwarded headers instead of deriving them from the
 internal upstream. That keeps each app's existing Istio `VirtualService` and
 base URL intact while moving the user-facing authentication layer to Octelium
-clientless access.
+clientless access. Cordium is the exception because its package-managed
+`default.cordium` Service terminates the Octelium route directly.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -104,13 +110,25 @@ Apply the service catalog to the Octelium Cluster:
 octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
 
+Never add `--prune` to that command: this catalog is not an exhaustive list of
+every non-system resource in the Octelium Cluster. When upgrading a Cluster
+that previously applied the repo-defined `cordium` Service, first apply the
+updated catalog and then remove only the obsolete duplicate:
+
+```sh
+if octeliumctl get service cordium.default --domain stinkyboi.com >/dev/null 2>&1; then
+  octeliumctl delete service cordium.default --domain stinkyboi.com
+fi
+```
+
 Cordium is bootstrapped by the `cordium` Argo CD Application after that catalog
 exists. The app runs upstream `cordium-genesis init` from a pinned
 `ghcr.io/octelium/cordium-genesis:0.12.7` image and routes the public
 `https://cordium.stinkyboi.com` browser path plus workspace app subdomains under
-`*.cordium.stinkyboi.com` through the Octelium `cordium` WEB Service. Browser
-access is scoped to the dedicated `homelab-cordium-user` HUMAN identity
-through `homelab-cordium-user-access`. Agent automation should use a credential
+`*.cordium.stinkyboi.com` through the package-managed Octelium
+`default.cordium` WEB Service, whose primary hostname is `cordium`. Browser
+access is scoped to the dedicated `homelab-cordium-user` HUMAN identity by the
+User-attached `homelab-cordium-user-access` policy. Agent automation should use a credential
 for `homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do
 not reuse the human browser identity for automated workspace runs. Workspace
 defaults stay with upstream Cordium until this repository adds a reviewed
@@ -218,8 +236,9 @@ The gate verifies:
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
 - every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
-  including `cordium` and `cordium-agent-api.homelab`,
-  exists in the Octelium Cluster;
+  including `cordium-agent-api.homelab`, exists in the Octelium Cluster, and
+  Cordium's generated `default.cordium` Service is present without a duplicate
+  primary hostname;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS without `octelium connect`; the Enterprise console check must not

@@ -400,12 +400,32 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service is missing: ${SERVICE}"
       fi
     done
+    DUPLICATE_PRIMARY_HOSTNAMES="$(
+      jq -r '
+        [.items[] | select(.spec.isPublic == true) | .status.primaryHostname // empty | select(length > 0)]
+        | group_by(.)
+        | map(select(length > 1) | .[0])
+        | .[]
+      ' <<<"${SERVICES_JSON}"
+    )"
+    if [ -z "${DUPLICATE_PRIMARY_HOSTNAMES}" ]; then
+      pass "Octelium public Services have unique primary hostnames"
+    else
+      fail "Octelium public Services have duplicate primary hostnames: $(tr '\n' ' ' <<<"${DUPLICATE_PRIMARY_HOSTNAMES}")"
+    fi
     for SERVICE in affine argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public/clientless"
       else
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
+    done
+    if jq -e '.items[] | select(.metadata.name == "default.cordium" and .metadata.isSystem == true and .status.primaryHostname == "cordium" and .status.namespaceRef.name == "cordium" and .status.managedService != null and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Cordium uses its package-managed default.cordium WEB Service"
+    else
+      fail "Cordium package-managed default.cordium WEB Service is missing or invalid"
+    fi
+    for SERVICE in affine argocd compass deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.config.upstream.url == "https://istio-ingressgateway.istio-system.svc.cluster.local:443" and .spec.config.tls.insecureSkipVerify == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} uses the non-redirecting Istio HTTPS upstream"
       else
@@ -423,6 +443,26 @@ else
   note "Skipping octeliumctl Service catalog check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-services.$$ /tmp/octelium-services.err.$$
+
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get user homelab-cordium-user -o json >/tmp/octelium-user.$$ 2>/tmp/octelium-user.err.$$; then
+    USER_JSON="$(cat /tmp/octelium-user.$$)"
+    if jq -e '.metadata.name == "homelab-cordium-user" and (((.spec.authorization.policies // []) | index("homelab-cordium-user-access")) != null)' >/dev/null 2>&1 <<<"${USER_JSON}"; then
+      pass "Cordium access policy is attached to its dedicated human User"
+    else
+      fail "Cordium access policy is not attached to homelab-cordium-user"
+    fi
+  else
+    if [ -s /tmp/octelium-user.err.$$ ]; then
+      fail "octeliumctl could not get homelab-cordium-user for ${DOMAIN}: $(tr '\n' ' ' </tmp/octelium-user.err.$$)"
+    else
+      fail "octeliumctl could not get homelab-cordium-user for ${DOMAIN} within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
+  fi
+else
+  note "Skipping Octelium User policy check because public Octelium gRPC is not available"
+fi
+rm -f /tmp/octelium-user.$$ /tmp/octelium-user.err.$$
 
 note "Checking public app and Enterprise console hostnames"
 while read -r HOST; do
