@@ -214,7 +214,9 @@ controllers:
             backup=${state}.bak
             timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 
-            if ! [ -s "$state" ] || ! validate_session_states "$state"; then
+            if ! [ -e "$state" ] && ! [ -e "$backup" ]; then
+              echo "No persisted session state found; allowing Deluge to initialize it"
+            elif ! [ -s "$state" ] || ! validate_session_states "$state"; then
               test -s "$backup"
               validate_session_states "$backup"
               if [ -e "$state" ]; then

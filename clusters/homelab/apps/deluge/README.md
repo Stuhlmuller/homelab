@@ -172,7 +172,8 @@ loaded sequentially. The liveness probe restarts the app container after three
 failed RPC checks. Startup reproduces Deluge's sequential load, archives an
 invalid current file or incompatible backup, and restores or refreshes only
 from a state file that passes libtorrent validation. This leaves `.torrent`
-files and downloaded data untouched.
+files and downloaded data untouched. When neither state file exists on a new
+config volume, the wrapper lets Deluge perform its normal first-run setup.
 
 If automatic recovery cannot validate the backup, the app container stops
 instead of overwriting more state. Preserve torrent metadata and downloaded
