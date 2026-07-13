@@ -37,10 +37,22 @@ registrations.
 
 The `IaC/live/aws-ssm-parameters` stack also attaches the existing
 `external-secrets_aws-ssm-auth` user to the
-`homelab-ssm-parameter-readers` IAM group. The group's
-`homelab-ssm-parameter-reader` policy lets External Secrets read both
-placeholder parameters and listed Entra-managed SSO parameters, and call
-`kms:Decrypt`.
+`homelab-ssm-parameter-readers` IAM group. Deterministic customer-managed
+policies named `homelab-ssm-parameter-reader-00`,
+`homelab-ssm-parameter-reader-01`, and so on let External Secrets read the
+exact repository-listed placeholder and Entra-managed SSO parameter ARNs. The
+small existing `homelab-ssm-parameter-reader` inline policy grants decrypt and
+describe access to the exact SSM KMS key. The module sorts the parameter names
+and places at most 25 in each managed policy; it does not grant a
+`/homelab/*` wildcard.
+
+AWS limits each customer-managed policy to 6,144 non-whitespace characters and
+each IAM group to 10 attached managed policies. Module preconditions guard both
+limits. Splitting the same permissions across group inline policies is not a
+valid workaround because AWS applies a 5,120-character aggregate limit across
+all inline policies on one group. The fixed-size KMS-only inline policy stays
+well below that aggregate limit and is updated only after all managed reader
+policies are attached, preserving access during migration.
 
 Operators applying `IaC/live/aws-ssm-parameters` also need identity-based KMS
 permissions on the resolved `us-west-2` SSM key ARN. An apply role that can
@@ -65,10 +77,10 @@ Bootstrap order:
 1. Apply `IaC/live/aws-ssm-parameters` to create the SSM placeholders.
 2. Replace `/homelab/external-secrets/aws-ssm/access-key-id` and
    `/homelab/external-secrets/aws-ssm/secret-access-key` with an IAM access key
-   that can read `/homelab/*` Parameter Store values in `us-west-2` and decrypt
-   the configured KMS key. The repository-managed
-   `homelab-ssm-parameter-reader` IAM policy grants those permissions through
-   the `homelab-ssm-parameter-readers` IAM group.
+   that can read the exact repository-listed `/homelab/...` Parameter Store
+   values in `us-west-2` and decrypt the configured KMS key. The
+   repository-managed `homelab-ssm-parameter-reader` IAM policy set grants
+   those permissions through the `homelab-ssm-parameter-readers` IAM group.
 3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
 The Kubernetes Secret stack refuses to apply while either SSM value is empty or

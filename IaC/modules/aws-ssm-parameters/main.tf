@@ -49,6 +49,10 @@ locals {
   effective_kms_key_id   = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
   effective_kms_key_arn  = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
   parameter_reader_names = setunion(toset(keys(var.parameters)), var.additional_parameter_reader_names)
+  parameter_reader_policy_chunks = length(var.parameter_reader_iam_user_names) > 0 ? {
+    for index, names in chunklist(sort(tolist(local.parameter_reader_names)), 25) :
+    format("%02d", index) => names
+  } : {}
   external_parameters = {
     for name, parameter in var.parameters :
     name => parameter
@@ -174,22 +178,26 @@ moved {
 }
 
 data "aws_iam_policy_document" "parameter_reader" {
-  count = length(var.parameter_reader_iam_user_names) > 0 ? 1 : 0
+  for_each = local.parameter_reader_policy_chunks
 
   statement {
     sid = "ReadManagedSsmParameters"
 
     actions = [
-      "ssm:DescribeParameters",
       "ssm:GetParameter",
       "ssm:GetParameters",
     ]
 
     resources = [
-      for name in local.parameter_reader_names :
+      for name in each.value :
       "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${trimprefix(name, "/")}"
     ]
   }
+
+}
+
+data "aws_iam_policy_document" "parameter_reader_kms" {
+  count = length(var.parameter_reader_iam_user_names) > 0 ? 1 : 0
 
   statement {
     sid = "DecryptManagedSsmParameters"
@@ -209,14 +217,51 @@ resource "aws_iam_group" "parameter_readers" {
   count = length(var.parameter_reader_iam_user_names) > 0 ? 1 : 0
 
   name = "homelab-ssm-parameter-readers"
+
+  lifecycle {
+    precondition {
+      condition     = length(local.parameter_reader_policy_chunks) <= 10
+      error_message = "The SSM parameter reader group cannot attach more than 10 managed IAM policies. Reduce the parameter set or increase the deterministic chunk size."
+    }
+  }
 }
 
+resource "aws_iam_policy" "parameter_reader" {
+  for_each = data.aws_iam_policy_document.parameter_reader
+
+  name        = "homelab-ssm-parameter-reader-${each.key}"
+  description = "Read one deterministic chunk of exact homelab SSM parameter ARNs."
+  policy      = each.value.json
+  tags        = var.tags
+
+  lifecycle {
+    precondition {
+      condition     = length(each.value.json) <= 6144
+      error_message = "An SSM parameter reader managed policy exceeds AWS IAM's 6,144-character policy limit. Reduce the deterministic chunk size."
+    }
+  }
+}
+
+resource "aws_iam_group_policy_attachment" "parameter_reader" {
+  for_each = aws_iam_policy.parameter_reader
+
+  group      = aws_iam_group.parameter_readers[0].name
+  policy_arn = each.value.arn
+}
+
+# Keep the existing inline policy address and shrink it only after every
+# managed SSM policy is attached. This avoids a reader-permission gap while
+# migrating away from the aggregate group inline-policy size limit.
 resource "aws_iam_group_policy" "parameter_reader" {
   count = length(var.parameter_reader_iam_user_names) > 0 ? 1 : 0
 
   group  = aws_iam_group.parameter_readers[0].name
   name   = "homelab-ssm-parameter-reader"
-  policy = data.aws_iam_policy_document.parameter_reader[0].json
+  policy = data.aws_iam_policy_document.parameter_reader_kms[0].json
+
+  depends_on = [
+    aws_iam_group_policy_attachment.parameter_reader,
+  ]
 }
 
 resource "aws_iam_user_group_membership" "parameter_reader" {
