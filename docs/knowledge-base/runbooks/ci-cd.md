@@ -149,6 +149,18 @@ state KMS access to `alias/homelab-opentofu` in `us-east-1`. The same role also
 needs identity-based KMS access on the resolved `us-west-2` SSM SecureString
 key ARN managed by `IaC/live/aws-ssm-parameters`; state-key-only access fails
 during SSM provider refresh with `AccessDeniedException` for `kms:DescribeKey`.
+The narrow managed-policy lifecycle grant for the chunked SSM reader policies
+is owned by `IaC/operator/github-actions-role-policy`. An AWS administrator
+plans and applies that unit through Terragrunt; CI intentionally does not
+traverse `IaC/operator`, because the workflow role must not manage the policy
+attached to itself. The grant covers only the ten exact
+`homelab-ssm-parameter-reader-00` through `-09` policy slots and conditioned
+attach/detach operations on the exact `homelab-ssm-parameter-readers` group;
+listing remains read-only. The same operator unit owns an SSM/KMS-only
+permissions boundary for `external-secrets_aws-ssm-auth` and enforces no direct
+managed or inline user policies, so group-policy writes cannot expand that
+credential into unrelated AWS access. See `docs/ci-cd.md` for the bootstrap,
+first-run import, remote-state reinitialization, and recovery commands.
 The workflows resolve non-sensitive role/client/tenant values from GitHub
 variables first and same-named secrets as a fallback, while
 `AZUREAD_CLIENT_SECRET`, `OCTELIUM_CI_AUTH_TOKEN`, and `KUBE_CONFIG_B64` remain

@@ -59,6 +59,20 @@ policy`.
 ## Open Findings
 
 - **Status:** open
+- **Area:** CI/CD identity
+- **Evidence:** a read-only IAM inspection on 2026-07-13 found that the live
+  `Github-TF-State` trust policy accepts `repo:Stuhlmuller/homelab:*` and
+  `repo:Stuhlmuller/github-iac:*`, while `docs/ci-cd.md` documents only the
+  `homelab-plan` and `homelab-production` environment subjects.
+- **Risk:** the live GitHub OIDC trust boundary is broader than this
+  repository's documented production and plan environments; narrowing it
+  without inspecting `github-iac` could also break an active external consumer.
+- **Next step:** inventory every workflow that assumes the role, decide whether
+  `github-iac` needs a separate role, then manage and validate the trust policy
+  through a reviewed operator-owned Terragrunt unit before removing wildcard
+  subjects.
+
+- **Status:** open
 - **Area:** agent runtime
 - **Evidence:** OpenClaw pod currently runs on an NFS-backed PVC where files can
   appear as `nobody:nogroup`; PR #296 configures workspace scratch paths and

@@ -17,6 +17,31 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
 
+Operator-owned AWS bootstrap units require a focused backend-free validation
+and an administrator-authenticated plan before apply:
+
+```sh
+cd IaC/operator/github-actions-role-policy
+terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable validate -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
+  'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
+```
+
+Run the import only on the first rollout, or during state recovery, when
+`state list` does not contain `aws_iam_user.external_secrets`. Backend-free
+validation deliberately leaves the working directory detached from shared
+state, so the authenticated `init -reconfigure` must precede every import,
+production plan, or apply from that directory.
+
+The GitHub workflow role must not plan or apply `IaC/operator`; those units own
+the permissions that protect the workflow from self-administration.
+
 ## GitHub Workflow Checks
 
 Workflow changes are covered by `scripts/ci/conftest-policies.sh` and

@@ -17,6 +17,11 @@ OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
 that point back at repository-owned manifests, Helm values, or Kustomize
 overlays.
 
+`IaC/operator` is the deliberate exception to workflow-driven apply. It owns
+bootstrap permissions that the GitHub OIDC role must never change for itself;
+an administrator still uses reviewed Terragrunt/OpenTofu desired state and the
+shared remote backend to apply those units.
+
 Argo CD Image Updater follows the same review path for repo-declared workload
 images: it writes changes to GitHub pull requests instead of keeping live-only
 Argo CD parameter overrides as steady state.
@@ -27,6 +32,7 @@ Argo CD parameter overrides as steady state.
 | --- | --- |
 | Root Terragrunt settings | `IaC/root.hcl` |
 | Argo CD bootstrap | `IaC/bootstrap/argocd` |
+| Operator-owned AWS apply-role policy | `IaC/operator/github-actions-role-policy` |
 | Argo CD app registrations | `IaC/live/argocd-apps/<app>` |
 | Argo CD Application module | `IaC/modules/argocd-application-kubernetes` |
 | App desired state | `clusters/homelab/apps/<app>` |
