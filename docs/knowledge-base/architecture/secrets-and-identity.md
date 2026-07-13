@@ -117,6 +117,14 @@ roles need identity-based KMS permissions for both keys.
   Octelium Enterprise license material, if required for commercial or
   production use, also stays outside git; add only a safe SSM or
   ExternalSecret contract in a future change if the package needs one.
+- The GitHub Actions AWS OIDC apply role is an external bootstrap identity.
+  Its additive SSM reader-policy lifecycle grant is declared in
+  `IaC/operator/github-actions-role-policy` and applied only with a reviewed
+  administrator session. CI must not traverse `IaC/operator` or gain permission
+  to replace its own attachment. The grant is bounded to policy slots `00`
+  through `09` and the exact `homelab-ssm-parameter-readers` group; the live
+  trust-policy scope remains a separately tracked finding in
+  [[../operations/continuous-improvement]].
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,

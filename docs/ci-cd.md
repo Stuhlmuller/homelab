@@ -314,6 +314,28 @@ state encryption access to `alias/homelab-opentofu` in the state region
 `kms:DescribeKey`, `kms:Encrypt`, `kms:GenerateDataKey`, and
 `kms:ReEncrypt*`.
 
+The additive IAM grant required to manage the chunked SSM reader policies is
+declared in `IaC/operator/github-actions-role-policy`. It is deliberately
+outside the GitHub workflow traversal: an automation role must not be able to
+widen or replace the policy attached to itself. After review, an AWS
+administrator applies that unit through Terragrunt:
+
+```sh
+aws sso login --profile <administrator-profile>
+cd IaC/operator/github-actions-role-policy
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color -auto-approve
+```
+
+The resulting managed policy is limited to lifecycle operations on the ten
+exact slots `homelab-ssm-parameter-reader-00` through `-09` and conditioned
+attach/detach/list operations on the exact `homelab-ssm-parameter-readers`
+group. A production failure that reports
+`AccessDenied` for `iam:CreatePolicy` means this operator prerequisite has not
+been applied or has drifted; repair it through this unit, then rerun the failed
+`Terragrunt Apply` workflow.
+
 It also needs runtime-secret KMS access for `IaC/live/aws-ssm-parameters`. That
 unit manages SecureString parameters in `us-west-2` and creates a regional KMS
 key using the same alias, `alias/homelab-opentofu`, for the SSM parameters. The
@@ -325,11 +347,11 @@ also need the key, alias, IAM, and SSM write actions represented by
 `IaC/live/azuread-applications/grafana`.
 
 If the production apply fails while reading a KMS key in `us-west-2` with an
-error like `AccessDeniedException` for `kms:DescribeKey`, update the identity
-policy attached to `AWS_ROLE_TO_ASSUME_HOMELAB` through the approved AWS IAM
-management path. Do not repair this by editing SSM parameter values, changing
-External Secrets, or patching live cluster resources; the failure happens before
-Terragrunt can refresh the SSM declaration state.
+error like `AccessDeniedException` for `kms:DescribeKey`, update the relevant
+operator-owned identity policy through a reviewed Terragrunt unit. Do not repair
+this by editing SSM parameter values, changing External Secrets, or patching live
+cluster resources; the failure happens before Terragrunt can refresh the SSM
+declaration state.
 
 The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
 `ARM_TENANT_ID` environment variables mapped from the protected GitHub
