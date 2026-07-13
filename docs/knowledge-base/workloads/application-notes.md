@@ -151,10 +151,10 @@ authenticated clientless browser requests. The connector is pinned to nodes with
 The connector runs with `replicaCount: 1` after the Octelium API, service
 catalog, and workload credential are verified, but the current app Services are
 direct upstreams rather than connector-served upstreams. The explicit app
-Service catalog in `docs/examples/octelium/homelab-services.yaml` covers Argo
-AFFiNE, Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot, OpenClaw, Policy
-Bot, Prowlarr, Radarr, Sonarr, and the Podinfo demo. The catalog keeps human
-WEB access separate from the reserved workload WEB-serving rule for
+Service catalog in `docs/examples/octelium/homelab-services.yaml` covers
+AFFiNE, Argo CD, Compass, Deluge, Grafana, Kiali, LiteLLM, n8n, OctoBot,
+OpenClaw, Policy Bot, Prowlarr, Radarr, Sonarr, and the Podinfo demo. The catalog
+keeps human WEB access separate from the reserved workload WEB-serving rule for
 `homelab-octelium-client`. The matching workload credential lives in SSM at
 `/homelab/octelium/client-auth-token` and renders through
 `octelium-client-auth` to the versioned target Secret
