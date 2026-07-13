@@ -2,6 +2,7 @@ policy:
   approval:
     - pull request commits have verified signatures
     - or:
+        - codex review bot approved
         - rstuhlmuller thumbs-up comment approved
         - organization member approved
   disapproval:
@@ -18,6 +19,24 @@ approval_rules:
       count: 0
       conditions:
         has_valid_signatures: true
+  - name: codex review bot approved
+    description: >-
+      Count only the exact top-level thumbs-up comment that the Codex review
+      bot posts after approving the latest PR changes with no P0 or P1 review
+      alerts.
+    options:
+      invalidate_on_push: true
+      methods:
+        comments: []
+        comment_patterns:
+          - '^\s*👍\s*$'
+        github_review: false
+        github_review_comment_patterns: []
+        body_patterns: []
+    requires:
+      count: 1
+      users:
+        - "chatgpt-codex-connector[bot]"
   - name: rstuhlmuller thumbs-up comment approved
     description: >-
       Count only an explicit thumbs-up comment from rstuhlmuller; this approval
