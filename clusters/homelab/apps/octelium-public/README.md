@@ -1,7 +1,7 @@
 # Octelium Public Control Plane
 
 This app runs the outbound Cloudflare Tunnel connector that makes the Octelium
-Cluster control-plane hostnames and clientless app hostnames reachable from
+Cluster control-plane hostnames and public app hostnames reachable from
 outside the tailnet:
 
 - `stinkyboi.com`
@@ -41,7 +41,9 @@ resolver access.
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
 original Host headers. Octelium uses that public FQDN to select the matching
-`WEB` Service, enforce login, and then proxy to the existing Istio app route.
+`WEB` Service and then proxy to the existing Istio app route. The Services
+enforce login except for AFFiNE's reviewed anonymous transport, where AFFiNE
+owns authentication so its native client can connect.
 `cloudflared` reads this routing table only when the pod starts. Whenever
 `configmap.yaml` changes, update the
 `homelab.rst.io/cloudflared-config-revision` pod-template annotation in

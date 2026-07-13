@@ -26,6 +26,8 @@ spec:
       app.kubernetes.io/component: server
   template:
     metadata:
+      annotations:
+        homelab.rst.io/config-revision: "2"
       labels:
         app.kubernetes.io/name: affine
         app.kubernetes.io/component: server

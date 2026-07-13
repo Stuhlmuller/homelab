@@ -161,11 +161,9 @@ metadata:
 spec:
   displayName: AFFiNE
   isPublic: true
+  isAnonymous: true
   mode: WEB
   port: 80
-  authorization:
-    policies:
-      - homelab-human-web-access
   config:
     upstream:
       url: https://istio-ingressgateway.istio-system.svc.cluster.local:443

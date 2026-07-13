@@ -3,10 +3,11 @@
 Octelium is the primary access plane for homelab apps, VPN sessions, CI
 Kubernetes API reachability, and external callback paths. Existing
 `*.stinkyboi.com` app hostnames resolve through the repo-owned
-`octelium-public` Cloudflare Tunnel connector. Octelium `WEB` Services enforce
-clientless browser login for app UIs before proxying to the existing private
-Istio routes. Tailscale Funnel is not an approved external-service backbone in
-steady state.
+`octelium-public` Cloudflare Tunnel connector. Octelium `WEB` Services normally
+enforce clientless browser login before proxying to the existing private Istio
+routes. AFFiNE is anonymous at Octelium and uses its own authentication so its
+stock native client can connect. Tailscale Funnel is not an approved
+external-service backbone in steady state.
 
 ## DNS Model
 
@@ -21,7 +22,8 @@ LoadBalancer IP. Use `scripts/octelium-public-dns.sh` to reconcile those exact
 records from the SSM-backed tunnel UUID.
 
 The public tunnel forwards app UI hostnames to the Octelium public ingress
-dataplane so Octelium can select the matching `WEB` Service and enforce login.
+dataplane so Octelium can select the matching `WEB` Service and apply its
+declared clientless or anonymous access mode.
 The tunnel forwards the Octelium Cluster/API/portal hostnames, Enterprise
 console, and unauthenticated callback hostnames to the in-cluster Istio gateway,
 where explicit `VirtualService` objects keep backend routing narrow.
@@ -36,7 +38,7 @@ why `stinkyboi.com` is the Octelium cluster domain even though
 | Surface | HTTPS host | Backbone |
 |-----|------------------|---------------|
 | Octelium control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com`, `https://octelium-api.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
-| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium clientless `WEB` Services |
+| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
 
@@ -77,10 +79,11 @@ Octelium serves the app UI set through
 Octelium browser login use explicit first-level callback hostnames through the
 same `octelium-public` tunnel, not Tailscale Funnel.
 
-AFFiNE uses `https://affine.stinkyboi.com` through the public/clientless
+AFFiNE uses `https://affine.stinkyboi.com` through the public, anonymous
 Octelium `affine` WEB Service. The Cloudflare Tunnel forwards that hostname to
-the Octelium ingress dataplane, which authenticates the browser before the
-request reaches the Istio route and `affine` namespace Service.
+the Octelium ingress dataplane and then the Istio route. AFFiNE authenticates
+users itself, registration is disabled after bootstrap, and the anonymous
+transport lets AFFiNE Desktop use its native-origin CORS flow.
 
 Use `https://octobot.stinkyboi.com` through Octelium for private setup, paper
 trading, and operator-reviewed live trading; exchange credentials and strategy
