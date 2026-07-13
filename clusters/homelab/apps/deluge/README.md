@@ -139,6 +139,11 @@ kubectl -n media exec deploy/deluge -c gluetun -- /gluetun-entrypoint healthchec
 If Gluetun is unhealthy, Deluge should lose readiness and torrent traffic should
 fail closed instead of bypassing the VPN.
 
+The Gluetun container also removes stale IPv4 and IPv6 WireGuard policy rules
+in a `postStart` hook. This follows the upstream Kubernetes recovery for
+`adding IPv6 rule ... file exists`, where an abrupt container exit can leave a
+pod-shared rule behind before the restartable sidecar starts again.
+
 ## Troubleshooting
 
 If the Pod is `Ready` and Gluetun is healthy but Deluge is not usable, check
