@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: affine-redis
+  namespace: affine
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app.kubernetes.io/name: affine-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: homelab-productivity
+spec:
+  selector:
+    app.kubernetes.io/name: affine-redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: affine-redis
+  namespace: affine
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    checkov.io/skip1: CKV_K8S_22=Redis needs writable runtime paths for its generated config and append-only persistence.
+    checkov.io/skip2: CKV_K8S_43=The image is pinned to an immutable linux-amd64 digest.
+    checkov.io/skip3: CKV2_K8S_6=affine-redis is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+  labels:
+    app.kubernetes.io/name: affine-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: homelab-productivity
+spec:
+  serviceName: affine-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: affine-redis
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: affine-redis
+        app.kubernetes.io/component: cache
+        app.kubernetes.io/part-of: homelab-productivity
+    spec:
+      serviceAccountName: affine
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redis
+          image: redis:8.2.1-bookworm@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+          args:
+            - |
+              password="$(cat /run/secrets/affine/REDIS_PASSWORD)"
+              if [ -z "$password" ] || [ "$password" = "REPLACE_ME" ]; then
+                echo "AFFiNE Redis password is missing or still uses the placeholder" >&2
+                exit 1
+              fi
+
+              umask 077
+              cat > /tmp/redis.conf <<EOF
+              bind 0.0.0.0
+              protected-mode yes
+              port 6379
+              dir /data
+              appendonly yes
+              appendfsync everysec
+              save 60 1000
+              requirepass ${password}
+              EOF
+              exec redis-server /tmp/redis.conf
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - redis-cli --no-auth-warning -a "$(cat /run/secrets/affine/REDIS_PASSWORD)" ping | grep -qx PONG
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - redis-cli --no-auth-warning -a "$(cat /run/secrets/affine/REDIS_PASSWORD)" ping | grep -qx PONG
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/affine
+              readOnly: true
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: auth
+          secret:
+            secretName: affine-secrets
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        annotations:
+          argocd.argoproj.io/sync-options: Prune=false
+        labels:
+          app.kubernetes.io/name: affine-redis
+          app.kubernetes.io/component: cache
+          app.kubernetes.io/part-of: homelab-productivity
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-default
+        resources:
+          requests:
+            storage: 5Gi

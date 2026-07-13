@@ -8,26 +8,27 @@ handling is clear.
 ## Order
 
 1. argocd-image-updater
-2. Policy Bot
-3. OpenClaw
-4. OctoBot
-5. n8n
-6. n8n-postgres
-7. Radarr and Sonarr
-8. Prowlarr
-9. media-postgres
-10. LiteLLM
-11. Deluge
-12. Kiali
-13. Grafana
-14. Descheduler
-15. Prometheus
-16. platform-storage
-17. Tailscale
-18. Istio
-19. cert-manager
-20. external-secrets
-21. platform-dns
+2. AFFiNE
+3. Policy Bot
+4. OpenClaw
+5. OctoBot
+6. n8n
+7. n8n-postgres
+8. Radarr and Sonarr
+9. Prowlarr
+10. media-postgres
+11. LiteLLM
+12. Deluge
+13. Kiali
+14. Grafana
+15. Descheduler
+16. Prometheus
+17. platform-storage
+18. Tailscale
+19. Istio
+20. cert-manager
+21. external-secrets
+22. platform-dns
 
 ## Persistent Data
 
@@ -43,6 +44,11 @@ For `n8n-postgres`, take a PostgreSQL logical dump before rollback whenever n8n
 has already written workflows, users, credentials metadata, or execution
 history to PostgreSQL. Preserve both the PostgreSQL PVC and the n8n
 `/home/node/.n8n` PVC unless intentionally rebuilding from exports.
+
+For AFFiNE, take a PostgreSQL logical dump and coordinated NFS backup before
+rollback. Preserve the PostgreSQL, Redis, blob-storage, and config claims, and
+do not rotate `/homelab/affine/private-key`; changing that ECDSA key invalidates
+sessions and can make encrypted application data unreadable.
 
 n8n public webhook exposure is independent of its stored workflow data. Remove
 `n8n-webhook-octelium`, its `octelium-public` tunnel/DNS hostname, and the

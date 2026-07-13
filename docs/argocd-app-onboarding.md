@@ -17,6 +17,7 @@ requested workloads.
 | media-postgres | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | Yes | external-secrets, platform-storage |
 | n8n-postgres | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | Yes | external-secrets, platform-storage |
 | github-actions-runner | support | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | Yes | external-secrets |
+| affine | requested | `affine` | `clusters/homelab/apps/affine` | `IaC/live/argocd-apps/affine` | Yes | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage |
 | argocd-image-updater | requested | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | Yes | external-secrets |
 | external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | platform-dns |
 | cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
@@ -70,6 +71,11 @@ n8n is not considered ready until `n8n-postgres` is synced and healthy, the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets are ready, the
 `n8n` database exists, and any required SQLite export/import migration has been
 completed.
+
+AFFiNE is not considered ready until its ExternalSecret, PostgreSQL 16 with the
+pgvector extension, authenticated Redis, migration init container, four
+retained NFS claims, Istio route, Octelium `WEB` Service, Cloudflare Tunnel
+ingress, and public DNS record have all reconciled successfully.
 
 ## Registration Provider
 

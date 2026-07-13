@@ -14,6 +14,40 @@ spec:
       - main
       - dev
   applicationRefs:
+    - namePattern: affine
+      writeBackConfig:
+        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
+        method: git:secret:argocd/argocd-image-updater-git
+        gitConfig:
+          repository: https://github.com/Stuhlmuller/homelab.git
+          branch: main
+          writeBackTarget: kustomization:/clusters/homelab/apps/affine
+          pullRequest:
+            github: {}
+      images:
+        - alias: affine
+          imageName: ghcr.io/toeverything/affine
+          commonUpdateSettings:
+            allowTags: regexp:^0\.26\.[0-9]+$
+          manifestTargets:
+            kustomize:
+              name: ghcr.io/toeverything/affine
+        - alias: postgres
+          imageName: pgvector/pgvector
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^0\.8\.[0-9]+-pg16-bookworm$
+          manifestTargets:
+            kustomize:
+              name: pgvector/pgvector
+        - alias: redis
+          imageName: redis
+          commonUpdateSettings:
+            updateStrategy: newest-build
+            allowTags: regexp:^8\.2\.[0-9]+-bookworm$
+          manifestTargets:
+            kustomize:
+              name: redis
     - namePattern: deluge
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.

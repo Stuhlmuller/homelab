@@ -29,6 +29,7 @@ utility, not as an app, callback, or CI access path.
 
 | App | Namespace | GitOps path | Terragrunt path | State | Depends on |
 | --- | --- | --- | --- | --- | --- |
+| `affine` | `affine` | `clusters/homelab/apps/affine` | `IaC/live/argocd-apps/affine` | AFFiNE `0.26.3`, PostgreSQL 16 with pgvector, authenticated persistent Redis, migration init container with `Recreate` ordering, 50 Gi blob storage, retained config, generated ECDSA signing key, and `https://affine.stinkyboi.com` through Octelium clientless access | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage |
 | `argocd-image-updater` | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | controller state and GitHub App PR credential | external-secrets |
 | `external-secrets` | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | controller state only | platform-dns |
 | `cert-manager` | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | controller-managed certificates | external-secrets |
@@ -56,10 +57,12 @@ utility, not as an app, callback, or CI access path.
 
 ## Mesh Policy Summary
 
-Istio ambient is committed for the `ai`, `automation`, and `monitoring`
+Istio ambient is committed for the `affine`, `ai`, `automation`, and `monitoring`
 namespaces. The source of truth is `docs/runtime-isolation.md` plus the
 `authorizationpolicy.yaml` files in the affected app overlays.
 
+- `affine` uses namespace default-deny, gateway-only server access, and
+  service-account-only database/cache access.
 - `ai` uses a namespace default-deny policy and explicit inbound allows for the
   Istio gateway path used by Octelium service proxies, the Octelium connector
   principal reserved for future served upstreams, Alertmanager to reach

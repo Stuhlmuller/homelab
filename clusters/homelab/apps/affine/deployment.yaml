@@ -1,0 +1,214 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affine
+  namespace: affine
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+    checkov.io/skip1: CKV_K8S_22=AFFiNE needs writable image-managed runtime paths and writes durable blobs/config to retained PVCs.
+    checkov.io/skip2: CKV_K8S_40=The upstream AFFiNE self-host image writes under /root/.affine and does not publish a non-root runtime contract.
+    checkov.io/skip3: CKV_K8S_43=The image is pinned to an immutable linux-amd64 digest.
+    checkov.io/skip4: CKV2_K8S_6=AFFiNE is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+    checkov.io/skip5: CKV_K8S_23=The upstream self-host image requires its root-owned /root/.affine paths; privilege escalation and Linux capabilities remain disabled.
+    checkov.io/skip6: CKV_K8S_35=AFFiNE supports database, Redis, and signing-key credentials only through environment configuration; values come from External Secrets and are never committed.
+  labels:
+    app.kubernetes.io/name: affine
+    app.kubernetes.io/component: server
+    app.kubernetes.io/part-of: homelab-productivity
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: affine
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: affine
+        app.kubernetes.io/component: server
+        app.kubernetes.io/part-of: homelab-productivity
+    spec:
+      serviceAccountName: affine
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: migration
+          image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              test -n "${DATABASE_PASSWORD}"
+              test -n "${REDIS_SERVER_PASSWORD}"
+              test -n "${AFFINE_PRIVATE_KEY}"
+              exec node ./scripts/self-host-predeploy.js
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: postgresql://affine:$(DATABASE_PASSWORD)@affine-postgres.affine.svc.cluster.local:5432/affine
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.affine.svc.cluster.local
+            - name: REDIS_SERVER_PORT
+              value: "6379"
+            - name: REDIS_SERVER_DATABASE
+              value: "0"
+            - name: REDIS_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: REDIS_PASSWORD
+            - name: AFFINE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: AFFINE_PRIVATE_KEY
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.stinkyboi.com
+            - name: AFFINE_SERVER_HOST
+              value: affine.stinkyboi.com
+            - name: AFFINE_SERVER_HTTPS
+              value: "true"
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: NODE_ENV
+              value: production
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.affine/storage
+            - name: config
+              mountPath: /root/.affine/config
+            - name: config-source
+              mountPath: /root/.affine/config/config.json
+              subPath: config.json
+              readOnly: true
+      containers:
+        - name: affine
+          image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: postgresql://affine:$(DATABASE_PASSWORD)@affine-postgres.affine.svc.cluster.local:5432/affine
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.affine.svc.cluster.local
+            - name: REDIS_SERVER_PORT
+              value: "6379"
+            - name: REDIS_SERVER_DATABASE
+              value: "0"
+            - name: REDIS_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: REDIS_PASSWORD
+            - name: AFFINE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: AFFINE_PRIVATE_KEY
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.stinkyboi.com
+            - name: AFFINE_SERVER_HOST
+              value: affine.stinkyboi.com
+            - name: AFFINE_SERVER_HTTPS
+              value: "true"
+            - name: AFFINE_SERVER_PORT
+              value: "3010"
+            - name: LISTEN_ADDR
+              value: 0.0.0.0
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: DEPLOYMENT_TYPE
+              value: selfhosted
+            - name: DEPLOYMENT_PLATFORM
+              value: kubernetes
+            - name: NODE_ENV
+              value: production
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
+            - name: TZ
+              value: America/Los_Angeles
+          ports:
+            - name: http
+              containerPort: 3010
+          readinessProbe:
+            httpGet:
+              path: /info
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /info
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /info
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.affine/storage
+            - name: config
+              mountPath: /root/.affine/config
+            - name: config-source
+              mountPath: /root/.affine/config/config.json
+              subPath: config.json
+              readOnly: true
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: affine-storage
+        - name: config
+          persistentVolumeClaim:
+            claimName: affine-config
+        - name: config-source
+          configMap:
+            name: affine-config

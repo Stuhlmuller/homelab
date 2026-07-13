@@ -28,6 +28,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: ai
     - server: https://kubernetes.default.svc
+      namespace: affine
+    - server: https://kubernetes.default.svc
       namespace: argocd
     - server: https://kubernetes.default.svc
       namespace: automation

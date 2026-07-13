@@ -1,0 +1,40 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: affine-default-deny
+  namespace: affine
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: affine-server-allow-gateway
+  namespace: affine
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: affine
+      app.kubernetes.io/component: server
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/octelium-client/sa/octelium-client
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: affine-allow-internal
+  namespace: affine
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: homelab-productivity
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/affine/sa/affine

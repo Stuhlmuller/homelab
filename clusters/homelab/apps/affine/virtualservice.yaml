@@ -1,0 +1,24 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: affine-octelium
+  namespace: affine
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - affine.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: affine.affine.svc.cluster.local
+            port:
+              number: 3010
+      timeout: 60s
+      retries:
+        attempts: 3
+        perTryTimeout: 10s
+        retryOn: connect-failure,refused-stream,reset,5xx

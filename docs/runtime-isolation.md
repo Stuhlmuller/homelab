@@ -36,6 +36,9 @@ is known well enough to enforce with Layer 4 identity policy:
 
 - `ai` has a namespace default-deny `AuthorizationPolicy`; only the explicit
   workload allow rules below should accept inbound mesh traffic.
+- `affine` has a namespace default-deny policy, allows the Istio gateway to the
+  server, and allows only the `affine` service account to reach its PostgreSQL
+  and Redis pods.
 - `automation` and `monitoring` are ambient-enrolled, but enforcement starts
   with selected workload policies instead of a namespace default-deny. Policy
   Bot callback traffic, monitoring operator webhooks, and other controller
@@ -49,6 +52,9 @@ The current service access contract is:
 
 | Destination workload | Namespace | Allowed source principal | Reason |
 |----------------------|-----------|--------------------------|--------|
+| `affine` | `affine` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium clientless app access through the Istio gateway. |
+| `affine` | `affine` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
+| `affine-postgres`, `affine-redis` | `affine` | `cluster.local/ns/affine/sa/affine` | AFFiNE server and migration access to dedicated state services. |
 | `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |
 | `litellm` | `ai` | `cluster.local/ns/ai/sa/openclaw` | OpenClaw model gateway calls. |
 | `litellm` | `ai` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
@@ -120,6 +126,7 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 
 | Namespace | Desired-state owner |
 |-----------|---------------------|
+| `affine` | `clusters/homelab/apps/affine/namespace.yaml` |
 | `cert-manager` | `clusters/homelab/apps/cert-manager/namespace.yaml` |
 | `external-secrets` | `clusters/homelab/apps/external-secrets/namespace.yaml` |
 | `ai` | `clusters/homelab/apps/litellm/namespace.yaml` |

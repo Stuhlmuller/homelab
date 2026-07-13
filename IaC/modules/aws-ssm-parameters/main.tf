@@ -62,7 +62,12 @@ locals {
   random_generated_parameters = {
     for name, parameter in local.generated_parameters :
     name => parameter
-    if try(parameter.generated.source_parameter, null) == null
+    if try(parameter.generated.source_parameter, null) == null && try(parameter.generated.kind, "password") == "password"
+  }
+  ecdsa_generated_parameters = {
+    for name, parameter in local.generated_parameters :
+    name => parameter
+    if try(parameter.generated.source_parameter, null) == null && try(parameter.generated.kind, "password") == "ecdsa_private_key"
   }
   sourced_generated_parameters = {
     for name, parameter in local.generated_parameters :
@@ -73,11 +78,19 @@ locals {
     for name, parameter in local.random_generated_parameters :
     name => "${try(parameter.generated.prefix, "")}${random_password.generated[name].result}"
   }
-  generated_values = merge(
+  ecdsa_generated_values = {
+    for name, parameter in local.ecdsa_generated_parameters :
+    name => tls_private_key.generated[name].private_key_pem
+  }
+  direct_generated_values = merge(
     local.random_generated_values,
+    local.ecdsa_generated_values,
+  )
+  generated_values = merge(
+    local.direct_generated_values,
     {
       for name, parameter in local.sourced_generated_parameters :
-      name => local.random_generated_values[parameter.generated.source_parameter]
+      name => local.direct_generated_values[parameter.generated.source_parameter]
     }
   )
 }
@@ -88,6 +101,13 @@ resource "random_password" "generated" {
   length           = each.value.generated.length
   override_special = each.value.generated.override_special
   special          = each.value.generated.special
+}
+
+resource "tls_private_key" "generated" {
+  for_each = local.ecdsa_generated_parameters
+
+  algorithm   = "ECDSA"
+  ecdsa_curve = "P256"
 }
 
 resource "aws_ssm_parameter" "this" {

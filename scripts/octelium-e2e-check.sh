@@ -97,6 +97,7 @@ if [ "${DOMAIN}" = "stinkyboi.com" ]; then
 fi
 
 APP_HOSTS="
+affine.stinkyboi.com
 argocd.stinkyboi.com
 compass.stinkyboi.com
 cordium.stinkyboi.com
@@ -121,6 +122,7 @@ policy-bot-hook.stinkyboi.com /api/github/hook expect-policy-bot-400 POST
 
 REQUIRED_SERVICES="
 kubernetes-api.ci
+affine
 argocd
 compass
 cordium
@@ -398,7 +400,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service is missing: ${SERVICE}"
       fi
     done
-    for SERVICE in argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public/clientless"
       else

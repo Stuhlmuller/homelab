@@ -37,6 +37,10 @@ data:
         originRequest:
           originServerName: octelium-api.stinkyboi.com
           httpHostHeader: octelium-api.stinkyboi.com
+      - hostname: affine.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: affine.stinkyboi.com
       - hostname: argocd.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:

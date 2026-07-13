@@ -179,6 +179,34 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: compass-discovery-affine
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: AFFiNE
+    compass.adinhodovic.com/urls: "AFFiNE=https://affine.stinkyboi.com"
+    compass.adinhodovic.com/description: Collaborative documents, whiteboards, and knowledge base.
+    compass.adinhodovic.com/icon: selfhst:affine
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: productivity,knowledge-base
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: affine.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: compass-discovery-n8n
   namespace: monitoring
   labels:
