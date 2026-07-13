@@ -19,12 +19,14 @@ they exist so dependency state is still delivered through Argo CD.
 - Include `IaC/root.hcl` from every unit.
 - Source the local Kubernetes-backed Application module. Do not require a
   locally authenticated Argo CD API provider for routine app registration.
+- Pass the `Application` as a raw `manifest` using Argo CD CRD field names such
+  as `repoURL`, `targetRevision`, and `syncPolicy`.
 - Register Applications in the `homelab` AppProject. If an app needs a new
   chart repository, destination namespace, or cluster-scoped kind, update
   `clusters/homelab/argocd/self-management/appproject.yaml` before applying
   the Application.
 - Declare every upstream relationship with a `dependencies` block.
-- Use `sync_policy.automated` with prune and self-heal by default. Any future
+- Use `spec.syncPolicy.automated` with prune and self-heal by default. Any future
   exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under
   `clusters/homelab/apps/<app>/` or `clusters/homelab/platform/<service>/`.

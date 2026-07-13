@@ -20,71 +20,83 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "argocd-image-updater"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "argocd"
-  }
-
-  sources = [
-    {
-      repo_url        = "https://argoproj.github.io/argo-helm"
-      chart           = "argocd-image-updater"
-      target_revision = "1.2.2"
-      helm = {
-        release_name = "argocd-image-updater"
-        value_files  = ["$values/clusters/homelab/apps/argocd-image-updater/values.yaml"]
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/argocd-image-updater"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "argocd-image-updater"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "image-updates"
-      value = "docs/argocd-image-updater.md"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "argocd"
+      }
+
+      sources = [
+        {
+          repoURL        = "https://argoproj.github.io/argo-helm"
+          chart          = "argocd-image-updater"
+          path           = "."
+          targetRevision = "1.2.2"
+          helm = {
+            releaseName = "argocd-image-updater"
+            valueFiles  = ["$values/clusters/homelab/apps/argocd-image-updater/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          ref            = "values"
+          path           = "."
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/argocd-image-updater"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "image-updates"
+          value = "docs/argocd-image-updater.md"
+        }
+      ]
     }
-  ]
+  }
 }

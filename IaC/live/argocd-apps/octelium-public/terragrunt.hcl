@@ -24,46 +24,56 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "octelium-public"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+
+    metadata = {
+      name      = "octelium-public"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
+      }
     }
-  }
 
-  project = "homelab"
+    spec = {
+      project = "homelab"
 
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "octelium-public"
-  }
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "octelium-public"
+      }
 
-  sources = [
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/octelium-public"
-      kustomize       = {}
-    }
-  ]
+      sources = [
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/octelium-public"
+          kustomize      = {}
+        }
+      ]
 
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
       }
     }
   }

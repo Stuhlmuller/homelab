@@ -24,54 +24,64 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "octelium-cluster"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "istio-system"
-  }
-
-  sources = [
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/octelium-cluster"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = false
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=false",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "octelium-cluster"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "bootstrap"
-      value = "Run scripts/octelium-cluster-bootstrap.sh after platform-multus and octelium-storage are healthy"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "istio-system"
+      }
+
+      sources = [
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/octelium-cluster"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = false
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=false",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "bootstrap"
+          value = "Run scripts/octelium-cluster-bootstrap.sh after platform-multus and octelium-storage are healthy"
+        }
+      ]
     }
-  ]
+  }
 }

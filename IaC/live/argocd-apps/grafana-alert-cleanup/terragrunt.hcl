@@ -23,54 +23,64 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "grafana-alert-cleanup"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "monitoring"
-  }
-
-  sources = [
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/grafana-alert-cleanup"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "grafana-alert-cleanup"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "purpose"
-      value = "one-shot cleanup for stale Grafana alert rules after alert provisioning drift"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "monitoring"
+      }
+
+      sources = [
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/grafana-alert-cleanup"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "purpose"
+          value = "one-shot cleanup for stale Grafana alert rules after alert provisioning drift"
+        }
+      ]
     }
-  ]
+  }
 }

@@ -23,66 +23,76 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "octelium"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "octelium-client"
-  }
-
-  sources = [
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/octelium"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "octelium"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "mode"
-      value = "Octelium service catalog is the homelab app access path; app FQDNs use private Istio SNI backend routes"
-    },
-    {
-      name  = "services"
-      value = "Serves the explicit homelab service catalog in docs/examples/octelium"
-    },
-    {
-      name  = "enterprise"
-      value = "Enterprise package octeliumee desired version 0.22.0 is adopted by the octelium-enterprise Argo CD Application"
-    },
-    {
-      name  = "state"
-      value = "Stateless connector plus in-cluster demo service"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "octelium-client"
+      }
+
+      sources = [
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/octelium"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "mode"
+          value = "Octelium service catalog is the homelab app access path; app FQDNs use private Istio SNI backend routes"
+        },
+        {
+          name  = "services"
+          value = "Serves the explicit homelab service catalog in docs/examples/octelium"
+        },
+        {
+          name  = "enterprise"
+          value = "Enterprise package octeliumee desired version 0.22.0 is adopted by the octelium-enterprise Argo CD Application"
+        },
+        {
+          name  = "state"
+          value = "Stateless connector plus in-cluster demo service"
+        }
+      ]
     }
-  ]
+  }
 }

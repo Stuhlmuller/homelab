@@ -20,63 +20,75 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "cert-manager"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "cert-manager"
-  }
-
-  sources = [
-    {
-      repo_url        = "https://charts.jetstack.io"
-      chart           = "cert-manager"
-      target_revision = "v1.19.2"
-      helm = {
-        release_name = "cert-manager"
-        value_files  = ["$values/clusters/homelab/apps/cert-manager/values.yaml"]
+    metadata = {
+      name      = "cert-manager"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/cert-manager"
-      kustomize       = {}
     }
-  ]
 
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "cert-manager"
+      }
+
+      sources = [
+        {
+          repoURL        = "https://charts.jetstack.io"
+          chart          = "cert-manager"
+          path           = "."
+          targetRevision = "v1.19.2"
+          helm = {
+            releaseName = "cert-manager"
+            valueFiles  = ["$values/clusters/homelab/apps/cert-manager/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          ref            = "values"
+          path           = "."
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/cert-manager"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
       }
     }
   }
