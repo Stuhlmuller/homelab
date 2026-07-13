@@ -62,6 +62,14 @@ prove runtime readiness. A dependency is ready only when Argo CD reports the
 upstream Application registered, synced, and healthy, or an exception is
 recorded in `docs/validation-runbook.md`.
 
+## Provider Scope
+
+`IaC/root.hcl` owns shared state and inputs, but it does not inject workload
+providers into every unit. Kubernetes-backed units include
+`IaC/kubernetes-provider.hcl`; the Argo CD bootstrap unit generates its Helm
+provider locally. Keep new providers scoped to the units that use them so lock
+files represent real module dependencies.
+
 ## Source Files
 
 - `docs/argocd-bootstrap.md`
