@@ -481,11 +481,16 @@ their library mounts now target the QNAP `/media` export: Radarr uses
 `media-downloads` at `/downloads`. The old dynamic media PVCs stay declared as
 migration sources until the `/media` copy is verified.
 
-Radarr uses `AuthenticationMethod=External` in `/config/config.xml`, managed by
-the startup init container in `clusters/homelab/apps/radarr/values.yaml`.
-Octelium is the target access boundary, with Funnel disabled. This avoids
-recurring Radarr password lockouts from internal auth drift while keeping
-browser access behind a reviewed private access layer.
+Radarr uses `AuthenticationMethod=External` and
+`AuthenticationRequired=DisabledForLocalAddresses` in `/config/config.xml`,
+managed by the startup init container in
+`clusters/homelab/apps/radarr/values.yaml`. The init container removes legacy
+`AuthenticationEnabled` and retired `AuthenticationType` entries, rewrites the
+target tags so only one copy remains, and asserts the final non-secret auth
+state. This avoids recurring Radarr password lockouts from old Forms-auth
+flags or duplicate XML tags while keeping browser access behind Octelium, with
+Funnel disabled. The Radarr probes check `/initialize.json` with the response
+body discarded because that endpoint includes the live API key.
 
 ## Tailscale
 

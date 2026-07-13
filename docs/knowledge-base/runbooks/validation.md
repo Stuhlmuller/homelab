@@ -70,6 +70,13 @@ Sonarr, Radarr, and Prowlarr also wait for `media-postgres` and Servarr
 PostgreSQL fields. n8n also waits for `n8n-postgres`, the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets, and an
 authenticated `n8n` database connection before the app is considered ready.
+Radarr has an extra lockout check: `config.xml` must contain exactly one
+`AuthenticationMethod=External` entry and one
+`AuthenticationRequired=DisabledForLocalAddresses` entry, with no legacy
+`AuthenticationEnabled` or retired `AuthenticationType` entries. Probe
+`/initialize.json` with the body discarded because the response contains the
+live API key; a direct `/api/v3/...` request without that key can still return
+`401` normally.
 
 ## Common Stop Conditions
 
