@@ -12,7 +12,7 @@ controllers:
       configure-postgres:
         image:
           repository: lscr.io/linuxserver/radarr
-          tag: 6.1.1@sha256:c0a4335d4249b46102f64cf6fa27ffc3bddfd9138fac1e4ddf238afd37f02d1f
+          tag: 6.3.0@sha256:2b2c1c05eb3f648d2c80dfab9486147dd7bb0ad4d77fa972fc1c5de8f1da3738
         envFrom:
           - secretRef:
               name: media-postgres-arr-env
@@ -145,7 +145,7 @@ controllers:
       app:
         image:
           repository: lscr.io/linuxserver/radarr
-          tag: 6.1.1@sha256:c0a4335d4249b46102f64cf6fa27ffc3bddfd9138fac1e4ddf238afd37f02d1f
+          tag: 6.3.0@sha256:2b2c1c05eb3f648d2c80dfab9486147dd7bb0ad4d77fa972fc1c5de8f1da3738
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
