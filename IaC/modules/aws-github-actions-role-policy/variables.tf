@@ -8,6 +8,41 @@ variable "apply_role_name" {
   }
 }
 
+variable "aws_region" {
+  description = "AWS region containing the homelab SSM parameters and runtime-secret KMS key."
+  type        = string
+}
+
+variable "external_secrets_boundary_policy_name" {
+  description = "Name of the operator-owned permissions boundary for the External Secrets IAM user."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,128}$", var.external_secrets_boundary_policy_name))
+    error_message = "external_secrets_boundary_policy_name must be a valid IAM policy name."
+  }
+}
+
+variable "external_secrets_user_name" {
+  description = "Existing IAM user used by External Secrets for SSM reads."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,64}$", var.external_secrets_user_name))
+    error_message = "external_secrets_user_name must be a valid IAM user name."
+  }
+}
+
+variable "kms_key_id" {
+  description = "Alias of the regional KMS key used to encrypt homelab SSM parameters."
+  type        = string
+
+  validation {
+    condition     = startswith(var.kms_key_id, "alias/")
+    error_message = "kms_key_id must be a KMS alias so the boundary follows the operator-managed runtime-secret key."
+  }
+}
+
 variable "parameter_reader_group_name" {
   description = "Exact IAM group that receives the managed SSM parameter reader policies."
   type        = string

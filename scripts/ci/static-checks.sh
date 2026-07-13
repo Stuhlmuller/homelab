@@ -6,6 +6,14 @@ terragrunt hcl fmt --check
 terragrunt hcl validate
 echo "::endgroup::"
 
+echo "::group::Operator OpenTofu validation"
+(
+  cd IaC/operator/github-actions-role-policy
+  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable validate -no-color
+)
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"

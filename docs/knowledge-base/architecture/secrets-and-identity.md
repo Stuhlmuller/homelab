@@ -122,8 +122,11 @@ roles need identity-based KMS permissions for both keys.
   `IaC/operator/github-actions-role-policy` and applied only with a reviewed
   administrator session. CI must not traverse `IaC/operator` or gain permission
   to replace its own attachment. The grant is bounded to policy slots `00`
-  through `09` and the exact `homelab-ssm-parameter-readers` group; the live
-  trust-policy scope remains a separately tracked finding in
+  through `09` and the exact `homelab-ssm-parameter-readers` group. The unit
+  also adopts `external-secrets_aws-ssm-auth`, removes direct user policies,
+  and caps it with an operator-owned boundary that allows only homelab SSM reads
+  and runtime-secret KMS decrypt/describe access. The live trust-policy scope
+  remains a separately tracked finding in
   [[../operations/continuous-improvement]].
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
