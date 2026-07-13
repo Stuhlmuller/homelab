@@ -239,12 +239,13 @@ curl -I https://cordium.stinkyboi.com
 
 AFFiNE is a self-hosted collaborative knowledge base in the `affine` namespace.
 It uses a dedicated pgvector/PostgreSQL 16 StatefulSet, authenticated Redis with
-append-only persistence, retained NFS claims for blobs and config, and an Argo
-CD migration hook. Human access is `https://affine.stinkyboi.com` through the
-public/clientless Octelium `affine` WEB Service; the application itself has no
-unauthenticated public route. Its generated ECDSA key must remain stable across
-restores. Copilot and SMTP remain disabled until complete provider contracts
-are added. Source: `clusters/homelab/apps/affine/README.md`.
+append-only persistence, retained NFS claims for blobs and config, and a
+migration init container in a `Recreate` Deployment. Human access is
+`https://affine.stinkyboi.com` through the public/clientless Octelium `affine`
+WEB Service; the application itself has no unauthenticated public route. Its
+generated ECDSA key must remain stable across restores. Copilot and SMTP remain
+disabled until complete provider contracts are added. Source:
+`clusters/homelab/apps/affine/README.md`.
 
 ## OctoBot
 

@@ -8,7 +8,6 @@ resources:
   - pvc.yaml
   - postgres.yaml
   - redis.yaml
-  - migration-job.yaml
   - deployment.yaml
   - service.yaml
   - networkpolicy.yaml

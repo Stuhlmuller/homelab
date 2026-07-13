@@ -23,8 +23,9 @@ gateway. There is no unauthenticated Funnel route to the workload.
   External Secrets. Do not rotate it without invalidating sessions and planning
   encrypted-data recovery.
 - Database migrations: the digest-pinned AFFiNE image runs
-  `scripts/self-host-predeploy.js` as an Argo CD Sync hook after PostgreSQL and
-  Redis are healthy and before the server Deployment is reconciled.
+  `scripts/self-host-predeploy.js` as an init container. The Deployment uses
+  `Recreate`, so the previous server stops before the replacement pod migrates
+  the database and starts the new server.
 - Copilot: disabled. The current homelab LiteLLM catalog exposes a text model
   but not AFFiNE's required embedding and image capabilities. Add the complete
   model set and a file-backed secret contract before enabling it.
@@ -44,7 +45,7 @@ After the intended accounts exist, set `auth.allowSignup` to `false` in
 ```sh
 kubectl kustomize clusters/homelab/apps/affine
 kubectl -n argocd get application affine
-kubectl -n affine get deploy,statefulset,job,pod,pvc,svc,externalsecret
+kubectl -n affine get deploy,statefulset,pod,pvc,svc,externalsecret
 kubectl -n affine exec statefulset/affine-postgres -- \
   psql -U affine -d affine -c 'select extversion from pg_extension where extname = '\''vector'\'';'
 kubectl -n affine exec statefulset/affine-redis -- /bin/sh -ec \

@@ -73,9 +73,9 @@ n8n is not considered ready until `n8n-postgres` is synced and healthy, the
 completed.
 
 AFFiNE is not considered ready until its ExternalSecret, PostgreSQL 16 with the
-pgvector extension, authenticated Redis, migration hook, four retained NFS
-claims, Istio route, Octelium `WEB` Service, Cloudflare Tunnel ingress, and
-public DNS record have all reconciled successfully.
+pgvector extension, authenticated Redis, migration init container, four
+retained NFS claims, Istio route, Octelium `WEB` Service, Cloudflare Tunnel
+ingress, and public DNS record have all reconciled successfully.
 
 ## Registration Provider
 

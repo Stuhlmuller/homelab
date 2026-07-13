@@ -36,6 +36,75 @@ spec:
       securityContext:
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: migration
+          image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              test -n "${DATABASE_PASSWORD}"
+              test -n "${REDIS_SERVER_PASSWORD}"
+              test -n "${AFFINE_PRIVATE_KEY}"
+              exec node ./scripts/self-host-predeploy.js
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: postgresql://affine:$(DATABASE_PASSWORD)@affine-postgres.affine.svc.cluster.local:5432/affine
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.affine.svc.cluster.local
+            - name: REDIS_SERVER_PORT
+              value: "6379"
+            - name: REDIS_SERVER_DATABASE
+              value: "0"
+            - name: REDIS_SERVER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: REDIS_PASSWORD
+            - name: AFFINE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: AFFINE_PRIVATE_KEY
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.stinkyboi.com
+            - name: AFFINE_SERVER_HOST
+              value: affine.stinkyboi.com
+            - name: AFFINE_SERVER_HTTPS
+              value: "true"
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: NODE_ENV
+              value: production
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=3072
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.affine/storage
+            - name: config
+              mountPath: /root/.affine/config
+            - name: config-source
+              mountPath: /root/.affine/config/config.json
+              subPath: config.json
+              readOnly: true
       containers:
         - name: affine
           image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
