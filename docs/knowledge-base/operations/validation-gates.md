@@ -123,7 +123,11 @@ The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
 the complete homelab WEB Service catalog, public DNS for each existing
 `*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
-Octelium clientless WEB access. App hostnames must not resolve to private
+Octelium public WEB access. It also requires AFFiNE's anonymous Service mode
+and validates the native-client CORS preflight plus public `serverConfig`
+GraphQL query, confirms AFFiNE rejects an unauthenticated workspace query, and
+ensures every other public app Service remains non-anonymous. App hostnames
+must not resolve to private
 Octelium service IPs or the old Tailscale wildcard. The same script probes the
 reviewed callback hostnames for public DNS and path-limited reachability; the
 n8n expected-negative webhook probe must see an n8n webhook response body, not

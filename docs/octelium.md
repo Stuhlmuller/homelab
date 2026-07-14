@@ -3,8 +3,10 @@
 This repository uses Octelium for human access to homelab applications. App
 hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
 records point those names at the public Cloudflare Tunnel, the tunnel forwards
-them to the Octelium public ingress, and Octelium `WEB` Services enforce login
-before proxying to the existing Istio app routes.
+them to the Octelium public ingress, and Octelium `WEB` Services proxy to the
+existing Istio app routes. Most enforce Octelium login. AFFiNE is the reviewed
+exception: Octelium permits anonymous transport so the stock native client can
+reach AFFiNE's own authentication and API.
 
 CI cluster reachability now uses the Octelium `kubernetes-api.ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
@@ -40,8 +42,9 @@ and `MKNOD` so it can create `/dev/net/tun` for the demo and any future
 connector-served upstream. The production app access path does not require a
 local user VPN session or the in-cluster connector: public app requests enter
 through Cloudflare Tunnel, land on the Octelium public ingress, and are
-authorized as clientless browser sessions before Octelium forwards them to the
-in-cluster Istio gateway.
+forwarded to the in-cluster Istio gateway. Octelium authorizes normal app UIs
+as clientless browser sessions; the anonymous AFFiNE Service delegates user
+authentication to AFFiNE.
 
 ## Octelium Service Catalog
 
@@ -77,6 +80,10 @@ They create:
   `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.
+- The `affine` Service alone sets `isAnonymous: true`. AFFiNE Desktop uses a
+  native `assets://.` origin and must directly reach its server-discovery,
+  login, GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled
+  after account bootstrap, so existing AFFiNE credentials remain the boundary.
 - Package-managed public `WEB` Service `default.cordium`, created by Cordium
   genesis with primary hostname `cordium`. Do not also declare a `cordium`
   Service in Octelium's default Namespace; both derive
@@ -101,8 +108,9 @@ requests. The header block also sets `forwardedMode: TRANSPARENT` so Octelium
 preserves those explicit forwarded headers instead of deriving them from the
 internal upstream. That keeps each app's existing Istio `VirtualService` and
 base URL intact while moving the user-facing authentication layer to Octelium
-clientless access. Cordium is the exception because its package-managed
-`default.cordium` Service terminates the Octelium route directly.
+clientless access. AFFiNE instead owns its user-facing authentication, and
+Cordium's package-managed `default.cordium` Service terminates its Octelium
+route directly.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -214,7 +222,11 @@ scripts/octelium-e2e-check.sh
 The gate uses ordinary public HTTPS requests to the existing
 `https://*.stinkyboi.com` app hostnames. It fails if any app hostname still
 resolves to Octelium private service IPs, if an app Service is not `WEB` with
-`isPublic: true`, or if the public hostname returns a routing 404.
+`isPublic: true`, or if the public hostname returns a routing 404. It also
+requires AFFiNE's Service to be anonymous and verifies the native-client CORS
+preflight plus the public `serverConfig` GraphQL query. A negative workspace
+query must still return AFFiNE's `AUTHENTICATION_REQUIRED` error, and all other
+app Services must remain non-anonymous.
 
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and
@@ -243,6 +255,9 @@ The gate verifies:
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS without `octelium connect`; the Enterprise console check must not
   redirect to `console.octelium.stinkyboi.com`;
+- AFFiNE's native `assets://.` origin can preflight and query `serverConfig` at
+  `https://affine.stinkyboi.com/graphql`, while an anonymous workspace query is
+  denied by AFFiNE;
 - reviewed callback hostnames `n8n-webhook.stinkyboi.com` and
   `policy-bot-hook.stinkyboi.com` resolve publicly and reach their path-limited
   callback routes.

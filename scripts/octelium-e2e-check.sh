@@ -22,8 +22,9 @@ Usage: scripts/octelium-e2e-check.sh [options]
 Validate that Octelium is the homelab backbone for app access, CI reachability,
 VPN entry points, and reviewed public callbacks.
 The check requires a running Octelium Cluster, an applied homelab service
-catalog, an active octelium-client connector, and clientless WEB access for
-the existing app FQDNs.
+catalog, an active octelium-client connector, and public WEB access for the
+existing app FQDNs. AFFiNE is anonymous at Octelium so its native client can
+use AFFiNE's own authentication; the other app Services remain clientless.
 
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
@@ -91,6 +92,7 @@ done
 
 API_HOST="octelium-api.${DOMAIN}"
 PORTAL_HOST="portal.${DOMAIN}"
+AFFINE_HOST="affine.stinkyboi.com"
 CONTROL_HOSTS=("${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}")
 if [ "${DOMAIN}" = "stinkyboi.com" ]; then
   CONTROL_HOSTS+=("octelium.stinkyboi.com")
@@ -415,9 +417,21 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     fi
     for SERVICE in affine argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-        pass "Octelium Service ${SERVICE} is WEB and public/clientless"
+        pass "Octelium Service ${SERVICE} is WEB and public"
       else
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
+      fi
+    done
+    if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service affine permits native-client access through AFFiNE authentication"
+    else
+      fail "Octelium Service affine is not anonymous for native-client access"
+    fi
+    for SERVICE in argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+        pass "Octelium Service ${SERVICE} still requires authentication"
+      else
+        fail "Octelium Service ${SERVICE} unexpectedly permits anonymous access"
       fi
     done
     if jq -e '.items[] | select(.metadata.name == "default.cordium" and .metadata.isSystem == true and .status.primaryHostname == "cordium" and .status.namespaceRef.name == "cordium" and .status.managedService != null and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
@@ -525,6 +539,82 @@ while read -r HOST; do
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
 done <<<"${APP_HOSTS}"
+
+note "Checking AFFiNE native-client bootstrap"
+AFFINE_ORIGIN="assets://."
+AFFINE_PREFLIGHT_HEADERS="$(mktemp "${TMPDIR:-/tmp}/affine-preflight-headers.XXXXXX")"
+AFFINE_PREFLIGHT_ERR="$(mktemp "${TMPDIR:-/tmp}/affine-preflight-curl.XXXXXX")"
+AFFINE_PREFLIGHT_CODE="$(
+  curl -sS -X OPTIONS --max-time 20 \
+    -D "${AFFINE_PREFLIGHT_HEADERS}" \
+    -o /dev/null \
+    -w '%{http_code}' \
+    -H "Origin: ${AFFINE_ORIGIN}" \
+    -H 'Access-Control-Request-Method: POST' \
+    -H 'Access-Control-Request-Headers: content-type,x-affine-version,x-operation-name' \
+    "https://${AFFINE_HOST}/graphql" 2>"${AFFINE_PREFLIGHT_ERR}" || true
+)"
+AFFINE_ALLOW_ORIGIN="$(awk 'tolower($1) == "access-control-allow-origin:" {print $2}' "${AFFINE_PREFLIGHT_HEADERS}" | tr -d '\r' | tail -1)"
+AFFINE_ALLOW_METHODS="$(awk 'tolower($1) == "access-control-allow-methods:" {$1=""; sub(/^ /, ""); print}' "${AFFINE_PREFLIGHT_HEADERS}" | tr -d '\r' | tr '[:lower:]' '[:upper:]' | tail -1)"
+AFFINE_ALLOW_HEADERS="$(awk 'tolower($1) == "access-control-allow-headers:" {$1=""; sub(/^ /, ""); print}' "${AFFINE_PREFLIGHT_HEADERS}" | tr -d '\r' | tr '[:upper:]' '[:lower:]' | tail -1)"
+
+if { [ "${AFFINE_PREFLIGHT_CODE}" = "200" ] || [ "${AFFINE_PREFLIGHT_CODE}" = "204" ]; } &&
+  [ "${AFFINE_ALLOW_ORIGIN}" = "${AFFINE_ORIGIN}" ] &&
+  grep -F 'POST' >/dev/null 2>&1 <<<"${AFFINE_ALLOW_METHODS}" &&
+  grep -F 'content-type' >/dev/null 2>&1 <<<"${AFFINE_ALLOW_HEADERS}" &&
+  grep -F 'x-affine-version' >/dev/null 2>&1 <<<"${AFFINE_ALLOW_HEADERS}" &&
+  grep -F 'x-operation-name' >/dev/null 2>&1 <<<"${AFFINE_ALLOW_HEADERS}"; then
+  pass "AFFiNE accepts the native-client CORS preflight"
+else
+  fail "AFFiNE native-client CORS preflight failed with HTTP ${AFFINE_PREFLIGHT_CODE}; allow-origin=${AFFINE_ALLOW_ORIGIN:-missing}; allow-methods=${AFFINE_ALLOW_METHODS:-missing}; allow-headers=${AFFINE_ALLOW_HEADERS:-missing}; curl: $(tr '\n' ' ' <"${AFFINE_PREFLIGHT_ERR}")"
+fi
+rm -f "${AFFINE_PREFLIGHT_HEADERS}" "${AFFINE_PREFLIGHT_ERR}"
+
+AFFINE_GRAPHQL_HEADERS="$(mktemp "${TMPDIR:-/tmp}/affine-graphql-headers.XXXXXX")"
+AFFINE_GRAPHQL_BODY="$(mktemp "${TMPDIR:-/tmp}/affine-graphql-body.XXXXXX")"
+AFFINE_GRAPHQL_ERR="$(mktemp "${TMPDIR:-/tmp}/affine-graphql-curl.XXXXXX")"
+AFFINE_GRAPHQL_CODE="$(
+  curl -sS -X POST --max-time 20 \
+    -D "${AFFINE_GRAPHQL_HEADERS}" \
+    -o "${AFFINE_GRAPHQL_BODY}" \
+    -w '%{http_code}' \
+    -H "Origin: ${AFFINE_ORIGIN}" \
+    -H 'Content-Type: application/json' \
+    -H 'x-affine-version: 0.26.3' \
+    -H 'x-operation-name: serverConfig' \
+    --data-binary '{"operationName":"serverConfig","query":"query serverConfig { serverConfig { baseUrl } }","variables":{}}' \
+    "https://${AFFINE_HOST}/graphql" 2>"${AFFINE_GRAPHQL_ERR}" || true
+)"
+AFFINE_GRAPHQL_ALLOW_ORIGIN="$(awk 'tolower($1) == "access-control-allow-origin:" {print $2}' "${AFFINE_GRAPHQL_HEADERS}" | tr -d '\r' | tail -1)"
+if [ "${AFFINE_GRAPHQL_CODE}" = "200" ] &&
+  [ "${AFFINE_GRAPHQL_ALLOW_ORIGIN}" = "${AFFINE_ORIGIN}" ] &&
+  jq -e --arg base_url "https://${AFFINE_HOST}" '.data.serverConfig.baseUrl == $base_url' "${AFFINE_GRAPHQL_BODY}" >/dev/null 2>&1; then
+  pass "AFFiNE native client can discover https://${AFFINE_HOST}"
+else
+  fail "AFFiNE native-client serverConfig request failed with HTTP ${AFFINE_GRAPHQL_CODE}; allow-origin=${AFFINE_GRAPHQL_ALLOW_ORIGIN:-missing}; curl: $(tr '\n' ' ' <"${AFFINE_GRAPHQL_ERR}")"
+fi
+
+AFFINE_PRIVATE_CODE="$(
+  curl -sS -X POST --max-time 20 \
+    -D "${AFFINE_GRAPHQL_HEADERS}" \
+    -o "${AFFINE_GRAPHQL_BODY}" \
+    -w '%{http_code}' \
+    -H "Origin: ${AFFINE_ORIGIN}" \
+    -H 'Content-Type: application/json' \
+    -H 'x-affine-version: 0.26.3' \
+    -H 'x-operation-name: getWorkspaces' \
+    --data-binary '{"operationName":"getWorkspaces","query":"query getWorkspaces { workspaces { id } }","variables":{}}' \
+    "https://${AFFINE_HOST}/graphql" 2>"${AFFINE_GRAPHQL_ERR}" || true
+)"
+AFFINE_PRIVATE_ALLOW_ORIGIN="$(awk 'tolower($1) == "access-control-allow-origin:" {print $2}' "${AFFINE_GRAPHQL_HEADERS}" | tr -d '\r' | tail -1)"
+if [ "${AFFINE_PRIVATE_CODE}" = "200" ] &&
+  [ "${AFFINE_PRIVATE_ALLOW_ORIGIN}" = "${AFFINE_ORIGIN}" ] &&
+  jq -e '.data == null and .errors[0].extensions.status == 401 and .errors[0].extensions.type == "AUTHENTICATION_REQUIRED"' "${AFFINE_GRAPHQL_BODY}" >/dev/null 2>&1; then
+  pass "AFFiNE still denies unauthenticated workspace access"
+else
+  fail "AFFiNE did not return the expected authentication error for an anonymous workspace query; HTTP ${AFFINE_PRIVATE_CODE}; allow-origin=${AFFINE_PRIVATE_ALLOW_ORIGIN:-missing}; curl: $(tr '\n' ' ' <"${AFFINE_GRAPHQL_ERR}")"
+fi
+rm -f "${AFFINE_GRAPHQL_HEADERS}" "${AFFINE_GRAPHQL_BODY}" "${AFFINE_GRAPHQL_ERR}"
 
 note "Checking public callback hostnames"
 while read -r HOST CALLBACK_PATH MODE METHOD; do

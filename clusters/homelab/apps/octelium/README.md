@@ -3,8 +3,9 @@
 This app prepares a repo-owned Octelium client connector in the homelab.
 Octelium is the replacement path for human app access. App hostnames keep their
 existing `*.stinkyboi.com` names. Exact Cloudflare DNS records point those
-names at the public Cloudflare Tunnel, and Octelium `WEB` Services enforce
-browser login before proxying to the existing Istio app routes.
+names at the public Cloudflare Tunnel, and Octelium `WEB` Services proxy to the
+existing Istio app routes. All app Services enforce browser login except
+AFFiNE, which delegates authentication to AFFiNE for native-client support.
 
 The deployed Kubernetes pieces are:
 
@@ -46,6 +47,9 @@ The Octelium resource catalog for the external Octelium Cluster is
   `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
   `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the existing app
   hostnames such as `https://grafana.stinkyboi.com`.
+- `affine` is the only anonymous Octelium app Service. AFFiNE signup is closed
+  after bootstrap, and AFFiNE's own sessions protect workspace data while the
+  public transport supports the native client's `assets://.` origin.
 - Cordium genesis owns the package-managed `default.cordium` public `WEB`
   Service with primary hostname `cordium`; the catalog attaches its narrow
   access policy to the dedicated `homelab-cordium-user` instead of declaring a
@@ -71,7 +75,8 @@ service catalog, and workload credential are verified. The `nodeSelector` keeps
 the connector on Octelium dataplane nodes for smoke tests and future private
 upstreams. Public app traffic does not depend on this connector; it enters
 through `octelium-public`, reaches the Octelium ingress dataplane, and is
-authorized as clientless `WEB` traffic.
+authorized as clientless `WEB` traffic except for AFFiNE's reviewed anonymous
+transport.
 
 ## Activation And Cutover
 

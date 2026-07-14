@@ -16,8 +16,11 @@ platform state lives under `clusters/homelab/platform/<service>`. Register both
 through `IaC/live/argocd-apps/<name>` and deliver runtime changes through Argo
 CD rather than direct cluster mutation.
 
-Human application access uses Octelium clientless `WEB` Services. Reviewed
-callback hosts use the public Octelium tunnel with explicit path restrictions.
+Human application access normally uses Octelium clientless `WEB` Services.
+AFFiNE is the reviewed exception: its Octelium Service is anonymous so the
+stock native client can use AFFiNE's own login, while public signup remains
+disabled. Reviewed callback hosts use the public Octelium tunnel with explicit
+path restrictions.
 Tailscale is secondary LAN and egress infrastructure, not the primary app
 access plane. `cloudflared` loads its mounted hostname map only at pod startup,
 so every `octelium-public/configmap.yaml` routing change must also advance the

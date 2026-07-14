@@ -2,9 +2,10 @@
 
 AFFiNE runs as a self-hosted collaborative knowledge base at
 `https://affine.stinkyboi.com`. Public internet reachability terminates at the
-shared Cloudflare Tunnel, then Octelium requires an authenticated HUMAN
-clientless browser session before proxying the request through the Istio
-gateway. There is no unauthenticated Funnel route to the workload.
+shared Cloudflare Tunnel and passes through an anonymous Octelium `WEB` Service
+to the Istio gateway. AFFiNE owns end-user authentication. This exception to
+the normal clientless-login boundary is required because stock AFFiNE Desktop
+must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
 
 ## Runtime contract
 
@@ -35,10 +36,12 @@ gateway. There is no unauthenticated Funnel route to the workload.
 
 ## First login
 
-Open `https://affine.stinkyboi.com` through Octelium. AFFiNE allows signup so
-the first authenticated homelab user can complete the upstream admin bootstrap.
-After the intended accounts exist, set `auth.allowSignup` to `false` in
-`configmap.yaml` and roll the change through GitOps.
+Open `https://affine.stinkyboi.com` and sign in with an existing AFFiNE account,
+or enter that URL in AFFiNE Desktop's self-hosted connection dialog. Public
+signup is disabled because the intended accounts already exist. Re-enable it
+only for a time-bounded, reviewed account bootstrap and bump the Deployment's
+`homelab.rst.io/config-revision` annotation so the subPath-mounted config is
+loaded by a new pod.
 
 ## Validation
 
@@ -51,12 +54,20 @@ kubectl -n affine exec statefulset/affine-postgres -- \
 kubectl -n affine exec statefulset/affine-redis -- /bin/sh -ec \
   'redis-cli --no-auth-warning -a "$(cat /run/secrets/affine/REDIS_PASSWORD)" ping'
 curl -I https://affine.stinkyboi.com
+curl -sS -X OPTIONS -D - -o /dev/null \
+  -H 'Origin: assets://.' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type,x-affine-version,x-operation-name' \
+  https://affine.stinkyboi.com/graphql
 ```
 
 Expected results: the Argo CD Application is synced and healthy, both
 StatefulSets and the AFFiNE Deployment are ready, all four PVCs are bound, the
-`vector` extension exists, Redis returns `PONG`, and the public URL starts the
-Octelium clientless login flow instead of exposing AFFiNE anonymously.
+`vector` extension exists, Redis returns `PONG`, and the native-client CORS
+preflight returns `200` or `204` with `Access-Control-Allow-Origin: assets://.`.
+Unauthenticated users may reach AFFiNE's public shell and server-discovery API,
+but the e2e gate must receive `AUTHENTICATION_REQUIRED` for an anonymous
+workspace query before this route is considered safe.
 
 ## Backup, restore, and rollback
 
