@@ -168,6 +168,12 @@ the PVC, and an authenticated connection to the `n8n` database documented in
 `clusters/homelab/apps/n8n-postgres/README.md` before treating n8n as migrated
 to PostgreSQL.
 
+n8n startup probes use `/healthz`, while readiness and liveness use the
+database-aware `/healthz/readiness` endpoint. This distinction lets migrations
+finish during startup but replaces an n8n process whose PostgreSQL connection
+pool stays closed after a database interruption. A pod that is Ready while
+`/healthz/readiness` returns HTTP 503 is running stale probe configuration.
+
 n8n webhooks use the reviewed Octelium-public callback route at
 `https://n8n-webhook.stinkyboi.com`. After sync, verify the callback
 VirtualService and `octelium-public` tunnel exist, then check that the
@@ -177,6 +183,8 @@ webhook path prefixes:
 ```sh
 kubectl -n automation get virtualservice n8n-webhook-octelium
 kubectl -n octelium-public get deploy cloudflared
+kubectl -n automation exec deploy/n8n -c app -- \
+  node -e 'fetch("http://127.0.0.1:5678/healthz/readiness").then((response) => console.log(response.status))'
 curl -I https://n8n.stinkyboi.com/
 curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.stinkyboi.com/webhook/__missing__
 grep -i webhook /tmp/n8n-webhook-body.txt

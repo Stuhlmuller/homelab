@@ -100,14 +100,24 @@ controllers:
           limits:
             memory: 2Gi
         probes:
-          readiness:
+          startup:
             enabled: true
             custom: true
             spec:
               httpGet:
                 path: /healthz
                 port: 5678
-              failureThreshold: 6
+              failureThreshold: 60
+              periodSeconds: 5
+              timeoutSeconds: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz/readiness
+                port: 5678
+              failureThreshold: 3
               periodSeconds: 10
               timeoutSeconds: 5
           liveness:
@@ -115,7 +125,7 @@ controllers:
             custom: true
             spec:
               httpGet:
-                path: /healthz
+                path: /healthz/readiness
                 port: 5678
               failureThreshold: 3
               periodSeconds: 30

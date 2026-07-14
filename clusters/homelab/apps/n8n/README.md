@@ -70,6 +70,22 @@ Switching from the older SQLite-backed desired state does not automatically
 import rows from `/home/node/.n8n/database.sqlite`. Export workflows and
 credentials before rollout if the existing SQLite contents must be preserved.
 
+## Database-Aware Health Checks
+
+The startup probe uses `/healthz`, which confirms the n8n process is serving
+without terminating a legitimate long-running database migration. After
+startup succeeds, readiness and liveness use `/healthz/readiness`, which also
+checks database readiness. A PostgreSQL interruption therefore removes n8n
+from Service endpoints and, after three failed 30-second liveness checks,
+restarts n8n so it rebuilds a stale PostgreSQL connection pool. The init
+container waits for an authenticated database connection before the replacement
+process starts.
+
+Do not change the readiness or liveness probes back to `/healthz`: that endpoint
+can continue returning HTTP 200 after n8n has closed its database pool, leaving
+webhooks to return HTTP 503 `Database is not ready!` until the process is
+replaced.
+
 ## Validation
 
 ```sh
@@ -78,7 +94,7 @@ kubectl -n automation get deploy/n8n svc/n8n externalsecret/n8n-secrets
 kubectl -n automation get virtualservice/n8n-octelium virtualservice/n8n-webhook-octelium
 kubectl -n automation exec deploy/n8n -c app -- \
   node -e '
-    fetch("http://n8n.automation.svc.cluster.local:5678/healthz")
+    fetch("http://n8n.automation.svc.cluster.local:5678/healthz/readiness")
       .then((response) => console.log(response.status));
   '
 kubectl -n octelium-public get deploy cloudflared
@@ -92,8 +108,11 @@ callback host reaches n8n only under the webhook prefixes, and an unknown
 webhook path returns an n8n not-found response until a workflow registers that
 webhook. A generic 404 without n8n webhook text means the request may still be
 stopping at the Cloudflare tunnel catch-all or Istio gateway instead of the n8n
-backend. The internal health request from the n8n pod should print `200` after
-the AuthorizationPolicy syncs.
+backend. The internal database-aware health request from the n8n pod should
+print `200` after the AuthorizationPolicy syncs. HTTP 503 with `Database is not
+ready!` means the callback reached n8n but n8n cannot use PostgreSQL; inspect
+both pods and confirm the database-aware liveness probe replaces the stale n8n
+process.
 
 ## Rollback
 
