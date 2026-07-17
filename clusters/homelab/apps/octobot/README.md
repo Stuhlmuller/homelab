@@ -57,8 +57,6 @@ through Octelium.
 
 - Back up the PVCs before changing strategies, enabling real exchange accounts,
   or testing a major OctoBot upgrade.
-- The `retired-workload-cleanup` hook removes stale finance PVCs from the
-  retired trading runtime during Argo CD sync.
 - Prefer paper trading and backtesting until the configuration is proven.
 - Do not place exchange API keys in Git, Terragrunt inputs, Helm values,
   Kubernetes Secrets, or External Secrets without adding an explicit repository
