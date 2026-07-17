@@ -54,6 +54,7 @@ inputs = {
 
   sync_policy = {
     automated = {
+      enabled   = true
       prune     = true
       self_heal = true
     }
