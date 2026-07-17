@@ -58,26 +58,28 @@ policy`.
 
 ## Open Findings
 
-- **Status:** mitigation prepared; rollout validation pending
+- **Status:** mitigated; 30-minute rollout validation passed
 - **Area:** AFFiNE / storage I/O
 - **Evidence:** The operator reported that QNAP responsiveness returned several
   minutes after AFFiNE, its PostgreSQL database, and Redis were scaled to zero.
   The previous Redis desired state added two persistence paths that AFFiNE's
   official deployment does not use: AOF with an NFS `fsync` every second and an
   RDB snapshot after 1,000 changes in 60 seconds. AOF rewrites and RDB snapshots
-  can rewrite the full Redis dataset. The available Prometheus container
-  metrics showed low average AFFiNE traffic before shutdown but do not observe
-  node-level NFS RPCs, so the exact burst was not captured and causation is not
-  yet proven.
-- **Risk:** Redis persistence and PostgreSQL checkpoint/WAL activity can overlap
-  on the same four-disk QNAP RAID 5 export, creating latency far beyond their
-  modest average bandwidth. Scaling the whole app down avoids the pressure but
-  leaves AFFiNE unavailable.
-- **Next step:** roll out the repository mitigation that makes Redis ephemeral,
-  retains its former AOF claim read-only for rollback, and paces/compresses
-  PostgreSQL checkpoint/WAL work without disabling synchronous durability.
-  Re-enable AFFiNE through GitOps, observe NAS latency and node NFS RPC rates for
-  at least 30 minutes, and keep the change only if the QNAP remains responsive.
+  can rewrite the full Redis dataset. The deployed mitigation now uses a
+  node-local `emptyDir` for Redis, retains the former NFS claim read-only, and
+  paces/compresses PostgreSQL checkpoint and WAL writes. During the 2026-07-16
+  rollout, AFFiNE stayed synced, healthy, and restart-free for more than 30
+  minutes. Redis reported AOF and RDB persistence disabled. The `acer` NFS
+  client averaged about 4.2 RPC/s, 0.49 writes/s, and 0.27 commits/s with no
+  retransmissions; wired QNAP latency remained sub-millisecond with no packet
+  loss.
+- **Risk:** Redis is now ephemeral, so a pod or node restart can discard cache
+  entries and queued work. PostgreSQL remains durable on the QNAP and still
+  needs normal backup and latency monitoring.
+- **Next step:** keep the mitigation. Retain the former Redis claim until the
+  rollback window closes, then remove it through the normal GitOps workflow.
+  Track remaining operator-to-wired latency under the separate networking
+  finding below.
 
 - **Status:** open
 - **Area:** networking / storage access
@@ -97,18 +99,19 @@ policy`.
   that QNAP responsiveness returned after AFFiNE had been off for several
   minutes. That timing correlates the recovery with AFFiNE shutdown, but the
   fast wired NFS benchmark and slow router boundary still leave the original
-  gateway-path symptom unexplained.
+  gateway-path symptom unexplained. The 2026-07-16 AFFiNE rollout reproduced
+  mild cross-uplink jitter while NFS remained nearly idle: the Mac saw the QNAP
+  and `acer` rise together to roughly 40 ms while the router stayed near 4 ms,
+  but `acer` continued reaching the QNAP in about 0.2-0.3 ms. This isolates the
+  remaining symptom from AFFiNE's Redis and PostgreSQL storage activity.
 - **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
   homelab appears to hang even when the NAS and wired switch fabric are healthy.
-  Operator SMB access is slow, and live scale-to-zero state for AFFiNE and
-  OpenClaw intentionally drifts from repository desired state until the test is
-  completed.
-- **Next step:** first run the controlled AFFiNE storage mitigation and compare
-  router-to-wired latency while it is enabled and disabled. If the cross-boundary
-  symptom returns despite low NFS activity, inspect the router/AP-to-switch
-  uplink negotiation, utilization, error/drop counters, spanning-tree state,
-  patch cable, and switch ports. Restore OpenClaw separately so its known read
-  storm cannot overlap the AFFiNE test.
+  Operator SMB access can still be slow. OpenClaw remains off so its separate
+  read storm does not obscure this test.
+- **Next step:** inspect the router/AP-to-switch uplink negotiation, utilization,
+  error/drop counters, spanning-tree state, patch cable, and switch ports.
+  Restore OpenClaw separately so its known read storm cannot overlap the AFFiNE
+  test.
 
 - **Status:** open
 - **Area:** agent runtime / storage
