@@ -36,7 +36,7 @@ ready, but they must not be treated as production-ready until:
 
 ## Stateful Apps
 
-The current stateful set includes AFFiNE with PostgreSQL/pgvector, persistent
+The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral
 Redis, blob storage, and config state; Prometheus, Grafana, Deluge, media-postgres,
 n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium Enterprise package
 stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
@@ -44,6 +44,12 @@ Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
+
+AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
+`emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
+This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
+reaching the QNAP. PostgreSQL remains durable on NFS with WAL compression and
+checkpoint pacing; synchronous commit remains enabled.
 
 ## Source Files
 
