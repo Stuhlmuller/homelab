@@ -90,7 +90,7 @@ kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-app-dns.sh scripts/octelium-public-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
