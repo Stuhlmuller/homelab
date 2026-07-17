@@ -4,11 +4,14 @@
   "automerge": false,
   "packageRules": [
     {
-      "description": "Compass image updates are owned by Argo CD Image Updater.",
+      "description": "Image updates are owned by Argo CD Image Updater.",
       "matchManagers": ["helm-values"],
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["adinhodovic/compass"],
-      "matchFileNames": ["clusters/homelab/apps/compass/values.yaml"],
+      "matchPackageNames": ["adinhodovic/compass", "ghcr.io/n8n-io/n8n"],
+      "matchFileNames": [
+        "clusters/homelab/apps/compass/values.yaml",
+        "clusters/homelab/apps/n8n/values.yaml"
+      ],
       "enabled": false
     }
   ],
