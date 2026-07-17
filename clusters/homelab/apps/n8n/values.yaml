@@ -50,8 +50,8 @@ controllers:
     containers:
       app:
         image:
-          repository: docker.n8n.io/n8nio/n8n
-          tag: "2.30.6@sha256:efe735b31f5d4ed35a057a56d9a803e42f933a2b028b69b8462d9c4a7c90fe5c"
+          repository: ghcr.io/n8n-io/n8n
+          tag: "stable@sha256:efe735b31f5d4ed35a057a56d9a803e42f933a2b028b69b8462d9c4a7c90fe5c"
         env:
           TZ: America/Los_Angeles
           GENERIC_TIMEZONE: America/Los_Angeles
