@@ -58,6 +58,75 @@ policy`.
 
 ## Open Findings
 
+- **Status:** mitigation prepared; rollout validation pending
+- **Area:** AFFiNE / storage I/O
+- **Evidence:** The operator reported that QNAP responsiveness returned several
+  minutes after AFFiNE, its PostgreSQL database, and Redis were scaled to zero.
+  The previous Redis desired state added two persistence paths that AFFiNE's
+  official deployment does not use: AOF with an NFS `fsync` every second and an
+  RDB snapshot after 1,000 changes in 60 seconds. AOF rewrites and RDB snapshots
+  can rewrite the full Redis dataset. The available Prometheus container
+  metrics showed low average AFFiNE traffic before shutdown but do not observe
+  node-level NFS RPCs, so the exact burst was not captured and causation is not
+  yet proven.
+- **Risk:** Redis persistence and PostgreSQL checkpoint/WAL activity can overlap
+  on the same four-disk QNAP RAID 5 export, creating latency far beyond their
+  modest average bandwidth. Scaling the whole app down avoids the pressure but
+  leaves AFFiNE unavailable.
+- **Next step:** roll out the repository mitigation that makes Redis ephemeral,
+  retains its former AOF claim read-only for rollback, and paces/compresses
+  PostgreSQL checkpoint/WAL work without disabling synchronous durability.
+  Re-enable AFFiNE through GitOps, observe NAS latency and node NFS RPC rates for
+  at least 30 minutes, and keep the change only if the QNAP remains responsive.
+
+- **Status:** open
+- **Area:** networking / storage access
+- **Evidence:** Read-only checks on 2026-07-13 isolated the remaining NAS
+  slowness to the router/AP-to-wired-switch path. From the operator Mac,
+  `10.1.0.1` averaged about 4 ms while the QNAP and every wired Talos node
+  averaged roughly 600-1,100 ms. From `zimaboard-0`, the QNAP averaged 0.85 ms
+  and `zimaboard-1` averaged 0.62 ms, but the router averaged 271 ms. A 64 MiB
+  memory-only TCP transfer from the Wi-Fi operator Mac to a wired Talos node
+  took 70.4 seconds (about 7.6 Mbit/s), while a wired pod read an existing QNAP
+  file at 108 MB/s. Talos node NIC counters showed 1 Gbit/full-duplex links
+  without meaningful errors, and cluster NFS traffic was nearly idle after
+  OpenClaw stopped. AFFiNE,
+  AFFiNE PostgreSQL, and AFFiNE Redis were temporarily scaled to zero by an
+  explicit operator-requested `kubectl scale`; OpenClaw was also held at zero,
+  but the cross-uplink latency initially remained. The operator later reported
+  that QNAP responsiveness returned after AFFiNE had been off for several
+  minutes. That timing correlates the recovery with AFFiNE shutdown, but the
+  fast wired NFS benchmark and slow router boundary still leave the original
+  gateway-path symptom unexplained.
+- **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
+  homelab appears to hang even when the NAS and wired switch fabric are healthy.
+  Operator SMB access is slow, and live scale-to-zero state for AFFiNE and
+  OpenClaw intentionally drifts from repository desired state until the test is
+  completed.
+- **Next step:** first run the controlled AFFiNE storage mitigation and compare
+  router-to-wired latency while it is enabled and disabled. If the cross-boundary
+  symptom returns despite low NFS activity, inspect the router/AP-to-switch
+  uplink negotiation, utilization, error/drop counters, spanning-tree state,
+  patch cable, and switch ports. Restore OpenClaw separately so its known read
+  storm cannot overlap the AFFiNE test.
+
+- **Status:** open
+- **Area:** agent runtime / storage
+- **Evidence:** Before OpenClaw was stopped on 2026-07-13, `acer` sustained about
+  3,850 NFSv3 reads per second and 206 Mbit/s of receive traffic. Process-level
+  counters attributed roughly 33 MiB/s of physical reads to
+  `openclaw-gateway`; AFFiNE, PostgreSQL, Deluge, and other sampled NFS-mounted
+  containers were nearly idle. OpenClaw's read-only `memory status` command
+  timed out while this activity continued.
+- **Risk:** hot OpenClaw gateway state, memory indexing, or workspace scanning
+  on the QNAP-backed PVC can amplify storage pressure and obscure independent
+  network faults.
+- **Next step:** after fixing the router/switch uplink, reproduce the OpenClaw
+  load in a controlled window and identify which gateway state path is being
+  scanned. Keep durable agent state on the PVC, but move any rebuildable hot
+  index, cache, or watcher-heavy state to pod-local storage through reviewed
+  GitOps desired state if the read storm returns.
+
 - **Status:** open
 - **Area:** CI/CD identity
 - **Evidence:** a read-only IAM inspection on 2026-07-13 found that the live

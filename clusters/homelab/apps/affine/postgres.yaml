@@ -88,6 +88,22 @@ spec:
         - name: postgres
           image: pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
           imagePullPolicy: IfNotPresent
+          args:
+            # Keep synchronous durability, but reduce checkpoint frequency,
+            # spread checkpoint writes, and compress full-page WAL images on
+            # the latency-sensitive QNAP NFS volume.
+            - -c
+            - checkpoint_timeout=15min
+            - -c
+            - checkpoint_completion_target=0.9
+            - -c
+            - wal_compression=on
+            - -c
+            - log_checkpoints=on
+            - -c
+            - track_io_timing=on
+            - -c
+            - track_wal_io_timing=on
           env:
             - name: POSTGRES_USER
               value: affine

@@ -24,7 +24,7 @@ metadata:
   namespace: affine
   annotations:
     argocd.argoproj.io/sync-wave: "0"
-    checkov.io/skip1: CKV_K8S_22=Redis needs writable runtime paths for its generated config and append-only persistence.
+    checkov.io/skip1: CKV_K8S_22=Redis needs writable runtime paths; durable AFFiNE state stays in PostgreSQL and blob storage.
     checkov.io/skip2: CKV_K8S_43=The image is pinned to an immutable linux-amd64 digest.
     checkov.io/skip3: CKV2_K8S_6=affine-redis is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
   labels:
@@ -75,9 +75,8 @@ spec:
               protected-mode yes
               port 6379
               dir /data
-              appendonly yes
-              appendfsync everysec
-              save 60 1000
+              appendonly no
+              save ""
               requirepass ${password}
               EOF
               exec redis-server /tmp/redis.conf
@@ -121,12 +120,22 @@ spec:
               mountPath: /run/secrets/affine
               readOnly: true
             - name: data
+              mountPath: /retained-data
+              readOnly: true
+            - name: runtime-data
               mountPath: /data
       volumes:
         - name: auth
           secret:
             secretName: affine-secrets
+        # AFFiNE's official deployment treats Redis as ephemeral. Keep Redis
+        # writes off NFS; PostgreSQL remains the durable source of truth.
+        - name: runtime-data
+          emptyDir:
+            sizeLimit: 256Mi
   volumeClaimTemplates:
+    # Retain and mount the former AOF claim read-only for rollback. Keeping the
+    # template avoids an immutable StatefulSet replacement during this change.
     - metadata:
         name: data
         annotations:
