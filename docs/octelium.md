@@ -340,12 +340,13 @@ curl -sS \
   https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
 ```
 
-The tunnel transport is pinned to QUIC in `octelium-public`; if
+The `octelium-public` tunnel uses automatic transport selection: QUIC is
+preferred, with HTTP/2 fallback when UDP/7844 is unavailable. If
 `kubectl -n istio-system logs deploy/istio-ingressgateway` shows
 `POST /octelium.api.main.user.v1.MainService/Connect` ending with
-`DR http2.remote_reset` after roughly 125 seconds, treat that as a tunnel
-transport regression rather than an Octelium login failure. Keep UDP/7844
-allowed in the `cloudflared-egress` NetworkPolicy while QUIC is enabled.
+`DR http2.remote_reset` after roughly 125 seconds, the tunnel has likely fallen
+back to HTTP/2. Restore reliable UDP/7844 rather than forcing HTTP/2. Keep both
+UDP/7844 and TCP/7844 allowed in the `cloudflared-egress` NetworkPolicy.
 
 The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
 
