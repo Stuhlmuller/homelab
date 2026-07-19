@@ -17,11 +17,9 @@ env:
   OCTELIUM_NO_DNS: "true"
   OCTELIUM_TUNNEL_MODE: wireguard
   OCTELIUM_USE_SUDO: "false"
-  RECOVERY_REVISION: 20b6e809d81668b15f94ab723f987c93ac62305d
 
 jobs:
   grafana:
-    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on:
       - self-hosted
       - homelab-ci
@@ -97,111 +95,6 @@ jobs:
             kubectl -n monitoring logs "${pod}" --all-containers --previous --tail=200 || true
             echo "::endgroup::"
           done
-          EOF
-
-      - name: Disconnect Octelium
-        if: always()
-        run: bash scripts/ci/disconnect-octelium.sh
-
-  recover-octelium-public:
-    if: ${{ github.ref == 'refs/heads/codex/fix-cloudflared-transport-fallback' }}
-    runs-on: ubuntu-24.04
-    environment:
-      name: homelab-plan
-    env:
-      OCTELIUM_API_HOST_ALIAS: ""
-      OCTELIUM_READY_TIMEOUT_SECONDS: "90"
-    permissions:
-      contents: read
-    timeout-minutes: 20
-    steps:
-      - name: Check Out Repository
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
-        with:
-          persist-credentials: false
-
-      - name: Install Nix
-        # cachix/install-nix-action@v31
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
-        with:
-          enable_kvm: false
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Restore Nix Store Cache
-        # nix-community/cache-nix-action@v7
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
-        with:
-          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
-
-      - name: Verify Recovery Inputs
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: |
-          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
-          [[ "${RECOVERY_REVISION}" =~ ^([0-9a-f]{40}|main)$ ]] || { echo "recovery_revision must be a 40-character Git SHA or main."; exit 1; }
-
-      - name: Install Octelium Client
-        run: bash scripts/ci/install-octelium-client.sh
-
-      - name: Install Argo CD CLI
-        env:
-          ARGOCD_VERSION: 3.4.5
-          ARGOCD_SHA256: 23303f05a58c1e041324d5645b0f9d6ea338b16bbf32f4a24508f388fcf9f9c0
-        run: |
-          artifact="${RUNNER_TEMP}/argocd"
-          curl -fsSL "https://github.com/argoproj/argo-cd/releases/download/v${ARGOCD_VERSION}/argocd-linux-amd64" -o "${artifact}"
-          printf '%s  %s\n' "${ARGOCD_SHA256}" "${artifact}" | sha256sum --check -
-          chmod 0755 "${artifact}"
-          printf '%s\n' "${RUNNER_TEMP}" >>"${GITHUB_PATH}"
-
-      - name: Recover octelium-public Through Argo CD
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
-          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
-          KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
-        run: |
-          nix develop --command bash <<'EOF'
-          set -euo pipefail
-          cleanup() {
-            bash scripts/ci/disconnect-octelium.sh
-          }
-          trap cleanup EXIT
-
-          connected=false
-          for attempt in 1 2 3 4 5; do
-            export OCTELIUM_HOMEDIR="${RUNNER_TEMP}/octelium-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
-            if bash scripts/ci/connect-octelium.sh; then
-              connected=true
-              break
-            fi
-            bash scripts/ci/disconnect-octelium.sh || true
-          done
-          ${connected}
-          bash scripts/ci/install-kubeconfig.sh
-          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
-          kubectl --request-timeout=15s version
-          argocd app sync octelium-public \
-            --core \
-            --app-namespace argocd \
-            --revision "${RECOVERY_REVISION}" \
-            --dry-run \
-            --assumeYes \
-            --timeout 300
-          argocd app set octelium-public \
-            --core \
-            --app-namespace argocd \
-            --source-position 1 \
-            --revision "${RECOVERY_REVISION}"
-          argocd app sync octelium-public \
-            --core \
-            --app-namespace argocd \
-            --revision "${RECOVERY_REVISION}" \
-            --assumeYes \
-            --timeout 600
-          kubectl -n octelium-public rollout status deployment/cloudflared --timeout=5m
-          test "$(kubectl -n octelium-public get configmap octelium-public-cloudflared -o jsonpath='{.data.config\.yaml}' | awk '$1 == "protocol:" { print $2; exit }')" = auto
           EOF
 
       - name: Disconnect Octelium
