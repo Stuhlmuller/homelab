@@ -108,6 +108,9 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: homelab-plan
+    env:
+      OCTELIUM_API_HOST_ALIAS: ""
+      OCTELIUM_READY_TIMEOUT_SECONDS: "90"
     permissions:
       contents: read
     timeout-minutes: 20
@@ -166,7 +169,16 @@ jobs:
           }
           trap cleanup EXIT
 
-          bash scripts/ci/connect-octelium.sh
+          connected=false
+          for attempt in 1 2 3 4 5; do
+            export OCTELIUM_HOMEDIR="${RUNNER_TEMP}/octelium-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${attempt}"
+            if bash scripts/ci/connect-octelium.sh; then
+              connected=true
+              break
+            fi
+            bash scripts/ci/disconnect-octelium.sh || true
+          done
+          ${connected}
           bash scripts/ci/install-kubeconfig.sh
           curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
           kubectl --request-timeout=15s version
