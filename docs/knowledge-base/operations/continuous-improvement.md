@@ -103,13 +103,35 @@ policy`.
   mild cross-uplink jitter while NFS remained nearly idle: the Mac saw the QNAP
   and `acer` rise together to roughly 40 ms while the router stayed near 4 ms,
   but `acer` continued reaching the QNAP in about 0.2-0.3 ms. This isolates the
-  remaining symptom from AFFiNE's Redis and PostgreSQL storage activity.
+  remaining symptom from AFFiNE's Redis and PostgreSQL storage activity. On
+  2026-07-18 the Mac measured 30-60% packet loss to every wired Talos node and
+  the QNAP while the router remained at 0% loss. During the same incident,
+  public sites returned Cloudflare 524 errors and `cloudflared` repeatedly
+  failed QUIC handshakes with `no recent network activity`. The GitOps
+  mitigation now uses cloudflared automatic transport selection and permits
+  TCP/7844 so public HTTP traffic can fall back to HTTP/2. The emergency
+  rollout also exposed a circular recovery dependency: the local Kubernetes
+  API had 70-80% packet loss, the homelab GitHub Actions runner was offline,
+  and policy-bot could not approve the PR. A bounded GitHub-hosted recovery
+  attempt could not publish `kubernetes-api.ci` because authenticated Octelium
+  gRPC calls through Cloudflare lost their trailers, so no Argo CD operation
+  was submitted. A later 2026-07-18 sample deteriorated to 100% loss from the
+  Mac to `acer`, while the Xfinity gateway remained at 0% loss; the QNAP and
+  worker nodes still lost 60-80% of packets. The Mac's `en0` counters showed
+  no errors or collisions during the same interval, further isolating the
+  fault to the gateway-to-wired-segment path rather than the operator host.
 - **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
   homelab appears to hang even when the NAS and wired switch fabric are healthy.
-  Operator SMB access can still be slow. OpenClaw remains off so its separate
-  read storm does not obscure this test.
+  Operator SMB access can still be slow, and the same failure can block both
+  the normal PR approval path and remote GitOps recovery. OpenClaw remains off
+  so its separate read storm does not obscure this test.
 - **Next step:** inspect the router/AP-to-switch uplink negotiation, utilization,
   error/drop counters, spanning-tree state, patch cable, and switch ports.
+  Restore reliable UDP/7844 so long-lived Octelium gRPC streams remain on QUIC;
+  HTTP/2 fallback preserves basic public access but is not the preferred steady
+  state. Design and validate a least-privilege, repository-owned recovery path
+  that does not depend on policy-bot, the in-cluster runner, or the public
+  Octelium control path being healthy.
   Restore OpenClaw separately so its known read storm cannot overlap the AFFiNE
   test.
 
