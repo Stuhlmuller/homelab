@@ -115,7 +115,11 @@ policy`.
   and policy-bot could not approve the PR. A bounded GitHub-hosted recovery
   attempt could not publish `kubernetes-api.ci` because authenticated Octelium
   gRPC calls through Cloudflare lost their trailers, so no Argo CD operation
-  was submitted.
+  was submitted. A later 2026-07-18 sample deteriorated to 100% loss from the
+  Mac to `acer`, while the Xfinity gateway remained at 0% loss; the QNAP and
+  worker nodes still lost 60-80% of packets. The Mac's `en0` counters showed
+  no errors or collisions during the same interval, further isolating the
+  fault to the gateway-to-wired-segment path rather than the operator host.
 - **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
   homelab appears to hang even when the NAS and wired switch fabric are healthy.
   Operator SMB access can still be slow, and the same failure can block both
