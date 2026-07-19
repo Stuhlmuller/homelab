@@ -123,8 +123,8 @@ policy`.
 - **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
   homelab appears to hang even when the NAS and wired switch fabric are healthy.
   Operator SMB access can still be slow, and the same failure can block both
-  the normal PR approval path and remote GitOps recovery. OpenClaw remains off
-  so its separate read storm does not obscure this test.
+  the normal PR approval path and remote GitOps recovery. OpenClaw was restored
+  on 2026-07-19; its separate read-storm risk remains tracked below.
 - **Next step:** inspect the router/AP-to-switch uplink negotiation, utilization,
   error/drop counters, spanning-tree state, patch cable, and switch ports.
   Restore reliable UDP/7844 so long-lived Octelium gRPC streams remain on QUIC;
@@ -142,7 +142,14 @@ policy`.
   counters attributed roughly 33 MiB/s of physical reads to
   `openclaw-gateway`; AFFiNE, PostgreSQL, Deluge, and other sampled NFS-mounted
   containers were nearly idle. OpenClaw's read-only `memory status` command
-  timed out while this activity continued.
+  timed out while this activity continued. After OpenClaw was restored on
+  2026-07-19, its gateway stopped accepting loopback connections for 22 seconds:
+  Kubernetes recorded six readiness timeouts from 17:33:01-17:33:23 UTC, then
+  OpenClaw's health monitor released a stale `Memory Dreaming Promotion` session
+  and the gateway recovered at 17:33:27 UTC. The app now has an HTTP readiness
+  probe and a liveness probe that restarts the app container if a gateway stall
+  persists, while the existing proxy readiness probe continues to withdraw the
+  endpoint promptly.
 - **Risk:** hot OpenClaw gateway state, memory indexing, or workspace scanning
   on the QNAP-backed PVC can amplify storage pressure and obscure independent
   network faults.
@@ -150,7 +157,21 @@ policy`.
   load in a controlled window and identify which gateway state path is being
   scanned. Keep durable agent state on the PVC, but move any rebuildable hot
   index, cache, or watcher-heavy state to pod-local storage through reviewed
-  GitOps desired state if the read storm returns.
+  GitOps desired state if the read storm returns. Correlate any future liveness
+  restart with the gateway log, NFS counters, and the active memory job before
+  changing storage behavior.
+
+- **Status:** open
+- **Area:** agent runtime / sandboxing
+- **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
+  `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has
+  no Docker command or sandbox backend. The affected nested cron lanes failed
+  rather than falling back to the embedded backend.
+- **Risk:** non-main and scheduled agent work can fail even while the gateway
+  and Control UI remain healthy.
+- **Next step:** provide and document a supported sandbox backend or narrow the
+  sandbox policy deliberately. Do not silently disable the boundary without a
+  security review.
 
 - **Status:** open
 - **Area:** CI/CD identity

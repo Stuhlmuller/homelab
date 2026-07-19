@@ -332,6 +332,64 @@ controllers:
             memory: 2Gi
           limits:
             memory: 6Gi
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    const http = require("node:http");
+                    const request = http.get(
+                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
+                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
+                    );
+                    request.on("timeout", () => request.destroy());
+                    request.on("error", () => process.exit(1));
+              failureThreshold: 24
+              periodSeconds: 5
+              timeoutSeconds: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    const http = require("node:http");
+                    const request = http.get(
+                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
+                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
+                    );
+                    request.on("timeout", () => request.destroy());
+                    request.on("error", () => process.exit(1));
+              failureThreshold: 2
+              periodSeconds: 5
+              timeoutSeconds: 3
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    const http = require("node:http");
+                    const request = http.get(
+                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
+                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
+                    );
+                    request.on("timeout", () => request.destroy());
+                    request.on("error", () => process.exit(1));
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 3
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
