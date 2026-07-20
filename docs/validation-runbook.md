@@ -260,7 +260,7 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 | Missing Application module | Stop, fix the local `IaC/modules/argocd-application-kubernetes` module or explicitly document a temporary catalog fallback before applying. |
 | Dependency cycle | Stop, remove the cycle from Terragrunt dependencies before applying. |
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |
-| External DNS lookup failures from pods | Verify `platform-dns` is synced and CoreDNS forwards through `1.1.1.3` and `1.0.0.3`; do not manually patch the live CoreDNS `ConfigMap`. |
+| External DNS lookup failures from pods | Verify `platform-dns` is synced and CoreDNS forwards through `1.1.1.1` and `1.0.0.1`; confirm the upstream answer is not a sinkhole response such as `0.0.0.0`; do not manually patch the live CoreDNS `ConfigMap`. |
 | Missing AWS SSM parameter | Create the parameter outside the repo, then re-sync the owning ExternalSecret. |
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |

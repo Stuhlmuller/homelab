@@ -83,6 +83,17 @@ kubectl kustomize clusters/homelab/apps/argocd-image-updater
 rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-image-updater/imageupdater.yaml
 ```
 
+For `platform-dns` changes, render the overlay and compare upstream answers
+before rollout. After Argo CD syncs, verify CoreDNS contains the intended
+resolvers and a workload pod receives a public answer rather than a sinkhole:
+
+```sh
+kubectl kustomize clusters/homelab/platform/dns
+dig +short A iptorrents.com @1.1.1.1
+kubectl -n kube-system get configmap coredns -o yaml
+kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
+```
+
 ## Octelium Cutover Checks
 
 Before running `octops init`, validate the self-hosted Cluster prerequisites:
