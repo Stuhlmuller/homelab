@@ -58,6 +58,25 @@ policy`.
 
 ## Open Findings
 
+- **Status:** mitigated for `media-postgres`; open for the other PostgreSQL workloads
+- **Area:** storage / database recovery
+- **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
+  failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
+  `media-postgres` remained in crash recovery longer than its liveness window,
+  so kubelet repeatedly terminated it with exit code 137 before it could become
+  ready. Prowlarr then returned PostgreSQL connection-refused errors while Argo
+  CD still reported the app healthy. The QNAP NFS exports and RPC services were
+  reachable when checked after the initial stall. The repository now gives
+  `media-postgres` a 30-minute startup window and a 120-second termination grace
+  period.
+- **Risk:** `affine-postgres`, `n8n-postgres`, and `octelium-postgres` retain the
+  same readiness/liveness-only probe pattern and can enter equivalent recovery
+  loops after another shared-storage stall.
+- **Next step:** validate the `media-postgres` rollout and recovery, inspect QNAP
+  pool, disk, and network history for the incident window, then add equivalent
+  recovery-aware startup behavior to the remaining PostgreSQL StatefulSets in
+  separately reviewed workload changes.
+
 - **Status:** mitigated; 30-minute rollout validation passed
 - **Area:** AFFiNE / storage I/O
 - **Evidence:** The operator reported that QNAP responsiveness returned several
