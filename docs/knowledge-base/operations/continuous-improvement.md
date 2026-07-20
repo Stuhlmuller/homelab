@@ -58,6 +58,25 @@ policy`.
 
 ## Open Findings
 
+- **Status:** open; alert semantics fixed, scrape failure unresolved
+- **Area:** observability / kube-state-metrics
+- **Evidence:** Read-only checks on 2026-07-19 showed all four expected nodes
+  `Ready`, and the kube-state-metrics endpoint exported `kube_node_info` for
+  each node. Prometheus nevertheless reported the target as `up == 0`, spent
+  10.000 seconds on each scrape, and ingested zero samples. Both the minimum
+  and maximum target state were zero across the full 15-day retention window.
+  The previous Grafana inventory query used `or vector(0)`, converting this
+  telemetry outage into a false report that all four machines were missing.
+- **Risk:** kube-state-metrics-backed inventory, readiness, and pressure rules
+  cannot observe Kubernetes node state while the scrape is unavailable. A
+  telemetry failure can conceal a real node problem if it is not alerted
+  separately.
+- **Next step:** The Grafana rules now alert directly on kube-state-metrics
+  availability and only evaluate expected hardware inventory while that scrape
+  is healthy. Separately measure the Prometheus-to-exporter path and determine
+  whether the 10-second deadline, exporter payload, or ambient-mesh transport
+  prevents the scrape from completing before changing the scrape configuration.
+
 - **Status:** fixed
 - **Area:** networking / DNS
 - **Evidence:** Read-only checks on 2026-07-19 showed that the configured

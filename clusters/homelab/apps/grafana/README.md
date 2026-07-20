@@ -122,8 +122,11 @@ The provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
+- Kube-state-metrics unavailable for 5 minutes. This alert owns telemetry
+  failures that would otherwise make the Kubernetes node rules return no data.
 - Expected homelab hardware node inventory missing for 5 minutes. The current
-  expected nodes are `acer`, `zimaboard-0`, `zimaboard-1`, and `zimaboard-2`.
+  expected nodes are `acer`, `zimaboard-0`, `zimaboard-1`, and `zimaboard-2`;
+  this rule only evaluates while kube-state-metrics is successfully scraped.
 - Kubernetes node `Ready` condition failures for 5 minutes.
 - Kubernetes node `MemoryPressure`, `DiskPressure`, `PIDPressure`, or
   `NetworkUnavailable` conditions for 5 minutes.
