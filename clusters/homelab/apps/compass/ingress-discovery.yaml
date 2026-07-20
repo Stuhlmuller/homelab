@@ -95,6 +95,34 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: compass-discovery-dispatcharr
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Dispatcharr
+    compass.adinhodovic.com/urls: "Dispatcharr=https://dispatcharr.stinkyboi.com"
+    compass.adinhodovic.com/description: IPTV stream and EPG manager reached through the Octelium app access plane.
+    compass.adinhodovic.com/icon: lucide:radio-tower
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: media,iptv
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: dispatcharr.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: compass-discovery-grafana
   namespace: monitoring
   labels:

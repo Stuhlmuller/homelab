@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: dispatcharr-postgres
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: dispatcharr-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: media
+      ports:
+        - protocol: TCP
+          port: 5432

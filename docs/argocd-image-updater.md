@@ -14,6 +14,10 @@ or raw manifests:
   PostgreSQL 16, and Redis `8.2` until their stateful upgrade paths are
   reviewed.
 - `deluge`: BusyBox, Gluetun, and Deluge containers.
+- `dispatcharr`: Dispatcharr web and Celery containers plus the Redis sidecar.
+  The dedicated PostgreSQL manifest remains review-pinned because this
+  multi-source Application uses its Image Updater write-back target for Helm
+  values.
 - `litellm`: LiteLLM database container.
 - `media-postgres`: PostgreSQL StatefulSet image.
 - `n8n-postgres`: n8n PostgreSQL StatefulSet image.

@@ -79,6 +79,10 @@ roles need identity-based KMS permissions for both keys.
   and adoptable only as an OpenTofu state tombstone because the production
   policy rejects SSM parameter deletion. Remove it only with a reviewed
   repository-owned state and secret-retirement workflow.
+- Dispatcharr's dedicated PostgreSQL password is generated at
+  `/homelab/media-postgres/dispatcharr-app-password` and rendered by
+  `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
+  remain operator-configured and must not be committed.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token

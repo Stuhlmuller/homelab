@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dispatcharr-postgres
+  namespace: media
+  labels:
+    app.kubernetes.io/name: dispatcharr-postgres
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: dispatcharr-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

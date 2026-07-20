@@ -76,10 +76,10 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `grafana`,
-  `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
-  `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
-  such as `https://grafana.stinkyboi.com`.
+- Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
+  `grafana`, `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
+  `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the existing app
+  hostnames, such as `https://grafana.stinkyboi.com`.
 - The `affine` Service alone sets `isAnonymous: true`. AFFiNE Desktop uses a
   native `assets://.` origin and must directly reach its server-discovery,
   login, GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled
