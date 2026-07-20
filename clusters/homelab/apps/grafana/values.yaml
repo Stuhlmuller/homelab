@@ -34,7 +34,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "13"
+  homelab.rst.io/alerting-provisioning-version: "14"
 plugins:
   - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
@@ -1103,6 +1103,81 @@ alerting:
         folder: Homelab
         interval: 1m
         rules:
+          - uid: homelab-kube-state-metrics-down
+            title: Kube-state-metrics scrape unavailable
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: max(up{job="kube-state-metrics"}) or vector(0)
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: Kube-state-metrics scrape health
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: Prometheus cannot scrape kube-state-metrics.
+              description: Node inventory, readiness, and pressure alerts require kube-state-metrics. Restore this scrape before interpreting those rules as healthy.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/architecture/cluster-topology.md
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              node_scope: telemetry
           - uid: homelab-expected-node-missing
             title: Homelab expected hardware node missing
             condition: C
@@ -1117,7 +1192,16 @@ alerting:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: count(kube_node_info{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2"}) or vector(0)
+                  expr: |
+                    count(
+                      count by (node) (
+                        kube_node_info{node=~"acer|zimaboard-0|zimaboard-1|zimaboard-2"}
+                      )
+                    )
+                    and on()
+                    (
+                      max(up{job="kube-state-metrics"}) == 1
+                    )
                   instant: true
                   intervalMs: 1000
                   legendFormat: Expected homelab hardware nodes
@@ -1167,7 +1251,7 @@ alerting:
                   maxDataPoints: 43200
                   refId: C
                   type: threshold
-            noDataState: Alerting
+            noDataState: OK
             execErrState: Alerting
             for: 5m
             annotations:

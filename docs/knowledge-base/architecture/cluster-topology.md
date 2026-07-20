@@ -23,6 +23,12 @@ and kubelet/cAdvisor metrics for inventory count, Kubernetes readiness,
 pressure conditions, and workload CPU/memory use against reported machine
 capacity.
 
+Kube-state-metrics availability has a dedicated critical alert. The expected
+hardware inventory rule only evaluates while that scrape is healthy, so a
+telemetry outage cannot be misreported as four missing machines. The dedicated
+alert also makes it explicit that the kube-state-metrics-backed readiness and
+pressure rules have no current data.
+
 Update the Grafana alert regex and expected count in the same change that adds,
 removes, or renames a node.
 
