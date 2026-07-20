@@ -54,15 +54,13 @@ checkpoint pacing; synchronous commit remains enabled.
 `affine-postgres` was fenced at zero replicas during the first phase of the
 2026-07-20 stale-lock recovery; live validation confirmed the pod was absent
 and its retained PVC stayed bound. The second phase declares that claim as an
-early Argo CD resource and uses the idempotent
+early Argo CD resource and used the idempotent
 `affine-postgres-stale-lock-recovery-20260720` Sync hook to remove only
-`postmaster.pid` before Argo CD restores one replica. Argo recreates a failed
-hook before retrying. A successful run writes a durable completion marker on
-the PVC, so later retries cannot remove the live server's lock; a fresh claim
-safely skips removal and preserves the from-scratch apply path. The restored
-pod tolerates 30 minutes of startup or liveness failures and uses a 120-second
-termination grace period. Remove the one-shot hook after recovery validation
-passes.
+`postmaster.pid` before Argo CD restored one replica. The hook wrote a durable
+completion marker on the PVC, PostgreSQL completed crash recovery, and live
+validation passed with zero pod restarts. The incident-only hook is now removed
+from desired state, while the explicit retained claim, 30-minute startup and
+liveness windows, and 120-second termination grace remain.
 
 `media-postgres` protects NFS-backed crash recovery with a 30-minute startup
 probe and a 120-second termination grace period. Readiness still requires
