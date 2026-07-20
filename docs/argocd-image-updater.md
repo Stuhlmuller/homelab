@@ -10,7 +10,7 @@ container image that this repository declares directly in workload Helm values
 or raw manifests:
 
 - `affine`: AFFiNE server/migration init container, pgvector PostgreSQL, and
-  Redis images; updates remain within AFFiNE `0.26`, pgvector `0.8` on
+  Redis images; updates remain within AFFiNE `0.27`, pgvector `0.8` on
   PostgreSQL 16, and Redis `8.2` until their stateful upgrade paths are
   reviewed.
 - `deluge`: BusyBox, Gluetun, and Deluge containers.

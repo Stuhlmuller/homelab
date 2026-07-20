@@ -48,7 +48,11 @@ history to PostgreSQL. Preserve both the PostgreSQL PVC and the n8n
 For AFFiNE, take a PostgreSQL logical dump and coordinated NFS backup before
 rollback. Preserve the PostgreSQL, Redis, blob-storage, and config claims, and
 do not rotate `/homelab/affine/private-key`; changing that ECDSA key invalidates
-sessions and can make encrypted application data unreadable.
+sessions and can make encrypted application data unreadable. AFFiNE `0.27.0`
+removes legacy permission and subscription database structures during
+migration. Do not run `0.26.x` against a database migrated by `0.27`; restore
+the pre-upgrade PostgreSQL dump and coordinated blob/config backup before
+restoring the older image.
 
 n8n public webhook exposure is independent of its stored workflow data. Remove
 `n8n-webhook-octelium`, its `octelium-public` tunnel/DNS hostname, and the

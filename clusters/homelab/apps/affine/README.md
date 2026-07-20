@@ -9,7 +9,7 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
 
 ## Runtime contract
 
-- AFFiNE server: `ghcr.io/toeverything/affine:0.26.3`, one replica on port
+- AFFiNE server: `ghcr.io/toeverything/affine:0.27.0`, one replica on port
   `3010`, with the upstream `/info` health endpoint.
 - Database: dedicated PostgreSQL 16 plus pgvector, authenticated with
   `/homelab/affine/postgres-password` and persisted on a 20 Gi
@@ -36,10 +36,20 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
 - Database migrations: the digest-pinned AFFiNE image runs
   `scripts/self-host-predeploy.js` as an init container. The Deployment uses
   `Recreate`, so the previous server stops before the replacement pod migrates
-  the database and starts the new server.
-- Copilot: disabled. The current homelab LiteLLM catalog exposes a text model
-  but not AFFiNE's required embedding and image capabilities. Add the complete
-  model set and a file-backed secret contract before enabling it.
+  the database and starts the new server. The `0.27.0` migration adds BYOK,
+  auth-session, MCP-credential, and quota state while removing legacy
+  permission and subscription tables, so take a fresh PostgreSQL dump and
+  coordinated NFS backup before rollout.
+- Copilot and experimental BYOK: disabled. AFFiNE `0.27.0` exposes the BYOK
+  settings API expected by `0.27` clients, but the homelab keeps both features
+  off. The current LiteLLM catalog exposes a text model but not AFFiNE's
+  required embedding and image capabilities. Add the complete model set and a
+  file-backed secret contract before enabling either feature.
+- Configuration: non-secret server and indexer settings live in the mounted
+  `config.json`, matching the `0.27` preference for file-backed configuration.
+  Database, Redis, and signing-key values remain ExternalSecret-backed runtime
+  inputs supported by the upstream image. AFFiNE `0.27` interprets throttle
+  TTL values as milliseconds, so the committed one-minute windows use `60000`.
 - SMTP: not configured because the homelab does not own a shared SMTP provider.
   Do not add mail credentials to `config.json`; introduce SSM parameters and
   ExternalSecret mappings before enabling password-reset or invite delivery.
@@ -101,6 +111,7 @@ the `vector` extension exists, Redis returns `PONG` with AOF disabled and no RDB
 save in progress, PostgreSQL reports the committed NFS-aware settings, and the
 native-client CORS preflight returns `200` or `204` with
 `Access-Control-Allow-Origin: assets://.`.
+Only AFFiNE clients at version `0.26` or newer are supported by server `0.27`.
 Unauthenticated users may reach AFFiNE's public shell and server-discovery API,
 but the e2e gate must receive `AUTHENTICATION_REQUIRED` for an anonymous
 workspace query before this route is considered safe.
@@ -144,4 +155,7 @@ ephemeral: a pod or node restart clears caches and can discard queued work, so
 verify background jobs after recovery. The former Redis AOF claim is retained
 only as a rollback artifact while this mitigation is evaluated. Roll
 application code back through Git; never delete retained claims as part of a
-rollback.
+rollback. After the `0.27.0` database migration has run, do not roll application
+code back to `0.26.x` against the migrated database. Restore the pre-upgrade
+PostgreSQL dump and coordinated blob/config backup before restoring the older
+image.

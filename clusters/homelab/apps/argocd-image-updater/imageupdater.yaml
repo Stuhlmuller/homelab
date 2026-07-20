@@ -28,7 +28,7 @@ spec:
         - alias: affine
           imageName: ghcr.io/toeverything/affine
           commonUpdateSettings:
-            allowTags: regexp:^0\.26\.[0-9]+$
+            allowTags: regexp:^0\.27\.[0-9]+$
           manifestTargets:
             kustomize:
               name: ghcr.io/toeverything/affine
