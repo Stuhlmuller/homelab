@@ -112,6 +112,28 @@ policy`.
   windows, then add equivalent recovery-aware behavior to the remaining
   PostgreSQL StatefulSets in separately reviewed workload changes.
 
+- **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
+- **Area:** monitoring / PostgreSQL availability
+- **Evidence:** Read-only validation on 2026-07-20 found Prometheus reporting
+  `up{job="kube-state-metrics"} == 0` with a scrape `context deadline exceeded`,
+  even though the kube-state-metrics pod and EndpointSlice were ready and a
+  local port-forward returned metrics. Ztunnel recorded inbound HBONE
+  connections from the correctly identified Prometheus service account to the
+  kube-state-metrics pod timing out with zero bytes transferred. The new
+  `homelab-postgres-unavailable` Grafana rule therefore uses kubelet
+  `prober_probe_total` readiness counters, which live Prometheus queries
+  confirmed for `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
+  `octelium-postgres-0`. The healthy expression returned no series, while a
+  simulated missing pod returned a labeled alert instance.
+- **Risk:** Existing Grafana node, pod, Deployment, and PVC rules that depend on
+  kube-state-metrics can remain in `NoData/OK` until that scrape path is
+  restored. The generic Prometheus-target-down rule reports the failed target,
+  but it does not replace the missing workload telemetry.
+- **Next step:** diagnose and fix the cross-node ambient HBONE path through a
+  repository-owned Istio or workload rollout change, then verify
+  `up{job="kube-state-metrics"} == 1` and that the kube-state-metrics-backed
+  Grafana rules return live series.
+
 - **Status:** mitigated; 30-minute rollout validation passed
 - **Area:** AFFiNE / storage I/O
 - **Evidence:** The operator reported that QNAP responsiveness returned several
