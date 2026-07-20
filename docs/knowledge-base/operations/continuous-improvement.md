@@ -58,6 +58,22 @@ policy`.
 
 ## Open Findings
 
+- **Status:** fixed
+- **Area:** networking / DNS
+- **Evidence:** Read-only checks on 2026-07-19 showed that the configured
+  Cloudflare Family resolvers (`1.1.1.3` and `1.0.0.3`) returned `0.0.0.0` and
+  `::` for a required Prowlarr indexer while standard Cloudflare DNS returned
+  its public IPv4 addresses. Prowlarr general HTTPS egress remained healthy,
+  proving the connection refusal came from DNS sinkholing rather than TLS,
+  IPv6, or workload egress. `platform-dns` now uses `1.1.1.1` and `1.0.0.1`.
+- **Risk:** cluster DNS no longer receives Cloudflare Family malware and adult
+  category filtering. Silent category sinkholes are incompatible with required
+  media indexers and can present as application transport failures.
+- **Next step:** keep explicit public resolvers and monitor CoreDNS errors. If
+  category filtering is required later, introduce a reviewed allow/deny policy
+  with observable denial behavior instead of switching the shared resolver back
+  to an opaque sinkhole response.
+
 - **Status:** mitigated for `media-postgres`; open for the other PostgreSQL workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe

@@ -25,6 +25,10 @@ utility, not as an app, callback, or CI access path.
 | `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
 | `n8n-postgres` | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | external-secrets, platform-storage |
 
+`platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
+`1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
+sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
+
 `media-postgres` has a recovery-aware 30-minute startup probe and 120-second
 termination grace period so an NFS stall does not trap Prowlarr, Radarr, and
 Sonarr's shared database in a liveness restart loop.
