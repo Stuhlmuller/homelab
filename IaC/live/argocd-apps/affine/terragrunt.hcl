@@ -27,86 +27,95 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "affine"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "affine"
-  }
-
-  sources = [
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/affine"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      enabled   = true
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "3m"
+    metadata = {
+      name      = "affine"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
+
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "affine"
+      }
+
+      sources = [
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/affine"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "3m"
+          }
+        }
+      }
+
+      ignoreDifferences = [
+        {
+          group     = "apps"
+          kind      = "StatefulSet"
+          name      = "affine-postgres"
+          namespace = "affine"
+          jsonPointers = [
+            "/metadata/annotations",
+            "/spec/volumeClaimTemplates"
+          ]
+        },
+        {
+          group     = "apps"
+          kind      = "StatefulSet"
+          name      = "affine-redis"
+          namespace = "affine"
+          jsonPointers = [
+            "/metadata/annotations",
+            "/spec/volumeClaimTemplates"
+          ]
+        }
+      ]
+
+      info = [
+        {
+          name  = "url"
+          value = "https://affine.stinkyboi.com"
+        },
+        {
+          name  = "rollout"
+          value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, Redis, NFS, Istio, and Octelium are healthy"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
+        }
+      ]
+    }
   }
-
-  ignore_differences = [
-    {
-      group     = "apps"
-      kind      = "StatefulSet"
-      name      = "affine-postgres"
-      namespace = "affine"
-      json_pointers = [
-        "/metadata/annotations",
-        "/spec/volumeClaimTemplates"
-      ]
-    },
-    {
-      group     = "apps"
-      kind      = "StatefulSet"
-      name      = "affine-redis"
-      namespace = "affine"
-      json_pointers = [
-        "/metadata/annotations",
-        "/spec/volumeClaimTemplates"
-      ]
-    }
-  ]
-
-  info = [
-    {
-      name  = "url"
-      value = "https://affine.stinkyboi.com"
-    },
-    {
-      name  = "rollout"
-      value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, Redis, NFS, Istio, and Octelium are healthy"
-    },
-    {
-      name  = "storage"
-      value = "docs/storage-nfs.md"
-    }
-  ]
 }

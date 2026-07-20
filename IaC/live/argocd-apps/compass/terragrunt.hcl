@@ -24,75 +24,87 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "compass"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "monitoring"
-  }
-
-  sources = [
-    {
-      repo_url        = "ghcr.io/adinhodovic/charts"
-      chart           = "compass"
-      target_revision = "0.6.0"
-      helm = {
-        release_name = "compass"
-        value_files  = ["$values/clusters/homelab/apps/compass/values.yaml"]
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/compass"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "compass"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "ingress"
-      value = "Octelium target compass.homelab with private Istio SNI backend routing"
-    },
-    {
-      name  = "state"
-      value = "stateless Kubernetes service discovery dashboard"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "monitoring"
+      }
+
+      sources = [
+        {
+          repoURL        = "ghcr.io/adinhodovic/charts"
+          chart          = "compass"
+          path           = "."
+          targetRevision = "0.6.0"
+          helm = {
+            releaseName = "compass"
+            valueFiles  = ["$values/clusters/homelab/apps/compass/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          ref            = "values"
+          path           = "."
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/compass"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "ingress"
+          value = "Octelium target compass.homelab with private Istio SNI backend routing"
+        },
+        {
+          name  = "state"
+          value = "stateless Kubernetes service discovery dashboard"
+        }
+      ]
     }
-  ]
+  }
 }

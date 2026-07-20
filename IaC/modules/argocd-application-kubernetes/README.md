@@ -1,24 +1,15 @@
 # Argo CD Application via Kubernetes
 
-This module manages an Argo CD `Application` custom resource with the
-Kubernetes provider. It keeps application registration declarative without
-requiring a locally authenticated Argo CD API session.
+This module is a small policy wrapper around the Kubernetes provider's native
+`kubernetes_manifest` resource. Callers pass an Argo CD `Application` manifest
+using the same field names as the CRD instead of a second, module-specific
+schema.
 
-Use this module for private or core-only Argo CD installations where Terraform
-can reach the Kubernetes API but should not depend on an exposed Argo CD API
-server. The input shape intentionally mirrors the catalog `argocd-application`
-module so existing Terragrunt units can keep the same readable application
-definition.
+The wrapper retains the repository's required OpenTofu state and plan
+encryption, field-manager ownership, and computed-field normalization for
+metadata, destinations, and multi-source paths. Repository-owned source fields
+such as `targetRevision` remain declarative.
 
-The module includes a non-destructive `removed` block for the previous
-`argocd_application.this` resource address. The live homelab state has already
-been migrated to the Kubernetes manifest address, so this module does not carry
-a persistent import block that would prevent future brand-new Applications from
-being created normally.
-
-The Kubernetes provider validates the object returned by the API server after
-apply. Argo CD reserializes multi-source `spec.sources` entries, so the module
-marks that list as computed for Applications with more than one source while
-still sending the repository-owned source definitions from Terragrunt. Single
-source Applications keep `spec.sources` managed so target revision drift can be
-repaired declaratively.
+The non-destructive `removed` block preserves the completed migration from the
+old `argocd_application.this` resource address. The managed resource remains
+`kubernetes_manifest.this`, so simplifying the inputs does not move state.
