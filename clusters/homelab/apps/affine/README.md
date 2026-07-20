@@ -56,9 +56,25 @@ loaded by a new pod.
 
 ## Validation
 
+### Recovery phase 1: fenced
+
 ```sh
 kubectl kustomize clusters/homelab/apps/affine
 kubectl -n argocd get application affine
+kubectl -n affine get statefulset affine-postgres \
+  -o jsonpath='{.spec.replicas}{" "}{.status.currentReplicas}{"\n"}'
+kubectl -n affine get pod affine-postgres-0 --ignore-not-found
+kubectl -n affine get pvc data-affine-postgres-0
+```
+
+Expected phase-one results: Argo CD reports the Application synced, the
+StatefulSet prints desired replica count `0` with no current replica, the pod
+lookup prints nothing, and the retained PostgreSQL PVC remains `Bound`. Do not
+run the recovery hook until all four conditions hold.
+
+### Recovery phase 2: restored
+
+```sh
 kubectl -n affine get deploy,statefulset,pod,pvc,svc,externalsecret
 kubectl -n affine exec statefulset/affine-postgres -- \
   psql -U affine -d affine -c 'select extversion from pg_extension where extname = '\''vector'\'';'
@@ -77,9 +93,9 @@ curl -sS -X OPTIONS -D - -o /dev/null \
   https://affine.stinkyboi.com/graphql
 ```
 
-Expected results: the Argo CD Application is synced and healthy, both
-StatefulSets and the AFFiNE Deployment are ready, all four PVCs are bound, the
-`vector` extension exists, Redis returns `PONG` with AOF disabled and no RDB
+Expected post-recovery results: the Argo CD Application is synced and healthy,
+both StatefulSets and the AFFiNE Deployment are ready, all four PVCs are bound,
+the `vector` extension exists, Redis returns `PONG` with AOF disabled and no RDB
 save in progress, PostgreSQL reports the committed NFS-aware settings, and the
 native-client CORS preflight returns `200` or `204` with
 `Access-Control-Allow-Origin: assets://.`.
