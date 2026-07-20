@@ -37,6 +37,7 @@ override.tf.json
 terraform.rc
 
 .terragrunt-cache/
+.direnv/
 .DS_Store
 .pytest_cache/
 __pycache__/
