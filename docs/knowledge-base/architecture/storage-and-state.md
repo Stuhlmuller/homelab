@@ -51,11 +51,12 @@ This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
 reaching the QNAP. PostgreSQL remains durable on NFS with WAL compression and
 checkpoint pacing; synchronous commit remains enabled.
 
-`affine-postgres` tolerates 30 minutes of startup or liveness failures and uses
-a 120-second termination grace period. Its single-replica container startup
-removes a stale `postmaster.pid` from an already-terminated predecessor so an
-NFS interruption cannot leave the database in a permission-denied crash loop.
-The PVC remains retained and is never recreated as part of this recovery path.
+`affine-postgres` is intentionally fenced at zero replicas during the first
+phase of the 2026-07-20 stale-lock recovery; that phase does not modify its
+retained PVC. After Argo CD confirms the old pod is absent, a separately
+reviewed repository-owned hook can remove only `postmaster.pid` before restoring
+one replica. The restored pod tolerates 30 minutes of startup or liveness
+failures and uses a 120-second termination grace period.
 
 `media-postgres` protects NFS-backed crash recovery with a 30-minute startup
 probe and a 120-second termination grace period. Readiness still requires

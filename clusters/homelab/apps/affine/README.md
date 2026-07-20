@@ -18,10 +18,10 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
   timing is enabled for post-rollout verification. Synchronous commit remains
   enabled; the tuning does not trade committed database durability for speed.
   Startup and liveness failures tolerate a 30-minute QNAP recovery window, and
-  shutdown receives 120 seconds to finish. Before each new container instance,
-  the single-replica StatefulSet removes a stale `postmaster.pid` left by an
-  already-terminated predecessor so an interrupted NFS shutdown cannot trap the
-  database in a permission-denied crash loop.
+  shutdown receives 120 seconds to finish. During the 2026-07-20 incident, the
+  StatefulSet is intentionally fenced at zero replicas until the old pod is
+  confirmed absent and a separate repository-owned recovery hook clears its
+  stale `postmaster.pid` before restoring one replica.
 - Cache and jobs: dedicated authenticated Redis 8.2 with AOF and RDB
   persistence disabled, matching AFFiNE's official deployment model. Redis
   runtime files use a 256 Mi node-local `emptyDir`, so cache and queue churn
@@ -94,12 +94,18 @@ failed checks, but kubelet allows up to 30 minutes before restarting the
 container. This favors recovery in place because killing PostgreSQL while its
 NFS volume is stalled forces crash recovery and can leave `postmaster.pid`
 behind. If a restart is eventually required, kubelet allows 120 seconds for a
-clean shutdown; the next container removes only that stale lock file before
-running the official PostgreSQL entrypoint.
+clean shutdown.
+
+Recovery from the 2026-07-20 stale-lock incident is intentionally staged. Phase
+1 sets the StatefulSet to zero replicas and does not modify the PVC. After Argo
+CD confirms `affine-postgres-0` is absent, phase 2 may clear only
+`pgdata/postmaster.pid` with a repository-owned hook and then restore one
+replica. Never force-delete the pod or remove the lock while an old node could
+still run PostgreSQL against the NFS volume.
 
 After an interruption, confirm that `affine-postgres-0` becomes ready without a
 growing restart count and that its logs reach `database system is ready to
-accept connections`. Repeated NFS timeouts or a lock-removal failure means the
+accept connections`. Repeated NFS timeouts or a recovery-hook failure means the
 QNAP export is still unhealthy; inspect the NAS pool, disks, and wired network
 path before retrying a rollout. Preserve the PostgreSQL PVC throughout
 recovery.
