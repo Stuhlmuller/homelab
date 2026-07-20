@@ -56,13 +56,12 @@ inputs = {
 
       syncPolicy = {
         automated = {
-          allowEmpty = false
+          allowEmpty = true
           enabled    = true
           prune      = true
           selfHeal   = true
         }
         syncOptions = [
-          "CreateNamespace=true",
           "ServerSideApply=true"
         ]
         retry = {
@@ -78,7 +77,7 @@ inputs = {
       info = [
         {
           name  = "purpose"
-          value = "one-shot cleanup for stale Grafana alert rules after alert provisioning drift"
+          value = "retirement tombstone that prunes the completed Grafana alert cleanup resources"
         }
       ]
     }
