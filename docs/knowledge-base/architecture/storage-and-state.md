@@ -51,6 +51,12 @@ This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
 reaching the QNAP. PostgreSQL remains durable on NFS with WAL compression and
 checkpoint pacing; synchronous commit remains enabled.
 
+`media-postgres` protects NFS-backed crash recovery with a 30-minute startup
+probe and a 120-second termination grace period. Readiness still requires
+`pg_isready`, so Prowlarr, Radarr, and Sonarr cannot reach PostgreSQL until
+recovery completes. See `clusters/homelab/apps/media-postgres/README.md` for the
+failure mode and operator response.
+
 ## Source Files
 
 - `docs/storage-nfs.md`

@@ -27,6 +27,19 @@ UID/GID 65534 because the QNAP NFS export squashes writes to its anonymous user
 and denies `chown`; PostgreSQL requires the server process to own the data
 directory.
 
+## Recovery Probes
+
+The startup probe allows PostgreSQL up to 30 minutes to finish crash recovery
+before Kubernetes enables its liveness and readiness probes. This prevents a
+slow NFS recovery from becoming a restart loop where the liveness probe kills
+PostgreSQL before it can accept connections. The readiness probe still removes
+the database from the Service until `pg_isready` succeeds.
+
+The pod also has a 120-second termination grace period so PostgreSQL has more
+time to finish a fast shutdown without being forcibly killed. If startup
+recovery reaches the 30-minute limit, verify QNAP and NFS health before changing
+the probe thresholds or rolling dependent applications.
+
 ## Databases
 
 The init script creates the logical databases that Servarr expects:
