@@ -34,9 +34,7 @@ metadata:
     app.kubernetes.io/part-of: homelab-productivity
 spec:
   serviceName: affine-postgres
-  # Recovery phase 1: keep the only PostgreSQL writer stopped until the
-  # repository-owned recovery hook clears the stale lock in phase 2.
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: affine-postgres

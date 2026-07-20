@@ -74,8 +74,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** recovery fenced in desired state for `affine-postgres`, partially
-  mitigated for `media-postgres`, and open for the other PostgreSQL workloads
+- **Status:** restore prepared for `affine-postgres`, partially mitigated for
+  `media-postgres`, and open for the other PostgreSQL workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -89,20 +89,24 @@ policy`.
   nodes. `media-postgres`, `n8n-postgres`, and `octelium-postgres` recovered
   after kubelet restarts, but `affine-postgres` entered more than 130 restarts
   and then failed to open `postmaster.pid` with `Permission denied`. AFFiNE's
-  first recovery phase now sets the StatefulSet to zero replicas without
-  modifying its PVC. The restore configuration tolerates 30 minutes of startup
-  or liveness failures and grants 120 seconds for shutdown.
+  first recovery phase set the StatefulSet to zero replicas without modifying
+  its PVC; Argo CD then reported the Application synced and healthy, the pod was
+  absent, and the retained claim remained bound. The second phase uses a
+  repository-owned, early-wave Sync hook to remove only the fenced stale lock
+  before restoring one replica. Argo recreates a failed hook before retrying. A
+  completion marker on the declared PostgreSQL claim makes later runs read-only
+  after the first successful recovery, and a fresh claim safely skips removal.
+  The restore configuration tolerates 30 minutes of startup or liveness
+  failures and grants 120 seconds for shutdown.
 - **Risk:** `media-postgres` still has a short post-start liveness window, while
   `n8n-postgres` and `octelium-postgres` retain the readiness/liveness-only probe
   pattern. Another shared-storage stall can still restart those databases and
-  lengthen recovery. AFFiNE remains unavailable until the fencing phase is
-  applied and its separate recovery hook safely restores the replica.
-- **Next step:** merge the AFFiNE fencing phase and confirm its pod is absent,
-  then use a separately reviewed repository-owned hook to remove only the stale
-  lock before restoring one replica. Validate that rollout and recovery, inspect
-  QNAP pool, disk, and network history for both incident windows, then add
-  equivalent recovery-aware behavior to the remaining PostgreSQL StatefulSets
-  in separately reviewed workload changes.
+  lengthen recovery. AFFiNE remains unavailable until the second phase safely
+  restores the replica and passes its database and application checks.
+- **Next step:** merge and validate the AFFiNE restore, then remove its one-shot
+  recovery hook from desired state. Inspect QNAP pool, disk, and network history
+  for both incident windows, then add equivalent recovery-aware behavior to the
+  remaining PostgreSQL StatefulSets in separately reviewed workload changes.
 
 - **Status:** mitigated; 30-minute rollout validation passed
 - **Area:** AFFiNE / storage I/O
