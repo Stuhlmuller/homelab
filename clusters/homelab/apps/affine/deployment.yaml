@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        homelab.rst.io/config-revision: "2"
+        homelab.rst.io/config-revision: "3"
       labels:
         app.kubernetes.io/name: affine
         app.kubernetes.io/component: server
@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: migration
-          image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
+          image: ghcr.io/toeverything/affine:0.27.0@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -74,14 +74,6 @@ spec:
                 secretKeyRef:
                   name: affine-secrets
                   key: AFFINE_PRIVATE_KEY
-            - name: AFFINE_SERVER_EXTERNAL_URL
-              value: https://affine.stinkyboi.com
-            - name: AFFINE_SERVER_HOST
-              value: affine.stinkyboi.com
-            - name: AFFINE_SERVER_HTTPS
-              value: "true"
-            - name: AFFINE_INDEXER_ENABLED
-              value: "false"
             - name: NODE_ENV
               value: production
             - name: NODE_OPTIONS
@@ -109,7 +101,7 @@ spec:
               readOnly: true
       containers:
         - name: affine
-          image: ghcr.io/toeverything/affine:0.26.3@sha256:0a082ab0b929139a34a6eb9d422ad107290bdf3fc2fc644036161f0d9f0ce239
+          image: ghcr.io/toeverything/affine:0.27.0@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f
           imagePullPolicy: IfNotPresent
           env:
             - name: DATABASE_PASSWORD
@@ -135,18 +127,6 @@ spec:
                 secretKeyRef:
                   name: affine-secrets
                   key: AFFINE_PRIVATE_KEY
-            - name: AFFINE_SERVER_EXTERNAL_URL
-              value: https://affine.stinkyboi.com
-            - name: AFFINE_SERVER_HOST
-              value: affine.stinkyboi.com
-            - name: AFFINE_SERVER_HTTPS
-              value: "true"
-            - name: AFFINE_SERVER_PORT
-              value: "3010"
-            - name: LISTEN_ADDR
-              value: 0.0.0.0
-            - name: AFFINE_INDEXER_ENABLED
-              value: "false"
             - name: DEPLOYMENT_TYPE
               value: selfhosted
             - name: DEPLOYMENT_PLATFORM

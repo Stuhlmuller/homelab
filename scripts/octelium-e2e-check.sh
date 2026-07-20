@@ -580,7 +580,7 @@ AFFINE_GRAPHQL_CODE="$(
     -w '%{http_code}' \
     -H "Origin: ${AFFINE_ORIGIN}" \
     -H 'Content-Type: application/json' \
-    -H 'x-affine-version: 0.26.3' \
+    -H 'x-affine-version: 0.27.0' \
     -H 'x-operation-name: serverConfig' \
     --data-binary '{"operationName":"serverConfig","query":"query serverConfig { serverConfig { baseUrl } }","variables":{}}' \
     "https://${AFFINE_HOST}/graphql" 2>"${AFFINE_GRAPHQL_ERR}" || true
@@ -601,7 +601,7 @@ AFFINE_PRIVATE_CODE="$(
     -w '%{http_code}' \
     -H "Origin: ${AFFINE_ORIGIN}" \
     -H 'Content-Type: application/json' \
-    -H 'x-affine-version: 0.26.3' \
+    -H 'x-affine-version: 0.27.0' \
     -H 'x-operation-name: getWorkspaces' \
     --data-binary '{"operationName":"getWorkspaces","query":"query getWorkspaces { workspaces { id } }","variables":{}}' \
     "https://${AFFINE_HOST}/graphql" 2>"${AFFINE_GRAPHQL_ERR}" || true

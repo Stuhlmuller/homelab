@@ -9,7 +9,7 @@ metadata:
 data:
   config.json: |
     {
-      "$schema": "https://github.com/toeverything/AFFiNE/releases/download/v0.26.3/config.schema.json",
+      "$schema": "https://github.com/toeverything/AFFiNE/releases/download/v0.27.0/config.schema.json",
       "server": {
         "name": "AFFiNE Homelab",
         "externalUrl": "https://affine.stinkyboi.com",
@@ -49,6 +49,7 @@ data:
       },
       "copilot": {
         "enabled": false,
+        "byok.enabled": false,
         "storage": {
           "provider": "fs",
           "bucket": "copilot",
@@ -57,14 +58,17 @@ data:
           }
         }
       },
+      "indexer": {
+        "enabled": false
+      },
       "throttle": {
         "enabled": true,
         "throttlers.default": {
-          "ttl": 60,
+          "ttl": 60000,
           "limit": 120
         },
         "throttlers.strict": {
-          "ttl": 60,
+          "ttl": 60000,
           "limit": 20
         }
       },
