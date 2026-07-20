@@ -15,7 +15,7 @@ controllers:
       operator-toolbox:
         image:
           repository: docker.io/nixos/nix
-          tag: "2.34.8@sha256:1a711b619c8a713eff32c3f8d8781b3b4d0130cb91c0a57f67e87abfeeb90b01"
+          tag: "2.35.1@sha256:377d4887aca98f0dfa12971c1ea6d6a625a435d8b610d4c95a436843da6fbfd1"
         env:
           NIXPKGS_REF: github:NixOS/nixpkgs/29916453413845e54a65b8a1cf996842300cd299
         command:
@@ -57,7 +57,7 @@ controllers:
       bootstrap-config:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.6.11@sha256:3814fb1f62f9cfc5944de088c5817c68c88b5d721feebe36420b666a90a61ce7"
+          tag: "2026.7.1@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c"
         resources:
           requests:
             cpu: 500m
@@ -275,7 +275,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.6.11@sha256:3814fb1f62f9cfc5944de088c5817c68c88b5d721feebe36420b666a90a61ce7"
+          tag: "2026.7.1@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -332,10 +332,68 @@ controllers:
             memory: 2Gi
           limits:
             memory: 6Gi
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    const http = require("node:http");
+                    const request = http.get(
+                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
+                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
+                    );
+                    request.on("timeout", () => request.destroy());
+                    request.on("error", () => process.exit(1));
+              failureThreshold: 24
+              periodSeconds: 5
+              timeoutSeconds: 3
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    const http = require("node:http");
+                    const request = http.get(
+                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
+                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
+                    );
+                    request.on("timeout", () => request.destroy());
+                    request.on("error", () => process.exit(1));
+              failureThreshold: 2
+              periodSeconds: 5
+              timeoutSeconds: 3
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - node
+                  - -e
+                  - |
+                    const http = require("node:http");
+                    const request = http.get(
+                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
+                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
+                    );
+                    request.on("timeout", () => request.destroy());
+                    request.on("error", () => process.exit(1));
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 3
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.6.11@sha256:3814fb1f62f9cfc5944de088c5817c68c88b5d721feebe36420b666a90a61ce7"
+          tag: "2026.7.1@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c"
         command:
           - python3
           - -u

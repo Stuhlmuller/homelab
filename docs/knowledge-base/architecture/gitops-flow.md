@@ -45,15 +45,18 @@ See [[runbooks/argocd-bootstrap]], [[runbooks/argocd-app-onboarding]], and
 ## Registration Pattern
 
 Argo CD Applications are registered through the repository-local
-`IaC/modules/argocd-application-kubernetes` module. For Git-backed sources that
-point at this repository, set `target_revision` to `main` unless a temporary
+`IaC/modules/argocd-application-kubernetes` module. Terragrunt passes a raw
+CRD-shaped `manifest`, so Application fields use their native names such as
+`repoURL`, `targetRevision`, and `syncPolicy`. For Git-backed sources that point
+at this repository, set `targetRevision` to `main` unless a temporary
 non-default branch is explicitly documented for testing or recovery.
 
-The module sends repo-owned `spec.sources` values but marks that list as
-computed for the Kubernetes provider because Argo CD normalizes multi-source
-Application entries after apply. Production logs can therefore include
-Terragrunt's internal `tofu apply` subprocess even though the operator entrypoint
-remains the Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
+The module delegates the CRD schema to `kubernetes_manifest` while retaining
+repository policy for encrypted state, field-manager ownership, and the small
+set of fields Argo CD or the API server normalizes. Repository-owned source
+fields remain declarative. Production logs can include Terragrunt's internal
+`tofu apply` subprocess even though the operator entrypoint remains the
+Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
 
 ## Dependency Rule
 

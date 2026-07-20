@@ -191,7 +191,9 @@ spec:
             github: {}
       images:
         - alias: n8n
-          imageName: docker.n8n.io/n8nio/n8n:2.x
+          imageName: ghcr.io/n8n-io/n8n:stable
+          commonUpdateSettings:
+            updateStrategy: digest
           manifestTargets:
             helm:
               name: controllers.n8n.containers.app.image.repository

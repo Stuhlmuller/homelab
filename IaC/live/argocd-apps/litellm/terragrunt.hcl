@@ -25,71 +25,83 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "litellm"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "ai"
-  }
-
-  sources = [
-    {
-      repo_url        = "ghcr.io/berriai"
-      chart           = "litellm-helm"
-      target_revision = "0.1.832"
-      helm = {
-        release_name = "litellm"
-        value_files  = ["$values/clusters/homelab/apps/litellm/values.yaml"]
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/litellm"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "litellm"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "rollout"
-      value = "automated; verify provider secrets and NFS backup coverage before exposing the gateway"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "ai"
+      }
+
+      sources = [
+        {
+          repoURL        = "ghcr.io/berriai"
+          chart          = "litellm-helm"
+          path           = "."
+          targetRevision = "0.1.832"
+          helm = {
+            releaseName = "litellm"
+            valueFiles  = ["$values/clusters/homelab/apps/litellm/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          ref            = "values"
+          path           = "."
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/litellm"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify provider secrets and NFS backup coverage before exposing the gateway"
+        }
+      ]
     }
-  ]
+  }
 }

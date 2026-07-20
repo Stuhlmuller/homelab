@@ -22,46 +22,56 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "github-actions-runner"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
+
+    metadata = {
+      name      = "github-actions-runner"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
+      }
     }
-  }
 
-  project = "homelab"
+    spec = {
+      project = "homelab"
 
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "github-actions-runner"
-  }
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "github-actions-runner"
+      }
 
-  sources = [
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/github-actions-runner"
-      kustomize       = {}
-    }
-  ]
+      sources = [
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/github-actions-runner"
+          kustomize      = {}
+        }
+      ]
 
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
       }
     }
   }

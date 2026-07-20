@@ -127,11 +127,13 @@ The provisioned rules cover:
 - Kubernetes workload memory usage above 90 percent of a node's reported
   hardware memory capacity for 15 minutes.
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
+- Repository-owned PostgreSQL readiness probes missing or no longer succeeding
+  for approximately 5 minutes.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
-- Deluge daemon RPC health missing or failing for 5 minutes, using the
-  `deluge_daemon_rpc_healthy` metric from the Deluge metrics sidecar instead of
-  generic Pod readiness.
+- Deluge VPN or daemon health missing or failing for 5 minutes, using the
+  `deluge_vpn_healthy` and `deluge_daemon_rpc_healthy` metrics from the Deluge
+  metrics sidecar instead of generic Pod readiness.
 - Homelab stateful PVC usage above 85 percent for 15 minutes.
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
@@ -151,6 +153,21 @@ reviewed node-exporter path before adding those bare-metal alert families.
 The provisioning file also deletes retired OctoBot- and Deluge-specific
 deployment availability rules so Grafana only evaluates the generic workload
 alerts after startup or an alerting provisioning reload.
+
+The PostgreSQL rule reads `prober_probe_total` from the kubelet probe targets,
+so it does not depend on kube-state-metrics. It covers the stable StatefulSet
+pods `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
+`octelium-postgres-0`. A two-minute window without a successful readiness probe
+must remain pending for another three minutes before the critical alert fires;
+an entirely missing expected probe series follows the same pending period.
+Update the expression when another repository-owned PostgreSQL StatefulSet is
+added. Intentional scale-to-zero maintenance is still database downtime, so
+silence this alert in Alertmanager before a planned fence.
+
+Start triage with read-only pod state, events, and PostgreSQL logs. For an
+NFS-backed crash or stale-lock failure, inspect QNAP health and positively fence
+the old writer before any lock-file recovery. Never delete `postmaster.pid`
+while another pod or node could still write the same data directory.
 
 The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one
@@ -199,7 +216,7 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the fourteen provisioned `homelab-*` alert rules
+`Entra ID` login path works, and the sixteen provisioned `homelab-*` alert rules
 are present under Grafana Alerting.
 
 ## Rollback

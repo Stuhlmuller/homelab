@@ -190,7 +190,7 @@ Missing CRDs:
 Bad repository path or target revision:
 
 1. Inspect `kubectl -n argocd describe application argocd-self-management`.
-2. Correct `repo_url`, `path`, or `target_revision` in repo-owned code.
+2. Correct `repoURL`, `path`, or `targetRevision` in the repo-owned Application manifest.
 3. Re-run `terragrunt plan` and `terragrunt apply`.
 
 Missing credentials:

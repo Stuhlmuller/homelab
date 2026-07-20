@@ -41,10 +41,6 @@ config:
       api_url: https://lscr.io
       prefix: lscr.io
       ping: false
-    - name: n8n
-      api_url: https://docker.n8n.io
-      prefix: docker.n8n.io
-      ping: false
 
 metrics:
   enabled: true

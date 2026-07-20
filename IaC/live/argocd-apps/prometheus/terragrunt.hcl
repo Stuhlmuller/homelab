@@ -23,75 +23,87 @@ locals {
 }
 
 inputs = {
-  metadata = {
-    name      = "prometheus"
-    namespace = "argocd"
-    labels = {
-      "app.kubernetes.io/managed-by" = "terragrunt"
-      "app.kubernetes.io/part-of"    = "homelab"
-    }
-  }
+  manifest = {
+    apiVersion = "argoproj.io/v1alpha1"
+    kind       = "Application"
 
-  project = "homelab"
-
-  destination = {
-    server    = "https://kubernetes.default.svc"
-    namespace = "monitoring"
-  }
-
-  sources = [
-    {
-      repo_url        = "https://prometheus-community.github.io/helm-charts"
-      chart           = "kube-prometheus-stack"
-      target_revision = "85.2.0"
-      helm = {
-        release_name = "prometheus"
-        value_files  = ["$values/clusters/homelab/apps/prometheus/values.yaml"]
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      ref             = "values"
-      directory = {
-        include = ".argocd-values-ref-placeholder.yaml"
-      }
-    },
-    {
-      repo_url        = local.repo_url
-      target_revision = local.target_revision
-      path            = "clusters/homelab/apps/prometheus"
-      kustomize       = {}
-    }
-  ]
-
-  sync_policy = {
-    automated = {
-      prune     = true
-      self_heal = true
-    }
-    sync_options = [
-      "CreateNamespace=true",
-      "ServerSideApply=true"
-    ]
-    retry = {
-      limit = "5"
-      backoff = {
-        duration     = "30s"
-        factor       = "2"
-        max_duration = "2m"
+    metadata = {
+      name      = "prometheus"
+      namespace = "argocd"
+      labels = {
+        "app.kubernetes.io/managed-by" = "terragrunt"
+        "app.kubernetes.io/part-of"    = "homelab"
       }
     }
-  }
 
-  info = [
-    {
-      name  = "rollout"
-      value = "automated; verify NFS backup coverage before relying on retained metrics"
-    },
-    {
-      name  = "storage"
-      value = "docs/storage-nfs.md"
+    spec = {
+      project = "homelab"
+
+      destination = {
+        name      = ""
+        server    = "https://kubernetes.default.svc"
+        namespace = "monitoring"
+      }
+
+      sources = [
+        {
+          repoURL        = "https://prometheus-community.github.io/helm-charts"
+          chart          = "kube-prometheus-stack"
+          path           = "."
+          targetRevision = "85.2.0"
+          helm = {
+            releaseName = "prometheus"
+            valueFiles  = ["$values/clusters/homelab/apps/prometheus/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          ref            = "values"
+          path           = "."
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          targetRevision = local.target_revision
+          path           = "clusters/homelab/apps/prometheus"
+          kustomize      = {}
+        }
+      ]
+
+      syncPolicy = {
+        automated = {
+          allowEmpty = false
+          enabled    = true
+          prune      = true
+          selfHeal   = true
+        }
+        syncOptions = [
+          "CreateNamespace=true",
+          "ServerSideApply=true"
+        ]
+        retry = {
+          limit = "5"
+          backoff = {
+            duration    = "30s"
+            factor      = "2"
+            maxDuration = "2m"
+          }
+        }
+      }
+
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify NFS backup coverage before relying on retained metrics"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
+        }
+      ]
     }
-  ]
+  }
 }

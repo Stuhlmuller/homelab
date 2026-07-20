@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        homelab.rst.io/cloudflared-config-revision: callback-hosts-2026-06-29
+        homelab.rst.io/cloudflared-config-revision: transport-auto-2026-07-18
       labels:
         app.kubernetes.io/name: cloudflared
         app.kubernetes.io/part-of: octelium-public

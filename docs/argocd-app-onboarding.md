@@ -83,7 +83,9 @@ Terragrunt registers Applications through the repository-local
 `IaC/modules/argocd-application-kubernetes` module. The module writes Argo CD
 `Application` CRDs through the Kubernetes provider, so routine registration does
 not require an exposed Argo CD API endpoint, an auth token in operator
-environment variables, or a manual local `argocd login`.
+environment variables, or a manual local `argocd login`. Each Terragrunt unit
+passes a raw CRD-shaped `manifest`; use Argo CD field names directly instead of
+a second module-specific schema.
 
 ## Image Updates
 
