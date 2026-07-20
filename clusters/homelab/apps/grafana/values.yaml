@@ -34,7 +34,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "11"
+  homelab.rst.io/alerting-provisioning-version: "12"
 plugins:
   - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
@@ -452,6 +452,108 @@ alerting:
             labels:
               severity: critical
               managed_by: grafana-provisioning
+          - uid: homelab-postgres-unavailable
+            title: PostgreSQL database unavailable
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: |
+                    (
+                      sum by (namespace, pod, container) (
+                        increase(prober_probe_total{
+                          container="postgres",
+                          namespace=~"affine|automation|media|octelium-storage",
+                          pod=~"affine-postgres-0|media-postgres-0|n8n-postgres-0|octelium-postgres-0",
+                          probe_type="Readiness",
+                          result="successful"
+                        }[2m])
+                      ) == 0
+                    )
+                    or
+                    sum by (namespace, pod, container) (
+                      absent(prober_probe_total{namespace="affine",pod="affine-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
+                    )
+                    or
+                    sum by (namespace, pod, container) (
+                      absent(prober_probe_total{namespace="automation",pod="n8n-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
+                    )
+                    or
+                    sum by (namespace, pod, container) (
+                      absent(prober_probe_total{namespace="media",pod="media-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
+                    )
+                    or
+                    sum by (namespace, pod, container) (
+                      absent(prober_probe_total{namespace="octelium-storage",pod="octelium-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
+                    )
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: '{{ "{{" }} namespace {{ "}}" }}/{{ "{{" }} pod {{ "}}" }} readiness unavailable'
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: OK
+            execErrState: Alerting
+            for: 3m
+            annotations:
+              summary: A repository-owned PostgreSQL database is not passing readiness probes.
+              description: Successful kubelet readiness probes have stopped or the expected probe series is missing. Inspect the labeled pod, its events and logs, and shared NFS health before recovery.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/grafana/README.md
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              app: postgres
           - uid: homelab-deployment-unavailable
             title: Kubernetes deployment unavailable
             condition: C
