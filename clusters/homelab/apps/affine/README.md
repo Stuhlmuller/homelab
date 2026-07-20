@@ -18,9 +18,9 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
   timing is enabled for post-rollout verification. Synchronous commit remains
   enabled; the tuning does not trade committed database durability for speed.
   Startup and liveness failures tolerate a 30-minute QNAP recovery window, and
-  shutdown receives 120 seconds to finish. The 2026-07-20 recovery first fenced
-  the StatefulSet at zero replicas; the current phase uses a PreSync Job to
-  clear only the fenced stale `postmaster.pid` before restoring one replica.
+  shutdown receives 120 seconds to finish. The 2026-07-20 incident was restored
+  after fencing the StatefulSet at zero replicas and running a reviewed one-shot
+  hook; that incident-only hook is no longer part of desired state.
 - Cache and jobs: dedicated authenticated Redis 8.2 with AOF and RDB
   persistence disabled, matching AFFiNE's official deployment model. Redis
   runtime files use a 256 Mi node-local `emptyDir`, so cache and queue churn
@@ -54,6 +54,9 @@ only for a time-bounded, reviewed account bootstrap and bump the Deployment's
 loaded by a new pod.
 
 ## Validation
+
+The two phases below preserve the validation record for the 2026-07-20
+incident. Normal steady-state validation starts with the phase-two checks.
 
 ### Recovery phase 1: fenced
 
@@ -111,27 +114,26 @@ NFS volume is stalled forces crash recovery and can leave `postmaster.pid`
 behind. If a restart is eventually required, kubelet allows 120 seconds for a
 clean shutdown.
 
-Recovery from the 2026-07-20 stale-lock incident is intentionally staged. Phase
-1 set the StatefulSet to zero replicas without modifying the PVC, and live
-validation confirmed the pod was absent while the claim remained `Bound`. Phase
-2 adds the idempotent `affine-postgres-stale-lock-recovery-20260720` Sync hook.
-Argo CD first declares the retained claim, then runs that Job in an earlier sync
-wave than the one-replica StatefulSet. Argo recreates a failed hook before its
-next attempt, while a successful attempt writes a completion marker to the PVC
-before PostgreSQL can start. Retries that see the marker leave `postmaster.pid`
-unchanged, so they cannot remove the active server's lock. Declaring the claim
-separately also preserves the from-scratch apply path: a fresh volume has no
-stale lock, receives the marker, and then initializes normally. Never
-force-delete the pod or remove the lock while an old node could still run
-PostgreSQL against the NFS volume.
+Recovery from the 2026-07-20 stale-lock incident was intentionally staged.
+Phase 1 set the StatefulSet to zero replicas without modifying the PVC, and
+live validation confirmed the pod was absent while the claim remained `Bound`.
+Phase 2 used the idempotent
+`affine-postgres-stale-lock-recovery-20260720` Sync hook in an earlier wave than
+the one-replica StatefulSet. The successful hook removed the fenced stale lock,
+wrote a completion marker, and allowed PostgreSQL crash recovery to finish. The
+incident-only hook was then removed from desired state; the PostgreSQL claim
+remains declared separately so retained state is explicit and fresh installs
+remain deterministic.
 
 After an interruption, confirm that `affine-postgres-0` becomes ready without a
 growing restart count and that its logs reach `database system is ready to
 accept connections`. Repeated NFS timeouts or a recovery-hook failure means the
 QNAP export is still unhealthy; inspect the NAS pool, disks, and wired network
 path before retrying a rollout. Preserve the PostgreSQL PVC throughout
-recovery. Remove the one-shot hook from desired state after the restored
-database passes the phase-two checks.
+recovery. Never force-delete the pod or remove a lock while an old node could
+still run PostgreSQL against the NFS volume. A future stale-lock incident needs
+a new reviewed fence and incident-specific recovery change; do not restore or
+reuse the removed 2026-07-20 hook.
 
 ## Backup, restore, and rollback
 

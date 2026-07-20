@@ -74,7 +74,7 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** restore prepared for `affine-postgres`, partially mitigated for
+- **Status:** `affine-postgres` restored, partially mitigated for
   `media-postgres`, and open for the other PostgreSQL workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
@@ -97,16 +97,20 @@ policy`.
   completion marker on the declared PostgreSQL claim makes later runs read-only
   after the first successful recovery, and a fresh claim safely skips removal.
   The restore configuration tolerates 30 minutes of startup or liveness
-  failures and grants 120 seconds for shutdown.
+  failures and grants 120 seconds for shutdown. Live rollout validation at
+  `d7268376` captured the hook removing the stale lock and writing its marker;
+  PostgreSQL then completed crash recovery, became ready with zero restarts,
+  retained pgvector `0.8.1` and the committed settings, and returned AFFiNE to a
+  synced, healthy Argo CD state. HTTPS, native-client CORS, server discovery,
+  and the anonymous-workspace denial checks all passed. The incident-only hook
+  was removed from steady-state desired state after those checks.
 - **Risk:** `media-postgres` still has a short post-start liveness window, while
   `n8n-postgres` and `octelium-postgres` retain the readiness/liveness-only probe
   pattern. Another shared-storage stall can still restart those databases and
-  lengthen recovery. AFFiNE remains unavailable until the second phase safely
-  restores the replica and passes its database and application checks.
-- **Next step:** merge and validate the AFFiNE restore, then remove its one-shot
-  recovery hook from desired state. Inspect QNAP pool, disk, and network history
-  for both incident windows, then add equivalent recovery-aware behavior to the
-  remaining PostgreSQL StatefulSets in separately reviewed workload changes.
+  lengthen recovery.
+- **Next step:** inspect QNAP pool, disk, and network history for both incident
+  windows, then add equivalent recovery-aware behavior to the remaining
+  PostgreSQL StatefulSets in separately reviewed workload changes.
 
 - **Status:** mitigated; 30-minute rollout validation passed
 - **Area:** AFFiNE / storage I/O

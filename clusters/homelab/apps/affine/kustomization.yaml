@@ -6,7 +6,6 @@ resources:
   - externalsecret.yaml
   - configmap.yaml
   - pvc.yaml
-  - postgres-recovery-job.yaml
   - postgres.yaml
   - redis.yaml
   - deployment.yaml
