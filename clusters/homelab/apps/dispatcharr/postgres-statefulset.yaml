@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dispatcharr-postgres
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    checkov.io/skip1: CKV_K8S_40=The pod runs as the QNAP NFS anonymous UID 65534 so PostgreSQL owns the squashed data directory without root.
+    checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
+    checkov.io/skip3: CKV_K8S_43=Image tag and digest are pinned for GitOps review.
+    checkov.io/skip4: CKV2_K8S_6=dispatcharr-postgres is covered by postgres-networkpolicy.yaml; diff-only scans do not include sibling manifests.
+  labels:
+    app.kubernetes.io/name: dispatcharr-postgres
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  serviceName: dispatcharr-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dispatcharr-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dispatcharr-postgres
+        app.kubernetes.io/part-of: homelab-media
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: require-real-password
+          image: postgres:17.5-bookworm@sha256:fbcea1bd13b6a882cd6caa6b58db3ae5c102efe50ec625b3e2a5cbc50db5bfe4
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              password="$(cat /run/secrets/dispatcharr-postgres/POSTGRES_PASSWORD)"
+              if [ -z "$password" ]; then
+                echo "dispatcharr-postgres password is empty; update /homelab/media-postgres/dispatcharr-app-password in SSM" >&2
+                exit 1
+              fi
+              if [ "$password" = "REPLACE_ME" ]; then
+                echo "dispatcharr-postgres password still uses the REPLACE_ME placeholder in SSM" >&2
+                exit 1
+              fi
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/dispatcharr-postgres
+              readOnly: true
+      containers:
+        - name: postgres
+          image: postgres:17.5-bookworm@sha256:fbcea1bd13b6a882cd6caa6b58db3ae5c102efe50ec625b3e2a5cbc50db5bfe4
+          imagePullPolicy: Always
+          env:
+            - name: POSTGRES_USER_FILE
+              value: /run/secrets/dispatcharr-postgres/POSTGRES_USER
+            - name: POSTGRES_DB_FILE
+              value: /run/secrets/dispatcharr-postgres/POSTGRES_DB
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/dispatcharr-postgres/POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - name: postgres
+              containerPort: 5432
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - dispatcharr
+                - -d
+                - dispatcharr
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - dispatcharr
+                - -d
+                - dispatcharr
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - dispatcharr
+                - -d
+                - dispatcharr
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/dispatcharr-postgres
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: auth
+          secret:
+            secretName: dispatcharr-postgres-env
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: dispatcharr-postgres
+          app.kubernetes.io/part-of: homelab-media
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: nfs-default
+        resources:
+          requests:
+            storage: 20Gi

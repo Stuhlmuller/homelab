@@ -33,6 +33,17 @@ workload README and [[../architecture/storage-and-state]]. Secret values stay
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [[../architecture/secrets-and-identity]].
 
+## Dispatcharr
+
+Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
+`https://dispatcharr.stinkyboi.com` through the Octelium app access plane. Its
+`data` PVC stores file-backed runtime data and operator-configured IPTV sources,
+while database state lives in the dedicated `dispatcharr-postgres` StatefulSet
+and PVC. Do not switch it to upstream all-in-one mode on `nfs-default`: that
+image recursively changes ownership below `/data/db`, which conflicts with the
+QNAP export's squashed UID behavior. Provider credentials, playlist URLs, and
+guide source secrets stay outside git.
+
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep
 steady-state resources under Argo CD wherever the upstream lifecycle permits.

@@ -64,6 +64,10 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: deluge.stinkyboi.com
+      - hostname: dispatcharr.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: dispatcharr.stinkyboi.com
       - hostname: grafana.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:

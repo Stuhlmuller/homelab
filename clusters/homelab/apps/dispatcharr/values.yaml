@@ -1,0 +1,139 @@
+serviceAccount:
+  dispatcharr: {}
+controllers:
+  dispatcharr:
+    serviceAccount:
+      identifier: dispatcharr
+    strategy: Recreate
+    pod:
+      automountServiceAccountToken: false
+      annotations:
+        homelab.rst.io/access-mode: "octelium"
+    containers:
+      app:
+        image:
+          repository: ghcr.io/dispatcharr/dispatcharr
+          tag: latest@sha256:9275b0c1f5319a84b412af6839a1364ef25b61d8d6ff0d2130a6c2b2504a8b07
+        envFrom:
+          - secretRef:
+              name: dispatcharr-postgres-env
+        env:
+          TZ: America/Los_Angeles
+          DISPATCHARR_ENV: modular
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          DISPATCHARR_LOG_LEVEL: info
+          DISPATCHARR_ENABLE_IP_LOOKUP: "false"
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 9191
+              failureThreshold: 12
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 9191
+              failureThreshold: 6
+              periodSeconds: 30
+              timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            memory: 4Gi
+      celery:
+        image:
+          repository: ghcr.io/dispatcharr/dispatcharr
+          tag: latest@sha256:9275b0c1f5319a84b412af6839a1364ef25b61d8d6ff0d2130a6c2b2504a8b07
+        command:
+          - /app/docker/entrypoint.celery.sh
+        envFrom:
+          - secretRef:
+              name: dispatcharr-postgres-env
+        env:
+          TZ: America/Los_Angeles
+          DISPATCHARR_ENV: modular
+          DISPATCHARR_PORT: "9191"
+          DISPATCHARR_WEB_HOST: localhost
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          DISPATCHARR_LOG_LEVEL: info
+          DISPATCHARR_ENABLE_IP_LOOKUP: "false"
+          DJANGO_SETTINGS_MODULE: dispatcharr.settings
+          PYTHONUNBUFFERED: "1"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 2Gi
+      redis:
+        image:
+          repository: redis
+          tag: 7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 6379
+              failureThreshold: 6
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              tcpSocket:
+                port: 6379
+              failureThreshold: 3
+              periodSeconds: 30
+              timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            memory: 512Mi
+service:
+  app:
+    controller: dispatcharr
+    ports:
+      http:
+        port: 9191
+persistence:
+  data:
+    enabled: true
+    storageClass: nfs-default
+    size: 20Gi
+    accessMode: ReadWriteOnce
+    advancedMounts:
+      dispatcharr:
+        app:
+          - path: /data
+        celery:
+          - path: /data
+  shm:
+    enabled: true
+    type: emptyDir
+    medium: Memory
+    sizeLimit: 512Mi
+    advancedMounts:
+      dispatcharr:
+        app:
+          - path: /dev/shm
+        celery:
+          - path: /dev/shm
