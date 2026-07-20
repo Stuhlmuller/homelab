@@ -174,6 +174,12 @@ rules and tighter rotation:
 | `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
+The retired `/homelab/github-actions-runner/registration-token` SSM parameter
+has no runtime consumer. Its declaration and preexisting-parameter adoption
+guard remain temporarily because the production policy rejects SSM parameter
+deletion; remove both only with a reviewed repository-owned state and
+secret-retirement workflow.
+
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so
 storing them as environment secrets also works when that is how the repository
