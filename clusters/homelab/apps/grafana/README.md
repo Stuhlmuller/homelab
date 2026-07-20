@@ -109,6 +109,11 @@ while Grafana-managed notifications stay controlled by the provisioned Grafana
 policy. This makes alert rules and routing reviewable and repeatable without
 putting notification credentials in git.
 
+Grafana and Alertmanager both use a one-hour repeat interval. An alert that
+remains firing therefore sends hourly reminder notifications to Discord until
+the underlying condition resolves; Alertmanager then sends the resolved
+notification because the Discord receiver has `send_resolved` enabled.
+
 For alerting-only provisioning changes that do not rotate credentials, bump
 `homelab.rst.io/alerting-provisioning-version` so Grafana restarts and processes
 rule additions, changes, and deletions.

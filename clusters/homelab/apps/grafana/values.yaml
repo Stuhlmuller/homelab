@@ -34,7 +34,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "12"
+  homelab.rst.io/alerting-provisioning-version: "13"
 plugins:
   - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
@@ -211,7 +211,7 @@ alerting:
           - conclusion
         group_wait: 30s
         group_interval: 5m
-        repeat_interval: 4h
+        repeat_interval: 1h
   rules.yaml:
     apiVersion: 1
     deleteRules:

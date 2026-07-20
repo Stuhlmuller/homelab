@@ -66,10 +66,12 @@ roles need identity-based KMS permissions for both keys.
   from `/homelab/grafana/discord-webhook-url` and
   `/homelab/grafana/openclaw-alert-hook-token`. Grafana routes alerts to the
   in-cluster Alertmanager contact point, Alertmanager fans out with file-backed
-  credentials, and Grafana provisioning deletes the retired `homelab-discord`
-  and `homelab-openclaw-alert-hook` receiver UIDs so persisted Grafana PVC state
-  does not keep retrying removed integrations. OpenClaw receives the same hook
-  token through `openclaw-secrets` as `GRAFANA_ALERT_HOOK_TOKEN`; bootstrap
+  credentials, and both routing layers repeat unresolved alerts hourly before
+  Alertmanager sends the resolved notification. Grafana provisioning deletes
+  the retired `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs
+  so persisted Grafana PVC state does not keep retrying removed integrations.
+  OpenClaw receives the same hook token through `openclaw-secrets` as
+  `GRAFANA_ALERT_HOOK_TOKEN`; bootstrap
   expands and JSON-encodes that runtime value before writing `hooks.token`,
   because OpenClaw rejects SecretRef objects for that hook-token surface.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
