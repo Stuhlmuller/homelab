@@ -37,7 +37,9 @@ unavailable; the previous forced HTTP/2 transport repeatedly ended the public
 API stream with Istio `DR http2.remote_reset` after roughly 125 seconds even
 though unary API calls succeeded. The `cloudflared-egress` NetworkPolicy
 allows both UDP/7844 for QUIC and TCP/7844 for HTTP/2 fallback, plus TCP/443
-and DNS for Cloudflare API and resolver access.
+for Cloudflare API access. The public rule excludes private and link-local IPv4
+ranges; separate namespace-scoped rules allow only the in-cluster Istio HTTPS
+origin, the Octelium ingress dataplane, and DNS through `kube-system`.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their

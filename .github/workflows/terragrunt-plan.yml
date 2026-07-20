@@ -30,12 +30,11 @@ env:
   KUBE_API_SERVER_URL: https://127.0.0.1:16443
   KUBE_TLS_SERVER_NAME: 10.1.0.199
   OCTELIUM_DOMAIN: stinkyboi.com
-  OCTELIUM_API_HOST_ALIAS: 10.101.66.84
   OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
   OCTELIUM_KUBE_LOCAL_PORT: 16443
   OCTELIUM_IMPLEMENTATION: gvisor
   OCTELIUM_NO_DNS: "true"
-  OCTELIUM_TUNNEL_MODE: wireguard
+  OCTELIUM_TUNNEL_MODE: quicv0
   OCTELIUM_USE_SUDO: "false"
 
 jobs:
@@ -73,9 +72,7 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     needs:
       - static-policy
-    runs-on:
-      - self-hosted
-      - homelab-ci
+    runs-on: ubuntu-24.04
     environment:
       name: homelab-plan
     permissions:
