@@ -49,10 +49,12 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
 
-The CodeQL Advanced workflow in `.github/workflows/codeql.yml` runs on pushes
-and pull requests targeting `main` and on its weekly schedule. Treat it as
-CI/CD security automation: workflow edits should pass the static policy gate
-locally before relying on GitHub's code scanning result.
+The CodeQL workflow in `.github/workflows/codeql.yml` runs on pushes
+and pull requests targeting `main` and on its weekly schedule. It has one
+buildless `actions` analysis job because this repository has no compiled
+application source. Treat it as CI/CD security automation: workflow edits
+should pass the static policy gate locally before relying on GitHub's code
+scanning result.
 
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
@@ -81,6 +83,17 @@ kubectl kustomize clusters/homelab/apps/argocd-image-updater
 rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-image-updater/imageupdater.yaml
 ```
 
+For `platform-dns` changes, render the overlay and compare upstream answers
+before rollout. After Argo CD syncs, verify CoreDNS contains the intended
+resolvers and a workload pod receives a public answer rather than a sinkhole:
+
+```sh
+kubectl kustomize clusters/homelab/platform/dns
+dig +short A iptorrents.com @1.1.1.1
+kubectl -n kube-system get configmap coredns -o yaml
+kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
+```
+
 ## Octelium Cutover Checks
 
 Before running `octops init`, validate the self-hosted Cluster prerequisites:
@@ -90,7 +103,7 @@ kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-app-dns.sh scripts/octelium-public-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -123,7 +136,11 @@ The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
 the complete homelab WEB Service catalog, public DNS for each existing
 `*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
-Octelium clientless WEB access. App hostnames must not resolve to private
+Octelium public WEB access. It also requires AFFiNE's anonymous Service mode
+and validates the native-client CORS preflight plus public `serverConfig`
+GraphQL query, confirms AFFiNE rejects an unauthenticated workspace query, and
+ensures every other public app Service remains non-anonymous. App hostnames
+must not resolve to private
 Octelium service IPs or the old Tailscale wildcard. The same script probes the
 reviewed callback hostnames for public DNS and path-limited reachability; the
 n8n expected-negative webhook probe must see an n8n webhook response body, not

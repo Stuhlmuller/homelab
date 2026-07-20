@@ -52,7 +52,7 @@ The current service access contract is:
 
 | Destination workload | Namespace | Allowed source principal | Reason |
 |----------------------|-----------|--------------------------|--------|
-| `affine` | `affine` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium clientless app access through the Istio gateway. |
+| `affine` | `affine` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Public Octelium transport with AFFiNE-owned authentication through the Istio gateway. |
 | `affine` | `affine` | `cluster.local/ns/octelium-client/sa/octelium-client` | Octelium private service bridge. |
 | `affine-postgres`, `affine-redis` | `affine` | `cluster.local/ns/affine/sa/affine` | AFFiNE server and migration access to dedicated state services. |
 | `litellm` | `ai` | `cluster.local/ns/istio-system/sa/istio-ingressgateway` | Octelium service-proxy app access through the Istio gateway. |

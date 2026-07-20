@@ -47,6 +47,7 @@ spec:
     spec:
       serviceAccountName: affine
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
@@ -88,6 +89,22 @@ spec:
         - name: postgres
           image: pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
           imagePullPolicy: IfNotPresent
+          args:
+            # Keep synchronous durability, but reduce checkpoint frequency,
+            # spread checkpoint writes, and compress full-page WAL images on
+            # the latency-sensitive QNAP NFS volume.
+            - -c
+            - checkpoint_timeout=15min
+            - -c
+            - checkpoint_completion_target=0.9
+            - -c
+            - wal_compression=on
+            - -c
+            - log_checkpoints=on
+            - -c
+            - track_io_timing=on
+            - -c
+            - track_wal_io_timing=on
           env:
             - name: POSTGRES_USER
               value: affine
@@ -102,6 +119,17 @@ spec:
           ports:
             - name: postgres
               containerPort: 5432
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - affine
+                - -d
+                - affine
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
           readinessProbe:
             exec:
               command:
@@ -125,7 +153,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 60
           resources:
             requests:
               cpu: 100m

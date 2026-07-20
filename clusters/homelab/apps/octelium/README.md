@@ -3,8 +3,9 @@
 This app prepares a repo-owned Octelium client connector in the homelab.
 Octelium is the replacement path for human app access. App hostnames keep their
 existing `*.stinkyboi.com` names. Exact Cloudflare DNS records point those
-names at the public Cloudflare Tunnel, and Octelium `WEB` Services enforce
-browser login before proxying to the existing Istio app routes.
+names at the public Cloudflare Tunnel, and Octelium `WEB` Services proxy to the
+existing Istio app routes. All app Services enforce browser login except
+AFFiNE, which delegates authentication to AFFiNE for native-client support.
 
 The deployed Kubernetes pieces are:
 
@@ -42,10 +43,17 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `affine`, `argocd`, `compass`, `cordium`, `deluge`, `grafana`,
+- Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `grafana`,
   `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
   `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the existing app
   hostnames such as `https://grafana.stinkyboi.com`.
+- `affine` is the only anonymous Octelium app Service. AFFiNE signup is closed
+  after bootstrap, and AFFiNE's own sessions protect workspace data while the
+  public transport supports the native client's `assets://.` origin.
+- Cordium genesis owns the package-managed `default.cordium` public `WEB`
+  Service with primary hostname `cordium`; the catalog attaches its narrow
+  access policy to the dedicated `homelab-cordium-user` instead of declaring a
+  duplicate `cordium` Service.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
 The Enterprise console hostname `https://console.stinkyboi.com` is routed by
@@ -67,7 +75,8 @@ service catalog, and workload credential are verified. The `nodeSelector` keeps
 the connector on Octelium dataplane nodes for smoke tests and future private
 upstreams. Public app traffic does not depend on this connector; it enters
 through `octelium-public`, reaches the Octelium ingress dataplane, and is
-authorized as clientless `WEB` traffic.
+authorized as clientless `WEB` traffic except for AFFiNE's reviewed anonymous
+transport.
 
 ## Activation And Cutover
 
@@ -243,7 +252,7 @@ kubectl kustomize clusters/homelab/apps/octelium
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
 bash -n scripts/octelium-cloudflare-grpc.sh
-bash -n scripts/octelium-app-dns.sh scripts/octelium-gateway-dns.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
 
@@ -255,7 +264,7 @@ kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-app-dns.sh --dry-run
+scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>

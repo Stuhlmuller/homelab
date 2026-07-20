@@ -20,7 +20,7 @@ data:
         "port": 3010
       },
       "auth": {
-        "allowSignup": true,
+        "allowSignup": false,
         "allowSignupForOauth": false,
         "requireEmailDomainVerification": false,
         "requireEmailVerification": false,

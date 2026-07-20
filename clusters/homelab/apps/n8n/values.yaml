@@ -50,8 +50,8 @@ controllers:
     containers:
       app:
         image:
-          repository: docker.n8n.io/n8nio/n8n
-          tag: "2.26.4@sha256:ddb5204bc8c7b71c446dfe1c1dce296df138bcfadb7f5e27d7de35ec2889d026"
+          repository: ghcr.io/n8n-io/n8n
+          tag: "stable@sha256:efe735b31f5d4ed35a057a56d9a803e42f933a2b028b69b8462d9c4a7c90fe5c"
         env:
           TZ: America/Los_Angeles
           GENERIC_TIMEZONE: America/Los_Angeles
@@ -100,14 +100,24 @@ controllers:
           limits:
             memory: 2Gi
         probes:
-          readiness:
+          startup:
             enabled: true
             custom: true
             spec:
               httpGet:
                 path: /healthz
                 port: 5678
-              failureThreshold: 6
+              failureThreshold: 60
+              periodSeconds: 5
+              timeoutSeconds: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz/readiness
+                port: 5678
+              failureThreshold: 3
               periodSeconds: 10
               timeoutSeconds: 5
           liveness:
@@ -115,7 +125,7 @@ controllers:
             custom: true
             spec:
               httpGet:
-                path: /healthz
+                path: /healthz/readiness
                 port: 5678
               failureThreshold: 3
               periodSeconds: 30

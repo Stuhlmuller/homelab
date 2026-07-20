@@ -163,8 +163,8 @@ machine:
           - network: 0.0.0.0/0
             gateway: 10.1.0.1
     nameservers:
-      - 1.1.1.3
-      - 1.0.0.3
+      - 1.1.1.1
+      - 1.0.0.1
   install:
     disk: CONTROL_PLANE_INTERNAL_DISK
     image: ghcr.io/siderolabs/installer:v1.11.3
@@ -280,8 +280,8 @@ machine:
           - network: 0.0.0.0/0
             gateway: 10.1.0.1
     nameservers:
-      - 1.1.1.3
-      - 1.0.0.3
+      - 1.1.1.1
+      - 1.0.0.1
   install:
     disk: /dev/mmcblk0
     image: ghcr.io/siderolabs/installer:v1.11.3

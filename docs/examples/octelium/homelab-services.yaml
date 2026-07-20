@@ -68,7 +68,7 @@ spec:
           of:
             - match: ctx.user.metadata.name == "homelab-cordium-user"
             - match: ctx.user.spec.type == "HUMAN"
-            - match: ctx.service.metadata.name == "cordium"
+            - match: ctx.service.metadata.name == "default.cordium"
             - match: ctx.service.spec.mode == "WEB"
             - any:
                 of:
@@ -98,7 +98,6 @@ spec:
     policies:
       - homelab-human-web-access
       - homelab-workload-web-serve
-      - homelab-cordium-user-access
       - homelab-cordium-agent-api-access
 ---
 kind: Namespace
@@ -144,6 +143,9 @@ spec:
   type: HUMAN
   groups:
     - cordium-users
+  authorization:
+    policies:
+      - homelab-cordium-user-access
 ---
 kind: User
 metadata:
@@ -159,11 +161,9 @@ metadata:
 spec:
   displayName: AFFiNE
   isPublic: true
+  isAnonymous: true
   mode: WEB
   port: 80
-  authorization:
-    policies:
-      - homelab-human-web-access
   config:
     upstream:
       url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
@@ -235,35 +235,6 @@ spec:
         addRequestHeaders:
           - key: X-Forwarded-Host
             value: compass.stinkyboi.com
-          - key: X-Forwarded-Port
-            value: "443"
-          - key: X-Forwarded-Proto
-            value: https
----
-kind: Service
-metadata:
-  name: cordium
-spec:
-  displayName: Cordium
-  isPublic: true
-  mode: WEB
-  port: 80
-  authorization:
-    policies:
-      - homelab-cordium-user-access
-  config:
-    upstream:
-      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
-    tls:
-      insecureSkipVerify: true
-    http:
-      header:
-        forwardedMode: TRANSPARENT
-        host:
-          value: cordium.stinkyboi.com
-        addRequestHeaders:
-          - key: X-Forwarded-Host
-            value: cordium.stinkyboi.com
           - key: X-Forwarded-Port
             value: "443"
           - key: X-Forwarded-Proto

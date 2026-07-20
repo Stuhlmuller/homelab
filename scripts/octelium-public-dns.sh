@@ -13,7 +13,7 @@ usage() {
 Usage: scripts/octelium-public-dns.sh [options]
 
 Reconcile Cloudflare DNS records for the public Octelium control plane,
-clientless app hostnames, and reviewed callback hostnames.
+public app hostnames, and reviewed callback hostnames.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
 SSM Parameter Store, removes exact A/AAAA records for the Octelium control-plane

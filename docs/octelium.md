@@ -3,8 +3,10 @@
 This repository uses Octelium for human access to homelab applications. App
 hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
 records point those names at the public Cloudflare Tunnel, the tunnel forwards
-them to the Octelium public ingress, and Octelium `WEB` Services enforce login
-before proxying to the existing Istio app routes.
+them to the Octelium public ingress, and Octelium `WEB` Services proxy to the
+existing Istio app routes. Most enforce Octelium login. AFFiNE is the reviewed
+exception: Octelium permits anonymous transport so the stock native client can
+reach AFFiNE's own authentication and API.
 
 CI cluster reachability now uses the Octelium `kubernetes-api.ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
@@ -40,8 +42,9 @@ and `MKNOD` so it can create `/dev/net/tun` for the demo and any future
 connector-served upstream. The production app access path does not require a
 local user VPN session or the in-cluster connector: public app requests enter
 through Cloudflare Tunnel, land on the Octelium public ingress, and are
-authorized as clientless browser sessions before Octelium forwards them to the
-in-cluster Istio gateway.
+forwarded to the in-cluster Istio gateway. Octelium authorizes normal app UIs
+as clientless browser sessions; the anonymous AFFiNE Service delegates user
+authentication to AFFiNE.
 
 ## Octelium Service Catalog
 
@@ -58,8 +61,9 @@ They create:
 - Policy `homelab-human-web-access`, allowing authenticated human client
   sessions and clientless browser sessions to app `WEB` Services.
 - Policy `homelab-cordium-user-access`, allowing only the dedicated
-  `homelab-cordium-user` HUMAN identity to reach the public Cordium `WEB`
-  Service.
+  `homelab-cordium-user` HUMAN identity to reach Cordium's package-managed
+  `default.cordium` public `WEB` Service. The catalog attaches this policy to
+  that dedicated repo-owned User because the system Service cannot be edited.
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
@@ -72,10 +76,18 @@ They create:
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - TCP/6443 Service `kubernetes-api.ci`, forwarding to
   `tcp://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `affine`, `argocd`, `compass`, `cordium`, `deluge`, `grafana`,
+- Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `grafana`,
   `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`, `prowlarr`,
   `radarr`, and `sonarr`. Their public FQDNs are the existing app hostnames,
   such as `https://grafana.stinkyboi.com`.
+- The `affine` Service alone sets `isAnonymous: true`. AFFiNE Desktop uses a
+  native `assets://.` origin and must directly reach its server-discovery,
+  login, GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled
+  after account bootstrap, so existing AFFiNE credentials remain the boundary.
+- Package-managed public `WEB` Service `default.cordium`, created by Cordium
+  genesis with primary hostname `cordium`. Do not also declare a `cordium`
+  Service in Octelium's default Namespace; both derive
+  `cordium.stinkyboi.com` and make the ingress reject its routing snapshot.
 - Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
   workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
   automation through `cordium-agent-api.homelab`, plus the matching
@@ -88,7 +100,7 @@ gateway, and the `octelium-cluster` `VirtualService` routes it to the
 package-owned `console.octelium` backend without exposing the nested
 `console.octelium.stinkyboi.com` hostname.
 
-Each app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
+Each repo-defined app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
 setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
 `X-Forwarded-Proto` for the original app hostname. The HTTPS hop avoids the
 gateway's HTTP-to-HTTPS redirect loop for authenticated clientless browser
@@ -96,7 +108,9 @@ requests. The header block also sets `forwardedMode: TRANSPARENT` so Octelium
 preserves those explicit forwarded headers instead of deriving them from the
 internal upstream. That keeps each app's existing Istio `VirtualService` and
 base URL intact while moving the user-facing authentication layer to Octelium
-clientless access.
+clientless access. AFFiNE instead owns its user-facing authentication, and
+Cordium's package-managed `default.cordium` Service terminates its Octelium
+route directly.
 
 Apply the service catalog to the Octelium Cluster:
 
@@ -104,13 +118,25 @@ Apply the service catalog to the Octelium Cluster:
 octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
 
+Never add `--prune` to that command: this catalog is not an exhaustive list of
+every non-system resource in the Octelium Cluster. When upgrading a Cluster
+that previously applied the repo-defined `cordium` Service, first apply the
+updated catalog and then remove only the obsolete duplicate:
+
+```sh
+if octeliumctl get service cordium.default --domain stinkyboi.com >/dev/null 2>&1; then
+  octeliumctl delete service cordium.default --domain stinkyboi.com
+fi
+```
+
 Cordium is bootstrapped by the `cordium` Argo CD Application after that catalog
 exists. The app runs upstream `cordium-genesis init` from a pinned
 `ghcr.io/octelium/cordium-genesis:0.12.7` image and routes the public
 `https://cordium.stinkyboi.com` browser path plus workspace app subdomains under
-`*.cordium.stinkyboi.com` through the Octelium `cordium` WEB Service. Browser
-access is scoped to the dedicated `homelab-cordium-user` HUMAN identity
-through `homelab-cordium-user-access`. Agent automation should use a credential
+`*.cordium.stinkyboi.com` through the package-managed Octelium
+`default.cordium` WEB Service, whose primary hostname is `cordium`. Browser
+access is scoped to the dedicated `homelab-cordium-user` HUMAN identity by the
+User-attached `homelab-cordium-user-access` policy. Agent automation should use a credential
 for `homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do
 not reuse the human browser identity for automated workspace runs. Workspace
 defaults stay with upstream Cordium until this repository adds a reviewed
@@ -196,7 +222,11 @@ scripts/octelium-e2e-check.sh
 The gate uses ordinary public HTTPS requests to the existing
 `https://*.stinkyboi.com` app hostnames. It fails if any app hostname still
 resolves to Octelium private service IPs, if an app Service is not `WEB` with
-`isPublic: true`, or if the public hostname returns a routing 404.
+`isPublic: true`, or if the public hostname returns a routing 404. It also
+requires AFFiNE's Service to be anonymous and verifies the native-client CORS
+preflight plus the public `serverConfig` GraphQL query. A negative workspace
+query must still return AFFiNE's `AUTHENTICATION_REQUIRED` error, and all other
+app Services must remain non-anonymous.
 
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and
@@ -218,12 +248,16 @@ The gate verifies:
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
 - every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
-  including `cordium` and `cordium-agent-api.homelab`,
-  exists in the Octelium Cluster;
+  including `cordium-agent-api.homelab`, exists in the Octelium Cluster, and
+  Cordium's generated `default.cordium` Service is present without a duplicate
+  primary hostname;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS without `octelium connect`; the Enterprise console check must not
   redirect to `console.octelium.stinkyboi.com`;
+- AFFiNE's native `assets://.` origin can preflight and query `serverConfig` at
+  `https://affine.stinkyboi.com/graphql`, while an anonymous workspace query is
+  denied by AFFiNE;
 - reviewed callback hostnames `n8n-webhook.stinkyboi.com` and
   `policy-bot-hook.stinkyboi.com` resolve publicly and reach their path-limited
   callback routes.
@@ -306,12 +340,13 @@ curl -sS \
   https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
 ```
 
-The tunnel transport is pinned to QUIC in `octelium-public`; if
+The `octelium-public` tunnel uses automatic transport selection: QUIC is
+preferred, with HTTP/2 fallback when UDP/7844 is unavailable. If
 `kubectl -n istio-system logs deploy/istio-ingressgateway` shows
 `POST /octelium.api.main.user.v1.MainService/Connect` ending with
-`DR http2.remote_reset` after roughly 125 seconds, treat that as a tunnel
-transport regression rather than an Octelium login failure. Keep UDP/7844
-allowed in the `cloudflared-egress` NetworkPolicy while QUIC is enabled.
+`DR http2.remote_reset` after roughly 125 seconds, the tunnel has likely fallen
+back to HTTP/2. Restore reliable UDP/7844 rather than forcing HTTP/2. Keep both
+UDP/7844 and TCP/7844 allowed in the `cloudflared-egress` NetworkPolicy.
 
 The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
 
@@ -528,7 +563,6 @@ kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
-bash -n scripts/octelium-app-dns.sh
 bash -n scripts/octelium-public-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
 bash -n scripts/octelium-cloudflare-grpc.sh

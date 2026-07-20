@@ -62,6 +62,11 @@ The global policy uses semantic-version updates and ignores `latest`, `main`,
 and `dev` tags. Images whose upstream tags are not plain semver use
 per-image `newest-build` rules with regular-expression allow lists.
 
+n8n is the exception: Image Updater follows the official GHCR `stable` tag by
+digest. n8n prereleases use ordinary semantic versions, and `docker.n8n.io` is
+backed by Docker Hub's anonymous pull limits, so semver selection can choose a
+prerelease while repeated manifest lookups can be rate-limited.
+
 Image Updater writes to the source paths that Argo CD already renders:
 
 - Helm values files use `helmvalues:/clusters/homelab/apps/<app>/values.yaml`.

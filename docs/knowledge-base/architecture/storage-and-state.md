@@ -36,7 +36,7 @@ ready, but they must not be treated as production-ready until:
 
 ## Stateful Apps
 
-The current stateful set includes AFFiNE with PostgreSQL/pgvector, persistent
+The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral
 Redis, blob storage, and config state; Prometheus, Grafana, Deluge, media-postgres,
 n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium Enterprise package
 stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
@@ -44,6 +44,29 @@ Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
+
+AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
+`emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
+This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
+reaching the QNAP. PostgreSQL remains durable on NFS with WAL compression and
+checkpoint pacing; synchronous commit remains enabled.
+
+`affine-postgres` was fenced at zero replicas during the first phase of the
+2026-07-20 stale-lock recovery; live validation confirmed the pod was absent
+and its retained PVC stayed bound. The second phase declares that claim as an
+early Argo CD resource and used the idempotent
+`affine-postgres-stale-lock-recovery-20260720` Sync hook to remove only
+`postmaster.pid` before Argo CD restored one replica. The hook wrote a durable
+completion marker on the PVC, PostgreSQL completed crash recovery, and live
+validation passed with zero pod restarts. The incident-only hook is now removed
+from desired state, while the explicit retained claim, 30-minute startup and
+liveness windows, and 120-second termination grace remain.
+
+`media-postgres` protects NFS-backed crash recovery with a 30-minute startup
+probe and a 120-second termination grace period. Readiness still requires
+`pg_isready`, so Prowlarr, Radarr, and Sonarr cannot reach PostgreSQL until
+recovery completes. See `clusters/homelab/apps/media-postgres/README.md` for the
+failure mode and operator response.
 
 ## Source Files
 

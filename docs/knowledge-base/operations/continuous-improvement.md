@@ -58,6 +58,197 @@ policy`.
 
 ## Open Findings
 
+- **Status:** fixed
+- **Area:** networking / DNS
+- **Evidence:** Read-only checks on 2026-07-19 showed that the configured
+  Cloudflare Family resolvers (`1.1.1.3` and `1.0.0.3`) returned `0.0.0.0` and
+  `::` for a required Prowlarr indexer while standard Cloudflare DNS returned
+  its public IPv4 addresses. Prowlarr general HTTPS egress remained healthy,
+  proving the connection refusal came from DNS sinkholing rather than TLS,
+  IPv6, or workload egress. `platform-dns` now uses `1.1.1.1` and `1.0.0.1`.
+- **Risk:** cluster DNS no longer receives Cloudflare Family malware and adult
+  category filtering. Silent category sinkholes are incompatible with required
+  media indexers and can present as application transport failures.
+- **Next step:** keep explicit public resolvers and monitor CoreDNS errors. If
+  category filtering is required later, introduce a reviewed allow/deny policy
+  with observable denial behavior instead of switching the shared resolver back
+  to an opaque sinkhole response.
+
+- **Status:** `affine-postgres` restored, partially mitigated for
+  `media-postgres`, and open for the other PostgreSQL workloads
+- **Area:** storage / database recovery
+- **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
+  failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
+  `media-postgres` remained in crash recovery longer than its liveness window,
+  so kubelet repeatedly terminated it with exit code 137 before it could become
+  ready. Prowlarr then returned PostgreSQL connection-refused errors while Argo
+  CD still reported the app healthy. The QNAP NFS exports and RPC services were
+  reachable when checked after the initial stall. The repository now gives
+  `media-postgres` a 30-minute startup window and a 120-second termination grace
+  period. A recurrence on 2026-07-20 affected NFS-backed workloads across three
+  nodes. `media-postgres`, `n8n-postgres`, and `octelium-postgres` recovered
+  after kubelet restarts, but `affine-postgres` entered more than 130 restarts
+  and then failed to open `postmaster.pid` with `Permission denied`. AFFiNE's
+  first recovery phase set the StatefulSet to zero replicas without modifying
+  its PVC; Argo CD then reported the Application synced and healthy, the pod was
+  absent, and the retained claim remained bound. The second phase uses a
+  repository-owned, early-wave Sync hook to remove only the fenced stale lock
+  before restoring one replica. Argo recreates a failed hook before retrying. A
+  completion marker on the declared PostgreSQL claim makes later runs read-only
+  after the first successful recovery, and a fresh claim safely skips removal.
+  The restore configuration tolerates 30 minutes of startup or liveness
+  failures and grants 120 seconds for shutdown. Live rollout validation at
+  `d7268376` captured the hook removing the stale lock and writing its marker;
+  PostgreSQL then completed crash recovery, became ready with zero restarts,
+  retained pgvector `0.8.1` and the committed settings, and returned AFFiNE to a
+  synced, healthy Argo CD state. HTTPS, native-client CORS, server discovery,
+  and the anonymous-workspace denial checks all passed. The incident-only hook
+  was removed from steady-state desired state after those checks.
+- **Risk:** `media-postgres` still has a short post-start liveness window, while
+  `n8n-postgres` and `octelium-postgres` retain the readiness/liveness-only probe
+  pattern. Another shared-storage stall can still restart those databases and
+  lengthen recovery.
+- **Next step:** inspect QNAP pool, disk, and network history for both incident
+  windows, then add equivalent recovery-aware behavior to the remaining
+  PostgreSQL StatefulSets in separately reviewed workload changes.
+
+- **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
+- **Area:** monitoring / PostgreSQL availability
+- **Evidence:** Read-only validation on 2026-07-20 found Prometheus reporting
+  `up{job="kube-state-metrics"} == 0` with a scrape `context deadline exceeded`,
+  even though the kube-state-metrics pod and EndpointSlice were ready and a
+  local port-forward returned metrics. Ztunnel recorded inbound HBONE
+  connections from the correctly identified Prometheus service account to the
+  kube-state-metrics pod timing out with zero bytes transferred. The new
+  `homelab-postgres-unavailable` Grafana rule therefore uses kubelet
+  `prober_probe_total` readiness counters, which live Prometheus queries
+  confirmed for `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
+  `octelium-postgres-0`. The healthy expression returned no series, while a
+  simulated missing pod returned a labeled alert instance.
+- **Risk:** Existing Grafana node, pod, Deployment, and PVC rules that depend on
+  kube-state-metrics can remain in `NoData/OK` until that scrape path is
+  restored. The generic Prometheus-target-down rule reports the failed target,
+  but it does not replace the missing workload telemetry.
+- **Next step:** diagnose and fix the cross-node ambient HBONE path through a
+  repository-owned Istio or workload rollout change, then verify
+  `up{job="kube-state-metrics"} == 1` and that the kube-state-metrics-backed
+  Grafana rules return live series.
+
+- **Status:** mitigated; 30-minute rollout validation passed
+- **Area:** AFFiNE / storage I/O
+- **Evidence:** The operator reported that QNAP responsiveness returned several
+  minutes after AFFiNE, its PostgreSQL database, and Redis were scaled to zero.
+  The previous Redis desired state added two persistence paths that AFFiNE's
+  official deployment does not use: AOF with an NFS `fsync` every second and an
+  RDB snapshot after 1,000 changes in 60 seconds. AOF rewrites and RDB snapshots
+  can rewrite the full Redis dataset. The deployed mitigation now uses a
+  node-local `emptyDir` for Redis, retains the former NFS claim read-only, and
+  paces/compresses PostgreSQL checkpoint and WAL writes. During the 2026-07-16
+  rollout, AFFiNE stayed synced, healthy, and restart-free for more than 30
+  minutes. Redis reported AOF and RDB persistence disabled. The `acer` NFS
+  client averaged about 4.2 RPC/s, 0.49 writes/s, and 0.27 commits/s with no
+  retransmissions; wired QNAP latency remained sub-millisecond with no packet
+  loss.
+- **Risk:** Redis is now ephemeral, so a pod or node restart can discard cache
+  entries and queued work. PostgreSQL remains durable on the QNAP and still
+  needs normal backup and latency monitoring.
+- **Next step:** keep the mitigation. Retain the former Redis claim until the
+  rollback window closes, then remove it through the normal GitOps workflow.
+  Track remaining operator-to-wired latency under the separate networking
+  finding below.
+
+- **Status:** open
+- **Area:** networking / storage access
+- **Evidence:** Read-only checks on 2026-07-13 isolated the remaining NAS
+  slowness to the router/AP-to-wired-switch path. From the operator Mac,
+  `10.1.0.1` averaged about 4 ms while the QNAP and every wired Talos node
+  averaged roughly 600-1,100 ms. From `zimaboard-0`, the QNAP averaged 0.85 ms
+  and `zimaboard-1` averaged 0.62 ms, but the router averaged 271 ms. A 64 MiB
+  memory-only TCP transfer from the Wi-Fi operator Mac to a wired Talos node
+  took 70.4 seconds (about 7.6 Mbit/s), while a wired pod read an existing QNAP
+  file at 108 MB/s. Talos node NIC counters showed 1 Gbit/full-duplex links
+  without meaningful errors, and cluster NFS traffic was nearly idle after
+  OpenClaw stopped. AFFiNE,
+  AFFiNE PostgreSQL, and AFFiNE Redis were temporarily scaled to zero by an
+  explicit operator-requested `kubectl scale`; OpenClaw was also held at zero,
+  but the cross-uplink latency initially remained. The operator later reported
+  that QNAP responsiveness returned after AFFiNE had been off for several
+  minutes. That timing correlates the recovery with AFFiNE shutdown, but the
+  fast wired NFS benchmark and slow router boundary still leave the original
+  gateway-path symptom unexplained. The 2026-07-16 AFFiNE rollout reproduced
+  mild cross-uplink jitter while NFS remained nearly idle: the Mac saw the QNAP
+  and `acer` rise together to roughly 40 ms while the router stayed near 4 ms,
+  but `acer` continued reaching the QNAP in about 0.2-0.3 ms. This isolates the
+  remaining symptom from AFFiNE's Redis and PostgreSQL storage activity. On
+  2026-07-18 the Mac measured 30-60% packet loss to every wired Talos node and
+  the QNAP while the router remained at 0% loss. During the same incident,
+  public sites returned Cloudflare 524 errors and `cloudflared` repeatedly
+  failed QUIC handshakes with `no recent network activity`. The GitOps
+  mitigation now uses cloudflared automatic transport selection and permits
+  TCP/7844 so public HTTP traffic can fall back to HTTP/2. The emergency
+  rollout also exposed a circular recovery dependency: the local Kubernetes
+  API had 70-80% packet loss, the homelab GitHub Actions runner was offline,
+  and policy-bot could not approve the PR. A bounded GitHub-hosted recovery
+  attempt could not publish `kubernetes-api.ci` because authenticated Octelium
+  gRPC calls through Cloudflare lost their trailers, so no Argo CD operation
+  was submitted. A later 2026-07-18 sample deteriorated to 100% loss from the
+  Mac to `acer`, while the Xfinity gateway remained at 0% loss; the QNAP and
+  worker nodes still lost 60-80% of packets. The Mac's `en0` counters showed
+  no errors or collisions during the same interval, further isolating the
+  fault to the gateway-to-wired-segment path rather than the operator host.
+- **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
+  homelab appears to hang even when the NAS and wired switch fabric are healthy.
+  Operator SMB access can still be slow, and the same failure can block both
+  the normal PR approval path and remote GitOps recovery. OpenClaw was restored
+  on 2026-07-19; its separate read-storm risk remains tracked below.
+- **Next step:** inspect the router/AP-to-switch uplink negotiation, utilization,
+  error/drop counters, spanning-tree state, patch cable, and switch ports.
+  Restore reliable UDP/7844 so long-lived Octelium gRPC streams remain on QUIC;
+  HTTP/2 fallback preserves basic public access but is not the preferred steady
+  state. Design and validate a least-privilege, repository-owned recovery path
+  that does not depend on policy-bot, the in-cluster runner, or the public
+  Octelium control path being healthy.
+  Restore OpenClaw separately so its known read storm cannot overlap the AFFiNE
+  test.
+
+- **Status:** open
+- **Area:** agent runtime / storage
+- **Evidence:** Before OpenClaw was stopped on 2026-07-13, `acer` sustained about
+  3,850 NFSv3 reads per second and 206 Mbit/s of receive traffic. Process-level
+  counters attributed roughly 33 MiB/s of physical reads to
+  `openclaw-gateway`; AFFiNE, PostgreSQL, Deluge, and other sampled NFS-mounted
+  containers were nearly idle. OpenClaw's read-only `memory status` command
+  timed out while this activity continued. After OpenClaw was restored on
+  2026-07-19, its gateway stopped accepting loopback connections for 22 seconds:
+  Kubernetes recorded six readiness timeouts from 17:33:01-17:33:23 UTC, then
+  OpenClaw's health monitor released a stale `Memory Dreaming Promotion` session
+  and the gateway recovered at 17:33:27 UTC. The app now has an HTTP readiness
+  probe and a liveness probe that restarts the app container if a gateway stall
+  persists, while the existing proxy readiness probe continues to withdraw the
+  endpoint promptly.
+- **Risk:** hot OpenClaw gateway state, memory indexing, or workspace scanning
+  on the QNAP-backed PVC can amplify storage pressure and obscure independent
+  network faults.
+- **Next step:** after fixing the router/switch uplink, reproduce the OpenClaw
+  load in a controlled window and identify which gateway state path is being
+  scanned. Keep durable agent state on the PVC, but move any rebuildable hot
+  index, cache, or watcher-heavy state to pod-local storage through reviewed
+  GitOps desired state if the read storm returns. Correlate any future liveness
+  restart with the gateway log, NFS counters, and the active memory job before
+  changing storage behavior.
+
+- **Status:** open
+- **Area:** agent runtime / sandboxing
+- **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
+  `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has
+  no Docker command or sandbox backend. The affected nested cron lanes failed
+  rather than falling back to the embedded backend.
+- **Risk:** non-main and scheduled agent work can fail even while the gateway
+  and Control UI remain healthy.
+- **Next step:** provide and document a supported sandbox backend or narrow the
+  sandbox policy deliberately. Do not silently disable the boundary without a
+  security review.
+
 - **Status:** open
 - **Area:** CI/CD identity
 - **Evidence:** a read-only IAM inspection on 2026-07-13 found that the live
