@@ -346,7 +346,10 @@ preferred, with HTTP/2 fallback when UDP/7844 is unavailable. If
 `POST /octelium.api.main.user.v1.MainService/Connect` ending with
 `DR http2.remote_reset` after roughly 125 seconds, the tunnel has likely fallen
 back to HTTP/2. Restore reliable UDP/7844 rather than forcing HTTP/2. Keep both
-UDP/7844 and TCP/7844 allowed in the `cloudflared-egress` NetworkPolicy.
+UDP/7844 and TCP/7844 allowed to public IPv4 destinations in the
+`cloudflared-egress` NetworkPolicy. Keep private and link-local IPv4 ranges
+excluded from that public rule, and allow the in-cluster Istio HTTPS origin,
+Octelium ingress dataplane, and cluster DNS through namespace-scoped rules.
 
 The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
 
@@ -626,20 +629,21 @@ The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
 this workload credential. Do not add Octelium `--scope` flags to this CI
 connection on v0.35; scoped auth-token sessions are denied before the
 Kubernetes API listener is published.
-The workflow value `OCTELIUM_TUNNEL_MODE=wireguard` selects the Octelium
-client's WireGuard dataplane mode; it is not a Tailscale fallback path.
-The CI helper defaults to a per-GitHub-run Octelium homedir. Keep that behavior
-on self-hosted runners so a stale local OcteliumDB refresh token cannot bypass a
-freshly rotated `OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
+The workflow value `OCTELIUM_TUNNEL_MODE=quicv0` selects the hosted-compatible
+Octelium QUIC dataplane because GitHub-hosted runners cannot route directly to
+the gateways' IPv6-only WireGuard addresses. It is not a Tailscale fallback
+path.
+The CI helper defaults to a per-GitHub-run Octelium homedir so a stale local
+OcteliumDB refresh token cannot bypass a freshly rotated
+`OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
 logout-on-exit and the `if: always()` disconnect helper calls both
 `octelium disconnect` and `octelium logout` against the same ephemeral homedir
-so auth-token sessions do not accumulate. The self-hosted runner maps
-`octelium-api.stinkyboi.com` to the Istio ingress gateway ClusterIP with
-`OCTELIUM_API_HOST_ALIAS`; keep that alias on CI paths because the public
-Cloudflare hostname can answer unauthenticated gRPC probes while authenticated
-CLI success responses still lose required trailers. CI keeps `--no-dns` enabled
-because it only needs the localhost `kubernetes-api.ci` publish and later Nix
-or Kubernetes commands should keep the runner's normal DNS resolver. The
+so auth-token sessions do not accumulate. GitHub-hosted jobs connect through
+the public `octelium-api.stinkyboi.com` endpoint and leave
+`OCTELIUM_API_HOST_ALIAS` unset because they cannot route to the private Istio
+ClusterIP. CI keeps `--no-dns` enabled because it only needs the localhost
+`kubernetes-api.ci` publish and later Nix or Kubernetes commands should keep
+the runner's normal DNS resolver. The
 credential helper verifies GitHub environment secret write access with a
 temporary write/delete, refreshes an existing Credential's User and Policy
 binding, and refuses existing-credential rotation when GitHub secret updates are

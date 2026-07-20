@@ -97,10 +97,6 @@ inputs = {
       description   = "AWS secret access key used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder
     }
-    "/homelab/github-actions-runner/registration-token" = {
-      description   = "Short-lived GitHub Actions self-hosted runner registration token used to bootstrap the homelab runner."
-      initial_value = local.placeholder
-    }
     "/homelab/tailscale/oauth-client-id" = {
       description   = "Tailscale Kubernetes operator OAuth client ID."
       initial_value = local.placeholder

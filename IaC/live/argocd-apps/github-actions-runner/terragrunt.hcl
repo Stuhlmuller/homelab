@@ -10,12 +10,6 @@ terraform {
   source = "../../../modules/argocd-application-kubernetes"
 }
 
-dependencies {
-  paths = [
-    "../external-secrets"
-  ]
-}
-
 locals {
   repo_url        = "https://github.com/Stuhlmuller/homelab.git"
   target_revision = "main"
@@ -55,13 +49,12 @@ inputs = {
 
       syncPolicy = {
         automated = {
-          allowEmpty = false
+          allowEmpty = true
           enabled    = true
           prune      = true
           selfHeal   = true
         }
         syncOptions = [
-          "CreateNamespace=true",
           "ServerSideApply=true"
         ]
         retry = {

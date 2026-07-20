@@ -86,42 +86,6 @@ destroy_deleted_terragrunt_units() {
   done
 }
 
-adopt_existing_ssm_parameters() {
-  local parameter_region="us-west-2"
-  local state_resources
-  local parameter_name
-  local resource_address
-  local existing_name
-
-  terragrunt init -no-color
-  state_resources="$(terragrunt state list -no-color 2>/dev/null || true)"
-
-  for parameter_name in "/homelab/github-actions-runner/registration-token"; do
-    resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
-
-    if grep -Fxq "$resource_address" <<<"$state_resources"; then
-      echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
-      continue
-    fi
-
-    existing_name="$(
-      aws ssm describe-parameters \
-        --region "$parameter_region" \
-        --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
-        --query "Parameters[0].Name" \
-        --output text 2>/dev/null || true
-    )"
-
-    if [[ "$existing_name" == "$parameter_name" ]]; then
-      echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
-      terragrunt import -no-color "$resource_address" "$parameter_name"
-      state_resources="${state_resources}"$'\n'"${resource_address}"
-    else
-      echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
-    fi
-  done
-}
-
 prepare_terragrunt_filter_base
 
 if ! azuread_credentials_available && azuread_stack_changed; then
@@ -143,7 +107,6 @@ echo "::group::AWS SSM parameter declaration plan and apply"
 (
   cd IaC/live/aws-ssm-parameters
   rm -f plan.out plan.json
-  adopt_existing_ssm_parameters
   terragrunt plan -out plan.out -no-color
   terragrunt --log-disable show -json plan.out >plan.json
   conftest test --policy ../../../policy --output github plan.json
