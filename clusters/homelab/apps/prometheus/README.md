@@ -13,6 +13,11 @@ Alertmanager. Alertmanager then delivers notifications to Discord with the
 native Discord receiver and to OpenClaw's authenticated `/hooks/agent` endpoint
 with a bearer-token webhook receiver.
 
+The root route repeats notifications every hour while an alert remains active.
+Discord also receives a resolved notification after the alert clears because
+its receiver has `send_resolved` enabled. Keep the Grafana notification policy
+repeat interval aligned with this route so both stages preserve that cadence.
+
 The `alertmanager-discord-webhook` and `alertmanager-openclaw-alert-hook`
 ExternalSecrets read the existing `/homelab/grafana/discord-webhook-url` and
 `/homelab/grafana/openclaw-alert-hook-token` SSM parameters. The Alertmanager
