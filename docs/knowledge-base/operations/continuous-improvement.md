@@ -74,7 +74,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** mitigated for `media-postgres`; open for the other PostgreSQL workloads
+- **Status:** mitigated in desired state for `affine-postgres`, partially
+  mitigated for `media-postgres`, and open for the other PostgreSQL workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -84,13 +85,20 @@ policy`.
   CD still reported the app healthy. The QNAP NFS exports and RPC services were
   reachable when checked after the initial stall. The repository now gives
   `media-postgres` a 30-minute startup window and a 120-second termination grace
-  period.
-- **Risk:** `affine-postgres`, `n8n-postgres`, and `octelium-postgres` retain the
-  same readiness/liveness-only probe pattern and can enter equivalent recovery
-  loops after another shared-storage stall.
-- **Next step:** validate the `media-postgres` rollout and recovery, inspect QNAP
-  pool, disk, and network history for the incident window, then add equivalent
-  recovery-aware startup behavior to the remaining PostgreSQL StatefulSets in
+  period. A recurrence on 2026-07-20 affected NFS-backed workloads across three
+  nodes. `media-postgres`, `n8n-postgres`, and `octelium-postgres` recovered
+  after kubelet restarts, but `affine-postgres` entered more than 130 restarts
+  and then failed to open `postmaster.pid` with `Permission denied`. AFFiNE's
+  desired state now removes that stale lock before the official entrypoint,
+  tolerates 30 minutes of startup or liveness failures, and grants 120 seconds
+  for shutdown.
+- **Risk:** `media-postgres` still has a short post-start liveness window, while
+  `n8n-postgres` and `octelium-postgres` retain the readiness/liveness-only probe
+  pattern. Another shared-storage stall can still restart those databases and
+  lengthen recovery. AFFiNE's mitigation still requires rollout validation.
+- **Next step:** validate the AFFiNE rollout and recovery, inspect QNAP pool,
+  disk, and network history for both incident windows, then add equivalent
+  recovery-aware behavior to the remaining PostgreSQL StatefulSets in
   separately reviewed workload changes.
 
 - **Status:** mitigated; 30-minute rollout validation passed

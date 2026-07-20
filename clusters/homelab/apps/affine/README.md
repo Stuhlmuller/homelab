@@ -17,6 +17,11 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
   across each interval, full-page WAL images are compressed, and PostgreSQL I/O
   timing is enabled for post-rollout verification. Synchronous commit remains
   enabled; the tuning does not trade committed database durability for speed.
+  Startup and liveness failures tolerate a 30-minute QNAP recovery window, and
+  shutdown receives 120 seconds to finish. Before each new container instance,
+  the single-replica StatefulSet removes a stale `postmaster.pid` left by an
+  already-terminated predecessor so an interrupted NFS shutdown cannot trap the
+  database in a permission-denied crash loop.
 - Cache and jobs: dedicated authenticated Redis 8.2 with AOF and RDB
   persistence disabled, matching AFFiNE's official deployment model. Redis
   runtime files use a 256 Mi node-local `emptyDir`, so cache and queue churn
@@ -81,6 +86,23 @@ native-client CORS preflight returns `200` or `204` with
 Unauthenticated users may reach AFFiNE's public shell and server-discovery API,
 but the e2e gate must receive `AUTHENTICATION_REQUIRED` for an anonymous
 workspace query before this route is considered safe.
+
+## NFS interruption recovery
+
+The PostgreSQL readiness probe removes the database Service endpoint after six
+failed checks, but kubelet allows up to 30 minutes before restarting the
+container. This favors recovery in place because killing PostgreSQL while its
+NFS volume is stalled forces crash recovery and can leave `postmaster.pid`
+behind. If a restart is eventually required, kubelet allows 120 seconds for a
+clean shutdown; the next container removes only that stale lock file before
+running the official PostgreSQL entrypoint.
+
+After an interruption, confirm that `affine-postgres-0` becomes ready without a
+growing restart count and that its logs reach `database system is ready to
+accept connections`. Repeated NFS timeouts or a lock-removal failure means the
+QNAP export is still unhealthy; inspect the NAS pool, disks, and wired network
+path before retrying a rollout. Preserve the PostgreSQL PVC throughout
+recovery.
 
 ## Backup, restore, and rollback
 

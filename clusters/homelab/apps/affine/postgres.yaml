@@ -47,6 +47,7 @@ spec:
     spec:
       serviceAccountName: affine
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
@@ -88,6 +89,17 @@ spec:
         - name: postgres
           image: pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
           imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              lock_file="${PGDATA}/postmaster.pid"
+              if [ -e "$lock_file" ]; then
+                echo "removing stale PostgreSQL lock file left by the previous container instance"
+              fi
+              rm -f "$lock_file"
+              exec /usr/local/bin/docker-entrypoint.sh "$@"
+            - --
           args:
             # Keep synchronous durability, but reduce checkpoint frequency,
             # spread checkpoint writes, and compress full-page WAL images on
@@ -118,6 +130,17 @@ spec:
           ports:
             - name: postgres
               containerPort: 5432
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - affine
+                - -d
+                - affine
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
           readinessProbe:
             exec:
               command:
@@ -141,7 +164,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 60
           resources:
             requests:
               cpu: 100m
