@@ -260,10 +260,13 @@ kubectl -n media exec deploy/deluge -c app -- \
 ```
 
 The apply path pauses the selected torrents, adopts existing target files with
-libtorrent's `dont_replace` storage move, forces a piece-hash recheck, and
-resumes them. Target files are never replaced; stale source copies may be
-removed by libtorrent. Exact sizes are only the selection guard—the hash
-recheck is the integrity decision. See the upstream
+libtorrent's `dont_replace` storage move, and forces a piece-hash recheck. It
+guards the serialized checks against redownloading: verified entries resume for
+seeding, while entries that fail their hashes remain paused. If an older apply
+is already checking, attach the same guard with `--monitor`. Target files are
+never replaced; stale source copies may be removed by libtorrent. Exact sizes
+are only the selection guard—the hash recheck is the integrity decision. See
+the upstream
 [move-storage contract](https://www.libtorrent.org/reference-Storage.html).
 
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
