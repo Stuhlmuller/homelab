@@ -184,8 +184,17 @@ connecting Web to the healthy daemon.
 If automatic recovery cannot validate the backup, the app container stops
 instead of overwriting more state. Preserve torrent metadata and downloaded
 data; do not delete the `.torrent` files under `/config/state` or the
-`/downloads` tree. After explicit operator approval, inspect the archived files
-before using the manual fallback:
+`/downloads` tree. After explicit operator approval, use the repo-owned restore
+script for archived torrent metadata:
+
+```sh
+scripts/deluge-restore-torrents.sh /config/archive/torrent-recovery-20260720T062234Z.tar.xz --dry-run
+scripts/deluge-restore-torrents.sh /config/archive/torrent-recovery-20260720T062234Z.tar.xz --execute
+scripts/deluge-restore-torrents.sh /config/archive/torrent-recovery-20260720T062234Z.tar.xz --readd
+```
+
+Use the raw in-pod fallback only when the script does not cover the restore
+source:
 
 ```sh
 kubectl -n media exec deploy/deluge -c app -- /bin/sh -c '

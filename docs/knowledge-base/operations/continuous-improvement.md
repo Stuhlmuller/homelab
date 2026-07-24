@@ -381,7 +381,12 @@ policy`.
   `libtorrent::libtorrent_exception: invalid type requested from entry`.
   `deluge_daemon_rpc_healthy` was `0` until the documented
   `session.state` recovery restored `/config/session.state.bak` and archived
-  the broken state file as `session.state.broken-20260615T040836Z`.
+  the broken state file as `session.state.broken-20260615T040836Z`. On
+  2026-07-24 UTC, Deluge RPC was unhealthy and the visible torrent list had
+  collapsed to one torrent; `scripts/deluge-restore-torrents.sh` restored
+  `/config/archive/torrent-recovery-20260720T062234Z.tar.xz`, preserved the
+  pre-restore state as `/config/state.pre-restore-20260724T055007Z`, and
+  re-added 14 archived `.torrent` files.
 - **Risk:** Deluge can be unavailable while Kubernetes readiness, Gluetun, and
   Argo CD still look healthy, and the same persisted-state corruption may
   recur after future pod or daemon restarts.
