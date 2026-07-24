@@ -78,8 +78,8 @@ provide Deluge's write access. When stale resume data points complete downloads
 at the incomplete root, the documented operator script selects only exact-size
 target files, adopts them with libtorrent's `dont_replace` move, and requires a
 full piece-hash recheck before completion is trusted. The command resumes
-hash-valid entries for seeding and pauses hash failures so stale catalog state
-cannot trigger a silent redownload.
+hash-valid entries for seeding and pauses hash failures. Checks run one at a
+time so Deluge's queue transitions cannot trigger a silent redownload.
 
 ## Source Files
 

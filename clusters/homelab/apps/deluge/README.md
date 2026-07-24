@@ -261,13 +261,25 @@ kubectl -n media exec deploy/deluge -c app -- \
 
 The apply path pauses the selected torrents, adopts existing target files with
 libtorrent's `dont_replace` storage move, and forces a piece-hash recheck. It
-guards the serialized checks against redownloading: verified entries resume for
-seeding, while entries that fail their hashes remain paused. If an older apply
-is already checking, attach the same guard with `--monitor`. Target files are
-never replaced; stale source copies may be removed by libtorrent. Exact sizes
-are only the selection guard—the hash recheck is the integrity decision. See
-the upstream
+checks entries one at a time so queue transitions cannot start a redownload:
+verified entries resume for seeding, while entries that fail their hashes
+remain paused. Target files are never replaced; stale source copies may be
+removed by libtorrent. Exact sizes are only the selection guard—the hash
+recheck is the integrity decision. See the upstream
 [move-storage contract](https://www.libtorrent.org/reference-Storage.html).
+
+If Sonarr and Radarr both have empty queues after recovery, remove paused
+catalog entries whose expected complete-root files are missing or the wrong
+size:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- \
+  python3 /scripts/reconcile-completed.py --prune-skipped
+```
+
+This cleanup refuses entries that are not paused under `/downloads/complete`
+and calls Deluge with `remove_data=false`, so it removes only stale catalog
+records and never downloaded files.
 
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
 container repeatedly fails startup health checks with DNS lookup timeouts, treat
