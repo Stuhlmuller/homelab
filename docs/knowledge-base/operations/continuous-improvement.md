@@ -440,5 +440,7 @@ policy`.
   wrapper skips the futile recursive ownership hook. Deluge reloaded all 14
   torrents and resumed downloads after the observed restart. The guarded
   operator reconciliation adopts exact-size complete-root files without
-  replacement and makes libtorrent hash-check them before trusting completion;
-  separately reduce the NFS stall that causes the bad shutdowns.
+  replacement and makes libtorrent hash-check them before trusting completion.
+  Its guard resumes verified entries and pauses hash failures instead of
+  redownloading them; separately reduce the NFS stall that causes the bad
+  shutdowns.

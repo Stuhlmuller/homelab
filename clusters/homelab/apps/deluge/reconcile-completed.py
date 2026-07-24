@@ -14,6 +14,7 @@ from twisted.internet import defer, reactor, task
 CONFIG_DIR = "/config"
 STATE_DIR = os.path.join(CONFIG_DIR, "state")
 COMPLETE_DIR = os.path.realpath("/downloads/complete")
+STATUS_FIELDS = ["is_finished", "save_path", "state"]
 
 
 def files_complete(torrent_id):
@@ -44,13 +45,84 @@ def local_auth():
 
 
 @defer.inlineCallbacks
-def reconcile(apply, timeout):
+def monitor_rechecks(candidates, timeout):
+    deadline = time.monotonic() + timeout
+    saw_checking = False
+    quiet_polls = 0
+
+    while True:
+        statuses = yield client.core.get_torrents_status({}, STATUS_FIELDS)
+        missing = [
+            torrent_id for torrent_id in candidates if torrent_id not in statuses
+        ]
+        if missing:
+            raise RuntimeError("a selected torrent disappeared during its hash check")
+
+        downloading = [
+            torrent_id
+            for torrent_id in candidates
+            if not statuses[torrent_id]["is_finished"]
+            and statuses[torrent_id]["state"] == "Downloading"
+        ]
+        if downloading:
+            yield client.core.pause_torrent(downloading)
+
+        checking = [
+            torrent_id
+            for torrent_id in candidates
+            if statuses[torrent_id]["state"] == "Checking"
+        ]
+        if checking:
+            saw_checking = True
+            quiet_polls = 0
+        elif saw_checking:
+            quiet_polls += 1
+
+        if saw_checking and quiet_polls >= 3:
+            break
+        if time.monotonic() >= deadline:
+            raise TimeoutError("timed out waiting for Deluge hash checks")
+        yield task.deferLater(reactor, 5, lambda: None)
+
+    statuses = yield client.core.get_torrents_status({}, STATUS_FIELDS)
+    verified = [
+        torrent_id
+        for torrent_id in candidates
+        if statuses[torrent_id]["is_finished"]
+    ]
+    incomplete = [
+        torrent_id
+        for torrent_id in candidates
+        if not statuses[torrent_id]["is_finished"]
+    ]
+    if incomplete:
+        yield client.core.pause_torrent(incomplete)
+    if verified:
+        yield client.core.resume_torrent(verified)
+    print(
+        f"Hash checks complete: verified {len(verified)} entries; "
+        f"paused {len(incomplete)} incomplete entries"
+    )
+
+
+@defer.inlineCallbacks
+def reconcile(mode, timeout):
     username, password = local_auth()
     yield client.connect("127.0.0.1", 58846, username, password)
     try:
-        statuses = yield client.core.get_torrents_status(
-            {}, ["is_finished", "save_path"]
-        )
+        statuses = yield client.core.get_torrents_status({}, STATUS_FIELDS)
+        if mode == "monitor":
+            candidates = [
+                torrent_id
+                for torrent_id, status in statuses.items()
+                if not status["is_finished"]
+                and os.path.realpath(status["save_path"]) == COMPLETE_DIR
+            ]
+            print(f"Guarding {len(candidates)} incomplete complete-root entries")
+            if candidates:
+                yield monitor_rechecks(candidates, timeout)
+            return
+
         candidates = []
         total_bytes = 0
         skipped = 0
@@ -69,7 +141,7 @@ def reconcile(apply, timeout):
             f"{total_bytes} exact-size bytes under /downloads/complete; "
             f"skipped {skipped}"
         )
-        if not apply or not candidates:
+        if mode == "dry-run" or not candidates:
             if candidates:
                 print("Dry run only; rerun with --apply to adopt and hash-check them")
             return
@@ -98,19 +170,25 @@ def reconcile(apply, timeout):
 
         yield client.core.force_recheck(candidates)
         yield client.core.resume_torrent(candidates)
-        print(f"Started hash recheck for {len(candidates)} entries")
+        print(f"Started guarded hash recheck for {len(candidates)} entries")
+        yield monitor_rechecks(candidates, timeout)
     finally:
         client.disconnect()
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--apply", action="store_true")
-    parser.add_argument("--timeout", type=int, default=300)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--apply", action="store_true")
+    mode.add_argument("--monitor", action="store_true")
+    parser.add_argument("--timeout", type=int, default=7200)
     args = parser.parse_args()
+    selected_mode = (
+        "apply" if args.apply else "monitor" if args.monitor else "dry-run"
+    )
 
     exit_code = [0]
-    result = reconcile(args.apply, args.timeout)
+    result = reconcile(selected_mode, args.timeout)
 
     def failed(failure):
         print(failure.value, file=sys.stderr)
