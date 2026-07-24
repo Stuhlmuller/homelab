@@ -417,7 +417,12 @@ policy`.
   `/config/state/torrents.state`, which is the actual Deluge torrent catalog.
   During recovery validation, the still-running daemon rewrote the live catalog
   and fast-resume file to one entry, but nine retained `state-*.tar.xz`
-  snapshots still held all 14 fast-resume records.
+  snapshots still held all 14 fast-resume records. After the guarded recovery
+  rollout, a short NFS/RPC stall caused three 12-second liveness failures and
+  Kubernetes killed the otherwise recoverable app container with exit code
+  137. The restart then traversed the entire root-squashed `/config` tree in
+  LinuxServer's recursive ownership hook, producing hundreds of rejected
+  `chown` calls before Deluge reloaded all 14 torrents and resumed downloads.
 - **Risk:** Deluge can be unavailable while Kubernetes readiness, Gluetun, and
   Argo CD still look healthy, and the same persisted-state corruption may
   recur after future pod or daemon restarts. Repeated bad-shutdown archives now
@@ -427,6 +432,8 @@ policy`.
   `torrents.state` as invalid when `.torrent` files exist. It requires matching
   fast-resume records from the live file or a retained archive plus
   `/downloads`-scoped save paths before atomically restoring fast-resume data
-  and rebuilding the catalog, and it archives the pre-recovery files. Validate
-  that Deluge reloads all 14 torrents and survives a clean restart; separately
-  reduce the NFS stall that causes the bad shutdowns.
+  and rebuilding the catalog, and it archives the pre-recovery files. Runtime
+  liveness now allows the same 30-minute recovery window as startup, and the
+  wrapper skips the futile recursive ownership hook. Deluge reloaded all 14
+  torrents and resumed downloads after the observed restart; separately reduce
+  the NFS stall that causes the bad shutdowns.

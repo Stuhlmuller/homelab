@@ -70,6 +70,12 @@ until recovery completes. See
 `clusters/homelab/apps/media-postgres/README.md` for the failure mode and
 operator response.
 
+Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
+stalls do not force repeated libtorrent state reloads. Its startup wrapper skips
+the pinned LinuxServer image's recursive `/config` ownership pass because QNAP
+root squash rejects the operation and the retained PVC permissions already
+provide Deluge's write access.
+
 ## Source Files
 
 - `docs/storage-nfs.md`
