@@ -74,7 +74,10 @@ Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
 stalls do not force repeated libtorrent state reloads. Its startup wrapper skips
 the pinned LinuxServer image's recursive `/config` ownership pass because QNAP
 root squash rejects the operation and the retained PVC permissions already
-provide Deluge's write access.
+provide Deluge's write access. When stale resume data points complete downloads
+at the incomplete root, the documented operator script selects only exact-size
+target files, adopts them with libtorrent's `dont_replace` move, and requires a
+full piece-hash recheck before completion is trusted.
 
 ## Source Files
 

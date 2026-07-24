@@ -423,6 +423,9 @@ policy`.
   137. The restart then traversed the entire root-squashed `/config` tree in
   LinuxServer's recursive ownership hook, producing hundreds of rejected
   `chown` calls before Deluge reloaded all 14 torrents and resumed downloads.
+  The recovered snapshot marked only three entries complete; 11 pointed at
+  `/downloads/incomplete`, including nine shown as queued, even though all 11
+  had complete-root files matching every expected file count and byte size.
 - **Risk:** Deluge can be unavailable while Kubernetes readiness, Gluetun, and
   Argo CD still look healthy, and the same persisted-state corruption may
   recur after future pod or daemon restarts. Repeated bad-shutdown archives now
@@ -435,5 +438,7 @@ policy`.
   and rebuilding the catalog, and it archives the pre-recovery files. Runtime
   liveness now allows the same 30-minute recovery window as startup, and the
   wrapper skips the futile recursive ownership hook. Deluge reloaded all 14
-  torrents and resumed downloads after the observed restart; separately reduce
-  the NFS stall that causes the bad shutdowns.
+  torrents and resumed downloads after the observed restart. The guarded
+  operator reconciliation adopts exact-size complete-root files without
+  replacement and makes libtorrent hash-check them before trusting completion;
+  separately reduce the NFS stall that causes the bad shutdowns.
