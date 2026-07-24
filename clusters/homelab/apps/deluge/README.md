@@ -168,12 +168,26 @@ Repeated `libtorrent::libtorrent_exception` messages such as
 connection refusals, mean the Deluge daemon could not restore its persisted
 session state. Deluge 2.0.5 attempts to load both `session.state` and
 `session.state.bak`; individually valid files can still be incompatible when
-loaded sequentially. The liveness probe restarts the app container after three
-failed RPC checks. Startup reproduces Deluge's sequential load, archives an
+loaded sequentially. Startup reproduces that sequential load, archives an
 invalid current file or incompatible backup, and restores or refreshes only
-from a state file that passes libtorrent validation. This leaves `.torrent`
-files and downloaded data untouched. When neither state file exists on a new
-config volume, the wrapper lets Deluge perform its normal first-run setup.
+from a state file that passes libtorrent validation.
+
+The separate `/config/state/torrents.state` file is Deluge's active torrent
+catalog. If that catalog is empty or invalid while `.torrent` metadata remains,
+startup first restores a non-empty validated catalog backup. When both catalog
+copies are unusable, the repo-owned recovery script rebuilds the catalog only
+if every `.torrent` info hash has an exact fast-resume match and every recovered
+save path stays under `/downloads`. It checks the live fast-resume file first,
+then retained `/config/archive/*.tar.xz` snapshots from newest to oldest. It
+archives the old catalogs, atomically restores the complete fast-resume data
+and catalog, and stops without changing state if validation fails. Downloaded
+data and `.torrent` files remain untouched.
+
+The startup probe gives NFS-backed initialization and guarded state recovery up
+to 30 minutes before liveness begins. After startup, three failed daemon RPC
+checks still restart a persistently unhealthy app container. When no persisted
+state exists on a new config volume, the wrapper lets Deluge perform its normal
+first-run setup.
 
 Before Deluge Web starts, the same wrapper normalizes legacy daemon hostlist
 entries from `localhost` to Deluge's default `127.0.0.1`. Sonarr's Deluge
@@ -184,17 +198,9 @@ connecting Web to the healthy daemon.
 If automatic recovery cannot validate the backup, the app container stops
 instead of overwriting more state. Preserve torrent metadata and downloaded
 data; do not delete the `.torrent` files under `/config/state` or the
-`/downloads` tree. After explicit operator approval, use the repo-owned restore
-script for archived torrent metadata:
-
-```sh
-scripts/deluge-restore-torrents.sh /config/archive/torrent-recovery-20260720T062234Z.tar.xz --dry-run
-scripts/deluge-restore-torrents.sh /config/archive/torrent-recovery-20260720T062234Z.tar.xz --execute
-scripts/deluge-restore-torrents.sh /config/archive/torrent-recovery-20260720T062234Z.tar.xz --readd
-```
-
-Use the raw in-pod fallback only when the script does not cover the restore
-source:
+`/downloads` tree. Catalog recovery archives are written under
+`/config/archive/torrent-catalog-recovery-*`. After explicit operator approval,
+inspect the archived files before using the manual session-state fallback:
 
 ```sh
 kubectl -n media exec deploy/deluge -c app -- /bin/sh -c '
@@ -225,8 +231,9 @@ kubectl -n media exec deploy/deluge -c gluetun -- \
 
 The expected port state is `listen_ports: (5983, 5983)` and
 `random_outgoing_ports: True`. Both `deluge_daemon_rpc_healthy` and
-`deluge_vpn_healthy` should be `1`. The archived `session.state.broken-*` file
-is the rollback reference if the backup state is worse.
+`deluge_vpn_healthy` should be `1`; `deluge_torrents_total` should match the
+expected catalog count. The archived `session.state.broken-*` file is the
+rollback reference if the backup state is worse.
 
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
 container repeatedly fails startup health checks with DNS lookup timeouts, treat

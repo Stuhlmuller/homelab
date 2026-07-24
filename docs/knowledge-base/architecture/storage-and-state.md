@@ -63,11 +63,12 @@ validation passed with zero pod restarts. The incident-only hook is now removed
 from desired state, while the explicit retained claim, 30-minute startup and
 liveness windows, and 120-second termination grace remain.
 
-`media-postgres` protects NFS-backed crash recovery with a 30-minute startup
-probe and a 120-second termination grace period. Readiness still requires
-`pg_isready`, so Prowlarr, Radarr, and Sonarr cannot reach PostgreSQL until
-recovery completes. See `clusters/homelab/apps/media-postgres/README.md` for the
-failure mode and operator response.
+`media-postgres` protects NFS-backed recovery with 30-minute startup and runtime
+liveness windows plus a 120-second termination grace period. Readiness still
+requires `pg_isready`, so Prowlarr, Radarr, and Sonarr cannot reach PostgreSQL
+until recovery completes. See
+`clusters/homelab/apps/media-postgres/README.md` for the failure mode and
+operator response.
 
 ## Source Files
 
