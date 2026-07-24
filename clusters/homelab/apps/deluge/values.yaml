@@ -256,6 +256,7 @@ controllers:
               fi
             fi
 
+            python3 /scripts/recover-torrent-catalog.py
             normalize_web_daemon_host
             exec /init
         env:
@@ -270,6 +271,18 @@ controllers:
                 - -c
                 - s6-svc -d /var/run/s6/services/deluged && timeout 20s s6-svwait -d /var/run/s6/services/deluged || true
         probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - timeout 10s deluge-console -c /config status >/dev/null 2>&1
+              failureThreshold: 180
+              periodSeconds: 10
+              timeoutSeconds: 12
           liveness:
             enabled: true
             custom: true
@@ -438,6 +451,15 @@ persistence:
         app:
           - path: /downloads
             subPath: downloads
+  recovery-script:
+    enabled: true
+    type: configMap
+    name: deluge-catalog-recovery
+    advancedMounts:
+      deluge:
+        app:
+          - path: /scripts
+            readOnly: true
   tun:
     enabled: true
     type: hostPath

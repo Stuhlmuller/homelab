@@ -1,7 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: media
 resources:
   - namespace.yaml
   - externalsecret.yaml
   - media-storage.yaml
   - virtualservice.yaml
+configMapGenerator:
+  - name: deluge-catalog-recovery
+    files:
+      - recover-torrent-catalog.py
+generatorOptions:
+  disableNameSuffixHash: true
