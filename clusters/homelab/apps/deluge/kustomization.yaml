@@ -10,5 +10,6 @@ configMapGenerator:
   - name: deluge-catalog-recovery
     files:
       - recover-torrent-catalog.py
+      - reconcile-completed.py
 generatorOptions:
   disableNameSuffixHash: true

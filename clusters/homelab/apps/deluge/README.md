@@ -242,6 +242,30 @@ The expected port state is `listen_ports: (5983, 5983)` and
 expected catalog count. The archived `session.state.broken-*` file is the
 rollback reference if the backup state is worse.
 
+If a retained fast-resume snapshot points completed torrents back at
+`/downloads/incomplete`, use the mounted reconciliation script. It selects only
+incomplete catalog entries whose complete-root files all exist at their exact
+expected sizes. Dry-run first:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- \
+  python3 /scripts/reconcile-completed.py
+```
+
+After reviewing the count and byte total, apply the native libtorrent recovery:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- \
+  python3 /scripts/reconcile-completed.py --apply
+```
+
+The apply path pauses the selected torrents, adopts existing target files with
+libtorrent's `dont_replace` storage move, forces a piece-hash recheck, and
+resumes them. Target files are never replaced; stale source copies may be
+removed by libtorrent. Exact sizes are only the selection guard—the hash
+recheck is the integrity decision. See the upstream
+[move-storage contract](https://www.libtorrent.org/reference-Storage.html).
+
 If `deluge-vpn` is ready and the Kubernetes Secret exists but the Gluetun
 container repeatedly fails startup health checks with DNS lookup timeouts, treat
 that as an unhealthy WireGuard tunnel rather than a missing Kubernetes secret.
