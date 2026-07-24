@@ -184,10 +184,17 @@ and catalog, and stops without changing state if validation fails. Downloaded
 data and `.torrent` files remain untouched.
 
 The startup probe gives NFS-backed initialization and guarded state recovery up
-to 30 minutes before liveness begins. After startup, three failed daemon RPC
-checks still restart a persistently unhealthy app container. When no persisted
-state exists on a new config volume, the wrapper lets Deluge perform its normal
-first-run setup.
+to 30 minutes before liveness begins. Runtime liveness also requires 30 minutes
+of continuous daemon RPC failures before restarting the app, so a transient NFS
+stall can clear without forcing another state archive and reload.
+
+The wrapper removes the pinned image's `/etc/cont-init.d/30-config` hook before
+LinuxServer initialization. That hook recursively changes ownership across
+`/config`, which cannot succeed on the QNAP root-squashed export and turns every
+restart into a large NFS metadata scan. The PVC's existing world-writable
+permissions remain the write-access contract for Deluge's configured UID/GID.
+When no persisted state exists on a new config volume, the wrapper lets Deluge
+perform its normal first-run setup.
 
 Before Deluge Web starts, the same wrapper normalizes legacy daemon hostlist
 entries from `localhost` to Deluge's default `127.0.0.1`. Sonarr's Deluge

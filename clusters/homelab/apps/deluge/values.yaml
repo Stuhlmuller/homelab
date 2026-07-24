@@ -258,6 +258,7 @@ controllers:
 
             python3 /scripts/recover-torrent-catalog.py
             normalize_web_daemon_host
+            rm -f /etc/cont-init.d/30-config
             exec /init
         env:
           TZ: America/Los_Angeles
@@ -292,7 +293,7 @@ controllers:
                   - /bin/sh
                   - -c
                   - timeout 10s deluge-console -c /config status >/dev/null 2>&1
-              failureThreshold: 3
+              failureThreshold: 60
               initialDelaySeconds: 60
               periodSeconds: 30
               timeoutSeconds: 12
