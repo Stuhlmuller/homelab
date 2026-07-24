@@ -13,7 +13,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/dispatcharr/dispatcharr
-          tag: latest@sha256:9275b0c1f5319a84b412af6839a1364ef25b61d8d6ff0d2130a6c2b2504a8b07
+          tag: latest@sha256:3eb0ec779f3437ec64c08a9b3f545a355a8f512f3740cdeaac42b80f1021637d
         envFrom:
           - secretRef:
               name: dispatcharr-postgres-env
@@ -55,7 +55,7 @@ controllers:
       celery:
         image:
           repository: ghcr.io/dispatcharr/dispatcharr
-          tag: latest@sha256:9275b0c1f5319a84b412af6839a1364ef25b61d8d6ff0d2130a6c2b2504a8b07
+          tag: latest@sha256:3eb0ec779f3437ec64c08a9b3f545a355a8f512f3740cdeaac42b80f1021637d
         command:
           - /app/docker/entrypoint.celery.sh
         envFrom:
