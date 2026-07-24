@@ -441,6 +441,8 @@ policy`.
   torrents and resumed downloads after the observed restart. The guarded
   operator reconciliation adopts exact-size complete-root files without
   replacement and makes libtorrent hash-check them before trusting completion.
-  Its guard resumes verified entries and pauses hash failures instead of
-  redownloading them; separately reduce the NFS stall that causes the bad
-  shutdowns.
+  It checks one entry at a time, resumes verified entries, and pauses hash
+  failures instead of redownloading them. After confirming the Sonarr and
+  Radarr queues are empty, its guarded prune removes only paused, unrecoverable
+  Deluge catalog records with `remove_data=false`; separately reduce the NFS
+  stall that causes the bad shutdowns.
