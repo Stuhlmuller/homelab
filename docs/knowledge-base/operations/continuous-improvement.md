@@ -122,14 +122,37 @@ policy`.
   retained pgvector `0.8.1` and the committed settings, and returned AFFiNE to a
   synced, healthy Argo CD state. HTTPS, native-client CORS, server discovery,
   and the anonymous-workspace denial checks all passed. The incident-only hook
-  was removed from steady-state desired state after those checks.
-- **Risk:** `media-postgres` still has a short post-start liveness window, while
-  `n8n-postgres` and `octelium-postgres` retain the readiness/liveness-only probe
-  pattern. Another shared-storage stall can still restart those databases and
-  lengthen recovery.
-- **Next step:** inspect QNAP pool, disk, and network history for both incident
-  windows, then add equivalent recovery-aware behavior to the remaining
-  PostgreSQL StatefulSets in separately reviewed workload changes.
+  was removed from steady-state desired state after those checks. Read-only
+  inspection on 2026-07-24 confirmed another broad recurrence:
+  `media-postgres` had restarted 148 times in four days, Deluge's app and
+  Gluetun containers had restarted 669 and 413 times in ten days, and Radarr
+  had restarted 147 times in three and a half days. Sonarr and Prowlarr had
+  zero restarts in their current pods but logged repeated PostgreSQL connection
+  refusals and read timeouts. Prometheus recorded about 22,465 I/O-wait
+  task-seconds for `media-postgres`, 11,062 for Radarr, 5,677 for Deluge, 5,141
+  for Sonarr, and 2,476 for Prowlarr over the preceding 24 hours, with no media
+  container OOM events. The NFSv3 client statistics shared by the affected
+  mounts on `acer` recorded 7,732,718 WRITE RPC timeouts and roughly 69 seconds
+  of average write execution time over the mount lifetime, compared with 12
+  and 24 WRITE timeouts and roughly 46 and 87 milliseconds average execution
+  time on `zimaboard-0` and `zimaboard-1`. Deluge's VPN metric was healthy
+  99.8% of the last 24 hours while daemon RPC health was only 65.3%; its
+  previous app instance stalled during `/config` ownership initialization
+  before the liveness probe restarted it. All affected persistent volumes
+  target the QNAP at `10.1.0.2` over NFSv3.
+- **Risk:** probe hardening limits crash-recovery loops but cannot make the
+  shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
+  `Running` while database calls fail, while Deluge and Radarr turn sustained
+  I/O stalls into restart loops. The same failure domain affects unrelated
+  NFS-backed workloads across the cluster.
+- **Next step:** the media PostgreSQL liveness window now matches its
+  30-minute startup recovery window, which prevents brief NFS outages from
+  immediately starting another crash-recovery cycle. Treat the QNAP and
+  especially the `acer` NFS client path as the primary incident. Inspect QNAP
+  pool, disk, NFS-service, and network history for the 2026-07-23/24 window;
+  collect Talos kernel NFS diagnostics with a populated Talos client config;
+  and benchmark NFS latency from each wired node. Evaluate moving PostgreSQL
+  and other high-churn state to storage designed for database synchronous I/O.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
@@ -381,11 +404,29 @@ policy`.
   `libtorrent::libtorrent_exception: invalid type requested from entry`.
   `deluge_daemon_rpc_healthy` was `0` until the documented
   `session.state` recovery restored `/config/session.state.bak` and archived
-  the broken state file as `session.state.broken-20260615T040836Z`.
+  the broken state file as `session.state.broken-20260615T040836Z`. On
+  2026-07-24, Deluge reported zero loaded torrents even though
+  `/config/state` still contained 14 `.torrent` files and a 37,454-byte
+  `torrents.fastresume`. Both the live `torrents.state` and its backup were
+  only 80 bytes. The two retained `torrent-recovery-20260720` archives
+  preserved all 14 metadata files but their 2,287-byte catalogs each referenced
+  only one torrent, so neither was a complete rollback source. The daemon
+  logged `Bad shutdown detected` followed by `Finished loading 0 torrents`.
+  The startup wrapper validated `/config/session.state`, which holds libtorrent
+  session settings, but did not validate or restore
+  `/config/state/torrents.state`, which is the actual Deluge torrent catalog.
+  During recovery validation, the still-running daemon rewrote the live catalog
+  and fast-resume file to one entry, but nine retained `state-*.tar.xz`
+  snapshots still held all 14 fast-resume records.
 - **Risk:** Deluge can be unavailable while Kubernetes readiness, Gluetun, and
   Argo CD still look healthy, and the same persisted-state corruption may
-  recur after future pod or daemon restarts.
-- **Next step:** investigate a durable fix for recurring Deluge
-  `session.state` corruption, such as a safer shutdown path, a newer Deluge or
-  libtorrent image, or an automated guarded recovery that preserves
-  `/config/state/*.torrent` and `/downloads`.
+  recur after future pod or daemon restarts. Repeated bad-shutdown archives now
+  preserve the empty catalog and can age out the last known-good recovery
+  copies even though the individual torrent metadata files remain.
+- **Next step:** guarded startup recovery now treats an empty
+  `torrents.state` as invalid when `.torrent` files exist. It requires matching
+  fast-resume records from the live file or a retained archive plus
+  `/downloads`-scoped save paths before atomically restoring fast-resume data
+  and rebuilding the catalog, and it archives the pre-recovery files. Validate
+  that Deluge reloads all 14 torrents and survives a clean restart; separately
+  reduce the NFS stall that causes the bad shutdowns.

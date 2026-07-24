@@ -33,12 +33,17 @@ The startup probe allows PostgreSQL up to 30 minutes to finish crash recovery
 before Kubernetes enables its liveness and readiness probes. This prevents a
 slow NFS recovery from becoming a restart loop where the liveness probe kills
 PostgreSQL before it can accept connections. The readiness probe still removes
-the database from the Service until `pg_isready` succeeds.
+the database from the Service until `pg_isready` succeeds. After startup, the
+liveness probe also requires 30 minutes of continuous failures before
+restarting PostgreSQL. This keeps an intermittent NFS stall from turning a
+temporarily unavailable database into repeated crash recovery while dependent
+apps remain protected by readiness.
 
 The pod also has a 120-second termination grace period so PostgreSQL has more
 time to finish a fast shutdown without being forcibly killed. If startup
-recovery reaches the 30-minute limit, verify QNAP and NFS health before changing
-the probe thresholds or rolling dependent applications.
+recovery or a runtime liveness failure reaches the 30-minute limit, verify QNAP
+and NFS health before changing the probe thresholds or rolling dependent
+applications.
 
 ## Databases
 
