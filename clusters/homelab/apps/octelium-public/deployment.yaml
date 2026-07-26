@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        homelab.rst.io/cloudflared-config-revision: ci-kubernetes-route-2026-07-26
+        homelab.rst.io/cloudflared-config-revision: ci-kubernetes-route-2026-07-26-v2
       labels:
         app.kubernetes.io/name: cloudflared
         app.kubernetes.io/part-of: octelium-public
