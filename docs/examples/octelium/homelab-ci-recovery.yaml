@@ -1,6 +1,6 @@
 kind: Policy
 metadata:
-  name: homelab-ci-recovery-kubernetes-api-access
+  name: ci-recovery-access
 spec:
   rules:
     - effect: ALLOW
@@ -31,7 +31,7 @@ spec:
   authorization:
     policies:
       - homelab-ci-kubernetes-api-access
-      - homelab-ci-recovery-kubernetes-api-access
+      - ci-recovery-access
 ---
 kind: User
 metadata:
