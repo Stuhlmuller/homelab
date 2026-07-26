@@ -127,8 +127,8 @@ Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
 
 CI/CD Octelium changes should also pass shell syntax checks for
-`scripts/ci/install-octelium-client.sh`, `scripts/ci/connect-octelium.sh`, and
-`scripts/ci/install-kubeconfig.sh`. Validate that
+`scripts/ci/install-octelium-client.sh`, `scripts/ci/live-terragrunt.sh`, and
+the Octelium/kubeconfig helpers it calls. Validate that
 `docs/examples/octelium/homelab-services.yaml` parses and contains Service
 `kubernetes-api.ci` before applying it with `octeliumctl`.
 

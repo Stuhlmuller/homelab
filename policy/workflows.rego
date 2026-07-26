@@ -35,6 +35,7 @@ deny contains msg if {
 deny contains msg if {
 	live_homelab_workflow
 	not workflow_run_contains("scripts/ci/connect-octelium.sh")
+	not workflow_run_contains("scripts/ci/live-terragrunt.sh")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q touches live homelab access but does not connect through Octelium first", [name])
 }
@@ -42,6 +43,7 @@ deny contains msg if {
 deny contains msg if {
 	live_homelab_workflow
 	not workflow_run_contains("scripts/ci/disconnect-octelium.sh")
+	not workflow_run_contains("scripts/ci/live-terragrunt.sh")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q touches live homelab access but does not tear down Octelium sessions", [name])
 }
@@ -97,6 +99,10 @@ live_homelab_workflow if {
 
 live_homelab_workflow if {
 	workflow_run_contains("scripts/ci/terragrunt-apply.sh")
+}
+
+live_homelab_workflow if {
+	workflow_run_contains("scripts/ci/live-terragrunt.sh")
 }
 
 live_homelab_workflow if {

@@ -134,20 +134,7 @@ jobs:
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
-        run: |
-          nix develop --command bash <<'EOF'
-          set -euo pipefail
-          cleanup() {
-            bash scripts/ci/disconnect-octelium.sh
-          }
-          trap cleanup EXIT
-
-          bash scripts/ci/connect-octelium.sh
-          bash scripts/ci/install-kubeconfig.sh
-          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
-          kubectl --request-timeout=15s version
-          bash scripts/ci/terragrunt-apply.sh
-          EOF
+        run: nix develop --command bash scripts/ci/live-terragrunt.sh apply
 
       - name: Disconnect Octelium
         if: always()
