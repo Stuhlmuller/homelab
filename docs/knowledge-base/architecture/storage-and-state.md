@@ -71,15 +71,22 @@ until recovery completes. See
 operator response.
 
 Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
-stalls do not force repeated libtorrent state reloads. Its startup wrapper skips
-the pinned LinuxServer image's recursive `/config` ownership pass because QNAP
-root squash rejects the operation and the retained PVC permissions already
-provide Deluge's write access. When stale resume data points complete downloads
-at the incomplete root, the documented operator script selects only exact-size
-target files, adopts them with libtorrent's `dont_replace` move, and requires a
-full piece-hash recheck before completion is trusted. The command resumes
-hash-valid entries for seeding and pauses hash failures so stale catalog state
-cannot trigger a silent redownload.
+stalls do not force repeated libtorrent state reloads. The Deluge liveness RPC
+checks use a 25-second command timeout after read-only inspection on 2026-07-26
+found the VPN healthy and Sonarr-to-Deluge HTTP fast while intermittent
+`deluge-console status` calls exceeded the old 10-second budget and triggered
+probe flaps. The metrics sidecar computes fresh health on each scrape with an
+8-second RPC cap because the old cached writer wedged for more than a day inside
+`timeout 10s deluge-console` and kept serving stale
+`deluge_daemon_rpc_healthy 0`. Its startup wrapper skips the pinned LinuxServer
+image's recursive `/config` ownership pass because QNAP root squash rejects the
+operation and the retained PVC permissions already provide Deluge's write
+access. When stale resume data points complete downloads at the incomplete root,
+the documented operator script selects only exact-size target files, adopts them
+with libtorrent's `dont_replace` move, and requires a full piece-hash recheck
+before completion is trusted. The command resumes hash-valid entries for seeding
+and pauses hash failures so stale catalog state cannot trigger a silent
+redownload.
 
 ## Source Files
 

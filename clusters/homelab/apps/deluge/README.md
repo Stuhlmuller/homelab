@@ -58,9 +58,11 @@ still fails closed when the VPN healthcheck fails. Deluge daemon health is
 covered separately by the app liveness probe and exported RPC metric.
 
 A `daemon-metrics` sidecar runs `deluge-console -c /config status` and probes
-Gluetun's local health endpoint every 30 seconds. It exposes
+Gluetun's local health endpoint on each scrape. It exposes
 `deluge_daemon_rpc_healthy` and `deluge_vpn_healthy` on the service `metrics`
-port as Prometheus text format. Prometheus scrapes them through
+port as Prometheus text format. Each scrape runs a fresh bounded status check
+so one stuck `deluge-console` process cannot leave Prometheus reading a stale
+unhealthy cache after Deluge recovers. Prometheus scrapes them through
 `clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
 alerts when either metric is missing or failing. This catches both a failed VPN
 sidecar and the case where Kubernetes and Gluetun look healthy but `deluged`
@@ -186,7 +188,10 @@ data and `.torrent` files remain untouched.
 The startup probe gives NFS-backed initialization and guarded state recovery up
 to 30 minutes before liveness begins. Runtime liveness also requires 30 minutes
 of continuous daemon RPC failures before restarting the app, so a transient NFS
-stall can clear without forcing another state archive and reload.
+stall can clear without forcing another state archive and reload. The
+`deluge-console status` checks use a 25-second command timeout because short
+NFS-backed daemon stalls have exceeded the old 10-second budget while Deluge
+Web and Gluetun remained otherwise healthy.
 
 The wrapper removes the pinned image's `/etc/cont-init.d/30-config` hook before
 LinuxServer initialization. That hook recursively changes ownership across
