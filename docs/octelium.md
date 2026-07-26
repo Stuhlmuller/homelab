@@ -8,7 +8,7 @@ existing Istio app routes. Most enforce Octelium login. AFFiNE is the reviewed
 exception: Octelium permits anonymous transport so the stock native client can
 reach AFFiNE's own authentication and API.
 
-CI cluster reachability now uses the Octelium `kubernetes-api.ci` Service.
+CI cluster reachability now uses the Octelium `kubernetes-api-ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
 ingress, on their existing paths until they are replaced in their own changes.
 
@@ -74,8 +74,8 @@ They create:
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
-- TCP/6443 Service `kubernetes-api.ci`, forwarding to
-  `tcp://10.1.0.199:6443` for CI Kubernetes API access.
+- Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
+  `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
   `grafana`, `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
   `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the existing app
@@ -263,7 +263,7 @@ The gate verifies:
   callback routes.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
-Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api.ci`
+Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api-ci`
 Octelium Service, and reviewed external callbacks use the `octelium-public`
 tunnel with path-limited Istio routes. If the gate fails, treat the failure
 output as the repair work queue.
@@ -618,7 +618,7 @@ Check the CI Kubernetes API Service through Octelium from a client machine:
 ```sh
 curl -fsS \
   -H 'Authorization: Bearer <octelium-clientless-access-token>' \
-  https://kubernetes-api.ci.stinkyboi.com/version
+  https://kubernetes-api-ci.stinkyboi.com/version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for

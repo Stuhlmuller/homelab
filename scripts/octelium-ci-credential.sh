@@ -266,6 +266,19 @@ if [[ "$apply_catalog" == "true" ]]; then
   fi
 fi
 
+retire_legacy_ci_service() {
+  # This service used a two-label hostname that is not covered by the
+  # cluster's first-level wildcard certificate.
+  if run_octeliumctl get service kubernetes-api.ci --domain "$domain" >/dev/null 2>&1; then
+    run_octeliumctl delete service kubernetes-api.ci --domain "$domain" >/dev/null
+    echo "Deleted retired Octelium service kubernetes-api.ci"
+  fi
+}
+
+if [[ "$apply_catalog" == "true" ]]; then
+  retire_legacy_ci_service
+fi
+
 preflight_github_secret_targets
 
 delete_active_user_sessions() {

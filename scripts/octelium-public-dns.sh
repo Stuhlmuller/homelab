@@ -146,7 +146,7 @@ hostnames=(
   "dispatcharr.${domain}"
   "grafana.${domain}"
   "kiali.${domain}"
-  "kubernetes-api.ci.${domain}"
+  "kubernetes-api-ci.${domain}"
   "litellm.${domain}"
   "n8n.${domain}"
   "n8n-webhook.${domain}"
@@ -162,6 +162,10 @@ hostnames=(
 if [[ "$domain" == "$zone_name" ]]; then
   hostnames+=("octelium.${domain}")
 fi
+
+# Retire the short-lived two-label CI endpoint. The certificate only covers
+# first-level subdomains, so the replacement is kubernetes-api-ci.<domain>.
+retired_hostnames=("kubernetes-api.ci.${domain}")
 
 delete_exact_records() {
   local hostname="$1"
@@ -244,4 +248,10 @@ for hostname in "${hostnames[@]}"; do
   delete_exact_records "$hostname" A
   delete_exact_records "$hostname" AAAA
   upsert_cname_record "$hostname"
+done
+
+for hostname in "${retired_hostnames[@]}"; do
+  delete_exact_records "$hostname" A
+  delete_exact_records "$hostname" AAAA
+  delete_exact_records "$hostname" CNAME
 done

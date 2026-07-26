@@ -76,9 +76,9 @@ contract for Grafana.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
-  and the public clientless `KUBERNETES` Service `kubernetes-api.ci`. Live
+  and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
   Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
-  existing Cloudflare Tunnel endpoint at `https://kubernetes-api.ci.stinkyboi.com`.
+  existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
   This avoids the IPv6-only Gateway QUIC path, while the
   `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
@@ -156,7 +156,7 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api.ci` Service. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
@@ -184,7 +184,7 @@ defines:
 - workload User `homelab-ci`;
 - Policy `homelab-ci-kubernetes-api-access`, which allows only the public
   clientless Kubernetes Service;
-- public `KUBERNETES` Service `kubernetes-api.ci -> https://10.1.0.199:6443`.
+- public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
 
 Apply that catalog after materializing the upstream kubeconfig Secret, then
 create or rotate the GitHub environment secret in both CI environments:
@@ -219,7 +219,7 @@ helper so the token is captured and stored without being displayed.
 Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after catalog policy
 changes, after runner image changes, and on a regular schedule. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
-CI receives `403` from `kubernetes-api.ci`, reapply the catalog, reconcile the
+CI receives `403` from `kubernetes-api-ci`, reapply the catalog, reconcile the
 Secret, and rotate the credential with `scripts/octelium-ci-credential.sh`.
 If the credential must be recovered, apply
 `docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub

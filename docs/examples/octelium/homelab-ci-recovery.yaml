@@ -10,7 +10,7 @@ spec:
             - match: ctx.user.metadata.name == "homelab-ci-recovery"
             - match: ctx.user.spec.type == "WORKLOAD"
             - match: ctx.session.status.type == "CLIENTLESS"
-            - match: ctx.service.metadata.name == "kubernetes-api.ci"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci"
             - match: ctx.service.spec.mode == "KUBERNETES"
 ---
 kind: Namespace

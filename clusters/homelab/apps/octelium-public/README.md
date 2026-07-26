@@ -13,7 +13,7 @@ outside the tailnet:
   `docs/examples/octelium/homelab-services.yaml`
 - `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com` for
   reviewed external callbacks that cannot complete an Octelium browser login
-- `kubernetes-api.ci.stinkyboi.com` for the policy-bound clientless CI
+- `kubernetes-api-ci.stinkyboi.com` for the policy-bound clientless CI
   Kubernetes Service
 
 ## Secret Contract

@@ -6,7 +6,7 @@ on:
 permissions: {}
 
 env:
-  KUBE_API_SERVER_URL: https://kubernetes-api.ci.stinkyboi.com
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
 
 jobs:
   grafana:

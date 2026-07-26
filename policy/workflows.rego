@@ -42,7 +42,7 @@ deny contains msg if {
 deny contains msg if {
 	live_homelab_workflow
 	value := workflow_env_value("KUBE_API_SERVER_URL")
-	value != "https://kubernetes-api.ci.stinkyboi.com"
+	value != "https://kubernetes-api-ci.stinkyboi.com"
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must reach Kubernetes through the Octelium clientless endpoint", [name])
 }

@@ -119,7 +119,7 @@ their exit node to route internet-bound traffic through the homelab cluster
 egress path. It also advertises the `10.1.0.0/24` homelab LAN route so tailnet
 clients can reach local network services through the same operator-managed
 device when Octelium is unavailable or when a local-LAN workflow has not yet
-moved. GitHub Actions uses Octelium Service `kubernetes-api.ci` instead of this
+moved. GitHub Actions uses Octelium Service `kubernetes-api-ci` instead of this
 tailnet route.
 
 This repository cannot approve tailnet routes by itself. The tailnet policy must
