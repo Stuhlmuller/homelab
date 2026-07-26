@@ -344,6 +344,8 @@ ensure_existing_credential_spec() {
   if jq -e \
     --arg user "$user_name" \
     --arg policy "$policy_name" \
+    --arg credential_type "$credential_type" \
+    --arg session_type "$session_type" \
     '
       .spec.user == $user and
       .spec.type == ($credential_type | ascii_upcase | gsub("-"; "_")) and
@@ -355,12 +357,14 @@ ensure_existing_credential_spec() {
   fi
 
   credential_spec="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential-spec.XXXXXX.yaml")"
+  local credential_type_value="${credential_type^^}"
+  credential_type_value="${credential_type_value//-/_}"
   {
     printf 'kind: Credential\n'
     printf 'metadata:\n'
     printf '  name: %s\n' "$credential_name"
     printf 'spec:\n'
-    printf '  type: %s\n' "${credential_type^^}"
+    printf '  type: %s\n' "$credential_type_value"
     printf '  user: %s\n' "$user_name"
     printf '  sessionType: %s\n' "${session_type^^}"
     printf '  authorization:\n'
