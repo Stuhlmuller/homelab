@@ -19,10 +19,8 @@ dependencies {
 }
 
 locals {
-  repo_url = "https://github.com/Stuhlmuller/homelab.git"
-
-  # Temporary recovery reference; restore main immediately after this rollout lands.
-  target_revision = "codex/deluge-stabilize-metrics"
+  repo_url        = "https://github.com/Stuhlmuller/homelab.git"
+  target_revision = "main"
 }
 
 inputs = {

@@ -146,7 +146,6 @@ hostnames=(
   "dispatcharr.${domain}"
   "grafana.${domain}"
   "kiali.${domain}"
-  "kubernetes-api.ci.${domain}"
   "litellm.${domain}"
   "n8n.${domain}"
   "n8n-webhook.${domain}"

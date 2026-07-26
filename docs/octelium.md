@@ -613,20 +613,44 @@ external callbacks that cannot complete an Octelium browser login, currently
 callback `VirtualService` objects path-limited and annotated with
 `homelab.rst.io/public-callback: "true"` plus a reviewed purpose.
 
-Check the CI Kubernetes API Service through Octelium from a client machine:
+Check the CI Kubernetes API service through Octelium from a client machine:
 
 ```sh
-curl -fsS \
-  -H 'Authorization: Bearer <octelium-clientless-access-token>' \
-  https://kubernetes-api.ci.stinkyboi.com/version
+octelium connect \
+  --domain stinkyboi.com \
+  --implementation gvisor \
+  --ip-mode=v4 \
+  --no-dns \
+  --publish kubernetes-api.ci:127.0.0.1:16443
+curl -kfsS https://127.0.0.1:16443/version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
-this clientless workload credential. The upstream kubeconfig lives only in the
-Octelium Secret `homelab-ci-kubeconfig`, created with
-`scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`. GitHub Actions
-uses the access token as the public Service bearer credential, avoiding the
-IPv6-only Gateway transport entirely.
+this workload credential. Do not add Octelium `--scope` flags to this CI
+connection on v0.35; scoped auth-token sessions are denied before the
+Kubernetes API listener is published.
+The workflow value `OCTELIUM_TUNNEL_MODE=quicv0` selects the hosted-compatible
+Octelium QUIC dataplane because GitHub-hosted runners cannot route directly to
+the gateways' IPv6-only WireGuard addresses. It is not a Tailscale fallback
+path.
+The CI helper defaults to a per-GitHub-run Octelium homedir so a stale local
+OcteliumDB refresh token cannot bypass a freshly rotated
+`OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
+logout-on-exit and the `if: always()` disconnect helper calls both
+`octelium disconnect` and `octelium logout` against the same ephemeral homedir
+so auth-token sessions do not accumulate. GitHub-hosted jobs connect through
+the public `octelium-api.stinkyboi.com` endpoint and leave
+`OCTELIUM_API_HOST_ALIAS` unset because they cannot route to the private Istio
+ClusterIP. CI keeps `--no-dns` enabled because it only needs the localhost
+`kubernetes-api.ci` publish and later Nix or Kubernetes commands should keep
+the runner's normal DNS resolver. The
+credential helper verifies GitHub environment secret write access with a
+temporary write/delete, refreshes an existing Credential's User and Policy
+binding, and refuses existing-credential rotation when GitHub secret updates are
+disabled. If the `homelab-ci` user hits the Octelium server-side active-session
+cap, use the credential helper's
+`--delete-user-sessions-only` mode to clear only those workload sessions before
+rerunning CI.
 
 ## Rollback
 

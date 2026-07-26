@@ -75,19 +75,33 @@ contract for Grafana.
   section in the PR description after a successful plan.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
-- Octelium access uses an access-token credential for workload User `homelab-ci`
-  and the public clientless `KUBERNETES` Service `kubernetes-api.ci`. Live
-  Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
-  existing Cloudflare Tunnel endpoint at `https://kubernetes-api.ci.stinkyboi.com`.
-  This avoids the IPv6-only Gateway QUIC path, while the
-  `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
+- Octelium access uses a workload credential for User `homelab-ci` and Service
+  `kubernetes-api.ci`. Live Terragrunt and diagnostic jobs run on GitHub-hosted
+  Ubuntu and reach the cluster through Octelium userspace Service publishing
+  rather than direct Kubernetes routing. Hosted runners connect through the
+  public `octelium-api.stinkyboi.com` endpoint; do not set the private
+  `OCTELIUM_API_HOST_ALIAS` ClusterIP on those jobs. The jobs use gVisor
+  userspace publishing, skip Octelium DNS changes because CI only needs the
+  localhost publish, and force Octelium's `quicv0` tunnel mode because hosted
+  runners cannot route directly to the gateways' IPv6-only WireGuard addresses.
+  They publish the Service to `127.0.0.1:16443` and rely on the
+  `homelab-ci-kubernetes-api-access` policy as the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
-- The upstream kubeconfig is stored only as the Octelium Secret
-  `homelab-ci-kubeconfig`, materialized with
-  `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
-  into GitHub. CI writes a token-only kubeconfig with mode `0600`, verifies
-  `/version` with the bearer token, then runs authenticated `kubectl`.
+  The Octelium Cluster bootstrap enables `network.quicv0.enable` for hosted CI;
+  reconcile the `_gw-*` gateway AAAA records with
+  `scripts/octelium-gateway-dns.sh` whenever Octelium gateway status changes.
+  External clients need those exact public gateway hostnames for hosted CI QUIC
+  sessions and human WireGuard client dataplane sessions.
+- The kubeconfig is injected only from GitHub environment secrets and written to
+  `$HOME/.kube/config` with mode `0600`. After writing it, CI rewrites the
+  current cluster server to `https://127.0.0.1:16443` and sets the TLS server
+  name to `10.1.0.199`, so the Kubernetes API certificate remains valid through
+  the Octelium tunnel.
+- Kubernetes reachability is verified first with a TLS reachability `curl`
+  probe against `https://127.0.0.1:16443/version`, which may return `401` on
+  clusters that reject anonymous API requests, and then with authenticated
+  `kubectl --request-timeout=15s version` after kubeconfig installation.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
@@ -147,7 +161,7 @@ Create two GitHub environments:
 - `homelab-production`: used by post-merge applies. Require reviewers and limit
   deployment branches to `main`.
 
-Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Add
+Add `OCTELIUM_CI_AUTH_TOKEN` and `KUBE_CONFIG_B64` to both environments. Add
 `AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan`
 lets trusted pull requests render AzureAD application plans, otherwise that PR
 plan phase is skipped with a warning. Repository-level secrets also work, but
@@ -156,7 +170,8 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 |--------|-------------|---------|
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api.ci` Service. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium workload credential for User `homelab-ci`, used only to create a policy-bound client session for `MainService/Connect` and Service `kubernetes-api.ci`. |
+| `KUBE_CONFIG_B64` | both | Base64-encoded kubeconfig for the homelab cluster. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
@@ -182,15 +197,15 @@ The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
 
 - workload User `homelab-ci`;
-- Policy `homelab-ci-kubernetes-api-access`, which allows only the public
-  clientless Kubernetes Service;
-- public `KUBERNETES` Service `kubernetes-api.ci -> https://10.1.0.199:6443`.
+- Policy `homelab-ci-kubernetes-api-access`, which allows only the Octelium
+  user API `Connect` method and the Kubernetes API TCP Service;
+- TCP Service `kubernetes-api.ci -> tcp://10.1.0.199:6443`.
 
-Apply that catalog after materializing the upstream kubeconfig Secret, then
-create or rotate the GitHub environment secret in both CI environments:
+Apply that catalog to the Octelium Cluster after the control plane, portal, and
+API hostnames are reachable, then create or rotate the GitHub environment
+secret in both CI environments:
 
 ```sh
-scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
 scripts/octelium-ci-credential.sh
 ```
 
@@ -217,14 +232,43 @@ fix `gh auth status` or the target environment permissions, then rerun the
 helper so the token is captured and stored without being displayed.
 
 Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after catalog policy
-changes, after runner image changes, and on a regular schedule. Reconcile the
-Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
-CI receives `403` from `kubernetes-api.ci`, reapply the catalog, reconcile the
-Secret, and rotate the credential with `scripts/octelium-ci-credential.sh`.
-If the credential must be recovered, apply
+changes, after runner image changes, and on a regular schedule. The workflow
+still needs `KUBE_CONFIG_B64`; Octelium only carries the transport path to the
+Kubernetes API. If CI logs show `gRPC error PermissionDenied` before
+`kubernetes-api.ci` is published, reapply the catalog and rotate the credential
+with `scripts/octelium-ci-credential.sh`.
+The CI connect helper uses a per-GitHub-run Octelium homedir so one job cannot
+reuse an older local OcteliumDB session after the GitHub environment secret has
+been rotated. The helper also asks Octelium to log out when the background
+`connect` process exits, and the paired disconnect helper runs
+`octelium disconnect` plus `octelium logout` against that same ephemeral
+homedir during `if: always()` teardown. GitHub-hosted jobs must use the public
+Octelium API endpoint and leave `OCTELIUM_API_HOST_ALIAS` unset.
+Live jobs enter the Nix shell before starting `octelium connect`; do not add
+new `nix develop` invocations after the tunnel is open.
+If CI logs show `gRPC error PermissionDenied` before `kubernetes-api.ci` is
+published and `octeliumctl get sessions --user homelab-ci -o json` shows the
+server-side session cap is full, clear only that workload user's active
+sessions through the repo-owned admin helper:
+
+```sh
+scripts/octelium-ci-credential.sh --delete-user-sessions-only
+```
+
+If the server cannot delete the stale sessions, apply
 `docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
 credential to `homelab-ci-recovery` with the same helper. The recovery user is
-limited to the same public Kubernetes Service.
+limited to the same Octelium API Connect call and Kubernetes TCP service.
+
+Use the same `--homedir` and `--octelium-proxy` recovery flags with that
+cleanup mode when the admin CLI session is using the local bootstrap proxy.
+
+Do not add `--scope` flags to `scripts/ci/connect-octelium.sh` for this
+credential unless a newer Octelium release validates that scoped auth-token
+sessions can publish `kubernetes-api.ci`. On Octelium v0.35, the
+policy-bound workload credential authenticates and is then constrained by the
+attached policy; adding `api:*` or `service:*` scopes causes the client session
+to be denied before the runner can establish the tunnel.
 
 ## AWS Setup
 
