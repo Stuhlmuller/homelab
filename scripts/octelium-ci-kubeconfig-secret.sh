@@ -10,8 +10,8 @@ usage() {
 Usage: scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig PATH [options]
 
 Store a Kubernetes kubeconfig in Octelium for the clientless CI Kubernetes
-Service. The kubeconfig stays outside git and is replaced atomically through
-the authenticated Octelium admin API.
+Service. The kubeconfig stays outside git and is reconciled through the
+authenticated Octelium admin API.
 
 Options:
   --kubeconfig PATH   Source kubeconfig file (required).
