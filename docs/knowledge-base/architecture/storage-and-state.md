@@ -70,6 +70,9 @@ until recovery completes. See
 `clusters/homelab/apps/media-postgres/README.md` for the failure mode and
 operator response.
 
+`octelium-postgres` uses the same recovery window. Its availability is required
+for Octelium service publication, including the CI Kubernetes API tunnel.
+
 Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
 stalls do not force repeated libtorrent state reloads. Its pod runs on
 `zimaboard-0` with resource requests, keeping it off the control-plane node
