@@ -1,0 +1,34 @@
+data "azuread_client_config" "current" {}
+
+resource "azuread_application_password" "sso" {
+  application_id    = azuread_application.this.id
+  display_name      = "${credential_display_name}"
+  end_date_relative = "8760h"
+}
+
+locals {
+  ${parameter_local_name} = ${parameters_hcl}
+}
+
+resource "aws_ssm_parameter" "sso" {
+  for_each = local.${parameter_local_name}
+
+  region      = "${aws_region}"
+  name        = each.key
+  description = each.value.description
+  type        = "SecureString"
+  value       = each.value.value
+  key_id      = "${kms_key_id}"
+  tier        = "Standard"
+  tags        = ${tags_json}
+}
+
+output "sso_parameter_names" {
+  description = "${parameter_output_description}"
+  value       = keys(aws_ssm_parameter.sso)
+}
+
+output "sso_password_key_id" {
+  description = "${credential_output_description}"
+  value       = azuread_application_password.sso.key_id
+}

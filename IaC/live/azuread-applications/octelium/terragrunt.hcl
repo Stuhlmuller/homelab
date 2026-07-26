@@ -45,17 +45,16 @@ EOF
 generate "sso_parameters" {
   path      = "sso-parameters.tf"
   if_exists = "overwrite_terragrunt"
-  contents  = <<EOF
-data "azuread_client_config" "current" {}
-
-resource "azuread_application_password" "sso" {
-  application_id    = azuread_application.this.id
-  display_name      = "homelab-octelium-entra-oidc"
-  end_date_relative = "8760h"
-}
-
-locals {
-  octelium_entra_parameters = {
+  contents = templatefile("../sso-parameters.tftpl", {
+    aws_region                    = local.aws_region
+    kms_key_id                    = local.kms_key_id
+    credential_display_name       = "homelab-octelium-entra-oidc"
+    credential_output_description = "Key ID for the generated Octelium Microsoft Entra application password."
+    parameter_local_name          = "octelium_entra_parameters"
+    parameter_output_description  = "AWS SSM parameter names populated from the Octelium Microsoft Entra application."
+    tags_json                     = jsonencode(local.tags)
+    parameters_hcl                = <<PARAMETERS
+{
     "/homelab/octelium/entra/client-id" = {
       description = "Octelium Microsoft Entra OIDC client ID from the managed application registration."
       value       = azuread_application.this.client_id
@@ -72,32 +71,9 @@ locals {
       description = "Octelium Microsoft Entra tenant ID."
       value       = data.azuread_client_config.current.tenant_id
     }
-  }
 }
-
-resource "aws_ssm_parameter" "sso" {
-  for_each = local.octelium_entra_parameters
-
-  region      = "${local.aws_region}"
-  name        = each.key
-  description = each.value.description
-  type        = "SecureString"
-  value       = each.value.value
-  key_id      = "${local.kms_key_id}"
-  tier        = "Standard"
-  tags        = ${jsonencode(local.tags)}
-}
-
-output "sso_parameter_names" {
-  description = "AWS SSM parameter names populated from the Octelium Microsoft Entra application."
-  value       = keys(aws_ssm_parameter.sso)
-}
-
-output "sso_password_key_id" {
-  description = "Key ID for the generated Octelium Microsoft Entra application password."
-  value       = azuread_application_password.sso.key_id
-}
-EOF
+PARAMETERS
+  })
 }
 
 inputs = {

@@ -59,7 +59,9 @@ roles need identity-based KMS permissions for both keys.
   credential replacement. Its SSM contract is summarized in
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
-  `IaC/live/azuread-applications/grafana`.
+  `IaC/live/azuread-applications/grafana`; shared generated password and SSM
+  parameter wiring lives in
+  `IaC/live/azuread-applications/sso-parameters.tftpl`.
 - Alertmanager owns notification delivery credentials for Grafana-managed
   alerts. The Prometheus app materializes `alertmanager-discord-webhook` and
   `alertmanager-openclaw-alert-hook` ExternalSecrets in `monitoring`, sourced
