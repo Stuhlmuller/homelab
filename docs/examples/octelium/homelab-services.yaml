@@ -42,7 +42,7 @@ spec:
             - match: ctx.user.metadata.name == "homelab-ci"
             - match: ctx.user.spec.type == "WORKLOAD"
             - match: ctx.session.status.type == "CLIENTLESS"
-            - match: ctx.service.metadata.name == "kubernetes-api-ci"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci.default"
             - match: ctx.service.spec.mode == "KUBERNETES"
 ---
 kind: Policy
