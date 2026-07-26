@@ -47,9 +47,10 @@ See [[runbooks/argocd-bootstrap]], [[runbooks/argocd-app-onboarding]], and
 Argo CD Applications are registered through the repository-local
 `IaC/modules/argocd-application-kubernetes` module. Terragrunt passes a raw
 CRD-shaped `manifest`, so Application fields use their native names such as
-`repoURL`, `targetRevision`, and `syncPolicy`. For Git-backed sources that point
-at this repository, set `targetRevision` to `main` unless a temporary
-non-default branch is explicitly documented for testing or recovery.
+`repoURL`, `targetRevision`, and `syncPolicy`. Git-backed source defaults for
+this repository live in `IaC/live/argocd-apps/defaults.hcl`; keep
+`targetRevision` on `main` unless a temporary non-default branch is explicitly
+documented for testing or recovery.
 
 The module delegates the CRD schema to `kubernetes_manifest` while retaining
 repository policy for encrypted state, field-manager ownership, and the small

@@ -15,8 +15,7 @@ dependencies {
 }
 
 locals {
-  repo_url        = "https://github.com/Stuhlmuller/homelab.git"
-  target_revision = "main"
+  app_defaults = read_terragrunt_config(find_in_parent_folders("defaults.hcl")).locals
 }
 
 inputs = {
@@ -54,8 +53,8 @@ inputs = {
           }
         },
         {
-          repoURL        = local.repo_url
-          targetRevision = local.target_revision
+          repoURL        = local.app_defaults.repo_url
+          targetRevision = local.app_defaults.target_revision
           ref            = "values"
           path           = "."
           directory = {
@@ -63,8 +62,8 @@ inputs = {
           }
         },
         {
-          repoURL        = local.repo_url
-          targetRevision = local.target_revision
+          repoURL        = local.app_defaults.repo_url
+          targetRevision = local.app_defaults.target_revision
           path           = "clusters/homelab/apps/external-secrets"
           kustomize      = {}
         }
