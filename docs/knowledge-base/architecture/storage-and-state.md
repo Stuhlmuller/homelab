@@ -72,8 +72,8 @@ operator response.
 
 Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
 stalls do not force repeated libtorrent state reloads. Its pod runs on
-`zimaboard-1` with resource requests, keeping it off the control-plane node.
-The Deluge liveness RPC
+`zimaboard-0` with resource requests, keeping it off the control-plane node
+and away from the media PostgreSQL workload on `zimaboard-1`. The Deluge liveness RPC
 checks use a 25-second command timeout after read-only inspection on 2026-07-26
 found the VPN healthy and Sonarr-to-Deluge HTTP fast while intermittent
 `deluge-console status` calls exceeded the old 10-second budget and triggered

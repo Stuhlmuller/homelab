@@ -7,7 +7,7 @@ controllers:
     pod:
       automountServiceAccountToken: false
       nodeSelector:
-        kubernetes.io/hostname: zimaboard-1
+        kubernetes.io/hostname: zimaboard-0
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
