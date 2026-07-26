@@ -255,6 +255,11 @@ sessions through the repo-owned admin helper:
 scripts/octelium-ci-credential.sh --delete-user-sessions-only
 ```
 
+If the server cannot delete the stale sessions, apply
+`docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
+credential to `homelab-ci-recovery` with the same helper. The recovery user is
+limited to the same Octelium API Connect call and Kubernetes TCP service.
+
 Use the same `--homedir` and `--octelium-proxy` recovery flags with that
 cleanup mode when the admin CLI session is using the local bootstrap proxy.
 
