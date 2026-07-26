@@ -64,8 +64,10 @@ port as Prometheus text format. Each scrape runs a fresh bounded status check
 so one stuck `deluge-console` process cannot leave Prometheus reading a stale
 unhealthy cache after Deluge recovers. Prometheus scrapes them through
 `clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
-alerts when either metric is missing or failing. This catches both a failed VPN
-sidecar and the case where Kubernetes and Gluetun look healthy but `deluged`
+alerts when either metric is missing or failing. Prometheus samples every 45
+seconds with a 30-second deadline; the daemon RPC is capped at 20 seconds so
+transient NFS latency does not immediately look like a hard daemon outage. This
+catches both a failed VPN sidecar and the case where Kubernetes and Gluetun look healthy but `deluged`
 cannot restore state or accept console connections.
 
 ## Download Paths

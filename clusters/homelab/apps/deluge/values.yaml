@@ -6,6 +6,8 @@ controllers:
       identifier: deluge
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       annotations:
         homelab.rst.io/rollout-strategy: "recreate-singleton"
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
@@ -149,6 +151,12 @@ controllers:
           FIREWALL_INPUT_PORTS: "8112"
           FIREWALL_VPN_INPUT_PORTS: "5983"
           HEALTH_RESTART_VPN: "on"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -264,6 +272,12 @@ controllers:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
         lifecycle:
           preStop:
             exec:
@@ -329,6 +343,12 @@ controllers:
               fi
               sleep 2
             done
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
         securityContext:
           runAsGroup: 1000
           runAsUser: 1000
@@ -353,7 +373,7 @@ controllers:
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         universal_newlines=True,
-                        timeout=8,
+                        timeout=20,
                     )
                 except Exception:
                     return 0, 0, 0
@@ -409,6 +429,12 @@ controllers:
 
 
             HTTPServer(("0.0.0.0", 9797), MetricsHandler).serve_forever()
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 128Mi
         securityContext:
           allowPrivilegeEscalation: false
           runAsGroup: 1000
