@@ -22,6 +22,7 @@ OCTELIUM_TUNNEL_MODE="${OCTELIUM_TUNNEL_MODE:-}"
 OCTELIUM_USE_SUDO="${OCTELIUM_USE_SUDO:-false}"
 OCTELIUM_LOGOUT_ON_EXIT="${OCTELIUM_LOGOUT_ON_EXIT:-true}"
 OCTELIUM_STATUS_TIMEOUT_SECONDS="${OCTELIUM_STATUS_TIMEOUT_SECONDS:-10}"
+OCTELIUM_CONNECT_ATTEMPTS="${OCTELIUM_CONNECT_ATTEMPTS:-3}"
 OCTELIUM_CONNECT_LOG="${OCTELIUM_CONNECT_LOG:-${OCTELIUM_HOMEDIR}/connect.log}"
 OCTELIUM_CONNECT_PID_FILE="${OCTELIUM_CONNECT_PID_FILE:-${OCTELIUM_HOMEDIR}/connect.pid}"
 
@@ -167,13 +168,6 @@ fi
 if [ -z "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
   connect_cmd+=(--publish "${OCTELIUM_KUBE_SERVICE}:${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}")
 fi
-if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
-  nohup sudo -E "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
-else
-  nohup "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
-fi
-echo "$!" >"${OCTELIUM_CONNECT_PID_FILE}"
-
 if [ -n "${OCTELIUM_KUBE_SERVICE_ADDRESS}" ]; then
   readiness_url="https://${OCTELIUM_KUBE_SERVICE_ADDRESS}:6443/version"
   readiness_target="${OCTELIUM_KUBE_SERVICE} at ${OCTELIUM_KUBE_SERVICE_ADDRESS}:6443"
@@ -182,7 +176,6 @@ else
   readiness_target="${OCTELIUM_KUBE_SERVICE} on ${OCTELIUM_KUBE_LOCAL_HOST}:${OCTELIUM_KUBE_LOCAL_PORT}"
 fi
 
-deadline=$((SECONDS + OCTELIUM_READY_TIMEOUT_SECONDS))
 run_status() {
   local status_cmd
 
@@ -198,19 +191,40 @@ run_status() {
   fi
 }
 
-until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
-  if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
-    sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
-    echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
-    exit 1
+for attempt in $(seq 1 "${OCTELIUM_CONNECT_ATTEMPTS}"); do
+  : >"${OCTELIUM_CONNECT_LOG}"
+  if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
+    nohup sudo -E "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
+  else
+    nohup "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 &
   fi
-  if [ "${SECONDS}" -ge "${deadline}" ]; then
-    run_status
-    sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
-    echo "Timed out waiting for ${readiness_target}." >&2
-    exit 1
+  echo "$!" >"${OCTELIUM_CONNECT_PID_FILE}"
+
+  deadline=$((SECONDS + OCTELIUM_READY_TIMEOUT_SECONDS))
+  until curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; do
+    if ! kill -0 "$(cat "${OCTELIUM_CONNECT_PID_FILE}")" 2>/dev/null; then
+      break
+    fi
+    if [ "${SECONDS}" -ge "${deadline}" ]; then
+      run_status
+      sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
+      echo "Timed out waiting for ${readiness_target}." >&2
+      exit 1
+    fi
+    sleep 2
+  done
+
+  if curl -ksS --max-time 5 -o /dev/null "${readiness_url}"; then
+    echo "Octelium reached ${readiness_target}."
+    exit 0
   fi
-  sleep 2
+
+  sed -E 's/[A-Za-z0-9_-]{20,}/[redacted]/g' "${OCTELIUM_CONNECT_LOG}" >&2 || true
+  if [ "${attempt}" -lt "${OCTELIUM_CONNECT_ATTEMPTS}" ]; then
+    echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}; retrying (${attempt}/${OCTELIUM_CONNECT_ATTEMPTS})." >&2
+    sleep 2
+  fi
 done
 
-echo "Octelium reached ${readiness_target}."
+echo "Octelium exited before publishing ${OCTELIUM_KUBE_SERVICE}." >&2
+exit 1
