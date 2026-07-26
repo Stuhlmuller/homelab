@@ -61,12 +61,6 @@ inputs = {
           directory = {
             include = ".argocd-values-ref-placeholder.yaml"
           }
-        },
-        {
-          repoURL        = local.repo_url
-          targetRevision = local.target_revision
-          path           = "clusters/homelab/apps/descheduler"
-          kustomize      = {}
         }
       ]
 

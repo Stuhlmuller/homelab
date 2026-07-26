@@ -29,7 +29,7 @@ requested workloads.
 | grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, prometheus, platform-storage |
 | kiali | requested | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | Yes | istio, prometheus, grafana |
 | compass | requested | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | Yes | cert-manager, istio, prometheus |
-| descheduler | requested | `kube-system` | `clusters/homelab/apps/descheduler` | `IaC/live/argocd-apps/descheduler` | Yes | prometheus |
+| descheduler | requested | `kube-system` | `clusters/homelab/apps/descheduler/values.yaml` | `IaC/live/argocd-apps/descheduler` | Yes | prometheus |
 | deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | cert-manager, istio, platform-storage |
 | dispatcharr | requested | `media` | `clusters/homelab/apps/dispatcharr` | `IaC/live/argocd-apps/dispatcharr` | Yes | external-secrets, cert-manager, istio, platform-storage |
 | prowlarr | requested | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | Yes | cert-manager, istio, media-postgres, platform-storage |
