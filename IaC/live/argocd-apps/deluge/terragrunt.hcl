@@ -22,7 +22,7 @@ dependencies {
 locals {
   repo_url = "https://github.com/Stuhlmuller/homelab.git"
   # Temporary recovery pin so Argo CD can deploy the Deluge metrics fix before merge.
-  target_revision = "codex/deluge-stabilize-metrics"
+  target_revision = "05a11526844a11ee53fea26dcce3523a6ebb2d8b"
 }
 
 inputs = {
