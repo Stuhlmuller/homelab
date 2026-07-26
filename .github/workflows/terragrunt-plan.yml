@@ -26,16 +26,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER: 127.0.0.1
-  KUBE_API_SERVER_URL: https://127.0.0.1:16443
-  KUBE_TLS_SERVER_NAME: 10.1.0.199
-  OCTELIUM_DOMAIN: stinkyboi.com
-  OCTELIUM_KUBE_SERVICE: kubernetes-api.ci
-  OCTELIUM_KUBE_LOCAL_PORT: 16443
-  OCTELIUM_IMPLEMENTATION: gvisor
-  OCTELIUM_NO_DNS: "true"
-  OCTELIUM_TUNNEL_MODE: quicv0
-  OCTELIUM_USE_SUDO: "false"
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
 
 jobs:
   static-policy:
@@ -118,7 +109,7 @@ jobs:
               IaC/*|flake.nix|flake.lock|policy/*)
                 requires_live_plan=true
                 ;;
-              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
+              scripts/ci/install-kubeconfig.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
                 requires_live_plan=true
                 ;;
             esac
@@ -150,29 +141,17 @@ jobs:
           role-to-assume: ${{ env.AWS_PLAN_ROLE_ARN }}
           unset-current-credentials: true
 
-      - name: Install Octelium Client
-        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
-        run: bash scripts/ci/install-octelium-client.sh
-
       - name: Run Live Terragrunt Plan
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
-          KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
-          cleanup() {
-            bash scripts/ci/disconnect-octelium.sh
-          }
-          trap cleanup EXIT
-
-          bash scripts/ci/connect-octelium.sh
           bash scripts/ci/install-kubeconfig.sh
-          curl -ksS --max-time 10 -o /dev/null "${KUBE_API_SERVER_URL}/version"
+          curl -fsS --max-time 10 -H "Authorization: Bearer ${OCTELIUM_AUTH_TOKEN}" -o /dev/null "${KUBE_API_SERVER_URL}/version"
           kubectl --request-timeout=15s version
           bash scripts/ci/terragrunt-plan.sh
           EOF
@@ -198,10 +177,6 @@ jobs:
       - name: Run Conftest Policies
         if: ${{ !cancelled() }}
         run: nix develop --command bash scripts/ci/conftest-policies.sh
-
-      - name: Disconnect Octelium
-        if: ${{ always() && steps.live-plan-scope.outputs.requires-live-plan == 'true' }}
-        run: bash scripts/ci/disconnect-octelium.sh
 
   fork-plan-skipped:
     name: Terragrunt Plan Skipped For Fork

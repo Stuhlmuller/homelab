@@ -8,7 +8,7 @@ existing Istio app routes. Most enforce Octelium login. AFFiNE is the reviewed
 exception: Octelium permits anonymous transport so the stock native client can
 reach AFFiNE's own authentication and API.
 
-CI cluster reachability now uses the Octelium `kubernetes-api.ci` Service.
+CI cluster reachability now uses the Octelium `kubernetes-api-ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
 ingress, on their existing paths until they are replaced in their own changes.
 
@@ -74,8 +74,8 @@ They create:
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
-- TCP/6443 Service `kubernetes-api.ci`, forwarding to
-  `tcp://10.1.0.199:6443` for CI Kubernetes API access.
+- Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
+  `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
   `grafana`, `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
   `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the existing app
@@ -263,7 +263,7 @@ The gate verifies:
   callback routes.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
-Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api.ci`
+Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api-ci`
 Octelium Service, and reviewed external callbacks use the `octelium-public`
 tunnel with path-limited Istio routes. If the gate fails, treat the failure
 output as the repair work queue.
@@ -613,44 +613,20 @@ external callbacks that cannot complete an Octelium browser login, currently
 callback `VirtualService` objects path-limited and annotated with
 `homelab.rst.io/public-callback: "true"` plus a reviewed purpose.
 
-Check the CI Kubernetes API service through Octelium from a client machine:
+Check the CI Kubernetes API Service through Octelium from a client machine:
 
 ```sh
-octelium connect \
-  --domain stinkyboi.com \
-  --implementation gvisor \
-  --ip-mode=v4 \
-  --no-dns \
-  --publish kubernetes-api.ci:127.0.0.1:16443
-curl -kfsS https://127.0.0.1:16443/version
+curl -fsS \
+  -H 'Authorization: Bearer <octelium-clientless-access-token>' \
+  https://kubernetes-api-ci.stinkyboi.com/version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
-this workload credential. Do not add Octelium `--scope` flags to this CI
-connection on v0.35; scoped auth-token sessions are denied before the
-Kubernetes API listener is published.
-The workflow value `OCTELIUM_TUNNEL_MODE=quicv0` selects the hosted-compatible
-Octelium QUIC dataplane because GitHub-hosted runners cannot route directly to
-the gateways' IPv6-only WireGuard addresses. It is not a Tailscale fallback
-path.
-The CI helper defaults to a per-GitHub-run Octelium homedir so a stale local
-OcteliumDB refresh token cannot bypass a freshly rotated
-`OCTELIUM_CI_AUTH_TOKEN`. CI also runs `octelium connect` with
-logout-on-exit and the `if: always()` disconnect helper calls both
-`octelium disconnect` and `octelium logout` against the same ephemeral homedir
-so auth-token sessions do not accumulate. GitHub-hosted jobs connect through
-the public `octelium-api.stinkyboi.com` endpoint and leave
-`OCTELIUM_API_HOST_ALIAS` unset because they cannot route to the private Istio
-ClusterIP. CI keeps `--no-dns` enabled because it only needs the localhost
-`kubernetes-api.ci` publish and later Nix or Kubernetes commands should keep
-the runner's normal DNS resolver. The
-credential helper verifies GitHub environment secret write access with a
-temporary write/delete, refreshes an existing Credential's User and Policy
-binding, and refuses existing-credential rotation when GitHub secret updates are
-disabled. If the `homelab-ci` user hits the Octelium server-side active-session
-cap, use the credential helper's
-`--delete-user-sessions-only` mode to clear only those workload sessions before
-rerunning CI.
+this clientless workload credential. The upstream kubeconfig lives only in the
+Octelium Secret `homelab-ci-kubeconfig`, created with
+`scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`. GitHub Actions
+uses the access token as the public Service bearer credential, avoiding the
+IPv6-only Gateway transport entirely.
 
 ## Rollback
 

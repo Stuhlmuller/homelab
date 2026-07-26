@@ -123,7 +123,7 @@ policy-bot-hook.stinkyboi.com /api/github/hook expect-policy-bot-400 POST
 "
 
 REQUIRED_SERVICES="
-kubernetes-api.ci
+kubernetes-api-ci
 affine
 argocd
 compass

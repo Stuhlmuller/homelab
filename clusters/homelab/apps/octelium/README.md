@@ -41,8 +41,8 @@ The Octelium resource catalog for the external Octelium Cluster is
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
-- TCP/6443 Service `kubernetes-api.ci`, forwarding to
-  `tcp://10.1.0.199:6443` for CI Kubernetes API access.
+- Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
+  `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
   `grafana`, `kiali`, `litellm`, `n8n`, `octobot`, `openclaw`, `policy-bot`,
   `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the existing app

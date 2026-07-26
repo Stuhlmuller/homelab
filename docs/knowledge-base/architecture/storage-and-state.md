@@ -70,16 +70,29 @@ until recovery completes. See
 `clusters/homelab/apps/media-postgres/README.md` for the failure mode and
 operator response.
 
+`octelium-postgres` uses the same recovery window. Its availability is required
+for Octelium service publication, including the CI Kubernetes API tunnel.
+
 Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
-stalls do not force repeated libtorrent state reloads. Its startup wrapper skips
-the pinned LinuxServer image's recursive `/config` ownership pass because QNAP
-root squash rejects the operation and the retained PVC permissions already
-provide Deluge's write access. When stale resume data points complete downloads
-at the incomplete root, the documented operator script selects only exact-size
-target files, adopts them with libtorrent's `dont_replace` move, and requires a
-full piece-hash recheck before completion is trusted. The command resumes
-hash-valid entries for seeding and pauses hash failures so stale catalog state
-cannot trigger a silent redownload.
+stalls do not force repeated libtorrent state reloads. Its pod runs on
+`zimaboard-0` with resource requests, keeping it off the control-plane node
+and away from the media PostgreSQL workload on `zimaboard-1`. The Deluge liveness RPC
+checks use a 25-second command timeout after read-only inspection on 2026-07-26
+found the VPN healthy and Sonarr-to-Deluge HTTP fast while intermittent
+`deluge-console status` calls exceeded the old 10-second budget and triggered
+probe flaps. The metrics sidecar computes fresh health every 45 seconds with a
+20-second RPC cap and a 30-second Prometheus scrape deadline because the old
+cached writer wedged for more than a day inside
+`timeout 10s deluge-console` and kept serving stale
+`deluge_daemon_rpc_healthy 0`. Its startup wrapper skips the pinned LinuxServer
+image's recursive `/config` ownership pass because QNAP root squash rejects the
+operation and the retained PVC permissions already provide Deluge's write
+access. When stale resume data points complete downloads at the incomplete root,
+the documented operator script selects only exact-size target files, adopts them
+with libtorrent's `dont_replace` move, and requires a full piece-hash recheck
+before completion is trusted. The command resumes hash-valid entries for seeding
+and pauses hash failures so stale catalog state cannot trigger a silent
+redownload.
 
 ## Source Files
 

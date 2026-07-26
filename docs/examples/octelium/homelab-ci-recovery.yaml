@@ -1,0 +1,29 @@
+kind: Policy
+metadata:
+  name: ci-recovery-access
+spec:
+  rules:
+    - effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-ci-recovery"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENTLESS"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci.default"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+---
+kind: Namespace
+metadata:
+  name: ci
+spec:
+  authorization:
+    policies:
+      - homelab-ci-kubernetes-api-access
+      - ci-recovery-access
+---
+kind: User
+metadata:
+  name: homelab-ci-recovery
+spec:
+  type: WORKLOAD

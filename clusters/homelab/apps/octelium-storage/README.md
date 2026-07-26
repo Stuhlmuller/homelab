@@ -21,6 +21,9 @@ then deletes the temporary file.
 PostgreSQL uses a 20Gi `nfs-default` PVC. Redis uses a 5Gi `nfs-default` PVC
 with AOF enabled. The QNAP NFS export squashes ownership, so both pods run as
 UID/GID 65534 like the other file-backed PostgreSQL workloads in this repo.
+PostgreSQL has 30-minute startup and liveness windows plus a 120-second
+termination grace period so NFS recovery is allowed to complete without a
+crash-recovery loop.
 
 ## Validation
 

@@ -34,32 +34,17 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
-	not workflow_run_contains("scripts/ci/connect-octelium.sh")
+	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
 	name := object.get(input, "name", "<unnamed workflow>")
-	msg := sprintf("workflow %q touches live homelab access but does not connect through Octelium first", [name])
-}
-
-deny contains msg if {
-	live_homelab_workflow
-	not workflow_run_contains("scripts/ci/disconnect-octelium.sh")
-	name := object.get(input, "name", "<unnamed workflow>")
-	msg := sprintf("workflow %q touches live homelab access but does not tear down Octelium sessions", [name])
-}
-
-deny contains msg if {
-	live_homelab_workflow
-	value := workflow_env_value("OCTELIUM_KUBE_SERVICE")
-	value != "kubernetes-api.ci"
-	name := object.get(input, "name", "<unnamed workflow>")
-	msg := sprintf("workflow %q must publish Kubernetes through Octelium Service kubernetes-api.ci", [name])
+	msg := sprintf("workflow %q touches live homelab access but does not provide an Octelium clientless access token", [name])
 }
 
 deny contains msg if {
 	live_homelab_workflow
 	value := workflow_env_value("KUBE_API_SERVER_URL")
-	value != "https://127.0.0.1:16443"
+	value != "https://kubernetes-api-ci.stinkyboi.com"
 	name := object.get(input, "name", "<unnamed workflow>")
-	msg := sprintf("workflow %q must reach Kubernetes through the Octelium loopback listener", [name])
+	msg := sprintf("workflow %q must reach Kubernetes through the Octelium clientless endpoint", [name])
 }
 
 workflow_events := object.get(input, "on", object.get(input, true, {}))

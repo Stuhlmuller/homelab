@@ -34,28 +34,12 @@ metadata:
   name: homelab-ci-kubernetes-api-access
 spec:
   rules:
-    - name: connect-api
-      effect: ALLOW
-      condition:
-        all:
-          of:
-            - match: ctx.user.metadata.name == "homelab-ci"
-            - match: ctx.user.spec.type == "WORKLOAD"
-            - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.namespace.metadata.name == "octelium-api"
-            - match: ctx.service.spec.mode == "GRPC"
-            - match: ctx.request.grpc.serviceFullName == "octelium.api.main.user.v1.MainService"
-            - match: ctx.request.grpc.method == "Connect"
     - name: kubernetes-api-service
       effect: ALLOW
       condition:
         all:
           of:
             - match: ctx.user.metadata.name == "homelab-ci"
-            - match: ctx.user.spec.type == "WORKLOAD"
-            - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.metadata.name in ["kubernetes-api", "kubernetes-api.ci"]
-            - match: ctx.service.spec.mode == "TCP"
 ---
 kind: Policy
 metadata:
@@ -103,10 +87,7 @@ spec:
 kind: Namespace
 metadata:
   name: ci
-spec:
-  authorization:
-    policies:
-      - homelab-ci-kubernetes-api-access
+spec: {}
 ---
 kind: User
 metadata:
@@ -383,13 +364,23 @@ spec:
 ---
 kind: Service
 metadata:
-  name: kubernetes-api.ci
+  name: kubernetes-api-ci
 spec:
-  mode: TCP
+  isPublic: true
+  mode: KUBERNETES
   port: 6443
+  authorization:
+    policies:
+      - homelab-ci-kubernetes-api-access
   config:
     upstream:
-      url: tcp://10.1.0.199:6443
+      url: https://10.1.0.199:6443
+    kubernetes:
+      kubeconfig:
+        # checkov:skip=CKV_SECRET_6:Reference to an externally materialized Octelium Secret, not secret data.
+        fromSecret: homelab-ci-kubeconfig
+    tls:
+      insecureSkipVerify: true
 ---
 kind: Service
 metadata:
