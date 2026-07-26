@@ -376,6 +376,9 @@ spec:
   isPublic: true
   mode: KUBERNETES
   port: 6443
+  authorization:
+    policies:
+      - homelab-ci-kubernetes-api-access
   config:
     upstream:
       url: https://10.1.0.199:6443
