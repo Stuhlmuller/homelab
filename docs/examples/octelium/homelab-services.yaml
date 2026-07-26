@@ -40,9 +40,6 @@ spec:
         all:
           of:
             - match: ctx.user.metadata.name == "homelab-ci"
-            - match: ctx.user.spec.type == "WORKLOAD"
-            - match: ctx.session.status.type == "CLIENTLESS"
-            - match: ctx.service.spec.mode == "KUBERNETES"
 ---
 kind: Policy
 metadata:
