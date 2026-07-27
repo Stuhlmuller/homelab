@@ -18,7 +18,7 @@ terraform {
 dependencies {
   paths = [
     "../../aws-ssm-parameters",
-    "../../argocd-apps/external-secrets",
+    "${dirname(find_in_parent_folders("root.hcl"))}/live/argocd-apps/external-secrets",
   ]
 }
 

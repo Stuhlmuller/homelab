@@ -18,12 +18,12 @@ Use this checklist before adding a new runtime application.
 ## Implementation Shape
 
 1. Add app desired state under `clusters/homelab/apps/<app>`.
-2. Register the Application template under
-   `IaC/.catalog/units/live/argocd-apps/<app>` and add it to
-   `IaC/terragrunt.stack.hcl`.
+2. Register the Application in `IaC/terragrunt.stack.hcl` using the shared
+   `IaC/.catalog/units/live/argocd-app` template.
 3. Use `main` as the target revision for Git-backed sources unless a temporary
    branch is explicitly documented.
-4. Add Terragrunt dependencies for registration ordering.
+4. Add Terragrunt dependencies for registration ordering as sibling app names
+   in stack `values.dependencies`.
 5. Add runtime readiness notes for dependencies that must be synced and healthy.
 6. Keep non-secret desired-state inputs in committed files.
 7. Use ExternalSecret and SSM parameter references for secret material.

@@ -40,8 +40,11 @@ terraform.rc
 .terragrunt-stack/
 .terragrunt-stack-manifest
 IaC/bootstrap/**/terragrunt.hcl
+IaC/bootstrap/**/terragrunt.values.hcl
 IaC/live/**/terragrunt.hcl
+IaC/live/**/terragrunt.values.hcl
 IaC/operator/**/terragrunt.hcl
+IaC/operator/**/terragrunt.values.hcl
 .direnv/
 .DS_Store
 .pytest_cache/

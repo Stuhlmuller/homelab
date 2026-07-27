@@ -14,7 +14,8 @@ Use this checklist before adding or changing a Terragrunt unit.
 
 ## Implementation Shape
 
-1. Add the committed unit template under `IaC/.catalog/units/...`.
+1. Reuse an existing template under `IaC/.catalog/units/...`, or add the
+   smallest new one when the existing templates do not fit.
 2. Register the unit in `IaC/terragrunt.stack.hcl` with its historical live
    path and `no_dot_terragrunt_stack = true`.
 3. Run `terragrunt stack generate` from `IaC/` before focused validation.
