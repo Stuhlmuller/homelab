@@ -46,9 +46,9 @@ contract for Grafana.
   `pull_request_target`.
 - The lint workflow is a lightweight changed-file gate that preserves the
   required `Lint` status context without replacing the repository's stricter
-  static and Terragrunt gates. It checks diff whitespace, parses changed YAML
-  files, runs `bash -n` on changed shell scripts, and uses workflow concurrency
-  to cancel stale lint runs for the same pull request.
+  static and Terragrunt gates. It runs the upstream Super-Linter action with
+  `VALIDATE_ALL_CODEBASE=false` and uses workflow concurrency to cancel stale
+  lint runs for the same pull request.
 - Policy Bot reads this repository's `.policy.yml` and requires every pull
   request commit to have a GitHub-verified signature before normal review
   approval can satisfy the `policy-bot: main` branch protection check. The

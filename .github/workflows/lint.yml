@@ -19,32 +19,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Changed-file lint
+      - name: Super-Linter
+        uses: super-linter/super-linter@4ce20838b8ab83717e78138c5b3a1407148e0918  # v8.7.0
         env:
-          BASE_REF: ${{ github.event.pull_request.base.ref }}
-        run: |
-          set -euo pipefail
-
-          base_ref="origin/${BASE_REF}"
-          changed_files="$(git diff --name-only --diff-filter=ACMRT "${base_ref}...HEAD")"
-
-          git diff --check "${base_ref}...HEAD"
-
-          if [ -z "${changed_files}" ]; then
-            echo "No changed files to lint."
-            exit 0
-          fi
-
-          echo "${changed_files}" | sed 's/^/linting changed file: /'
-
-          yaml_files="$(printf '%s\n' "${changed_files}" | awk '/\.(yaml|yml)$/')"
-          if [ -n "${yaml_files}" ]; then
-            # shellcheck disable=SC2086
-            ruby -e 'require "yaml"; ARGV.each { |file| YAML.load_file(file) }' ${yaml_files}
-          fi
-
-          shell_files="$(printf '%s\n' "${changed_files}" | awk '/\.sh$/')"
-          if [ -n "${shell_files}" ]; then
-            # shellcheck disable=SC2086
-            bash -n ${shell_files}
-          fi
+          DEFAULT_BRANCH: ${{ github.event.pull_request.base.ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
