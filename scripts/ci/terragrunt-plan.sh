@@ -180,6 +180,7 @@ plan_deleted_terragrunt_units() {
 }
 
 prepare_terragrunt_filter_base
+terragrunt_generate_stack
 clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applications
 
 {
@@ -194,7 +195,7 @@ clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applica
 echo "::group::Argo CD bootstrap plan"
 (
   cd IaC/bootstrap
-  terragrunt run --all --filter 'IaC/bootstrap/argocd | [main...HEAD]' --parallelism 1 -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/bootstrap/argocd')" --parallelism 1 -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 if ! render_plan_out_if_present "Argo CD bootstrap" "IaC/bootstrap/argocd"; then
@@ -207,7 +208,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter 'IaC/live/argocd-apps/* | [main...HEAD]' --parallelism 1 --source-update -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
@@ -236,7 +237,7 @@ echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter 'IaC/live/azuread-applications/* | [main...HEAD]' --parallelism 1 --source-update -- plan -lock=false -no-color
+    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
   )
 
   planned_azuread_count=0

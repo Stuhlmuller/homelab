@@ -206,6 +206,12 @@ The pull request workflow renders saved Terragrunt `plan.out` files to local
 for static YAML policy checks. Run the same order locally when reproducing PR
 gate behavior.
 
+CI plan and apply scripts call `terragrunt stack generate` before filtering
+units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
+changes, the scripts plan or apply the matching generated unit groups instead
+of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
+files.
+
 The trusted GitHub Actions PR plan job is serialized with a shared concurrency
 group because it reads the same OpenTofu S3 backend state across pull requests.
 Do not treat a queued PR plan as unhealthy; it is waiting for the live-state

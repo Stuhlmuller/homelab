@@ -29,6 +29,9 @@ jobs:
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 
+      - name: Generate Terragrunt Stack
+        run: nix develop --command bash -c 'cd IaC && terragrunt stack generate'
+
       - name: Validate Terragrunt HCL
         run: nix develop --command terragrunt hcl validate
 
