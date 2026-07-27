@@ -616,9 +616,10 @@ callback `VirtualService` objects path-limited and annotated with
 Check the CI Kubernetes API Service through Octelium from a client machine:
 
 ```sh
-curl -fsS \
-  -H 'Authorization: Bearer <octelium-clientless-access-token>' \
-  https://kubernetes-api-ci.stinkyboi.com/version
+KUBE_API_SERVER_URL=https://kubernetes-api-ci.stinkyboi.com \
+OCTELIUM_AUTH_TOKEN=<octelium-clientless-access-token> \
+bash scripts/ci/install-kubeconfig.sh
+kubectl --request-timeout=15s version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
