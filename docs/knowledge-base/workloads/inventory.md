@@ -20,6 +20,7 @@ utility, not as an app, callback, or CI access path.
 | `platform-dns` | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Argo CD bootstrap |
 | `platform-multus` | support | `kube-system` | `clusters/homelab/platform/multus` | `IaC/live/argocd-apps/platform-multus` | Octelium data-plane prerequisites |
 | `platform-storage` | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | QNAP NFS export |
+| `platform-crossplane` | support | `crossplane-system` | `clusters/homelab/platform/crossplane` | `IaC/live/argocd-apps/platform-crossplane` | Argo CD bootstrap |
 | `octelium-storage` | support | `octelium-storage` | `clusters/homelab/apps/octelium-storage` | `IaC/live/argocd-apps/octelium-storage` | external-secrets, platform-storage |
 | `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none |
 | `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
@@ -28,6 +29,11 @@ utility, not as an app, callback, or CI access path.
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
 sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
+
+`platform-crossplane` installs Crossplane core `2.3.3` from the upstream stable
+Helm repository with default chart values. It intentionally does not install
+providers, ProviderConfigs, Compositions, managed resources, or cloud
+credentials yet.
 
 `media-postgres` has recovery-aware 30-minute startup and runtime liveness
 windows plus a 120-second termination grace period so an NFS stall does not trap

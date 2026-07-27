@@ -14,6 +14,7 @@ spec:
     - https://bjw-s-labs.github.io/helm-charts
     - https://charts.external-secrets.io
     - https://charts.jetstack.io
+    - https://charts.crossplane.io/stable
     - https://grafana.github.io/helm-charts
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
@@ -35,6 +36,8 @@ spec:
       namespace: automation
     - server: https://kubernetes.default.svc
       namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: crossplane-system
     - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
