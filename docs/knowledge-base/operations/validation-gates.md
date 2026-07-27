@@ -177,6 +177,13 @@ unavailable.
 
 ## Terragrunt Checks
 
+Generate explicit stack units before focused validation:
+
+```sh
+cd IaC
+terragrunt stack generate
+```
+
 Focused unit validation:
 
 ```sh
@@ -186,11 +193,11 @@ terragrunt --log-disable validate -no-color
 terragrunt --log-disable plan -no-color
 ```
 
-Implicit stack validation:
+Explicit stack validation:
 
 ```sh
-cd IaC/live/argocd-apps
-terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
+cd IaC
+terragrunt stack run plan
 ```
 
 The pull request workflow renders saved Terragrunt `plan.out` files to local

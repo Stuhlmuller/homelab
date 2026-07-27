@@ -14,15 +14,19 @@ Use this checklist before adding or changing a Terragrunt unit.
 
 ## Implementation Shape
 
-1. Include the root config used by nearby units.
-2. Use a local module or pinned catalog module source.
-3. Keep module inputs explicit in HCL or committed non-secret data.
-4. Do not introduce `get_env`, `TF_VAR_*`, shell-exported values, or hidden
+1. Add the committed unit template under `IaC/.catalog/units/...`.
+2. Register the unit in `IaC/terragrunt.stack.hcl` with its historical live
+   path and `no_dot_terragrunt_stack = true`.
+3. Run `terragrunt stack generate` from `IaC/` before focused validation.
+4. Include the root config used by nearby units.
+5. Use a local module or pinned catalog module source.
+6. Keep module inputs explicit in HCL or committed non-secret data.
+7. Do not introduce `get_env`, `TF_VAR_*`, shell-exported values, or hidden
    environment-derived desired state for normal inputs.
-5. Use `dependencies` for registration ordering when outputs are not needed.
-6. Use `dependency` blocks only when the unit must consume another unit's
+8. Use `dependencies` for registration ordering when outputs are not needed.
+9. Use `dependency` blocks only when the unit must consume another unit's
    outputs.
-7. Format and validate the smallest affected scope before planning or applying.
+10. Format and validate the smallest affected scope before planning or applying.
 
 ## Knowledge-Base Update
 

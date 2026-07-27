@@ -1,9 +1,9 @@
 # Argo CD App Registrations
 
-This directory is the Terragrunt entry point for registering homelab
-applications with Argo CD. Each child directory owns exactly one Argo CD
-Application and sources the repository-local
-`IaC/modules/argocd-application-kubernetes` module.
+This directory contains generated Terragrunt entry points for registering
+homelab applications with Argo CD. The committed source lives in
+`IaC/.catalog/units/live/argocd-apps/<app>/terragrunt.hcl`, and
+`IaC/terragrunt.stack.hcl` regenerates each child directory.
 
 The requested apps are registered here along with supporting Applications for
 shared platform services. `platform-dns` owns CoreDNS resolver policy,
@@ -15,7 +15,8 @@ they exist so dependency state is still delivered through Argo CD.
 
 ## Conventions
 
-- Use one `IaC/live/argocd-apps/<app>/terragrunt.hcl` file per Application.
+- Use one `IaC/.catalog/units/live/argocd-apps/<app>/terragrunt.hcl` template
+  per Application and register it in `IaC/terragrunt.stack.hcl`.
 - Include `IaC/root.hcl` from every unit.
 - Source the local Kubernetes-backed Application module. Do not require a
   locally authenticated Argo CD API provider for routine app registration.

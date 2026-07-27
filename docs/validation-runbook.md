@@ -13,10 +13,12 @@ secrets, Octelium CI identity setup, and AWS OIDC role boundaries.
 terragrunt hcl fmt
 terragrunt hcl validate
 nix develop --command bash scripts/ci/static-checks.sh
-cd IaC/live/aws-ssm-parameters
+cd IaC
+terragrunt stack generate
+cd live/aws-ssm-parameters
 terragrunt plan
-cd IaC/live/argocd-apps
-terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
+cd ../..
+terragrunt stack run --filter-affected --parallelism 1 --source-update plan -no-color
 ```
 
 Expected result: the Argo CD Application units affected by `main...HEAD` are

@@ -18,7 +18,9 @@ Use this checklist before adding a new runtime application.
 ## Implementation Shape
 
 1. Add app desired state under `clusters/homelab/apps/<app>`.
-2. Register the Application under `IaC/live/argocd-apps/<app>`.
+2. Register the Application template under
+   `IaC/.catalog/units/live/argocd-apps/<app>` and add it to
+   `IaC/terragrunt.stack.hcl`.
 3. Use `main` as the target revision for Git-backed sources unless a temporary
    branch is explicitly documented.
 4. Add Terragrunt dependencies for registration ordering.
