@@ -58,7 +58,7 @@ policy`.
 
 ## Open Findings
 
-- **Status:** desired-state mitigation prepared; live recovery in progress
+- **Status:** desired-state recovery complete; live verification pending
 - **Area:** Octelium / access recovery
 - **Evidence:** On 2026-07-29, an NFS-backed `octelium-postgres` stall made the
   public login origin return HTTP 502 while repeated CLI retries accumulated
@@ -72,7 +72,7 @@ policy`.
   remained pending. The storage manifest now uses `SELECT 1` for readiness and
   liveness instead of the shallow `pg_isready` check. The first recovery phase
   temporarily fences the StatefulSet at zero replicas without deleting its
-  retained PVC; the required follow-up restores one replica on the new revision.
+  retained PVC; this follow-up restores one replica on the new revision.
 - **Risk:** The larger ceiling restores recovery headroom but does not make the
   QNAP NFS path reliable; another retry storm could still fill 32 sessions.
 - **Next step:** Keep the existing PostgreSQL availability alert and NFS
