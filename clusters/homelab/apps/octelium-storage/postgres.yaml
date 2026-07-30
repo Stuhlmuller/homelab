@@ -39,6 +39,8 @@ spec:
         app.kubernetes.io/part-of: octelium
     spec:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534

@@ -72,9 +72,10 @@ operator response.
 
 `octelium-postgres` uses the same recovery window. Its readiness and liveness
 checks execute `SELECT 1`, preventing a server that accepts connections but
-cannot execute queries from remaining falsely healthy. Its availability is
-required for Octelium service publication, including the CI Kubernetes API
-tunnel.
+cannot execute queries from remaining falsely healthy. It is pinned to
+`zimaboard-1` to avoid the repeatedly stalled `acer` NFS client path. Its
+availability is required for Octelium service publication, including the CI
+Kubernetes API tunnel.
 
 Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
 stalls do not force repeated libtorrent state reloads. Its pod runs on
