@@ -143,8 +143,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** `affine-postgres` restored; `media-postgres` phase-one staging
-  validated and phase two awaiting rollout; open for other NFS workloads
+- **Status:** `affine-postgres` restored; `media-postgres` local cutover
+  validated; Prowlarr placement awaiting rollout; open for other NFS workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -209,6 +209,16 @@ policy`.
   TCP disabled, and 50 `SELECT 1` probes completing in 1.63 seconds. Backup
   `20260730T045748Z` verified the six custom-format dumps and password-free
   globals before phase two was released.
+  Live phase-two validation at signed revision `88098e7f` confirmed the legacy
+  writer at zero replicas, the local-only writer Ready on `acer`, the one-time
+  fence present, read/write SQL available, and 50 probes completing in 1.71
+  seconds. The remaining Prowlarr search stall was outside PostgreSQL: its raw
+  tracker HTTPS request completed in 0.49 seconds, while one read of the
+  NFS-backed `/config/config.xml` took 10.2 seconds and two live searches
+  exceeded 30 seconds. The equivalent reads in Sonarr and Radarr on
+  `zimaboard-0` took 79 and 281 milliseconds, and that node's NFS client
+  recorded 12 lifetime write timeouts versus 26,065,641 on `acer`. Desired
+  state now pins Prowlarr to `zimaboard-0` without replacing its retained PVC.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
@@ -217,11 +227,12 @@ policy`.
   hours, but the actual RPO is the age of the newest verified set and can be
   older. A failed nightly NFS backup has no freshness alert while the
   kube-state-metrics scrape path is unhealthy.
-- **Next step:** publish the writable replacement revision and validate the
-  writer fence, scheduled backup, and indexer searches in Prowlarr, Sonarr, and
-  Radarr. Separately inspect QNAP pool, disk, NFS-service, and network history
-  because the same failure domain still affects other NFS-backed workloads.
-  Restore backup freshness alerting when a reliable metric source is available.
+- **Next step:** validate the Prowlarr placement rollout and repeat searches in
+  Prowlarr, Sonarr, and Radarr. Verify the first scheduled local PostgreSQL
+  backup after 03:00 Pacific. Separately inspect QNAP pool, disk, NFS-service,
+  and network history because the same failure domain still affects other
+  NFS-backed workloads. Restore backup freshness alerting when a reliable
+  metric source is available.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
