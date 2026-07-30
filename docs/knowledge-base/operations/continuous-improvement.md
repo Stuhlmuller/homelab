@@ -70,7 +70,9 @@ policy`.
   During the confirmed live rollout on 2026-07-29, PostgreSQL again accepted
   sockets while bounded `SELECT 1` queries timed out and the console save
   remained pending. The storage manifest now uses `SELECT 1` for readiness and
-  liveness instead of the shallow `pg_isready` check.
+  liveness instead of the shallow `pg_isready` check. The first recovery phase
+  temporarily fences the StatefulSet at zero replicas without deleting its
+  retained PVC; the required follow-up restores one replica on the new revision.
 - **Risk:** The larger ceiling restores recovery headroom but does not make the
   QNAP NFS path reliable; another retry storm could still fill 32 sessions.
 - **Next step:** Keep the existing PostgreSQL availability alert and NFS

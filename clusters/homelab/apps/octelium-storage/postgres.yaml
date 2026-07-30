@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/part-of: octelium
 spec:
   serviceName: octelium-postgres
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: octelium-postgres
