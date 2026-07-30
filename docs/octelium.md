@@ -364,13 +364,15 @@ Octelium ingress dataplane, and cluster DNS through namespace-scoped rules.
 The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
 
 ```sh
-scripts/octelium-cloudflare-grpc.sh --dry-run
-scripts/octelium-cloudflare-grpc.sh
+gh workflow run octelium-cloudflare-grpc.yml --ref main
 ```
 
-This reads `/homelab/octelium/cloudflare-zone-settings-token`, which must be a
-Cloudflare API token with `Zone:Read` and `Zone Settings:Edit` for
-`stinkyboi.com`. The cert-manager DNS-01 token cannot update this setting.
+Set `CLOUDFLARE_ZONE_SETTINGS_TOKEN` as a `homelab-production` environment
+secret first. The protected workflow writes it to
+`/homelab/octelium/cloudflare-zone-settings-token` with the existing KMS key,
+then runs `scripts/octelium-cloudflare-grpc.sh` to enable and verify the zone
+setting. The token requires `Zone:Read` and `Zone Settings:Edit` for
+`stinkyboi.com`; the cert-manager DNS-01 token cannot update this setting.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump

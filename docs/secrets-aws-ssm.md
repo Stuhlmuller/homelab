@@ -223,11 +223,13 @@ would force the client onto the unsupported nested
 `octelium-api.octelium.stinkyboi.com` hostname.
 
 Octelium CLI and VPN sessions use gRPC against `octelium-api.stinkyboi.com`.
-Store a separate Cloudflare API token with `Zone:Read` and
-`Zone Settings:Edit` for `stinkyboi.com` in
-`/homelab/octelium/cloudflare-zone-settings-token`, then run
-`scripts/octelium-cloudflare-grpc.sh`. The cert-manager DNS-01 token is too
-narrow for this setting and returns Cloudflare error `9109`.
+Store a separate Cloudflare API token with `Zone:Read` and `Zone Settings:Edit`
+for `stinkyboi.com` as the `CLOUDFLARE_ZONE_SETTINGS_TOKEN` secret in the
+protected `homelab-production` GitHub environment, then dispatch
+`.github/workflows/octelium-cloudflare-grpc.yml` from `main`. The workflow
+injects the token into `/homelab/octelium/cloudflare-zone-settings-token` and
+runs the repo-owned reconciler. The cert-manager DNS-01 token is too narrow for
+this setting and returns Cloudflare error `9109`.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
