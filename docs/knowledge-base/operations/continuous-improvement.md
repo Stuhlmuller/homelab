@@ -102,12 +102,13 @@ policy`.
   the client, session, database, and Istio origin path.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Replace the `REPLACE_ME` value in
-  `/homelab/octelium/cloudflare-zone-settings-token` with a scoped Cloudflare
-  API token, run `scripts/octelium-cloudflare-grpc.sh --dry-run`, and enable
-  the zone gRPC setting with the same repo-owned script if it is off. If it is
-  already on, investigate Cloudflare edge trailer handling with the
-  direct-origin result as the control.
+- **Next step:** Add an approved repository-owned CI secret-injection path for
+  `/homelab/octelium/cloudflare-zone-settings-token`, then use it to inject a
+  scoped Cloudflare API token. Run
+  `scripts/octelium-cloudflare-grpc.sh --dry-run`, and enable the zone gRPC
+  setting with the same repo-owned script if it is off. If it is already on,
+  investigate Cloudflare edge trailer handling with the direct-origin result
+  as the control.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
