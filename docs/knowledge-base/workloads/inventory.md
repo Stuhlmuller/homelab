@@ -32,8 +32,9 @@ sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
 `media-postgres` keeps recovery-aware 30-minute startup and runtime liveness
 windows plus a 120-second termination grace period, but active data now uses a
 retained local volume pinned to `acer`. Readiness executes a real SQL query.
-The read-only cutover phase writes an immediate verified logical backup to the
-former NFS claim; the writable replacement phase adds the nightly schedule.
+The clean writable StatefulSet has no active NFS mount and uses a one-time
+old-writer fence. A nightly CronJob writes verified 14-day logical backups to
+the former NFS claim; the sibling recovery overlay fences both before restore.
 
 ## Requested Applications
 

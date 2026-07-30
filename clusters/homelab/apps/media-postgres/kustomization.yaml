@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cutover-backup-job.yaml
+  - backup-cronjob.yaml
   - externalsecret.yaml
   - initdb-configmap.yaml
   - local-storage.yaml

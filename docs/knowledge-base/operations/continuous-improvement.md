@@ -192,22 +192,27 @@ policy`.
   received connection refusals. Concurrent probe failures affected NFS-backed
   workloads on `acer`, `zimaboard-0`, and `zimaboard-1`, while every node
   remained Ready and physical NIC error counters stayed at zero. Desired state
-  now cold-copies `media-postgres` to an `acer`-pinned local volume, uses real
-  SQL for readiness, disables TCP to fence writes, retains the NFS copy, and
-  writes an immediate verified logical backup there through a local Unix
-  socket.
+  now stages `media-postgres` on an `acer`-pinned local volume, uses real SQL
+  for readiness, disables TCP during the verified cutover backup, and then
+  replaces the legacy StatefulSet with a writable local-only instance. A
+  one-time PID/socket fence prevents writer overlap. Nightly verified logical
+  backups retain 14 days on NFS without storing role password hashes, and the
+  repository recovery overlay fences the writer and schedule before restore.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
   I/O stalls into restart loops. The same failure domain affects unrelated
-  NFS-backed workloads across the cluster.
-- **Next step:** validate the read-only local `media-postgres` rollout, six
-  databases, sustained SQL latency, and first logical backup. Then scale the
-  legacy StatefulSet to zero and create a clean writable replacement without
-  its immutable NFS claim template or migration init container; add the nightly
-  backup schedule and validate indexer searches. Separately inspect QNAP pool,
-  disk, NFS-service, and network history because the same failure domain still
-  affects other NFS-backed workloads.
+  NFS-backed workloads across the cluster. The nominal local-disk RPO is 24
+  hours, but the actual RPO is the age of the newest verified set and can be
+  older. A failed nightly NFS backup has no freshness alert while the
+  kube-state-metrics scrape path is unhealthy.
+- **Next step:** publish and validate the read-only staging revision, six
+  databases, sustained SQL latency, and first logical backup. Then publish the
+  writable replacement revision and validate the writer fence, scheduled
+  backup, and indexer searches in Prowlarr, Sonarr, and Radarr. Separately
+  inspect QNAP pool, disk, NFS-service, and network history because the same
+  failure domain still affects other NFS-backed workloads. Restore backup
+  freshness alerting when a reliable metric source is available.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
@@ -221,7 +226,9 @@ policy`.
   `prober_probe_total` readiness counters, which live Prometheus queries
   confirmed for `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
   `octelium-postgres-0`. The healthy expression returned no series, while a
-  simulated missing pod returned a labeled alert instance.
+  simulated missing pod returned a labeled alert instance. The writable
+  cutover revision changes the media target to `media-postgres-local-0`; that
+  series still requires live rollout validation.
 - **Risk:** Existing Grafana node, pod, Deployment, and PVC rules that depend on
   kube-state-metrics can remain in `NoData/OK` until that scrape path is
   restored. The generic Prometheus-target-down rule reports the failed target,

@@ -65,8 +65,12 @@ completed.
 Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres` is synced, the `media-postgres-auth` and
 `media-postgres-arr-env` ExternalSecrets are ready, the six logical databases
-exist, each app's `config.xml` contains the official Servarr PostgreSQL fields,
-and any required SQLite-to-PostgreSQL data migration has been completed.
+exist, `media-postgres-local-0` is Ready on `acer`, the legacy
+`media-postgres` StatefulSet is at zero replicas, and the Service EndpointSlice
+contains only the local pod. Require a verified scheduled backup and successful
+indexer searches in Prowlarr, Sonarr, and Radarr. Each app's `config.xml` must
+also contain the official Servarr PostgreSQL fields, and any required
+SQLite-to-PostgreSQL data migration must be complete.
 
 n8n is not considered ready until `n8n-postgres` is synced and healthy, the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets are ready, the

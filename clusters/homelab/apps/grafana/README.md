@@ -164,7 +164,7 @@ alerts after startup or an alerting provisioning reload.
 
 The PostgreSQL rule reads `prober_probe_total` from the kubelet probe targets,
 so it does not depend on kube-state-metrics. It covers the stable StatefulSet
-pods `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
+pods `affine-postgres-0`, `media-postgres-local-0`, `n8n-postgres-0`, and
 `octelium-postgres-0`. A two-minute window without a successful readiness probe
 must remain pending for another three minutes before the critical alert fires;
 an entirely missing expected probe series follows the same pending period.
@@ -172,10 +172,10 @@ Update the expression when another repository-owned PostgreSQL StatefulSet is
 added. Intentional scale-to-zero maintenance is still database downtime, so
 silence this alert in Alertmanager before a planned fence.
 
-Start triage with read-only pod state, events, and PostgreSQL logs. For an
-NFS-backed crash or stale-lock failure, inspect QNAP health and positively fence
-the old writer before any lock-file recovery. Never delete `postmaster.pid`
-while another pod or node could still write the same data directory.
+Start triage with read-only pod state, events, PostgreSQL logs, and the
+workload's backing storage. Positively fence the old writer before any lock-file
+recovery. Never delete `postmaster.pid` while another pod or node could still
+write the same data directory.
 
 The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one

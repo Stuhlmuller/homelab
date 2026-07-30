@@ -20,11 +20,10 @@ Kubernetes persistent storage is backed by a QNAP NFS export.
 
 `media-postgres` is an explicit exception. Its active 20 Gi volume is a
 retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
-the former NFS data claim remains retained for the cutover recovery point and
-logical backups. The first cutover phase is read-only and takes an immediate
-verified backup; the writable replacement phase adds the nightly schedule. The
-local volume removes QNAP latency from the live database but couples recovery
-to the single control-plane node and its system disk.
+the former NFS data claim remains retained for verified nightly logical backups
+at 03:00 `America/Los_Angeles` with 14-day retention. The local volume removes
+QNAP latency from the live database but couples recovery to the single
+control-plane node and its system disk.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr use static PV/PVC pairs against the QNAP `/media` export for
@@ -73,13 +72,13 @@ liveness windows, and 120-second termination grace remain.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness probe executes `SELECT 1`
-instead of treating socket acceptance as usable database service. The first
-local-volume rollout cold-copies the stopped NFS `pgdata`, serves it read-only,
-disables TCP, and takes a verified logical backup through a local Unix socket.
-After validation, a clean replacement StatefulSet without the legacy immutable
-claim template or migration init container re-enables writes. See
-`clusters/homelab/apps/media-postgres/README.md` for the failure mode and
-operator response.
+instead of treating socket acceptance as usable database service. The writable
+`media-postgres-local` StatefulSet mounts only local storage; a one-time
+PID/socket fence prevents it from overlapping the staged writer. The legacy
+NFS-backed StatefulSet stays declared at zero replicas, and the sibling
+`media-postgres-recovery` overlay fences the writer and backup schedule before
+a logical restore. See `clusters/homelab/apps/media-postgres/README.md` for the
+failure mode and operator response.
 
 `octelium-postgres` keeps the 30-minute startup window but uses a 90-second
 runtime liveness window. Its readiness and liveness checks execute `SELECT 1`,
@@ -115,6 +114,8 @@ redownload.
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/deluge/media-storage.yaml`
+- `clusters/homelab/apps/media-postgres`
+- `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`

@@ -1,0 +1,355 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: media-postgres-restore-00000000t000000z-r1
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    checkov.io/skip1: CKV_K8S_43=The PostgreSQL image tag and digest are both pinned for recovery review.
+    checkov.io/skip2: CKV2_K8S_6=The recovery kustomization includes the matching default-deny NetworkPolicy.
+    checkov.io/skip3: CKV_K8S_23=The local-volume ownership init container runs as root; the restore remains non-root.
+    checkov.io/skip4: CKV_K8S_37=The ownership init container receives only CHOWN for the dedicated local volume.
+    checkov.io/skip5: CKV_K8S_25=The ownership init container receives only CHOWN for the dedicated local volume.
+  labels:
+    app.kubernetes.io/name: media-postgres-restore
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  activeDeadlineSeconds: 1800
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media-postgres-restore
+        app.kubernetes.io/part-of: homelab-media
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      restartPolicy: Never
+      securityContext:
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: prepare-local-data
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              chown 65534:65534 /target
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - CHOWN
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 0
+            runAsNonRoot: false
+            runAsUser: 0
+          volumeMounts:
+            - name: local-data
+              mountPath: /target
+      containers:
+        - name: restore
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          env:
+            - name: BACKUP_ID
+              value: REPLACE_WITH_UTC_BACKUP_DIRECTORY
+            - name: TMPDIR
+              value: /work
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              case "$BACKUP_ID" in
+                20[0-9][0-9][01][0-9][0-3][0-9]T[0-2][0-9][0-5][0-9][0-5][0-9]Z) ;;
+                *)
+                  echo "set BACKUP_ID to a verified UTC backup directory" >&2
+                  exit 1
+                  ;;
+              esac
+
+              current=/target/pgdata
+              restoring="/target/pgdata.restoring-${BACKUP_ID}"
+              previous="/target/pgdata.pre-restore-${BACKUP_ID}"
+              backup="/backup/logical-backups/${BACKUP_ID}"
+              in_progress=/target/.logical-restore-in-progress
+              socket=/work/socket
+
+              password="$(cat /run/secrets/media-postgres/POSTGRES_PASSWORD)"
+              if [ -z "$password" ] || [ "$password" = "REPLACE_ME" ]; then
+                echo "media-postgres password is empty or still a placeholder" >&2
+                exit 1
+              fi
+              unset password
+
+              restore_dirty=false
+              if [ -e "$in_progress" ]; then
+                test -f "$in_progress"
+                active_restore="$(cat "$in_progress")"
+                if [ -f "$current/.logical-restore-complete" ] &&
+                   [ "$(cat "$current/.logical-restore-complete")" = "$active_restore" ]; then
+                  rm -f "$in_progress"
+                elif [ "$active_restore" != "$BACKUP_ID" ]; then
+                  echo "restore ${active_restore} is still incomplete; retry that backup first" >&2
+                  exit 1
+                else
+                  restore_dirty=true
+                fi
+              fi
+              if [ ! -e "$in_progress" ]; then
+                printf '%s\n' "$BACKUP_ID" > "$in_progress"
+              fi
+              postgres_started=false
+              cleanup() {
+                if [ "$postgres_started" = true ]; then
+                  pg_ctl --pgdata="$restoring" --mode=immediate stop >/dev/null 2>&1 || true
+                fi
+                if [ "$restore_dirty" = false ]; then
+                  rm -f "$in_progress"
+                fi
+              }
+              trap cleanup EXIT
+              trap 'exit 1' HUP INT TERM
+
+              if [ -f "$current/.logical-restore-complete" ] &&
+                 [ "$(cat "$current/.logical-restore-complete")" = "$BACKUP_ID" ]; then
+                rm -f "$in_progress"
+                restore_dirty=false
+                echo "backup ${BACKUP_ID} is already restored"
+                exit 0
+              fi
+
+              if [ -f "$restoring/.logical-restore-complete" ] &&
+                 [ "$(cat "$restoring/.logical-restore-complete")" = "$BACKUP_ID" ]; then
+                restore_dirty=true
+                test "$(cat "$restoring/PG_VERSION")" = "14"
+                test ! -e "$restoring/postmaster.pid"
+                test ! -S /target/.s.PGSQL.5432
+                if [ -e "$current" ]; then
+                  test "$(cat "$current/PG_VERSION")" = "14"
+                  test ! -e "$current/postmaster.pid"
+                  test ! -e "$previous"
+                  mv "$current" "$previous"
+                fi
+                mv "$restoring" "$current"
+                rm -f "$in_progress"
+                restore_dirty=false
+                echo "completed the interrupted restore directory swap"
+                exit 0
+              fi
+
+              if [ ! -e "$current" ] && [ -e "$previous" ]; then
+                restore_dirty=true
+                mv "$previous" "$current"
+              fi
+
+              if [ -e "$current" ]; then
+                test "$(cat "$current/PG_VERSION")" = "14"
+                test ! -e "$current/postmaster.pid"
+              fi
+              test ! -S /target/.s.PGSQL.5432
+              test ! -e "$previous"
+              test -d "$backup"
+
+              (
+                cd "$backup"
+                sha256sum --check SHA256SUMS
+              )
+
+              for database in \
+                sonarr-main sonarr-log \
+                radarr-main radarr-log \
+                prowlarr-main prowlarr-log
+              do
+                pg_restore --list "${backup}/${database}.dump" >/dev/null
+              done
+
+              restore_dirty=true
+              if [ -e "$restoring" ]; then
+                test ! -e "$restoring/.logical-restore-complete"
+                find "$restoring" -depth -delete
+              fi
+
+              mkdir "$restoring"
+              initdb \
+                --pgdata="$restoring" \
+                --username=media_apps \
+                --pwfile=/run/secrets/media-postgres/POSTGRES_PASSWORD \
+                --auth-local=trust \
+                --auth-host=scram-sha-256 \
+                --encoding=UTF8 \
+                --locale=en_US.utf8
+
+              printf '\nhost all all all scram-sha-256\n' >> "$restoring/pg_hba.conf"
+              mkdir "$socket"
+              postgres_started=true
+              pg_ctl \
+                --pgdata="$restoring" \
+                --options="-c listen_addresses= -c unix_socket_directories=${socket}" \
+                --wait start
+
+              sed '/^CREATE ROLE media_apps;$/d' \
+                "${backup}/globals.sql" > /work/globals.sql
+              psql \
+                --host="$socket" \
+                --username=media_apps \
+                --dbname=postgres \
+                --no-psqlrc \
+                --set=ON_ERROR_STOP=1 \
+                --file=/work/globals.sql
+
+              psql \
+                --host="$socket" \
+                --username=media_apps \
+                --dbname=postgres \
+                --no-psqlrc \
+                --set=ON_ERROR_STOP=1 <<'SQL'
+              DO $restore$
+              BEGIN
+                EXECUTE format(
+                  'ALTER ROLE media_apps PASSWORD %L',
+                  btrim(pg_read_file('/run/secrets/media-postgres/POSTGRES_PASSWORD'))
+                );
+              END
+              $restore$;
+              SQL
+
+              createdb \
+                --host="$socket" \
+                --username=media_apps \
+                --maintenance-db=postgres \
+                --owner=media_apps \
+                --template=template0 \
+                media_apps
+
+              for database in \
+                sonarr-main sonarr-log \
+                radarr-main radarr-log \
+                prowlarr-main prowlarr-log
+              do
+                createdb \
+                  --host="$socket" \
+                  --username=media_apps \
+                  --maintenance-db=postgres \
+                  --owner=media_apps \
+                  --template=template0 \
+                  "$database"
+                pg_restore \
+                  --host="$socket" \
+                  --username=media_apps \
+                  --dbname="$database" \
+                  --exit-on-error \
+                  "${backup}/${database}.dump"
+              done
+
+              vacuumdb \
+                --host="$socket" \
+                --username=media_apps \
+                --all \
+                --analyze-in-stages
+
+              test "$(
+                psql \
+                  --host="$socket" \
+                  --username=media_apps \
+                  --dbname=postgres \
+                  --no-psqlrc \
+                  --tuples-only \
+                  --no-align \
+                  --command="
+                    SELECT count(*)
+                    FROM pg_database
+                    WHERE datname IN (
+                      'media_apps',
+                      'sonarr-main', 'sonarr-log',
+                      'radarr-main', 'radarr-log',
+                      'prowlarr-main', 'prowlarr-log'
+                    )
+                  "
+              )" = "7"
+
+              pg_ctl --pgdata="$restoring" --mode=fast --wait stop
+              postgres_started=false
+              test ! -e "$restoring/postmaster.pid"
+              printf '%s\n' "$BACKUP_ID" > "$restoring/.logical-restore-complete"
+
+              if [ -e "$current" ]; then
+                mv "$current" "$previous"
+              fi
+              if ! mv "$restoring" "$current"; then
+                if [ -e "$previous" ]; then
+                  mv "$previous" "$current"
+                fi
+                exit 1
+              fi
+              rm -f "$in_progress"
+              restore_dirty=false
+              trap - 0 1 2 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: auth
+              mountPath: /run/secrets/media-postgres
+              readOnly: true
+            - name: backup
+              mountPath: /backup
+              readOnly: true
+            - name: local-data
+              mountPath: /target
+            - name: work
+              mountPath: /work
+      volumes:
+        - name: auth
+          secret:
+            secretName: media-postgres-auth
+        - name: backup
+          persistentVolumeClaim:
+            claimName: data-media-postgres-0
+            readOnly: true
+        - name: local-data
+          persistentVolumeClaim:
+            claimName: media-postgres-local
+        - name: work
+          emptyDir:
+            medium: Memory
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: media-postgres-restore
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: media-postgres-restore
+  policyTypes:
+    - Ingress
+    - Egress

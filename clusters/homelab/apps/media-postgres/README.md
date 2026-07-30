@@ -1,10 +1,10 @@
 # Media PostgreSQL
 
 `media-postgres` is the shared PostgreSQL 14 instance for Sonarr, Radarr, and
-Prowlarr. It runs in the `media` namespace. During the first cutover phase, it
-cold-copies its active database to the static `media-postgres-local` volume
-pinned to `acer`, serves it read-only, and exposes only the in-cluster Service
-`media-postgres.media.svc.cluster.local:5432`.
+Prowlarr. The writable `media-postgres-local` StatefulSet runs in the `media`
+namespace on a static local volume pinned to `acer` and is exposed only through
+`media-postgres.media.svc.cluster.local:5432`. The legacy NFS-backed
+`media-postgres` StatefulSet remains declared at zero replicas.
 
 ## Secret Contract
 
@@ -23,9 +23,8 @@ first initialization. This is intentional here because the Servarr Prowlarr
 PostgreSQL guide states that Prowlarr housekeeping needs a superuser for vacuum
 work. Revisit this before adding unrelated apps to this database instance.
 
-`PGDATA` points at a `pgdata` subdirectory inside the PVC. PostgreSQL continues
-to run as UID/GID 65534 so the one-time NFS copy preserves ownership without
-rewriting every database file.
+`PGDATA` points at a `pgdata` subdirectory inside the PVC. PostgreSQL runs as
+UID/GID 65534, matching the ownership preserved by the staged NFS copy.
 
 ## Local Storage Cutover
 
@@ -37,26 +36,25 @@ affinity. The requested 20 Gi capacity is descriptive because `hostPath` does
 not enforce a quota; verify `acer` filesystem capacity during rollout and
 monitor it directly in steady state.
 
-On the first rollout, StatefulSet ordering stops the old pod before the new pod
-starts. `migrate-nfs-data` then copies the stopped NFS `pgdata` directory into
-an atomic staging directory on the local volume, verifies PostgreSQL major
-version 14, removes only the copied stale `postmaster.pid`, and renames the
-completed copy into place. Later starts skip the copy when local `PG_VERSION`
-already exists.
+The staged rollout first cold-copied the stopped NFS `pgdata` directory into an
+atomic local staging directory, verified PostgreSQL 14, removed only the copied
+stale `postmaster.pid`, and started the legacy StatefulSet locally with TCP
+disabled and transactions forced read-only. A one-shot Job then wrote verified
+logical dumps to the retained NFS claim.
 
-The first phase starts PostgreSQL with
-`listen_addresses=''` and `default_transaction_read_only=on`. Disabling TCP is
-the hard fence for Sonarr, Radarr, and Prowlarr writes. The pinned
-`media-postgres-cutover-backup` Job connects through a Unix socket shared on the
-local volume and writes verified logical dumps of all six databases to the
-retained NFS claim.
+The staging and writable states must reach `main` as two separately observed
+revisions. Do not squash them into one PR or merge the writable revision until
+Argo CD has synced the staging revision, the migration marker exists, and
+`media-postgres-cutover-backup` is complete. If Argo CD jumps directly to the
+writable state, the replacement intentionally fails closed because no verified
+local data exists.
 
-After the copy and backup are verified, the second phase must scale the legacy
-StatefulSet to zero and create a clean replacement StatefulSet that mounts only
-`media-postgres-local`, with neither the legacy `volumeClaimTemplates` nor the
-migration init container. Only that replacement re-enables writes. Removing
-the init container from the existing StatefulSet is insufficient because its
-immutable claim template would still mount the old NFS claim.
+The final `media-postgres-local` StatefulSet mounts only the local claim and
+does not contain the old NFS claim template or migration init container. Before
+its first start, `require-local-data` verifies the copy/restore marker and
+refuses to proceed while the legacy writer's `postmaster.pid` or shared Unix
+socket exists. It then writes `.local-cutover-fenced`; this closes the Argo CD
+zero-replica health race without blocking ordinary later restarts.
 
 This local volume survives ordinary Talos reboots and upgrades because `/var`
 is the Talos `EPHEMERAL` system volume, but it is node-bound and is lost if
@@ -75,9 +73,10 @@ restarting PostgreSQL.
 
 The pod also has a 120-second termination grace period so PostgreSQL has more
 time to finish a fast shutdown without being forcibly killed. If startup
-recovery or a runtime liveness failure reaches the 30-minute limit, verify QNAP
-and NFS health before changing the probe thresholds or rolling dependent
-applications.
+recovery or a runtime liveness failure reaches the 30-minute limit, inspect the
+`acer` local filesystem and PostgreSQL logs before changing probe thresholds or
+rolling dependent applications. QNAP health affects backups and the apps'
+remaining NFS-backed config, but not the active database files.
 
 ## Databases
 
@@ -114,50 +113,129 @@ Upstream migration references:
 
 ## Validation
 
-After Argo CD syncs the first cutover phase, verify the secret, local volume,
-StatefulSet, migration marker, read-only fence, database list, query latency,
-and completed backup:
+### Read-only staging revision
+
+Before merging the writable revision, capture all of this phase-one evidence:
 
 ```sh
-kubectl -n media get externalsecret media-postgres-auth media-postgres-arr-env
-kubectl -n media get secret media-postgres-auth media-postgres-arr-env
-kubectl get storageclass,persistentvolume media-postgres-local
-kubectl -n media get statefulset,pod,pvc,svc -l app.kubernetes.io/name=media-postgres
 kubectl -n media get pod media-postgres-0 -o wide
 kubectl -n media exec statefulset/media-postgres -- \
   test -f /var/lib/postgresql/data/pgdata/.nfs-migration-complete
-kubectl -n media exec statefulset/media-postgres -- psql -U media_apps -d media_apps -c '\l'
 kubectl -n media exec statefulset/media-postgres -- \
-  psql -U media_apps -d media_apps -c 'SELECT 1'
+  psql -U media_apps -d media_apps -c '\l'
 kubectl -n media exec statefulset/media-postgres -- \
   psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
 kubectl -n media exec statefulset/media-postgres -- \
   psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
 kubectl -n media get job media-postgres-cutover-backup
+kubectl -n media logs job/media-postgres-cutover-backup
+```
+
+The pod must run on `acer`; the migration marker and all six application
+databases must exist; `default_transaction_read_only` must report `on`; and
+`listen_addresses` must be empty. The Job must be `Complete`, and its log must
+record the verified UTC `BACKUP_ID`. This evidence is the merge gate for the
+writable revision.
+
+### Writable revision
+
+After Argo CD syncs the writable replacement, verify the secret, local volume,
+legacy fence, Service endpoint, database list, query latency, and backup
+schedule:
+
+```sh
+kubectl -n media get externalsecret media-postgres-auth media-postgres-arr-env
+kubectl -n media get secret media-postgres-auth media-postgres-arr-env
+kubectl get storageclass,persistentvolume media-postgres-local
+kubectl -n media get statefulset media-postgres media-postgres-local
+kubectl -n media get pod media-postgres-local-0 -o wide
+kubectl -n media get pvc media-postgres-local data-media-postgres-0
+kubectl -n media get statefulset media-postgres-local \
+  -o jsonpath='{.spec.template.spec.volumes[*].persistentVolumeClaim.claimName}{"\n"}'
+kubectl -n media get endpointslice \
+  -l kubernetes.io/service-name=media-postgres \
+  -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}{"\t"}{.conditions.ready}{"\n"}{end}'
+kubectl -n media exec statefulset/media-postgres-local -- \
+  test -f /var/lib/postgresql/data/.local-cutover-fenced
+kubectl -n media exec statefulset/media-postgres-local -- \
+  psql -U media_apps -d media_apps -c '\l'
+kubectl -n media exec statefulset/media-postgres-local -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
+kubectl -n media exec statefulset/media-postgres-local -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
+for attempt in $(seq 1 20); do
+  kubectl -n media exec statefulset/media-postgres-local -- \
+    psql -U media_apps -d media_apps -Atqc 'SELECT 1' >/dev/null || exit 1
+done
+kubectl -n media get cronjob media-postgres-backup
+kubectl -n media get cronjob media-postgres-backup \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup
 ```
 
 The database list should include `sonarr-main`, `sonarr-log`, `radarr-main`,
 `radarr-log`, `prowlarr-main`, and `prowlarr-log`. The pod must run on `acer`,
-the read-only setting must report `on`, repeated `SELECT 1` calls should
-complete without the NFS-correlated stalls, `listen_addresses` must be empty,
-and the backup Job must complete.
+the legacy StatefulSet must remain at zero replicas, the new StatefulSet must
+list only `media-postgres-local`, and the EndpointSlice must list only
+`media-postgres-local-0` as ready. The read-only setting must report `off`, and
+`listen_addresses` must report `*`. All repeated queries must complete without
+the NFS-correlated stalls. Test an indexer search in Prowlarr and then from both
+Sonarr and Radarr before closing the incident.
 
 ## Backup And Restore
 
-`media-postgres-cutover-backup` writes one verified recovery set containing
-custom-format dumps for all six databases, role globals, and checksums under
-`logical-backups/` on the retained NFS claim. This is a first-phase cutover
-gate, not the steady-state backup schedule. The writable replacement phase must
-replace it with a nightly CronJob before the cutover is complete.
+`media-postgres-backup` runs at 03:00 `America/Los_Angeles` each day. It writes
+one recovery set under `logical-backups/<UTC timestamp>/` on the retained NFS
+claim: custom-format dumps for all six databases, role globals without password
+hashes, and SHA-256 checksums. It validates every archive before publishing the
+directory and retains 14 days of completed backups. Each database dump is
+internally consistent, but the six dumps do not share one cross-database
+snapshot. Checksums detect corruption, not malicious modification, so treat
+the NFS backup as trusted input.
+
+Accepted operational gap: the nominal RPO is 24 hours, but the actual RPO is
+the age of the newest verified recovery set and can exceed 24 hours. Backup
+freshness is not alerted while the kube-state-metrics scrape path is unhealthy,
+so a QNAP stall can leave the newest scheduled Job failed until an operator
+checks it. Inspect the latest Job after each storage incident and retain the
+verified cutover set until the first scheduled recovery set succeeds; the
+normal 14-day retention policy applies afterward.
 
 ```sh
-kubectl -n media get job media-postgres-cutover-backup
-kubectl -n media logs job/media-postgres-cutover-backup
+kubectl -n media get cronjob media-postgres-backup
+kubectl -n media get cronjob media-postgres-backup \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup
+kubectl -n media logs job/<latest-media-postgres-backup-job>
+kubectl -n media exec statefulset/media-postgres-local -- \
+  df -h /var/lib/postgresql/data
 ```
 
-For a full restore, declare a fresh local volume in Git, restore globals and
-the six matching dumps through a repository-owned recovery Job, restore each
-app's `/config` backup, then re-sync Sonarr, Radarr, and Prowlarr. The retained
-NFS `pgdata` copy is a valid immediate rollback point only before writes reach
-the local database; afterward, rollback requires a fresh logical dump and
-restore rather than reattaching the stale NFS copy.
+The recovery overlay is
+`clusters/homelab/apps/media-postgres-recovery`. It renders the complete base
+application while patching the writer to zero replicas and suspending the
+backup CronJob before the restore Job. Use two reviewed Git revisions:
+
+1. Before changing desired state, confirm no backup Job is active and verify
+   `acer` has room for both the current and restored data directories. Read the
+   exact completed `BACKUP_ID` from the latest successful backup Job log.
+2. Change both `BACKUP_ID` and the timestamp/revision in the restore Job name,
+   then change the
+   `media-postgres` Application source path in
+   `IaC/live/argocd-apps/media-postgres/terragrunt.hcl` to the recovery overlay.
+   Merge and apply that Terragrunt unit through the declared workflow.
+3. Confirm `media-postgres-local` has no pod, no backup Job is active, and the
+   uniquely named restore Job completed. A live writer makes the Job fail
+   closed. A PVC marker also keeps the base writer stopped until the directory
+   swap completes; after a failure, retry the same `BACKUP_ID` under another
+   unique Job name before returning to the base overlay.
+4. In the follow-up revision, return the Application source path to
+   `clusters/homelab/apps/media-postgres`. This removes the restore Job,
+   resumes nightly backups, and starts the restored writer.
+
+Never point Argo CD at only `restore-job.yaml`, and never run the restore with a
+PostgreSQL pod active. The retained NFS `pgdata` copy is rollback-safe only
+before local writes begin; afterward, recover through a fresh logical
+dump/restore rather than reattaching the stale physical copy. Preserve
+`pgdata.pre-restore-<BACKUP_ID>` until SQL, indexer, and new-backup validation
+passes; remove it only through a later repository-owned cleanup.

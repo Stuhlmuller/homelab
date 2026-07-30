@@ -21,12 +21,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: media-postgres-cutover-backup
+  name: media-postgres-backup
   namespace: media
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: media-postgres-cutover-backup
+      app.kubernetes.io/name: media-postgres-backup
   policyTypes:
     - Ingress
     - Egress
