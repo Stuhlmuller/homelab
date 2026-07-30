@@ -145,8 +145,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** `affine-postgres` restored; `media-postgres` local cutover
-  validated; Prowlarr placement awaiting rollout; open for other NFS workloads
+- **Status:** `affine-postgres` restored; `media-postgres` and Prowlarr
+  cutovers validated; open for other NFS workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -221,6 +221,18 @@ policy`.
   `zimaboard-0` took 79 and 281 milliseconds, and that node's NFS client
   recorded 12 lifetime write timeouts versus 26,065,641 on `acer`. Desired
   state now pins Prowlarr to `zimaboard-0` without replacing its retained PVC.
+  Final read-only validation on 2026-07-30 found both Argo CD Applications
+  synced and healthy. Prowlarr was Ready with zero restarts on `zimaboard-0`
+  using its original retained claim; 20 config reads had a 17.34-millisecond
+  median and 30.66-millisecond p95. Prowlarr, Sonarr, and Radarr searches each
+  returned 50 results in 2.916, 3.519, and 3.714 seconds, respectively, with no
+  indexer or PostgreSQL timeout/refusal errors after the Prowlarr rollout. The
+  local PostgreSQL writer remained Ready with zero restarts, the legacy writer
+  remained at zero replicas, a rolled-back temporary write passed, and 50
+  queries completed in 1.669 seconds. The first scheduled backup Job completed
+  at 03:00 Pacific with no failures. Backup `20260730T100002Z` verified
+  password-free globals and all six dumps; the successful Job also exercised
+  the live 14-day retention command without error.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
@@ -229,12 +241,10 @@ policy`.
   hours, but the actual RPO is the age of the newest verified set and can be
   older. A failed nightly NFS backup has no freshness alert while the
   kube-state-metrics scrape path is unhealthy.
-- **Next step:** validate the Prowlarr placement rollout and repeat searches in
-  Prowlarr, Sonarr, and Radarr. Verify the first scheduled local PostgreSQL
-  backup after 03:00 Pacific. Separately inspect QNAP pool, disk, NFS-service,
-  and network history because the same failure domain still affects other
-  NFS-backed workloads. Restore backup freshness alerting when a reliable
-  metric source is available.
+- **Next step:** inspect QNAP pool, disk, NFS-service, and network history
+  because the same failure domain still affects other NFS-backed workloads.
+  Check scheduled backups manually after storage incidents, and restore backup
+  freshness alerting when a reliable metric source is available.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
