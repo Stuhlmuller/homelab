@@ -5,6 +5,7 @@ metadata:
   namespace: media
   annotations:
     argocd.argoproj.io/sync-wave: "1"
+    checkov.io/skip1: CKV2_K8S_6=The cutover Job is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
   labels:
     app.kubernetes.io/name: media-postgres-cutover-backup
     app.kubernetes.io/part-of: homelab-media
@@ -46,6 +47,7 @@ spec:
                 --host=/local \
                 --port=5432 \
                 --username=media_apps \
+                --no-role-passwords \
                 --globals-only > "${partial}/globals.sql"
 
               for database in \
