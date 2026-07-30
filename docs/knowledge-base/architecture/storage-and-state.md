@@ -18,6 +18,14 @@ Kubernetes persistent storage is backed by a QNAP NFS export.
 `platform-storage` owns the parent Argo CD Application, and the child
 `nfs-subdir-external-provisioner` Application owns the StorageClass.
 
+`media-postgres` is an explicit exception. Its active 20 Gi volume is a
+retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
+the former NFS data claim remains retained for the cutover recovery point and
+logical backups. The first cutover phase is read-only and takes an immediate
+verified backup; the writable replacement phase adds the nightly schedule. The
+local volume removes QNAP latency from the live database but couples recovery
+to the single control-plane node and its system disk.
+
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr use static PV/PVC pairs against the QNAP `/media` export for
 downloads, movies, and TV library data. Read-only `showmount -e 10.1.0.2`
@@ -63,10 +71,13 @@ validation passed with zero pod restarts. The incident-only hook is now removed
 from desired state, while the explicit retained claim, 30-minute startup and
 liveness windows, and 120-second termination grace remain.
 
-`media-postgres` protects NFS-backed recovery with 30-minute startup and runtime
-liveness windows plus a 120-second termination grace period. Readiness still
-requires `pg_isready`, so Prowlarr, Radarr, and Sonarr cannot reach PostgreSQL
-until recovery completes. See
+`media-postgres` uses 30-minute startup and runtime liveness windows plus a
+120-second termination grace period. Its readiness probe executes `SELECT 1`
+instead of treating socket acceptance as usable database service. The first
+local-volume rollout cold-copies the stopped NFS `pgdata`, serves it read-only,
+disables TCP, and takes a verified logical backup through a local Unix socket.
+After validation, a clean replacement StatefulSet without the legacy immutable
+claim template or migration init container re-enables writes. See
 `clusters/homelab/apps/media-postgres/README.md` for the failure mode and
 operator response.
 

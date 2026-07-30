@@ -22,16 +22,18 @@ utility, not as an app, callback, or CI access path.
 | `platform-storage` | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | QNAP NFS export |
 | `octelium-storage` | support | `octelium-storage` | `clusters/homelab/apps/octelium-storage` | `IaC/live/argocd-apps/octelium-storage` | external-secrets, platform-storage |
 | `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none |
-| `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
+| `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres` | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | external-secrets, platform-storage |
 
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
 sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
 
-`media-postgres` has recovery-aware 30-minute startup and runtime liveness
-windows plus a 120-second termination grace period so an NFS stall does not trap
-Prowlarr, Radarr, and Sonarr's shared database in a crash-recovery loop.
+`media-postgres` keeps recovery-aware 30-minute startup and runtime liveness
+windows plus a 120-second termination grace period, but active data now uses a
+retained local volume pinned to `acer`. Readiness executes a real SQL query.
+The read-only cutover phase writes an immediate verified logical backup to the
+former NFS claim; the writable replacement phase adds the nightly schedule.
 
 ## Requested Applications
 
@@ -55,9 +57,9 @@ Prowlarr, Radarr, and Sonarr's shared database in a crash-recovery loop.
 | `descheduler` | `kube-system` | `clusters/homelab/apps/descheduler/values.yaml` | `IaC/live/argocd-apps/descheduler` | controller state only | prometheus |
 | `deluge` | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | persistent config on `nfs-default`; shared downloads on QNAP `/media`; SSM-backed WireGuard profile via `deluge-vpn`; guarded recovery for libtorrent session state, the torrent catalog, and already-complete target files; 30-minute startup and runtime liveness windows; root-squash-aware startup without LinuxServer's recursive config ownership pass; `127.0.0.1` Web-to-daemon host compatibility for Sonarr; Prometheus health for the Gluetun VPN and Deluge daemon | cert-manager, istio, platform-storage |
 | `dispatcharr` | `media` | `clusters/homelab/apps/dispatcharr` | `IaC/live/argocd-apps/dispatcharr` | modular IPTV stream and EPG manager with a persistent data claim, dedicated PostgreSQL 17 claim, ephemeral Redis, and Octelium-protected UI; provider credentials and playlist URLs stay outside git | external-secrets, cert-manager, istio, platform-storage |
-| `prowlarr` | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | persistent config and PostgreSQL databases | cert-manager, istio, media-postgres, platform-storage |
-| `radarr` | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | persistent config and PostgreSQL databases on `nfs-default`; movies and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
-| `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config and PostgreSQL databases on `nfs-default`; TV and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
+| `prowlarr` | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | persistent config on `nfs-default`; indexer state in local `media-postgres` | cert-manager, istio, media-postgres, platform-storage |
+| `radarr` | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | persistent config on `nfs-default`; database state in local `media-postgres`; movies and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
+| `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config on `nfs-default`; database state in local `media-postgres`; TV and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, SSM-backed gateway auth, Discord channel config, SSM-backed GitHub App credentials, Codex OAuth credentials on PVC, explicit agent resource profile, and loopback HTTP readiness/liveness checks that recycle a persistently stalled gateway | external-secrets, cert-manager, istio, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public callbacks use `https://n8n-webhook.stinkyboi.com` through `octelium-public` and are limited to webhook prefixes; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |

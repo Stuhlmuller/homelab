@@ -1,0 +1,67 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: media-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: media-postgres
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 20Gi
+  claimRef:
+    name: media-postgres-local
+    namespace: media
+  hostPath:
+    # ponytail: one static volume avoids a cluster-wide provisioner; move this
+    # to a dedicated Talos UserVolume if node-local recovery or growth demands it.
+    path: /var/lib/media-postgres
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - acer
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: media-postgres-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-postgres-local
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: media-postgres
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: media-postgres-local
+  volumeMode: Filesystem
+  volumeName: media-postgres-local

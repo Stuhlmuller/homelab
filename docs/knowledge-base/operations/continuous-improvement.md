@@ -124,8 +124,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** `affine-postgres` restored, partially mitigated for
-  `media-postgres`, and open for the other PostgreSQL workloads
+- **Status:** `affine-postgres` restored; `media-postgres` local cutover
+  implemented and awaiting live validation; open for other NFS workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -171,19 +171,29 @@ policy`.
   previous app instance stalled during `/config` ownership initialization
   before the liveness probe restarted it. All affected persistent volumes
   target the QNAP at `10.1.0.2` over NFSv3.
+  A new recurrence on 2026-07-29 provided a 20-second kernel mount-stat delta:
+  311 `media-postgres` NFS writes completed with about 26.9 seconds average
+  queue time, 8.1 seconds RPC round-trip, and 35.0 seconds execution per write.
+  PostgreSQL readiness failed immediately before Prowlarr timed out and then
+  received connection refusals. Concurrent probe failures affected NFS-backed
+  workloads on `acer`, `zimaboard-0`, and `zimaboard-1`, while every node
+  remained Ready and physical NIC error counters stayed at zero. Desired state
+  now cold-copies `media-postgres` to an `acer`-pinned local volume, uses real
+  SQL for readiness, disables TCP to fence writes, retains the NFS copy, and
+  writes an immediate verified logical backup there through a local Unix
+  socket.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
   I/O stalls into restart loops. The same failure domain affects unrelated
   NFS-backed workloads across the cluster.
-- **Next step:** the media PostgreSQL liveness window now matches its
-  30-minute startup recovery window, which prevents brief NFS outages from
-  immediately starting another crash-recovery cycle. Treat the QNAP and
-  especially the `acer` NFS client path as the primary incident. Inspect QNAP
-  pool, disk, NFS-service, and network history for the 2026-07-23/24 window;
-  collect Talos kernel NFS diagnostics with a populated Talos client config;
-  and benchmark NFS latency from each wired node. Evaluate moving PostgreSQL
-  and other high-churn state to storage designed for database synchronous I/O.
+- **Next step:** validate the read-only local `media-postgres` rollout, six
+  databases, sustained SQL latency, and first logical backup. Then scale the
+  legacy StatefulSet to zero and create a clean writable replacement without
+  its immutable NFS claim template or migration init container; add the nightly
+  backup schedule and validate indexer searches. Separately inspect QNAP pool,
+  disk, NFS-service, and network history because the same failure domain still
+  affects other NFS-backed workloads.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability

@@ -4,10 +4,13 @@ metadata:
   name: media-postgres
   namespace: media
   annotations:
-    checkov.io/skip1: CKV_K8S_40=The pod runs as the QNAP NFS anonymous UID 65534 so PostgreSQL owns the squashed data directory without root.
+    checkov.io/skip1: CKV_K8S_40=PostgreSQL runs as UID 65534 to preserve the migrated database ownership.
     checkov.io/skip2: CKV_K8S_22=PostgreSQL requires writable image-managed runtime paths; persistent data is isolated on the data PVC.
     checkov.io/skip3: CKV_K8S_43=Image tags are pinned for GitOps review; digest pinning is tracked separately for homelab images.
     checkov.io/skip4: CKV2_K8S_6=media-postgres is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+    checkov.io/skip5: CKV_K8S_23=The local-volume ownership init container runs as root; PostgreSQL and the migration remain non-root.
+    checkov.io/skip6: CKV_K8S_37=The ownership init container receives only CHOWN for the dedicated local volume.
+    checkov.io/skip7: CKV_K8S_25=The ownership init container receives only CHOWN for the dedicated local volume.
   labels:
     app.kubernetes.io/name: media-postgres
     app.kubernetes.io/part-of: homelab-media
@@ -66,10 +69,94 @@ spec:
             - name: auth
               mountPath: /run/secrets/media-postgres
               readOnly: true
+        - name: prepare-local-data
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              chown 65534:65534 /target
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - CHOWN
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 0
+            runAsNonRoot: false
+            runAsUser: 0
+          volumeMounts:
+            - name: local-data
+              mountPath: /target
+        - name: migrate-nfs-data
+          image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              source=/source/pgdata
+              target=/target/pgdata
+              partial=/target/pgdata.migrating
+
+              if [ -e "$target" ]; then
+                test -f "$target/.nfs-migration-complete"
+                test "$(cat "$target/PG_VERSION")" = "14"
+                echo "local PostgreSQL data already exists; skipping NFS copy"
+                exit 0
+              fi
+
+              test "$(cat "$source/PG_VERSION")" = "14"
+              rm -rf -- "$partial"
+              mkdir "$partial"
+              cp -a --no-preserve=ownership "$source"/. "$partial"/
+              test "$(cat "$partial/PG_VERSION")" = "14"
+              rm -f -- "$partial/postmaster.pid"
+              touch "$partial/.nfs-migration-complete"
+              mv "$partial" "$target"
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+          volumeMounts:
+            - name: data
+              mountPath: /source
+              readOnly: true
+            - name: local-data
+              mountPath: /target
       containers:
         - name: postgres
           image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
           imagePullPolicy: Always
+          args:
+            - -c
+            - listen_addresses=
+            - -c
+            - default_transaction_read_only=on
+            - -c
+            - unix_socket_directories=/var/run/postgresql,/var/lib/postgresql/data
           env:
             - name: POSTGRES_USER_FILE
               value: /run/secrets/media-postgres/POSTGRES_USER
@@ -96,11 +183,9 @@ spec:
           readinessProbe:
             exec:
               command:
-                - pg_isready
-                - -U
-                - media_apps
-                - -d
-                - media_apps
+                - /bin/sh
+                - -ec
+                - psql -U media_apps -d media_apps -Atqc 'SELECT 1' >/dev/null
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -133,7 +218,7 @@ spec:
             - name: auth
               mountPath: /run/secrets/media-postgres
               readOnly: true
-            - name: data
+            - name: local-data
               mountPath: /var/lib/postgresql/data
             - name: initdb
               mountPath: /docker-entrypoint-initdb.d
@@ -145,6 +230,9 @@ spec:
         - name: initdb
           configMap:
             name: media-postgres-initdb
+        - name: local-data
+          persistentVolumeClaim:
+            claimName: media-postgres-local
   volumeClaimTemplates:
     - metadata:
         name: data

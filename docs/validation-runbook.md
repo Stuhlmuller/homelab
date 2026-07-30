@@ -145,6 +145,32 @@ the persistent `/config/config.xml` contains the Servarr-documented
 `PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
 migration.
 
+For the local database cutover, also require all of the following:
+
+```sh
+kubectl get storageclass,persistentvolume media-postgres-local
+kubectl -n media get pvc media-postgres-local data-media-postgres-0
+kubectl -n media get pod media-postgres-0 -o wide
+kubectl -n media exec statefulset/media-postgres -- \
+  test -f /var/lib/postgresql/data/pgdata/.nfs-migration-complete
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -Atqc 'SELECT 1'
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
+kubectl -n media get job media-postgres-cutover-backup
+```
+
+The local claim and PV must be `Bound`, the pod must run on `acer`, the
+migration marker must exist, and repeated SQL probes must complete without the
+NFS-correlated stalls. The first phase must remain read-only with TCP disabled,
+and the cutover backup Job must complete through the shared local Unix socket.
+The follow-up phase scales the legacy StatefulSet to zero and creates a clean
+writable replacement without its immutable NFS claim template or migration
+init container. Revalidate that replacement before treating PostgreSQL
+restarts as independent of NFS.
+
 For Radarr access lockout checks, validate that the auth-normalized
 `config.xml` contains exactly one `AuthenticationMethod=External` entry and
 one `AuthenticationRequired=DisabledForLocalAddresses` entry, with no

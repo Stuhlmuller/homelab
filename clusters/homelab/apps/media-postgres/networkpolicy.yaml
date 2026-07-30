@@ -17,3 +17,16 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: media-postgres-cutover-backup
+  namespace: media
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: media-postgres-cutover-backup
+  policyTypes:
+    - Ingress
+    - Egress

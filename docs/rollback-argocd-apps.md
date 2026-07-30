@@ -40,6 +40,13 @@ For `media-postgres`, take PostgreSQL logical dumps before rollback whenever
 Sonarr, Radarr, or Prowlarr have already written data to PostgreSQL. Preserve
 the PostgreSQL PVC unless intentionally rebuilding the media apps from backups.
 
+During the local-storage cutover, preserve both `media-postgres-local` and
+`data-media-postgres-0`. Before any write reaches the local database, reverting
+the StatefulSet mount can return to the stopped NFS copy. After local writes
+begin, that copy is stale: use a repository-owned reverse dump/restore workflow
+instead of mounting it directly. Never run the local and NFS PostgreSQL copies
+at the same time behind the `media-postgres` Service.
+
 For `n8n-postgres`, take a PostgreSQL logical dump before rollback whenever n8n
 has already written workflows, users, credentials metadata, or execution
 history to PostgreSQL. Preserve both the PostgreSQL PVC and the n8n
