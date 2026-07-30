@@ -74,6 +74,7 @@ spec:
                 cd "$complete"
                 sha256sum --check SHA256SUMS
               )
+              echo "completed backup ${timestamp}: ${complete}"
           resources:
             requests:
               cpu: 25m
