@@ -89,19 +89,24 @@ policy`.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** update prepared; live verification pending
+- **Status:** mitigated locally; public path still failing
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
   session succeeded through a TLS-preserving local CONNECT proxy to the
   in-cluster Istio gateway. Both `cloudflared` `2026.6.1` replicas selected
   QUIC successfully but logged that `2026.7.3` was the recommended update.
-  Desired state now pins that multi-architecture image by digest.
-- **Risk:** The update may not address Cloudflare edge behavior; retain the
-  in-cluster comparison path until authenticated public status and connect
-  calls pass.
-- **Next step:** Verify web login, `octelium status`, and a sustained
-  `octelium connect` through the public API after rollout.
+  After that digest-pinned update rolled out healthy, authenticated public
+  `octelium status` still hung. The direct route completed login and reached
+  `isConnected: true` with the unprivileged `gvisor` implementation, proving
+  the client, session, database, and Istio origin path.
+- **Risk:** The normal public CLI path remains unavailable even though browser
+  access and an unauthenticated gRPC-shaped probe work.
+- **Next step:** Refresh the operator's AWS SSO session, run
+  `scripts/octelium-cloudflare-grpc.sh --dry-run`, and enable the zone gRPC
+  setting with the same repo-owned script if it is off. If it is already on,
+  investigate Cloudflare edge trailer handling with the direct-origin result
+  as the control.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
