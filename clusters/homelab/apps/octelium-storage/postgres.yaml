@@ -107,11 +107,13 @@ spec:
           readinessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - octelium
                 - -d
                 - octelium
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -119,11 +121,13 @@ spec:
           livenessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - octelium
                 - -d
                 - octelium
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
