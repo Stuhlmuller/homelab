@@ -56,6 +56,9 @@ docs/examples/octelium/homelab-services.yaml
 
 They create:
 
+- Core `ClusterConfig` `default`, raising the human session ceiling to 32 so
+  disconnected CLI retries cannot exhaust the default 16-session allowance
+  before its 16-hour sessions expire.
 - Octelium Namespace `homelab` for the demo and Namespace `ci` for CI-only
   transport.
 - Policy `homelab-human-web-access`, allowing authenticated human client
@@ -115,8 +118,14 @@ route directly.
 Apply the service catalog to the Octelium Cluster:
 
 ```sh
+octeliumctl apply --domain stinkyboi.com \
+  --include ClusterConfig \
+  docs/examples/octelium/homelab-services.yaml
 octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
+
+`--include ClusterConfig` overrides the normal apply include list, so keep the
+second command to apply the catalog's other resource kinds.
 
 Never add `--prune` to that command: this catalog is not an exhaustive list of
 every non-system resource in the Octelium Cluster. When upgrading a Cluster
@@ -303,6 +312,7 @@ octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
   --admin-email '<entra-user-principal-name>'
+octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
   --user homelab-octelium-client \

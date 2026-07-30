@@ -58,6 +58,26 @@ policy`.
 
 ## Open Findings
 
+- **Status:** desired-state mitigation prepared; live recovery in progress
+- **Area:** Octelium / access recovery
+- **Evidence:** On 2026-07-29, an NFS-backed `octelium-postgres` stall made the
+  public login origin return HTTP 502 while repeated CLI retries accumulated
+  15 disconnected `homelab-owner` client sessions alongside its browser
+  session. Octelium then denied new authentication at the default 16-session
+  ceiling even after PostgreSQL recovered. The service catalog now declares
+  core `ClusterConfig` `default` with human `maxPerUser: 32`; the canonical
+  runbook applies that kind separately before the normal catalog resources.
+  During the confirmed live rollout on 2026-07-29, PostgreSQL again accepted
+  sockets while bounded `SELECT 1` queries timed out and the console save
+  remained pending. The storage manifest now uses `SELECT 1` for readiness and
+  liveness instead of the shallow `pg_isready` check.
+- **Risk:** The larger ceiling restores recovery headroom but does not make the
+  QNAP NFS path reliable; another retry storm could still fill 32 sessions.
+- **Next step:** Keep the existing PostgreSQL availability alert and NFS
+  investigation active. Delete disconnected sessions through
+  `octeliumctl delete session`, and treat renewed PostgreSQL probe failures as
+  the storage incident rather than an Octelium routing failure.
+
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
 - **Evidence:** Read-only checks on 2026-07-19 showed all four expected nodes
