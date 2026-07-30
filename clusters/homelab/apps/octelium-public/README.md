@@ -42,6 +42,9 @@ allows both UDP/7844 for QUIC and TCP/7844 for HTTP/2 fallback, plus TCP/443
 for Cloudflare API access. The public rule excludes private and link-local IPv4
 ranges; separate namespace-scoped rules allow only the in-cluster Istio HTTPS
 origin, the Octelium ingress dataplane, and DNS through `kube-system`.
+The connector image is pinned to `2026.7.3`, the version recommended by the
+running `2026.6.1` replicas while authenticated Octelium gRPC calls hung at the
+public Cloudflare hop but succeeded through the same Istio origin directly.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
