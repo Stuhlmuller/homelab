@@ -138,8 +138,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** `affine-postgres` restored; `media-postgres` local cutover
-  implemented and awaiting live validation; open for other NFS workloads
+- **Status:** `affine-postgres` restored; `media-postgres` phase-one staging
+  validated and phase two awaiting rollout; open for other NFS workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -198,6 +198,12 @@ policy`.
   one-time PID/socket fence prevents writer overlap. Nightly verified logical
   backups retain 14 days on NFS without storing role password hashes, and the
   repository recovery overlay fences the writer and schedule before restore.
+  Live phase-one validation at signed revision `24da3a01` confirmed Argo CD
+  synced and healthy, the retained local pod Ready on `acer`, the migration
+  marker and all six application databases present, read-only mode enabled,
+  TCP disabled, and 50 `SELECT 1` probes completing in 1.63 seconds. Backup
+  `20260730T045748Z` verified the six custom-format dumps and password-free
+  globals before phase two was released.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
@@ -206,13 +212,11 @@ policy`.
   hours, but the actual RPO is the age of the newest verified set and can be
   older. A failed nightly NFS backup has no freshness alert while the
   kube-state-metrics scrape path is unhealthy.
-- **Next step:** publish and validate the read-only staging revision, six
-  databases, sustained SQL latency, and first logical backup. Then publish the
-  writable replacement revision and validate the writer fence, scheduled
-  backup, and indexer searches in Prowlarr, Sonarr, and Radarr. Separately
-  inspect QNAP pool, disk, NFS-service, and network history because the same
-  failure domain still affects other NFS-backed workloads. Restore backup
-  freshness alerting when a reliable metric source is available.
+- **Next step:** publish the writable replacement revision and validate the
+  writer fence, scheduled backup, and indexer searches in Prowlarr, Sonarr, and
+  Radarr. Separately inspect QNAP pool, disk, NFS-service, and network history
+  because the same failure domain still affects other NFS-backed workloads.
+  Restore backup freshness alerting when a reliable metric source is available.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
