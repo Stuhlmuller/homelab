@@ -148,9 +148,10 @@ Create two GitHub environments:
   deployment branches to `main`.
 
 Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Add
-`AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan`
-lets trusted pull requests render AzureAD application plans, otherwise that PR
-plan phase is skipped with a warning. Repository-level secrets also work, but
+`AZUREAD_CLIENT_SECRET` and `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to
+`homelab-production`; adding `AZUREAD_CLIENT_SECRET` to `homelab-plan` lets
+trusted pull requests render AzureAD application plans, otherwise that PR plan
+phase is skipped with a warning. Repository-level secrets also work, but
 environment secrets are preferred so production credentials can have approval
 rules and tighter rotation:
 
@@ -158,6 +159,7 @@ rules and tighter rotation:
 |--------|-------------|---------|
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
+| `CLOUDFLARE_ZONE_SETTINGS_TOKEN` | `homelab-production` | Cloudflare API token with `Zone:Read` and `Zone Settings:Edit` used by the manually dispatched Octelium gRPC reconciler. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
 has no runtime consumer. Its declaration and preexisting-parameter adoption

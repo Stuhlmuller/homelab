@@ -100,6 +100,12 @@ roles need identity-based KMS permissions for both keys.
   for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
+  The separate Cloudflare zone-settings token is stored as the protected
+  `homelab-production` environment secret
+  `CLOUDFLARE_ZONE_SETTINGS_TOKEN`. The manually dispatched
+  `.github/workflows/octelium-cloudflare-grpc.yml` workflow injects it into
+  `/homelab/octelium/cloudflare-zone-settings-token` and runs the repo-owned
+  gRPC reconciler; the token value never belongs in git.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into

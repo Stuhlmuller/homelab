@@ -1,0 +1,54 @@
+name: Reconcile Octelium Cloudflare gRPC
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  reconcile:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Verify Inputs
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          CLOUDFLARE_ZONE_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_ZONE_SETTINGS_TOKEN }}
+        run: |
+          test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set for homelab-production."; exit 1; }
+          test -n "${CLOUDFLARE_ZONE_SETTINGS_TOKEN}" || { echo "CLOUDFLARE_ZONE_SETTINGS_TOKEN must be set as a homelab-production environment secret."; exit 1; }
+          test "${CLOUDFLARE_ZONE_SETTINGS_TOKEN}" != "REPLACE_ME" || { echo "CLOUDFLARE_ZONE_SETTINGS_TOKEN must not be REPLACE_ME."; exit 1; }
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: octelium-cloudflare-grpc-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Inject Cloudflare Token
+        env:
+          CLOUDFLARE_ZONE_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_ZONE_SETTINGS_TOKEN }}
+        run: |
+          aws ssm put-parameter \
+            --region us-west-2 \
+            --name /homelab/octelium/cloudflare-zone-settings-token \
+            --type SecureString \
+            --key-id alias/homelab-opentofu \
+            --overwrite \
+            --value "${CLOUDFLARE_ZONE_SETTINGS_TOKEN}" >/dev/null
+
+      - name: Reconcile Cloudflare gRPC
+        run: scripts/octelium-cloudflare-grpc.sh
