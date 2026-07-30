@@ -58,7 +58,7 @@ policy`.
 
 ## Open Findings
 
-- **Status:** placement fix prepared; live verification pending
+- **Status:** mitigated; local database storage still required
 - **Area:** Octelium / access recovery
 - **Evidence:** On 2026-07-29, an NFS-backed `octelium-postgres` stall made the
   public login origin return HTTP 502 while repeated CLI retries accumulated
@@ -75,13 +75,19 @@ policy`.
   retained PVC; the follow-up restores one replica on the new revision. That
   fresh pod stalled again on `acer`, while earlier node-level NFS evidence
   showed millions of write timeouts there and almost none on the ZimaBoards.
-  Desired state now pins only `octelium-postgres` to `zimaboard-1`.
+  Desired state now pins only `octelium-postgres` to `zimaboard-1`. Live
+  verification then caught the same retained NFS claim query-stalling again on
+  `zimaboard-1`; the SQL liveness probe correctly marked the pod unready. The
+  runtime liveness window is now 90 seconds so this failure restarts instead of
+  leaving Octelium authentication unavailable for 30 minutes.
 - **Risk:** The larger ceiling restores recovery headroom but does not make the
   QNAP NFS path reliable; another retry storm could still fill 32 sessions.
-- **Next step:** Keep the existing PostgreSQL availability alert and NFS
-  investigation active. Delete disconnected sessions through
-  `octeliumctl delete session`, and treat renewed PostgreSQL probe failures as
-  the storage incident rather than an Octelium routing failure.
+- **Next step:** Move PostgreSQL to reviewed local block storage; the cluster
+  currently exposes only `nfs-default`, so that migration needs a declared
+  Talos volume and Kubernetes storage path. Keep the availability alert active,
+  delete disconnected sessions through `octeliumctl delete session`, and treat
+  renewed probe failures as the storage incident rather than an Octelium
+  routing failure.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics

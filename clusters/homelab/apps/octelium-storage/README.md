@@ -21,13 +21,12 @@ then deletes the temporary file.
 PostgreSQL uses a 20Gi `nfs-default` PVC. Redis uses a 5Gi `nfs-default` PVC
 with AOF enabled. The QNAP NFS export squashes ownership, so both pods run as
 UID/GID 65534 like the other file-backed PostgreSQL workloads in this repo.
-PostgreSQL has 30-minute startup and liveness windows plus a 120-second
-termination grace period so NFS recovery is allowed to complete without a
-crash-recovery loop. Readiness and liveness execute `SELECT 1` instead of only
-checking that PostgreSQL accepts a socket connection, so a query-stalled server
-is not reported healthy. The pod is pinned to `zimaboard-1`, whose NFS client
-remained responsive during the 2026-07-29 incident that repeatedly stalled the
-same retained claim on `acer`.
+PostgreSQL has a 30-minute startup window, a 90-second runtime liveness window,
+and a 120-second termination grace period. Readiness and liveness execute
+`SELECT 1` instead of only checking that PostgreSQL accepts a socket connection,
+so a query-stalled server is removed from service and restarted promptly. The
+pod is pinned to `zimaboard-1`; this avoids the worst observed NFS client but
+does not make QNAP NFS reliable database storage.
 
 ## Validation
 

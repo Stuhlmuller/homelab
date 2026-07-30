@@ -70,12 +70,13 @@ until recovery completes. See
 `clusters/homelab/apps/media-postgres/README.md` for the failure mode and
 operator response.
 
-`octelium-postgres` uses the same recovery window. Its readiness and liveness
-checks execute `SELECT 1`, preventing a server that accepts connections but
-cannot execute queries from remaining falsely healthy. It is pinned to
-`zimaboard-1` to avoid the repeatedly stalled `acer` NFS client path. Its
-availability is required for Octelium service publication, including the CI
-Kubernetes API tunnel.
+`octelium-postgres` keeps the 30-minute startup window but uses a 90-second
+runtime liveness window. Its readiness and liveness checks execute `SELECT 1`,
+preventing a server that accepts connections but cannot execute queries from
+remaining falsely healthy. It is pinned to `zimaboard-1` to avoid the worst
+observed NFS client path, but QNAP NFS remains a database availability risk.
+Its availability is required for Octelium service publication, including the
+CI Kubernetes API tunnel.
 
 Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
 stalls do not force repeated libtorrent state reloads. Its pod runs on
