@@ -106,10 +106,10 @@ policy`.
   Cloudflare's current documentation states that Tunnel public-hostname
   deployments do not support gRPC. The Xfinity gateway exposes a working UPnP
   IGD, and `10.1.0.199:31432` returned the expected unauthenticated gRPC status
-  directly, proving a WAN-to-dedicated-NodePort route is viable.
+  directly, proving a WAN-to-dedicated-gateway route is viable.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Merge the dedicated `30443` Istio NodePort and updated
+- **Next step:** Merge the API-only Istio gateway on NodePort `30443` and updated
   `scripts/octelium-public-dns.sh`, let Argo CD sync Istio and
   `octelium-public`, then run the reconciler from the homelab LAN. Verify the
   proxied API gRPC response and a real public `octelium connect`; only then

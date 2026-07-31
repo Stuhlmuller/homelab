@@ -24,10 +24,11 @@ LoadBalancer IP.
 hostnames do not support the long-running gRPC stream used by
 `octelium connect`, so this name is a proxied A record to the current WAN IPv4
 address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
-that address through UPnP, maps public TCP/443 to the dedicated Istio NodePort
-at `10.1.0.199:30443`, verifies the origin gRPC response, and reconciles the
-record. It does not expose the browser or callback hostnames through the
-NodePort.
+that address through UPnP, maps public TCP/443 to the dedicated
+`octelium-api-ingressgateway` NodePort at `10.1.0.199:30443`, verifies the
+origin gRPC response, and reconciles the record. The dedicated gateway's TLS
+listener accepts only `octelium-api.stinkyboi.com`; browser, app, and callback
+hostnames remain unavailable through the WAN mapping.
 See Cloudflare's
 [gRPC limitation](https://developers.cloudflare.com/network/grpc-connections/#limitations)
 for the public-hostname restriction.
@@ -49,7 +50,7 @@ why `stinkyboi.com` is the Octelium cluster domain even though
 | Surface | HTTPS host | Backbone |
 |-----|------------------|---------------|
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
-| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy to WAN TCP/443, then UPnP to the dedicated Istio NodePort |
+| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy to WAN TCP/443, then UPnP to the API-only Istio gateway NodePort |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
@@ -74,12 +75,14 @@ the policy. Unauthenticated callback routes must also carry
 `homelab.rst.io/public-callback-purpose`.
 
 The primary Istio ingressgateway Service remains a Tailscale `LoadBalancer`
-with `allocateLoadBalancerNodePorts: false`. A separate
-`octelium-api-nodeport` Service exposes only TLS on fixed NodePort `30443`.
+with `allocateLoadBalancerNodePorts: false`. A separate gateway-chart release
+and `octelium-api-gateway` TLS configuration expose fixed NodePort `30443`.
+Its workload selector and exact hostname are separate from
+`tailnet-gateway`, preventing another app hostname from using the WAN listener.
 The router mapping exposes only public TCP/443 and targets the control-plane
-node at `10.1.0.199`; no public HTTP, status, or application NodePort is
-declared. Requests still terminate at the Octelium API and require Octelium
-authentication. To close the WAN listener immediately, run
+node at `10.1.0.199`; no public HTTP or status NodePort is declared. Requests
+still terminate at the Octelium API and require Octelium authentication. To
+close the WAN listener immediately, run
 `nix develop --command upnpc -d 443 TCP`; to restore the prior DNS shape,
 revert the direct-origin change and rerun `scripts/octelium-public-dns.sh`.
 

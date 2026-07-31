@@ -3,5 +3,5 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - certificate.yaml
-  - octelium-api-nodeport.yaml
+  - octelium-api-gateway.yaml
   - tailnet-gateway.yaml

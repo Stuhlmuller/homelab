@@ -1,0 +1,21 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: octelium-api-gateway
+  namespace: istio-system
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+spec:
+  selector:
+    istio: octelium-api-ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      hosts:
+        - octelium-api.stinkyboi.com
+      tls:
+        mode: SIMPLE
+        credentialName: stinkyboi-com-tls

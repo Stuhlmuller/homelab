@@ -353,11 +353,12 @@ curl -sS \
 Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
 API hostname therefore uses a separate direct origin: Cloudflare's normal
 proxied A record reaches public TCP/443, the Xfinity gateway maps that port to
-`10.1.0.199:30443`, and the dedicated `octelium-api-nodeport` Service forwards
-TLS unchanged to Istio. Run `scripts/octelium-public-dns.sh` from the homelab
-LAN to reconcile both the UPnP mapping and DNS record. The script verifies an
-unauthenticated `grpc-status: 16` response from the NodePort before exposing it.
-All browser, app, and callback hostnames remain on `octelium-public`.
+`10.1.0.199:30443`, and the dedicated `octelium-api-ingressgateway` forwards
+TLS through an Istio `Gateway` that accepts only the API hostname. Run
+`scripts/octelium-public-dns.sh` from the homelab LAN to reconcile both the
+UPnP mapping and DNS record. The script verifies an unauthenticated
+`grpc-status: 16` response from the NodePort before exposing it. All browser,
+app, and callback hostnames remain on `octelium-public`.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump

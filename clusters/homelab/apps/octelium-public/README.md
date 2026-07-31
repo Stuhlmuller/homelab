@@ -38,8 +38,10 @@ The `octelium-api.stinkyboi.com` CLI hostname does not use this public-hostname
 tunnel because Cloudflare does not support gRPC streams on that route type.
 It uses Cloudflare's normal proxied gRPC path to public TCP/443, which
 `scripts/octelium-public-dns.sh` maps with UPnP to the dedicated
-`octelium-api-nodeport` Istio Service at `10.1.0.199:30443`. The connector
-remains pinned to `2026.7.3` for the browser, app, and callback routes.
+`octelium-api-ingressgateway` at `10.1.0.199:30443`. That gateway's TLS
+listener accepts only the API hostname, so app hostnames cannot bypass their
+Tunnel and Octelium clientless path through the WAN mapping. The connector
+remains pinned to `2026.7.3` for browser, app, and callback routes.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
