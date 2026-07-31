@@ -89,7 +89,7 @@ policy`.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** direct-origin gateway and router mapping live; Xfinity ingress blocked
+- **Status:** direct-origin gateway live; high-port WAN fallback in progress
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
@@ -114,13 +114,15 @@ policy`.
   lease. Direct origin probes still return `grpc-status: 16`, but Cloudflare
   receives HTTP `502` and direct WAN IPv4 connections time out. Xfinity
   documents that Advanced Security can block all inbound traffic to UPnP and
-  port-forwarded devices.
+  port-forwarded devices, and its published blocked-port list does not include
+  `8443`. Cloudflare Origin Rules can keep the client on standard TCP/443 while
+  overriding only the origin destination port on every plan.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** In the Xfinity app, keep Advanced Security enabled and use its
-  device-specific Allow Access flow for `zimaboard-0`, then verify the proxied
-  API gRPC response and a real public `octelium connect`; only then mark the
-  transport incident fixed.
+- **Next step:** Map WAN TCP/8443 from `zimaboard-0`, add the exact-host
+  Cloudflare destination-port override, then verify the proxied API gRPC
+  response and a real public `octelium connect`. Use Xfinity's device-specific
+  Allow Access flow only if the high-port route is also filtered.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
