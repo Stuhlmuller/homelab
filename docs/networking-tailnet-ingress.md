@@ -84,8 +84,8 @@ The router mapping exposes only public TCP/8443 and targets worker
 `zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
 The host-networked CronJob must run on that worker because the Xfinity UPnP
 implementation rejects mappings submitted by a different LAN client. It
-refreshes the Xfinity gateway's minimum 86,400-second lease hourly, so reverting
-or suspending the CronJob closes the WAN listener within 24 hours. Requests
+refreshes the Xfinity gateway's minimum 86,400-second lease every five minutes,
+so reverting or suspending the CronJob closes the WAN listener within 24 hours. Requests
 still terminate at the Octelium API and require Octelium authentication.
 If the mapping exists but WAN connections time out, use Xfinity Advanced
 Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity

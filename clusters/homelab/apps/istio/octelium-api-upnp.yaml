@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: octelium-api-upnp
     app.kubernetes.io/part-of: octelium
 spec:
-  schedule: "17 * * * *"
+  schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 1
