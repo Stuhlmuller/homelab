@@ -160,21 +160,23 @@ if ! valid_ipv4 "$public_ipv4"; then
 fi
 
 reconcile_api_port_mapping() {
-  local grpc_status mappings
+  local grpc_status mapping_current mappings
   mappings="$(upnpc -l 2>/dev/null)"
+  mapping_current="false"
 
   if grep -Eq "TCP[[:space:]]+${api_public_port}->${api_origin_ip}:${api_origin_port}([[:space:]]|$)" <<<"$mappings"; then
-    echo "Octelium API TCP/${api_public_port} mapping is current"
-    return 0
-  fi
-
-  if grep -Eq "TCP[[:space:]]+${api_public_port}->" <<<"$mappings"; then
+    mapping_current="true"
+  elif grep -Eq "TCP[[:space:]]+${api_public_port}->" <<<"$mappings"; then
     echo "error: TCP/${api_public_port} already maps to a different LAN target" >&2
     exit 1
   fi
 
   if [[ "$dry_run" == "true" ]]; then
-    echo "DRY-RUN map TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}"
+    if [[ "$mapping_current" == "true" ]]; then
+      echo "DRY-RUN Octelium API TCP/${api_public_port} mapping is current"
+    else
+      echo "DRY-RUN map TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}"
+    fi
     return 0
   fi
 
@@ -194,6 +196,11 @@ reconcile_api_port_mapping() {
   if [[ "$grpc_status" != "16" ]]; then
     echo "error: Octelium API NodePort returned gRPC status ${grpc_status:-missing}, expected 16" >&2
     exit 1
+  fi
+
+  if [[ "$mapping_current" == "true" ]]; then
+    echo "Octelium API TCP/${api_public_port} mapping and origin are current"
+    return 0
   fi
 
   upnpc -e octelium-api \
