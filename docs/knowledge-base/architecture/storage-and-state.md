@@ -89,15 +89,20 @@ Its availability is required for Octelium service publication, including the
 CI Kubernetes API tunnel.
 
 Deluge's active 5 Gi config volume is a retained static `hostPath` PV at
-`/var/lib/deluge`, pinned to `zimaboard-0`. The first replacement pod cold-copies
-the stopped singleton's NFS config and records an idempotent migration marker.
-The old `deluge-config` claim remains the migration/rollback source and receives
-verified nightly archives with 14-day retention. This removes catalog,
-fast-resume, authentication, and health-command reads from the QNAP path after
-read-only inspection on 2026-07-30 found the VPN healthy while the previous pod
-reported failed daemon RPC health for roughly 17 hours; its clean replacement
-loaded all 17 torrents with no error-state entries, but an ordinary
-`deluge-console status` still took 13 seconds on NFS.
+`/var/lib/deluge`, pinned to `zimaboard-0`. The initial guarded cold copy took
+4 minutes 6 seconds for roughly 5.2 MB, demonstrating the QNAP stall on the old
+startup path. The steady-state pod mounts only local config and shared
+downloads; the old `deluge-config` claim receives verified nightly archives
+with 14-day retention. This removes catalog, fast-resume, authentication, and
+health-command reads from the QNAP path after read-only inspection on
+2026-07-30 found the VPN healthy while the previous pod reported failed daemon
+RPC health for roughly 17 hours. Its clean replacement loaded all 17 torrents
+with no error-state entries and zero container restarts. An ordinary
+`deluge-console status` still took 13 seconds on local config, so the existing
+bounded health timeout remains necessary even though NFS is no longer in that
+path.
+The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
+the CronJob's archive listing validation.
 
 Deluge keeps 30-minute startup and runtime liveness windows so guarded
 libtorrent recovery is not interrupted. The metrics sidecar computes fresh

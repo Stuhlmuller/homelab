@@ -104,25 +104,25 @@ Active Deluge config uses the retained `deluge-config-local` volume backed by
 files, authentication, and probe reads from the QNAP NFS latency path that
 repeatedly stalled Deluge while the VPN remained healthy.
 
-The first replacement pod cold-copies the stopped singleton's existing
-`deluge-config` NFS claim into the empty local volume. The migration fails
-closed when `core.conf` is absent, clears an incomplete prior copy before
-retrying, and writes `.nfs-migration-complete` only after the copy and `sync`
-finish. `Recreate` ordering is required: it stops the old writer before the
-migration init container reads the NFS source. The retained NFS claim remains a
-migration and rollback source; do not point the active app back at it after
-local writes begin.
-
-After the migration marker, daemon health, torrent count, and first scheduled
-backup are verified, remove `migrate-config` and the `legacy-config` pod mount
-in a follow-up revision. The backup CronJob keeps the retained NFS claim; the
-steady-state Deluge pod should not need QNAP availability to start.
+The initial cutover stopped the singleton and cold-copied its existing
+`deluge-config` NFS claim into the empty local volume before starting Deluge.
+The guarded copy took 4 minutes 6 seconds for roughly 5.2 MB, directly
+demonstrating the QNAP stall on the old startup path. The steady-state pod
+mounts only the local config and shared downloads claims; the retained NFS
+config claim is mounted only by the backup CronJob.
 
 `deluge-config-backup` writes a verified compressed archive of the local config
 back to `deluge-config` at 03:30 Pacific each day and retains 14 days. The
 archive is a best-effort filesystem snapshot of a running daemon. Keep several
 generations because related state files can change while an archive is being
-read.
+read. The first scheduled run completed and validated
+`20260731T103003Z.tar.gz`.
+
+LinuxServer's ownership hook ran once after migration and established UID/GID
+`1000` on the local config. Steady-state startup removes that hook before
+`/init`; otherwise every restart scans config again and attempts a known-futile
+`chown` of the root-squashed QNAP downloads mount. Any restore Job must preserve
+UID/GID `1000` and mode `0600` on Deluge's private config files.
 
 The local volume survives ordinary Talos reboots and upgrades because `/var` is
 on the Talos `EPHEMERAL` system volume. It remains tied to `zimaboard-0` and is
@@ -139,8 +139,7 @@ in this namespace limited to repo-reviewed media automation.
 Deluge uses a `Recreate` rollout strategy because the app and helper sidecars
 share a single node-local `ReadWriteOnce` config PVC. Kubernetes must stop the
 old singleton before starting the replacement so two Deluge daemons do not
-write the same config volume and the first local migration reads a stopped NFS
-source.
+write the same config volume.
 
 The app asks s6 to stop the Deluge daemon during its Kubernetes `preStop` hook
 and waits up to 20 seconds so libtorrent can write clean state without s6
@@ -268,7 +267,7 @@ kubectl -n media exec deploy/deluge -c app -- \
 kubectl -n media exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config info
 kubectl -n media exec deploy/deluge -c daemon-metrics -- \
-  python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=5).read().decode(), end="")'
+  python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=25).read().decode(), end="")'
 kubectl -n media exec deploy/deluge -c gluetun -- \
   /gluetun-entrypoint healthcheck
 ```
