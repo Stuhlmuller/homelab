@@ -223,7 +223,7 @@ would force the client onto the unsupported nested
 `octelium-api.octelium.stinkyboi.com` hostname.
 
 Octelium CLI and VPN sessions use gRPC against `octelium-api.stinkyboi.com`.
-The `octelium-api-upnp` CronJob maintains its short-lived UPnP port mapping;
+The `octelium-api-upnp` CronJob maintains its leased UPnP port mapping;
 run `scripts/octelium-public-dns.sh` from the homelab LAN to verify the mapping
 and reconcile the proxied A record. The script reuses the cert-manager
 Cloudflare token because DNS edit permission is sufficient; no separate

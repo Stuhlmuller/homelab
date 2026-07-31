@@ -24,7 +24,7 @@ LoadBalancer IP.
 hostnames do not support the long-running gRPC stream used by
 `octelium connect`, so this name is a proxied A record to the current WAN IPv4
 address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
-that address through UPnP, verifies the short-lived mapping maintained by the
+that address through UPnP, verifies the leased mapping maintained by the
 `octelium-api-upnp` CronJob to the dedicated `octelium-api-ingressgateway`
 NodePort at `10.1.0.200:30443`, verifies the origin gRPC response, and
 reconciles the record. The dedicated gateway's TLS
@@ -84,9 +84,13 @@ The router mapping exposes only public TCP/443 and targets worker
 `zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
 The host-networked CronJob must run on that worker because the Xfinity UPnP
 implementation rejects mappings submitted by a different LAN client. It
-refreshes a 600-second lease every five minutes, so reverting or suspending the
-CronJob closes the WAN listener within ten minutes. Requests still terminate at
-the Octelium API and require Octelium authentication.
+refreshes the Xfinity gateway's minimum 86,400-second lease hourly, so reverting
+or suspending the CronJob closes the WAN listener within 24 hours. Requests
+still terminate at the Octelium API and require Octelium authentication.
+If the mapping exists but WAN connections time out, use Xfinity Advanced
+Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
+[documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
+that Advanced Security can block all inbound traffic to a forwarded device.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct

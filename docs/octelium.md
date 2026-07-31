@@ -356,7 +356,7 @@ proxied A record reaches public TCP/443, the Xfinity gateway maps that port to
 `10.1.0.200:30443`, and the dedicated `octelium-api-ingressgateway` forwards
 TLS through an Istio `Gateway` that accepts only the API hostname. Run
 `scripts/octelium-public-dns.sh` from the homelab LAN after the
-`octelium-api-upnp` CronJob creates its short-lived router mapping. The script
+`octelium-api-upnp` CronJob creates its leased router mapping. The script
 verifies both that mapping and an unauthenticated `grpc-status: 16` response
 from the NodePort before changing DNS. All browser, app, and callback hostnames
 remain on `octelium-public`.
