@@ -303,15 +303,14 @@ fi
 note "Checking API-only ingress boundary"
 API_GATEWAY_JSON="$(kubectl_homelab -n istio-system get gateway octelium-api-gateway -o json 2>/dev/null || true)"
 if jq -e \
-  --arg host "${API_HOST}" \
   '
     .spec.selector.istio == "octelium-api-ingressgateway" and
-    [.spec.servers[].hosts[]] == [$host] and
+    [.spec.servers[].hosts[]] == ["*"] and
     all(.spec.servers[]; .port.number == 443 and .port.protocol == "HTTPS")
   ' >/dev/null 2>&1 <<<"${API_GATEWAY_JSON}"; then
-  pass "dedicated Istio Gateway accepts only ${API_HOST}"
+  pass "dedicated Istio Gateway accepts Cloudflare origin TLS without SNI"
 else
-  fail "dedicated Istio Gateway is missing or accepts hosts beyond ${API_HOST}"
+  fail "dedicated Istio Gateway does not accept Cloudflare origin TLS without SNI"
 fi
 
 API_GATEWAY_SERVICE_JSON="$(kubectl_homelab -n istio-system get service octelium-api-ingressgateway -o json 2>/dev/null || true)"
@@ -327,12 +326,19 @@ else
 fi
 
 OCTELIUM_VIRTUALSERVICE_JSON="$(kubectl_homelab -n istio-system get virtualservice octelium-cluster -o json 2>/dev/null || true)"
+API_VIRTUALSERVICE_JSON="$(kubectl_homelab -n istio-system get virtualservice octelium-api -o json 2>/dev/null || true)"
 if jq -e \
-  'any(.spec.gateways[]; . == "istio-system/octelium-api-gateway")' \
-  >/dev/null 2>&1 <<<"${OCTELIUM_VIRTUALSERVICE_JSON}"; then
-  pass "Octelium control-plane route binds to the dedicated API gateway"
+  --arg host "${API_HOST}" \
+  '
+    .spec.hosts == [$host] and
+    .spec.gateways == ["istio-system/octelium-api-gateway"]
+  ' >/dev/null 2>&1 <<<"${API_VIRTUALSERVICE_JSON}" &&
+  ! jq -e \
+    'any(.spec.gateways[]; . == "istio-system/octelium-api-gateway")' \
+    >/dev/null 2>&1 <<<"${OCTELIUM_VIRTUALSERVICE_JSON}"; then
+  pass "only ${API_HOST} binds to the dedicated API gateway"
 else
-  fail "Octelium control-plane route is not bound to the dedicated API gateway"
+  fail "dedicated API gateway routing is not limited to ${API_HOST}"
 fi
 
 note "Checking Octelium TLS/API endpoints"

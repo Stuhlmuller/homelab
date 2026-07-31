@@ -27,9 +27,10 @@ address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
 that address through UPnP, verifies the leased mapping maintained by the
 `octelium-api-upnp` CronJob to the dedicated `octelium-api-ingressgateway`
 NodePort at `10.1.0.200:30443`, verifies the origin gRPC response, and
-reconciles the record. The dedicated gateway's TLS
-listener accepts only `octelium-api.stinkyboi.com`; browser, app, and callback
-hostnames remain unavailable through the WAN mapping.
+reconciles the record. The dedicated gateway accepts Cloudflare origin TLS
+without SNI, but a separate `VirtualService` routes only
+`octelium-api.stinkyboi.com`; browser, app, and callback hostnames remain
+unavailable through the WAN mapping.
 See Cloudflare's
 [gRPC limitation](https://developers.cloudflare.com/network/grpc-connections/#limitations)
 for the public-hostname restriction.
@@ -78,7 +79,7 @@ the policy. Unauthenticated callback routes must also carry
 The primary Istio ingressgateway Service remains a Tailscale `LoadBalancer`
 with `allocateLoadBalancerNodePorts: false`. A separate gateway-chart release
 and `octelium-api-gateway` TLS configuration expose fixed NodePort `30443`.
-Its workload selector and exact hostname are separate from
+Its workload selector and API-only `VirtualService` are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
 The router mapping exposes only public TCP/8443 and targets worker
 `zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.

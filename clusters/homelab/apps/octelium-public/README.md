@@ -40,9 +40,10 @@ It uses Cloudflare's normal proxied gRPC path on client TCP/443. A
 hostname-specific Origin Rule sends that traffic to WAN TCP/8443, which the
 `octelium-api-upnp` CronJob maps with UPnP to the dedicated
 `octelium-api-ingressgateway` at `10.1.0.200:30443`.
-`scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. That gateway's TLS
-listener accepts only the API hostname, so app hostnames cannot bypass their
-Tunnel and Octelium clientless path through the WAN mapping. The connector
+`scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. The
+gateway accepts Cloudflare origin TLS without SNI, but its separate
+`octelium-api` `VirtualService` routes only the API Host, so app hostnames
+cannot bypass their Tunnel and Octelium clientless path through the WAN mapping. The connector
 remains pinned to `2026.7.3` for browser, app, and callback routes.
 
 App hostnames forward directly to
