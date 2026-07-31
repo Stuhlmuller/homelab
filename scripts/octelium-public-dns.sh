@@ -18,7 +18,7 @@ Usage: scripts/octelium-public-dns.sh [options]
 Reconcile the public Octelium ingress route and Cloudflare DNS records.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
-SSM Parameter Store. It verifies the short-lived UPnP mapping maintained by the
+SSM Parameter Store. It verifies the leased UPnP mapping maintained by the
 octelium-api-upnp CronJob and creates a proxied A record for the API hostname.
 Other hostnames remain proxied CNAME records to the named Cloudflare Tunnel. It
 does not touch wildcard records.

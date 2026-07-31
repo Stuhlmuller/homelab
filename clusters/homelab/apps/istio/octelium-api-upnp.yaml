@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: octelium-api-upnp
     app.kubernetes.io/part-of: octelium
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "17 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 1
@@ -53,7 +53,7 @@ spec:
                         <NewInternalClient>10.1.0.200</NewInternalClient>
                         <NewEnabled>1</NewEnabled>
                         <NewPortMappingDescription>octelium-api</NewPortMappingDescription>
-                        <NewLeaseDuration>600</NewLeaseDuration>
+                        <NewLeaseDuration>86400</NewLeaseDuration>
                       </u:AddPortMapping>
                     </s:Body>
                   </s:Envelope>'
@@ -66,7 +66,7 @@ spec:
                   )"
                   case "$response" in
                     *AddPortMappingResponse*)
-                      echo "refreshed TCP/443 to 10.1.0.200:30443 for 600 seconds"
+                      echo "refreshed TCP/443 to 10.1.0.200:30443 for 86400 seconds"
                       ;;
                     *)
                       echo "error: router did not confirm the Octelium API mapping" >&2

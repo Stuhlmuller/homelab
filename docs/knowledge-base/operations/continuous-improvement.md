@@ -89,7 +89,7 @@ policy`.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** direct-origin gateway rolled out; router mapping follow-up in progress
+- **Status:** direct-origin gateway and router mapping live; Xfinity ingress blocked
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
@@ -109,12 +109,18 @@ policy`.
   unauthenticated gRPC status directly. The gateway rejected a mapping created
   from the operator workstation with UPnP error `402`, because its
   implementation requires the request to originate from the target LAN client.
+  The host-networked reconciliation then succeeded from `zimaboard-0`, and the
+  router lists TCP/443 to `10.1.0.200:30443` with its minimum 86,400-second
+  lease. Direct origin probes still return `grpc-status: 16`, but Cloudflare
+  receives HTTP `502` and direct WAN IPv4 connections time out. Xfinity
+  documents that Advanced Security can block all inbound traffic to UPnP and
+  port-forwarded devices.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Let the host-networked `octelium-api-upnp` CronJob on
-  `zimaboard-0` establish the 600-second lease, reconcile the proxied A record,
-  and verify a real public `octelium connect`; only then mark the transport
-  incident fixed.
+- **Next step:** In the Xfinity app, keep Advanced Security enabled and use its
+  device-specific Allow Access flow for `zimaboard-0`, then verify the proxied
+  API gRPC response and a real public `octelium connect`; only then mark the
+  transport incident fixed.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
