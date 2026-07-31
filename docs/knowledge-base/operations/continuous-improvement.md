@@ -116,13 +116,17 @@ policy`.
   documents that Advanced Security can block all inbound traffic to UPnP and
   port-forwarded devices, and its published blocked-port list does not include
   `8443`. Cloudflare Origin Rules can keep the client on standard TCP/443 while
-  overriding only the origin destination port on every plan.
+  overriding only the origin destination port on every plan. The live
+  TCP/8443 mapping changed the edge failure from a timeout to Cloudflare HTTP
+  `525`, while the dedicated Envoy logged `filter_chain_not_found` for that
+  connection. This proves the high port reaches Istio and that Cloudflare's
+  origin handshake omits the SNI required by the original exact-host Gateway.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Map WAN TCP/8443 from `zimaboard-0`, add the exact-host
+- **Next step:** Let the dedicated Gateway accept origin TLS without SNI while
+  moving its routing into an API-only `VirtualService`, add the exact-host
   Cloudflare destination-port override, then verify the proxied API gRPC
-  response and a real public `octelium connect`. Use Xfinity's device-specific
-  Allow Access flow only if the high-port route is also filtered.
+  response and a real public `octelium connect`.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics

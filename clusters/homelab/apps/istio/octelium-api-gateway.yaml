@@ -15,7 +15,7 @@ spec:
         name: https
         protocol: HTTPS
       hosts:
-        - octelium-api.stinkyboi.com
+        - "*"
       tls:
         mode: SIMPLE
         credentialName: stinkyboi-com-tls

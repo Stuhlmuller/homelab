@@ -354,8 +354,9 @@ Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
 API hostname therefore uses a separate direct origin: clients reach
 Cloudflare on TCP/443, a hostname-specific Origin Rule changes the destination
 port to `8443`, and the Xfinity gateway maps that port to
-`10.1.0.200:30443`. The dedicated `octelium-api-ingressgateway` forwards TLS
-through an Istio `Gateway` that accepts only the API hostname. Run
+`10.1.0.200:30443`. The dedicated `octelium-api-ingressgateway` accepts
+Cloudflare origin TLS without SNI, while a separate `VirtualService` routes
+only the API Host. Run
 `scripts/octelium-public-dns.sh` from the homelab LAN after the
 `octelium-api-upnp` CronJob creates its leased router mapping. The script
 verifies both that mapping and an unauthenticated `grpc-status: 16` response
