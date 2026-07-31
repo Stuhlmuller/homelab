@@ -1,0 +1,88 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: octelium-api-upnp
+  namespace: istio-system
+  annotations:
+    checkov.io/skip1: CKV_K8S_19=UPnP only accepts the mapping when the request originates from the target worker, so this pod must use that worker's network.
+  labels:
+    app.kubernetes.io/name: octelium-api-upnp
+    app.kubernetes.io/part-of: octelium
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 60
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: octelium-api-upnp
+            app.kubernetes.io/part-of: octelium
+        spec:
+          automountServiceAccountToken: false
+          hostNetwork: true
+          nodeSelector:
+            kubernetes.io/hostname: zimaboard-0
+          restartPolicy: Never
+          securityContext:
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: reconcile
+              image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  body='<?xml version="1.0"?>
+                  <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+                    <s:Body>
+                      <u:AddPortMapping xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">
+                        <NewRemoteHost></NewRemoteHost>
+                        <NewExternalPort>443</NewExternalPort>
+                        <NewProtocol>TCP</NewProtocol>
+                        <NewInternalPort>30443</NewInternalPort>
+                        <NewInternalClient>10.1.0.200</NewInternalClient>
+                        <NewEnabled>1</NewEnabled>
+                        <NewPortMappingDescription>octelium-api</NewPortMappingDescription>
+                        <NewLeaseDuration>600</NewLeaseDuration>
+                      </u:AddPortMapping>
+                    </s:Body>
+                  </s:Envelope>'
+                  response="$(
+                    wget -qO- -T 10 \
+                      --header='Content-Type: text/xml; charset="utf-8"' \
+                      --header='SOAPAction: "urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"' \
+                      --post-data="$body" \
+                      http://10.1.0.1:49152/upnp/control/WANIPConnection0
+                  )"
+                  case "$response" in
+                    *AddPortMappingResponse*)
+                      echo "refreshed TCP/443 to 10.1.0.200:30443 for 600 seconds"
+                      ;;
+                    *)
+                      echo "error: router did not confirm the Octelium API mapping" >&2
+                      exit 1
+                      ;;
+                  esac
+              resources:
+                requests:
+                  cpu: 5m
+                  memory: 8Mi
+                limits:
+                  cpu: 50m
+                  memory: 32Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true

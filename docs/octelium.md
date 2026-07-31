@@ -353,12 +353,13 @@ curl -sS \
 Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
 API hostname therefore uses a separate direct origin: Cloudflare's normal
 proxied A record reaches public TCP/443, the Xfinity gateway maps that port to
-`10.1.0.199:30443`, and the dedicated `octelium-api-ingressgateway` forwards
+`10.1.0.200:30443`, and the dedicated `octelium-api-ingressgateway` forwards
 TLS through an Istio `Gateway` that accepts only the API hostname. Run
-`scripts/octelium-public-dns.sh` from the homelab LAN to reconcile both the
-UPnP mapping and DNS record. The script verifies an unauthenticated
-`grpc-status: 16` response from the NodePort before exposing it. All browser,
-app, and callback hostnames remain on `octelium-public`.
+`scripts/octelium-public-dns.sh` from the homelab LAN after the
+`octelium-api-upnp` CronJob creates its short-lived router mapping. The script
+verifies both that mapping and an unauthenticated `grpc-status: 16` response
+from the NodePort before changing DNS. All browser, app, and callback hostnames
+remain on `octelium-public`.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
@@ -381,8 +382,8 @@ scripts/octelium-public-dns.sh
 ```
 
 The gateway reconciler prevents `_gw-*` names from falling through to stale
-wildcard records. The public reconciler creates a proxied API A record and its
-UPnP mapping, then creates exact proxied CNAME records to the named Cloudflare
+wildcard records. The public reconciler verifies the CronJob-owned API mapping,
+creates its proxied A record, then creates exact proxied CNAME records to the named Cloudflare
 Tunnel target for `stinkyboi.com`, portal and browser aliases,
 `console.stinkyboi.com`, app hostnames such as `grafana.stinkyboi.com`, and
 callback hostnames such as `n8n-webhook.stinkyboi.com` and
