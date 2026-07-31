@@ -36,9 +36,10 @@ existing `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 The `octelium-api.stinkyboi.com` CLI hostname does not use this public-hostname
 tunnel because Cloudflare does not support gRPC streams on that route type.
-It uses Cloudflare's normal proxied gRPC path to public TCP/443, which
-`scripts/octelium-public-dns.sh` maps with UPnP to the dedicated
-`octelium-api-ingressgateway` at `10.1.0.199:30443`. That gateway's TLS
+It uses Cloudflare's normal proxied gRPC path to public TCP/443, which the
+`octelium-api-upnp` CronJob maps with UPnP to the dedicated
+`octelium-api-ingressgateway` at `10.1.0.200:30443`.
+`scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. That gateway's TLS
 listener accepts only the API hostname, so app hostnames cannot bypass their
 Tunnel and Octelium clientless path through the WAN mapping. The connector
 remains pinned to `2026.7.3` for browser, app, and callback routes.
@@ -64,10 +65,10 @@ the public certificate/DNS shape.
 The Cloudflare DNS records for browser, app, and callback hostnames must be
 exact proxied CNAMEs to the named tunnel target,
 `<tunnel-uuid>.cfargotunnel.com`. The API hostname must be a proxied A record
-to the WAN address. Reconcile both the DNS records and API port mapping with
-`scripts/octelium-public-dns.sh` from the homelab LAN after the tunnel UUID is
-stored in SSM. Public resolvers should return Cloudflare anycast addresses, not
-private Octelium or old tailnet addresses.
+to the WAN address. After Argo CD syncs the `octelium-api-upnp` CronJob,
+reconcile DNS with `scripts/octelium-public-dns.sh` from the homelab LAN.
+Public resolvers should return Cloudflare anycast addresses, not private
+Octelium or old tailnet addresses.
 
 Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
 `*.stinkyboi.com` certificate shape. The cluster domain is `stinkyboi.com` so

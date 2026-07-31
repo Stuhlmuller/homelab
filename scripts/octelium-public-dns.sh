@@ -7,7 +7,7 @@ aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 tunnel_id_parameter="/homelab/octelium/cloudflare-tunnel-id"
 dry_run="false"
-api_origin_ip="10.1.0.199"
+api_origin_ip="10.1.0.200"
 api_origin_port="30443"
 api_public_port="443"
 
@@ -18,10 +18,10 @@ Usage: scripts/octelium-public-dns.sh [options]
 Reconcile the public Octelium ingress route and Cloudflare DNS records.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
-SSM Parameter Store. It maps public TCP/443 to the dedicated Octelium API
-NodePort with UPnP and creates a proxied A record for the API hostname. Other
-hostnames remain proxied CNAME records to the named Cloudflare Tunnel. It does
-not touch wildcard records.
+SSM Parameter Store. It verifies the short-lived UPnP mapping maintained by the
+octelium-api-upnp CronJob and creates a proxied A record for the API hostname.
+Other hostnames remain proxied CNAME records to the named Cloudflare Tunnel. It
+does not touch wildcard records.
 
 Options:
   --domain DOMAIN                 Octelium Cluster domain. Default: stinkyboi.com
@@ -31,7 +31,7 @@ Options:
                                   Default: /homelab/cert-manager/cloudflare-api-token
   --tunnel-id-parameter NAME      SSM parameter containing the Cloudflare Tunnel UUID.
                                   Default: /homelab/octelium/cloudflare-tunnel-id
-  --dry-run                       Print intended router and DNS changes without writing.
+  --dry-run                       Print intended DNS changes without writing.
   -h, --help                      Show this help.
 USAGE
 }
@@ -159,7 +159,7 @@ if ! valid_ipv4 "$public_ipv4"; then
   exit 1
 fi
 
-reconcile_api_port_mapping() {
+verify_api_port_mapping() {
   local grpc_status mapping_current mappings
   mappings="$(upnpc -l 2>/dev/null)"
   mapping_current="false"
@@ -175,7 +175,7 @@ reconcile_api_port_mapping() {
     if [[ "$mapping_current" == "true" ]]; then
       echo "DRY-RUN Octelium API TCP/${api_public_port} mapping is current"
     else
-      echo "DRY-RUN map TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}"
+      echo "DRY-RUN Octelium API mapping is pending from the octelium-api-upnp CronJob"
     fi
     return 0
   fi
@@ -198,18 +198,15 @@ reconcile_api_port_mapping() {
     exit 1
   fi
 
-  if [[ "$mapping_current" == "true" ]]; then
-    echo "Octelium API TCP/${api_public_port} mapping and origin are current"
-    return 0
+  if [[ "$mapping_current" != "true" ]]; then
+    echo "error: wait for the octelium-api-upnp CronJob to map TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}" >&2
+    exit 1
   fi
 
-  upnpc -e octelium-api \
-    -a "$api_origin_ip" "$api_origin_port" "$api_public_port" TCP 0 \
-    >/dev/null
-  echo "Mapped Octelium API TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}"
+  echo "Octelium API TCP/${api_public_port} mapping and origin are current"
 }
 
-reconcile_api_port_mapping
+verify_api_port_mapping
 
 hostnames=(
   "$domain"

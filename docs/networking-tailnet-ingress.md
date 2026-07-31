@@ -24,9 +24,10 @@ LoadBalancer IP.
 hostnames do not support the long-running gRPC stream used by
 `octelium connect`, so this name is a proxied A record to the current WAN IPv4
 address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
-that address through UPnP, maps public TCP/443 to the dedicated
-`octelium-api-ingressgateway` NodePort at `10.1.0.199:30443`, verifies the
-origin gRPC response, and reconciles the record. The dedicated gateway's TLS
+that address through UPnP, verifies the short-lived mapping maintained by the
+`octelium-api-upnp` CronJob to the dedicated `octelium-api-ingressgateway`
+NodePort at `10.1.0.200:30443`, verifies the origin gRPC response, and
+reconciles the record. The dedicated gateway's TLS
 listener accepts only `octelium-api.stinkyboi.com`; browser, app, and callback
 hostnames remain unavailable through the WAN mapping.
 See Cloudflare's
@@ -79,12 +80,13 @@ with `allocateLoadBalancerNodePorts: false`. A separate gateway-chart release
 and `octelium-api-gateway` TLS configuration expose fixed NodePort `30443`.
 Its workload selector and exact hostname are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
-The router mapping exposes only public TCP/443 and targets the control-plane
-node at `10.1.0.199`; no public HTTP or status NodePort is declared. Requests
-still terminate at the Octelium API and require Octelium authentication. To
-close the WAN listener immediately, run
-`nix develop --command upnpc -d 443 TCP`; to restore the prior DNS shape,
-revert the direct-origin change and rerun `scripts/octelium-public-dns.sh`.
+The router mapping exposes only public TCP/443 and targets worker
+`zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
+The host-networked CronJob must run on that worker because the Xfinity UPnP
+implementation rejects mappings submitted by a different LAN client. It
+refreshes a 600-second lease every five minutes, so reverting or suspending the
+CronJob closes the WAN listener within ten minutes. Requests still terminate at
+the Octelium API and require Octelium authentication.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct
