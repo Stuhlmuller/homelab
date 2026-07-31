@@ -15,6 +15,7 @@ spec:
     - console.stinkyboi.com
   gateways:
     - istio-system/tailnet-gateway
+    - istio-system/octelium-api-gateway
   http:
     - match:
         - authority:

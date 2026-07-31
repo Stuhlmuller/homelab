@@ -30,6 +30,7 @@
             gh
             gitleaks
             kubectl
+            miniupnpc
             opentofu
             ripgrep
             talosctl

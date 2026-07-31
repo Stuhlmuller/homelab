@@ -32,11 +32,6 @@ data:
         originRequest:
           originServerName: portal.stinkyboi.com
           httpHostHeader: portal.stinkyboi.com
-      - hostname: octelium-api.stinkyboi.com
-        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
-        originRequest:
-          originServerName: octelium-api.stinkyboi.com
-          httpHostHeader: octelium-api.stinkyboi.com
       - hostname: affine.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:

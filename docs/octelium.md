@@ -350,29 +350,15 @@ curl -sS \
   https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
 ```
 
-The `octelium-public` tunnel uses automatic transport selection: QUIC is
-preferred, with HTTP/2 fallback when UDP/7844 is unavailable. If
-`kubectl -n istio-system logs deploy/istio-ingressgateway` shows
-`POST /octelium.api.main.user.v1.MainService/Connect` ending with
-`DR http2.remote_reset` after roughly 125 seconds, the tunnel has likely fallen
-back to HTTP/2. Restore reliable UDP/7844 rather than forcing HTTP/2. Keep both
-UDP/7844 and TCP/7844 allowed to public IPv4 destinations in the
-`cloudflared-egress` NetworkPolicy. Keep private and link-local IPv4 ranges
-excluded from that public rule, and allow the in-cluster Istio HTTPS origin,
-Octelium ingress dataplane, and cluster DNS through namespace-scoped rules.
-
-The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
-
-```sh
-gh workflow run octelium-cloudflare-grpc.yml --ref main
-```
-
-Set `CLOUDFLARE_ZONE_SETTINGS_TOKEN` as a `homelab-production` environment
-secret first. The protected workflow writes it to
-`/homelab/octelium/cloudflare-zone-settings-token` with the existing KMS key,
-then runs `scripts/octelium-cloudflare-grpc.sh` to enable and verify the zone
-setting. The token requires `Zone:Read` and `Zone Settings:Edit` for
-`stinkyboi.com`; the cert-manager DNS-01 token cannot update this setting.
+Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
+API hostname therefore uses a separate direct origin: Cloudflare's normal
+proxied A record reaches public TCP/443, the Xfinity gateway maps that port to
+`10.1.0.199:30443`, and the dedicated `octelium-api-ingressgateway` forwards
+TLS through an Istio `Gateway` that accepts only the API hostname. Run
+`scripts/octelium-public-dns.sh` from the homelab LAN to reconcile both the
+UPnP mapping and DNS record. The script verifies an unauthenticated
+`grpc-status: 16` response from the NodePort before exposing it. All browser,
+app, and callback hostnames remain on `octelium-public`.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
@@ -395,11 +381,12 @@ scripts/octelium-public-dns.sh
 ```
 
 The gateway reconciler prevents `_gw-*` names from falling through to stale
-wildcard records. The public DNS reconciler creates exact proxied CNAME records
-for `stinkyboi.com`, Octelium API/portal aliases, `console.stinkyboi.com`, app
-hostnames such as `grafana.stinkyboi.com`, and callback hostnames such as
-`n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`, all pointing
-at the named Cloudflare Tunnel target.
+wildcard records. The public reconciler creates a proxied API A record and its
+UPnP mapping, then creates exact proxied CNAME records to the named Cloudflare
+Tunnel target for `stinkyboi.com`, portal and browser aliases,
+`console.stinkyboi.com`, app hostnames such as `grafana.stinkyboi.com`, and
+callback hostnames such as `n8n-webhook.stinkyboi.com` and
+`policy-bot-hook.stinkyboi.com`.
 
 ## Octelium Enterprise Package
 
@@ -576,11 +563,11 @@ Before rollout:
 kubectl kustomize clusters/homelab/apps/octelium
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-storage
+kubectl kustomize clusters/homelab/apps/istio
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-public-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
-bash -n scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
@@ -592,7 +579,6 @@ After activation:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
-scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
