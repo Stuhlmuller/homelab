@@ -88,32 +88,33 @@ observed NFS client path, but QNAP NFS remains a database availability risk.
 Its availability is required for Octelium service publication, including the
 CI Kubernetes API tunnel.
 
-Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
-stalls do not force repeated libtorrent state reloads. Its pod runs on
-`zimaboard-0` with resource requests, keeping it off the control-plane node
-and away from the media PostgreSQL workload on `zimaboard-1`. The Deluge liveness RPC
-checks use a 25-second command timeout after read-only inspection on 2026-07-26
-found the VPN healthy and Sonarr-to-Deluge HTTP fast while intermittent
-`deluge-console status` calls exceeded the old 10-second budget and triggered
-probe flaps. The metrics sidecar computes fresh health every 45 seconds with a
-20-second RPC cap and a 30-second Prometheus scrape deadline because the old
-cached writer wedged for more than a day inside
-`timeout 10s deluge-console` and kept serving stale
-`deluge_daemon_rpc_healthy 0`. Its startup wrapper skips the pinned LinuxServer
-image's recursive `/config` ownership pass because QNAP root squash rejects the
-operation and the retained PVC permissions already provide Deluge's write
-access. When stale resume data points complete downloads at the incomplete root,
-the documented operator script selects only exact-size target files, adopts them
-with libtorrent's `dont_replace` move, and requires a full piece-hash recheck
-before completion is trusted. The command resumes hash-valid entries for seeding
-and pauses hash failures so stale catalog state cannot trigger a silent
-redownload.
+Deluge's active 5 Gi config volume is a retained static `hostPath` PV at
+`/var/lib/deluge`, pinned to `zimaboard-0`. The first replacement pod cold-copies
+the stopped singleton's NFS config and records an idempotent migration marker.
+The old `deluge-config` claim remains the migration/rollback source and receives
+verified nightly archives with 14-day retention. This removes catalog,
+fast-resume, authentication, and health-command reads from the QNAP path after
+read-only inspection on 2026-07-30 found the VPN healthy while the previous pod
+reported failed daemon RPC health for roughly 17 hours; its clean replacement
+loaded all 17 torrents with no error-state entries, but an ordinary
+`deluge-console status` still took 13 seconds on NFS.
+
+Deluge keeps 30-minute startup and runtime liveness windows so guarded
+libtorrent recovery is not interrupted. The metrics sidecar computes fresh
+health every 45 seconds with a 20-second RPC cap and a 30-second Prometheus
+scrape deadline. When stale resume data points complete downloads at the
+incomplete root, the documented operator script selects only exact-size target
+files, adopts them with libtorrent's `dont_replace` move, and requires a full
+piece-hash recheck before completion is trusted. The command resumes hash-valid
+entries for seeding and pauses hash failures so stale catalog state cannot
+trigger a silent redownload.
 
 ## Source Files
 
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/deluge/media-storage.yaml`
+- `clusters/homelab/apps/deluge/local-storage.yaml`
 - `clusters/homelab/apps/media-postgres`
 - `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`

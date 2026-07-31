@@ -537,5 +537,10 @@ policy`.
   operator reconciliation adopts exact-size complete-root files without
   replacement and makes libtorrent hash-check them before trusting completion.
   Its guard resumes verified entries and pauses hash failures instead of
-  redownloading them; separately reduce the NFS stall that causes the bad
-  shutdowns.
+  redownloading them. The active config volume now uses retained local storage
+  on `zimaboard-0`; a guarded cold migration retains the NFS claim for rollback
+  and nightly archives. This removes the recurring QNAP config stall from the
+  daemon, probe, and catalog paths while keeping shared media on the NAS. After
+  live migration and the first backup validate, remove the migration-only NFS
+  mount from the Deluge pod so QNAP availability is no longer a startup
+  dependency.
