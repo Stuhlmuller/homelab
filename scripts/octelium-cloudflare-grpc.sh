@@ -109,7 +109,7 @@ zone_id="$(
 )"
 
 current_value="$(
-  cf_api GET "/zones/${zone_id}/settings/grpc" |
+  cf_api GET "/zones/${zone_id}/settings/long_lived_grpc" |
     jq -er '.result.value'
 )"
 
@@ -123,10 +123,10 @@ if [[ "$current_value" == "on" ]]; then
   exit 0
 fi
 
-cf_api PATCH "/zones/${zone_id}/settings/grpc" '{"value":"on"}' >/dev/null
+cf_api PATCH "/zones/${zone_id}/settings/long_lived_grpc" '{"value":"on"}' >/dev/null
 
 updated_value="$(
-  cf_api GET "/zones/${zone_id}/settings/grpc" |
+  cf_api GET "/zones/${zone_id}/settings/long_lived_grpc" |
     jq -er '.result.value'
 )"
 
