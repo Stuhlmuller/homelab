@@ -36,7 +36,8 @@ existing `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 The `octelium-api.stinkyboi.com` CLI hostname does not use this public-hostname
 tunnel because Cloudflare does not support gRPC streams on that route type.
-It uses Cloudflare's normal proxied gRPC path to public TCP/443, which the
+It uses Cloudflare's normal proxied gRPC path on client TCP/443. A
+hostname-specific Origin Rule sends that traffic to WAN TCP/8443, which the
 `octelium-api-upnp` CronJob maps with UPnP to the dedicated
 `octelium-api-ingressgateway` at `10.1.0.200:30443`.
 `scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. That gateway's TLS

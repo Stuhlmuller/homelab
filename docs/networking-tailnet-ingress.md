@@ -51,7 +51,7 @@ why `stinkyboi.com` is the Octelium cluster domain even though
 | Surface | HTTPS host | Backbone |
 |-----|------------------|---------------|
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
-| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy to WAN TCP/443, then UPnP to the API-only Istio gateway NodePort |
+| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy on client TCP/443, Origin Rule to WAN TCP/8443, then UPnP to the API-only Istio gateway NodePort |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
@@ -80,7 +80,7 @@ with `allocateLoadBalancerNodePorts: false`. A separate gateway-chart release
 and `octelium-api-gateway` TLS configuration expose fixed NodePort `30443`.
 Its workload selector and exact hostname are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
-The router mapping exposes only public TCP/443 and targets worker
+The router mapping exposes only public TCP/8443 and targets worker
 `zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
 The host-networked CronJob must run on that worker because the Xfinity UPnP
 implementation rejects mappings submitted by a different LAN client. It
@@ -91,6 +91,9 @@ If the mapping exists but WAN connections time out, use Xfinity Advanced
 Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
 [documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
 that Advanced Security can block all inbound traffic to a forwarded device.
+The Cloudflare Origin Rule must match
+`http.host eq "octelium-api.stinkyboi.com"` and override the destination port
+to `8443`; the client URL remains standard HTTPS on port `443`.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct

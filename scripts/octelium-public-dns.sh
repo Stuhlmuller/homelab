@@ -9,7 +9,7 @@ tunnel_id_parameter="/homelab/octelium/cloudflare-tunnel-id"
 dry_run="false"
 api_origin_ip="10.1.0.200"
 api_origin_port="30443"
-api_public_port="443"
+api_public_port="8443"
 
 usage() {
   cat <<'USAGE'
