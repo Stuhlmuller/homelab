@@ -99,16 +99,17 @@ policy`.
   After that digest-pinned update rolled out healthy, authenticated public
   `octelium status` still hung. The direct route completed login and reached
   `isConnected: true` with the unprivileged `gvisor` implementation, proving
-  the client, session, database, and Istio origin path.
+  the client, session, database, and Istio origin path. The first protected
+  reconciliation run injected the scoped token successfully, but Cloudflare
+  returned `Undefined zone setting: grpc`; the zone now exposes
+  `long_lived_grpc=off`, so the reconciler targets that current setting ID.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Set a scoped Cloudflare API token as the protected
-  `homelab-production` environment secret
-  `CLOUDFLARE_ZONE_SETTINGS_TOKEN`, then dispatch
-  `.github/workflows/octelium-cloudflare-grpc.yml` from `main`. If the workflow
-  confirms the zone setting is already on and the public path still fails,
-  investigate Cloudflare edge trailer handling with the direct-origin result
-  as the control.
+- **Next step:** Merge the corrected setting ID, dispatch
+  `.github/workflows/octelium-cloudflare-grpc.yml` from `main`, and retry the
+  public client path. If the workflow confirms the zone setting is already on
+  and the public path still fails, investigate Cloudflare edge trailer handling
+  with the direct-origin result as the control.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
