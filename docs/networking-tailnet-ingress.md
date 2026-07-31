@@ -3,7 +3,8 @@
 Octelium is the primary access plane for homelab apps, VPN sessions, CI
 Kubernetes API reachability, and external callback paths. Existing
 `*.stinkyboi.com` app hostnames resolve through the repo-owned
-`octelium-public` Cloudflare Tunnel connector. Octelium `WEB` Services normally
+`octelium-public` Cloudflare Tunnel connector; the Octelium CLI API uses the
+separate direct gRPC origin documented below. Octelium `WEB` Services normally
 enforce clientless browser login before proxying to the existing private Istio
 routes. AFFiNE is anonymous at Octelium and uses its own authentication so its
 stock native client can connect. Tailscale Funnel is not an approved
@@ -11,20 +12,30 @@ external-service backbone in steady state.
 
 ## DNS Model
 
-Exact app, callback, and Octelium control-plane records such as
+Exact app, callback, and browser control-plane records such as
 `grafana.stinkyboi.com`, `n8n-webhook.stinkyboi.com`,
-`policy-bot-hook.stinkyboi.com`, `portal.stinkyboi.com`, and
-`octelium-api.stinkyboi.com` must be proxied CNAMEs to the
+`policy-bot-hook.stinkyboi.com`, and `portal.stinkyboi.com` must be proxied CNAMEs to the
 `homelab-octelium-public` Cloudflare Tunnel target,
 `<tunnel-uuid>.cfargotunnel.com`. Public DNS answers should be Cloudflare
 anycast addresses, not Octelium private service IPs or the old tailnet
-LoadBalancer IP. Use `scripts/octelium-public-dns.sh` to reconcile those exact
-records from the SSM-backed tunnel UUID.
+LoadBalancer IP.
+
+`octelium-api.stinkyboi.com` is the exception. Cloudflare Tunnel public
+hostnames do not support the long-running gRPC stream used by
+`octelium connect`, so this name is a proxied A record to the current WAN IPv4
+address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
+that address through UPnP, maps public TCP/443 to the dedicated Istio NodePort
+at `10.1.0.199:30443`, verifies the origin gRPC response, and reconciles the
+record. It does not expose the browser or callback hostnames through the
+NodePort.
+See Cloudflare's
+[gRPC limitation](https://developers.cloudflare.com/network/grpc-connections/#limitations)
+for the public-hostname restriction.
 
 The public tunnel forwards app UI hostnames to the Octelium public ingress
 dataplane so Octelium can select the matching `WEB` Service and apply its
 declared clientless or anonymous access mode.
-The tunnel forwards the Octelium Cluster/API/portal hostnames, Enterprise
+The tunnel forwards the Octelium Cluster and portal browser hostnames, Enterprise
 console, and unauthenticated callback hostnames to the in-cluster Istio gateway,
 where explicit `VirtualService` objects keep backend routing narrow.
 
@@ -37,7 +48,8 @@ why `stinkyboi.com` is the Octelium cluster domain even though
 
 | Surface | HTTPS host | Backbone |
 |-----|------------------|---------------|
-| Octelium control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com`, `https://octelium-api.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
+| Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
+| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy to WAN TCP/443, then UPnP to the dedicated Istio NodePort |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
@@ -61,12 +73,15 @@ the policy. Unauthenticated callback routes must also carry
 `homelab.rst.io/public-callback-reviewed: "true"`, and a non-empty
 `homelab.rst.io/public-callback-purpose`.
 
-The Istio ingressgateway Service is a Tailscale `LoadBalancer` and sets
-`allocateLoadBalancerNodePorts: false` so the gateway is not exposed through
-high NodePorts on every Talos node. A 2026-05-25 read-only scan found existing
-NodePorts from the earlier Service revision. After Argo CD syncs this desired
-state, verify those ports are gone with `kubectl -n istio-system get svc
-istio-ingressgateway -o yaml` and a focused node-port scan.
+The primary Istio ingressgateway Service remains a Tailscale `LoadBalancer`
+with `allocateLoadBalancerNodePorts: false`. A separate
+`octelium-api-nodeport` Service exposes only TLS on fixed NodePort `30443`.
+The router mapping exposes only public TCP/443 and targets the control-plane
+node at `10.1.0.199`; no public HTTP, status, or application NodePort is
+declared. Requests still terminate at the Octelium API and require Octelium
+authentication. To close the WAN listener immediately, run
+`nix develop --command upnpc -d 443 TCP`; to restore the prior DNS shape,
+revert the direct-origin change and rerun `scripts/octelium-public-dns.sh`.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct

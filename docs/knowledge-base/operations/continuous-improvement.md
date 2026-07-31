@@ -89,7 +89,7 @@ policy`.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** mitigated locally; public path still failing
+- **Status:** direct-origin fix implemented; rollout pending
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
@@ -101,15 +101,19 @@ policy`.
   `isConnected: true` with the unprivileged `gvisor` implementation, proving
   the client, session, database, and Istio origin path. The first protected
   reconciliation run injected the scoped token successfully, but Cloudflare
-  returned `Undefined zone setting: grpc`; the zone now exposes
-  `long_lived_grpc=off`, so the reconciler targets that current setting ID.
+  returned `Undefined zone setting: grpc`; its replacement
+  `long_lived_grpc` is visible but non-editable and returns API error `1015`.
+  Cloudflare's current documentation states that Tunnel public-hostname
+  deployments do not support gRPC. The Xfinity gateway exposes a working UPnP
+  IGD, and `10.1.0.199:31432` returned the expected unauthenticated gRPC status
+  directly, proving a WAN-to-dedicated-NodePort route is viable.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Merge the corrected setting ID, dispatch
-  `.github/workflows/octelium-cloudflare-grpc.yml` from `main`, and retry the
-  public client path. If the workflow confirms the zone setting is already on
-  and the public path still fails, investigate Cloudflare edge trailer handling
-  with the direct-origin result as the control.
+- **Next step:** Merge the dedicated `30443` Istio NodePort and updated
+  `scripts/octelium-public-dns.sh`, let Argo CD sync Istio and
+  `octelium-public`, then run the reconciler from the homelab LAN. Verify the
+  proxied API gRPC response and a real public `octelium connect`; only then
+  mark the transport incident fixed.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics

@@ -99,7 +99,7 @@ stack because Terraform manages the Kubernetes Secret.
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
 | octelium | `octelium-client-auth` | `octelium-client-auth-v5` | `/homelab/octelium/client-auth-token` |
 | octelium-public | `octelium-public-cloudflared-credentials` | `octelium-public-cloudflared-credentials` | `/homelab/octelium/cloudflare-tunnel-credentials-json`, `/homelab/octelium/cloudflare-tunnel-id` |
-| octelium-public | Cloudflare zone gRPC reconciler | none | `/homelab/octelium/cloudflare-zone-settings-token` |
+| octelium-public | retired Cloudflare zone-setting token; no runtime consumer | none | `/homelab/octelium/cloudflare-zone-settings-token` |
 | octelium | Octelium native Secret `entra-oidc-client-secret` | Octelium IdentityProvider `entra` | `/homelab/octelium/entra/client-id`, `/homelab/octelium/entra/client-secret`, `/homelab/octelium/entra/issuer-url`, `/homelab/octelium/entra/tenant-id` |
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
@@ -223,13 +223,12 @@ would force the client onto the unsupported nested
 `octelium-api.octelium.stinkyboi.com` hostname.
 
 Octelium CLI and VPN sessions use gRPC against `octelium-api.stinkyboi.com`.
-Store a separate Cloudflare API token with `Zone:Read` and `Zone Settings:Edit`
-for `stinkyboi.com` as the `CLOUDFLARE_ZONE_SETTINGS_TOKEN` secret in the
-protected `homelab-production` GitHub environment, then dispatch
-`.github/workflows/octelium-cloudflare-grpc.yml` from `main`. The workflow
-injects the token into `/homelab/octelium/cloudflare-zone-settings-token` and
-runs the repo-owned reconciler. The cert-manager DNS-01 token is too narrow for
-this setting and returns Cloudflare error `9109`.
+Run `scripts/octelium-public-dns.sh` from the homelab LAN to reconcile its UPnP
+port mapping and proxied A record. The script reuses the cert-manager
+Cloudflare token because DNS edit permission is sufficient; no separate
+zone-settings token is required. The old
+`/homelab/octelium/cloudflare-zone-settings-token` declaration is retained
+temporarily so removing a secret value is a separate reviewed operation.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

@@ -7,18 +7,21 @@ aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 tunnel_id_parameter="/homelab/octelium/cloudflare-tunnel-id"
 dry_run="false"
+api_origin_ip="10.1.0.199"
+api_origin_port="30443"
+api_public_port="443"
 
 usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-public-dns.sh [options]
 
-Reconcile Cloudflare DNS records for the public Octelium control plane,
-public app hostnames, and reviewed callback hostnames.
+Reconcile the public Octelium ingress route and Cloudflare DNS records.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
-SSM Parameter Store, removes exact A/AAAA records for the Octelium control-plane
-hostnames, and creates exact proxied CNAME records pointing at the named tunnel
-target. It does not touch wildcard records.
+SSM Parameter Store. It maps public TCP/443 to the dedicated Octelium API
+NodePort with UPnP and creates a proxied A record for the API hostname. Other
+hostnames remain proxied CNAME records to the named Cloudflare Tunnel. It does
+not touch wildcard records.
 
 Options:
   --domain DOMAIN                 Octelium Cluster domain. Default: stinkyboi.com
@@ -28,7 +31,7 @@ Options:
                                   Default: /homelab/cert-manager/cloudflare-api-token
   --tunnel-id-parameter NAME      SSM parameter containing the Cloudflare Tunnel UUID.
                                   Default: /homelab/octelium/cloudflare-tunnel-id
-  --dry-run                       Print intended changes without writing Cloudflare DNS.
+  --dry-run                       Print intended router and DNS changes without writing.
   -h, --help                      Show this help.
 USAGE
 }
@@ -81,6 +84,7 @@ require_command() {
 require_command aws
 require_command curl
 require_command jq
+require_command upnpc
 
 cloudflare_token="$(
   aws ssm get-parameter \
@@ -132,10 +136,78 @@ zone_id="$(
 )"
 
 tunnel_target="${tunnel_id}.cfargotunnel.com"
+api_hostname="octelium-api.${domain}"
+
+upnp_status="$(upnpc -s 2>/dev/null)"
+public_ipv4="$(
+  awk -F ' = ' '/^ExternalIPAddress = / { print $2; exit }' <<<"$upnp_status"
+)"
+
+valid_ipv4() {
+  local value="$1"
+  local octets octet
+  IFS=. read -r -a octets <<<"$value"
+  [[ "${#octets[@]}" -eq 4 ]] || return 1
+  for octet in "${octets[@]}"; do
+    [[ "$octet" =~ ^[0-9]+$ ]] || return 1
+    ((10#$octet <= 255)) || return 1
+  done
+}
+
+if ! valid_ipv4 "$public_ipv4"; then
+  echo "error: UPnP did not return a valid public IPv4 address" >&2
+  exit 1
+fi
+
+reconcile_api_port_mapping() {
+  local grpc_status mappings
+  mappings="$(upnpc -l 2>/dev/null)"
+
+  if grep -Eq "TCP[[:space:]]+${api_public_port}->${api_origin_ip}:${api_origin_port}([[:space:]]|$)" <<<"$mappings"; then
+    echo "Octelium API TCP/${api_public_port} mapping is current"
+    return 0
+  fi
+
+  if grep -Eq "TCP[[:space:]]+${api_public_port}->" <<<"$mappings"; then
+    echo "error: TCP/${api_public_port} already maps to a different LAN target" >&2
+    exit 1
+  fi
+
+  if [[ "$dry_run" == "true" ]]; then
+    echo "DRY-RUN map TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}"
+    return 0
+  fi
+
+  grpc_status="$(
+    curl -fsS --http2 --max-time 10 \
+      --resolve "${api_hostname}:${api_origin_port}:${api_origin_ip}" \
+      -H 'content-type: application/grpc' \
+      -H 'te: trailers' \
+      --data-binary '' \
+      -o /dev/null \
+      -D - \
+      "https://${api_hostname}:${api_origin_port}/octelium.api.main.user.v1.MainService/GetStatus" |
+      tr -d '\r' |
+      awk -F ': ' 'tolower($1) == "grpc-status" { print $2; exit }'
+  )"
+
+  if [[ "$grpc_status" != "16" ]]; then
+    echo "error: Octelium API NodePort returned gRPC status ${grpc_status:-missing}, expected 16" >&2
+    exit 1
+  fi
+
+  upnpc -e octelium-api \
+    -a "$api_origin_ip" "$api_origin_port" "$api_public_port" TCP 0 \
+    >/dev/null
+  echo "Mapped Octelium API TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}"
+}
+
+reconcile_api_port_mapping
+
 hostnames=(
   "$domain"
   "portal.${domain}"
-  "octelium-api.${domain}"
+  "$api_hostname"
   "affine.${domain}"
   "argocd.${domain}"
   "compass.${domain}"
@@ -195,39 +267,41 @@ delete_exact_records() {
   done <<<"$records"
 }
 
-upsert_cname_record() {
-  local hostname="$1"
+upsert_record() {
+  local record_type="$1"
+  local hostname="$2"
+  local content="$3"
   local payload records record_id
 
   payload="$(
     jq -cn \
-      --arg type "CNAME" \
+      --arg type "$record_type" \
       --arg name "$hostname" \
-      --arg content "$tunnel_target" \
+      --arg content "$content" \
       '{type: $type, name: $name, content: $content, ttl: 1, proxied: true}'
   )"
 
   records="$(
-    cf_api GET "/zones/${zone_id}/dns_records?type=CNAME&name=${hostname}" |
+    cf_api GET "/zones/${zone_id}/dns_records?type=${record_type}&name=${hostname}" |
       jq -c '.result[]'
   )"
 
   if [[ -z "$records" ]]; then
     if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN create CNAME ${hostname} ${tunnel_target}"
+      echo "DRY-RUN create ${record_type} ${hostname}"
     else
       cf_api POST "/zones/${zone_id}/dns_records" "$payload" >/dev/null
-      echo "Created CNAME ${hostname} ${tunnel_target}"
+      echo "Created ${record_type} ${hostname}"
     fi
     return 0
   fi
 
   record_id="$(jq -r '.id' <<<"$(head -n 1 <<<"$records")")"
   if [[ "$dry_run" == "true" ]]; then
-    echo "DRY-RUN update CNAME ${hostname} ${tunnel_target}"
+    echo "DRY-RUN update ${record_type} ${hostname}"
   else
     cf_api PUT "/zones/${zone_id}/dns_records/${record_id}" "$payload" >/dev/null
-    echo "Updated CNAME ${hostname} ${tunnel_target}"
+    echo "Updated ${record_type} ${hostname}"
   fi
 
   tail -n +2 <<<"$records" | while IFS= read -r extra_record; do
@@ -236,18 +310,24 @@ upsert_cname_record() {
     extra_id="$(jq -r '.id' <<<"$extra_record")"
     extra_content="$(jq -r '.content' <<<"$extra_record")"
     if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN delete extra CNAME ${hostname} ${extra_content}"
+      echo "DRY-RUN delete extra ${record_type} ${hostname} ${extra_content}"
     else
       cf_api DELETE "/zones/${zone_id}/dns_records/${extra_id}" >/dev/null
-      echo "Deleted extra CNAME ${hostname} ${extra_content}"
+      echo "Deleted extra ${record_type} ${hostname} ${extra_content}"
     fi
   done
 }
 
 for hostname in "${hostnames[@]}"; do
-  delete_exact_records "$hostname" A
-  delete_exact_records "$hostname" AAAA
-  upsert_cname_record "$hostname"
+  if [[ "$hostname" == "$api_hostname" ]]; then
+    delete_exact_records "$hostname" AAAA
+    delete_exact_records "$hostname" CNAME
+    upsert_record A "$hostname" "$public_ipv4"
+  else
+    delete_exact_records "$hostname" A
+    delete_exact_records "$hostname" AAAA
+    upsert_record CNAME "$hostname" "$tunnel_target"
+  fi
 done
 
 for hostname in "${retired_hostnames[@]}"; do

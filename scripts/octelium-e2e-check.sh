@@ -350,7 +350,7 @@ case "${GRPC_HTTP_CODE}" in
     ;;
   403)
     if [ "${GRPC_SERVER}" = "cloudflare" ]; then
-      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; enable Cloudflare zone gRPC or use a non-public-hostname Tunnel route before Octelium clients can connect from outside the tailnet"
+      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; reconcile the direct API origin with scripts/octelium-public-dns.sh"
     else
       fail "https://${API_HOST} returned HTTP 403 to a gRPC request"
     fi
