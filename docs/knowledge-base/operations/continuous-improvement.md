@@ -89,7 +89,7 @@ policy`.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** high-port origin proven; Cloudflare rule reconciliation pending
+- **Status:** resolved; public Octelium client connection verified
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
@@ -123,14 +123,21 @@ policy`.
   origin handshake omits the SNI required by the original exact-host Gateway.
   After the SNI-tolerant Gateway and API-only `VirtualService` rolled out, the
   Cloudflare TCP/8443 probe returned HTTP/2 `200` with `grpc-status: 16`, while
-  a request for another Host returned `route_not_found`. The remaining
-  standard-port cutover is owned by the protected
-  `octelium-cloudflare-origin-port.yml` workflow using the existing
-  `homelab-production` GitHub Actions secret.
-- **Risk:** The normal public CLI path remains unavailable even though browser
-  access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Run the protected Cloudflare workflow, verify the standard
-  TCP/443 API response, and complete a real public `octelium connect`.
+  a request for another Host returned `route_not_found`. Protected run
+  `30716050087` then exposed the final cause: the zone used Flexible SSL, so
+  Cloudflare sent plaintext to the TLS-only origin and returned HTTP `520`.
+  PR `#638` added a hostname-scoped Full (strict) Configuration Rule alongside
+  the existing destination-port rule. Protected run `30716932077` created and
+  verified both rules. The standard TCP/443 API probe then returned HTTP/2
+  `200`, `content-type: application/grpc`, and the expected unauthenticated
+  `grpc-status: 16`. A real Octelium `v0.35.0` client authenticated as
+  `homelab-owner`, printed `Connected successfully`, and reported
+  `isConnected: true`; the test session then shut down cleanly.
+- **Risk:** Public client availability still depends on the leased UPnP mapping,
+  the two exact-host Cloudflare rules, and normal certificate renewal.
+- **Next step:** Keep the protected reconciliation workflow rerunnable and
+  treat a missing standard-port `grpc-status: 16` response as edge-path drift
+  before investigating Octelium authentication or storage.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
