@@ -6,9 +6,15 @@ api_hostname="octelium-api.stinkyboi.com"
 origin_port=8443
 rule_description="Octelium API origin port"
 token="${CLOUDFLARE_ZONE_SETTINGS_TOKEN:-}"
+action="${1:-apply}"
 
 if [[ -z "$token" || "$token" == "REPLACE_ME" ]]; then
   echo "error: CLOUDFLARE_ZONE_SETTINGS_TOKEN is required" >&2
+  exit 1
+fi
+
+if [[ "$action" != "apply" && "$action" != "remove" ]]; then
+  echo "error: action must be apply or remove" >&2
   exit 1
 fi
 
@@ -57,6 +63,33 @@ ruleset_id="$(
     <<<"$rulesets"
 )"
 
+if [[ -n "$ruleset_id" ]]; then
+  ruleset="$(cf_api GET "/zones/${zone_id}/rulesets/${ruleset_id}")"
+  rule_id="$(
+    jq -r \
+      --arg description "$rule_description" \
+      'first(.result.rules[]? | select(.description == $description) | .id) // ""' \
+      <<<"$ruleset"
+  )"
+else
+  rule_id=""
+fi
+
+if [[ "$action" == "remove" ]]; then
+  if [[ -z "$rule_id" ]]; then
+    echo "Cloudflare Origin Rule is already absent for ${api_hostname}"
+    exit 0
+  fi
+
+  cf_api DELETE "/zones/${zone_id}/rulesets/${ruleset_id}/rules/${rule_id}" >/dev/null
+  verified="$(cf_api GET "/zones/${zone_id}/rulesets/${ruleset_id}")"
+  jq -e \
+    --arg description "$rule_description" \
+    'all(.result.rules[]?; .description != $description)' >/dev/null <<<"$verified"
+  echo "Removed Cloudflare Origin Rule for ${api_hostname}"
+  exit 0
+fi
+
 rule_payload="$(
   jq -cn \
     --arg description "$rule_description" \
@@ -86,14 +119,6 @@ if [[ -z "$ruleset_id" ]]; then
   ruleset_id="$(jq -er '.result.id' <<<"$created")"
   echo "Created Cloudflare Origin Rule for ${api_hostname} -> TCP/${origin_port}"
 else
-  ruleset="$(cf_api GET "/zones/${zone_id}/rulesets/${ruleset_id}")"
-  rule_id="$(
-    jq -r \
-      --arg description "$rule_description" \
-      'first(.result.rules[]? | select(.description == $description) | .id) // ""' \
-      <<<"$ruleset"
-  )"
-
   if [[ -z "$rule_id" ]]; then
     cf_api POST "/zones/${zone_id}/rulesets/${ruleset_id}/rules" "$rule_payload" >/dev/null
     echo "Added Cloudflare Origin Rule for ${api_hostname} -> TCP/${origin_port}"

@@ -1,4 +1,4 @@
-name: Reconcile Octelium Cloudflare Origin Port
+name: Remove Octelium Cloudflare Origin Port
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  reconcile:
+  remove:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment:
@@ -23,7 +23,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Reconcile Cloudflare Origin Port
+      - name: Remove Cloudflare Origin Port
         env:
           CLOUDFLARE_ZONE_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_ZONE_SETTINGS_TOKEN }}
-        run: scripts/octelium-cloudflare-origin-port.sh
+        run: scripts/octelium-cloudflare-origin-port.sh remove
