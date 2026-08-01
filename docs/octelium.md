@@ -363,6 +363,13 @@ verifies both that mapping and an unauthenticated `grpc-status: 16` response
 from the NodePort before changing DNS. All browser, app, and callback hostnames
 remain on `octelium-public`.
 
+Reconcile the Cloudflare Origin Rule through its protected workflow so the
+token remains masked inside the `homelab-production` environment:
+
+```sh
+gh workflow run octelium-cloudflare-origin-port.yml --ref main
+```
+
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
 `remoteRef.version` on `octelium-client-auth`, update the ExternalSecret target
@@ -570,6 +577,7 @@ kubectl kustomize clusters/homelab/apps/istio
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-public-dns.sh
+bash -n scripts/octelium-cloudflare-origin-port.sh
 bash -n scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
