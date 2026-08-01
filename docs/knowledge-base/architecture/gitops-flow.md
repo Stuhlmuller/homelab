@@ -63,6 +63,11 @@ fields remain declarative. Production logs can include Terragrunt's internal
 `tofu apply` subprocess even though the operator entrypoint remains the
 Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
 
+`platform-crossplane` currently installs only Crossplane core through the
+upstream Helm chart. Before Argo CD owns Crossplane Provider, Composition, or
+managed-resource manifests, add the Crossplane-recommended Argo CD tracking and
+health settings to the repository-owned Argo CD configuration.
+
 ## Dependency Rule
 
 Terragrunt `dependencies` blocks order Application registration. They do not
