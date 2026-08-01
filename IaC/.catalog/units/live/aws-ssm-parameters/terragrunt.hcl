@@ -122,7 +122,7 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/octelium/cloudflare-zone-settings-token" = {
-      description   = "Cloudflare API token with Zone:Read and Zone Settings:Edit permissions used to enable gRPC for the Octelium public API hostname."
+      description   = "Legacy Cloudflare zone-settings token placeholder with no runtime consumer; retained pending separate retirement review."
       initial_value = local.placeholder
     }
     "/homelab/octelium/postgres-password" = {
