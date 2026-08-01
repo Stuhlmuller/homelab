@@ -90,6 +90,24 @@ if [[ "$action" == "remove" ]]; then
   exit 0
 fi
 
+ssl_mode="$(cf_api GET "/zones/${zone_id}/settings/ssl" | jq -er '.result.value')"
+origin_max_http_version="$(
+  cf_api GET "/zones/${zone_id}/settings/origin_max_http_version" |
+    jq -er '.result.value'
+)"
+
+echo "Cloudflare origin transport: SSL=${ssl_mode}, HTTP/${origin_max_http_version} max"
+
+if [[ "$ssl_mode" != "full" && "$ssl_mode" != "strict" ]]; then
+  echo "error: Cloudflare SSL mode must be Full or Full (strict) for the TLS origin" >&2
+  exit 1
+fi
+
+if [[ "$origin_max_http_version" != "2" ]]; then
+  echo "error: Cloudflare HTTP/2 to Origin must be enabled for Octelium gRPC" >&2
+  exit 1
+fi
+
 rule_payload="$(
   jq -cn \
     --arg description "$rule_description" \

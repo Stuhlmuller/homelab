@@ -50,7 +50,7 @@ why `stinkyboi.com` is the Octelium cluster domain even though
 ## Route Inventory
 
 | Surface | HTTPS host | Backbone |
-|-----|------------------|---------------|
+| --- | --- | --- |
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
 | Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy on client TCP/443, Origin Rule to WAN TCP/8443, then UPnP to the API-only Istio gateway NodePort |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
@@ -102,8 +102,9 @@ gh workflow run octelium-cloudflare-origin-port.yml --ref main
 ```
 
 The `homelab-production` environment secret
-`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read and Transform Rules edit
-for `stinkyboi.com`.
+`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read, Zone Settings read, and
+Origin Rules edit for `stinkyboi.com`. Zone Settings read authorizes the
+workflow's Full SSL and HTTP/2-to-origin checks.
 Rollback is the same protected path and is safe to repeat:
 
 ```sh

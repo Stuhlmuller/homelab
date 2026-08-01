@@ -89,7 +89,7 @@ git, but they are copied into the encrypted OpenTofu remote state for that
 stack because Terraform manages the Kubernetes Secret.
 
 | App | ExternalSecret | Target Secret | SSM parameters |
-|-----|----------------|---------------|----------------|
+| --- | --- | --- | --- |
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
 | argocd-image-updater | `argocd-image-updater-git` | `argocd-image-updater-git` | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` |
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
@@ -110,7 +110,8 @@ stack because Terraform manages the Kubernetes Secret.
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
-| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password`, `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
+| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
+| openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
@@ -231,7 +232,9 @@ zone-settings token is required for DNS. The protected
 `octelium-cloudflare-origin-port.yml` workflow separately uses the
 `homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to
 reconcile the exact-host destination-port override without exposing the value.
-That token needs zone read and Transform Rules edit for `stinkyboi.com`. The old
+That token needs zone read, Zone Settings read, and Origin Rules edit for
+`stinkyboi.com`. Zone Settings read authorizes the workflow's SSL mode and
+HTTP/2-to-origin checks. The old
 `/homelab/octelium/cloudflare-zone-settings-token` declaration is retained
 temporarily so removing a secret value is a separate reviewed operation.
 
