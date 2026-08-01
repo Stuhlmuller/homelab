@@ -103,7 +103,7 @@ kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-entra-oidc.sh scripts/octelium-cloudflare-grpc.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-cloudflare-origin-port.sh scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -130,7 +130,10 @@ CI/CD Octelium changes should also pass shell syntax checks for
 `scripts/ci/install-kubeconfig.sh`, `scripts/octelium-ci-credential.sh`, and
 `scripts/octelium-ci-kubeconfig-secret.sh`. Validate that
 `docs/examples/octelium/homelab-services.yaml` parses and contains Service
-`kubernetes-api-ci` before applying it with `octeliumctl`.
+`kubernetes-api-ci` plus core `ClusterConfig` `default` with human
+`maxPerUser: 32` before applying it with `octeliumctl`. Apply the
+`ClusterConfig` with `--include ClusterConfig` before the normal catalog apply
+because the include flag replaces the default resource-kind list.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
@@ -204,7 +207,9 @@ The pull request workflow renders saved Terragrunt `plan.out` files to local
 `plan.json` files and runs Terraform-plan Conftest policy during
 `scripts/ci/terragrunt-plan.sh`. It then runs `scripts/ci/conftest-policies.sh`
 for static YAML policy checks. Run the same order locally when reproducing PR
-gate behavior.
+gate behavior. The live plan, apply, and diagnostics jobs verify the Octelium
+Kubernetes access path with `kubectl --request-timeout=15s version` after
+`scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`

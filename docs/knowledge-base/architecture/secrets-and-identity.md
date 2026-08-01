@@ -100,6 +100,14 @@ roles need identity-based KMS permissions for both keys.
   for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
+  The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
+  The protected `octelium-cloudflare-origin-port.yml` workflow uses the
+  `homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN`
+  only for zone read and Transform Rules edit while reconciling the exact API
+  hostname's destination port; the token value never enters git or workflow
+  output. The former
+  `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
+  consumer and remains only until secret retirement is reviewed separately.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into

@@ -56,8 +56,10 @@ Stateful apps auto-sync by default, but they are not considered operationally
 ready until `platform-storage` is synced, the `nfs-default` StorageClass is
 verified, and `docs/storage-nfs.md` records backup coverage.
 
-Deluge, Radarr, and Sonarr keep app config on `nfs-default`, but media library
-paths use static claims against the QNAP `/media` export. Read-only
+Radarr and Sonarr keep app config on `nfs-default`. Deluge keeps active config
+on a retained local volume pinned to `zimaboard-0` and archives it nightly to
+its retained NFS claim. All three apps use static claims against the QNAP
+`/media` export for media-library paths. Read-only
 `showmount -e 10.1.0.2` verified `/media` for every Talos node on 2026-05-26;
 do not treat those apps as cut over until the three media migration Jobs have
 completed.
@@ -65,8 +67,12 @@ completed.
 Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres` is synced, the `media-postgres-auth` and
 `media-postgres-arr-env` ExternalSecrets are ready, the six logical databases
-exist, each app's `config.xml` contains the official Servarr PostgreSQL fields,
-and any required SQLite-to-PostgreSQL data migration has been completed.
+exist, `media-postgres-local-0` is Ready on `acer`, the legacy
+`media-postgres` StatefulSet is at zero replicas, and the Service EndpointSlice
+contains only the local pod. Require a verified scheduled backup and successful
+indexer searches in Prowlarr, Sonarr, and Radarr. Each app's `config.xml` must
+also contain the official Servarr PostgreSQL fields, and any required
+SQLite-to-PostgreSQL data migration must be complete.
 
 n8n is not considered ready until `n8n-postgres` is synced and healthy, the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets are ready, the

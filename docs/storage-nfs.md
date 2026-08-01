@@ -3,6 +3,13 @@
 Stateful apps use a default QNAP-backed NFS StorageClass named `nfs-default`
 unless an app-specific exception is documented here.
 
+`media-postgres` is the first database exception: its active PostgreSQL data is
+on a static node-local volume on `acer`. The retained NFS claim stores verified
+nightly logical backups at 03:00 `America/Los_Angeles` with 14-day retention.
+The nominal RPO is 24 hours, but the actual RPO is the age of the newest
+verified set and can exceed that; backup freshness remains a manual check while
+kube-state-metrics alerting is unavailable.
+
 ## NAS Configuration
 
 | Setting | Value |
@@ -98,12 +105,16 @@ The parent `platform-storage` Application auto-syncs by default. Treat it as a
 readiness gate anyway: verify the QNAP export is visible and the child
 provisioner Application is healthy before relying on stateful workload PVCs.
 
-## Media Library Static Volumes
+## Static And Local Volume Exceptions
 
 The default `nfs-default` StorageClass remains the path for application config,
-PostgreSQL data, dashboards, metrics, and other app-owned state. Deluge, Radarr,
-and Sonarr media-library data uses static PV/PVC pairs that mount the QNAP
-`/media` export directly:
+most PostgreSQL data, dashboards, metrics, and other app-owned state. The
+exceptions are:
+
+- `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
+  backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
+- Deluge, Radarr, and Sonarr media-library static PV/PVC pairs that mount the
+  QNAP `/media` export directly.
 
 | Claim | Owned by | Mounted in apps | Media subdirectory |
 | --- | --- | --- | --- |
@@ -177,9 +188,9 @@ app has acceptable backup and restore coverage.
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus repo-owned dashboard and alerting config in `clusters/homelab/apps/grafana` | Restore PVC and re-sync Grafana desired state | Preserve PVC |
 | affine | PostgreSQL/pgvector database, uploaded blobs, instance config; ephemeral Redis cache/jobs | `nfs-default` for durable state; node-local `emptyDir` for Redis | Coordinated NFS backup plus `pg_dump` before upgrades; Redis is excluded | Restore PostgreSQL and blob/config claims from one recovery point; Redis rebuilds empty and queued work may be lost | Preserve durable claims and the ECDSA signing key; preserve the inactive former Redis AOF claim during the tuning rollback window |
-| deluge | config on `nfs-default`, shared downloads on `media-downloads` backed by `/media` | `nfs-default` plus static `/media` PV | NFS backup for config and `/media/downloads` | Restore config PVC and `/media/downloads` before app sync | Preserve PVCs and `/media/downloads` |
+| deluge | active config on `deluge-config-local`, retained NFS config/archive claim, shared downloads on `media-downloads` backed by `/media` | static local config PV plus retained `nfs-default` and static `/media` PV | Nightly verified config archive to NFS with 14-day retention plus `/media/downloads` backup | Stop Deluge, restore one validated config archive into the local claim through a reviewed Job, then verify `/media/downloads` before app sync | Preserve the local PV, retained NFS claim, and `/media/downloads` |
 | dispatcharr | file-backed runtime data plus dedicated `dispatcharr-postgres` database | `nfs-default` | NFS backup for data PVC and `dispatcharr-postgres` PVC plus PostgreSQL logical dump | Restore data PVC and `dispatcharr-postgres` PVC or logical dump before app sync | Preserve PVCs and database unless intentionally resetting IPTV state |
-| media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | `nfs-default` | NFS backup plus `pg_dump` logical dumps before upgrades | Restore PostgreSQL PVC or logical dumps before media app sync | Preserve PVC unless intentionally rebuilding from dumps |
+| media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | static `media-postgres-local` on `acer`; retained `nfs-default` backup claim | Nightly role globals without password hashes, six custom-format dumps, and checksums on retained NFS; 14-day retention; nominal 24-hour RPO, but actual RPO is the newest verified set; freshness checked manually until alert telemetry is restored | Fence the writer with the repository recovery overlay, restore globals plus all six matching dumps, then restart the media apps | Preserve both claims; the NFS physical copy is stale after local writes begin |
 | prowlarr | config, indexer refs, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases before app sync and re-test app integrations | Preserve PVCs |
 | radarr | config and PostgreSQL refs on `nfs-default`, movies on `media-movies`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/movies`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/movies` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
 | sonarr | config and PostgreSQL refs on `nfs-default`, TV on `media-tv`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/tv`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/tv` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
@@ -211,3 +222,10 @@ app has acceptable backup and restore coverage.
   only to `10.1.0.199`, `10.1.0.200`, `10.1.0.201`, and `10.1.0.202`. The same
   audit found NFSv2 still advertised through RPC; disable it in QTS because the
   Kubernetes StorageClass mounts with NFSv3.
+- Read-only inspection on 2026-07-29 measured 311 `media-postgres` NFS writes
+  over 20 seconds with roughly 26.9 seconds queued, 8.1 seconds RPC round-trip,
+  and 35.0 seconds total execution per write. Concurrent failures affected
+  NFS-backed workloads on every active node while all nodes remained Ready and
+  physical NIC errors stayed at zero. This evidence drove the local
+  `media-postgres` cutover; QNAP remains the backup rather than active database
+  path.

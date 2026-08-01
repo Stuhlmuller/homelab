@@ -1143,6 +1143,17 @@ unit "argocd_apps_istio" {
             }
           },
           {
+            repoURL        = "https://istio-release.storage.googleapis.com/charts"
+            chart          = "gateway"
+            path           = "."
+            targetRevision = "1.27.3"
+            helm = {
+              releaseName          = "octelium-api-ingressgateway"
+              skipSchemaValidation = true
+              valueFiles           = ["$values/clusters/homelab/apps/istio/octelium-api-gateway-values.yaml"]
+            }
+          },
+          {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             ref            = "values"

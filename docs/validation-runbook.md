@@ -147,6 +147,70 @@ the persistent `/config/config.xml` contains the Servarr-documented
 `PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
 migration.
 
+For the local database cutover, also require all of the following:
+
+Treat the read-only staging state and writable replacement as separate observed
+`main` revisions. Do not squash or merge the replacement until Argo CD has
+synced the staging revision, the migration marker exists, and the one-shot
+cutover backup Job has completed.
+
+Phase one, while `media-postgres` is the read-only local staging pod:
+
+```sh
+kubectl -n media get pod media-postgres-0 -o wide
+kubectl -n media exec statefulset/media-postgres -- \
+  test -f /var/lib/postgresql/data/pgdata/.nfs-migration-complete
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -c '\l'
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -Atqc 'SELECT 1'
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
+kubectl -n media exec statefulset/media-postgres -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
+kubectl -n media get job media-postgres-cutover-backup
+kubectl -n media logs job/media-postgres-cutover-backup
+```
+
+Require all six application databases, `default_transaction_read_only=on`, an
+empty `listen_addresses`, a `Complete` backup Job, and its logged UTC
+`BACKUP_ID` before merging phase two.
+
+Phase two, after the writable replacement syncs:
+
+```sh
+kubectl get storageclass,persistentvolume media-postgres-local
+kubectl -n media get pvc media-postgres-local data-media-postgres-0
+kubectl -n media get statefulset media-postgres media-postgres-local
+kubectl -n media get pod media-postgres-local-0 -o wide
+kubectl -n media get statefulset media-postgres-local \
+  -o jsonpath='{.spec.template.spec.volumes[*].persistentVolumeClaim.claimName}{"\n"}'
+kubectl -n media get endpointslice \
+  -l kubernetes.io/service-name=media-postgres \
+  -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}{"\t"}{.conditions.ready}{"\n"}{end}'
+kubectl -n media exec statefulset/media-postgres-local -- \
+  test -f /var/lib/postgresql/data/.local-cutover-fenced
+kubectl -n media exec statefulset/media-postgres-local -- \
+  psql -U media_apps -d media_apps -Atqc 'SELECT 1'
+kubectl -n media exec statefulset/media-postgres-local -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
+kubectl -n media exec statefulset/media-postgres-local -- \
+  psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
+kubectl -n media get cronjob media-postgres-backup
+kubectl -n media get cronjob media-postgres-backup \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup
+```
+
+The local claim and PV must be `Bound`, the pod must run on `acer`, the
+legacy StatefulSet must remain at zero replicas, and the replacement must list
+only `media-postgres-local`. The EndpointSlice must list only
+`media-postgres-local-0` as ready. The cutover fence marker must exist,
+`default_transaction_read_only` must report `off`, `listen_addresses` must
+report `*`, and repeated SQL probes must complete without NFS-correlated stalls.
+Verify the latest scheduled backup completes and then test an indexer search in
+Prowlarr, Sonarr, and Radarr before treating the incident as closed.
+
 For Radarr access lockout checks, validate that the auth-normalized
 `config.xml` contains exactly one `AuthenticationMethod=External` entry and
 one `AuthenticationRequired=DisabledForLocalAddresses` entry, with no

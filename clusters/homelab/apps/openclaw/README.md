@@ -75,16 +75,17 @@ runtime material. Do not commit it or paste it into docs.
 
 The gateway binds only to pod loopback on port `18789`; the `proxy` container
 publishes it on service port `8080`. Both containers participate in pod
-readiness. The proxy checks that it can open a loopback TCP connection, while
-the app container makes a bounded HTTP request that proves the gateway event
-loop can answer requests.
+readiness through native HTTP probes against `/` on port `8080`, which avoids
+spawning probe processes inside the containers while requiring the proxy to
+connect to the gateway and relay a successful HTTP response.
 
 The app container also owns startup and liveness probes. Startup allows up to
 two minutes for the gateway to load persisted state and plugins. After startup,
-three consecutive failed liveness checks restart only the app container. This
-recovers a persistent gateway event-loop stall without restarting the proxy or
-rerunning the pod init containers. Readiness removes the pod from the Service
-before that recovery threshold is reached.
+three consecutive failed liveness checks restart only the app container when
+the gateway stops answering HTTP through the proxy. Readiness removes the pod
+from the Service before that recovery threshold is reached. A TCP-only check is
+not sufficient here because the proxy listener can accept a connection even
+when its upstream gateway is unavailable.
 
 Use the event timestamps to distinguish expected startup failures from a live
 stall, then verify the gateway itself:
