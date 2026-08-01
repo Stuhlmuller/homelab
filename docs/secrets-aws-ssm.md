@@ -227,7 +227,11 @@ The `octelium-api-upnp` CronJob maintains its leased UPnP port mapping;
 run `scripts/octelium-public-dns.sh` from the homelab LAN to verify the mapping
 and reconcile the proxied A record. The script reuses the cert-manager
 Cloudflare token because DNS edit permission is sufficient; no separate
-zone-settings token is required. The old
+zone-settings token is required for DNS. The protected
+`octelium-cloudflare-origin-port.yml` workflow separately uses the
+`homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to
+reconcile the exact-host destination-port override without exposing the value.
+That token needs zone read and Transform Rules edit for `stinkyboi.com`. The old
 `/homelab/octelium/cloudflare-zone-settings-token` declaration is retained
 temporarily so removing a secret value is a separate reviewed operation.
 

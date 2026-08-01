@@ -89,7 +89,7 @@ policy`.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** direct-origin gateway live; high-port WAN fallback in progress
+- **Status:** high-port origin proven; Cloudflare rule reconciliation pending
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
@@ -121,12 +121,16 @@ policy`.
   `525`, while the dedicated Envoy logged `filter_chain_not_found` for that
   connection. This proves the high port reaches Istio and that Cloudflare's
   origin handshake omits the SNI required by the original exact-host Gateway.
+  After the SNI-tolerant Gateway and API-only `VirtualService` rolled out, the
+  Cloudflare TCP/8443 probe returned HTTP/2 `200` with `grpc-status: 16`, while
+  a request for another Host returned `route_not_found`. The remaining
+  standard-port cutover is owned by the protected
+  `octelium-cloudflare-origin-port.yml` workflow using the existing
+  `homelab-production` GitHub Actions secret.
 - **Risk:** The normal public CLI path remains unavailable even though browser
   access and an unauthenticated gRPC-shaped probe work.
-- **Next step:** Let the dedicated Gateway accept origin TLS without SNI while
-  moving its routing into an API-only `VirtualService`, add the exact-host
-  Cloudflare destination-port override, then verify the proxied API gRPC
-  response and a real public `octelium connect`.
+- **Next step:** Run the protected Cloudflare workflow, verify the standard
+  TCP/443 API response, and complete a real public `octelium connect`.
 
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
@@ -251,6 +255,11 @@ policy`.
   at 03:00 Pacific with no failures. Backup `20260730T100002Z` verified
   password-free globals and all six dumps; the successful Job also exercised
   the live 14-day retention command without error.
+  Read-only inspection on 2026-08-01 found Radarr independently
+  `CrashLoopBackOff` with 785 restarts because its NFS-backed
+  `/config/config.xml` was empty. The local-config Deluge replacement remained
+  healthy with zero restarts, 17 torrents, and successful Sonarr connectivity,
+  separating this recurrence from the completed Deluge cutover.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained

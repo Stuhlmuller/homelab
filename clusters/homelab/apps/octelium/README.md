@@ -259,7 +259,7 @@ kubectl kustomize clusters/homelab/apps/octelium
 kubectl kustomize clusters/homelab/apps/istio
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-cloudflare-origin-port.sh
 scripts/octelium-e2e-check.sh --help
 ```
 
