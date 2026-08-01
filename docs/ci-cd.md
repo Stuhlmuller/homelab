@@ -155,7 +155,7 @@ environment secrets are preferred so production credentials can have approval
 rules and tighter rotation:
 
 | Secret | Environment | Purpose |
-|--------|-------------|---------|
+| --- | --- | --- |
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
@@ -171,7 +171,7 @@ storing them as environment secrets also works when that is how the repository
 has been configured:
 
 | Variable | Environment | Purpose |
-|----------|-------------|---------|
+| --- | --- | --- |
 | `AWS_ROLE_TO_ASSUME_HOMELAB` | repository, `homelab-plan`, or `homelab-production` | AWS role used by trusted PR plans and protected post-merge applies. |
 | `AZUREAD_CLIENT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application client ID used by the AzureAD provider. |
 | `AZUREAD_TENANT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra tenant ID used by the AzureAD provider. |
