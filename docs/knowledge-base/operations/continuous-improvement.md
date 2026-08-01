@@ -251,6 +251,11 @@ policy`.
   at 03:00 Pacific with no failures. Backup `20260730T100002Z` verified
   password-free globals and all six dumps; the successful Job also exercised
   the live 14-day retention command without error.
+  Read-only inspection on 2026-08-01 found Radarr independently
+  `CrashLoopBackOff` with 785 restarts because its NFS-backed
+  `/config/config.xml` was empty. The local-config Deluge replacement remained
+  healthy with zero restarts, 17 torrents, and successful Sonarr connectivity,
+  separating this recurrence from the completed Deluge cutover.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
