@@ -10,6 +10,95 @@ terragrunt_filter_head_ref() {
   printf '%s\n' "$head_ref"
 }
 
+terragrunt_generate_stack() {
+  (
+    cd IaC || exit
+    terragrunt stack generate
+  )
+}
+
+terragrunt_stack_units_at_ref() {
+  local ref="$1"
+  local path_prefix="${2:-}"
+
+  if ! git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
+    return 0
+  fi
+
+  git show "${ref}:IaC/terragrunt.stack.hcl" | awk -v prefix="$path_prefix" '
+    function emit_unit() {
+      if (prefix == "" || index(unit_path, prefix) == 1) {
+        printf "%s", unit_block
+      }
+    }
+
+    !in_unit && /^unit "[^"]+"[[:space:]]*\{/ {
+      in_unit = 1
+      depth = 0
+      unit_block = ""
+      unit_path = ""
+    }
+
+    in_unit {
+      unit_block = unit_block $0 ORS
+
+      brace_line = $0
+      open_braces = gsub(/\{/, "", brace_line)
+      brace_line = $0
+      close_braces = gsub(/\}/, "", brace_line)
+      depth += open_braces - close_braces
+
+      if ($0 ~ /^  path[[:space:]]*=/) {
+        unit_path = $0
+        sub(/^[[:space:]]*path[[:space:]]*=[[:space:]]*"/, "", unit_path)
+        sub(/".*$/, "", unit_path)
+      }
+
+      if (depth == 0) {
+        emit_unit()
+        in_unit = 0
+      }
+    }
+  '
+}
+
+terragrunt_stack_unit_paths_at_ref() {
+  terragrunt_stack_units_at_ref "$1" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
+}
+
+terragrunt_stack_changed() {
+  local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
+  local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
+
+  if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
+    return 0
+  fi
+
+  if [[ -z "$head_ref" ]]; then
+    head_ref="$(terragrunt_filter_head_ref)"
+  fi
+
+  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
+    return 0
+  fi
+
+  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
+    return 0
+  fi
+
+  ! git diff --quiet "$base_ref" "$head_ref" -- IaC/terragrunt.stack.hcl IaC/.catalog IaC/modules
+}
+
+terragrunt_changed_filter() {
+  local all_filter="$1"
+
+  if terragrunt_stack_changed; then
+    printf '%s\n' "$all_filter"
+  else
+    printf '%s | [main...HEAD]\n' "$all_filter"
+  fi
+}
+
 terragrunt_filter_base_ref() {
   local base_ref="${TERRAGRUNT_FILTER_BASE_SHA:-${APPLY_BASE_SHA:-}}"
 
@@ -74,6 +163,7 @@ prepare_terragrunt_filter_base() {
 terragrunt_deleted_unit_paths() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
   local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
+  local head_stack_unit_paths
 
   if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
     return 0
@@ -93,9 +183,22 @@ terragrunt_deleted_unit_paths() {
     return 0
   fi
 
-  git diff --name-only --diff-filter=D "$base_ref" "$head_ref" -- 'IaC/**/terragrunt.hcl' \
-    | sed 's#/terragrunt\.hcl$##' \
-    | sort
+  head_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$head_ref")"
+
+  while IFS= read -r unit_dir; do
+    if grep -Fxq "$unit_dir" <<<"$head_stack_unit_paths"; then
+      continue
+    fi
+    printf '%s\n' "$unit_dir"
+  done < <(
+    {
+      git diff --name-only --diff-filter=D "$base_ref" "$head_ref" -- 'IaC/**/terragrunt.hcl' \
+        | sed 's#/terragrunt\.hcl$##'
+      comm -23 \
+        <(terragrunt_stack_unit_paths_at_ref "$base_ref" | sort) \
+        <(printf '%s\n' "$head_stack_unit_paths" | sed '/^$/d' | sort)
+    } | sort -u
+  )
 }
 
 terragrunt_create_deleted_unit_destroy_stack() {

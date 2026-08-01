@@ -1,9 +1,10 @@
 # Argo CD App Registrations
 
-This directory is the Terragrunt entry point for registering homelab
-applications with Argo CD. Each child directory owns exactly one Argo CD
-Application and sources the repository-local
-`IaC/modules/argocd-application-kubernetes` module.
+This directory contains generated Terragrunt entry points for registering
+homelab applications with Argo CD. The committed source lives in
+`IaC/.catalog/units/live/argocd-app/terragrunt.hcl`, and
+`IaC/terragrunt.stack.hcl` supplies per-app values and regenerates each child
+directory.
 
 The requested apps are registered here along with supporting Applications for
 shared platform services. `platform-dns` owns CoreDNS resolver policy,
@@ -15,7 +16,9 @@ they exist so dependency state is still delivered through Argo CD.
 
 ## Conventions
 
-- Use one `IaC/live/argocd-apps/<app>/terragrunt.hcl` file per Application.
+- Use the shared `IaC/.catalog/units/live/argocd-app/terragrunt.hcl` template
+  for every Application and register per-app `values` in
+  `IaC/terragrunt.stack.hcl`.
 - Include `IaC/root.hcl` from every unit.
 - Source the local Kubernetes-backed Application module. Do not require a
   locally authenticated Argo CD API provider for routine app registration.
@@ -25,7 +28,8 @@ they exist so dependency state is still delivered through Argo CD.
   chart repository, destination namespace, or cluster-scoped kind, update
   `clusters/homelab/argocd/self-management/appproject.yaml` before applying
   the Application.
-- Declare every upstream relationship with a `dependencies` block.
+- Declare every upstream relationship with `values.dependencies` as sibling app
+  names, such as `external-secrets`, not generated relative paths.
 - Use `spec.syncPolicy.automated` with prune and self-heal by default. Any future
   exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under

@@ -180,6 +180,13 @@ unavailable.
 
 ## Terragrunt Checks
 
+Generate explicit stack units before focused validation:
+
+```sh
+cd IaC
+terragrunt stack generate
+```
+
 Focused unit validation:
 
 ```sh
@@ -189,11 +196,11 @@ terragrunt --log-disable validate -no-color
 terragrunt --log-disable plan -no-color
 ```
 
-Implicit stack validation:
+Explicit stack validation:
 
 ```sh
-cd IaC/live/argocd-apps
-terragrunt run --all --filter-affected --parallelism 1 --source-update -- plan -no-color
+cd IaC
+terragrunt stack run plan
 ```
 
 The pull request workflow renders saved Terragrunt `plan.out` files to local
@@ -203,6 +210,16 @@ for static YAML policy checks. Run the same order locally when reproducing PR
 gate behavior. The live plan, apply, and diagnostics jobs verify the Octelium
 Kubernetes access path with `kubectl --request-timeout=15s version` after
 `scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig.
+
+CI plan and apply scripts call `terragrunt stack generate` before filtering
+units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
+changes, the scripts plan or apply the matching generated unit groups instead
+of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
+files. Deleted-unit handling compares tracked units and explicit-stack paths at
+the base and head revisions, so a catalog migration at the same path is not a
+destroy while removing a stack block still retires its state. The production
+Azure credential gate compares only AzureAD unit sources and AzureAD stack
+blocks; unrelated stack changes do not require Azure credentials.
 
 The trusted GitHub Actions PR plan job is serialized with a shared concurrency
 group because it reads the same OpenTofu S3 backend state across pull requests.

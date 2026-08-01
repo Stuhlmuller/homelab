@@ -31,9 +31,11 @@ Argo CD parameter overrides as steady state.
 | Concern | Path |
 | --- | --- |
 | Root Terragrunt settings | `IaC/root.hcl` |
-| Argo CD bootstrap | `IaC/bootstrap/argocd` |
-| Operator-owned AWS apply-role policy | `IaC/operator/github-actions-role-policy` |
-| Argo CD app registrations | `IaC/live/argocd-apps/<app>` |
+| Terragrunt stack entry point | `IaC/terragrunt.stack.hcl` |
+| Terragrunt unit templates | `IaC/.catalog/units` |
+| Generated Argo CD bootstrap unit | `IaC/bootstrap/argocd` |
+| Generated operator-owned AWS apply-role policy unit | `IaC/operator/github-actions-role-policy` |
+| Generated Argo CD app registrations | `IaC/live/argocd-apps/<app>` |
 | Argo CD Application module | `IaC/modules/argocd-application-kubernetes` |
 | App desired state | `clusters/homelab/apps/<app>` |
 | Platform desired state | `clusters/homelab/platform/<service>` |
@@ -44,9 +46,12 @@ See [[runbooks/argocd-bootstrap]], [[runbooks/argocd-app-onboarding]], and
 
 ## Registration Pattern
 
-Argo CD Applications are registered through the repository-local
-`IaC/modules/argocd-application-kubernetes` module. Terragrunt passes a raw
-CRD-shaped `manifest`, so Application fields use their native names such as
+Argo CD Applications are registered through the shared Terragrunt unit template
+at `IaC/.catalog/units/live/argocd-app` and per-app `values` in the explicit
+stack at `IaC/terragrunt.stack.hcl`. The generated units keep the historical
+`IaC/live/...` paths so S3 backend keys remain stable. The template sources the
+repository-local `IaC/modules/argocd-application-kubernetes` module and passes a
+raw CRD-shaped `manifest`, so Application fields use their native names such as
 `repoURL`, `targetRevision`, and `syncPolicy`. For Git-backed sources that point
 at this repository, set `targetRevision` to `main` unless a temporary
 non-default branch is explicitly documented for testing or recovery.

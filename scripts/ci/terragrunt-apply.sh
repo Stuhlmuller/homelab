@@ -34,7 +34,20 @@ azuread_stack_changed() {
     return 0
   fi
 
-  ! git diff --quiet "$base_sha" "$head_sha" -- IaC/live/azuread-applications
+  if ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+
+  if ! git diff --quiet "$base_sha" "$head_sha" -- \
+    IaC/live/azuread-applications \
+    IaC/.catalog/units/live/azuread-applications; then
+    return 0
+  fi
+
+  ! diff -q \
+    <(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/') \
+    <(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/') \
+    >/dev/null
 }
 
 destroy_deleted_terragrunt_units() {
@@ -96,33 +109,32 @@ adopt_existing_ssm_parameters() {
   terragrunt init -no-color
   state_resources="$(terragrunt state list -no-color 2>/dev/null || true)"
 
-  for parameter_name in "/homelab/github-actions-runner/registration-token"; do
-    resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
+  parameter_name="/homelab/github-actions-runner/registration-token"
+  resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
 
-    if grep -Fxq "$resource_address" <<<"$state_resources"; then
-      echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
-      continue
-    fi
+  if grep -Fxq "$resource_address" <<<"$state_resources"; then
+    echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
+    return
+  fi
 
-    existing_name="$(
-      aws ssm describe-parameters \
-        --region "$parameter_region" \
-        --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
-        --query "Parameters[0].Name" \
-        --output text 2>/dev/null || true
-    )"
+  existing_name="$(
+    aws ssm describe-parameters \
+      --region "$parameter_region" \
+      --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
+      --query "Parameters[0].Name" \
+      --output text 2>/dev/null || true
+  )"
 
-    if [[ "$existing_name" == "$parameter_name" ]]; then
-      echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
-      terragrunt import -no-color "$resource_address" "$parameter_name"
-      state_resources="${state_resources}"$'\n'"${resource_address}"
-    else
-      echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
-    fi
-  done
+  if [[ "$existing_name" == "$parameter_name" ]]; then
+    echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
+    terragrunt import -no-color "$resource_address" "$parameter_name"
+  else
+    echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
+  fi
 }
 
 prepare_terragrunt_filter_base
+terragrunt_generate_stack
 
 if ! azuread_credentials_available && azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
@@ -135,7 +147,7 @@ destroy_deleted_terragrunt_units
 echo "::group::Argo CD bootstrap apply"
 (
   cd IaC/bootstrap
-  terragrunt run --all --filter-affected --non-interactive --parallelism 1 -- apply -no-color -auto-approve
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/bootstrap/argocd')" --non-interactive --parallelism 1 -- apply -no-color -auto-approve
 )
 echo "::endgroup::"
 
@@ -166,7 +178,7 @@ echo "::group::AzureAD application registration apply"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
   )
 elif azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
@@ -180,7 +192,7 @@ echo "::endgroup::"
 echo "::group::Argo CD Application registration apply"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
 )
 echo "::endgroup::"
 
@@ -202,6 +214,6 @@ echo "::endgroup::"
 echo "::group::Kubernetes secret materialization apply"
 (
   cd IaC/live/kubernetes-secrets
-  terragrunt run --all --filter-affected --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/kubernetes-secrets/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
 )
 echo "::endgroup::"

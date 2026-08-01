@@ -112,7 +112,7 @@ append_deleted_unit_note() {
     printf '### Deleted Terragrunt Units\n\n'
     printf '%s\n\n' "$message"
     for unit_dir in "$@"; do
-      printf -- '- `%s`\n' "$unit_dir"
+      printf -- "- \`%s\`\n" "$unit_dir"
     done
     printf '\n'
   } >>"$plan_markdown"
@@ -180,21 +180,22 @@ plan_deleted_terragrunt_units() {
 }
 
 prepare_terragrunt_filter_base
+terragrunt_generate_stack
 clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applications
 
 {
   printf '## Terragrunt Plan Output\n\n'
-  printf 'Rendered from saved `plan.out` files with `terragrunt show -no-color plan.out`.\n\n'
+  printf "Rendered from saved \`plan.out\` files with \`terragrunt show -no-color plan.out\`.\n\n"
   if [[ -n "${GITHUB_SHA:-}" ]]; then
-    printf 'Source commit: `%s`.\n\n' "$GITHUB_SHA"
+    printf "Source commit: \`%s\`.\n\n" "$GITHUB_SHA"
   fi
-  printf '> `IaC/live/aws-ssm-parameters` and `IaC/live/kubernetes-secrets` are intentionally excluded from PR plans because they require protected apply credentials or decrypted SSM reads.\n\n'
+  printf "> \`IaC/live/aws-ssm-parameters\` and \`IaC/live/kubernetes-secrets\` are intentionally excluded from PR plans because they require protected apply credentials or decrypted SSM reads.\n\n"
 } >"$plan_markdown"
 
 echo "::group::Argo CD bootstrap plan"
 (
   cd IaC/bootstrap
-  terragrunt run --all --filter 'IaC/bootstrap/argocd | [main...HEAD]' --parallelism 1 -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/bootstrap/argocd')" --parallelism 1 -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 if ! render_plan_out_if_present "Argo CD bootstrap" "IaC/bootstrap/argocd"; then
@@ -207,7 +208,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter 'IaC/live/argocd-apps/* | [main...HEAD]' --parallelism 1 --source-update -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
@@ -236,7 +237,7 @@ echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter 'IaC/live/azuread-applications/* | [main...HEAD]' --parallelism 1 --source-update -- plan -lock=false -no-color
+    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
   )
 
   planned_azuread_count=0
