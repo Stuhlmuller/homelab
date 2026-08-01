@@ -102,10 +102,8 @@ gh workflow run octelium-cloudflare-origin-port.yml --ref main
 ```
 
 The `homelab-production` environment secret
-`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read and Origin Rules edit
+`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read and Transform Rules edit
 for `stinkyboi.com`.
-The apply workflow also verifies Full or Full (strict) SSL and HTTP/2 to the
-origin before reconciling the rule.
 Rollback is the same protected path and is safe to repeat:
 
 ```sh
