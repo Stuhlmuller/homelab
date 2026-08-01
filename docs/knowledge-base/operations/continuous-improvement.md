@@ -376,10 +376,14 @@ policy`.
   2026-07-19, its gateway stopped accepting loopback connections for 22 seconds:
   Kubernetes recorded six readiness timeouts from 17:33:01-17:33:23 UTC, then
   OpenClaw's health monitor released a stale `Memory Dreaming Promotion` session
-  and the gateway recovered at 17:33:27 UTC. The app now has an HTTP readiness
-  probe and a liveness probe that restarts the app container if a gateway stall
-  persists, while the existing proxy readiness probe continues to withdraw the
-  endpoint promptly.
+  and the gateway recovered at 17:33:27 UTC. A 2026-07-26 read-only inspection
+  found the app had 584 restarts in seven days because exec probes were failing
+  with `OCI runtime exec failed` / `setns` errors even while logs showed normal
+  gateway startup. The app and proxy now use native HTTP probes through the
+  proxy so kubelet no longer depends on container exec, while probe success
+  still requires the loopback gateway to return an HTTP response. A TCP probe
+  of the proxy listener was rejected because it could succeed before the proxy
+  discovered that the upstream gateway was unavailable.
 - **Risk:** hot OpenClaw gateway state, memory indexing, or workspace scanning
   on the QNAP-backed PVC can amplify storage pressure and obscure independent
   network faults.
