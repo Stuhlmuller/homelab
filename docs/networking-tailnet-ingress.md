@@ -95,6 +95,15 @@ that Advanced Security can block all inbound traffic to a forwarded device.
 The Cloudflare Origin Rule must match
 `http.host eq "octelium-api.stinkyboi.com"` and override the destination port
 to `8443`; the client URL remains standard HTTPS on port `443`.
+Reconcile it without exposing the token by running the protected workflow:
+
+```sh
+gh workflow run octelium-cloudflare-origin-port.yml --ref main
+```
+
+The `homelab-production` environment secret
+`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read and Transform Rules edit
+for `stinkyboi.com`.
 
 Prometheus is intentionally absent from the tailnet route inventory. Grafana is
 the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct
