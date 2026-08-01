@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Cluster Topology
 
 Tags: #architecture #talos #kubernetes
@@ -11,7 +13,7 @@ control-plane node and three Zimaboard workers.
 | --- | --- | --- | --- |
 | `acer` | `10.1.0.199` | control-plane | Canonical Talos and Kubernetes API endpoint |
 | `zimaboard-0` | `10.1.0.200` | worker | Hyphenated Kubernetes node name |
-| `zimaboard-1` | `10.1.0.201` | worker | Hyphenated Kubernetes node name |
+| `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
 ## Monitoring Contract
@@ -31,6 +33,13 @@ pressure rules have no current data.
 
 Update the Grafana alert regex and expected count in the same change that adds,
 removes, or renames a node.
+
+## Workload Scheduling
+
+Terragrunt manages `octelium.com/node-mode-cordium=` on `zimaboard-1` because
+Cordium-generated Workspace Pods require that selector. Of the worker nodes,
+`zimaboard-1` has enough memory for the default Workspace limit and lower
+reserved load than `zimaboard-0`; `zimaboard-2` is too small.
 
 ## Canonical Endpoints
 

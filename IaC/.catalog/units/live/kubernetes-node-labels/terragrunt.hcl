@@ -17,6 +17,7 @@ inputs = {
     }
     zimaboard-1 = {
       "octelium.com/node-mode-controlplane" = ""
+      "octelium.com/node-mode-cordium"      = ""
     }
     zimaboard-2 = {
       "octelium.com/node-mode-dataplane" = ""

@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Octelium Client Bridge
 
 This repository uses Octelium for human access to homelab applications. App
@@ -495,7 +497,7 @@ Terragrunt/OpenTofu manages the Octelium node labels:
 | Node | Octelium label |
 | --- | --- |
 | `zimaboard-0` | `octelium.com/node-mode-dataplane=` |
-| `zimaboard-1` | `octelium.com/node-mode-controlplane=` |
+| `zimaboard-1` | `octelium.com/node-mode-controlplane=`, `octelium.com/node-mode-cordium=` |
 | `zimaboard-2` | `octelium.com/node-mode-dataplane=` |
 
 Argo CD manages:
