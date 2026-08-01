@@ -370,6 +370,9 @@ token remains masked inside the `homelab-production` environment:
 gh workflow run octelium-cloudflare-origin-port.yml --ref main
 ```
 
+The workflow also verifies that the zone uses Full or Full (strict) SSL and
+allows HTTP/2 to the origin; Octelium's TLS gRPC endpoint requires both.
+
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
 `remoteRef.version` on `octelium-client-auth`, update the ExternalSecret target
