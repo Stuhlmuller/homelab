@@ -86,8 +86,8 @@ contract for Grafana.
 - The upstream kubeconfig is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
   `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
-  into GitHub. CI writes a token-only kubeconfig with mode `0600`, verifies
-  `/version` with the bearer token, then runs authenticated `kubectl`.
+  into GitHub. CI writes a token-only kubeconfig with mode `0600`, then verifies
+  the Kubernetes API with authenticated `kubectl`.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
@@ -219,8 +219,9 @@ helper so the token is captured and stored without being displayed.
 Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after catalog policy
 changes, after runner image changes, and on a regular schedule. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
-CI receives `403` from `kubernetes-api-ci`, reapply the catalog, reconcile the
-Secret, and rotate the credential with `scripts/octelium-ci-credential.sh`.
+CI receives `401` or `403` from authenticated `kubectl` against
+`kubernetes-api-ci`, reapply the catalog, reconcile the Secret, and rotate the
+credential with `scripts/octelium-ci-credential.sh`.
 If the credential must be recovered, apply
 `docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
 credential to `homelab-ci-recovery` with the same helper. The recovery user is
