@@ -15,8 +15,8 @@ The deployed runtime is split intentionally:
   `homelab-cordium-user-access` policy.
 - Agent access uses the Octelium `homelab-cordium-agent` WORKLOAD identity and
   the `cordium-agent-api.homelab` gRPC Service for automation.
-- Workspace defaults stay with upstream Cordium until this repository adds a
-  reviewed Cordium-native workspace configuration resource.
+- The repo-owned Cordium `ClusterConfig` sends every Workspace PVC to the
+  non-default `cordium-local` StorageClass on `zimaboard-1`.
 
 The hook image is pinned to Cordium `0.12.7`. Upstream genesis creates the
 long-running Cordium `nocturne` and `rscserver` Deployments and registers the
@@ -40,6 +40,10 @@ ordinary homelab workloads must not use this Namespace.
 Workspace Pods select `octelium.com/node-mode-cordium=`. Terragrunt manages
 that label on `zimaboard-1`, the lower-reserved-capacity 8 GB worker; the
 smaller `zimaboard-2` cannot satisfy the default Workspace memory limit.
+Workspace storage is also pinned there under `/var/lib/cordium-workspaces`.
+It is disposable node-local data with no replication or backup. Existing
+Workspace PVCs keep their original StorageClass; recreate a failed Workspace
+after applying the ClusterConfig.
 
 Cordium genesis owns the system Service `default.cordium`, whose primary
 hostname is `cordium`. The homelab catalog must not also declare a `cordium`
@@ -76,6 +80,15 @@ Argo CD then syncs the `cordium` Application and runs the genesis hook. If the
 hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change, bump
 `homelab.rst.io/cordium-genesis-revision` on the Job template.
 
+Wait for the `cordium-local` StorageClass, then apply the reviewed Cordium
+configuration through its native API:
+
+```sh
+kubectl get storageclass cordium-local
+cordium man apply clusters/homelab/apps/cordium/cluster-config.yaml
+cordium man get clusterconfig -o yaml
+```
+
 Create a workload credential for automation after the `homelab-cordium-agent`
 User exists:
 
@@ -101,7 +114,9 @@ kubectl -n octelium logs job/cordium-genesis
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 kubectl get namespace cordium --show-labels
 kubectl get node zimaboard-1 --show-labels
+kubectl get storageclass cordium-local
 kubectl -n cordium get deploy,pod,pvc
+cordium man get clusterconfig -o yaml
 octeliumctl get svc default.cordium
 octeliumctl get svc cordium-agent-api.homelab
 curl -I https://cordium.stinkyboi.com
@@ -120,6 +135,10 @@ git -C /workspace/repo remote get-url origin
 exit
 ```
 
+The remote URL must be
+`https://github.com/Stuhlmuller/homelab.git`, and the new Workspace PVC must
+report `cordium-local` in `kubectl -n cordium get pvc`.
+
 The expected steady state includes ready Cordium controller pods in the
 `octelium` namespace, running Workspace Pods in the privileged `cordium`
 namespace, and an Octelium-protected browser route for
@@ -133,3 +152,7 @@ recreate its package-managed `default.cordium` Service. Then remove the
 Octelium catalog entries for `cordium-agent-api.homelab`,
 `homelab-cordium-user`, and
 `homelab-cordium-agent` if the platform is being retired.
+
+Removing `cordium-local-path-provisioner` stops new local provisioning but does
+not migrate existing Workspace data. Stop and delete disposable Workspaces
+before removing the StorageClass or its node-local directories.

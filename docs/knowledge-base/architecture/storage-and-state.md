@@ -18,6 +18,14 @@ Kubernetes persistent storage is backed by a QNAP NFS export.
 `platform-storage` owns the parent Argo CD Application, and the child
 `nfs-subdir-external-provisioner` Application owns the StorageClass.
 
+Cordium Workspaces are the deliberate exception to the NFS default. The
+`cordium-local` StorageClass dynamically provisions disposable `hostPath`
+volumes under `/var/lib/cordium-workspaces` on `zimaboard-1`. Rootless Podman
+requires private ownership and mode bits for its runtime directory, which the
+QNAP NFSv3 export does not preserve. These volumes use a `Delete` reclaim
+policy and have no replication or backup; they are development scratch space,
+not durable workload storage.
+
 `media-postgres` is an explicit exception. Its active 20 Gi volume is a
 retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
 the former NFS data claim remains retained for verified nightly logical backups
@@ -118,6 +126,7 @@ trigger a silent redownload.
 
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
+- `clusters/homelab/apps/cordium/cluster-config.yaml`
 - `clusters/homelab/apps/deluge/media-storage.yaml`
 - `clusters/homelab/apps/deluge/local-storage.yaml`
 - `clusters/homelab/apps/media-postgres`
