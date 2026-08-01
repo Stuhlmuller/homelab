@@ -76,7 +76,9 @@ terragrunt hcl fmt --check
 ```
 
 ```sh
-cd IaC/bootstrap/argocd
+cd IaC
+terragrunt stack generate
+cd bootstrap/argocd
 terragrunt init
 terragrunt plan
 ```
@@ -99,12 +101,15 @@ Expected plan:
 ## Apply
 
 ```sh
-cd IaC/bootstrap/argocd
+cd IaC
+terragrunt stack generate
+cd bootstrap/argocd
 terragrunt apply
 ```
 
-This is the one-command durable bootstrap path. From a clean cluster, Helm
-installs Argo CD and its CRDs first. The Terragrunt `after_hook` then waits for
+This is the durable bootstrap path: stack generation materializes the unit,
+then one `terragrunt apply` installs Argo CD and its CRDs. The Terragrunt
+`after_hook` then waits for
 `applications.argoproj.io` and `appprojects.argoproj.io`, applies the
 repo-owned `homelab` AppProject, and applies the self-management Application
 manifest from this repository.

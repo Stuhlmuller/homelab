@@ -34,7 +34,20 @@ azuread_stack_changed() {
     return 0
   fi
 
-  ! git diff --quiet "$base_sha" "$head_sha" -- IaC/live/azuread-applications IaC/terragrunt.stack.hcl IaC/.catalog
+  if ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+
+  if ! git diff --quiet "$base_sha" "$head_sha" -- \
+    IaC/live/azuread-applications \
+    IaC/.catalog/units/live/azuread-applications; then
+    return 0
+  fi
+
+  ! diff -q \
+    <(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/') \
+    <(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/') \
+    >/dev/null
 }
 
 destroy_deleted_terragrunt_units() {

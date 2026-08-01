@@ -9,6 +9,12 @@ terragrunt_generate_stack
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
+expected_units="$(rg -c '^unit "' IaC/terragrunt.stack.hcl)"
+parsed_units="$(terragrunt_stack_unit_paths_at_ref HEAD | wc -l | tr -d ' ')"
+if [[ "$parsed_units" -ne "$expected_units" ]]; then
+  echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
+  exit 1
+fi
 echo "::endgroup::"
 
 echo "::group::Operator OpenTofu validation"

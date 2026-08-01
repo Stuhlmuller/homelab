@@ -215,7 +215,11 @@ CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
 changes, the scripts plan or apply the matching generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files.
+files. Deleted-unit handling compares tracked units and explicit-stack paths at
+the base and head revisions, so a catalog migration at the same path is not a
+destroy while removing a stack block still retires its state. The production
+Azure credential gate compares only AzureAD unit sources and AzureAD stack
+blocks; unrelated stack changes do not require Azure credentials.
 
 The trusted GitHub Actions PR plan job is serialized with a shared concurrency
 group because it reads the same OpenTofu S3 backend state across pull requests.

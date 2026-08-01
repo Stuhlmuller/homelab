@@ -337,7 +337,9 @@ with the nearest validation for the files being changed:
 Argo CD is bootstrapped through one Terragrunt stack:
 
 ```sh
-cd IaC/bootstrap/argocd
+cd IaC
+terragrunt stack generate
+cd bootstrap/argocd
 terragrunt apply
 ```
 

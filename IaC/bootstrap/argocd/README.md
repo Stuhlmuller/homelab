@@ -4,7 +4,9 @@ This is the single Terragrunt entry point for seeding Argo CD into the homelab
 cluster:
 
 ```sh
-cd IaC/bootstrap/argocd
+cd IaC
+terragrunt stack generate
+cd bootstrap/argocd
 terragrunt apply
 ```
 
