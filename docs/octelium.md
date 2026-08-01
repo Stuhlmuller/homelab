@@ -363,17 +363,18 @@ verifies both that mapping and an unauthenticated `grpc-status: 16` response
 from the NodePort before changing DNS. All browser, app, and callback hostnames
 remain on `octelium-public`.
 
-Reconcile the Cloudflare Origin Rule through its protected workflow so the
-token remains masked inside the `homelab-production` environment:
+Reconcile the Cloudflare origin-port and TLS Configuration Rules through their
+protected workflow so the token remains masked inside the `homelab-production`
+environment:
 
 ```sh
 gh workflow run octelium-cloudflare-origin-port.yml --ref main
 ```
 
-The workflow also verifies that the zone uses Full or Full (strict) SSL and
-allows HTTP/2 to the origin; Octelium's TLS gRPC endpoint requires both.
-Its token needs zone read, Zone Settings read, and Origin Rules edit for
-`stinkyboi.com`.
+The workflow sets Full (strict) SSL for only the Octelium API hostname and
+verifies that the zone allows HTTP/2 to the origin; Octelium's TLS gRPC endpoint
+requires both. Its token needs zone read, Zone Settings read, Origin Rules edit,
+and Config Settings write for `stinkyboi.com`.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump

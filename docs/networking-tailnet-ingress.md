@@ -92,19 +92,20 @@ If the mapping exists but WAN connections time out, use Xfinity Advanced
 Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
 [documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
 that Advanced Security can block all inbound traffic to a forwarded device.
-The Cloudflare Origin Rule must match
+Cloudflare rules must match
 `http.host eq "octelium-api.stinkyboi.com"` and override the destination port
-to `8443`; the client URL remains standard HTTPS on port `443`.
-Reconcile it without exposing the token by running the protected workflow:
+to `8443` while setting SSL to Full (strict); the client URL remains standard
+HTTPS on port `443`. Reconcile them without exposing the token by running the
+protected workflow:
 
 ```sh
 gh workflow run octelium-cloudflare-origin-port.yml --ref main
 ```
 
 The `homelab-production` environment secret
-`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read, Zone Settings read, and
-Origin Rules edit for `stinkyboi.com`. Zone Settings read authorizes the
-workflow's Full SSL and HTTP/2-to-origin checks.
+`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read, Zone Settings read,
+Origin Rules edit, and Config Settings write for `stinkyboi.com`. Zone Settings
+read authorizes the workflow's SSL and HTTP/2-to-origin checks.
 Rollback is the same protected path and is safe to repeat:
 
 ```sh
