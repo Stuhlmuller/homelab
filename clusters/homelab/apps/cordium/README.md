@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Cordium
 
 Cordium is bootstrapped into the self-hosted Octelium Cluster with the upstream
@@ -34,6 +36,10 @@ unconfined AppArmor profile. The repo-owned `cordium` Namespace therefore
 enforces the `privileged` Pod Security profile while continuing to audit and
 warn against `restricted`. Keep this exception limited to Cordium Workspaces;
 ordinary homelab workloads must not use this Namespace.
+
+Workspace Pods select `octelium.com/node-mode-cordium=`. Terragrunt manages
+that label on `zimaboard-1`, the lower-reserved-capacity 8 GB worker; the
+smaller `zimaboard-2` cannot satisfy the default Workspace memory limit.
 
 Cordium genesis owns the system Service `default.cordium`, whose primary
 hostname is `cordium`. The homelab catalog must not also declare a `cordium`
@@ -94,6 +100,7 @@ kubectl -n octelium get job cordium-genesis
 kubectl -n octelium logs job/cordium-genesis
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 kubectl get namespace cordium --show-labels
+kubectl get node zimaboard-1 --show-labels
 kubectl -n cordium get deploy,pod,pvc
 octeliumctl get svc default.cordium
 octeliumctl get svc cordium-agent-api.homelab
