@@ -561,8 +561,9 @@ policy`.
   restarts.
   This removes the recurring QNAP config stall from the daemon, probe, and
   catalog paths while keeping shared media on the NAS. Steady-state startup
-  also skips LinuxServer's ownership hook after it established UID/GID `1000`
-  on local config, avoiding a repeated scan and the futile root-squashed
-  downloads `chown`. The first scheduled NFS archive,
+  replaces LinuxServer's broad ownership hook with a non-recursive ownership
+  assignment on the local config root, preserving clean bootstrap while
+  avoiding a repeated scan and the futile root-squashed downloads `chown`. The
+  first scheduled NFS archive,
   `20260731T103003Z.tar.gz`, completed and passed archive listing validation
   before the migration-only mount was removed from the app pod.

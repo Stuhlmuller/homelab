@@ -118,11 +118,12 @@ generations because related state files can change while an archive is being
 read. The first scheduled run completed and validated
 `20260731T103003Z.tar.gz`.
 
-LinuxServer's ownership hook ran once after migration and established UID/GID
-`1000` on the local config. Steady-state startup removes that hook before
-`/init`; otherwise every restart scans config again and attempts a known-futile
-`chown` of the root-squashed QNAP downloads mount. Any restore Job must preserve
-UID/GID `1000` and mode `0600` on Deluge's private config files.
+Steady-state startup assigns only the local `/config` mount root to UID/GID
+`1000`, then removes LinuxServer's broad ownership hook before `/init`. This
+keeps an empty `DirectoryOrCreate` volume bootstrappable without recursively
+scanning config or attempting a known-futile `chown` of the root-squashed QNAP
+downloads mount. Any restore Job must preserve UID/GID `1000` and mode `0600`
+on Deluge's private config files.
 
 The local volume survives ordinary Talos reboots and upgrades because `/var` is
 on the Talos `EPHEMERAL` system volume. It remains tied to `zimaboard-0` and is

@@ -266,6 +266,7 @@ controllers:
 
             python3 /scripts/recover-torrent-catalog.py
             normalize_web_daemon_host
+            chown "${PUID}:${PGID}" /config
             rm -f /etc/cont-init.d/30-config
             exec /init
         env:
