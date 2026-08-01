@@ -1,5 +1,7 @@
 # Workload Inventory
 
+<!-- markdownlint-disable MD013 -->
+
 Tags: #workloads #argocd #inventory
 
 This inventory summarizes the current application and platform ownership map.

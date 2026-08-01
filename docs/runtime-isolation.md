@@ -1,5 +1,7 @@
 # Runtime Isolation
 
+<!-- markdownlint-disable MD060 -->
+
 This repo treats runtime isolation as desired state, not as an ad hoc live
 cluster repair. Add or change isolation controls in git first, validate the
 rendered manifests, then let Argo CD converge them.
