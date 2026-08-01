@@ -96,30 +96,28 @@ adopt_existing_ssm_parameters() {
   terragrunt init -no-color
   state_resources="$(terragrunt state list -no-color 2>/dev/null || true)"
 
-  for parameter_name in "/homelab/github-actions-runner/registration-token"; do
-    resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
+  parameter_name="/homelab/github-actions-runner/registration-token"
+  resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
 
-    if grep -Fxq "$resource_address" <<<"$state_resources"; then
-      echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
-      continue
-    fi
+  if grep -Fxq "$resource_address" <<<"$state_resources"; then
+    echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
+    return
+  fi
 
-    existing_name="$(
-      aws ssm describe-parameters \
-        --region "$parameter_region" \
-        --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
-        --query "Parameters[0].Name" \
-        --output text 2>/dev/null || true
-    )"
+  existing_name="$(
+    aws ssm describe-parameters \
+      --region "$parameter_region" \
+      --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
+      --query "Parameters[0].Name" \
+      --output text 2>/dev/null || true
+  )"
 
-    if [[ "$existing_name" == "$parameter_name" ]]; then
-      echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
-      terragrunt import -no-color "$resource_address" "$parameter_name"
-      state_resources="${state_resources}"$'\n'"${resource_address}"
-    else
-      echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
-    fi
-  done
+  if [[ "$existing_name" == "$parameter_name" ]]; then
+    echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
+    terragrunt import -no-color "$resource_address" "$parameter_name"
+  else
+    echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
+  fi
 }
 
 prepare_terragrunt_filter_base

@@ -322,7 +322,7 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 ## Failure Modes
 
 | Failure | Operator response |
-|---------|-------------------|
+| --- | --- |
 | Missing Application module | Stop, fix the local `IaC/modules/argocd-application-kubernetes` module or explicitly document a temporary catalog fallback before applying. |
 | Dependency cycle | Stop, remove the cycle from Terragrunt dependencies before applying. |
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |

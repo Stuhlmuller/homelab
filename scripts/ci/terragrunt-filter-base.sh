@@ -12,7 +12,7 @@ terragrunt_filter_head_ref() {
 
 terragrunt_generate_stack() {
   (
-    cd IaC
+    cd IaC || exit
     terragrunt stack generate
   )
 }

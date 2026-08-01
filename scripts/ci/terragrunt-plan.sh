@@ -112,7 +112,7 @@ append_deleted_unit_note() {
     printf '### Deleted Terragrunt Units\n\n'
     printf '%s\n\n' "$message"
     for unit_dir in "$@"; do
-      printf -- '- `%s`\n' "$unit_dir"
+      printf -- "- \`%s\`\n" "$unit_dir"
     done
     printf '\n'
   } >>"$plan_markdown"
@@ -185,11 +185,11 @@ clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applica
 
 {
   printf '## Terragrunt Plan Output\n\n'
-  printf 'Rendered from saved `plan.out` files with `terragrunt show -no-color plan.out`.\n\n'
+  printf "Rendered from saved \`plan.out\` files with \`terragrunt show -no-color plan.out\`.\n\n"
   if [[ -n "${GITHUB_SHA:-}" ]]; then
-    printf 'Source commit: `%s`.\n\n' "$GITHUB_SHA"
+    printf "Source commit: \`%s\`.\n\n" "$GITHUB_SHA"
   fi
-  printf '> `IaC/live/aws-ssm-parameters` and `IaC/live/kubernetes-secrets` are intentionally excluded from PR plans because they require protected apply credentials or decrypted SSM reads.\n\n'
+  printf "> \`IaC/live/aws-ssm-parameters\` and \`IaC/live/kubernetes-secrets\` are intentionally excluded from PR plans because they require protected apply credentials or decrypted SSM reads.\n\n"
 } >"$plan_markdown"
 
 echo "::group::Argo CD bootstrap plan"
