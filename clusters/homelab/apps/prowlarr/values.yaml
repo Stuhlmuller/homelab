@@ -6,6 +6,8 @@ controllers:
       identifier: prowlarr
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-0
       annotations:
         homelab.rst.io/access-mode: "octelium"
     initContainers:

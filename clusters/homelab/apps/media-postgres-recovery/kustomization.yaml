@@ -1,0 +1,49 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../media-postgres
+  - restore-job.yaml
+patches:
+  - target:
+      group: external-secrets.io
+      version: v1
+      kind: ExternalSecret
+      name: media-postgres-auth
+    patch: |-
+      apiVersion: external-secrets.io/v1
+      kind: ExternalSecret
+      metadata:
+        name: media-postgres-auth
+        namespace: media
+        annotations:
+          argocd.argoproj.io/sync-wave: "-2"
+  - target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: media-postgres-local
+    patch: |-
+      apiVersion: apps/v1
+      kind: StatefulSet
+      metadata:
+        name: media-postgres-local
+        namespace: media
+        annotations:
+          argocd.argoproj.io/sync-wave: "-2"
+      spec:
+        replicas: 0
+  - target:
+      group: batch
+      version: v1
+      kind: CronJob
+      name: media-postgres-backup
+    patch: |-
+      apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        name: media-postgres-backup
+        namespace: media
+        annotations:
+          argocd.argoproj.io/sync-wave: "-2"
+      spec:
+        suspend: true

@@ -20,7 +20,7 @@ spec:
   template:
     metadata:
       annotations:
-        homelab.rst.io/cloudflared-config-revision: ci-kubernetes-route-2026-07-26-v2
+        homelab.rst.io/cloudflared-config-revision: direct-api-origin-2026-07-30
       labels:
         app.kubernetes.io/name: cloudflared
         app.kubernetes.io/part-of: octelium-public
@@ -36,7 +36,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cloudflared
-          image: cloudflare/cloudflared:2026.6.1@sha256:6d91c121b803126f7a5344005d17a9324788fc09d305b6e2560ec6040a7ae283
+          image: cloudflare/cloudflared:2026.7.3@sha256:e39ee8da81ad5e05d77f38d2f51c60ca51bf2a8450ac3abab50c17fdb91d91bf
           imagePullPolicy: IfNotPresent
           args:
             - tunnel

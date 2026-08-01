@@ -58,6 +58,76 @@ policy`.
 
 ## Open Findings
 
+- **Status:** mitigated; local database storage still required
+- **Area:** Octelium / access recovery
+- **Evidence:** On 2026-07-29, an NFS-backed `octelium-postgres` stall made the
+  public login origin return HTTP 502 while repeated CLI retries accumulated
+  15 disconnected `homelab-owner` client sessions alongside its browser
+  session. Octelium then denied new authentication at the default 16-session
+  ceiling even after PostgreSQL recovered. The service catalog now declares
+  core `ClusterConfig` `default` with human `maxPerUser: 32`; the canonical
+  runbook applies that kind separately before the normal catalog resources.
+  During the confirmed live rollout on 2026-07-29, PostgreSQL again accepted
+  sockets while bounded `SELECT 1` queries timed out and the console save
+  remained pending. The storage manifest now uses `SELECT 1` for readiness and
+  liveness instead of the shallow `pg_isready` check. The first recovery phase
+  temporarily fences the StatefulSet at zero replicas without deleting its
+  retained PVC; the follow-up restores one replica on the new revision. That
+  fresh pod stalled again on `acer`, while earlier node-level NFS evidence
+  showed millions of write timeouts there and almost none on the ZimaBoards.
+  Desired state now pins only `octelium-postgres` to `zimaboard-1`. Live
+  verification then caught the same retained NFS claim query-stalling again on
+  `zimaboard-1`; the SQL liveness probe correctly marked the pod unready. The
+  runtime liveness window is now 90 seconds so this failure restarts instead of
+  leaving Octelium authentication unavailable for 30 minutes.
+- **Risk:** The larger ceiling restores recovery headroom but does not make the
+  QNAP NFS path reliable; another retry storm could still fill 32 sessions.
+- **Next step:** Move PostgreSQL to reviewed local block storage; the cluster
+  currently exposes only `nfs-default`, so that migration needs a declared
+  Talos volume and Kubernetes storage path. Keep the availability alert active,
+  delete disconnected sessions through `octeliumctl delete session`, and treat
+  renewed probe failures as the storage incident rather than an Octelium
+  routing failure.
+
+- **Status:** direct-origin gateway live; high-port WAN fallback in progress
+- **Area:** Octelium / public gRPC transport
+- **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
+  still hung through `octelium-api.stinkyboi.com` while the same client and
+  session succeeded through a TLS-preserving local CONNECT proxy to the
+  in-cluster Istio gateway. Both `cloudflared` `2026.6.1` replicas selected
+  QUIC successfully but logged that `2026.7.3` was the recommended update.
+  After that digest-pinned update rolled out healthy, authenticated public
+  `octelium status` still hung. The direct route completed login and reached
+  `isConnected: true` with the unprivileged `gvisor` implementation, proving
+  the client, session, database, and Istio origin path. The first protected
+  reconciliation run injected the scoped token successfully, but Cloudflare
+  returned `Undefined zone setting: grpc`; its replacement
+  `long_lived_grpc` is visible but non-editable and returns API error `1015`.
+  Cloudflare's current documentation states that Tunnel public-hostname
+  deployments do not support gRPC. The Xfinity gateway exposes a working UPnP
+  IGD, and the dedicated NodePort on `10.1.0.200:30443` returned the expected
+  unauthenticated gRPC status directly. The gateway rejected a mapping created
+  from the operator workstation with UPnP error `402`, because its
+  implementation requires the request to originate from the target LAN client.
+  The host-networked reconciliation then succeeded from `zimaboard-0`, and the
+  router lists TCP/443 to `10.1.0.200:30443` with its minimum 86,400-second
+  lease. Direct origin probes still return `grpc-status: 16`, but Cloudflare
+  receives HTTP `502` and direct WAN IPv4 connections time out. Xfinity
+  documents that Advanced Security can block all inbound traffic to UPnP and
+  port-forwarded devices, and its published blocked-port list does not include
+  `8443`. Cloudflare Origin Rules can keep the client on standard TCP/443 while
+  overriding only the origin destination port on every plan. The live
+  TCP/8443 mapping changed the edge failure from a timeout to Cloudflare HTTP
+  `525`, while the dedicated Envoy logged `filter_chain_not_found` for that
+  connection. This proves the high port reaches Istio and that Cloudflare's
+  origin handshake omits the SNI required by the original exact-host Gateway.
+- **Risk:** The normal public CLI path remains unavailable even though browser
+  access and an unauthenticated gRPC-shaped probe work.
+- **Next step:** Let the dedicated Gateway accept origin TLS without SNI while
+  moving its routing into an API-only `VirtualService`, add the exact-host
+  Cloudflare destination-port override, then verify the proxied API gRPC
+  response and a real public `octelium connect`.
+
 - **Status:** open; alert semantics fixed, scrape failure unresolved
 - **Area:** observability / kube-state-metrics
 - **Evidence:** Read-only checks on 2026-07-19 showed all four expected nodes
@@ -93,8 +163,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** `affine-postgres` restored, partially mitigated for
-  `media-postgres`, and open for the other PostgreSQL workloads
+- **Status:** `affine-postgres` restored; `media-postgres` and Prowlarr
+  cutovers validated; open for other NFS workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -140,19 +210,59 @@ policy`.
   previous app instance stalled during `/config` ownership initialization
   before the liveness probe restarted it. All affected persistent volumes
   target the QNAP at `10.1.0.2` over NFSv3.
+  A new recurrence on 2026-07-29 provided a 20-second kernel mount-stat delta:
+  311 `media-postgres` NFS writes completed with about 26.9 seconds average
+  queue time, 8.1 seconds RPC round-trip, and 35.0 seconds execution per write.
+  PostgreSQL readiness failed immediately before Prowlarr timed out and then
+  received connection refusals. Concurrent probe failures affected NFS-backed
+  workloads on `acer`, `zimaboard-0`, and `zimaboard-1`, while every node
+  remained Ready and physical NIC error counters stayed at zero. Desired state
+  now stages `media-postgres` on an `acer`-pinned local volume, uses real SQL
+  for readiness, disables TCP during the verified cutover backup, and then
+  replaces the legacy StatefulSet with a writable local-only instance. A
+  one-time PID/socket fence prevents writer overlap. Nightly verified logical
+  backups retain 14 days on NFS without storing role password hashes, and the
+  repository recovery overlay fences the writer and schedule before restore.
+  Live phase-one validation at signed revision `24da3a01` confirmed Argo CD
+  synced and healthy, the retained local pod Ready on `acer`, the migration
+  marker and all six application databases present, read-only mode enabled,
+  TCP disabled, and 50 `SELECT 1` probes completing in 1.63 seconds. Backup
+  `20260730T045748Z` verified the six custom-format dumps and password-free
+  globals before phase two was released.
+  Live phase-two validation at signed revision `88098e7f` confirmed the legacy
+  writer at zero replicas, the local-only writer Ready on `acer`, the one-time
+  fence present, read/write SQL available, and 50 probes completing in 1.71
+  seconds. The remaining Prowlarr search stall was outside PostgreSQL: its raw
+  tracker HTTPS request completed in 0.49 seconds, while one read of the
+  NFS-backed `/config/config.xml` took 10.2 seconds and two live searches
+  exceeded 30 seconds. The equivalent reads in Sonarr and Radarr on
+  `zimaboard-0` took 79 and 281 milliseconds, and that node's NFS client
+  recorded 12 lifetime write timeouts versus 26,065,641 on `acer`. Desired
+  state now pins Prowlarr to `zimaboard-0` without replacing its retained PVC.
+  Final read-only validation on 2026-07-30 found both Argo CD Applications
+  synced and healthy. Prowlarr was Ready with zero restarts on `zimaboard-0`
+  using its original retained claim; 20 config reads had a 17.34-millisecond
+  median and 30.66-millisecond p95. Prowlarr, Sonarr, and Radarr searches each
+  returned 50 results in 2.916, 3.519, and 3.714 seconds, respectively, with no
+  indexer or PostgreSQL timeout/refusal errors after the Prowlarr rollout. The
+  local PostgreSQL writer remained Ready with zero restarts, the legacy writer
+  remained at zero replicas, a rolled-back temporary write passed, and 50
+  queries completed in 1.669 seconds. The first scheduled backup Job completed
+  at 03:00 Pacific with no failures. Backup `20260730T100002Z` verified
+  password-free globals and all six dumps; the successful Job also exercised
+  the live 14-day retention command without error.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
   I/O stalls into restart loops. The same failure domain affects unrelated
-  NFS-backed workloads across the cluster.
-- **Next step:** the media PostgreSQL liveness window now matches its
-  30-minute startup recovery window, which prevents brief NFS outages from
-  immediately starting another crash-recovery cycle. Treat the QNAP and
-  especially the `acer` NFS client path as the primary incident. Inspect QNAP
-  pool, disk, NFS-service, and network history for the 2026-07-23/24 window;
-  collect Talos kernel NFS diagnostics with a populated Talos client config;
-  and benchmark NFS latency from each wired node. Evaluate moving PostgreSQL
-  and other high-churn state to storage designed for database synchronous I/O.
+  NFS-backed workloads across the cluster. The nominal local-disk RPO is 24
+  hours, but the actual RPO is the age of the newest verified set and can be
+  older. A failed nightly NFS backup has no freshness alert while the
+  kube-state-metrics scrape path is unhealthy.
+- **Next step:** inspect QNAP pool, disk, NFS-service, and network history
+  because the same failure domain still affects other NFS-backed workloads.
+  Check scheduled backups manually after storage incidents, and restore backup
+  freshness alerting when a reliable metric source is available.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
@@ -166,7 +276,9 @@ policy`.
   `prober_probe_total` readiness counters, which live Prometheus queries
   confirmed for `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
   `octelium-postgres-0`. The healthy expression returned no series, while a
-  simulated missing pod returned a labeled alert instance.
+  simulated missing pod returned a labeled alert instance. The writable
+  cutover revision changes the media target to `media-postgres-local-0`; that
+  series still requires live rollout validation.
 - **Risk:** Existing Grafana node, pod, Deployment, and PVC rules that depend on
   kube-state-metrics can remain in `NoData/OK` until that scrape path is
   restored. The generic Prometheus-target-down rule reports the failed target,
@@ -442,5 +554,16 @@ policy`.
   operator reconciliation adopts exact-size complete-root files without
   replacement and makes libtorrent hash-check them before trusting completion.
   Its guard resumes verified entries and pauses hash failures instead of
-  redownloading them; separately reduce the NFS stall that causes the bad
-  shutdowns.
+  redownloading them. The active config volume now uses retained local storage
+  on `zimaboard-0`; the initial guarded cold copy took 4 minutes 6 seconds for
+  roughly 5.2 MB and retained the NFS claim for nightly archives. The
+  replacement loaded all 17 torrents with no error-state entries or container
+  restarts.
+  This removes the recurring QNAP config stall from the daemon, probe, and
+  catalog paths while keeping shared media on the NAS. Steady-state startup
+  replaces LinuxServer's broad ownership hook with a non-recursive ownership
+  assignment on the local config root, preserving clean bootstrap while
+  avoiding a repeated scan and the futile root-squashed downloads `chown`. The
+  first scheduled NFS archive,
+  `20260731T103003Z.tar.gz`, completed and passed archive listing validation
+  before the migration-only mount was removed from the app pod.

@@ -97,6 +97,39 @@ Use these Deluge paths:
 The `download-dirs` init container keeps the incomplete, complete, Radarr,
 Sonarr, and manual directories present before Deluge starts.
 
+## Config Storage
+
+Active Deluge config uses the retained `deluge-config-local` volume backed by
+`/var/lib/deluge` on `zimaboard-0`. This removes the daemon catalog, fast-resume
+files, authentication, and probe reads from the QNAP NFS latency path that
+repeatedly stalled Deluge while the VPN remained healthy.
+
+The initial cutover stopped the singleton and cold-copied its existing
+`deluge-config` NFS claim into the empty local volume before starting Deluge.
+The guarded copy took 4 minutes 6 seconds for roughly 5.2 MB, directly
+demonstrating the QNAP stall on the old startup path. The steady-state pod
+mounts only the local config and shared downloads claims; the retained NFS
+config claim is mounted only by the backup CronJob.
+
+`deluge-config-backup` writes a verified compressed archive of the local config
+back to `deluge-config` at 03:30 Pacific each day and retains 14 days. The
+archive is a best-effort filesystem snapshot of a running daemon. Keep several
+generations because related state files can change while an archive is being
+read. The first scheduled run completed and validated
+`20260731T103003Z.tar.gz`.
+
+Steady-state startup assigns only the local `/config` mount root to UID/GID
+`1000`, then removes LinuxServer's broad ownership hook before `/init`. This
+keeps an empty `DirectoryOrCreate` volume bootstrappable without recursively
+scanning config or attempting a known-futile `chown` of the root-squashed QNAP
+downloads mount. Any restore Job must preserve UID/GID `1000` and mode `0600`
+on Deluge's private config files.
+
+The local volume survives ordinary Talos reboots and upgrades because `/var` is
+on the Talos `EPHEMERAL` system volume. It remains tied to `zimaboard-0` and is
+lost if that system disk is reset or fails. Move it to a dedicated Talos
+UserVolume if that recovery model becomes unacceptable.
+
 ## Pod Security
 
 Gluetun needs `NET_ADMIN` and `/dev/net/tun` to create the WireGuard tunnel.
@@ -104,10 +137,10 @@ The `media` namespace is labeled for privileged Pod Security admission by this
 app path so Kubernetes can admit the Deluge VPN Pod. Keep privileged workloads
 in this namespace limited to repo-reviewed media automation.
 
-Deluge uses a `Recreate` rollout strategy because the app and helper sidecar
-share a single `ReadWriteOnce` config PVC. Kubernetes should stop the old
-singleton before starting the replacement so two Deluge daemons do not write the
-same restored config volume at the same time.
+Deluge uses a `Recreate` rollout strategy because the app and helper sidecars
+share a single node-local `ReadWriteOnce` config PVC. Kubernetes must stop the
+old singleton before starting the replacement so two Deluge daemons do not
+write the same config volume.
 
 The app asks s6 to stop the Deluge daemon during its Kubernetes `preStop` hook
 and waits up to 20 seconds so libtorrent can write clean state without s6
@@ -136,11 +169,18 @@ After SSM values are replaced and Argo CD syncs Deluge:
 kubectl -n media get externalsecret deluge-vpn
 kubectl -n media get secret deluge-vpn
 kubectl -n media get pod -l app.kubernetes.io/name=deluge
+kubectl get persistentvolume deluge-config-local
+kubectl -n media get pvc deluge-config-local deluge-config
 kubectl -n media logs deploy/deluge -c gluetun
+kubectl -n media exec deploy/deluge -c app -- \
+  test -f /config/.nfs-migration-complete
+kubectl -n media get cronjob deluge-config-backup
 ```
 
 The ExternalSecret should be ready, the `deluge-vpn` Secret should exist, the
-Pod should be ready, and Gluetun logs should show a healthy WireGuard session.
+local and retained NFS claims should be bound, the migration marker should
+exist, the Pod should be ready on `zimaboard-0`, and Gluetun logs should show a
+healthy WireGuard session.
 This command should return success only while the VPN is healthy:
 
 ```sh
@@ -187,21 +227,11 @@ archives the old catalogs, atomically restores the complete fast-resume data
 and catalog, and stops without changing state if validation fails. Downloaded
 data and `.torrent` files remain untouched.
 
-The startup probe gives NFS-backed initialization and guarded state recovery up
-to 30 minutes before liveness begins. Runtime liveness also requires 30 minutes
-of continuous daemon RPC failures before restarting the app, so a transient NFS
-stall can clear without forcing another state archive and reload. The
-`deluge-console status` checks use a 25-second command timeout because short
-NFS-backed daemon stalls have exceeded the old 10-second budget while Deluge
-Web and Gluetun remained otherwise healthy.
-
-The wrapper removes the pinned image's `/etc/cont-init.d/30-config` hook before
-LinuxServer initialization. That hook recursively changes ownership across
-`/config`, which cannot succeed on the QNAP root-squashed export and turns every
-restart into a large NFS metadata scan. The PVC's existing world-writable
-permissions remain the write-access contract for Deluge's configured UID/GID.
-When no persisted state exists on a new config volume, the wrapper lets Deluge
-perform its normal first-run setup.
+The startup probe gives local initialization and guarded state recovery up to 30
+minutes before liveness begins. Runtime liveness also requires 30 minutes of
+continuous daemon RPC failures before restarting the app. The existing
+25-second RPC timeout remains conservative for libtorrent recovery, but routine
+checks should no longer inherit QNAP config latency.
 
 Before Deluge Web starts, the same wrapper normalizes legacy daemon hostlist
 entries from `localhost` to Deluge's default `127.0.0.1`. Sonarr's Deluge
@@ -238,7 +268,7 @@ kubectl -n media exec deploy/deluge -c app -- \
 kubectl -n media exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config info
 kubectl -n media exec deploy/deluge -c daemon-metrics -- \
-  python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=5).read().decode(), end="")'
+  python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=25).read().decode(), end="")'
 kubectl -n media exec deploy/deluge -c gluetun -- \
   /gluetun-entrypoint healthcheck
 ```
@@ -248,6 +278,21 @@ The expected port state is `listen_ports: (5983, 5983)` and
 `deluge_vpn_healthy` should be `1`; `deluge_torrents_total` should match the
 expected catalog count. The archived `session.state.broken-*` file is the
 rollback reference if the backup state is worse.
+
+Verify scheduled backups after the first 03:30 run and after any QNAP incident:
+
+```sh
+kubectl -n media get cronjob deluge-config-backup \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n media get job \
+  -l app.kubernetes.io/name=deluge-config-backup
+kubectl -n media logs job/<latest-deluge-config-backup-job>
+```
+
+Restore requires a reviewed repository revision that stops Deluge, mounts one
+selected archive and the local claim in a one-shot restore Job, validates the
+archive before replacing `/config`, and then removes the Job before the app is
+started again. Do not restore into the local claim while the Deluge pod exists.
 
 If a retained fast-resume snapshot points completed torrents back at
 `/downloads/incomplete`, use the mounted reconciliation script. It selects only

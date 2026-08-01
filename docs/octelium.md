@@ -56,6 +56,9 @@ docs/examples/octelium/homelab-services.yaml
 
 They create:
 
+- Core `ClusterConfig` `default`, raising the human session ceiling to 32 so
+  disconnected CLI retries cannot exhaust the default 16-session allowance
+  before its 16-hour sessions expire.
 - Octelium Namespace `homelab` for the demo and Namespace `ci` for CI-only
   transport.
 - Policy `homelab-human-web-access`, allowing authenticated human client
@@ -115,8 +118,14 @@ route directly.
 Apply the service catalog to the Octelium Cluster:
 
 ```sh
+octeliumctl apply --domain stinkyboi.com \
+  --include ClusterConfig \
+  docs/examples/octelium/homelab-services.yaml
 octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
 ```
+
+`--include ClusterConfig` overrides the normal apply include list, so keep the
+second command to apply the catalog's other resource kinds.
 
 Never add `--prune` to that command: this catalog is not an exhaustive list of
 every non-system resource in the Octelium Cluster. When upgrading a Cluster
@@ -303,6 +312,7 @@ octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
   --admin-email '<entra-user-principal-name>'
+octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
   --user homelab-octelium-client \
@@ -340,27 +350,18 @@ curl -sS \
   https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
 ```
 
-The `octelium-public` tunnel uses automatic transport selection: QUIC is
-preferred, with HTTP/2 fallback when UDP/7844 is unavailable. If
-`kubectl -n istio-system logs deploy/istio-ingressgateway` shows
-`POST /octelium.api.main.user.v1.MainService/Connect` ending with
-`DR http2.remote_reset` after roughly 125 seconds, the tunnel has likely fallen
-back to HTTP/2. Restore reliable UDP/7844 rather than forcing HTTP/2. Keep both
-UDP/7844 and TCP/7844 allowed to public IPv4 destinations in the
-`cloudflared-egress` NetworkPolicy. Keep private and link-local IPv4 ranges
-excluded from that public rule, and allow the in-cluster Istio HTTPS origin,
-Octelium ingress dataplane, and cluster DNS through namespace-scoped rules.
-
-The CLI and VPN path also requires Cloudflare to allow gRPC for the zone:
-
-```sh
-scripts/octelium-cloudflare-grpc.sh --dry-run
-scripts/octelium-cloudflare-grpc.sh
-```
-
-This reads `/homelab/octelium/cloudflare-zone-settings-token`, which must be a
-Cloudflare API token with `Zone:Read` and `Zone Settings:Edit` for
-`stinkyboi.com`. The cert-manager DNS-01 token cannot update this setting.
+Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
+API hostname therefore uses a separate direct origin: clients reach
+Cloudflare on TCP/443, a hostname-specific Origin Rule changes the destination
+port to `8443`, and the Xfinity gateway maps that port to
+`10.1.0.200:30443`. The dedicated `octelium-api-ingressgateway` accepts
+Cloudflare origin TLS without SNI, while a separate `VirtualService` routes
+only the API Host. Run
+`scripts/octelium-public-dns.sh` from the homelab LAN after the
+`octelium-api-upnp` CronJob creates its leased router mapping. The script
+verifies both that mapping and an unauthenticated `grpc-status: 16` response
+from the NodePort before changing DNS. All browser, app, and callback hostnames
+remain on `octelium-public`.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
@@ -383,11 +384,12 @@ scripts/octelium-public-dns.sh
 ```
 
 The gateway reconciler prevents `_gw-*` names from falling through to stale
-wildcard records. The public DNS reconciler creates exact proxied CNAME records
-for `stinkyboi.com`, Octelium API/portal aliases, `console.stinkyboi.com`, app
-hostnames such as `grafana.stinkyboi.com`, and callback hostnames such as
-`n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`, all pointing
-at the named Cloudflare Tunnel target.
+wildcard records. The public reconciler verifies the CronJob-owned API mapping,
+creates its proxied A record, then creates exact proxied CNAME records to the named Cloudflare
+Tunnel target for `stinkyboi.com`, portal and browser aliases,
+`console.stinkyboi.com`, app hostnames such as `grafana.stinkyboi.com`, and
+callback hostnames such as `n8n-webhook.stinkyboi.com` and
+`policy-bot-hook.stinkyboi.com`.
 
 ## Octelium Enterprise Package
 
@@ -564,11 +566,11 @@ Before rollout:
 kubectl kustomize clusters/homelab/apps/octelium
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-storage
+kubectl kustomize clusters/homelab/apps/istio
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-public-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
-bash -n scripts/octelium-cloudflare-grpc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
@@ -580,7 +582,6 @@ After activation:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
-scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
@@ -616,9 +617,10 @@ callback `VirtualService` objects path-limited and annotated with
 Check the CI Kubernetes API Service through Octelium from a client machine:
 
 ```sh
-curl -fsS \
-  -H 'Authorization: Bearer <octelium-clientless-access-token>' \
-  https://kubernetes-api-ci.stinkyboi.com/version
+KUBE_API_SERVER_URL=https://kubernetes-api-ci.stinkyboi.com \
+OCTELIUM_AUTH_TOKEN=<octelium-clientless-access-token> \
+bash scripts/ci/install-kubeconfig.sh
+kubectl --request-timeout=15s version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for

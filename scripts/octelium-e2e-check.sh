@@ -300,6 +300,47 @@ else
   fail "octelium-client Deployment is missing"
 fi
 
+note "Checking API-only ingress boundary"
+API_GATEWAY_JSON="$(kubectl_homelab -n istio-system get gateway octelium-api-gateway -o json 2>/dev/null || true)"
+if jq -e \
+  '
+    .spec.selector.istio == "octelium-api-ingressgateway" and
+    [.spec.servers[].hosts[]] == ["*"] and
+    all(.spec.servers[]; .port.number == 443 and .port.protocol == "HTTPS")
+  ' >/dev/null 2>&1 <<<"${API_GATEWAY_JSON}"; then
+  pass "dedicated Istio Gateway accepts Cloudflare origin TLS without SNI"
+else
+  fail "dedicated Istio Gateway does not accept Cloudflare origin TLS without SNI"
+fi
+
+API_GATEWAY_SERVICE_JSON="$(kubectl_homelab -n istio-system get service octelium-api-ingressgateway -o json 2>/dev/null || true)"
+if jq -e \
+  '
+    .spec.type == "NodePort" and
+    .spec.selector.istio == "octelium-api-ingressgateway" and
+    any(.spec.ports[]; .port == 443 and .targetPort == 443 and .nodePort == 30443)
+  ' >/dev/null 2>&1 <<<"${API_GATEWAY_SERVICE_JSON}"; then
+  pass "dedicated Octelium API gateway owns NodePort 30443"
+else
+  fail "dedicated Octelium API gateway NodePort is missing or selects the shared gateway"
+fi
+
+OCTELIUM_VIRTUALSERVICE_JSON="$(kubectl_homelab -n istio-system get virtualservice octelium-cluster -o json 2>/dev/null || true)"
+API_VIRTUALSERVICE_JSON="$(kubectl_homelab -n istio-system get virtualservice octelium-api -o json 2>/dev/null || true)"
+if jq -e \
+  --arg host "${API_HOST}" \
+  '
+    .spec.hosts == [$host] and
+    .spec.gateways == ["istio-system/octelium-api-gateway"]
+  ' >/dev/null 2>&1 <<<"${API_VIRTUALSERVICE_JSON}" &&
+  ! jq -e \
+    'any(.spec.gateways[]; . == "istio-system/octelium-api-gateway")' \
+    >/dev/null 2>&1 <<<"${OCTELIUM_VIRTUALSERVICE_JSON}"; then
+  pass "only ${API_HOST} binds to the dedicated API gateway"
+else
+  fail "dedicated API gateway routing is not limited to ${API_HOST}"
+fi
+
 note "Checking Octelium TLS/API endpoints"
 for HOST in "${CONTROL_HOSTS[@]}"; do
   HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-headers.XXXXXX")"
@@ -350,7 +391,7 @@ case "${GRPC_HTTP_CODE}" in
     ;;
   403)
     if [ "${GRPC_SERVER}" = "cloudflare" ]; then
-      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; enable Cloudflare zone gRPC or use a non-public-hostname Tunnel route before Octelium clients can connect from outside the tailnet"
+      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; reconcile the direct API origin with scripts/octelium-public-dns.sh"
     else
       fail "https://${API_HOST} returned HTTP 403 to a gRPC request"
     fi

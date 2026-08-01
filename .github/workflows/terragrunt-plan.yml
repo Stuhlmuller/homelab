@@ -151,7 +151,6 @@ jobs:
           nix develop --command bash <<'EOF'
           set -euo pipefail
           bash scripts/ci/install-kubeconfig.sh
-          curl -fsS --max-time 10 -H "Authorization: Bearer ${OCTELIUM_AUTH_TOKEN}" -o /dev/null "${KUBE_API_SERVER_URL}/version"
           kubectl --request-timeout=15s version
           bash scripts/ci/terragrunt-plan.sh
           EOF
