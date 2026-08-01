@@ -1,5 +1,7 @@
 # Runtime Isolation
 
+<!-- markdownlint-disable MD060 -->
+
 This repo treats runtime isolation as desired state, not as an ad hoc live
 cluster repair. Add or change isolation controls in git first, validate the
 rendered manifests, then let Argo CD converge them.
@@ -118,6 +120,7 @@ workload that needs it.
 | `istio-system` | Istio gateway and dataplane components need elevated networking permissions. | `clusters/homelab/apps/istio/namespace.yaml` |
 | `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`. | `scripts/octelium-cluster-bootstrap.sh` |
 | `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface. | `clusters/homelab/apps/octelium/namespace.yaml` |
+| `cordium` | Cordium-generated Workspace Pods run as privileged root containers with an unconfined AppArmor profile. | `clusters/homelab/apps/cordium/namespace.yaml` |
 | `tailscale` | Tailscale operator proxy Pods need privileged networking for connector and load-balancer devices. | `clusters/homelab/apps/tailscale/namespace.yaml` |
 
 ## Baseline Workloads

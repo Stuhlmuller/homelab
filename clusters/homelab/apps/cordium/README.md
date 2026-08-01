@@ -29,6 +29,12 @@ privileges to long-running workloads. The Argo CD app keeps the hook and RBAC
 visible in git; the generated Octelium/Cordium runtime resources remain owned
 by Octelium controllers.
 
+Cordium-generated Workspace Pods run as privileged root containers with an
+unconfined AppArmor profile. The repo-owned `cordium` Namespace therefore
+enforces the `privileged` Pod Security profile while continuing to audit and
+warn against `restricted`. Keep this exception limited to Cordium Workspaces;
+ordinary homelab workloads must not use this Namespace.
+
 Cordium genesis owns the system Service `default.cordium`, whose primary
 hostname is `cordium`. The homelab catalog must not also declare a `cordium`
 Service in Octelium's default Namespace: both names derive the same public
@@ -87,13 +93,29 @@ Tailscale-only URL.
 kubectl -n octelium get job cordium-genesis
 kubectl -n octelium logs job/cordium-genesis
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
+kubectl get namespace cordium --show-labels
+kubectl -n cordium get deploy,pod,pvc
 octeliumctl get svc default.cordium
 octeliumctl get svc cordium-agent-api.homelab
 curl -I https://cordium.stinkyboi.com
 ```
 
+Verify the human developer path end to end with the public repository:
+
+```sh
+cordium run --repository https://github.com/Stuhlmuller/homelab.git
+```
+
+In the resulting Workspace terminal, confirm the clone and then exit:
+
+```sh
+git -C /workspace/repo remote get-url origin
+exit
+```
+
 The expected steady state includes ready Cordium controller pods in the
-`octelium` namespace and an Octelium-protected browser route for
+`octelium` namespace, running Workspace Pods in the privileged `cordium`
+namespace, and an Octelium-protected browser route for
 `cordium.stinkyboi.com` plus workspace app subdomains under
 `*.cordium.stinkyboi.com`.
 
