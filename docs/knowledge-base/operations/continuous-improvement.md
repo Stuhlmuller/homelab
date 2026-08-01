@@ -555,9 +555,15 @@ policy`.
   replacement and makes libtorrent hash-check them before trusting completion.
   Its guard resumes verified entries and pauses hash failures instead of
   redownloading them. The active config volume now uses retained local storage
-  on `zimaboard-0`; a guarded cold migration retains the NFS claim for rollback
-  and nightly archives. This removes the recurring QNAP config stall from the
-  daemon, probe, and catalog paths while keeping shared media on the NAS. After
-  live migration and the first backup validate, remove the migration-only NFS
-  mount from the Deluge pod so QNAP availability is no longer a startup
-  dependency.
+  on `zimaboard-0`; the initial guarded cold copy took 4 minutes 6 seconds for
+  roughly 5.2 MB and retained the NFS claim for nightly archives. The
+  replacement loaded all 17 torrents with no error-state entries or container
+  restarts.
+  This removes the recurring QNAP config stall from the daemon, probe, and
+  catalog paths while keeping shared media on the NAS. Steady-state startup
+  replaces LinuxServer's broad ownership hook with a non-recursive ownership
+  assignment on the local config root, preserving clean bootstrap while
+  avoiding a repeated scan and the futile root-squashed downloads `chown`. The
+  first scheduled NFS archive,
+  `20260731T103003Z.tar.gz`, completed and passed archive listing validation
+  before the migration-only mount was removed from the app pod.

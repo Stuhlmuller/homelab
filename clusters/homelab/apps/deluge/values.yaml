@@ -15,33 +15,6 @@ controllers:
         homelab.rst.io/wireguard-profile-ssm-version: "4"
     strategy: Recreate
     initContainers:
-      migrate-config:
-        image:
-          repository: busybox
-          tag: 1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
-        command:
-          - /bin/sh
-          - -ec
-          - |
-            marker=/config/.nfs-migration-complete
-            if [ -e "$marker" ]; then
-              exit 0
-            fi
-
-            test -s /legacy-config/core.conf
-            find /config -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
-            cp -R /legacy-config/. /config/
-            sync
-            touch "$marker"
-            sync
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-            add:
-              - DAC_READ_SEARCH
-          readOnlyRootFilesystem: true
       download-dirs:
         image:
           repository: busybox
@@ -293,6 +266,8 @@ controllers:
 
             python3 /scripts/recover-torrent-catalog.py
             normalize_web_daemon_host
+            chown "${PUID}:${PGID}" /config
+            rm -f /etc/cont-init.d/30-config
             exec /init
         env:
           TZ: America/Los_Angeles
@@ -480,25 +455,12 @@ persistence:
     existingClaim: deluge-config-local
     advancedMounts:
       deluge:
-        migrate-config:
-          - path: /config
         app:
           - path: /config
         port-config:
           - path: /config
         daemon-metrics:
           - path: /config
-            readOnly: true
-  legacy-config:
-    # Migration-only: remove this mount and migrate-config after the local
-    # rollout marker and first scheduled backup are verified.
-    enabled: true
-    type: persistentVolumeClaim
-    existingClaim: deluge-config
-    advancedMounts:
-      deluge:
-        migrate-config:
-          - path: /legacy-config
             readOnly: true
   downloads:
     enabled: true
