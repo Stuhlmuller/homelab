@@ -100,6 +100,19 @@ octeliumctl get svc cordium-agent-api.homelab
 curl -I https://cordium.stinkyboi.com
 ```
 
+Verify the human developer path end to end with the public repository:
+
+```sh
+cordium run --repository https://github.com/Stuhlmuller/homelab.git
+```
+
+In the resulting Workspace terminal, confirm the clone and then exit:
+
+```sh
+git -C /workspace/repo remote get-url origin
+exit
+```
+
 The expected steady state includes ready Cordium controller pods in the
 `octelium` namespace, running Workspace Pods in the privileged `cordium`
 namespace, and an Octelium-protected browser route for
