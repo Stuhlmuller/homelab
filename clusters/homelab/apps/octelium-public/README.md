@@ -1,13 +1,12 @@
 # Octelium Public Control Plane
 
 This app runs the outbound Cloudflare Tunnel connector that makes the Octelium
-Cluster control-plane hostnames and public app hostnames reachable from
-outside the tailnet:
+browser control-plane and public app hostnames reachable from outside the
+tailnet:
 
 - `stinkyboi.com`
 - `octelium.stinkyboi.com`
 - `portal.stinkyboi.com`
-- `octelium-api.stinkyboi.com`
 - `argocd.stinkyboi.com`, `console.stinkyboi.com`,
   `grafana.stinkyboi.com`, and the other app FQDNs declared in
   `docs/examples/octelium/homelab-services.yaml`
@@ -15,6 +14,9 @@ outside the tailnet:
   reviewed external callbacks that cannot complete an Octelium browser login
 - `kubernetes-api-ci.stinkyboi.com` for the policy-bound clientless CI
   Kubernetes Service
+
+`octelium-api.stinkyboi.com` uses the separate direct gRPC origin documented
+below.
 
 ## Secret Contract
 
@@ -27,21 +29,22 @@ tokens.
 
 ## Routing
 
-`cloudflared` forwards the Octelium control-plane hostnames to the in-cluster
+`cloudflared` forwards the browser-facing Octelium control-plane hostnames to the in-cluster
 Istio gateway at `https://istio-ingressgateway.istio-system.svc.cluster.local:443`
 while setting the matching origin SNI and Host header. Istio then uses the
 existing `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
-The tunnel prefers QUIC for the cloudflared-to-Cloudflare transport because
-Octelium `MainService/Connect` is a long-lived gRPC stream. It uses
-`protocol: auto` so cloudflared can fall back to HTTP/2 when UDP/7844 is
-unavailable; the previous forced HTTP/2 transport repeatedly ended the public
-API stream with Istio `DR http2.remote_reset` after roughly 125 seconds even
-though unary API calls succeeded. The `cloudflared-egress` NetworkPolicy
-allows both UDP/7844 for QUIC and TCP/7844 for HTTP/2 fallback, plus TCP/443
-for Cloudflare API access. The public rule excludes private and link-local IPv4
-ranges; separate namespace-scoped rules allow only the in-cluster Istio HTTPS
-origin, the Octelium ingress dataplane, and DNS through `kube-system`.
+The `octelium-api.stinkyboi.com` CLI hostname does not use this public-hostname
+tunnel because Cloudflare does not support gRPC streams on that route type.
+It uses Cloudflare's normal proxied gRPC path on client TCP/443. A
+hostname-specific Origin Rule sends that traffic to WAN TCP/8443, which the
+`octelium-api-upnp` CronJob maps with UPnP to the dedicated
+`octelium-api-ingressgateway` at `10.1.0.200:30443`.
+`scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. The
+gateway accepts Cloudflare origin TLS without SNI, but its separate
+`octelium-api` `VirtualService` routes only the API Host, so app hostnames
+cannot bypass their Tunnel and Octelium clientless path through the WAN mapping. The connector
+remains pinned to `2026.7.3` for browser, app, and callback routes.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
@@ -61,12 +64,13 @@ directly to the Istio gateway with its original Host header, and
 `console.octelium.stinkyboi.com` name is a nested hostname and is not part of
 the public certificate/DNS shape.
 
-The Cloudflare DNS records for the public hostnames, app hostnames, and
-callback hostnames must be exact proxied CNAMEs to the named tunnel target,
-`<tunnel-uuid>.cfargotunnel.com`. Reconcile them with
-`scripts/octelium-public-dns.sh` after the tunnel UUID is stored in SSM. Public
-resolvers should return Cloudflare anycast A/AAAA records, not private Octelium
-or old tailnet addresses.
+The Cloudflare DNS records for browser, app, and callback hostnames must be
+exact proxied CNAMEs to the named tunnel target,
+`<tunnel-uuid>.cfargotunnel.com`. The API hostname must be a proxied A record
+to the WAN address. After Argo CD syncs the `octelium-api-upnp` CronJob,
+reconcile DNS with `scripts/octelium-public-dns.sh` from the homelab LAN.
+Public resolvers should return Cloudflare anycast addresses, not private
+Octelium or old tailnet addresses.
 
 Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
 `*.stinkyboi.com` certificate shape. The cluster domain is `stinkyboi.com` so
@@ -77,6 +81,7 @@ the Octelium client calls `octelium-api.stinkyboi.com`; the
 
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium-public
+kubectl kustomize clusters/homelab/apps/istio
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
 scripts/octelium-public-dns.sh --dry-run

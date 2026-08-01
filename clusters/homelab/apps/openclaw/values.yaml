@@ -337,18 +337,9 @@ controllers:
             enabled: true
             custom: true
             spec:
-              exec:
-                command:
-                  - node
-                  - -e
-                  - |
-                    const http = require("node:http");
-                    const request = http.get(
-                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
-                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
-                    );
-                    request.on("timeout", () => request.destroy());
-                    request.on("error", () => process.exit(1));
+              httpGet:
+                path: /
+                port: 8080
               failureThreshold: 24
               periodSeconds: 5
               timeoutSeconds: 3
@@ -356,18 +347,9 @@ controllers:
             enabled: true
             custom: true
             spec:
-              exec:
-                command:
-                  - node
-                  - -e
-                  - |
-                    const http = require("node:http");
-                    const request = http.get(
-                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
-                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
-                    );
-                    request.on("timeout", () => request.destroy());
-                    request.on("error", () => process.exit(1));
+              httpGet:
+                path: /
+                port: 8080
               failureThreshold: 2
               periodSeconds: 5
               timeoutSeconds: 3
@@ -375,18 +357,9 @@ controllers:
             enabled: true
             custom: true
             spec:
-              exec:
-                command:
-                  - node
-                  - -e
-                  - |
-                    const http = require("node:http");
-                    const request = http.get(
-                      { host: "127.0.0.1", port: 18789, path: "/", timeout: 2000 },
-                      (response) => process.exit(response.statusCode < 500 ? 0 : 1),
-                    );
-                    request.on("timeout", () => request.destroy());
-                    request.on("error", () => process.exit(1));
+              httpGet:
+                path: /
+                port: 8080
               failureThreshold: 3
               periodSeconds: 10
               timeoutSeconds: 3
@@ -461,14 +434,9 @@ controllers:
             enabled: true
             custom: true
             spec:
-              exec:
-                command:
-                  - python3
-                  - -c
-                  - |
-                    import socket
-                    with socket.create_connection(("127.0.0.1", 18789), timeout=2):
-                        pass
+              httpGet:
+                path: /
+                port: 8080
               failureThreshold: 3
               periodSeconds: 5
               timeoutSeconds: 3

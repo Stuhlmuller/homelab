@@ -34,7 +34,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "14"
+  homelab.rst.io/alerting-provisioning-version: "15"
 plugins:
   - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
 initChownData:
@@ -472,7 +472,7 @@ alerting:
                         increase(prober_probe_total{
                           container="postgres",
                           namespace=~"affine|automation|media|octelium-storage",
-                          pod=~"affine-postgres-0|media-postgres-0|n8n-postgres-0|octelium-postgres-0",
+                          pod=~"affine-postgres-0|media-postgres-local-0|n8n-postgres-0|octelium-postgres-0",
                           probe_type="Readiness",
                           result="successful"
                         }[2m])
@@ -488,7 +488,7 @@ alerting:
                     )
                     or
                     sum by (namespace, pod, container) (
-                      absent(prober_probe_total{namespace="media",pod="media-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
+                      absent(prober_probe_total{namespace="media",pod="media-postgres-local-0",container="postgres",probe_type="Readiness",result="successful"})
                     )
                     or
                     sum by (namespace, pod, container) (
@@ -548,7 +548,7 @@ alerting:
             for: 3m
             annotations:
               summary: A repository-owned PostgreSQL database is not passing readiness probes.
-              description: Successful kubelet readiness probes have stopped or the expected probe series is missing. Inspect the labeled pod, its events and logs, and shared NFS health before recovery.
+              description: Successful kubelet readiness probes have stopped or the expected probe series is missing. Inspect the labeled pod, its events, logs, and backing storage before recovery.
               runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/grafana/README.md
             labels:
               severity: critical

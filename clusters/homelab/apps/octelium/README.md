@@ -28,6 +28,8 @@ The deployed Kubernetes pieces are:
 The Octelium resource catalog for the external Octelium Cluster is
 `docs/examples/octelium/homelab-services.yaml`. It defines:
 
+- Core `ClusterConfig` `default` with a 32-session human limit so stale CLI
+  retries cannot exhaust the default 16-session allowance before expiry.
 - Octelium Namespace `homelab` for apps and Namespace `ci` for CI-only
   transport.
 - Policy `homelab-human-web-access`, which allows authenticated human client
@@ -83,8 +85,12 @@ transport.
 Apply the external Octelium resources to the Octelium Cluster:
 
 ```sh
+octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 ```
+
+The first command is separate because `--include ClusterConfig` replaces
+`octeliumctl apply`'s normal resource-kind include list.
 
 Configure Microsoft Entra as the portal login provider after
 `IaC/live/azuread-applications/octelium` has applied:
@@ -199,6 +205,7 @@ octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
   --admin-email '<entra-user-principal-name>'
+octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
   --user homelab-octelium-client \
@@ -249,9 +256,9 @@ Render before rollout:
 
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium
+kubectl kustomize clusters/homelab/apps/istio
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
-bash -n scripts/octelium-cloudflare-grpc.sh
 bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
@@ -262,7 +269,6 @@ After activation:
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
-scripts/octelium-cloudflare-grpc.sh --dry-run
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \

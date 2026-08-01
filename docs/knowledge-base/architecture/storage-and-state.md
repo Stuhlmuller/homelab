@@ -18,6 +18,13 @@ Kubernetes persistent storage is backed by a QNAP NFS export.
 `platform-storage` owns the parent Argo CD Application, and the child
 `nfs-subdir-external-provisioner` Application owns the StorageClass.
 
+`media-postgres` is an explicit exception. Its active 20 Gi volume is a
+retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
+the former NFS data claim remains retained for verified nightly logical backups
+at 03:00 `America/Los_Angeles` with 14-day retention. The local volume removes
+QNAP latency from the live database but couples recovery to the single
+control-plane node and its system disk.
+
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr use static PV/PVC pairs against the QNAP `/media` export for
 downloads, movies, and TV library data. Read-only `showmount -e 10.1.0.2`
@@ -63,42 +70,58 @@ validation passed with zero pod restarts. The incident-only hook is now removed
 from desired state, while the explicit retained claim, 30-minute startup and
 liveness windows, and 120-second termination grace remain.
 
-`media-postgres` protects NFS-backed recovery with 30-minute startup and runtime
-liveness windows plus a 120-second termination grace period. Readiness still
-requires `pg_isready`, so Prowlarr, Radarr, and Sonarr cannot reach PostgreSQL
-until recovery completes. See
-`clusters/homelab/apps/media-postgres/README.md` for the failure mode and
-operator response.
+`media-postgres` uses 30-minute startup and runtime liveness windows plus a
+120-second termination grace period. Its readiness probe executes `SELECT 1`
+instead of treating socket acceptance as usable database service. The writable
+`media-postgres-local` StatefulSet mounts only local storage; a one-time
+PID/socket fence prevents it from overlapping the staged writer. The legacy
+NFS-backed StatefulSet stays declared at zero replicas, and the sibling
+`media-postgres-recovery` overlay fences the writer and backup schedule before
+a logical restore. See `clusters/homelab/apps/media-postgres/README.md` for the
+failure mode and operator response.
 
-`octelium-postgres` uses the same recovery window. Its availability is required
-for Octelium service publication, including the CI Kubernetes API tunnel.
+`octelium-postgres` keeps the 30-minute startup window but uses a 90-second
+runtime liveness window. Its readiness and liveness checks execute `SELECT 1`,
+preventing a server that accepts connections but cannot execute queries from
+remaining falsely healthy. It is pinned to `zimaboard-1` to avoid the worst
+observed NFS client path, but QNAP NFS remains a database availability risk.
+Its availability is required for Octelium service publication, including the
+CI Kubernetes API tunnel.
 
-Deluge also uses 30-minute startup and runtime liveness windows so transient NFS
-stalls do not force repeated libtorrent state reloads. Its pod runs on
-`zimaboard-0` with resource requests, keeping it off the control-plane node
-and away from the media PostgreSQL workload on `zimaboard-1`. The Deluge liveness RPC
-checks use a 25-second command timeout after read-only inspection on 2026-07-26
-found the VPN healthy and Sonarr-to-Deluge HTTP fast while intermittent
-`deluge-console status` calls exceeded the old 10-second budget and triggered
-probe flaps. The metrics sidecar computes fresh health every 45 seconds with a
-20-second RPC cap and a 30-second Prometheus scrape deadline because the old
-cached writer wedged for more than a day inside
-`timeout 10s deluge-console` and kept serving stale
-`deluge_daemon_rpc_healthy 0`. Its startup wrapper skips the pinned LinuxServer
-image's recursive `/config` ownership pass because QNAP root squash rejects the
-operation and the retained PVC permissions already provide Deluge's write
-access. When stale resume data points complete downloads at the incomplete root,
-the documented operator script selects only exact-size target files, adopts them
-with libtorrent's `dont_replace` move, and requires a full piece-hash recheck
-before completion is trusted. The command resumes hash-valid entries for seeding
-and pauses hash failures so stale catalog state cannot trigger a silent
-redownload.
+Deluge's active 5 Gi config volume is a retained static `hostPath` PV at
+`/var/lib/deluge`, pinned to `zimaboard-0`. The initial guarded cold copy took
+4 minutes 6 seconds for roughly 5.2 MB, demonstrating the QNAP stall on the old
+startup path. The steady-state pod mounts only local config and shared
+downloads; the old `deluge-config` claim receives verified nightly archives
+with 14-day retention. This removes catalog, fast-resume, authentication, and
+health-command reads from the QNAP path after read-only inspection on
+2026-07-30 found the VPN healthy while the previous pod reported failed daemon
+RPC health for roughly 17 hours. Its clean replacement loaded all 17 torrents
+with no error-state entries and zero container restarts. An ordinary
+`deluge-console status` still took 13 seconds on local config, so the existing
+bounded health timeout remains necessary even though NFS is no longer in that
+path.
+The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
+the CronJob's archive listing validation.
+
+Deluge keeps 30-minute startup and runtime liveness windows so guarded
+libtorrent recovery is not interrupted. The metrics sidecar computes fresh
+health every 45 seconds with a 20-second RPC cap and a 30-second Prometheus
+scrape deadline. When stale resume data points complete downloads at the
+incomplete root, the documented operator script selects only exact-size target
+files, adopts them with libtorrent's `dont_replace` move, and requires a full
+piece-hash recheck before completion is trusted. The command resumes hash-valid
+entries for seeding and pauses hash failures so stale catalog state cannot
+trigger a silent redownload.
 
 ## Source Files
 
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/deluge/media-storage.yaml`
+- `clusters/homelab/apps/deluge/local-storage.yaml`
+- `clusters/homelab/apps/media-postgres`
+- `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`

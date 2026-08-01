@@ -39,3 +39,23 @@ spec:
             host: octelium-ingress-dataplane.octelium.svc.cluster.local
             port:
               number: 8080
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: octelium-api
+  namespace: istio-system
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - octelium-api.stinkyboi.com
+  gateways:
+    - istio-system/octelium-api-gateway
+  http:
+    - route:
+        - destination:
+            host: octelium-ingress-dataplane.octelium.svc.cluster.local
+            port:
+              number: 8080

@@ -39,6 +39,8 @@ spec:
         app.kubernetes.io/part-of: octelium
     spec:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534
@@ -107,11 +109,13 @@ spec:
           readinessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - octelium
                 - -d
                 - octelium
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -119,15 +123,17 @@ spec:
           livenessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - octelium
                 - -d
                 - octelium
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 60
+            failureThreshold: 3
           resources:
             requests:
               cpu: 100m

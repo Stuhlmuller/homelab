@@ -1,3 +1,11 @@
+kind: ClusterConfig
+metadata:
+  name: default
+spec:
+  session:
+    human:
+      maxPerUser: 32
+---
 kind: Policy
 metadata:
   name: homelab-human-web-access
