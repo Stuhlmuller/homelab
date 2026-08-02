@@ -35,6 +35,11 @@ The Cordium Application prunes removed repository-owned Kubernetes manifests;
 Cordium and Octelium resources generated through their native APIs remain
 outside Argo CD's tracking and are unaffected by that setting.
 
+The temporary `cordium-sync-recovery` Job under Argo CD self-management removes
+an unsupported AppArmor field from the live sysctl DaemonSet so an earlier
+health-blocked Cordium sync can finish. Remove the Job and its narrow RBAC after
+the Cordium Application converges to the corrected manifest.
+
 ## Important Paths
 
 | Concern | Path |
