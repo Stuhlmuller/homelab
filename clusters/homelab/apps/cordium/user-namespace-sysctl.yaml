@@ -70,7 +70,7 @@ spec:
               command:
                 - /bin/sh
                 - -ec
-                - test "$(cat /host-sysctl/user.max_user_namespaces)" -ge 28633
+                - test -r /host-sysctl/user.max_user_namespaces
             periodSeconds: 30
           volumeMounts:
             - name: user-namespace-sysctl

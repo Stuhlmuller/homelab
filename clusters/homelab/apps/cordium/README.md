@@ -54,8 +54,9 @@ Workspaces fail during startup with `cannot clone: No space left on device`.
 The repo-owned `cordium-user-namespace-sysctl` DaemonSet applies the same value
 through a short-lived root init container whose only host access is the single
 sysctl file and reports the current value through an unprivileged readiness
-check. This keeps the GitOps rollout and node reboots convergent while the
-Talos patch remains the machine-config source of truth.
+check. The init container reapplies the value whenever GitOps or a node reboot
+recreates the Pod, while the Talos patch remains the machine-config source of
+truth.
 Render the complete worker config, validate it, and apply that reviewed config:
 
 ```sh
@@ -191,9 +192,10 @@ not migrate existing Workspace data. Stop and delete disposable Workspaces
 before removing the StorageClass or its node-local directories.
 
 After Cordium is retired, remove `user-namespace-sysctl.yaml` from the Cordium
-Kustomization, let Argo CD prune the DaemonSet, then restore Talos' disabled
-user-namespace default on `zimaboard-1` through the same reviewed worker-config
-path. A node reboot restores Talos' default after the DaemonSet is gone:
+Kustomization and let Argo CD prune the tracked DaemonSet, then restore Talos'
+disabled user-namespace default on `zimaboard-1` through the same reviewed
+worker-config path. A node reboot restores Talos' default after the DaemonSet
+is gone:
 
 ```sh
 talosctl machineconfig patch .talos/worker.yaml \

@@ -159,9 +159,9 @@ ExternalSecret polls the current agent credential from SSM every five minutes
 so replacing the bootstrap placeholder is reconciled without another git
 change. A repo-owned DaemonSet uses a root init container with access only to
 the user-namespace sysctl file on `zimaboard-1` to converge the value required
-by Cordium's rootless Podman runtime after GitOps syncs and node reboots; the
-Talos worker patch remains the machine-config source of truth. The genesis hook pins the
-image's numeric non-root identity and carries
+by Cordium's rootless Podman runtime whenever GitOps or a node reboot recreates
+the Pod; the Talos worker patch remains the machine-config source of truth. The
+genesis hook pins the image's numeric non-root identity and carries
 bootstrap-only RBAC `bind` and `escalate` on Roles and ClusterRoles because
 upstream Cordium creates managed RBAC such as `cordium-nocturne` before the
 long-running controllers exist.

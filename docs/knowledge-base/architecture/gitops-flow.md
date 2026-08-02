@@ -29,6 +29,9 @@ Argo CD parameter overrides as steady state.
 Cordium's CLI-native `ClusterConfig` is packaged into a generated ConfigMap and
 applied by an Argo CD PostSync hook after the upstream genesis hook completes.
 This keeps the non-Kubernetes API resource on the same reviewed GitOps path.
+The Cordium Application prunes removed repository-owned Kubernetes manifests;
+Cordium and Octelium resources generated through their native APIs remain
+outside Argo CD's tracking and are unaffected by that setting.
 
 ## Important Paths
 

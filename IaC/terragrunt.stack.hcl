@@ -431,7 +431,7 @@ unit "argocd_apps_cordium" {
           automated = {
             allowEmpty = false
             enabled    = true
-            prune      = false
+            prune      = true
             selfHeal   = true
           }
           syncOptions = [
