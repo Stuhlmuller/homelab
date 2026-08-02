@@ -95,7 +95,7 @@ They create:
   `cordium.stinkyboi.com` and make the ingress reject its routing snapshot.
 - Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
   workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
-  automation through `cordium-agent-api.homelab`, plus the matching
+  automation through Cordium's package-managed API, plus the matching
   `cordium-users` and `cordium-agents` Groups those Users reference.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
@@ -131,12 +131,15 @@ second command to apply the catalog's other resource kinds.
 
 Never add `--prune` to that command: this catalog is not an exhaustive list of
 every non-system resource in the Octelium Cluster. When upgrading a Cluster
-that previously applied the repo-defined `cordium` Service, first apply the
-updated catalog and then remove only the obsolete duplicate:
+that previously applied the repo-defined Cordium Services, first apply the
+updated catalog and then remove only the obsolete duplicates:
 
 ```sh
 if octeliumctl get service cordium.default --domain stinkyboi.com >/dev/null 2>&1; then
   octeliumctl delete service cordium.default --domain stinkyboi.com
+fi
+if octeliumctl get service cordium-agent-api.homelab --domain stinkyboi.com >/dev/null 2>&1; then
+  octeliumctl delete service cordium-agent-api.homelab --domain stinkyboi.com
 fi
 ```
 
@@ -160,7 +163,8 @@ upstream Cordium creates managed RBAC such as `cordium-nocturne` before the
 long-running controllers exist.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
-identity and `cordium-agent-api.homelab` Service.
+identity with access restricted to the package-managed Cordium
+`ManagementService`.
 
 ## Microsoft Entra Login
 
@@ -261,8 +265,8 @@ The gate verifies:
 - `stinkyboi.com`, `portal.stinkyboi.com`, `octelium-api.stinkyboi.com`, and
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
-- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
-  including `cordium-agent-api.homelab`, exists in the Octelium Cluster, and
+- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
+  exists in the Octelium Cluster, and
   Cordium's generated `default.cordium` Service is present without a duplicate
   primary hostname;
 - IdentityProvider `entra` exists in the Octelium Cluster;
