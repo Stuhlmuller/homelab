@@ -587,3 +587,11 @@ policy`.
   first scheduled NFS archive,
   `20260731T103003Z.tar.gz`, completed and passed archive listing validation
   before the migration-only mount was removed from the app pod.
+  On 2026-08-02, Gluetun then accumulated 11 clean Kubernetes-initiated
+  restarts while its internal health loop could not pass traffic through
+  `198.54.129.62`. The source AirVPN hostname had changed to
+  `198.54.129.125`, but the completed `config-wireguard` init container had
+  resolved it only once when the pod started. The resolver now runs in
+  Gluetun's startup wrapper, so every sidecar restart rebuilds the normalized
+  profile with the current DNS answer. Unused public-IP discovery is disabled
+  to stop permission errors while clearing `/tmp/gluetun/ip`.

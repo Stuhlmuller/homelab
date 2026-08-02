@@ -28,10 +28,18 @@ controllers:
               /downloads/complete/radarr \
               /downloads/complete/sonarr \
               /downloads/complete/manual
-      config-wireguard:
+      gluetun:
         image:
-          repository: busybox
-          tag: 1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+          repository: ghcr.io/qdm12/gluetun
+          tag: v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027
+        restartPolicy: Always
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - (ip rule del table 51820; ip -6 rule del table 51820) || true
         command:
           - /bin/sh
           - -ec
@@ -131,18 +139,7 @@ controllers:
             ' "$source_config" >"${target_config}.tmp"
             chmod 0400 "${target_config}.tmp"
             mv "${target_config}.tmp" "$target_config"
-      gluetun:
-        image:
-          repository: ghcr.io/qdm12/gluetun
-          tag: v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027
-        restartPolicy: Always
-        lifecycle:
-          postStart:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - (ip rule del table 51820; ip -6 rule del table 51820) || true
+            exec /gluetun-entrypoint
         env:
           TZ: America/Los_Angeles
           VPN_SERVICE_PROVIDER: custom
@@ -151,6 +148,7 @@ controllers:
           FIREWALL_INPUT_PORTS: "8112"
           FIREWALL_VPN_INPUT_PORTS: "5983"
           HEALTH_RESTART_VPN: "on"
+          PUBLICIP_ENABLED: "off"
         resources:
           requests:
             cpu: 100m
@@ -497,11 +495,8 @@ persistence:
     type: emptyDir
     advancedMounts:
       deluge:
-        config-wireguard:
-          - path: /gluetun/wireguard
         gluetun:
           - path: /gluetun/wireguard
-            readOnly: true
   vpn-profile-source:
     enabled: true
     type: secret
@@ -511,6 +506,6 @@ persistence:
         path: wg0.conf
     advancedMounts:
       deluge:
-        config-wireguard:
+        gluetun:
           - path: /vpn-source
             readOnly: true
