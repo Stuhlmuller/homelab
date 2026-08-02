@@ -1,0 +1,88 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cordium-local-path-provisioner
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: cordium-local-path-provisioner
+    app.kubernetes.io/part-of: platform-storage
+    app.kubernetes.io/managed-by: argocd
+    homelab.stuhlmuller.dev/cluster: homelab
+  annotations:
+    homelab.stuhlmuller.dev/storage-backend: zimaboard-1-local
+spec:
+  project: homelab
+  source:
+    repoURL: https://github.com/rancher/local-path-provisioner.git
+    path: deploy/chart/local-path-provisioner
+    targetRevision: v0.0.36
+    helm:
+      releaseName: cordium-local-path-provisioner
+      values: |
+        image:
+          tag: v0.0.36@sha256:1eba82e9c386038b4af6d69cca7519fac738c28c42735ed48ce70c882ad0d80f
+
+        helperImage:
+          tag: 1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+
+        fullnameOverride: cordium-local-path-provisioner
+
+        storageClass:
+          name: cordium-local
+          provisionerName: homelab.stuhlmuller.dev/cordium-local
+          defaultClass: false
+          defaultVolumeType: hostPath
+          reclaimPolicy: Delete
+          volumeBindingMode: WaitForFirstConsumer
+          allowedTopologies:
+            - matchLabelExpressions:
+                - key: kubernetes.io/hostname
+                  values:
+                    - zimaboard-1
+
+        nodePathMap:
+          - node: zimaboard-1
+            paths:
+              - /var/lib/cordium-workspaces
+          - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+            paths: []
+
+        podSecurityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          runAsUser: 65534
+          runAsGroup: 65534
+
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 128Mi
+
+        helperPod:
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 64Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cordium-storage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true

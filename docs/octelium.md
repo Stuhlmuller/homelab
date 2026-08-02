@@ -149,12 +149,15 @@ exists. The app runs upstream `cordium-genesis init` from a pinned
 access is scoped to the dedicated `homelab-cordium-user` HUMAN identity by the
 User-attached `homelab-cordium-user-access` policy. Agent automation should use a credential
 for `homelab-cordium-agent` scoped to `homelab-cordium-agent-api-access`; do
-not reuse the human browser identity for automated workspace runs. Workspace
-defaults stay with upstream Cordium until this repository adds a reviewed
-Cordium-native workspace configuration resource. The genesis hook pins the
-image's numeric non-root identity and carries bootstrap-only RBAC `bind` and
-`escalate` on Roles and ClusterRoles because upstream Cordium creates managed
-RBAC such as `cordium-nocturne` before the long-running controllers exist.
+not reuse the human browser identity for automated workspace runs. A PostSync
+hook applies the repo-owned Cordium `ClusterConfig`, which sends new Workspace
+PVCs to the disposable `cordium-local` StorageClass on `zimaboard-1`. Its
+ExternalSecret polls the current agent credential from SSM every five minutes
+so replacing the bootstrap placeholder is reconciled without another git
+change. The genesis hook pins the image's numeric non-root identity and carries
+bootstrap-only RBAC `bind` and `escalate` on Roles and ClusterRoles because
+upstream Cordium creates managed RBAC such as `cordium-nocturne` before the
+long-running controllers exist.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
 identity and `cordium-agent-api.homelab` Service.
@@ -595,6 +598,10 @@ scripts/octelium-e2e-check.sh --help
 After activation:
 
 ```sh
+kubectl -n octelium get job cordium-cluster-config
+kubectl -n octelium logs job/cordium-cluster-config
+kubectl get storageclass cordium-local
+cordium man get clusterconfig -o yaml
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
@@ -647,6 +654,13 @@ uses the access token as the public Service bearer credential, avoiding the
 IPv6-only Gateway transport entirely.
 
 ## Rollback
+
+Roll back the Cordium storage default through
+`clusters/homelab/apps/cordium/cluster-config.yaml`: remove the storage rule or
+point it at a reviewed replacement, merge, and let Argo CD rerun the PostSync
+hook. Existing Workspace PVCs do not migrate; recreate only disposable
+Workspaces that should use the replacement. Remove the `cordium-local`
+provisioner only after no PVC references it.
 
 Set the connector Deployment replicas to `0` and sync the `octelium` Argo CD
 Application. That stops the connector without restoring Tailscale Funnel.

@@ -391,8 +391,10 @@ unit "argocd_apps_cordium" {
 
   values = {
     dependencies = [
+      "external-secrets",
       "octelium-cluster",
-      "octelium-enterprise"
+      "octelium-enterprise",
+      "platform-storage"
     ]
     manifest = {
       apiVersion = "argoproj.io/v1alpha1"

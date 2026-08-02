@@ -94,6 +94,7 @@ stack because Terraform manages the Kubernetes Secret.
 | argocd-image-updater | `argocd-image-updater-git` | `argocd-image-updater-git` | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` |
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
+| cordium | `cordium-agent-auth` | `cordium-agent-auth-v1` | `/homelab/cordium/agent-auth-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
@@ -197,6 +198,15 @@ materializes a fresh Secret from the exact Parameter Store version, and bump
 the same annotation in
 `clusters/homelab/apps/octelium/connector.yaml` so the connector pod restarts with
 the refreshed environment variable.
+
+Cordium reads `/homelab/cordium/agent-auth-token` through
+`cordium-agent-auth`. The token belongs to the policy-bound
+`homelab-cordium-agent` Workload User and lets the PostSync hook apply the
+repository-owned ClusterConfig through Cordium's native API. Keep it out of
+git. The ExternalSecret polls the current SSM version every five minutes, so a
+populated credential or later rotation replaces the declared placeholder
+without a manifest annotation bump. When populated before the stack apply,
+`scripts/ci/terragrunt-apply.sh` adopts the parameter into OpenTofu state.
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/live/azuread-applications/octelium`, which writes generated

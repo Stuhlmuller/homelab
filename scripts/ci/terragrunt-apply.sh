@@ -105,32 +105,37 @@ adopt_existing_ssm_parameters() {
   local parameter_name
   local resource_address
   local existing_name
+  local parameter_names=(
+    "/homelab/github-actions-runner/registration-token"
+    "/homelab/cordium/agent-auth-token"
+  )
 
   terragrunt init -no-color
   state_resources="$(terragrunt state list -no-color 2>/dev/null || true)"
 
-  parameter_name="/homelab/github-actions-runner/registration-token"
-  resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
+  for parameter_name in "${parameter_names[@]}"; do
+    resource_address="aws_ssm_parameter.this[\"${parameter_name}\"]"
 
-  if grep -Fxq "$resource_address" <<<"$state_resources"; then
-    echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
-    return
-  fi
+    if grep -Fxq "$resource_address" <<<"$state_resources"; then
+      echo "SSM parameter ${parameter_name} is already managed in OpenTofu state."
+      continue
+    fi
 
-  existing_name="$(
-    aws ssm describe-parameters \
-      --region "$parameter_region" \
-      --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
-      --query "Parameters[0].Name" \
-      --output text 2>/dev/null || true
-  )"
+    existing_name="$(
+      aws ssm describe-parameters \
+        --region "$parameter_region" \
+        --parameter-filters "Key=Name,Option=Equals,Values=${parameter_name}" \
+        --query "Parameters[0].Name" \
+        --output text 2>/dev/null || true
+    )"
 
-  if [[ "$existing_name" == "$parameter_name" ]]; then
-    echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
-    terragrunt import -no-color "$resource_address" "$parameter_name"
-  else
-    echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
-  fi
+    if [[ "$existing_name" == "$parameter_name" ]]; then
+      echo "Adopting existing SSM parameter ${parameter_name} into OpenTofu state."
+      terragrunt import -no-color "$resource_address" "$parameter_name"
+    else
+      echo "SSM parameter ${parameter_name} is absent; OpenTofu will create the placeholder."
+    fi
+  done
 }
 
 prepare_terragrunt_filter_base

@@ -1,0 +1,19 @@
+---
+apiVersion: cordium/v1
+kind: ClusterConfig
+metadata:
+  name: default
+spec:
+  space:
+    ownership:
+      rules:
+        - condition:
+            matchAny: true
+          effect: ALLOW
+  workspace:
+    storage:
+      storageClass:
+        rules:
+          - condition:
+              matchAny: true
+            storageClass: cordium-local

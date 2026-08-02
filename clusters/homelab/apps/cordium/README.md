@@ -15,8 +15,9 @@ The deployed runtime is split intentionally:
   `homelab-cordium-user-access` policy.
 - Agent access uses the Octelium `homelab-cordium-agent` WORKLOAD identity and
   the `cordium-agent-api.homelab` gRPC Service for automation.
-- Workspace defaults stay with upstream Cordium until this repository adds a
-  reviewed Cordium-native workspace configuration resource.
+- The repo-owned Cordium `ClusterConfig` sends every Workspace PVC to the
+  non-default `cordium-local` StorageClass on `zimaboard-1`. A second PostSync
+  hook applies that config through Cordium's native API after genesis succeeds.
 
 The hook image is pinned to Cordium `0.12.7`. Upstream genesis creates the
 long-running Cordium `nocturne` and `rscserver` Deployments and registers the
@@ -40,6 +41,10 @@ ordinary homelab workloads must not use this Namespace.
 Workspace Pods select `octelium.com/node-mode-cordium=`. Terragrunt manages
 that label on `zimaboard-1`, the lower-reserved-capacity 8 GB worker; the
 smaller `zimaboard-2` cannot satisfy the default Workspace memory limit.
+Workspace storage is also pinned there under `/var/lib/cordium-workspaces`.
+It is disposable node-local data with no replication or backup. Existing
+Workspace PVCs keep their original StorageClass; recreate a failed Workspace
+after applying the ClusterConfig.
 
 Cordium genesis owns the system Service `default.cordium`, whose primary
 hostname is `cordium`. The homelab catalog must not also declare a `cordium`
@@ -76,8 +81,8 @@ Argo CD then syncs the `cordium` Application and runs the genesis hook. If the
 hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change, bump
 `homelab.rst.io/cordium-genesis-revision` on the Job template.
 
-Create a workload credential for automation after the `homelab-cordium-agent`
-User exists:
+Create the policy-bound agent credential and store it in
+`/homelab/cordium/agent-auth-token` before applying the stack:
 
 ```sh
 octeliumctl create cred \
@@ -86,8 +91,13 @@ octeliumctl create cred \
   homelab-cordium-agent
 ```
 
-Store that token outside git wherever the caller that drives agent workspaces
-expects it. Do not reuse a human browser session token for agent automation.
+The production apply adopts that pre-populated parameter into OpenTofu state
+instead of replacing it with the declared placeholder.
+The ExternalSecret polls the current SSM token every five minutes, so replacing
+the initial placeholder does not require a manifest annotation bump. Argo CD
+runs genesis at sync wave 0, then applies
+`cluster-config.yaml` at wave 1; no manual `cordium man apply` step is needed.
+Do not reuse a human browser session token for agent automation.
 Developer shell access should enter through `https://cordium.stinkyboi.com`
 and workspace subdomains under `*.cordium.stinkyboi.com`; do not bypass the
 Octelium-backed Cordium route with a direct Service, port-forward, or
@@ -98,10 +108,14 @@ Tailscale-only URL.
 ```sh
 kubectl -n octelium get job cordium-genesis
 kubectl -n octelium logs job/cordium-genesis
+kubectl -n octelium get job cordium-cluster-config
+kubectl -n octelium logs job/cordium-cluster-config
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 kubectl get namespace cordium --show-labels
 kubectl get node zimaboard-1 --show-labels
+kubectl get storageclass cordium-local
 kubectl -n cordium get deploy,pod,pvc
+cordium man get clusterconfig -o yaml
 octeliumctl get svc default.cordium
 octeliumctl get svc cordium-agent-api.homelab
 curl -I https://cordium.stinkyboi.com
@@ -120,6 +134,10 @@ git -C /workspace/repo remote get-url origin
 exit
 ```
 
+The remote URL must be
+`https://github.com/Stuhlmuller/homelab.git`, and the new Workspace PVC must
+report `cordium-local` in `kubectl -n cordium get pvc`.
+
 The expected steady state includes ready Cordium controller pods in the
 `octelium` namespace, running Workspace Pods in the privileged `cordium`
 namespace, and an Octelium-protected browser route for
@@ -133,3 +151,7 @@ recreate its package-managed `default.cordium` Service. Then remove the
 Octelium catalog entries for `cordium-agent-api.homelab`,
 `homelab-cordium-user`, and
 `homelab-cordium-agent` if the platform is being retired.
+
+Removing `cordium-local-path-provisioner` stops new local provisioning but does
+not migrate existing Workspace data. Stop and delete disposable Workspaces
+before removing the StorageClass or its node-local directories.
