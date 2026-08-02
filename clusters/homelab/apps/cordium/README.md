@@ -51,6 +51,11 @@ Cordium runs rootless Podman inside each privileged Workspace Pod. Apply the
 repo-owned `.talos/patches/worker-cordium-user-namespaces.yaml` patch only to
 `zimaboard-1`; Talos otherwise reports `user.max_user_namespaces=0`, and new
 Workspaces fail during startup with `cannot clone: No space left on device`.
+The repo-owned `cordium-user-namespace-sysctl` DaemonSet applies the same value
+through a short-lived root init container whose only host access is the single
+sysctl file and reports the current value through an unprivileged readiness
+check. This keeps the GitOps rollout and node reboots convergent while the
+Talos patch remains the machine-config source of truth.
 Render the complete worker config, validate it, and apply that reviewed config:
 
 ```sh
@@ -141,6 +146,7 @@ kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 kubectl get namespace cordium --show-labels
 kubectl get node zimaboard-1 --show-labels
 kubectl get storageclass cordium-local
+kubectl -n cordium rollout status daemonset/cordium-user-namespace-sysctl
 kubectl -n cordium get deploy,pod,pvc
 kubectl -n cordium exec deploy/ws-WORKSPACE -- \
   cat /proc/sys/user/max_user_namespaces
@@ -184,8 +190,10 @@ Removing `cordium-local-path-provisioner` stops new local provisioning but does
 not migrate existing Workspace data. Stop and delete disposable Workspaces
 before removing the StorageClass or its node-local directories.
 
-After Cordium is retired, restore Talos' disabled user-namespace default on
-`zimaboard-1` through the same reviewed worker-config path:
+After Cordium is retired, remove `user-namespace-sysctl.yaml` from the Cordium
+Kustomization, let Argo CD prune the DaemonSet, then restore Talos' disabled
+user-namespace default on `zimaboard-1` through the same reviewed worker-config
+path. A node reboot restores Talos' default after the DaemonSet is gone:
 
 ```sh
 talosctl machineconfig patch .talos/worker.yaml \

@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: cordium
   annotations:
-    homelab.rst.io/privileged-namespace-justification: Cordium Workspaces require privileged root containers and an unconfined AppArmor profile.
+    homelab.rst.io/privileged-namespace-justification: Cordium Workspaces require privileged root containers, and the node sysctl initializer requires a narrow hostPath mount.
   labels:
     app.kubernetes.io/name: cordium
     app.kubernetes.io/part-of: homelab
