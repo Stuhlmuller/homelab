@@ -205,7 +205,8 @@ Cordium reads `/homelab/cordium/agent-auth-token` through
 repository-owned ClusterConfig through Cordium's native API. Keep it out of
 git. The ExternalSecret polls the current SSM version every five minutes, so a
 populated credential or later rotation replaces the declared placeholder
-without a manifest annotation bump.
+without a manifest annotation bump. When populated before the stack apply,
+`scripts/ci/terragrunt-apply.sh` adopts the parameter into OpenTofu state.
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/live/azuread-applications/octelium`, which writes generated

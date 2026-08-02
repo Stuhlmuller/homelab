@@ -81,7 +81,8 @@ roles need identity-based KMS permissions for both keys.
   `homelab-cordium-agent` Workload User. The PostSync configuration hook uses
   that token only to apply the repository-owned Cordium ClusterConfig. This
   ExternalSecret polls the current SSM version every five minutes so bootstrap
-  can replace the declared placeholder without a follow-up git change.
+  can replace the declared placeholder without a follow-up git change. The
+  production apply adopts a pre-populated Cordium parameter before planning.
 - The retired GitHub Actions runner no longer consumes an SSM registration
   token. `/homelab/github-actions-runner/registration-token` remains declared
   and adoptable only as an OpenTofu state tombstone because the production

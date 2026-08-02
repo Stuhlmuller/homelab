@@ -91,6 +91,8 @@ octeliumctl create cred \
   homelab-cordium-agent
 ```
 
+The production apply adopts that pre-populated parameter into OpenTofu state
+instead of replacing it with the declared placeholder.
 The ExternalSecret polls the current SSM token every five minutes, so replacing
 the initial placeholder does not require a manifest annotation bump. Argo CD
 runs genesis at sync wave 0, then applies
