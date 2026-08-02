@@ -611,3 +611,13 @@ policy`.
   client keys and IPv4 address to Gluetun's native AirVPN provider. Gluetun
   owns server selection, so container recovery no longer needs pre-start DNS
   or the removed writable normalized-profile volume.
+  The first native-provider rollout at revision `a8093bf3` exposed one parser
+  defect: splitting the profile on every `=` removed the WireGuard key's
+  base64 padding. Revision `be8977d0` instead keeps everything after the first
+  delimiter. After Argo CD exhausted the failed revision's bounded retries, it
+  applied the correction without a manual refresh. Replacement pod
+  `deluge-54dcf44bbd-hstck` reached Ready with zero restarts, Argo CD returned
+  to `Synced/Healthy`, VPN and daemon health were both `1`, and all 17 torrents
+  loaded with zero errors. Its only PVCs are `deluge-config-local` and
+  `media-downloads`; the old NFS config claim and generated VPN-profile volume
+  are absent.
