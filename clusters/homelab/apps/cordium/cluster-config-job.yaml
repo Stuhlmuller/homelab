@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cordium-cluster-config
+  namespace: octelium
+  labels:
+    app.kubernetes.io/name: cordium
+    app.kubernetes.io/component: cluster-config
+    app.kubernetes.io/part-of: homelab
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "1"
+    checkov.io/skip1: CKV_K8S_35=The Cordium CLI accepts its workload credential through OCTELIUM_AUTH_TOKEN.
+    checkov.io/skip2: CKV2_K8S_6=The job is covered by the cordium-cluster-config policy in networkpolicy.yaml.
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cordium
+        app.kubernetes.io/component: cluster-config
+        app.kubernetes.io/part-of: homelab
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: OnFailure
+      nodeSelector:
+        octelium.com/node-mode-controlplane: ""
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: apply
+          image: ghcr.io/octelium/cordium:0.12.7@sha256:4d6728bd8d20d4b0ef2092221721c345f4739b88b1f2b263458f02283ee46eea
+          imagePullPolicy: IfNotPresent
+          args:
+            - --homedir=/tmp/octelium
+            - man
+            - apply
+            - /config/cluster-config.yaml
+          env:
+            - name: OCTELIUM_DOMAIN
+              value: stinkyboi.com
+            - name: OCTELIUM_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cordium-agent-auth-v1
+                  key: auth-token
+            - name: OCTELIUM_LOGOUT
+              value: "true"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cordium-cluster-config
+        - name: tmp
+          emptyDir: {}

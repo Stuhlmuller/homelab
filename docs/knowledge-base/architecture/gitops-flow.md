@@ -26,6 +26,10 @@ Argo CD Image Updater follows the same review path for repo-declared workload
 images: it writes changes to GitHub pull requests instead of keeping live-only
 Argo CD parameter overrides as steady state.
 
+Cordium's CLI-native `ClusterConfig` is packaged into a generated ConfigMap and
+applied by an Argo CD PostSync hook after the upstream genesis hook completes.
+This keeps the non-Kubernetes API resource on the same reviewed GitOps path.
+
 ## Important Paths
 
 | Concern | Path |

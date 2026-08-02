@@ -16,7 +16,8 @@ The deployed runtime is split intentionally:
 - Agent access uses the Octelium `homelab-cordium-agent` WORKLOAD identity and
   the `cordium-agent-api.homelab` gRPC Service for automation.
 - The repo-owned Cordium `ClusterConfig` sends every Workspace PVC to the
-  non-default `cordium-local` StorageClass on `zimaboard-1`.
+  non-default `cordium-local` StorageClass on `zimaboard-1`. A second PostSync
+  hook applies that config through Cordium's native API after genesis succeeds.
 
 The hook image is pinned to Cordium `0.12.7`. Upstream genesis creates the
 long-running Cordium `nocturne` and `rscserver` Deployments and registers the
@@ -80,17 +81,8 @@ Argo CD then syncs the `cordium` Application and runs the genesis hook. If the
 hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change, bump
 `homelab.rst.io/cordium-genesis-revision` on the Job template.
 
-Wait for the `cordium-local` StorageClass, then apply the reviewed Cordium
-configuration through its native API:
-
-```sh
-kubectl get storageclass cordium-local
-cordium man apply clusters/homelab/apps/cordium/cluster-config.yaml
-cordium man get clusterconfig -o yaml
-```
-
-Create a workload credential for automation after the `homelab-cordium-agent`
-User exists:
+Create the policy-bound agent credential and store it in
+`/homelab/cordium/agent-auth-token` before applying the stack:
 
 ```sh
 octeliumctl create cred \
@@ -99,8 +91,10 @@ octeliumctl create cred \
   homelab-cordium-agent
 ```
 
-Store that token outside git wherever the caller that drives agent workspaces
-expects it. Do not reuse a human browser session token for agent automation.
+The ExternalSecret materializes the token for the version-pinned Cordium CLI
+hook. Argo CD runs genesis at sync wave 0, then applies
+`cluster-config.yaml` at wave 1; no manual `cordium man apply` step is needed.
+Do not reuse a human browser session token for agent automation.
 Developer shell access should enter through `https://cordium.stinkyboi.com`
 and workspace subdomains under `*.cordium.stinkyboi.com`; do not bypass the
 Octelium-backed Cordium route with a direct Service, port-forward, or
@@ -111,6 +105,8 @@ Tailscale-only URL.
 ```sh
 kubectl -n octelium get job cordium-genesis
 kubectl -n octelium logs job/cordium-genesis
+kubectl -n octelium get job cordium-cluster-config
+kubectl -n octelium logs job/cordium-cluster-config
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 kubectl get namespace cordium --show-labels
 kubectl get node zimaboard-1 --show-labels

@@ -391,6 +391,7 @@ unit "argocd_apps_cordium" {
 
   values = {
     dependencies = [
+      "external-secrets",
       "octelium-cluster",
       "octelium-enterprise",
       "platform-storage"

@@ -89,6 +89,10 @@ inputs = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder
     }
+    "/homelab/cordium/agent-auth-token" = {
+      description   = "Octelium authentication token used to apply the Cordium ClusterConfig."
+      initial_value = local.placeholder
+    }
     "/homelab/external-secrets/aws-ssm/access-key-id" = {
       description   = "AWS access key ID used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder

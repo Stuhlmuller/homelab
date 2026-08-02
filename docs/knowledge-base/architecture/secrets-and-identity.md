@@ -76,6 +76,10 @@ roles need identity-based KMS permissions for both keys.
   because OpenClaw rejects SecretRef objects for that hook-token surface.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
+- Cordium uses the `cordium-agent-auth` ExternalSecret in `octelium`, sourced
+  from `/homelab/cordium/agent-auth-token`, for the policy-bound
+  `homelab-cordium-agent` Workload User. The PostSync configuration hook uses
+  that token only to apply the repository-owned Cordium ClusterConfig.
 - The retired GitHub Actions runner no longer consumes an SSM registration
   token. `/homelab/github-actions-runner/registration-token` remains declared
   and adoptable only as an OpenTofu state tombstone because the production
