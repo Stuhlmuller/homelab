@@ -44,105 +44,36 @@ controllers:
           - /bin/sh
           - -ec
           - |
-            source_config=/vpn-source/wg0.conf
-            target_config=/gluetun/wireguard/wg0.conf
-            test -s "$source_config"
-            endpoint="$(
-              awk -F= '
-                tolower($1) ~ /^[[:space:]]*endpoint[[:space:]]*$/ {
+            profile_value() {
+              awk -F= -v key="$1" '
+                tolower($1) ~ "^[[:space:]]*" key "[[:space:]]*$" {
                   value=$2
                   gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
                   print value
                   exit
                 }
-              ' "$source_config"
-            )"
-            host="${endpoint%:*}"
-            port="${endpoint##*:}"
-            if [ -z "$endpoint" ] || [ "$host" = "$endpoint" ] || [ -z "$port" ]; then
-              echo "WireGuard config must contain Endpoint = host:port" >&2
-              exit 1
-            fi
-            if printf "%s\n" "$host" | grep -Eq '^[0-9]+([.][0-9]+){3}$'; then
-              endpoint_ip="$host"
-            else
-              endpoint_ip="$(
-                nslookup "$host" |
-                  awk '/^Address: / {print $2}' |
-                  grep -E '^[0-9]+([.][0-9]+){3}$' |
-                  head -n 1
-              )"
-              if [ -z "$endpoint_ip" ]; then
-                echo "failed to resolve WireGuard endpoint hostname" >&2
-                exit 1
-              fi
-            fi
-            awk -F= -v replacement="Endpoint = ${endpoint_ip}:${port}" '
-              function trim(value) {
-                gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-                return value
-              }
-
-              function ipv4_cidr_list(value, parts, count, output, item, i) {
-                count = split(value, parts, ",")
-                output = ""
-                for (i = 1; i <= count; i++) {
-                  item = trim(parts[i])
-                  if (item ~ /^[0-9]+([.][0-9]+){3}\/[0-9]+$/) {
-                    output = output (output == "" ? "" : ", ") item
+              ' /vpn-source/wg0.conf
+            }
+            export WIREGUARD_PRIVATE_KEY="$(profile_value privatekey)"
+            export WIREGUARD_PRESHARED_KEY="$(profile_value presharedkey)"
+            export WIREGUARD_ADDRESSES="$(
+              profile_value address |
+                tr ',' '\n' |
+                awk '
+                  /^[[:space:]]*[0-9]+([.][0-9]+){3}\/[0-9]+[[:space:]]*$/ {
+                    gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+                    print
+                    exit
                   }
-                }
-                return output
-              }
-
-              /^[[:space:]]*Endpoint[[:space:]]*=/ && !done {
-                print replacement
-                done=1
-                next
-              }
-
-              tolower($1) ~ /^[[:space:]]*address[[:space:]]*$/ {
-                ipv4_addresses = ipv4_cidr_list($2)
-                if (ipv4_addresses == "" || address_done) {
-                  next
-                }
-                print "Address = " ipv4_addresses
-                address_done=1
-                next
-              }
-
-              tolower($1) ~ /^[[:space:]]*allowedips[[:space:]]*$/ {
-                ipv4_allowed_ips = ipv4_cidr_list($2)
-                if (ipv4_allowed_ips == "" || allowed_ips_done) {
-                  next
-                }
-                print "AllowedIPs = " ipv4_allowed_ips
-                allowed_ips_done=1
-                next
-              }
-
-              { print }
-              END {
-                if (!done) {
-                  print "WireGuard config must contain Endpoint = host:port" > "/dev/stderr"
-                  exit 1
-                }
-                if (!address_done) {
-                  print "WireGuard config must contain an IPv4 Address entry" > "/dev/stderr"
-                  exit 1
-                }
-                if (!allowed_ips_done) {
-                  print "WireGuard config must contain IPv4 AllowedIPs" > "/dev/stderr"
-                  exit 1
-                }
-              }
-            ' "$source_config" >"${target_config}.tmp"
-            chmod 0400 "${target_config}.tmp"
-            mv "${target_config}.tmp" "$target_config"
+                '
+            )"
+            test -n "$WIREGUARD_PRIVATE_KEY"
+            test -n "$WIREGUARD_PRESHARED_KEY"
+            test -n "$WIREGUARD_ADDRESSES"
             exec /gluetun-entrypoint
         env:
           TZ: America/Los_Angeles
-          VPN_SERVICE_PROVIDER: custom
+          VPN_SERVICE_PROVIDER: airvpn
           VPN_TYPE: wireguard
           FIREWALL: "on"
           FIREWALL_INPUT_PORTS: "8112"
@@ -490,13 +421,6 @@ persistence:
       deluge:
         gluetun:
           - path: /dev/net/tun
-  vpn-profile:
-    enabled: true
-    type: emptyDir
-    advancedMounts:
-      deluge:
-        gluetun:
-          - path: /gluetun/wireguard
   vpn-profile-source:
     enabled: true
     type: secret
