@@ -91,7 +91,6 @@ spec:
     policies:
       - homelab-human-web-access
       - homelab-workload-web-serve
-      - homelab-cordium-agent-api-access
 ---
 kind: Namespace
 metadata:
