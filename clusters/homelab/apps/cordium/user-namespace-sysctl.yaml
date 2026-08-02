@@ -36,8 +36,6 @@ spec:
               mountPath: /host-sysctl/user.max_user_namespaces
           securityContext:
             allowPrivilegeEscalation: false
-            appArmorProfile:
-              type: RuntimeDefault
             capabilities:
               drop:
                 - ALL
