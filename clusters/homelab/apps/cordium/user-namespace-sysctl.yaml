@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cordium-user-namespace-sysctl
+  namespace: cordium
+  labels:
+    app.kubernetes.io/name: cordium-user-namespace-sysctl
+    app.kubernetes.io/part-of: cordium
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cordium-user-namespace-sysctl
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cordium-user-namespace-sysctl
+        app.kubernetes.io/part-of: cordium
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      hostUsers: true
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: enable-user-namespaces
+          image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+          command:
+            - /bin/sh
+            - -ec
+            - printf '%s\n' 28633 > /host-sysctl/user.max_user_namespaces
+          volumeMounts:
+            - name: user-namespace-sysctl
+              mountPath: /host-sysctl/user.max_user_namespaces
+          securityContext:
+            allowPrivilegeEscalation: false
+            appArmorProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: false
+            runAsUser: 0
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 20m
+              memory: 16Mi
+      containers:
+        - name: status
+          image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+          command:
+            - /bin/sh
+            - -ec
+            - exec sleep 2147483647
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - test "$(cat /host-sysctl/user.max_user_namespaces)" -ge 28633
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - test -r /host-sysctl/user.max_user_namespaces
+            periodSeconds: 30
+          volumeMounts:
+            - name: user-namespace-sysctl
+              mountPath: /host-sysctl/user.max_user_namespaces
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 20m
+              memory: 16Mi
+      terminationGracePeriodSeconds: 5
+      volumes:
+        - name: user-namespace-sysctl
+          hostPath:
+            path: /proc/sys/user/max_user_namespaces
+            type: File
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cordium-user-namespace-sysctl
+  namespace: cordium
+  labels:
+    app.kubernetes.io/name: cordium-user-namespace-sysctl
+    app.kubernetes.io/part-of: cordium
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cordium-user-namespace-sysctl
+  policyTypes:
+    - Ingress
+    - Egress
