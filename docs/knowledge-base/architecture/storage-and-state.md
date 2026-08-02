@@ -27,6 +27,9 @@ policy and have no replication or backup; they are development scratch space,
 not durable workload storage. The provisioner and its `hostPath` helper Pods
 run in the dedicated privileged `cordium-storage` namespace so the broader
 `storage` namespace can keep baseline Pod Security enforcement.
+The Cordium worker patch also sets `user.max_user_namespaces=28633` only on
+`zimaboard-1`, because each Workspace starts a rootless Podman container and
+Talos otherwise disables the required user namespaces.
 
 `media-postgres` is an explicit exception. Its active 20 Gi volume is a
 retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
@@ -129,6 +132,9 @@ trigger a silent redownload.
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/cordium/cluster-config.yaml`
+- `.talos/patches/worker-zimaboard-1.yaml`
+- `.talos/patches/worker-cordium-user-namespaces.yaml`
+- `.talos/patches/worker-cordium-user-namespaces-rollback.yaml`
 - `clusters/homelab/apps/deluge/media-storage.yaml`
 - `clusters/homelab/apps/deluge/local-storage.yaml`
 - `clusters/homelab/apps/media-postgres`
