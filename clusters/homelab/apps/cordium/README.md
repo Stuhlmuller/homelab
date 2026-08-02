@@ -47,6 +47,32 @@ It is disposable node-local data with no replication or backup. Existing
 Workspace PVCs keep their original StorageClass; recreate a failed Workspace
 after applying the ClusterConfig.
 
+Cordium runs rootless Podman inside each privileged Workspace Pod. Apply the
+repo-owned `.talos/patches/worker-cordium-user-namespaces.yaml` patch only to
+`zimaboard-1`; Talos otherwise reports `user.max_user_namespaces=0`, and new
+Workspaces fail during startup with `cannot clone: No space left on device`.
+Render the complete worker config, validate it, and apply that reviewed config:
+
+```sh
+talosctl machineconfig patch .talos/worker.yaml \
+  --patch @.talos/patches/worker-zimaboard-1.yaml \
+  --patch @.talos/patches/worker-cordium-user-namespaces.yaml \
+  --output /private/tmp/worker-zimaboard-1-cordium.yaml
+talosctl validate \
+  --config /private/tmp/worker-zimaboard-1-cordium.yaml \
+  --mode metal \
+  --strict
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.201 \
+  apply-config \
+  --file /private/tmp/worker-zimaboard-1-cordium.yaml
+```
+
+Before applying, confirm the rendered config still names `zimaboard-1` and uses
+`10.1.0.201/24`; applying the base `zimaboard-0` identity would create a node
+name and address collision.
+
 Cordium genesis owns the system Service `default.cordium`, whose primary
 hostname is `cordium`. The homelab catalog must not also declare a `cordium`
 Service in Octelium's default Namespace: both names derive the same public
@@ -116,6 +142,8 @@ kubectl get namespace cordium --show-labels
 kubectl get node zimaboard-1 --show-labels
 kubectl get storageclass cordium-local
 kubectl -n cordium get deploy,pod,pvc
+kubectl -n cordium exec deploy/ws-WORKSPACE -- \
+  cat /proc/sys/user/max_user_namespaces
 cordium man get clusterconfig -o yaml
 octeliumctl get svc default.cordium
 octeliumctl get svc default-cordium.octelium-api
@@ -155,3 +183,28 @@ for `homelab-cordium-user` and
 Removing `cordium-local-path-provisioner` stops new local provisioning but does
 not migrate existing Workspace data. Stop and delete disposable Workspaces
 before removing the StorageClass or its node-local directories.
+
+After Cordium is retired, restore Talos' disabled user-namespace default on
+`zimaboard-1` through the same reviewed worker-config path:
+
+```sh
+talosctl machineconfig patch .talos/worker.yaml \
+  --patch @.talos/patches/worker-zimaboard-1.yaml \
+  --patch @.talos/patches/worker-cordium-user-namespaces-rollback.yaml \
+  --output /private/tmp/worker-zimaboard-1-cordium-rollback.yaml
+talosctl validate \
+  --config /private/tmp/worker-zimaboard-1-cordium-rollback.yaml \
+  --mode metal \
+  --strict
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.201 \
+  apply-config \
+  --file /private/tmp/worker-zimaboard-1-cordium-rollback.yaml
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.201 \
+  read /proc/sys/user/max_user_namespaces
+```
+
+The final command must print `0`.
