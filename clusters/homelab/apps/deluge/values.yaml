@@ -47,7 +47,7 @@ controllers:
             profile_value() {
               awk -F= -v key="$1" '
                 tolower($1) ~ "^[[:space:]]*" key "[[:space:]]*$" {
-                  value=$2
+                  value=substr($0, index($0, "=") + 1)
                   gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
                   print value
                   exit
