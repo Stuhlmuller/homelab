@@ -13,7 +13,7 @@ controllers:
       app:
         image:
           repository: drakkarsoftware/octobot
-          tag: "2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
+          tag: "2.1.13@sha256:56c42b40066afea4ebad52c44423ae23360e3ff51735efafe5a27fb499d6dd87"
         env:
           TZ: America/Los_Angeles
         probes:
