@@ -595,3 +595,10 @@ policy`.
   Gluetun's startup wrapper, so every sidecar restart rebuilds the normalized
   profile with the current DNS answer. Unused public-IP discovery is disabled
   to stop permission errors while clearing `/tmp/gluetun/ip`.
+  Live rollout validation at merged revision `ea35c590` resolved the profile to
+  `198.44.133.70`, returned Argo CD to `Synced/Healthy`, and left replacement
+  pod `deluge-76c8959f9d-sx289` Ready with zero restarts after more than two
+  minutes. VPN and daemon health were both `1`, all 17 torrents loaded with
+  zero errors, and the pod mounted only `deluge-config-local` and
+  `media-downloads`. The 2026-08-02 scheduled backup also completed and
+  validated archive `20260802T103004Z.tar.gz`.
