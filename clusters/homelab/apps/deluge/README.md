@@ -23,17 +23,13 @@ causes External Secrets to render a fresh Kubernetes Secret, and the pod
 template annotation rolls Deluge so Gluetun reads the new WireGuard profile at
 startup.
 
-Gluetun runs this profile through its `custom` WireGuard provider so it uses the
-exact AirVPN peer instead of selecting a random AirVPN server from provider
-metadata. Gluetun's custom WireGuard path still requires the endpoint host to
-be an IP address at startup, while AirVPN profiles can contain an endpoint DNS
-name. Gluetun's startup wrapper reads the secret profile, resolves a DNS
-endpoint to its current IPv4 address when needed, strips IPv6 `Address` and
-`AllowedIPs` entries, and writes the normalized profile into an in-memory
-volume at `/gluetun/wireguard/wg0.conf` before starting Gluetun. The wrapper
-runs again whenever Kubernetes restarts the Gluetun sidecar, so a rotating
-AirVPN DNS record cannot leave repeated recovery attempts pinned to a stale
-peer address. Keep
+Gluetun uses its native AirVPN WireGuard provider. Its startup wrapper reads
+the private key, preshared key, and first IPv4 interface address from the
+secret profile, then Gluetun selects a current server from its bundled AirVPN
+metadata. Endpoint and server-key fields from the generated profile are
+intentionally ignored. This removes the custom provider's IP-only endpoint
+conversion and avoids depending on DNS before Gluetun has restored its own DNS
+server and firewall during a container restart. Keep
 `homelab.rst.io/wireguard-profile-renderer-revision` in the pod template so
 renderer-only changes roll the singleton and clear stale Gluetun network rules.
 

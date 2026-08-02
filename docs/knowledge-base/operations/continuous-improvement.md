@@ -602,3 +602,12 @@ policy`.
   zero errors, and the pod mounted only `deluge-config-local` and
   `media-downloads`. The 2026-08-02 scheduled backup also completed and
   validated archive `20260802T103004Z.tar.gz`.
+  Roughly three hours later, another VPN health failure exposed a restart
+  bootstrap loop: Gluetun had changed the pod resolver to its own
+  `127.0.0.1`, then Kubernetes restarted the container and the wrapper tried to
+  resolve AirVPN before that local DNS server existed. Gluetun exited with
+  `failed to resolve WireGuard endpoint hostname`, accumulated nine restarts,
+  and left Argo CD `Progressing`. The wrapper now passes only the profile's
+  client keys and IPv4 address to Gluetun's native AirVPN provider. Gluetun
+  owns server selection, so container recovery no longer needs pre-start DNS
+  or the removed writable normalized-profile volume.
