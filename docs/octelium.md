@@ -131,12 +131,15 @@ second command to apply the catalog's other resource kinds.
 
 Never add `--prune` to that command: this catalog is not an exhaustive list of
 every non-system resource in the Octelium Cluster. When upgrading a Cluster
-that previously applied the repo-defined `cordium` Service, first apply the
-updated catalog and then remove only the obsolete duplicate:
+that previously applied the repo-defined Cordium Services, first apply the
+updated catalog and then remove only the obsolete duplicates:
 
 ```sh
 if octeliumctl get service cordium.default --domain stinkyboi.com >/dev/null 2>&1; then
   octeliumctl delete service cordium.default --domain stinkyboi.com
+fi
+if octeliumctl get service cordium-agent-api.homelab --domain stinkyboi.com >/dev/null 2>&1; then
+  octeliumctl delete service cordium-agent-api.homelab --domain stinkyboi.com
 fi
 ```
 
