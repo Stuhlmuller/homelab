@@ -95,7 +95,7 @@ They create:
   `cordium.stinkyboi.com` and make the ingress reject its routing snapshot.
 - Cordium-specific identities: HUMAN User `homelab-cordium-user` for browser
   workspace access and WORKLOAD User `homelab-cordium-agent` for agent API
-  automation through `cordium-agent-api.homelab`, plus the matching
+  automation through Cordium's package-managed API, plus the matching
   `cordium-users` and `cordium-agents` Groups those Users reference.
 - WEB Service `homelab-demo.homelab` for service-proxy smoke tests.
 
@@ -160,7 +160,8 @@ upstream Cordium creates managed RBAC such as `cordium-nocturne` before the
 long-running controllers exist.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
-identity and `cordium-agent-api.homelab` Service.
+identity with access restricted to the package-managed Cordium
+`ManagementService`.
 
 ## Microsoft Entra Login
 
@@ -261,8 +262,8 @@ The gate verifies:
 - `stinkyboi.com`, `portal.stinkyboi.com`, `octelium-api.stinkyboi.com`, and
   the `octelium.stinkyboi.com` alias respond over TLS. The API host may
   return `404` at the HTTP root because the real API is gRPC;
-- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`,
-  including `cordium-agent-api.homelab`, exists in the Octelium Cluster, and
+- every homelab app Service in `docs/examples/octelium/homelab-services.yaml`
+  exists in the Octelium Cluster, and
   Cordium's generated `default.cordium` Service is present without a duplicate
   primary hostname;
 - IdentityProvider `entra` exists in the Octelium Cluster;

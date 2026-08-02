@@ -14,7 +14,8 @@ The deployed runtime is split intentionally:
   `https://cordium.stinkyboi.com`, scoped by the dedicated User-attached
   `homelab-cordium-user-access` policy.
 - Agent access uses the Octelium `homelab-cordium-agent` WORKLOAD identity and
-  the `cordium-agent-api.homelab` gRPC Service for automation.
+  a credential policy restricted to Cordium's package-managed
+  `default-cordium.octelium-api` `ManagementService`.
 - The repo-owned Cordium `ClusterConfig` sends every Workspace PVC to the
   non-default `cordium-local` StorageClass on `zimaboard-1`. A second PostSync
   hook applies that config through Cordium's native API after genesis succeeds.
@@ -117,7 +118,7 @@ kubectl get storageclass cordium-local
 kubectl -n cordium get deploy,pod,pvc
 cordium man get clusterconfig -o yaml
 octeliumctl get svc default.cordium
-octeliumctl get svc cordium-agent-api.homelab
+octeliumctl get svc default-cordium.octelium-api
 curl -I https://cordium.stinkyboi.com
 ```
 
@@ -147,9 +148,8 @@ namespace, and an Octelium-protected browser route for
 ## Rollback
 
 Disable or delete the `cordium` Argo CD Application first so the hook does not
-recreate its package-managed `default.cordium` Service. Then remove the
-Octelium catalog entries for `cordium-agent-api.homelab`,
-`homelab-cordium-user`, and
+recreate its package-managed Services. Then remove the Octelium catalog entries
+for `homelab-cordium-user` and
 `homelab-cordium-agent` if the platform is being retired.
 
 Removing `cordium-local-path-provisioner` stops new local provisioning but does

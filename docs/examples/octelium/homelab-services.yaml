@@ -79,8 +79,9 @@ spec:
             - match: ctx.user.metadata.name == "homelab-cordium-agent"
             - match: ctx.user.spec.type == "WORKLOAD"
             - match: ctx.session.status.type == "CLIENT"
-            - match: ctx.service.metadata.name == "cordium-agent-api.homelab"
+            - match: ctx.service.metadata.name == "default-cordium.octelium-api"
             - match: ctx.service.spec.mode == "GRPC"
+            - match: ctx.request.grpc.serviceFullName == "octelium.api.main.cordium.v1.ManagementService"
 ---
 kind: Namespace
 metadata:
@@ -228,20 +229,6 @@ spec:
             value: "443"
           - key: X-Forwarded-Proto
             value: https
----
-kind: Service
-metadata:
-  name: cordium-agent-api.homelab
-spec:
-  displayName: Cordium agent API
-  mode: GRPC
-  port: 443
-  authorization:
-    policies:
-      - homelab-cordium-agent-api-access
-  config:
-    upstream:
-      url: grpc://default-cordium.octelium-api:8080
 ---
 kind: Service
 metadata:
