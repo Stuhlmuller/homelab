@@ -78,7 +78,7 @@ spec:
               memory: 64Mi
   destination:
     server: https://kubernetes.default.svc
-    namespace: storage
+    namespace: cordium-storage
   syncPolicy:
     automated:
       prune: true

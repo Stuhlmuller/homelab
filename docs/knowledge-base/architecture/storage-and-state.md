@@ -24,7 +24,9 @@ volumes under `/var/lib/cordium-workspaces` on `zimaboard-1`. Rootless Podman
 requires private ownership and mode bits for its runtime directory, which the
 QNAP NFSv3 export does not preserve. These volumes use a `Delete` reclaim
 policy and have no replication or backup; they are development scratch space,
-not durable workload storage.
+not durable workload storage. The provisioner and its `hostPath` helper Pods
+run in the dedicated privileged `cordium-storage` namespace so the broader
+`storage` namespace can keep baseline Pod Security enforcement.
 
 `media-postgres` is an explicit exception. Its active 20 Gi volume is a
 retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;

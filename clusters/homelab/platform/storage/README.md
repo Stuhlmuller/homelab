@@ -3,12 +3,14 @@
 This path owns the dynamic provisioners for the homelab cluster.
 The parent `platform-storage` Application is registered by the Terragrunt unit
 at `IaC/live/argocd-apps/platform-storage` and is automated by default. Its
-child Applications install upstream Helm charts into the `storage` namespace:
+child Applications install upstream Helm charts into dedicated namespaces:
 
 - `nfs-subdir-external-provisioner` creates the default `nfs-default`
   StorageClass for durable shared storage.
 - `cordium-local-path-provisioner` creates the non-default `cordium-local`
-  StorageClass. It provisions only on `zimaboard-1` under
+  StorageClass in the narrowly scoped privileged `cordium-storage` namespace.
+  Rancher's helper Pods require `hostPath` access while creating and removing
+  volumes. The provisioner operates only on `zimaboard-1` under
   `/var/lib/cordium-workspaces`, where Cordium's rootless Podman runtime can
   enforce private ownership and mode bits that the QNAP NFS export cannot.
 
