@@ -203,7 +203,9 @@ Cordium reads `/homelab/cordium/agent-auth-token` through
 `cordium-agent-auth`. The token belongs to the policy-bound
 `homelab-cordium-agent` Workload User and lets the PostSync hook apply the
 repository-owned ClusterConfig through Cordium's native API. Keep it out of
-git and version the ExternalSecret target when rotating it.
+git and bump `homelab.rst.io/octelium-credential-ssm-version` on the
+ExternalSecret when rotating it so `refreshPolicy: OnChange` reads the current
+SSM value.
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/live/azuread-applications/octelium`, which writes generated

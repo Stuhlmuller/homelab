@@ -91,8 +91,8 @@ octeliumctl create cred \
   homelab-cordium-agent
 ```
 
-The ExternalSecret materializes the token for the version-pinned Cordium CLI
-hook. Argo CD runs genesis at sync wave 0, then applies
+The ExternalSecret materializes the current SSM token for the Cordium CLI hook.
+Argo CD runs genesis at sync wave 0, then applies
 `cluster-config.yaml` at wave 1; no manual `cordium man apply` step is needed.
 Do not reuse a human browser session token for agent automation.
 Developer shell access should enter through `https://cordium.stinkyboi.com`
