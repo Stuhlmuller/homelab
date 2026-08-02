@@ -164,8 +164,10 @@ roles need identity-based KMS permissions for both keys.
   refreshes on ExternalSecret changes; after replacing the SSM profile value,
   bump `homelab.rst.io/wireguard-profile-ssm-version` on both the
   ExternalSecret and Deluge pod template so the Secret is rerendered and
-  Gluetun starts with the new profile. The Deluge pod resolves an endpoint DNS
-  name in the profile to an IPv4 address before handing it to Gluetun.
+  Gluetun starts with the new profile. Gluetun's startup wrapper resolves an
+  endpoint DNS name in the profile to an IPv4 address on every container start
+  before handing it to Gluetun, so sidecar recovery refreshes rotating AirVPN
+  endpoint records instead of reusing the pod's first answer.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
   `n8n-postgres` uses generated `/homelab/n8n/postgres-admin-password` and

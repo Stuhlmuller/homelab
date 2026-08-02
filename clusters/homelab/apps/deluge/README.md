@@ -12,7 +12,7 @@ The `deluge-vpn` ExternalSecret reads the AirVPN WireGuard profile from AWS
 SSM Parameter Store and publishes it as `wg0.conf`:
 
 | SSM parameter | Kubernetes Secret key |
-|---------------|-----------------------|
+| --- | --- |
 | `/homelab/deluge/vpn/wireguard-config` | `wg0.conf` |
 
 The `deluge-vpn` ExternalSecret uses `refreshPolicy: OnChange`. After replacing
@@ -27,12 +27,19 @@ Gluetun runs this profile through its `custom` WireGuard provider so it uses the
 exact AirVPN peer instead of selecting a random AirVPN server from provider
 metadata. Gluetun's custom WireGuard path still requires the endpoint host to
 be an IP address at startup, while AirVPN profiles can contain an endpoint DNS
-name. A `config-wireguard` init container reads the secret profile, resolves a
-DNS endpoint to its first IPv4 address when needed, strips IPv6 `Address` and
+name. Gluetun's startup wrapper reads the secret profile, resolves a DNS
+endpoint to its current IPv4 address when needed, strips IPv6 `Address` and
 `AllowedIPs` entries, and writes the normalized profile into an in-memory
-volume mounted at `/gluetun/wireguard/wg0.conf`. Keep
+volume at `/gluetun/wireguard/wg0.conf` before starting Gluetun. The wrapper
+runs again whenever Kubernetes restarts the Gluetun sidecar, so a rotating
+AirVPN DNS record cannot leave repeated recovery attempts pinned to a stale
+peer address. Keep
 `homelab.rst.io/wireguard-profile-renderer-revision` in the pod template so
 renderer-only changes roll the singleton and clear stale Gluetun network rules.
+
+Public IP discovery is disabled because Deluge does not consume it. VPN and
+daemon health remain covered by the local health endpoint and Prometheus
+metrics without Gluetun trying to persist unused data under `/tmp`.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
@@ -88,7 +95,7 @@ verified.
 Use these Deluge paths:
 
 | Setting | Path |
-|---------|------|
+| --- | --- |
 | Download to | `/downloads/incomplete` |
 | Move completed to | `/downloads/complete` |
 | Radarr label path | `/downloads/complete/radarr` |
