@@ -6,10 +6,47 @@ controllers:
       identifier: radarr
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-0
       annotations:
         homelab.rst.io/access-mode: "octelium"
+    strategy: Recreate
     initContainers:
+      prepare-config:
+        image:
+          repository: busybox
+          tag: 1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+        command:
+          - /bin/sh
+          - -ec
+          - chown 1000:1000 /config
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - CHOWN
+          readOnlyRootFilesystem: true
+      migrate-config:
+        dependsOn: prepare-config
+        image:
+          repository: lscr.io/linuxserver/radarr
+          tag: 6.3.0@sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
+        command:
+          - /bin/sh
+          - /scripts/migrate-config.sh
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
       configure-postgres:
+        dependsOn: migrate-config
         image:
           repository: lscr.io/linuxserver/radarr
           tag: 6.3.0@sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
@@ -146,6 +183,12 @@ controllers:
         image:
           repository: lscr.io/linuxserver/radarr
           tag: 6.3.0@sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            rm -f /etc/cont-init.d/30-config
+            exec /init
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
@@ -200,13 +243,37 @@ persistence:
   config:
     enabled: true
     type: persistentVolumeClaim
-    existingClaim: radarr-config
+    existingClaim: radarr-config-local
     advancedMounts:
       radarr:
+        prepare-config:
+          - path: /config
+        migrate-config:
+          - path: /config
         app:
           - path: /config
         configure-postgres:
           - path: /config
+  legacy-config:
+    # Migration-only: remove this mount and migrate-config after the local
+    # rollout marker and first scheduled backup are verified.
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: radarr-config
+    advancedMounts:
+      radarr:
+        migrate-config:
+          - path: /legacy-config
+            readOnly: true
+  migration-script:
+    enabled: true
+    type: configMap
+    name: radarr-config-migration
+    advancedMounts:
+      radarr:
+        migrate-config:
+          - path: /scripts
+            readOnly: true
   media:
     enabled: true
     type: persistentVolumeClaim

@@ -11,7 +11,7 @@ requested workloads.
 ## Applications
 
 | App | Kind | Namespace | GitOps path | Terragrunt path | Auto-sync | Dependencies |
-|-----|------|-----------|-------------|-----------------|-----------|--------------|
+| --- | --- | --- | --- | --- | --- | --- |
 | platform-dns | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Yes, no prune | Argo CD bootstrap |
 | platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | Yes | QNAP NFS export validation |
 | media-postgres | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | Yes | external-secrets, platform-storage |
@@ -56,9 +56,9 @@ Stateful apps auto-sync by default, but they are not considered operationally
 ready until `platform-storage` is synced, the `nfs-default` StorageClass is
 verified, and `docs/storage-nfs.md` records backup coverage.
 
-Radarr and Sonarr keep app config on `nfs-default`. Deluge keeps active config
-on a retained local volume pinned to `zimaboard-0` and archives it nightly to
-its retained NFS claim. All three apps use static claims against the QNAP
+Sonarr keeps app config on `nfs-default`. Deluge and Radarr keep active config
+on retained local volumes pinned to `zimaboard-0` and archive it nightly to
+their retained NFS claims. All three apps use static claims against the QNAP
 `/media` export for media-library paths. Read-only
 `showmount -e 10.1.0.2` verified `/media` for every Talos node on 2026-05-26;
 do not treat those apps as cut over until the three media migration Jobs have
