@@ -130,6 +130,17 @@ path.
 The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
 the CronJob's archive listing validation.
 
+Radarr's declared active 10 Gi config volume is a retained static `hostPath` PV
+at `/var/lib/radarr`, also pinned to `zimaboard-0`. The guarded cutover stops the
+singleton with `Recreate`, copies the retained NFS config tree, and replaces the
+known-empty `config.xml` with the newest validated built-in backup before the
+existing PostgreSQL/auth normalization runs. A migration marker makes the copy
+idempotent, while the invalid NFS file, built-in backups, and old
+`radarr-config` claim remain recoverable. A 04:00 Pacific CronJob writes verified
+archives back to that claim with 14-day retention. Live cutover and first-backup
+validation are still pending; until then, the migration-only NFS mount remains
+in the pod template.
+
 Deluge keeps 30-minute startup and runtime liveness windows so guarded
 libtorrent recovery is not interrupted. The metrics sidecar computes fresh
 health every 45 seconds with a 20-second RPC cap and a 30-second Prometheus
@@ -150,6 +161,8 @@ trigger a silent redownload.
 - `.talos/patches/worker-cordium-user-namespaces-rollback.yaml`
 - `clusters/homelab/apps/deluge/media-storage.yaml`
 - `clusters/homelab/apps/deluge/local-storage.yaml`
+- `clusters/homelab/apps/radarr/local-storage.yaml`
+- `clusters/homelab/apps/radarr/migrate-config.sh`
 - `clusters/homelab/apps/media-postgres`
 - `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`

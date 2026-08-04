@@ -147,6 +147,15 @@ the persistent `/config/config.xml` contains the Servarr-documented
 `PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
 migration.
 
+Radarr's local-config cutover is not complete until both `radarr-config-local`
+and the retained `radarr-config` claim are bound, the pod is Ready on
+`zimaboard-0`, `/config/.nfs-migration-complete` exists, and the first 04:00
+`radarr-config-backup` Job has completed. Validate one non-empty API key without
+printing it, discard the `/initialize.json` response body, and re-test Prowlarr
+integration. After those checks, remove the migration-only NFS mount in a
+separate revision. Do not reactivate the stale NFS config root after local
+writes begin; use the reviewed archive restore path in the Radarr README.
+
 For the local database cutover, also require all of the following:
 
 Treat the read-only staging state and writable replacement as separate observed

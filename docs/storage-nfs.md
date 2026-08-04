@@ -113,6 +113,9 @@ exceptions are:
 
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
+- `deluge-config-local` and `radarr-config-local`, retained static `hostPath`
+  PVs pinned to `zimaboard-0`. Their former NFS config claims remain backup and
+  recovery targets rather than active app storage.
 - Deluge, Radarr, and Sonarr media-library static PV/PVC pairs that mount the
   QNAP `/media` export directly.
 
@@ -183,8 +186,10 @@ NFS backup coverage is a hard readiness gate. Persistent apps are registered
 with automated sync, but they must not be treated as production-ready until each
 app has acceptable backup and restore coverage.
 
+<!-- markdownlint-disable MD013 -->
+
 | App | Data classes | StorageClass | Backup expectation | Restore expectation | Rollback data behavior |
-|-----|--------------|--------------|--------------------|---------------------|------------------------|
+| --- | --- | --- | --- | --- | --- |
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus repo-owned dashboard and alerting config in `clusters/homelab/apps/grafana` | Restore PVC and re-sync Grafana desired state | Preserve PVC |
 | affine | PostgreSQL/pgvector database, uploaded blobs, instance config; ephemeral Redis cache/jobs | `nfs-default` for durable state; node-local `emptyDir` for Redis | Coordinated NFS backup plus `pg_dump` before upgrades; Redis is excluded | Restore PostgreSQL and blob/config claims from one recovery point; Redis rebuilds empty and queued work may be lost | Preserve durable claims and the ECDSA signing key; preserve the inactive former Redis AOF claim during the tuning rollback window |
@@ -192,13 +197,15 @@ app has acceptable backup and restore coverage.
 | dispatcharr | file-backed runtime data plus dedicated `dispatcharr-postgres` database | `nfs-default` | NFS backup for data PVC and `dispatcharr-postgres` PVC plus PostgreSQL logical dump | Restore data PVC and `dispatcharr-postgres` PVC or logical dump before app sync | Preserve PVCs and database unless intentionally resetting IPTV state |
 | media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | static `media-postgres-local` on `acer`; retained `nfs-default` backup claim | Nightly role globals without password hashes, six custom-format dumps, and checksums on retained NFS; 14-day retention; nominal 24-hour RPO, but actual RPO is the newest verified set; freshness checked manually until alert telemetry is restored | Fence the writer with the repository recovery overlay, restore globals plus all six matching dumps, then restart the media apps | Preserve both claims; the NFS physical copy is stale after local writes begin |
 | prowlarr | config, indexer refs, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases before app sync and re-test app integrations | Preserve PVCs |
-| radarr | config and PostgreSQL refs on `nfs-default`, movies on `media-movies`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/movies`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/movies` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
+| radarr | active config on `radarr-config-local`, PostgreSQL app/log databases, movies on `media-movies`, shared downloads on `media-downloads` | static local config PV, retained `nfs-default` config/archive claim, local `media-postgres`, and static `/media` PVs | Nightly verified config archive to NFS with 14-day retention, PostgreSQL logical dump, `/media/movies`, and `/media/downloads` | Stop Radarr, restore one validated config archive into the local claim, restore matching PostgreSQL databases if needed, then verify integrations and `/media` paths | Preserve the local PV, retained NFS claim, PostgreSQL backups, and `/media` subdirectories; never reactivate stale NFS config after local writes |
 | sonarr | config and PostgreSQL refs on `nfs-default`, TV on `media-tv`, shared downloads on `media-downloads` | `nfs-default` plus static `/media` PVs | NFS backup for config, PostgreSQL logical dump, `/media/tv`, and `/media/downloads` | Restore config PVC and PostgreSQL databases, then verify `/media/tv` and `/media/downloads` | Preserve PVCs and `/media` subdirectories |
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |
 | openclaw | config, runtime state | `nfs-default` | NFS backup for runtime state | Restore PVC and verify LiteLLM connectivity | Preserve PVC |
 | n8n-postgres | n8n workflows, users, credentials metadata, and execution history | `nfs-default` | NFS backup plus PostgreSQL logical dump before upgrades | Restore PostgreSQL PVC or logical dump before n8n app sync | Preserve PVC unless intentionally rebuilding from exports |
 | n8n | instance config, encryption-key settings, and file-backed runtime data | `nfs-default` | NFS backup plus workflow export when available | Restore n8n PVC and n8n-postgres before app sync | Snapshot first, preserve PVC |
 | octobot | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, strategy config | `nfs-default` | NFS backup before strategy, tentacle, or exchange-account changes | Restore PVCs before comparing long-running paper/live strategy results or reusing exchange credentials | Preserve PVCs unless intentionally resetting bot credentials |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Validation Notes
 

@@ -175,7 +175,9 @@ policy`.
   to an opaque sinkhole response.
 
 - **Status:** `affine-postgres` restored; `media-postgres` and Prowlarr
-  cutovers validated; `n8n-postgres` restore prepared
+  cutovers validated; `n8n-postgres` restore prepared; Radarr
+  local-config cutover prepared and live validation pending; open for other NFS
+  workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -282,6 +284,13 @@ policy`.
   the original PVC still bound to the same volume. Phase two declares that
   claim at sync wave `-2`, runs the completion-marked recovery hook at wave
   `-1`, and restores one replica at wave `0`.
+  Read-only inspection on 2026-08-03 reconfirmed the zero-byte file and found
+  four valid built-in backup archives; the newest, dated 2026-07-27, contains a
+  complete config with one API key plus the expected PostgreSQL and auth tags.
+  The 81 MiB config tree is small relative to the 13.89 GB available on
+  `zimaboard-0`. Desired state now declares a guarded recovery into retained
+  local storage, preserves the invalid file and NFS claim, and schedules
+  verified 14-day archives back to NFS. Live recovery remains unverified.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
@@ -294,10 +303,13 @@ policy`.
 - **Next step:** merge and live-validate the n8n PostgreSQL restore, then remove
   its one-shot recovery hook from desired state while retaining the explicit
   claim and hardened probes.
-  Inspect QNAP pool, disk, NFS-service, and network history because the same
-  failure domain still affects other NFS-backed workloads. Check scheduled
-  backups manually after storage incidents, and restore backup freshness
-  alerting when a reliable metric source is available.
+  Sync and observe the Radarr recovery revision, verify the migration marker,
+  API identity, integrations, and first scheduled archive, then remove the
+  migration-only NFS mount in a follow-up revision. Inspect QNAP pool, disk,
+  NFS-service, and network history because the same failure domain still
+  affects other NFS-backed workloads. Check scheduled backups manually after
+  storage incidents, and restore backup freshness alerting when a reliable
+  metric source is available.
 
 - **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
 - **Area:** monitoring / PostgreSQL availability
