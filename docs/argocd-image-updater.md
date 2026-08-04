@@ -5,15 +5,15 @@ Argo CD Image Updater is installed as an Argo CD-managed Application from
 `argocd-image-updater` version `1.2.2` and runs in the `argocd` namespace.
 
 The `homelab-managed-images` `ImageUpdater` resource in
-`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` manages every
-container image that this repository declares directly in workload Helm values
-or raw manifests:
+`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` manages these
+repository-declared images:
 
 - `affine`: AFFiNE server/migration init container, pgvector PostgreSQL, and
   Redis images; updates remain within AFFiNE `0.27`, pgvector `0.8` on
   PostgreSQL 16, and Redis `8.2` until their stateful upgrade paths are
   reviewed.
-- `deluge`: BusyBox, Gluetun, and Deluge containers.
+- `deluge`: Gluetun and all Deluge containers. BusyBox stays Renovate-owned so
+  its Helm-values and raw-manifest uses move together.
 - `dispatcharr`: Dispatcharr web and Celery containers plus the Redis sidecar.
   The dedicated PostgreSQL manifest remains review-pinned because this
   multi-source Application uses its Image Updater write-back target for Helm
@@ -22,12 +22,12 @@ or raw manifests:
 - `media-postgres`: PostgreSQL StatefulSet image.
 - `n8n-postgres`: n8n PostgreSQL StatefulSet image.
 - `n8n`: n8n app container.
-- `octobot`: OctoBot app container. OctoBot is currently allow-listed to
-  `2.1.1` because `2.1.13` rejected the existing PVC-backed
-  `config.trading.paused` field during startup migration.
 - `openclaw`: bootstrap, app, and proxy containers.
 - `policy-bot`: Policy Bot Deployment image.
 - `prowlarr`, `radarr`, and `sonarr`: PostgreSQL bootstrap and app containers.
+
+OctoBot remains manually review-pinned to `2.1.1` because `2.1.13` rejected
+the existing PVC-backed `config.trading.paused` field during startup migration.
 
 Images owned only by upstream Helm chart defaults continue to move with chart
 version updates. Add explicit values and an `ImageUpdater` `applicationRefs`
@@ -60,11 +60,18 @@ The GitHub App must be installed on `Stuhlmuller/homelab` with repository
 contents write access and pull-request write access. Store the private key as a
 SecureString outside git.
 
+After increasing either permission, the installation owner must approve the
+pending permission update before new installation tokens receive it. Permission
+changes alone do not require replacing the App ID, installation ID, or private
+key in SSM.
+
 ## Update policy
 
 The global policy uses semantic-version updates and ignores `latest`, `main`,
-and `dev` tags. Images whose upstream tags are not plain semver use
-per-image `newest-build` rules with regular-expression allow lists.
+and `dev` tags. Flavor-suffixed semantic tags use `-0` constraints plus regular
+expression allow lists; this preserves semantic version ordering while
+admitting the required suffix. `newest-build` is reserved for non-semver tags
+such as commit hashes and LiteLLM's prefixed stable tags.
 
 n8n is the exception: Image Updater follows the official GHCR `stable` tag by
 digest. n8n prereleases use ordinary semantic versions, and `docker.n8n.io` is
@@ -78,8 +85,10 @@ Image Updater writes to the source paths that Argo CD already renders:
 
 Because these paths are explicitly managed by Image Updater and reviewed through
 pull requests, `scripts/ci/static-checks.sh` allows tag-only image fields inside
-those write-back targets. Unmanaged image fields still must be pinned as
-`tag@sha256:digest`.
+those write-back targets. `renovate.json` disables overlapping Docker updates in
+those targets. BusyBox is the deliberate exception and remains Renovate-owned
+across its Helm-values and raw-manifest uses. Unmanaged image fields still must
+be pinned as `tag@sha256:digest`.
 
 ## Verification
 
@@ -89,6 +98,7 @@ kubectl -n argocd get externalsecret argocd-image-updater-git
 kubectl -n argocd get secret argocd-image-updater-git
 kubectl -n argocd get imageupdater homelab-managed-images
 kubectl -n argocd logs deploy/argocd-image-updater-controller
+gh api 'repos/Stuhlmuller/homelab/collaborators/stuhlmuller-homelab-argocd%5Bbot%5D/permission' --jq .permission
 ```
 
 Expected result:
@@ -96,7 +106,8 @@ Expected result:
 - The controller Deployment is available.
 - `argocd-image-updater-git` is synced from AWS SSM and contains the GitHub App
   credential keys.
+- The GitHub App bot reports `write`, `maintain`, or `admin` repository access.
 - `homelab-managed-images` reports reconciliation status for the managed
-  Applications.
+  Applications without an `Error=True` condition.
 - New image versions create GitHub pull requests rather than live-only Argo CD
   parameter overrides.
