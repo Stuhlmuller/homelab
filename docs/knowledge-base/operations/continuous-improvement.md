@@ -174,8 +174,8 @@ policy`.
   with observable denial behavior instead of switching the shared resolver back
   to an opaque sinkhole response.
 
-- **Status:** `affine-postgres` restored; `media-postgres` and Prowlarr
-  cutovers validated; `n8n-postgres` restore prepared
+- **Status:** `affine-postgres` and `n8n-postgres` restored;
+  `media-postgres` and Prowlarr cutovers validated
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -279,9 +279,13 @@ policy`.
   and liveness windows plus 120 seconds for shutdown. Live validation at
   `e9f42313` confirmed Argo CD synced and healthy, desired/current replicas
   `0/0`, the old pod, process, and cgroup absent, no other claim consumer, and
-  the original PVC still bound to the same volume. Phase two declares that
-  claim at sync wave `-2`, runs the completion-marked recovery hook at wave
-  `-1`, and restores one replica at wave `0`.
+  the original PVC still bound to the same volume. Live phase-two validation at
+  `6c6f1182` confirmed the completion-marked hook succeeded, its durable marker
+  existed, the same PVC remained bound, PostgreSQL completed crash recovery
+  with zero restarts, SQL returned `1`, n8n became ready, and its internal and
+  public checks returned HTTP 200 and 404 instead of 503. The incident-only
+  hook is now removed from desired state; the explicit retained claim and
+  hardened probes remain.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
@@ -289,13 +293,11 @@ policy`.
   NFS-backed workloads across the cluster. The nominal local-disk RPO is 24
   hours, but the actual RPO is the age of the newest verified set and can be
   older. A failed nightly NFS backup has no freshness alert while the
-  kube-state-metrics scrape path is unhealthy. n8n remains unavailable until
-  the recovery hook succeeds and the database and application checks pass.
-- **Next step:** merge and live-validate the n8n PostgreSQL restore, then remove
-  its one-shot recovery hook from desired state while retaining the explicit
-  claim and hardened probes.
-  Inspect QNAP pool, disk, NFS-service, and network history because the same
-  failure domain still affects other NFS-backed workloads. Check scheduled
+  kube-state-metrics scrape path is unhealthy. n8n can recur until the shared
+  storage failure is corrected.
+- **Next step:** inspect QNAP pool, disk, NFS-service, and network history
+  because the same failure domain still affects other NFS-backed workloads.
+  Check scheduled
   backups manually after storage incidents, and restore backup freshness
   alerting when a reliable metric source is available.
 
