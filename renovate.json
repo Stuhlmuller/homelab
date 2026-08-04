@@ -4,14 +4,31 @@
   "automerge": false,
   "packageRules": [
     {
-      "description": "Image updates are owned by Argo CD Image Updater.",
-      "matchManagers": ["helm-values"],
+      "description": "These image updates are owned by Argo CD Image Updater.",
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["adinhodovic/compass", "ghcr.io/n8n-io/n8n"],
       "matchFileNames": [
+        "clusters/homelab/apps/affine/**",
         "clusters/homelab/apps/compass/values.yaml",
-        "clusters/homelab/apps/n8n/values.yaml"
+        "clusters/homelab/apps/deluge/values.yaml",
+        "clusters/homelab/apps/dispatcharr/values.yaml",
+        "clusters/homelab/apps/litellm/values.yaml",
+        "clusters/homelab/apps/media-postgres/**",
+        "clusters/homelab/apps/n8n-postgres/**",
+        "clusters/homelab/apps/n8n/values.yaml",
+        "clusters/homelab/apps/openclaw/values.yaml",
+        "clusters/homelab/apps/policy-bot/**",
+        "clusters/homelab/apps/prowlarr/values.yaml",
+        "clusters/homelab/apps/radarr/values.yaml",
+        "clusters/homelab/apps/sonarr/values.yaml"
       ],
+      "excludePackageNames": ["busybox"],
+      "enabled": false
+    },
+    {
+      "description": "OctoBot stays review-pinned until its PVC migration is tested.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["drakkarsoftware/octobot"],
+      "matchFileNames": ["clusters/homelab/apps/octobot/values.yaml"],
       "enabled": false
     }
   ],

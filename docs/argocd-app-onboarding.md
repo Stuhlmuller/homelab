@@ -99,7 +99,8 @@ a second module-specific schema.
 Repo-declared workload images are managed by Argo CD Image Updater through
 `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`. Image updates
 use Git write-back pull requests against `main`; do not add live-only Argo CD
-parameter overrides for image drift.
+parameter overrides for image drift. Add each managed write-back path to the
+Docker exclusions in `renovate.json` so only one updater owns the image.
 
 ## Sync And Health Exception Record
 

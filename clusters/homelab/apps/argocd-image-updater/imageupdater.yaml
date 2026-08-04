@@ -33,17 +33,15 @@ spec:
             kustomize:
               name: ghcr.io/toeverything/affine
         - alias: postgres
-          imageName: pgvector/pgvector
+          imageName: pgvector/pgvector:0.8.x-0
           commonUpdateSettings:
-            updateStrategy: newest-build
             allowTags: regexp:^0\.8\.[0-9]+-pg16-bookworm$
           manifestTargets:
             kustomize:
               name: pgvector/pgvector
         - alias: redis
-          imageName: redis
+          imageName: redis:8.2.x-0
           commonUpdateSettings:
-            updateStrategy: newest-build
             allowTags: regexp:^8\.2\.[0-9]+-bookworm$
           manifestTargets:
             kustomize:
@@ -59,12 +57,6 @@ spec:
           pullRequest:
             github: {}
       images:
-        - alias: downloadDirs
-          imageName: busybox:1.x
-          manifestTargets:
-            helm:
-              name: controllers.deluge.initContainers.download-dirs.image.repository
-              tag: controllers.deluge.initContainers.download-dirs.image.tag
         - alias: gluetun
           imageName: ghcr.io/qdm12/gluetun:v3.x
           manifestTargets:
@@ -83,6 +75,12 @@ spec:
             helm:
               name: controllers.deluge.containers.port-config.image.repository
               tag: controllers.deluge.containers.port-config.image.tag
+        - alias: delugeDaemonMetrics
+          imageName: lscr.io/linuxserver/deluge:2.x
+          manifestTargets:
+            helm:
+              name: controllers.deluge.containers.daemon-metrics.image.repository
+              tag: controllers.deluge.containers.daemon-metrics.image.tag
     - namePattern: dispatcharr
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
@@ -113,32 +111,13 @@ spec:
               name: controllers.dispatcharr.containers.celery.image.repository
               tag: controllers.dispatcharr.containers.celery.image.tag
         - alias: dispatcharrRedis
-          imageName: redis:7.x
+          imageName: redis:8.x-0
+          commonUpdateSettings:
+            allowTags: regexp:^8\.[0-9]+\.[0-9]+-alpine$
           manifestTargets:
             helm:
               name: controllers.dispatcharr.containers.redis.image.repository
               tag: controllers.dispatcharr.containers.redis.image.tag
-    - namePattern: octobot
-      writeBackConfig:
-        # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
-        method: git:secret:argocd/argocd-image-updater-git
-        gitConfig:
-          repository: https://github.com/Stuhlmuller/homelab.git
-          branch: main
-          writeBackTarget: helmvalues:/clusters/homelab/apps/octobot/values.yaml
-          pullRequest:
-            github: {}
-      images:
-        - alias: octobot
-          imageName: drakkarsoftware/octobot:2.x
-          commonUpdateSettings:
-            # 2.1.13 rejects the current PVC-backed config.trading.paused key.
-            # Keep OctoBot on the last known-good image until a migration is tested.
-            allowTags: regexp:^2\.1\.1$
-          manifestTargets:
-            helm:
-              name: controllers.octobot.containers.app.image.repository
-              tag: controllers.octobot.containers.app.image.tag
     - namePattern: compass
       writeBackConfig:
         # checkov:skip=CKV_SECRET_6: Image Updater credential reference, not secret material.
@@ -188,9 +167,8 @@ spec:
             github: {}
       images:
         - alias: postgres
-          imageName: postgres
+          imageName: postgres:14.x-0
           commonUpdateSettings:
-            updateStrategy: newest-build
             allowTags: regexp:^14\.[0-9]+-bookworm$
           manifestTargets:
             kustomize:
@@ -207,9 +185,8 @@ spec:
             github: {}
       images:
         - alias: postgres
-          imageName: postgres
+          imageName: postgres:14.x-0
           commonUpdateSettings:
-            updateStrategy: newest-build
             allowTags: regexp:^14\.[0-9]+-bookworm$
           manifestTargets:
             kustomize:
@@ -313,13 +290,13 @@ spec:
             github: {}
       images:
         - alias: radarrPostgresConfig
-          imageName: lscr.io/linuxserver/radarr:5.x
+          imageName: lscr.io/linuxserver/radarr:6.x
           manifestTargets:
             helm:
               name: controllers.radarr.initContainers.configure-postgres.image.repository
               tag: controllers.radarr.initContainers.configure-postgres.image.tag
         - alias: radarrApp
-          imageName: lscr.io/linuxserver/radarr:5.x
+          imageName: lscr.io/linuxserver/radarr:6.x
           manifestTargets:
             helm:
               name: controllers.radarr.containers.app.image.repository
