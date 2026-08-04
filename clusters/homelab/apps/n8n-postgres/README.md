@@ -23,9 +23,9 @@ The app password is mounted into n8n through `n8n-postgres-client` and read via
 
 The PostgreSQL init script creates:
 
-| Role | Database | Notes |
-|------|----------|-------|
-| `n8n` | `n8n` | Owns the database and `public` schema used by n8n |
+| Role  | Database | Notes                                             |
+| ----- | -------- | ------------------------------------------------- |
+| `n8n` | `n8n`    | Owns the database and `public` schema used by n8n |
 
 The init script runs only when PostgreSQL initializes an empty data directory.
 Changing database names, users, or passwords after first boot requires an
@@ -80,7 +80,8 @@ database connectivity:
 kubectl -n automation get externalsecret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get secret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get statefulset,pod,pvc,svc -l app.kubernetes.io/name=n8n-postgres
-kubectl -n automation exec statefulset/n8n-postgres -- psql -U postgres -d n8n -c '\du'
+kubectl -n automation exec statefulset/n8n-postgres -- \
+  psql -U postgres -d n8n -c '\du'
 ```
 
 The role list should include `n8n`, and n8n should report healthy only after
