@@ -87,6 +87,13 @@ validation passed with zero pod restarts. The incident-only hook is now removed
 from desired state, while the explicit retained claim, 30-minute startup and
 liveness windows, and 120-second termination grace remain.
 
+`n8n-postgres` is declared at zero replicas for phase one of the 2026-08-03
+stale-lock recovery after its NFS-backed `postmaster.pid` became inaccessible.
+The retained claim is unchanged. Phase two must confirm the old pod is absent
+before an incident-specific hook removes only that lock and restores one
+replica. The restored pod has 30-minute startup and liveness windows plus a
+120-second termination grace period.
+
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness probe executes `SELECT 1`
 instead of treating socket acceptance as usable database service. The writable

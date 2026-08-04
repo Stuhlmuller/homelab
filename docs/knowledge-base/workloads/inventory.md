@@ -44,6 +44,11 @@ The clean writable StatefulSet has no active NFS mount and uses a one-time
 old-writer fence. A nightly CronJob writes verified 14-day logical backups to
 the former NFS claim; the sibling recovery overlay fences both before restore.
 
+`n8n-postgres` is temporarily declared at zero replicas for phase one of the
+2026-08-03 NFS stale-lock recovery. Its retained claim remains bound; phase two
+must fence the old pod before removing only `postmaster.pid` and restoring one
+replica.
+
 ## Requested Applications
 
 | App | Namespace | GitOps path | Terragrunt path | State | Depends on |
