@@ -44,10 +44,10 @@ The clean writable StatefulSet has no active NFS mount and uses a one-time
 old-writer fence. A nightly CronJob writes verified 14-day logical backups to
 the former NFS claim; the sibling recovery overlay fences both before restore.
 
-`n8n-postgres` restores one replica through the fenced, completion-marked
-`n8n-postgres-stale-lock-recovery-20260803` Sync hook after phase-one live
-validation confirmed zero writers and the original bound claim. Its startup
-and liveness recovery windows are 30 minutes, with 120 seconds for shutdown.
+`n8n-postgres` recovered one replica after a fenced, completion-marked hook
+removed its 2026-08-03 stale lock. The one-shot hook is removed; its explicit
+retained claim, 30-minute startup and liveness windows, and 120-second shutdown
+grace remain.
 
 ## Requested Applications
 
