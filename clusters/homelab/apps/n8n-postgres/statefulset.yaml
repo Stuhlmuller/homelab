@@ -13,7 +13,9 @@ metadata:
     app.kubernetes.io/part-of: homelab-automation
 spec:
   serviceName: n8n-postgres
-  replicas: 1
+  # Recovery phase 1: keep the only PostgreSQL writer stopped until the
+  # repository-owned recovery hook clears the stale lock in phase 2.
+  replicas: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: n8n-postgres
@@ -24,6 +26,7 @@ spec:
         app.kubernetes.io/part-of: homelab-automation
     spec:
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
@@ -86,6 +89,17 @@ spec:
           ports:
             - name: postgres
               containerPort: 5432
+          startupProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - postgres
+                - -d
+                - postgres
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
           readinessProbe:
             exec:
               command:
@@ -109,7 +123,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 60
           resources:
             requests:
               cpu: 100m

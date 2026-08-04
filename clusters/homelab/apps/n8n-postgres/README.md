@@ -23,9 +23,9 @@ The app password is mounted into n8n through `n8n-postgres-client` and read via
 
 The PostgreSQL init script creates:
 
-| Role | Database | Notes |
-|------|----------|-------|
-| `n8n` | `n8n` | Owns the database and `public` schema used by n8n |
+| Role  | Database | Notes                                             |
+| ----- | -------- | ------------------------------------------------- |
+| `n8n` | `n8n`    | Owns the database and `public` schema used by n8n |
 
 The init script runs only when PostgreSQL initializes an empty data directory.
 Changing database names, users, or passwords after first boot requires an
@@ -39,7 +39,39 @@ This desired state points n8n at PostgreSQL. It preserves the existing
 current SQLite contents must be preserved, then import them after n8n starts
 against PostgreSQL.
 
+## NFS Interruption Recovery
+
+The readiness probe removes PostgreSQL from its Service after six failed
+checks, but startup and liveness failures now tolerate 30 minutes of QNAP
+recovery and shutdown receives 120 seconds to finish. This reduces forced
+crash recovery after an NFS stall.
+
+Recovery from the 2026-08-03 stale-lock incident is staged. Phase 1 keeps the
+StatefulSet at zero replicas without modifying its retained PVC. After live
+validation confirms `n8n-postgres-0` is absent, phase 2 may add an
+incident-specific, completion-marked hook that removes only
+`pgdata/postmaster.pid` before restoring one replica. Never remove the lock
+until the old writer is fenced.
+
 ## Validation
+
+### Recovery Phase 1: Fenced
+
+```sh
+kubectl kustomize clusters/homelab/apps/n8n-postgres
+kubectl -n argocd get application n8n-postgres
+kubectl -n automation get statefulset n8n-postgres \
+  -o jsonpath='{.spec.replicas}{" "}{.status.currentReplicas}{"\n"}'
+kubectl -n automation get pod n8n-postgres-0 --ignore-not-found
+kubectl -n automation get pvc data-n8n-postgres-0
+```
+
+Expected phase-one results: Argo CD reports the Application synced, the
+StatefulSet prints desired replica count `0` with no current replica, the pod
+lookup prints nothing, and the retained PostgreSQL PVC remains `Bound`. Do not
+run the recovery hook until all four conditions hold.
+
+### Recovery Phase 2: Restored
 
 After Argo CD syncs `n8n-postgres`, verify the secrets, StatefulSet, PVC, and
 database connectivity:
@@ -48,7 +80,8 @@ database connectivity:
 kubectl -n automation get externalsecret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get secret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get statefulset,pod,pvc,svc -l app.kubernetes.io/name=n8n-postgres
-kubectl -n automation exec statefulset/n8n-postgres -- psql -U postgres -d n8n -c '\du'
+kubectl -n automation exec statefulset/n8n-postgres -- \
+  psql -U postgres -d n8n -c '\du'
 ```
 
 The role list should include `n8n`, and n8n should report healthy only after
