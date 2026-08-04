@@ -4,5 +4,7 @@ resources:
   - externalsecret.yaml
   - initdb-configmap.yaml
   - networkpolicy.yaml
+  - pvc.yaml
+  - postgres-recovery-job.yaml
   - service.yaml
   - statefulset.yaml

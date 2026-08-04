@@ -175,7 +175,7 @@ policy`.
   to an opaque sinkhole response.
 
 - **Status:** `affine-postgres` restored; `media-postgres` and Prowlarr
-  cutovers validated; `n8n-postgres` recovery fence prepared
+  cutovers validated; `n8n-postgres` restore prepared
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -274,10 +274,14 @@ policy`.
   Kubernetes nodes and QNAP RPC services were reachable. Read-only node-side
   inspection found no PostgreSQL process or other PVC consumer; `pgdata` was
   mode `0700` with UID/GID `65534`, while `postmaster.pid` was a zero-byte mode
-  `000` file with the same owner. Desired state now prepares phase one by
-  fencing the StatefulSet at zero replicas without modifying its retained
-  claim, while adding 30-minute startup and liveness windows plus 120 seconds
-  for shutdown.
+  `000` file with the same owner. Phase one fenced the StatefulSet at zero
+  replicas without modifying its retained claim, while adding 30-minute startup
+  and liveness windows plus 120 seconds for shutdown. Live validation at
+  `e9f42313` confirmed Argo CD synced and healthy, desired/current replicas
+  `0/0`, the old pod, process, and cgroup absent, no other claim consumer, and
+  the original PVC still bound to the same volume. Phase two declares that
+  claim at sync wave `-2`, runs the completion-marked recovery hook at wave
+  `-1`, and restores one replica at wave `0`.
 - **Risk:** probe hardening limits crash-recovery loops but cannot make the
   shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
   `Running` while database calls fail, while Deluge and Radarr turn sustained
@@ -286,11 +290,10 @@ policy`.
   hours, but the actual RPO is the age of the newest verified set and can be
   older. A failed nightly NFS backup has no freshness alert while the
   kube-state-metrics scrape path is unhealthy. n8n remains unavailable until
-  the fence is live-validated and a separate recovery phase restores its
-  database.
-- **Next step:** merge the n8n PostgreSQL fence and confirm its pod is absent
-  while the retained claim stays bound, then use a separately reviewed,
-  completion-marked hook to clear only the stale lock and restore one replica.
+  the recovery hook succeeds and the database and application checks pass.
+- **Next step:** merge and live-validate the n8n PostgreSQL restore, then remove
+  its one-shot recovery hook from desired state while retaining the explicit
+  claim and hardened probes.
   Inspect QNAP pool, disk, NFS-service, and network history because the same
   failure domain still affects other NFS-backed workloads. Check scheduled
   backups manually after storage incidents, and restore backup freshness

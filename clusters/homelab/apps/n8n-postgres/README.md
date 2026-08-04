@@ -46,12 +46,17 @@ checks, but startup and liveness failures now tolerate 30 minutes of QNAP
 recovery and shutdown receives 120 seconds to finish. This reduces forced
 crash recovery after an NFS stall.
 
-Recovery from the 2026-08-03 stale-lock incident is staged. Phase 1 keeps the
-StatefulSet at zero replicas without modifying its retained PVC. After live
-validation confirms `n8n-postgres-0` is absent, phase 2 may add an
-incident-specific, completion-marked hook that removes only
-`pgdata/postmaster.pid` before restoring one replica. Never remove the lock
-until the old writer is fenced.
+Recovery from the 2026-08-03 stale-lock incident is staged. Phase 1 fenced the
+StatefulSet at zero replicas without modifying its retained PVC; live
+validation confirmed `n8n-postgres-0` was absent and no process or pod still
+used the claim. Phase 2 declares that retained claim at sync wave `-2`, runs the
+incident-specific `n8n-postgres-stale-lock-recovery-20260803` Sync hook at wave
+`-1`, and restores one replica at wave `0`.
+
+The hook removes only `pgdata/postmaster.pid`, verifies its absence, then
+writes a durable completion marker. A retry that sees the marker leaves the
+database files unchanged, so it cannot remove a live server lock. Remove the
+one-shot hook from desired state after recovery validation passes.
 
 ## Validation
 
@@ -66,10 +71,9 @@ kubectl -n automation get pod n8n-postgres-0 --ignore-not-found
 kubectl -n automation get pvc data-n8n-postgres-0
 ```
 
-Expected phase-one results: Argo CD reports the Application synced, the
-StatefulSet prints desired replica count `0` with no current replica, the pod
-lookup prints nothing, and the retained PostgreSQL PVC remains `Bound`. Do not
-run the recovery hook until all four conditions hold.
+Required phase-one results were: Argo CD synced and healthy, desired/current
+replicas `0/0`, no PostgreSQL pod or process, and the original PVC still
+`Bound`. Revision `e9f42313` passed that gate before phase 2 was prepared.
 
 ### Recovery Phase 2: Restored
 
@@ -81,11 +85,17 @@ kubectl -n automation get externalsecret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get secret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get statefulset,pod,pvc,svc -l app.kubernetes.io/name=n8n-postgres
 kubectl -n automation exec statefulset/n8n-postgres -- \
-  psql -U postgres -d n8n -c '\du'
+  test -f /var/lib/postgresql/data/.homelab-postgres-recovery-20260803-complete
+kubectl -n automation exec statefulset/n8n-postgres -- \
+  psql -U postgres -d n8n -Atqc 'select 1'
+kubectl -n automation rollout status deployment/n8n --timeout=10m
+curl -sS -o /dev/null -w '%{http_code}\n' \
+  https://n8n-webhook.stinkyboi.com/webhook/__missing__
 ```
 
-The role list should include `n8n`, and n8n should report healthy only after
-the `wait-for-postgres` init container succeeds.
+Expected phase-two results: Argo records the recovery hook as succeeded, the
+marker exists, PostgreSQL and n8n are ready, SQL prints `1`, and the public
+callback no longer returns HTTP 503. Preserve the PVC throughout recovery.
 
 ## Backup And Restore
 
