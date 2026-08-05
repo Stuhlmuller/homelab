@@ -32,7 +32,7 @@ controllers:
         dependsOn: prepare-config
         image:
           repository: lscr.io/linuxserver/radarr
-          tag: 6.3.0@sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
+          tag: 6.3.0@sha256:a45b5ab0f850f39edb4cc9c95bbd967b52ddc3d4574a4dfb45561177db6c88f4
         command:
           - /bin/sh
           - /scripts/migrate-config.sh
@@ -49,7 +49,7 @@ controllers:
         dependsOn: migrate-config
         image:
           repository: lscr.io/linuxserver/radarr
-          tag: 6.3.0@sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
+          tag: 6.3.0@sha256:a45b5ab0f850f39edb4cc9c95bbd967b52ddc3d4574a4dfb45561177db6c88f4
         envFrom:
           - secretRef:
               name: media-postgres-arr-env
@@ -182,7 +182,7 @@ controllers:
       app:
         image:
           repository: lscr.io/linuxserver/radarr
-          tag: 6.3.0@sha256:e35056574cdc695a9ee745aa1ecda9eab3842450bf4b7b8471b023790fa3861d
+          tag: 6.3.0@sha256:a45b5ab0f850f39edb4cc9c95bbd967b52ddc3d4574a4dfb45561177db6c88f4
         command:
           - /bin/sh
           - -ec
