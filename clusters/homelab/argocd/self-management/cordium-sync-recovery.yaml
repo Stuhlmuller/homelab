@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cordium-sync-recovery
+  namespace: cordium
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cordium-sync-recovery
+  namespace: cordium
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+    resourceNames:
+      - cordium-user-namespace-sysctl
+    verbs:
+      - get
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cordium-sync-recovery
+  namespace: cordium
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cordium-sync-recovery
+subjects:
+  - kind: ServiceAccount
+    name: cordium-sync-recovery
+    namespace: cordium
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cordium-sync-recovery
+  namespace: cordium
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cordium-sync-recovery
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.96.0.1/32
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cordium-sync-recovery
+  namespace: cordium
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    checkov.io/skip1: CKV_K8S_38=The recovery Job needs its narrowly scoped service-account token to patch one DaemonSet.
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cordium-sync-recovery
+        app.kubernetes.io/part-of: cordium
+    spec:
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      restartPolicy: OnFailure
+      serviceAccountName: cordium-sync-recovery
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: patch-daemonset
+          image: registry.k8s.io/kubectl:v1.36.1@sha256:d08f476d04d0e30f426f06bc6ff6c38913aaa4591943046b77e2f74a72d3611c
+          imagePullPolicy: IfNotPresent
+          args:
+            - patch
+            - daemonset
+            - cordium-user-namespace-sysctl
+            - --namespace=cordium
+            - --type=strategic
+            - --patch={"spec":{"template":{"spec":{"initContainers":[{"name":"enable-user-namespaces","securityContext":{"appArmorProfile":null}}]}}}}
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 65532
+            runAsNonRoot: true
+            runAsUser: 65532
