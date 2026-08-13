@@ -281,6 +281,7 @@ controllers:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          CODEX_SQLITE_HOME: /tmp/openclaw-codex-sqlite
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           NIX_CONFIG: experimental-features = nix-command flakes
           PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
