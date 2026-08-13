@@ -65,7 +65,10 @@ Redis, blob storage, and config state; Prometheus, Grafana, Deluge, Dispatcharr
 with dedicated PostgreSQL, media-postgres, n8n-postgres, octelium-storage
 PostgreSQL/Redis, Octelium Enterprise package
 stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. See
+Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. OpenClaw keeps
+auth, sessions, workspace, and application state on its PVC, but relocates
+rebuildable Codex app-server SQLite state and diagnostics to container-local
+`/tmp` so an unbounded diagnostic database cannot stall turns over NFS. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.

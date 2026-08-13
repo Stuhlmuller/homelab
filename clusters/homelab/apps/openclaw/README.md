@@ -267,3 +267,9 @@ kubectl -n ai exec deploy/openclaw -c app -- \
 
 Those OAuth credentials persist on the `/data/openclaw` volume and should not be
 copied into SSM. If the PVC is replaced, repeat the interactive Codex login.
+
+Codex app-server SQLite state and diagnostics use
+`/tmp/openclaw-codex-sqlite`, not the NFS-backed OpenClaw home. The Codex log
+database is rebuildable and can grow large enough to stall gateway turns over
+NFS; container restart clears this pod-local path. OpenClaw auth, sessions,
+workspace, and application state remain on the PVC.

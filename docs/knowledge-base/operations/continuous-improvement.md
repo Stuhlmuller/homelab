@@ -443,6 +443,22 @@ policy`.
   changing storage behavior.
 
 - **Status:** mitigated in desired state; rollout validation pending
+- **Area:** agent runtime / Codex diagnostics
+- **Evidence:** On 2026-08-13, a minimal Codex turn reproduced the gateway
+  stall after the sandbox error was fixed. The per-agent `codex-home` was 8.7
+  GiB on NFS: `logs_2.sqlite` was 5.7 GB and its WAL was 2.2 GB. During a fresh
+  turn, Codex read 2.2 GB in 22 seconds while cgroup memory climbed from 1.1 to
+  1.6 GB; gateway probes then timed out and liveness restarted the app.
+  Repository desired state now sets `CODEX_SQLITE_HOME` to container-local
+  `/tmp/openclaw-codex-sqlite` while leaving durable OpenClaw state on the PVC.
+- **Risk:** Codex native SQLite thread indexes and diagnostics reset with an app
+  container restart. OpenClaw retains its own session history and OAuth profile,
+  but native Codex-only diagnostic history is intentionally ephemeral.
+- **Next step:** after rollout, verify the Codex SQLite files are under `/tmp`,
+  a minimal agent turn returns without a probe failure, and the pod restart
+  count stays unchanged.
+
+- **Status:** mitigated in desired state; rollout validation pending
 - **Area:** agent runtime / sandboxing
 - **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
   `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has
