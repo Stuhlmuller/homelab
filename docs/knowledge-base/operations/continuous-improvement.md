@@ -442,17 +442,22 @@ policy`.
   restart with the gateway log, NFS counters, and the active memory job before
   changing storage behavior.
 
-- **Status:** open
+- **Status:** mitigated in desired state; rollout validation pending
 - **Area:** agent runtime / sandboxing
 - **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
   `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has
   no Docker command or sandbox backend. The affected nested cron lanes failed
-  rather than falling back to the embedded backend.
-- **Risk:** non-main and scheduled agent work can fail even while the gateway
-  and Control UI remain healthy.
-- **Next step:** provide and document a supported sandbox backend or narrow the
-  sandbox policy deliberately. Do not silently disable the boundary without a
-  security review.
+  rather than falling back to the embedded backend. On 2026-08-13, a direct
+  agent request failed with the same error while the gateway, OAuth profile,
+  secrets, pod, and public route were healthy. Repository desired state now
+  sets the sandbox mode to `off` because the workload has no supported backend.
+- **Risk:** agent execution is contained by the Kubernetes workload, not an
+  OpenClaw sandbox. Non-main and scheduled work can access resources available
+  inside the pod, including the persistent workspace and operator toolbox,
+  subject to the existing service-account, network, and filesystem controls.
+- **Next step:** after rollout, confirm the config reports sandbox mode `off`
+  and a direct or Discord agent request completes. Add a supported backend and
+  validate its containment before enabling OpenClaw sandboxing again.
 
 - **Status:** open
 - **Area:** CI/CD identity
