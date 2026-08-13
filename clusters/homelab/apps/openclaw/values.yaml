@@ -280,7 +280,6 @@ controllers:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
-          CODEX_SQLITE_HOME: /tmp/openclaw-codex-sqlite
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           NIX_CONFIG: experimental-features = nix-command flakes
           PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -330,8 +329,10 @@ controllers:
           requests:
             cpu: 1
             memory: 2Gi
+            ephemeral-storage: 512Mi
           limits:
             memory: 6Gi
+            ephemeral-storage: 3Gi
         probes:
           startup:
             enabled: true
@@ -484,6 +485,14 @@ persistence:
           - path: /data/openclaw/extensions
         bootstrap-config:
           - path: /data/openclaw/extensions
+  codex-runtime:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 2Gi
+    advancedMounts:
+      openclaw:
+        app:
+          - path: /data/openclaw/agents/main/agent/codex-home
   operator-toolbox:
     enabled: true
     type: emptyDir
