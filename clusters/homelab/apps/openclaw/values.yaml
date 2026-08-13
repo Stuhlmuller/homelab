@@ -166,7 +166,6 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
-            openclaw doctor --fix --non-interactive
             openclaw config validate
 
             openclaw config set --strict-json \
