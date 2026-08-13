@@ -442,7 +442,7 @@ policy`.
   restart with the gateway log, NFS counters, and the active memory job before
   changing storage behavior.
 
-- **Status:** mitigated in desired state; rollout validation pending
+- **Status:** fixed
 - **Area:** agent runtime / Codex diagnostics
 - **Evidence:** On 2026-08-13, a minimal Codex turn reproduced the gateway
   stall after the sandbox error was fixed. The per-agent `codex-home` was 8.7
@@ -455,10 +455,11 @@ policy`.
   PVC. The app container also has a `3Gi` ephemeral-storage limit.
 - **Risk:** Codex-native threads, indexes, caches, and diagnostics reset with a
   pod replacement. OpenClaw retains its own session history and OAuth profile.
-- **Next step:** after rollout, verify the Codex home is pod-local, a minimal
-  agent turn returns without a probe failure, and the restart count is stable.
+- **Validation:** PR #672 rolled out at commit `d858083b`. The pod-local Codex
+  home was 109 MiB, a minimal turn returned `OPENCLAW_OK` in 7.3 seconds, and
+  the ready pod retained zero restarts.
 
-- **Status:** mitigated in desired state; rollout validation pending
+- **Status:** fixed
 - **Area:** agent runtime / startup
 - **Evidence:** The first 2026-08-13 rollout stalled in `bootstrap-config`
   before the app container started. Automatic `openclaw doctor --fix` found
@@ -466,10 +467,11 @@ policy`.
   directory. Repository bootstrap now validates config without running doctor.
 - **Risk:** future OpenClaw upgrades that require config migration will fail
   validation instead of repairing persisted state automatically.
-- **Next step:** verify the replacement pod becomes ready. Run doctor or a
-  specific migration only as reviewed maintenance when an upgrade requires it.
+- **Validation:** the replacement pod completed both init containers and became
+  ready. Run doctor or a specific migration only as reviewed maintenance when
+  an upgrade requires it.
 
-- **Status:** mitigated in desired state; rollout validation pending
+- **Status:** fixed
 - **Area:** agent runtime / sandboxing
 - **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
   `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has
@@ -483,9 +485,9 @@ policy`.
   inside the pod, including the persistent workspace, operator toolbox, and
   mounted application credentials. The service account token is disabled and
   ingress is restricted, but workload egress is not restricted.
-- **Next step:** after rollout, confirm the config reports sandbox mode `off`
-  and a direct or Discord agent request completes. Add a supported backend and
-  validate its containment before enabling OpenClaw sandboxing again.
+- **Validation:** live config reported sandbox mode `off`, and a direct agent
+  request completed. Add and validate a supported backend before enabling
+  OpenClaw sandboxing again.
 
 - **Status:** open
 - **Area:** CI/CD identity
