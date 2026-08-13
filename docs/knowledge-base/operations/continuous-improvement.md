@@ -459,6 +459,17 @@ policy`.
   count stays unchanged.
 
 - **Status:** mitigated in desired state; rollout validation pending
+- **Area:** agent runtime / startup
+- **Evidence:** The first 2026-08-13 rollout stalled in `bootstrap-config`
+  before the app container started. Automatic `openclaw doctor --fix` found
+  5,344 orphan transcripts and remained blocked scanning the NFS-backed session
+  directory. Repository bootstrap now validates config without running doctor.
+- **Risk:** future OpenClaw upgrades that require config migration will fail
+  validation instead of repairing persisted state automatically.
+- **Next step:** verify the replacement pod becomes ready. Run doctor or a
+  specific migration only as reviewed maintenance when an upgrade requires it.
+
+- **Status:** mitigated in desired state; rollout validation pending
 - **Area:** agent runtime / sandboxing
 - **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
   `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has

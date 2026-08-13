@@ -234,12 +234,12 @@ ingress. Egress is not restricted, and all sessions share the pod's persistent
 workspace, operator toolbox, and mounted application credentials. If a sandbox
 backend is added later, document and validate it before changing this setting.
 
-During startup, the bootstrap always runs OpenClaw's safe non-interactive
-doctor repairs before applying desired state. This keeps version upgrades from
-blocking on stale runtime config and gives valid legacy PVC auth/order entries
-a chance to migrate to the canonical `openai` route while preserving secrets
-and OAuth state on the PVC. It also pins `gateway.mode` to `local`, which is
-required for the container-managed gateway process.
+During startup, the bootstrap validates the persisted config before applying
+desired state. It does not run automatic doctor repairs: doctor scans session
+history on the NFS-backed PVC, so accumulated orphan transcripts can block the
+pod before the gateway starts. Run migrations as explicit, reviewed maintenance
+when an upgrade requires them. Bootstrap also pins `gateway.mode` to `local`,
+which is required for the container-managed gateway process.
 
 Run the interactive login from a tailnet-connected operator machine:
 
