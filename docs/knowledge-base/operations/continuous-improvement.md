@@ -449,14 +449,14 @@ policy`.
   GiB on NFS: `logs_2.sqlite` was 5.7 GB and its WAL was 2.2 GB. During a fresh
   turn, Codex read 2.2 GB in 22 seconds while cgroup memory climbed from 1.1 to
   1.6 GB; gateway probes then timed out and liveness restarted the app.
-  Repository desired state now sets `CODEX_SQLITE_HOME` to container-local
-  `/tmp/openclaw-codex-sqlite` while leaving durable OpenClaw state on the PVC.
-- **Risk:** Codex native SQLite thread indexes and diagnostics reset with an app
-  container restart. OpenClaw retains its own session history and OAuth profile,
-  but native Codex-only diagnostic history is intentionally ephemeral.
-- **Next step:** after rollout, verify the Codex SQLite files are under `/tmp`,
-  a minimal agent turn returns without a probe failure, and the pod restart
-  count stays unchanged.
+  Moving only SQLite exposed a second startup backfill over 5,651 native Codex
+  sessions. Repository desired state now mounts the whole per-agent Codex home
+  from a `2Gi` pod-local `emptyDir` while leaving durable OpenClaw state on the
+  PVC. The app container also has a `3Gi` ephemeral-storage limit.
+- **Risk:** Codex-native threads, indexes, caches, and diagnostics reset with a
+  pod replacement. OpenClaw retains its own session history and OAuth profile.
+- **Next step:** after rollout, verify the Codex home is pod-local, a minimal
+  agent turn returns without a probe failure, and the restart count is stable.
 
 - **Status:** mitigated in desired state; rollout validation pending
 - **Area:** agent runtime / startup

@@ -66,9 +66,10 @@ with dedicated PostgreSQL, media-postgres, n8n-postgres, octelium-storage
 PostgreSQL/Redis, Octelium Enterprise package
 stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
 Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. OpenClaw keeps
-auth, sessions, workspace, and application state on its PVC, but relocates
-rebuildable Codex app-server SQLite state and diagnostics to container-local
-`/tmp` so an unbounded diagnostic database cannot stall turns over NFS. See
+auth, sessions, workspace, and application state on its PVC, but mounts its
+rebuildable per-agent Codex app-server home from a pod-local `emptyDir` so
+native thread backfills and diagnostics cannot stall turns over NFS. The volume
+is capped at `2Gi` to protect node storage. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
