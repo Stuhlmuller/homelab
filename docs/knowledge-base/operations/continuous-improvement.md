@@ -453,8 +453,9 @@ policy`.
   sets the sandbox mode to `off` because the workload has no supported backend.
 - **Risk:** agent execution is contained by the Kubernetes workload, not an
   OpenClaw sandbox. Non-main and scheduled work can access resources available
-  inside the pod, including the persistent workspace and operator toolbox,
-  subject to the existing service-account, network, and filesystem controls.
+  inside the pod, including the persistent workspace, operator toolbox, and
+  mounted application credentials. The service account token is disabled and
+  ingress is restricted, but workload egress is not restricted.
 - **Next step:** after rollout, confirm the config reports sandbox mode `off`
   and a direct or Discord agent request completes. Add a supported backend and
   validate its containment before enabling OpenClaw sandboxing again.

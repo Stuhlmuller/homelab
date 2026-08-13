@@ -229,9 +229,10 @@ default sandbox backend is Docker, but the application image does not ship
 Docker and this pod does not run Docker-in-Docker. Enabling `non-main` without a
 working backend makes Discord, group, and spawned agent runs fail before reply.
 The containment boundary is the Kubernetes workload: the service account token
-is disabled, committed NetworkPolicy and ambient mesh policies limit traffic,
-and durable agent state writes stay under the OpenClaw PVC. If a sandbox backend
-is added later, document and validate it before changing this setting.
+is disabled and committed NetworkPolicy and ambient mesh policies restrict
+ingress. Egress is not restricted, and all sessions share the pod's persistent
+workspace, operator toolbox, and mounted application credentials. If a sandbox
+backend is added later, document and validate it before changing this setting.
 
 During startup, the bootstrap always runs OpenClaw's safe non-interactive
 doctor repairs before applying desired state. This keeps version upgrades from
