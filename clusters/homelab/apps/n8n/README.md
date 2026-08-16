@@ -66,6 +66,11 @@ wait init container fails, inspect the `n8n-postgres-auth` and
 `n8n-postgres-client` ExternalSecrets, then verify the `n8n-postgres`
 StatefulSet and PVC.
 
+The readiness init container uses the PostgreSQL client from the same pinned
+major/minor image as the `n8n-postgres` server. Update the client and server
+images together in one reviewed change so readiness checks do not introduce an
+untested client/server major-version split.
+
 Switching from the older SQLite-backed desired state does not automatically
 import rows from `/home/node/.n8n/database.sqlite`. Export workflows and
 credentials before rollout if the existing SQLite contents must be preserved.
