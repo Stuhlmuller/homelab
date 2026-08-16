@@ -13,6 +13,14 @@
         "clusters/homelab/apps/n8n/values.yaml"
       ],
       "enabled": false
+    },
+    {
+      "description": "n8n PostgreSQL readiness client must stay aligned with the n8n-postgres server image.",
+      "matchManagers": ["helm-values"],
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "matchFileNames": ["clusters/homelab/apps/n8n/values.yaml"],
+      "enabled": false
     }
   ],
   "lockFileMaintenance": {
