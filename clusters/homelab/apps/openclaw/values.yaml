@@ -35,8 +35,7 @@ controllers:
               "$NIXPKGS_REF#talosctl" \
               "$NIXPKGS_REF#terragrunt"
             mkdir -p /nix-shared/store /nix-shared/var/nix
-            nix-store -qR /toolbox/profile |
-              xargs -r cp -a --target-directory=/nix-shared/store
+            cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
             chown -R 1000:1000 /nix-shared
             /toolbox/profile/bin/jq --version
