@@ -108,6 +108,7 @@ deluge.stinkyboi.com
 grafana.stinkyboi.com
 kiali.stinkyboi.com
 litellm.stinkyboi.com
+multica.stinkyboi.com
 n8n.stinkyboi.com
 octobot.stinkyboi.com
 openclaw.stinkyboi.com
@@ -133,6 +134,7 @@ grafana
 homelab-demo.homelab
 kiali
 litellm
+multica
 n8n
 octobot
 openclaw

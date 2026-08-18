@@ -1,16 +1,54 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: multica-allow-required-clients
+  name: multica-frontend-allow-required-clients
   namespace: ai
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: multica
       app.kubernetes.io/instance: multica
+      app.kubernetes.io/component: frontend
   action: ALLOW
   rules:
     - from:
         - source:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/octelium-client/sa/octelium-client
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: multica-backend-allow-required-clients
+  namespace: ai
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: multica
+      app.kubernetes.io/instance: multica
+      app.kubernetes.io/component: backend
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ai/sa/default
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: multica-postgres-allow-required-clients
+  namespace: ai
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: multica
+      app.kubernetes.io/instance: multica
+      app.kubernetes.io/component: postgres
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ai/sa/default
