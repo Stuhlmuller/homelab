@@ -1,14 +1,17 @@
 images:
   backend:
     repository: ghcr.io/multica-ai/multica-backend
+    # checkov:skip=CKV_SECRET_6: OCI image digest pin, not secret material.
     tag: v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
     pullPolicy: IfNotPresent
   frontend:
     repository: ghcr.io/multica-ai/multica-web
+    # checkov:skip=CKV_SECRET_6: OCI image digest pin, not secret material.
     tag: v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f
     pullPolicy: IfNotPresent
   postgres:
     repository: pgvector/pgvector
+    # checkov:skip=CKV_SECRET_6: OCI image digest pin, not secret material.
     tag: pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     pullPolicy: IfNotPresent
 
