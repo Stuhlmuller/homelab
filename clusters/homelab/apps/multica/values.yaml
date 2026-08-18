@@ -1,0 +1,88 @@
+images:
+  backend:
+    repository: ghcr.io/multica-ai/multica-backend
+    tag: v0.4.29
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: ghcr.io/multica-ai/multica-web
+    tag: v0.4.29
+    pullPolicy: IfNotPresent
+  postgres:
+    repository: pgvector/pgvector
+    tag: pg17
+    pullPolicy: IfNotPresent
+
+existingSecret: multica-secrets
+
+postgres:
+  external:
+    enabled: false
+  database: multica
+  user: multica
+  persistence:
+    size: 20Gi
+    storageClass: nfs-default
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+backend:
+  replicas: 1
+  uploads:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: nfs-default
+      accessModes:
+        - ReadWriteOnce
+  config:
+    appEnv: production
+    appUrl: https://multica.stinkyboi.com
+    frontendOrigin: https://multica.stinkyboi.com
+    corsAllowedOrigins: ""
+    cookieDomain: ""
+    resendFromEmail: noreply@stinkyboi.com
+    allowSignup: true
+    allowedEmails: ""
+    allowedEmailDomains: ""
+    disableWorkspaceCreation: false
+    vcsIntegrationEnabled: false
+    googleClientId: ""
+    googleRedirectUri: https://multica.stinkyboi.com/auth/callback
+    s3Bucket: ""
+    s3Region: us-west-2
+    cloudfrontDomain: ""
+    cloudfrontKeyPairId: ""
+    localUploadBaseUrl: https://multica.stinkyboi.com
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+frontend:
+  replicas: 1
+  config:
+    remoteApiUrl: http://multica-backend:8080
+    docsUrl: ""
+    publicApiUrl: ""
+    publicWsUrl: ""
+  compatibility:
+    backendAlias: false
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+
+ingress:
+  enabled: false
+
+monitoring:
+  prometheusRule:
+    enabled: false

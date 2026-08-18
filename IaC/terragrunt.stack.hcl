@@ -1525,6 +1525,108 @@ unit "argocd_apps_media_postgres" {
   }
 }
 
+unit "argocd_apps_multica" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/multica"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "external-secrets",
+      "cert-manager",
+      "istio",
+      "platform-storage"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "multica"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "ai"
+        }
+
+        sources = [
+          {
+            repoURL        = "ghcr.io/multica-ai/charts"
+            chart          = "multica"
+            path           = "."
+            targetRevision = "0.4.29"
+            helm = {
+              releaseName = "multica"
+              valueFiles  = ["$values/clusters/homelab/apps/multica/values.yaml"]
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            ref            = "values"
+            path           = "."
+            directory = {
+              include = ".argocd-values-ref-placeholder.yaml"
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/multica"
+            kustomize      = {}
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "3m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "url"
+            value = "https://multica.stinkyboi.com"
+          },
+          {
+            name  = "rollout"
+            value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, NFS, Istio, and Octelium are healthy"
+          },
+          {
+            name  = "storage"
+            value = "docs/storage-nfs.md"
+          }
+        ]
+      }
+    }
+  }
+}
+
 unit "argocd_apps_n8n" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/n8n"
