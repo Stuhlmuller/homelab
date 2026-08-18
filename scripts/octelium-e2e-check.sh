@@ -7,8 +7,6 @@ CONTROL_NAMESPACE="octelium"
 CATALOG="docs/examples/octelium/homelab-services.yaml"
 IDP_NAME="entra"
 TEST_PATH="/"
-CLIENT_IMPLEMENTATION="gvisor"
-APP_GATEWAY_SERVICE="homelab-app-gateway.homelab"
 OCTELIUMCTL_TIMEOUT_SECONDS=20
 HOMELAB_KUBECONFIG=""
 HOMELAB_CONTEXT=""
@@ -59,7 +57,7 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     --client-implementation)
-      CLIENT_IMPLEMENTATION="$2"
+      # Deprecated; accepted for compatibility.
       shift 2
       ;;
     --homelab-kubeconfig)
