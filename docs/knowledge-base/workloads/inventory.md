@@ -75,6 +75,7 @@ and liveness recovery windows are 30 minutes, with 120 seconds for shutdown.
 | `radarr` | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | guarded config recovery to a retained local volume on `zimaboard-0`, with the old NFS claim retained for nightly verified archives and rollback; database state in local `media-postgres`; movies and downloads on QNAP `/media`; live cutover and first-backup validation pending | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
 | `sonarr` | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | persistent config on `nfs-default`; database state in local `media-postgres`; TV and downloads on QNAP `/media` | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, platform-storage |
+| `multica` | `ai` | `clusters/homelab/apps/multica` | `IaC/live/argocd-apps/multica` | Multica `v0.4.29` self-host chart with frontend, backend API/WebSocket server, dedicated pgvector PostgreSQL, generated JWT and database secrets, Postgres and uploads PVCs on `nfs-default`, and Octelium-protected UI at `https://multica.stinkyboi.com` | external-secrets, cert-manager, istio, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent auth, sessions, workspace, and application state; pod-local rebuildable per-agent Codex runtime home; SSM-backed gateway auth, Discord channel config, and GitHub App credentials; Codex OAuth profile on PVC; pod-level containment with OpenClaw sandboxing disabled until a backend exists; explicit agent resource profile; native HTTP readiness/liveness checks through the proxy to the loopback gateway | external-secrets, cert-manager, istio, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public callbacks use `https://n8n-webhook.stinkyboi.com` through `octelium-public` and are limited to webhook prefixes; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public` | external-secrets, cert-manager, istio |
@@ -89,9 +90,10 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
 - `affine` uses namespace default-deny, gateway-only server access, and
   service-account-only database/cache access.
 - `ai` uses a namespace default-deny policy and explicit inbound allows for the
-  Istio gateway path used by Octelium service proxies, the Octelium connector
-  principal reserved for future served upstreams, Alertmanager to reach
-  OpenClaw `/hooks/agent`, and OpenClaw to reach LiteLLM.
+  Istio gateway path used by Octelium service proxies to LiteLLM, Multica, and
+  OpenClaw, the Octelium connector principal reserved for future served
+  upstreams, Alertmanager to reach OpenClaw `/hooks/agent`, and OpenClaw to
+  reach LiteLLM.
 - `automation` currently restricts `n8n` workload access to the Istio gateway,
   the Octelium client bridge, and n8n's own service account for authenticated
   self-API calls; the reviewed public n8n and Policy Bot callback hosts forward

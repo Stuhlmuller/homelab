@@ -92,6 +92,19 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
   remain operator-configured and must not be committed.
+- Multica uses generated `/homelab/multica/jwt-secret` and
+  `/homelab/multica/postgres-password` values. The `multica-secrets`
+  ExternalSecret in the `ai` namespace renders both parameters into the target
+  Secret `multica-secrets` with `refreshPolicy: OnChange` and
+  `deletionPolicy: Retain`. Rotate generated JWT and PostgreSQL values through
+  the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
+  catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack; do not hand-edit
+  `/homelab/multica/postgres-password`, because future applies restore the
+  repository-owned generated value. PostgreSQL password rotation also requires
+  the database-role procedure in [[runbooks/secrets-aws-ssm]] before rolling
+  consumers, since changing SSM alone does not update the retained PostgreSQL
+  role on an initialized PVC. Preserve the target Secret and PostgreSQL PVC
+  during rollback unless intentionally rebuilding the instance.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token

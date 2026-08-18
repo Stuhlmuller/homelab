@@ -261,6 +261,22 @@ inputs = {
       description   = "OpenClaw GitHub App private key PEM."
       initial_value = local.placeholder
     }
+    "/homelab/multica/jwt-secret" = {
+      description = "Multica JWT signing secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/multica/postgres-password" = {
+      description = "Multica dedicated PostgreSQL password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/n8n/encryption-key" = {
       description = "n8n instance encryption key for saved credentials and encrypted data."
       generated = {

@@ -195,7 +195,7 @@ ingress_hosts(ingress) := hosts if {
 }
 
 external_secret_allowed_prefixes := {
-	"ai": {"/homelab/litellm/", "/homelab/openclaw/", "/homelab/grafana/openclaw-alert-hook-token"},
+	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/grafana/openclaw-alert-hook-token"},
 	"affine": {"/homelab/affine/"},
 	"argocd": {"/homelab/argocd/", "/homelab/argocd-image-updater/"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
