@@ -27,8 +27,10 @@ role, and consumers move together.
    have an explicit keeper yet, add one before rotating.
 2. Plan and apply that stack so OpenTofu writes the new SecureString value to
    SSM.
-3. Pause Multica writes by scaling the backend Deployment to zero or using an
-   approved maintenance gate.
+3. Pause Multica writes through GitOps, such as a reviewed change that
+   disables automated sync or scales the backend in desired state, then wait for
+   Argo CD to report the paused state. Do not rely on manual `kubectl scale`
+   while automated self-heal is enabled.
 4. Read the new value from SSM in an operator shell without printing it in
    history or logs, then exec into the PostgreSQL pod while the old Secret still
    works and run `ALTER USER multica WITH PASSWORD '<new-password>';` through
