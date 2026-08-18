@@ -62,14 +62,14 @@ ready, but they must not be treated as production-ready until:
 
 The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral
 Redis, blob storage, and config state; Prometheus, Grafana, Deluge, Dispatcharr
-with dedicated PostgreSQL, media-postgres, n8n-postgres, octelium-storage
-PostgreSQL/Redis, Octelium Enterprise package
-stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. OpenClaw keeps
-auth, sessions, workspace, and application state on its PVC, but mounts its
-rebuildable per-agent Codex app-server home from a pod-local `emptyDir` so
-native thread backfills and diagnostics cannot stall turns over NFS. The volume
-is capped at `2Gi` to protect node storage. See
+with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
+backend upload PVCs, n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium
+Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
+`octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and
+OctoBot. OpenClaw keeps auth, sessions, workspace, and application state on its
+PVC, but mounts its rebuildable per-agent Codex app-server home from a
+pod-local `emptyDir` so native thread backfills and diagnostics cannot stall
+turns over NFS. The volume is capped at `2Gi` to protect node storage. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
@@ -118,6 +118,14 @@ observed NFS client path, but QNAP NFS remains a database availability risk.
 Its availability is required for Octelium service publication, including the
 CI Kubernetes API tunnel.
 
+Multica uses the standard `nfs-default` class for its dedicated pgvector
+PostgreSQL data and backend uploads. Treat those claims as a matched recovery
+set: restore the database and upload PVCs from the same backup point before
+resuming app sync, and preserve both PVCs during rollback unless intentionally
+rebuilding the Multica instance. The first rollout is registered as stateful but
+should stay in the stateful workload gate until backup and restore validation is
+completed in `docs/storage-nfs.md`.
+
 Deluge's active 5 Gi config volume is a retained static `hostPath` PV at
 `/var/lib/deluge`, pinned to `zimaboard-0`. The initial guarded cold copy took
 4 minutes 6 seconds for roughly 5.2 MB, demonstrating the QNAP stall on the old
@@ -160,6 +168,7 @@ trigger a silent redownload.
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/cordium/cluster-config.yaml`
+- `clusters/homelab/apps/multica`
 - `.talos/patches/worker-zimaboard-1.yaml`
 - `.talos/patches/worker-cordium-user-namespaces.yaml`
 - `.talos/patches/worker-cordium-user-namespaces-rollback.yaml`

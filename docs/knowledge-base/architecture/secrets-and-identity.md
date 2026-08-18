@@ -92,6 +92,15 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
   remain operator-configured and must not be committed.
+- Multica uses generated `/homelab/multica/jwt-secret` and
+  `/homelab/multica/postgres-password` values. The `multica-secrets`
+  ExternalSecret in the `ai` namespace renders both parameters into the target
+  Secret `multica-secrets` with `refreshPolicy: OnChange` and
+  `deletionPolicy: Retain`, so rotations require a reviewed SSM update plus a
+  manifest annotation/revision bump or ExternalSecret reconcile trigger before
+  pods consume the new JWT signing key or database password. Preserve the
+  target Secret and PostgreSQL PVC during rollback unless intentionally
+  rebuilding the instance.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token
