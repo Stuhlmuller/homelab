@@ -97,7 +97,8 @@ roles need identity-based KMS permissions for both keys.
   ExternalSecret in the `ai` namespace renders both parameters into the target
   Secret `multica-secrets` with `refreshPolicy: OnChange` and
   `deletionPolicy: Retain`. Rotate generated JWT and PostgreSQL values through
-  the `IaC/live/aws-ssm-parameters` OpenTofu workflow; do not hand-edit
+  the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
+  catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack; do not hand-edit
   `/homelab/multica/postgres-password`, because future applies restore the
   repository-owned generated value. PostgreSQL password rotation also requires
   the database-role procedure in [[runbooks/secrets-aws-ssm]] before rolling

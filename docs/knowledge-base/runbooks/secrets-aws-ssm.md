@@ -13,8 +13,10 @@ after the repository-managed bootstrap secret is available.
 The Multica chart reads `POSTGRES_PASSWORD` when the built-in PostgreSQL data
 directory is initialized. On a retained, already-initialized PVC, refreshing
 `multica-secrets` does not change the existing `multica` database role
-password. The generated SSM value is owned by the
-`IaC/live/aws-ssm-parameters` OpenTofu stack, so do not hand-edit
+password. The generated SSM value is declared in the committed
+`IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
+rendered into the `IaC/live/aws-ssm-parameters` OpenTofu stack, so do not
+hand-edit
 `/homelab/multica/postgres-password`; the next apply would restore the
 repository-owned generated value.
 
@@ -23,10 +25,10 @@ role, and consumers move together.
 
 1. Open a reviewed PR that changes the declared rotation trigger or keeper for
    `/homelab/multica/postgres-password` in
-   `IaC/live/aws-ssm-parameters`. If the generated-parameter workflow does not
+   `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the generated-parameter workflow does not
    have an explicit keeper yet, add one before rotating.
-2. Plan and apply that stack so OpenTofu writes the new SecureString value to
-   SSM.
+2. regenerate the live stack, then plan and apply it so OpenTofu writes the new
+   SecureString value to SSM.
 3. Pause Multica writes through GitOps, such as a reviewed change that
    disables automated sync or scales the backend in desired state, then wait for
    Argo CD to report the paused state. Do not rely on manual `kubectl scale`
@@ -44,7 +46,7 @@ role, and consumers move together.
    before reopening writes.
 
 If any step fails after the role password changes, either complete the Secret
-refresh and pod restart or revert the rotation PR, re-apply the generated
+refresh and pod restart or revert the rotation PR, regenerate and re-apply the generated
 parameter stack, and run another `ALTER USER` back to the restored password
 before bringing the backend up.
 

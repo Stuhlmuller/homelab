@@ -134,6 +134,8 @@ Terragrunt-generated internal values:
 - `/homelab/affine/private-key` (P-256 ECDSA PEM)
 - `/homelab/litellm/master-key`
 - `/homelab/media-postgres/app-password`
+- `/homelab/multica/jwt-secret`
+- `/homelab/multica/postgres-password`
 - `/homelab/n8n/encryption-key`
 - `/homelab/n8n/postgres-admin-password`
 - `/homelab/n8n/postgres-app-password`
