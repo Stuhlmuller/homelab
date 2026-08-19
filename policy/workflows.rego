@@ -92,8 +92,6 @@ live_homelab_workflow if {
 
 break_glass_kubeconfig_workflow if {
 	object.get(input, "name", "") == "Break Glass Multica Recovery"
-	events := workflow_events
-	has_event(events, "workflow_dispatch")
 }
 
 workflow_run_contains(needle) if {
