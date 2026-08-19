@@ -12,6 +12,10 @@ The workflow is intentionally constrained:
 - it applies the repository-owned `IaC/live/aws-ssm-parameters` unit before
   Multica so bootstrap secret material is created or adopted through its
   declared Terragrunt state owner;
+- it adopts existing GitHub runner and Cordium SSM parameters before the SSM
+  plan, matching the normal Terragrunt Apply state-recovery path;
+- it saves JSON plans for both recovery applies and runs the repository
+  Terraform Conftest policy before applying either plan;
 - it uses `terragrunt stack generate` and applies only the repository-owned
   Multica Argo CD unit after the SSM unit succeeds;
 - it polls the Multica Argo CD `Application` until it is both synced and
