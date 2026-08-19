@@ -1,0 +1,154 @@
+name: Break Glass Multica Recovery
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: break-glass-multica-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 45
+    env:
+      AWS_REGION: us-east-1
+      AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Verify Recovery Inputs
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+        run: |
+          test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set."; exit 1; }
+          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a repository secret."; exit 1; }
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: true
+          role-session-name: homelab-multica-recovery-${{ github.run_id }}
+          role-to-assume: ${{ env.AWS_APPLY_ROLE_ARN }}
+          unset-current-credentials: true
+
+      - name: Recover Multica
+        env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
+        run: |
+          nix develop --command bash <<'EOF'
+          set -euo pipefail
+
+          install -m 0700 -d "${HOME}/.kube"
+          printf '%s' "${KUBE_CONFIG_B64}" | base64 -d >"${HOME}/.kube/config"
+          chmod 0600 "${HOME}/.kube/config"
+
+          ensure_secure_parameter() {
+            local name="$1"
+            local length="$2"
+            local value
+            if aws ssm get-parameter --name "${name}" --with-decryption >/dev/null 2>&1; then
+              echo "SSM parameter ${name} already exists."
+              return 0
+            fi
+            value="$(openssl rand -base64 "${length}" | tr -d '\n')"
+            aws ssm put-parameter \
+              --name "${name}" \
+              --type SecureString \
+              --value "${value}" \
+              --overwrite >/dev/null
+            unset value
+            echo "Created SSM parameter ${name}."
+          }
+
+          ensure_secure_parameter /homelab/multica/jwt-secret 48
+          ensure_secure_parameter /homelab/multica/postgres-password 32
+
+          kubectl --request-timeout=15s version
+          kubectl apply -f - <<'YAML'
+          apiVersion: argoproj.io/v1alpha1
+          kind: Application
+          metadata:
+            name: multica
+            namespace: argocd
+            labels:
+              app.kubernetes.io/managed-by: break-glass-recovery
+              app.kubernetes.io/part-of: homelab
+          spec:
+            project: homelab
+            destination:
+              name: ""
+              server: https://kubernetes.default.svc
+              namespace: ai
+            sources:
+              - repoURL: ghcr.io/multica-ai/charts
+                chart: multica
+                path: .
+                targetRevision: 0.4.29
+                helm:
+                  releaseName: multica
+                  valueFiles:
+                    - $values/clusters/homelab/apps/multica/values.yaml
+              - repoURL: https://github.com/Stuhlmuller/homelab.git
+                targetRevision: main
+                ref: values
+                path: .
+                directory:
+                  include: .argocd-values-ref-placeholder.yaml
+              - repoURL: https://github.com/Stuhlmuller/homelab.git
+                targetRevision: main
+                path: clusters/homelab/apps/multica
+                kustomize: {}
+            syncPolicy:
+              automated:
+                allowEmpty: false
+                enabled: true
+                prune: true
+                selfHeal: true
+              syncOptions:
+                - CreateNamespace=true
+                - ServerSideApply=true
+              retry:
+                limit: 5
+                backoff:
+                  duration: 30s
+                  factor: 2
+                  maxDuration: 3m
+            info:
+              - name: url
+                value: https://multica.stinkyboi.com
+              - name: rollout
+                value: break-glass recovery while Octelium CI credential is repaired
+              - name: storage
+                value: docs/storage-nfs.md
+          YAML
+
+          kubectl -n argocd annotate application multica \
+            argocd.argoproj.io/refresh=hard \
+            --overwrite
+          kubectl -n argocd get application multica -o wide
+          EOF
