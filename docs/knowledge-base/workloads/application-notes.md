@@ -50,3 +50,12 @@ steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
+
+## Sonarr
+
+Sonarr runs behind Octelium with `AuthenticationMethod=External` and
+`AuthenticationRequired=DisabledForLocalAddresses`. Its startup path mirrors the
+Radarr auth recovery pattern: normalize the PVC-backed `config.xml` in an init
+container, remove legacy auth tags, pass matching `SONARR__AUTH__*`
+environment settings, and skip the linuxserver default config init script so
+the app does not reintroduce stale authentication state on restart.
