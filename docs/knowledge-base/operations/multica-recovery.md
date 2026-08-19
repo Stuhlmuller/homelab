@@ -8,14 +8,16 @@ The workflow is intentionally constrained:
 
 - it runs only from `main` through `workflow_dispatch`;
 - it uses the protected `homelab-production` environment;
-- it uses `KUBE_CONFIG_B64` only for this named break-glass workflow;
-- it creates Multica SSM bootstrap parameters only when AWS returns
-  `ParameterNotFound`;
-- it does not overwrite existing Multica SSM parameter values;
+- it uses `KUBE_CONFIG_B64` only for the guarded `recover` job;
+- it applies the repository-owned `IaC/live/aws-ssm-parameters` unit before
+  Multica so bootstrap secret material is created or adopted through its
+  declared Terragrunt state owner;
 - it uses `terragrunt stack generate` and applies only the repository-owned
-  Multica Argo CD unit;
+  Multica Argo CD unit after the SSM unit succeeds;
 - it polls the Multica Argo CD `Application` until it is both synced and
-  healthy, then fails the workflow if recovery does not complete.
+  healthy, then fails the workflow if recovery does not complete;
+- it does not imperatively patch, annotate, or otherwise mutate the live
+  `Application` during polling.
 
 After the Octelium CI credential is repaired with
 `scripts/octelium-ci-credential.sh`, prefer the normal Terragrunt Apply path and
