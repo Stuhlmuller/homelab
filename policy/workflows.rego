@@ -65,6 +65,23 @@ has_event(events, event) if {
 	object.keys(events)[_] == event
 }
 
+only_event(events, event) if {
+	events == event
+}
+
+only_event(events, event) if {
+	is_array(events)
+	count(events) == 1
+	events[0] == event
+}
+
+only_event(events, event) if {
+	is_object(events)
+	keys := object.keys(events)
+	count(keys) == 1
+	keys[0] == event
+}
+
 external_action_reference(uses) if {
 	not startswith(uses, "./")
 	not startswith(uses, "docker://")
@@ -87,27 +104,39 @@ live_homelab_workflow if {
 }
 
 live_homelab_workflow if {
-	workflow_step_env_has("KUBE_CONFIG_B64")
+	workflow_env_has("KUBE_CONFIG_B64")
 }
 
 break_glass_kubeconfig_workflow if {
 	object.get(input, "name", "") == "Break Glass Multica Recovery"
-	jobs := object.get(input, "jobs", {})
-	recover := object.get(jobs, "recover", {})
-	object.get(recover, "if", "") == "github.ref == 'refs/heads/main'"
-	environment := object.get(recover, "environment", {})
-	object.get(environment, "name", "") == "homelab-production"
-	not kubeconfig_step_in_unguarded_job
+	only_event(workflow_events, "workflow_dispatch")
+	not kubeconfig_env_in_unguarded_scope
 }
 
-kubeconfig_step_in_unguarded_job if {
+kubeconfig_env_in_unguarded_scope if {
+	workflow_top_env_has("KUBE_CONFIG_B64")
+}
+
+kubeconfig_env_in_unguarded_scope if {
 	jobs := object.get(input, "jobs", {})
 	some job_name, job in jobs
-	workflow_job_step_env_has(job, "KUBE_CONFIG_B64")
-	job_name != "recover"
+	workflow_job_env_has(job, "KUBE_CONFIG_B64")
+	not guarded_break_glass_job(job_name, job)
 }
 
-workflow_job_step_env_has(job, key) if {
+guarded_break_glass_job(job_name, job) if {
+	job_name == "recover"
+	object.get(job, "if", "") == "github.ref == 'refs/heads/main'"
+	environment := object.get(job, "environment", {})
+	object.get(environment, "name", "") == "homelab-production"
+}
+
+workflow_job_env_has(job, key) if {
+	env := object.get(job, "env", {})
+	object.get(env, key, null) != null
+}
+
+workflow_job_env_has(job, key) if {
 	steps := object.get(job, "steps", [])
 	some index
 	step := steps[index]
@@ -123,6 +152,21 @@ workflow_run_contains(needle) if {
 	step := steps[index]
 	run := lower(sprintf("%v", [object.get(step, "run", "")]))
 	contains(run, lower(needle))
+}
+
+workflow_env_has(key) if {
+	workflow_top_env_has(key)
+}
+
+workflow_env_has(key) if {
+	jobs := object.get(input, "jobs", {})
+	some _, job in jobs
+	workflow_job_env_has(job, key)
+}
+
+workflow_top_env_has(key) if {
+	env := object.get(input, "env", {})
+	object.get(env, key, null) != null
 }
 
 workflow_step_env_has(key) if {
