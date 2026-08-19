@@ -79,7 +79,7 @@ only_event(events, event) if {
 	is_object(events)
 	keys := object.keys(events)
 	count(keys) == 1
-	keys[0] == event
+	keys[_] == event
 }
 
 external_action_reference(uses) if {
