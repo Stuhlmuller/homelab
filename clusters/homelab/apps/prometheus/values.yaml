@@ -19,6 +19,8 @@ kubeScheduler:
 prometheus:
   prometheusSpec:
     retention: 15d
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector: {}
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector:

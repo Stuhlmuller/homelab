@@ -4,6 +4,8 @@ Prometheus persists metrics and Alertmanager state on `nfs-default`.
 Prometheus also discovers repo-owned ServiceMonitor objects in the `monitoring`
 namespace so independent Applications, such as Grafana, can expose metrics
 without spoofing the Prometheus Helm release label.
+Repo-owned PrometheusRule objects are selected the same way, which lets
+non-chart alert rules load without a Helm release label.
 
 ## Alert Routing
 
@@ -32,6 +34,13 @@ Argo CD application controller, repo server, and API server metrics services in
 the `argocd` namespace. The matching services are enabled by the Argo CD
 bootstrap stack at `IaC/bootstrap/argocd`; the ServiceMonitors live here so
 Prometheus Operator CRDs are installed before this scrape wiring is applied.
+
+`argocd-prometheusrules.yaml` owns Prometheus-native Argo CD alert rules for
+missing `argocd_app_info`, unhealthy applications, applications stuck
+Progressing, and applications stuck OutOfSync. These intentionally duplicate
+the high-value Grafana-managed Argo CD alerts so Alertmanager still receives
+Argo CD application failures directly when Grafana provisioning, rule
+evaluation, or Grafana's Alertmanager contact point is unhealthy.
 
 `deluge-servicemonitor.yaml` scrapes the Deluge metrics sidecar in the `media`
 namespace. That sidecar exposes `deluge_daemon_rpc_healthy`, which checks
@@ -90,6 +99,7 @@ After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 ```sh
 kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
 kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
+kubectl -n monitoring get prometheusrule argocd-application-health
 kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 ```
