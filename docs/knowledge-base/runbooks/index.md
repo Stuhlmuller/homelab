@@ -34,6 +34,9 @@ what to read, what facts matter, and what must be updated with future changes.
 - [[talos-control-plane-maintenance]] records issuer drift repair and upgrade
   gates.
 - [[image-automation]] records the Argo CD Image Updater pull-request policy.
+- `docs/multica-break-glass-recovery.md` records the temporary Multica
+  break-glass dispatch, verification, failure handling, rollback, and
+  retirement procedure.
 
 ## Supporting Maps
 
