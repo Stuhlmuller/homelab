@@ -24,6 +24,30 @@ persistent `/config` volume:
 The database password comes from AWS SSM Parameter Store through External
 Secrets. Do not commit it to this repository.
 
+## Config Storage
+
+Sonarr's active `/config` lives on the retained `sonarr-config-local` static
+PV at `/var/lib/sonarr` on `zimaboard-0`. This keeps runtime XML, the API key,
+and small app state out of the QNAP/NFS failure domain that previously caused
+slow config reads, PostgreSQL timeouts, and empty or malformed Servarr
+`config.xml` files.
+
+During the first rollout, the `migrate-config` init container mounts the legacy
+`sonarr-config` NFS claim read-only at `/legacy-config`, validates
+`config.xml`, and copies the tree into the local claim without copying
+`local-backups`. If the live `config.xml` is empty or malformed, the migration
+recovers the newest valid `sonarr_backup_*.zip` archive or a prior
+`config.xml.auth-recovery.*` file instead. A fresh install with an empty legacy
+claim gets a minimal local `config.xml` with a generated API key, while a
+non-empty legacy claim with unrecoverable config still fails the rollout for
+manual restore. A `.nfs-migration-complete` marker makes later restarts
+idempotent.
+
+The `sonarr-config-backup` CronJob runs nightly on `zimaboard-0`, validates the
+local `config.xml`, and writes 14-day tarball archives back to
+`sonarr-config/local-backups` on NFS. Keep the legacy claim until the migration
+marker and at least one scheduled backup have been verified.
+
 ## Authentication
 
 Sonarr runs behind Octelium and keeps local-address access unauthenticated for
@@ -45,6 +69,8 @@ After Argo CD syncs this change, verify the rollout and runtime endpoint:
 
 ```bash
 kubectl -n media rollout status deployment/sonarr --timeout=10m
+kubectl -n media exec deploy/sonarr -c app -- \
+  sh -ec 'test -f /config/.nfs-migration-complete'
 kubectl -n media exec deploy/sonarr -c app -- \
   sh -ec 'grep -E "<(AuthenticationMethod|AuthenticationRequired|PostgresHost|PostgresMainDb|PostgresLogDb)>" /config/config.xml'
 kubectl -n media exec deploy/sonarr -c app -- \
@@ -74,6 +100,9 @@ Failure modes to look for:
 
 - `Sonarr config.xml is missing a closing </Config> tag`: restore the config PVC
   from backup before another rollout.
+- `No Sonarr config with a closing Config tag and API key was recoverable`:
+  inspect the legacy NFS claim and restore a valid Sonarr backup archive before
+  retrying the rollout.
 - `must contain exactly one AuthenticationMethod=External`: inspect the
   init-container output and the PVC-backed XML for malformed or multiline auth
   tags.
@@ -82,9 +111,14 @@ Failure modes to look for:
 
 ### Rollback
 
-Rollback through GitOps, not a live manual patch. Revert the commit that changed
-`clusters/homelab/apps/sonarr/values.yaml`, open the normal PR, wait for CI, and
-let Argo CD sync `main`.
+Rollback through GitOps, not a live manual patch. After cutover, keep the
+`sonarr-config-local` claim mounted as active `/config` unless the rollback PR
+also restores a current `sonarr-config/local-backups/*.tar.gz` archive into the
+legacy claim root before Sonarr starts. Simply reverting `values.yaml` to mount
+the old `sonarr-config` claim can restart Sonarr with stale pre-cutover
+settings, because the nightly job writes current state under `local-backups`
+instead of refreshing the legacy root. Do not delete either the local or legacy
+config claim during rollback; both are retained recovery sources.
 
 If emergency access must temporarily return to built-in Forms auth, make that a
 repo change too: remove the `SONARR__AUTH__*` environment keys and the
@@ -95,9 +129,10 @@ unless intentionally rolling Sonarr back to SQLite from a verified backup.
 
 ## Media Storage
 
-Sonarr mounts the static `media-tv` PVC at `/tv` and the shared
-`media-downloads` PVC at `/downloads`. Both claims point at the QNAP `/media`
-NFS export instead of the default `/homelab` provisioner path.
+Sonarr mounts the node-local `sonarr-config-local` PVC at `/config`, the static
+`media-tv` PVC at `/tv`, and the shared `media-downloads` PVC at `/downloads`.
+The media claims point at the QNAP `/media` NFS export instead of the default
+`/homelab` provisioner path.
 
 The `media-tv-migration` Job copies files from the older `sonarr-media` PVC into
 `/media/tv`, sets write-friendly NFS permissions, and verifies that the target
