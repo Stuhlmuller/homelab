@@ -71,16 +71,24 @@ jobs:
             local name="$1"
             local length="$2"
             local value
+            local get_output
             if aws ssm get-parameter --name "${name}" --with-decryption >/dev/null 2>&1; then
               echo "SSM parameter ${name} already exists."
               return 0
+            fi
+            if get_output="$(aws ssm get-parameter --name "${name}" --with-decryption 2>&1)"; then
+              echo "SSM parameter ${name} already exists."
+              return 0
+            fi
+            if ! grep -q 'ParameterNotFound' <<<"${get_output}"; then
+              printf '%s\n' "${get_output}" >&2
+              return 1
             fi
             value="$(openssl rand -base64 "${length}" | tr -d '\n')"
             aws ssm put-parameter \
               --name "${name}" \
               --type SecureString \
-              --value "${value}" \
-              --overwrite >/dev/null
+              --value "${value}" >/dev/null
             unset value
             echo "Created SSM parameter ${name}."
           }
