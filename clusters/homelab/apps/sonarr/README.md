@@ -24,6 +24,21 @@ persistent `/config` volume:
 The database password comes from AWS SSM Parameter Store through External
 Secrets. Do not commit it to this repository.
 
+## Authentication
+
+Sonarr runs behind Octelium and keeps local-address access unauthenticated for
+the gateway path. The init container removes legacy `AuthenticationEnabled` and
+`AuthenticationType` entries from `config.xml`, then writes:
+
+```xml
+<AuthenticationMethod>External</AuthenticationMethod>
+<AuthenticationRequired>DisabledForLocalAddresses</AuthenticationRequired>
+```
+
+The app container also exports the matching `SONARR__AUTH__*` settings and
+skips the linuxserver default config init script so the PVC-backed
+configuration stays normalized after every restart.
+
 ## Media Storage
 
 Sonarr mounts the static `media-tv` PVC at `/tv` and the shared
