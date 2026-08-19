@@ -106,7 +106,7 @@ jobs:
           requires_live_plan=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              IaC/*|flake.nix|flake.lock|policy/*)
+              IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
               scripts/ci/install-kubeconfig.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)

@@ -62,7 +62,7 @@ has_event(events, event) if {
 
 has_event(events, event) if {
 	is_object(events)
-	events[event]
+	object.keys(events)[_] == event
 }
 
 external_action_reference(uses) if {
