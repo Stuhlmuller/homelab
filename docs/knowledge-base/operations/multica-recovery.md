@@ -2,7 +2,8 @@
 
 The `Break Glass Multica Recovery` workflow is a temporary, manual recovery
 path for the Multica first rollout when the normal Octelium clientless
-Kubernetes CI credential is broken before Terragrunt can run.
+Kubernetes CI credential is broken before Terragrunt can run. The executable
+operator procedure is `docs/multica-break-glass-recovery.md`.
 
 The workflow is intentionally constrained:
 
@@ -22,6 +23,11 @@ The workflow is intentionally constrained:
   healthy, then fails the workflow if recovery does not complete;
 - it does not imperatively patch, annotate, or otherwise mutate the live
   `Application` during polling.
+
+Before dispatch, read the runbook prerequisites and approval checklist. If a
+partial recovery apply occurs, reconcile through the repository-owned Terragrunt
+state paths and saved-plan Conftest gates described there; do not create SSM
+parameters manually or mutate the live Argo CD Application.
 
 After the Octelium CI credential is repaired with
 `scripts/octelium-ci-credential.sh`, prefer the normal Terragrunt Apply path and
