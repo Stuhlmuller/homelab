@@ -67,37 +67,13 @@ jobs:
           printf '%s' "${KUBE_CONFIG_B64}" | base64 -d >"${HOME}/.kube/config"
           chmod 0600 "${HOME}/.kube/config"
 
-          ensure_multica_parameter() {
-            local name="$1"
-            local length="$2"
-            local value
-            local get_output
-            if aws ssm get-parameter --name "${name}" --with-decryption >/dev/null 2>&1; then
-              echo "SSM parameter ${name} already exists."
-              return 0
-            fi
-            if get_output="$(aws ssm get-parameter --name "${name}" --with-decryption 2>&1)"; then
-              echo "SSM parameter ${name} already exists."
-              return 0
-            fi
-            if ! grep -q 'ParameterNotFound' <<<"${get_output}"; then
-              printf '%s\n' "${get_output}" >&2
-              return 1
-            fi
-            value="$(openssl rand -base64 "${length}" | tr -d '\n')"
-            aws ssm put-parameter \
-              --name "${name}" \
-              --type SecureString \
-              --value "${value}" >/dev/null
-            unset value
-            echo "Created SSM parameter ${name}."
-          }
-
-          ensure_multica_parameter /homelab/multica/jwt-secret 48
-          ensure_multica_parameter /homelab/multica/postgres-password 32
-
           kubectl --request-timeout=15s version
           (cd IaC && terragrunt stack generate)
+          (
+            cd IaC/live/aws-ssm-parameters
+            terragrunt init -no-color
+            terragrunt apply -no-color -auto-approve
+          )
           (
             cd IaC/live/argocd-apps/multica
             terragrunt init -no-color
@@ -121,9 +97,6 @@ jobs:
               kubectl -n argocd get application multica -o wide
               exit 0
             fi
-            kubectl -n argocd annotate application multica \
-              argocd.argoproj.io/refresh=hard \
-              --overwrite >/dev/null || true
             sleep 30
           done
 
