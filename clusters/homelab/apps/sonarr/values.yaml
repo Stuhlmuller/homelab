@@ -8,6 +8,7 @@ controllers:
       automountServiceAccountToken: false
       annotations:
         homelab.rst.io/access-mode: "octelium"
+    strategy: Recreate
     initContainers:
       configure-postgres:
         image:
@@ -37,15 +38,67 @@ controllers:
               tag="$1"
               value="$(xml_escape "$2")"
               awk -v tag="$tag" -v value="$value" '
-                BEGIN { found = 0 }
-                $0 ~ "<" tag ">" {
-                  print "  <" tag ">" value "</" tag ">"
-                  found = 1
+                BEGIN { inserted = 0 }
+                $0 ~ "^[[:space:]]*<" tag ">.*</" tag ">[[:space:]]*$" {
                   next
                 }
-                $0 ~ "</Config>" && found == 0 {
+                $0 ~ "^[[:space:]]*</Config>[[:space:]]*$" {
                   print "  <" tag ">" value "</" tag ">"
-                  found = 1
+                  inserted = 1
+                }
+                { print }
+                END {
+                  if (inserted == 0) {
+                    exit 1
+                  }
+                }
+              ' "$config" > "$tmp"
+              cat "$tmp" > "$config"
+            }
+
+            assert_single_config_tag() {
+              tag="$1"
+              expected="$2"
+              total="$(awk -v tag="$tag" '
+                $0 ~ "^[[:space:]]*<" tag ">.*</" tag ">[[:space:]]*$" { count++ }
+                END { print count + 0 }
+              ' "$config")"
+              matches="$(awk -v tag="$tag" -v expected="$expected" '
+                $0 ~ "^[[:space:]]*<" tag ">.*</" tag ">[[:space:]]*$" {
+                  value = $0
+                  sub("^[[:space:]]*<" tag ">", "", value)
+                  sub("</" tag ">[[:space:]]*$", "", value)
+                  if (value == expected) {
+                    count++
+                  }
+                }
+                END { print count + 0 }
+              ' "$config")"
+
+              if [ "$total" -ne 1 ] || [ "$matches" -ne 1 ]; then
+                echo "Sonarr config.xml must contain exactly one ${tag}=${expected}; found ${matches}/${total}" >&2
+                exit 1
+              fi
+            }
+
+            assert_absent_config_tag() {
+              tag="$1"
+              total="$(awk -v tag="$tag" '
+                $0 ~ "^[[:space:]]*<" tag ">.*</" tag ">[[:space:]]*$" { count++ }
+                END { print count + 0 }
+              ' "$config")"
+
+              if [ "$total" -ne 0 ]; then
+                echo "Sonarr config.xml must not contain legacy ${tag}; found ${total}" >&2
+                exit 1
+              fi
+            }
+
+            remove_config_tag() {
+              tag="$1"
+              awk -v tag="$tag" '
+                $0 ~ "^[[:space:]]*<" tag ">.*</" tag ">[[:space:]]*$" {
+                  next
                 }
                 { print }
               ' "$config" > "$tmp"
@@ -74,6 +127,18 @@ controllers:
             set_config_tag PostgresHost "$SONARR_POSTGRES_HOST"
             set_config_tag PostgresMainDb "$SONARR_POSTGRES_MAIN_DB"
             set_config_tag PostgresLogDb "$SONARR_POSTGRES_LOG_DB"
+
+            # AuthenticationEnabled is a legacy switch that forces Forms auth
+            # before Sonarr reads AuthenticationMethod. AuthenticationType is a
+            # retired/incorrect auth-required key. Keep both out of the PVC.
+            remove_config_tag AuthenticationEnabled
+            remove_config_tag AuthenticationType
+            set_config_tag AuthenticationMethod External
+            set_config_tag AuthenticationRequired DisabledForLocalAddresses
+            assert_absent_config_tag AuthenticationEnabled
+            assert_absent_config_tag AuthenticationType
+            assert_single_config_tag AuthenticationMethod External
+            assert_single_config_tag AuthenticationRequired DisabledForLocalAddresses
         securityContext:
           runAsGroup: 1000
           runAsUser: 1000
@@ -82,11 +147,56 @@ controllers:
         image:
           repository: lscr.io/linuxserver/sonarr
           tag: 4.0.19@sha256:373159ba768e23a3a1c497d9f2b936addf8fd5b1fdce7dd6a14080ac928bfda0
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            rm -f /etc/cont-init.d/30-config
+            exec /init
         env:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
           DELUGE_URL: http://deluge.media.svc.cluster.local:8112
+          SONARR__AUTH__METHOD: External
+          SONARR__AUTH__REQUIRED: DisabledForLocalAddresses
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -ec
+                  - curl -fsS -o /dev/null http://127.0.0.1:8989/initialize.json
+              failureThreshold: 36
+              periodSeconds: 5
+              timeoutSeconds: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -ec
+                  - curl -fsS -o /dev/null http://127.0.0.1:8989/initialize.json
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -ec
+                  - curl -fsS -o /dev/null http://127.0.0.1:8989/initialize.json
+              failureThreshold: 3
+              periodSeconds: 30
+              timeoutSeconds: 5
 service:
   app:
     controller: sonarr
