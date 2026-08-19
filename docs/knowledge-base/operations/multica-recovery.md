@@ -12,7 +12,10 @@ The workflow is intentionally constrained:
 - it creates Multica SSM bootstrap parameters only when AWS returns
   `ParameterNotFound`;
 - it does not overwrite existing Multica SSM parameter values;
-- it applies only the Multica Argo CD `Application` and asks Argo CD to refresh.
+- it uses `terragrunt stack generate` and applies only the repository-owned
+  Multica Argo CD unit;
+- it polls the Multica Argo CD `Application` until it is both synced and
+  healthy, then fails the workflow if recovery does not complete.
 
 After the Octelium CI credential is repaired with
 `scripts/octelium-ci-credential.sh`, prefer the normal Terragrunt Apply path and

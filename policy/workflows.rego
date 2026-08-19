@@ -97,6 +97,22 @@ break_glass_kubeconfig_workflow if {
 	object.get(recover, "if", "") == "github.ref == 'refs/heads/main'"
 	environment := object.get(recover, "environment", {})
 	object.get(environment, "name", "") == "homelab-production"
+	not kubeconfig_step_in_unguarded_job
+}
+
+kubeconfig_step_in_unguarded_job if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	workflow_job_step_env_has(job, "KUBE_CONFIG_B64")
+	job_name != "recover"
+}
+
+workflow_job_step_env_has(job, key) if {
+	steps := object.get(job, "steps", [])
+	some index
+	step := steps[index]
+	env := object.get(step, "env", {})
+	object.get(env, key, null) != null
 }
 
 workflow_run_contains(needle) if {

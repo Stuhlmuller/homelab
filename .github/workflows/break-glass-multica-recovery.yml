@@ -20,7 +20,7 @@ jobs:
       id-token: write
     timeout-minutes: 45
     env:
-      AWS_REGION: us-east-1
+      AWS_REGION: us-west-2
       AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
     steps:
       - name: Check Out Repository
@@ -67,7 +67,7 @@ jobs:
           printf '%s' "${KUBE_CONFIG_B64}" | base64 -d >"${HOME}/.kube/config"
           chmod 0600 "${HOME}/.kube/config"
 
-          ensure_secure_parameter() {
+          ensure_multica_parameter() {
             local name="$1"
             local length="$2"
             local value
@@ -93,70 +93,40 @@ jobs:
             echo "Created SSM parameter ${name}."
           }
 
-          ensure_secure_parameter /homelab/multica/jwt-secret 48
-          ensure_secure_parameter /homelab/multica/postgres-password 32
+          ensure_multica_parameter /homelab/multica/jwt-secret 48
+          ensure_multica_parameter /homelab/multica/postgres-password 32
 
           kubectl --request-timeout=15s version
-          kubectl apply -f - <<'YAML'
-          apiVersion: argoproj.io/v1alpha1
-          kind: Application
-          metadata:
-            name: multica
-            namespace: argocd
-            labels:
-              app.kubernetes.io/managed-by: break-glass-recovery
-              app.kubernetes.io/part-of: homelab
-          spec:
-            project: homelab
-            destination:
-              name: ""
-              server: https://kubernetes.default.svc
-              namespace: ai
-            sources:
-              - repoURL: ghcr.io/multica-ai/charts
-                chart: multica
-                path: .
-                targetRevision: 0.4.29
-                helm:
-                  releaseName: multica
-                  valueFiles:
-                    - $values/clusters/homelab/apps/multica/values.yaml
-              - repoURL: https://github.com/Stuhlmuller/homelab.git
-                targetRevision: main
-                ref: values
-                path: .
-                directory:
-                  include: .argocd-values-ref-placeholder.yaml
-              - repoURL: https://github.com/Stuhlmuller/homelab.git
-                targetRevision: main
-                path: clusters/homelab/apps/multica
-                kustomize: {}
-            syncPolicy:
-              automated:
-                allowEmpty: false
-                enabled: true
-                prune: true
-                selfHeal: true
-              syncOptions:
-                - CreateNamespace=true
-                - ServerSideApply=true
-              retry:
-                limit: 5
-                backoff:
-                  duration: 30s
-                  factor: 2
-                  maxDuration: 3m
-            info:
-              - name: url
-                value: https://multica.stinkyboi.com
-              - name: rollout
-                value: break-glass recovery while Octelium CI credential is repaired
-              - name: storage
-                value: docs/storage-nfs.md
-          YAML
+          (cd IaC && terragrunt stack generate)
+          (
+            cd IaC/live/argocd-apps/multica
+            terragrunt init -no-color
+            terragrunt apply -no-color -auto-approve
+          )
 
-          kubectl -n argocd annotate application multica \
-            argocd.argoproj.io/refresh=hard \
-            --overwrite
-          kubectl -n argocd get application multica -o wide
+          for attempt in $(seq 1 60); do
+            sync_status="$(
+              kubectl -n argocd get application multica \
+                -o jsonpath='{.status.sync.status}' 2>/dev/null || true
+            )"
+            health_status="$(
+              kubectl -n argocd get application multica \
+                -o jsonpath='{.status.health.status}' 2>/dev/null || true
+            )"
+            printf 'multica sync=%s health=%s attempt=%s\n' \
+              "${sync_status:-unknown}" \
+              "${health_status:-unknown}" \
+              "${attempt}"
+            if [[ "${sync_status}" == "Synced" && "${health_status}" == "Healthy" ]]; then
+              kubectl -n argocd get application multica -o wide
+              exit 0
+            fi
+            kubectl -n argocd annotate application multica \
+              argocd.argoproj.io/refresh=hard \
+              --overwrite >/dev/null || true
+            sleep 30
+          done
+
+          kubectl -n argocd get application multica -o yaml
+          exit 1
           EOF
