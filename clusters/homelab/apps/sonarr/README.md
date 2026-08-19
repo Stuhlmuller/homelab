@@ -34,10 +34,14 @@ slow config reads, PostgreSQL timeouts, and empty or malformed Servarr
 
 During the first rollout, the `migrate-config` init container mounts the legacy
 `sonarr-config` NFS claim read-only at `/legacy-config`, validates
-`config.xml`, and copies the full tree into the local claim. If the live
-`config.xml` is empty or malformed, the migration recovers the newest valid
-`sonarr_backup_*.zip` archive or a prior `config.xml.auth-recovery.*` file
-instead. A `.nfs-migration-complete` marker makes later restarts idempotent.
+`config.xml`, and copies the tree into the local claim without copying
+`local-backups`. If the live `config.xml` is empty or malformed, the migration
+recovers the newest valid `sonarr_backup_*.zip` archive or a prior
+`config.xml.auth-recovery.*` file instead. A fresh install with an empty legacy
+claim gets a minimal local `config.xml` with a generated API key, while a
+non-empty legacy claim with unrecoverable config still fails the rollout for
+manual restore. A `.nfs-migration-complete` marker makes later restarts
+idempotent.
 
 The `sonarr-config-backup` CronJob runs nightly on `zimaboard-0`, validates the
 local `config.xml`, and writes 14-day tarball archives back to
@@ -107,11 +111,14 @@ Failure modes to look for:
 
 ### Rollback
 
-Rollback through GitOps, not a live manual patch. Revert the commit that changed
-`clusters/homelab/apps/sonarr/values.yaml` plus the local-storage and backup
-manifests, open the normal PR, wait for CI, and let Argo CD sync `main`. Do not
-delete either the local or legacy config claim during rollback; both are
-retained recovery sources.
+Rollback through GitOps, not a live manual patch. After cutover, keep the
+`sonarr-config-local` claim mounted as active `/config` unless the rollback PR
+also restores a current `sonarr-config/local-backups/*.tar.gz` archive into the
+legacy claim root before Sonarr starts. Simply reverting `values.yaml` to mount
+the old `sonarr-config` claim can restart Sonarr with stale pre-cutover
+settings, because the nightly job writes current state under `local-backups`
+instead of refreshing the legacy root. Do not delete either the local or legacy
+config claim during rollback; both are retained recovery sources.
 
 If emergency access must temporarily return to built-in Forms auth, make that a
 repo change too: remove the `SONARR__AUTH__*` environment keys and the
