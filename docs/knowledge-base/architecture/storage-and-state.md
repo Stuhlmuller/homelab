@@ -43,9 +43,11 @@ QNAP latency from the live database but couples recovery to the single
 control-plane node and its system disk.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
-and Sonarr use static PV/PVC pairs against the QNAP `/media` export for
-downloads, movies, and TV library data. Read-only `showmount -e 10.1.0.2`
-verified `/media` and `/homelab` on 2026-05-26.
+and Sonarr keep active app config on retained local volumes pinned to
+`zimaboard-0`, while using retained NFS claims as migration sources and nightly
+archive targets. Their media paths still use static PV/PVC pairs against the
+QNAP `/media` export for downloads, movies, and TV library data. Read-only
+`showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
 ## Stateful Workload Gate
 
@@ -176,6 +178,8 @@ trigger a silent redownload.
 - `clusters/homelab/apps/deluge/local-storage.yaml`
 - `clusters/homelab/apps/radarr/local-storage.yaml`
 - `clusters/homelab/apps/radarr/migrate-config.sh`
+- `clusters/homelab/apps/sonarr/local-storage.yaml`
+- `clusters/homelab/apps/sonarr/migrate-config.sh`
 - `clusters/homelab/apps/media-postgres`
 - `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`

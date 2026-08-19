@@ -6,11 +6,47 @@ controllers:
       identifier: sonarr
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-0
       annotations:
         homelab.rst.io/access-mode: "octelium"
     strategy: Recreate
     initContainers:
+      prepare-config:
+        image:
+          repository: busybox
+          tag: 1.38.0@sha256:dc2d74b28e4cf8984fa52af1f39bc7c3d9c73760b41a74d629f5d11b1ab28616
+        command:
+          - /bin/sh
+          - -ec
+          - chown 1000:1000 /config
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+            add:
+              - CHOWN
+          readOnlyRootFilesystem: true
+      migrate-config:
+        dependsOn: prepare-config
+        image:
+          repository: lscr.io/linuxserver/sonarr
+          tag: 4.0.19@sha256:373159ba768e23a3a1c497d9f2b936addf8fd5b1fdce7dd6a14080ac928bfda0
+        command:
+          - /bin/sh
+          - /scripts/migrate-config.sh
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
       configure-postgres:
+        dependsOn: migrate-config
         image:
           repository: lscr.io/linuxserver/sonarr
           tag: 4.0.19@sha256:373159ba768e23a3a1c497d9f2b936addf8fd5b1fdce7dd6a14080ac928bfda0
@@ -207,13 +243,37 @@ persistence:
   config:
     enabled: true
     type: persistentVolumeClaim
-    existingClaim: sonarr-config
+    existingClaim: sonarr-config-local
     advancedMounts:
       sonarr:
+        prepare-config:
+          - path: /config
+        migrate-config:
+          - path: /config
         app:
           - path: /config
         configure-postgres:
           - path: /config
+  legacy-config:
+    # Migration-only: remove this mount and migrate-config after the local
+    # rollout marker and first scheduled backup are verified.
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: sonarr-config
+    advancedMounts:
+      sonarr:
+        migrate-config:
+          - path: /legacy-config
+            readOnly: true
+  migration-script:
+    enabled: true
+    type: configMap
+    name: sonarr-config-migration
+    advancedMounts:
+      sonarr:
+        migrate-config:
+          - path: /scripts
+            readOnly: true
   media:
     enabled: true
     type: persistentVolumeClaim

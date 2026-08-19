@@ -56,10 +56,10 @@ Stateful apps auto-sync by default, but they are not considered operationally
 ready until `platform-storage` is synced, the `nfs-default` StorageClass is
 verified, and `docs/storage-nfs.md` records backup coverage.
 
-Sonarr keeps app config on `nfs-default`. Deluge and Radarr keep active config
-on retained local volumes pinned to `zimaboard-0` and archive it nightly to
-their retained NFS claims. All three apps use static claims against the QNAP
-`/media` export for media-library paths. Read-only
+Sonarr, Deluge, and Radarr keep active config on retained local volumes pinned
+to `zimaboard-0` and archive it nightly to their retained NFS claims. All three
+apps use static claims against the QNAP `/media` export for media-library
+paths. Read-only
 `showmount -e 10.1.0.2` verified `/media` for every Talos node on 2026-05-26;
 do not treat those apps as cut over until the three media migration Jobs have
 completed.
