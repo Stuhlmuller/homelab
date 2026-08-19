@@ -62,3 +62,9 @@ environment settings, and skip the linuxserver default config init script so
 the app does not reintroduce stale authentication state on restart. Keep the
 legacy NFS claim as the read-only migration source and nightly archive target
 until live cutover and first-backup validation are complete.
+
+Grafana owns a Sonarr-specific critical alert for missing or non-incrementing
+kubelet readiness probes against the app container's `/initialize.json` local
+HTTP probe. The alert is part of desired state, but live rollout and validation
+remain gated until GitHub Actions Kubernetes auth for the homelab apply path is
+restored.

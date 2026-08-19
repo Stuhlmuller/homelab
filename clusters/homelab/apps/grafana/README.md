@@ -75,7 +75,7 @@ Grafana.com during pod startup, so first rollout depends on outbound HTTPS from
 the cluster to Grafana.com.
 
 | Folder | Dashboard | ID | Revision |
-|--------|-----------|----|----------|
+| --- | --- | --- | --- |
 | Kubernetes | Kubernetes / Views / Global | 15757 | 43 |
 | Kubernetes | Kubernetes / Views / Namespaces | 15758 | 46 |
 | Kubernetes | Kubernetes / Views / Pods | 15760 | 39 |
@@ -139,6 +139,8 @@ The provisioned rules cover:
   for approximately 5 minutes.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
+- Sonarr readiness probes missing or no longer succeeding for approximately 5
+  minutes.
 - Deluge VPN or daemon health missing or failing for 5 minutes, using the
   `deluge_vpn_healthy` and `deluge_daemon_rpc_healthy` metrics from the Deluge
   metrics sidecar instead of generic Pod readiness.
@@ -176,6 +178,13 @@ Start triage with read-only pod state, events, PostgreSQL logs, and the
 workload's backing storage. Positively fence the old writer before any lock-file
 recovery. Never delete `postmaster.pid` while another pod or node could still
 write the same data directory.
+
+The Sonarr readiness rule reads the kubelet `prober_probe_total` series for the
+`media` namespace Sonarr app container. The application probe hits
+`/initialize.json` on localhost, so it catches Sonarr being present but unable
+to serve its local HTTP endpoint in addition to missing probe telemetry. It is a
+targeted service alert for the recurring Sonarr outage path; the generic
+Deployment alert still covers desired replicas with no available pods.
 
 The Argo CD application health and sync rules intentionally keep the original
 `argocd_app_info` series labels instead of aggregating them. Grafana sends one
@@ -224,8 +233,8 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the sixteen provisioned `homelab-*` alert rules
-are present under Grafana Alerting.
+`Entra ID` login path works, and the seventeen provisioned `homelab-*` alert
+rules are present under Grafana Alerting.
 
 ## Rollback
 
