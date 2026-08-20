@@ -49,7 +49,7 @@ deny contains msg if {
 	msg := sprintf("workflow %q must reach Kubernetes through the Octelium clientless endpoint", [name])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
 has_event(events, event) if {
 	events == event
