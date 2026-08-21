@@ -75,7 +75,7 @@ controllers:
         resources:
           requests:
             cpu: 1
-            memory: 2Gi
+            memory: 768Mi
           limits:
             memory: 6Gi
       bootstrap-config:
@@ -85,7 +85,7 @@ controllers:
         resources:
           requests:
             cpu: 500m
-            memory: 1Gi
+            memory: 512Mi
           limits:
             memory: 3Gi
         env:
@@ -352,7 +352,7 @@ controllers:
         resources:
           requests:
             cpu: 1
-            memory: 2Gi
+            memory: 768Mi
             ephemeral-storage: 512Mi
           limits:
             memory: 6Gi
