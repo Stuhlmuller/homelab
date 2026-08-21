@@ -17,9 +17,9 @@ to trading only with withdrawals disabled before enabling live execution.
 - Web UI port: `5001`
 - Persistent state: `octobot-user`, `octobot-tentacles`, and `octobot-logs`
   PVCs on `nfs-default`
-- Startup reconciliation: a version-marked init container force-reinstalls the
-  image-matched built-in tentacles before OctoBot starts; user configuration
-  and logs remain untouched
+- Startup reconciliation: a version-marked init container removes two retired
+  tentacles, then force-reinstalls the image-matched built-in bundle before
+  OctoBot starts; user configuration and logs remain untouched
 - Route target: `https://octobot.stinkyboi.com` through Octelium service
   `octobot.homelab`; no public Funnel route
 - Secret source: none committed; OctoBot setup and exchange credentials are
@@ -70,4 +70,6 @@ through Octelium.
   tested against the current PVC-backed config. The `2.1.13` image rejected the
   persisted `config.trading.paused` key during startup migration and caused the
   pod to crash loop. Its newer tentacle code also remained on the shared PVC;
-  the version-marked init container repairs that executable-code mismatch once.
+  the version-marked init container removes the retired
+  `simple_market_making_trading_mode` and `octobot_process_operators` modules,
+  then repairs the executable-code mismatch once.

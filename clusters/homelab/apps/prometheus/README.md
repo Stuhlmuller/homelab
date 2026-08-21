@@ -9,22 +9,19 @@ without spoofing the Prometheus Helm release label.
 
 Alertmanager owns homelab notification fanout. Grafana-managed alerts route to
 the `homelab-alertmanager` Grafana contact point, which posts alerts to this
-Alertmanager. Alertmanager then delivers notifications to Discord with the
-native Discord receiver and to OpenClaw's authenticated `/hooks/agent` endpoint
-with a bearer-token webhook receiver.
+Alertmanager. Alertmanager then delivers notifications to Discord with its
+native Discord receiver.
 
 The root route repeats notifications every hour while an alert remains active.
 Discord also receives a resolved notification after the alert clears because
 its receiver has `send_resolved` enabled. Keep the Grafana notification policy
 repeat interval aligned with this route so both stages preserve that cadence.
 
-The `alertmanager-discord-webhook` and `alertmanager-openclaw-alert-hook`
-ExternalSecrets read the existing `/homelab/grafana/discord-webhook-url` and
-`/homelab/grafana/openclaw-alert-hook-token` SSM parameters. External Secrets
-renders the Discord URL into Alertmanager's runtime config Secret because the
+The `alertmanager-discord-webhook` ExternalSecret reads the existing
+`/homelab/grafana/discord-webhook-url` SSM parameter. External Secrets renders
+the Discord URL into Alertmanager's runtime config Secret because the
 Prometheus Operator schema does not support `webhook_url_file` for Discord.
-The OpenClaw bearer token remains file-backed under
-`/etc/alertmanager/secrets/`; neither secret is committed.
+The secret is not committed.
 
 ## Argo CD Metrics
 
@@ -91,6 +88,6 @@ After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 ```sh
 kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
 kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
-kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
-kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl -n monitoring get externalsecret alertmanager-discord-webhook
+kubectl -n monitoring get secret alertmanager-discord-webhook
 ```

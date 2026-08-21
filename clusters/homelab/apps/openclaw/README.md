@@ -160,23 +160,17 @@ The Discord bot must be invited to the target server and channel with at least
 the permissions OpenClaw reports as required for Discord, including viewing the
 channel and sending messages.
 
-## Alertmanager Hook
+## Agent Hook
 
-Alertmanager can notify Claw directly through OpenClaw's authenticated hook
-endpoint. The hook token is generated at
-`/homelab/grafana/openclaw-alert-hook-token`, exposed to Alertmanager as the
-`alertmanager-openclaw-alert-hook` Secret, and exposed to OpenClaw as
+OpenClaw exposes an authenticated agent hook for callers that send its native
+`message` payload. The hook token is generated at
+`/homelab/grafana/openclaw-alert-hook-token` and exposed to OpenClaw as
 `GRAFANA_ALERT_HOOK_TOKEN`.
 
 Startup bootstrap enables OpenClaw hooks at `/hooks` when the token is
-populated. Alertmanager posts alert notifications to
-`http://openclaw.ai.svc.cluster.local:8080/hooks/agent` with a bearer token, so
-alerts create direct OpenClaw agent runs instead of relying on Claw watching the
-Discord channel. The OpenClaw NetworkPolicy allows ingress to port `8080` from
-the `monitoring` namespace for this path, and the `ai` namespace
-AuthorizationPolicy allows the
-`cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager`
-principal through the ambient default deny.
+populated. Alertmanager does not call this endpoint: its standard webhook body
+does not include OpenClaw's required `message` field. Homelab alerts are sent
+through Alertmanager's native Discord receiver instead.
 
 OpenClaw rejects SecretRef objects for `hooks.token`, so bootstrap expands
 `GRAFANA_ALERT_HOOK_TOKEN` from the mounted Secret at pod startup, JSON-encodes
@@ -184,11 +178,9 @@ the actual runtime value, and writes that plain string to the PVC-backed
 OpenClaw config. This keeps the token out of git while satisfying OpenClaw's
 hook-token policy.
 
-After rotating the hook token, bump both
-`homelab.rst.io/openclaw-alert-hook-ssm-version` on the Prometheus-owned
-ExternalSecret and Alertmanager pod metadata, plus
+After rotating the hook token, bump
 `homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD
-refreshes the delivery Secret and rolls the pods that read it.
+refreshes the Secret and rolls the pod that reads it.
 
 ## GitHub App Credentials
 
