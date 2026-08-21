@@ -171,9 +171,9 @@ jobs:
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |
           {
-            printf '## Terragrunt Plan Output\n\n'
-            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
-            printf 'Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check.\n'
+            printf "%s\n\n" "## Terragrunt Plan Output"
+            printf "%s\n\n" "> Live Terragrunt plan skipped because this pull request did not change \`IaC/**\`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts."
+            printf "%s\n" "Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check."
           } >"${TERRAGRUNT_PLAN_MARKDOWN}"
 
       - name: Update PR Description With Plan Or Skip Note
