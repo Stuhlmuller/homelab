@@ -55,16 +55,13 @@ jobs:
 
       - name: Verify Diagnostic Inputs
         env:
-          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
-          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a homelab-plan environment secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
 
       - name: Run Kubernetes Diagnostics Through Octelium
         env:
           ACTION: ${{ inputs.action }}
-          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           TARGET: ${{ inputs.target }}
