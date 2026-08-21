@@ -59,6 +59,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: monitoring
     - server: https://kubernetes.default.svc
+      namespace: nofx
+    - server: https://kubernetes.default.svc
       namespace: octelium-client
     - server: https://kubernetes.default.svc
       namespace: octelium

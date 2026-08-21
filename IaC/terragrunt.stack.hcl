@@ -1627,6 +1627,89 @@ unit "argocd_apps_multica" {
   }
 }
 
+unit "argocd_apps_nofx" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/nofx"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "external-secrets",
+      "istio",
+      "octelium",
+      "platform-storage"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "nofx"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "nofx"
+        }
+
+        sources = [
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/nofx"
+            kustomize      = {}
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "3m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "url"
+            value = "https://nofx.stinkyboi.com"
+          },
+          {
+            name  = "rollout"
+            value = "automated after generated SSM secrets, External Secrets, NFS, Istio, and Octelium are healthy"
+          },
+          {
+            name  = "storage"
+            value = "docs/storage-nfs.md"
+          }
+        ]
+      }
+    }
+  }
+}
+
 unit "argocd_apps_n8n" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/n8n"

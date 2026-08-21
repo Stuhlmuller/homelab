@@ -116,7 +116,7 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-  homelab-octelium-public`. The same tunnel is the external callback backbone
+homelab-octelium-public`. The same tunnel is the external callback backbone
   for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
@@ -187,6 +187,12 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/n8n/postgres-app-password` values; n8n receives only the app
   password through `n8n-postgres-client` and
   `DB_POSTGRESDB_PASSWORD_FILE`.
+- NOFX uses the `nofx-secrets` ExternalSecret in the `nofx` namespace. The SSM
+  parameter stack generates `/homelab/nofx/jwt-secret` and
+  `/homelab/nofx/data-encryption-key`; `/homelab/nofx/rsa-private-key` and
+  `/homelab/nofx/claw402-wallet-key` are manual placeholders that must be
+  replaced outside git before features requiring RSA signing or paid CLAW402
+  wallet access are expected to work.
 - OpenClaw uses `/homelab/openclaw/app-secret` as
   `OPENCLAW_GATEWAY_TOKEN`; bootstrap configures gateway auth with an OpenClaw
   SecretRef to that environment value instead of a generated file under the

@@ -222,6 +222,30 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/nofx/jwt-secret" = {
+      description = "NOFX JWT signing secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/nofx/data-encryption-key" = {
+      description = "NOFX data encryption key for encrypted application secrets."
+      generated = {
+        length  = 44
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/nofx/rsa-private-key" = {
+      description   = "NOFX RSA private key used for browser-to-server transport encryption."
+      initial_value = local.placeholder
+    }
+    "/homelab/nofx/claw402-wallet-key" = {
+      description   = "NOFX CLAW402 wallet private key used for paid AI model calls."
+      initial_value = local.placeholder
+    }
     "/homelab/openclaw/app-secret" = {
       description = "OpenClaw application secret."
       generated = {
