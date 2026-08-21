@@ -35,6 +35,8 @@ spec:
             - name: user-namespace-sysctl
               mountPath: /host-sysctl/user.max_user_namespaces
           securityContext:
+            appArmorProfile:
+              type: Unconfined
             allowPrivilegeEscalation: false
             capabilities:
               drop:
@@ -75,6 +77,8 @@ spec:
               mountPath: /host-sysctl/user.max_user_namespaces
               readOnly: true
           securityContext:
+            appArmorProfile:
+              type: Unconfined
             allowPrivilegeEscalation: false
             capabilities:
               drop:
