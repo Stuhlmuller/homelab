@@ -228,6 +228,18 @@ controllers:
               failureThreshold: 180
               periodSeconds: 10
               timeoutSeconds: 30
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - timeout 10s curl -fsS -o /dev/null http://127.0.0.1:8112/
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 15
           liveness:
             enabled: true
             custom: true
