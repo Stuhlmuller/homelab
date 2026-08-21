@@ -9,6 +9,7 @@ if [ -n "${KUBE_CONFIG_B64:-}" ]; then
   if [ -n "${KUBE_API_SERVER_URL:-}" ] || [ -n "${KUBE_TLS_SERVER_NAME:-}" ] || [[ "${KUBE_INSECURE_SKIP_TLS_VERIFY:-false}" == "true" ]]; then
     current_context="$(kubectl config current-context)"
     cluster_name="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"${current_context}\")].context.cluster}")"
+    user_name="$(kubectl config view -o "jsonpath={.contexts[?(@.name==\"${current_context}\")].context.user}")"
 
     test -n "${cluster_name}" || {
       echo "Could not find the kubeconfig cluster for context ${current_context}." >&2
@@ -25,6 +26,14 @@ if [ -n "${KUBE_CONFIG_B64:-}" ]; then
 
     if [[ "${KUBE_INSECURE_SKIP_TLS_VERIFY:-false}" == "true" ]]; then
       kubectl config set-cluster "${cluster_name}" --insecure-skip-tls-verify=true >/dev/null
+    fi
+
+    if [ -n "${OCTELIUM_AUTH_TOKEN:-}" ]; then
+      test -n "${user_name}" || {
+        echo "Could not find the kubeconfig user for context ${current_context}." >&2
+        exit 1
+      }
+      kubectl config set-credentials "${user_name}" --token="${OCTELIUM_AUTH_TOKEN}" >/dev/null
     fi
   fi
 else
