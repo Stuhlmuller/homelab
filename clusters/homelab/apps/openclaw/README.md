@@ -34,6 +34,13 @@ prevents unsigned commits from being created by default. If the image does not
 ship `ssh-keygen`, bootstrap unpacks `openssh-client` into
 `/data/openclaw/tools` and points Git at that persistent helper.
 
+The `operator-toolbox` init container installs the homelab operator tools with
+Nix, shares `/toolbox/profile` with the app and bootstrap containers, and also
+copies the complete init-container `/nix/store` with its database into the
+shared `/nix` mount. Keep the store and database matched. Copying only the
+profile closure while copying the full database leaves missing derivation paths,
+which breaks fresh-pod `nix develop` runs against the homelab flake.
+
 ## Gateway Auth
 
 The generated `/homelab/openclaw/app-secret` SSM parameter is exposed to the

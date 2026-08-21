@@ -738,6 +738,36 @@ spec:
         octelium.com/component-type: cluster
     spec:
       automountServiceAccountToken: false
+      initContainers:
+      - command:
+        - /bin/sh
+        - -ec
+        - |
+          marker=/octelium-data/.homelab-rscstore-wal-recovery-20260821
+          [ -f "$marker" ] && exit 0
+          if [ -f /octelium-data/store.db.wal ]; then
+            mv /octelium-data/store.db.wal /octelium-data/store.db.wal.quarantined-20260821
+          fi
+          touch "$marker"
+        image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+        imagePullPolicy: IfNotPresent
+        name: quarantine-invalid-wal
+        resources:
+          limits:
+            cpu: 50m
+            memory: 32Mi
+          requests:
+            cpu: 5m
+            memory: 8Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - mountPath: /octelium-data
+          name: octelium
       containers:
       - image: ghcr.io/octelium/octeliumee-rscstore:0.22.0@sha256:c7d56cc2cc56422f051be8176e7f3220523e9ff1249dbd711e633542ed82e358
         imagePullPolicy: IfNotPresent

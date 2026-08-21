@@ -19,6 +19,7 @@ spec:
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
+    - https://kubernetes-sigs.github.io/metrics-server/
     - https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
     - https://github.com/rancher/local-path-provisioner.git
     - ghcr.io/octelium/helm-charts
@@ -58,6 +59,8 @@ spec:
       namespace: media
     - server: https://kubernetes.default.svc
       namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: nofx
     - server: https://kubernetes.default.svc
       namespace: octelium-client
     - server: https://kubernetes.default.svc
