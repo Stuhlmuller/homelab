@@ -32,6 +32,9 @@ utility, not as an app, callback, or CI access path.
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
 sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
+It also rewrites in-cluster `octelium-api.stinkyboi.com` lookups to the
+dedicated Istio gateway Service, so Cordium and other cluster clients do not
+depend on the router's WAN mapping.
 
 `platform-crossplane` installs Crossplane core `2.3.3` from the upstream stable
 Helm repository with default chart values. It intentionally does not install

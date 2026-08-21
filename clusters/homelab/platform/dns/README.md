@@ -11,6 +11,11 @@ category filtering. On 2026-07-19, the Family resolvers returned `0.0.0.0` and
 the authoritative public addresses. The sinkhole response surfaced as a
 misleading HTTPS connection-refused error in Prowlarr.
 
+Inside Kubernetes, `octelium-api.stinkyboi.com` resolves to the dedicated
+`octelium-api-ingressgateway` Service. This split-horizon route keeps Cordium
+and other in-cluster Octelium clients independent of the router's WAN mapping;
+external clients continue to use public DNS.
+
 Explicit public resolvers remain necessary because CoreDNS was observed on
 2026-05-25 forwarding through `169.254.116.108:53`, which timed out for AWS
 SSM, GitHub, and Tailscale names. Those failures surfaced as External Secrets
@@ -29,9 +34,11 @@ kubectl get externalsecret cert-manager-cloudflare-api-token -n cert-manager
 kubectl get clusterissuer letsencrypt-cloudflare
 kubectl get certificate stinkyboi-wildcard -n istio-system
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
+kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 octelium-api.stinkyboi.com
 ```
 
-The Prowlarr lookup should return public addresses rather than `0.0.0.0`.
+The Prowlarr lookup should return public addresses rather than `0.0.0.0`. The
+Octelium API lookup should return the gateway Service's ClusterIP.
 
 Rollback by reverting this overlay and the `platform-dns` Argo CD Application
 registration, then applying the affected Terragrunt stack. Do not manually patch
