@@ -16,7 +16,7 @@ metadata:
   name: multica-postgres
   namespace: ai
   annotations:
-    checkov.io/skip1: CKV_K8S_40=The pinned postgres image requires its fixed UID 999.
+    checkov.io/skip1: CKV_K8S_40=QNAP all-squash maps NFS ownership to UID 65534.
     checkov.io/skip2: CKV_K8S_35=The upstream postgres entrypoint requires POSTGRES_PASSWORD as an environment variable.
   labels:
     app.kubernetes.io/name: multica
@@ -40,15 +40,15 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
-        fsGroup: 999
+        fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: postgres
           image: pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
           securityContext:
             runAsNonRoot: true
-            runAsUser: 999
-            runAsGroup: 999
+            runAsUser: 65534
+            runAsGroup: 65534
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
