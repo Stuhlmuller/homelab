@@ -18,6 +18,6 @@ echo "::warning::Kubernetes clientless endpoint check failed; falling back to Oc
 "${script_dir}/connect-octelium.sh"
 
 export KUBE_API_SERVER_URL="https://${OCTELIUM_KUBE_LOCAL_HOST:-127.0.0.1}:${OCTELIUM_KUBE_LOCAL_PORT:-16443}"
-export KUBE_INSECURE_SKIP_TLS_VERIFY=true
+export KUBE_TLS_SERVER_NAME="${KUBE_TLS_SERVER_NAME:-10.1.0.199}"
 "${script_dir}/install-kubeconfig.sh"
 kubectl --request-timeout=15s version

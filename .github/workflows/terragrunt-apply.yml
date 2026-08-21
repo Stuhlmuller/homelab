@@ -25,7 +25,14 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+  KUBE_TLS_SERVER_NAME: 10.1.0.199
   OCTELIUM_DOMAIN: stinkyboi.com
+  OCTELIUM_IMPLEMENTATION: gvisor
+  OCTELIUM_KUBE_LOCAL_PORT: 16443
+  OCTELIUM_KUBE_SERVICE: kubernetes-api-ci
+  OCTELIUM_NO_DNS: "false"
+  OCTELIUM_TUNNEL_MODE: wireguard
+  OCTELIUM_USE_SUDO: "false"
 
 jobs:
   static-policy:
@@ -104,10 +111,12 @@ jobs:
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           OCTELIUM_DOMAIN: ${{ env.OCTELIUM_DOMAIN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
         run: |
           test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-production environment variable or secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-production environment secret."; exit 1; }
           test -n "${OCTELIUM_DOMAIN}" || { echo "OCTELIUM_DOMAIN must be set for Octelium fallback."; exit 1; }
+          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a repository secret."; exit 1; }
 
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
@@ -123,7 +132,9 @@ jobs:
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           OCTELIUM_DOMAIN: ${{ env.OCTELIUM_DOMAIN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
