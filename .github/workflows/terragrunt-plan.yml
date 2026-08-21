@@ -26,7 +26,15 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+  KUBE_API_SERVER_URL: https://127.0.0.1:16443
+  KUBE_TLS_SERVER_NAME: 10.1.0.199
+  OCTELIUM_DOMAIN: stinkyboi.com
+  OCTELIUM_KUBE_SERVICE: kubernetes-api-ci
+  OCTELIUM_KUBE_LOCAL_PORT: 16443
+  OCTELIUM_IMPLEMENTATION: gvisor
+  OCTELIUM_NO_DNS: "false"
+  OCTELIUM_TUNNEL_MODE: wireguard
+  OCTELIUM_USE_SUDO: "false"
 
 jobs:
   static-policy:
@@ -109,7 +117,7 @@ jobs:
               IaC/*|flake.nix|flake.lock|policy/*)
                 requires_live_plan=true
                 ;;
-              scripts/ci/install-kubeconfig.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
+              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/live-terragrunt.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
                 requires_live_plan=true
                 ;;
             esac
@@ -126,9 +134,11 @@ jobs:
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
+          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a repository secret."; exit 1; }
 
       - name: Configure AWS Credentials
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
@@ -141,19 +151,19 @@ jobs:
           role-to-assume: ${{ env.AWS_PLAN_ROLE_ARN }}
           unset-current-credentials: true
 
+      - name: Install Octelium Client
+        if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
+        run: bash scripts/ci/install-octelium-client.sh
+
       - name: Run Live Terragrunt Plan
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_TLS_SERVER_NAME: ${{ env.KUBE_TLS_SERVER_NAME }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
-        run: |
-          nix develop --command bash <<'EOF'
-          set -euo pipefail
-          bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
-          bash scripts/ci/terragrunt-plan.sh
-          EOF
+        run: nix develop --command bash scripts/ci/live-terragrunt.sh plan
 
       - name: Write Live Plan Skip Note
         if: steps.live-plan-scope.outputs.requires-live-plan != 'true'

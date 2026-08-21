@@ -76,18 +76,18 @@ contract for Grafana.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
-  and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
-  Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
-  existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
-  This avoids the IPv6-only Gateway QUIC path, while the
+  and the `KUBERNETES` Service `kubernetes-api-ci`. Live Terragrunt and
+  diagnostic jobs run on GitHub-hosted Ubuntu, start an Octelium client
+  session, publish `kubernetes-api-ci` to `https://127.0.0.1:16443`, and then
+  point a real kubeconfig at that local tunnel. The
   `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
-- The upstream kubeconfig is stored only as the Octelium Secret
-  `homelab-ci-kubeconfig`, materialized with
-  `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
-  into GitHub. CI writes a token-only kubeconfig with mode `0600`, then verifies
-  the Kubernetes API with authenticated `kubectl`.
+- The upstream kubeconfig is stored in GitHub as `KUBE_CONFIG_B64`, encoded
+  from the same restricted Kubernetes credential used by the Octelium CI
+  Service. CI writes it with mode `0600`, rewrites the server URL and TLS SNI
+  to the local Octelium tunnel, then verifies the Kubernetes API with
+  authenticated `kubectl`.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
@@ -147,7 +147,8 @@ Create two GitHub environments:
 - `homelab-production`: used by post-merge applies. Require reviewers and limit
   deployment branches to `main`.
 
-Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Add
+Add `OCTELIUM_CI_AUTH_TOKEN` to both environments and add `KUBE_CONFIG_B64` as
+a repository secret. Add
 `AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan` lets
 trusted pull requests render AzureAD application plans, otherwise that PR plan
 phase is skipped with a warning. Repository-level secrets also work, but
@@ -156,7 +157,8 @@ rules and tighter rotation:
 
 | Secret | Environment | Purpose |
 | --- | --- | --- |
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium access token for User `homelab-ci`, scoped to the `kubernetes-api-ci` Service. |
+| `KUBE_CONFIG_B64` | repository | Base64-encoded kubeconfig for the restricted CI Kubernetes credential; workflows rewrite its server to the local Octelium tunnel. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
@@ -186,11 +188,13 @@ defines:
   clientless Kubernetes Service;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
 
-Apply that catalog after materializing the upstream kubeconfig Secret, then
+Apply that catalog after materializing the upstream kubeconfig Secret, store the
+base64-encoded kubeconfig as the repository secret `KUBE_CONFIG_B64`, then
 create or rotate the GitHub environment secret in both CI environments:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
+base64 -w0 ~/.kube/config | gh secret set KUBE_CONFIG_B64 --repo Stuhlmuller/homelab
 scripts/octelium-ci-credential.sh
 ```
 
@@ -222,7 +226,9 @@ Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
 CI receives `401` or `403` from authenticated `kubectl` against
 `kubernetes-api-ci`, reapply the catalog, reconcile the Secret, and rotate the
 credential with `scripts/octelium-ci-credential.sh`.
-If the credential must be recovered, apply
+If CI receives `401` or `403` after the tunnel is established, verify that
+`KUBE_CONFIG_B64` still contains a valid restricted kubeconfig before rotating
+the Octelium credential. If the credential must be recovered, apply
 `docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
 credential to `homelab-ci-recovery` with the same helper. The recovery user is
 limited to the same public Kubernetes Service.

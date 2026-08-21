@@ -137,11 +137,12 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   runtime mappings and must not be committed to the public repo.
   GitHub Actions uses a separate Octelium workload credential for User
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
-  `kubernetes-api-ci`. Store the credential only as GitHub environment
+  `kubernetes-api-ci`. Store the Octelium credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`; the CI connector does not pass Octelium `--scope`
-  flags on v0.35, while the policy-bound credential authorizes the Connect API
-  method and Kubernetes API Service separately. Rotate it with
+  `homelab-production`, and store the restricted Kubernetes kubeconfig as the
+  repository secret `KUBE_CONFIG_B64`. CI publishes the Service to localhost
+  through Octelium, rewrites the kubeconfig server URL to that tunnel, and then
+  runs Terragrunt. Rotate the Octelium token with
   `scripts/octelium-ci-credential.sh` after applying catalog policy changes so
   the GitHub environments receive a token created against the current policy.
   The self-hosted Octelium Cluster storage layer uses generated
