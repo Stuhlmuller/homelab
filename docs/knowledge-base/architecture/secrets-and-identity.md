@@ -61,21 +61,22 @@ roles need identity-based KMS permissions for both keys.
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
 - Alertmanager owns notification delivery credentials for Grafana-managed
-  alerts. The Prometheus app materializes `alertmanager-discord-webhook` and
-  `alertmanager-openclaw-alert-hook` ExternalSecrets in `monitoring`, sourced
-  from `/homelab/grafana/discord-webhook-url` and
-  `/homelab/grafana/openclaw-alert-hook-token`. Grafana routes alerts to the
+  alerts. The Prometheus app materializes the
+  `alertmanager-discord-webhook` ExternalSecret in `monitoring`, sourced from
+  `/homelab/grafana/discord-webhook-url`. Grafana routes alerts to the
   in-cluster Alertmanager contact point. External Secrets renders the Discord
   URL into Alertmanager's runtime config Secret because the Operator schema has
-  no Discord URL-file field; the OpenClaw bearer token remains file-backed.
-  Both routing layers repeat unresolved alerts hourly before Alertmanager sends
-  the resolved notification. Grafana provisioning deletes
+  no Discord URL-file field. Both routing layers repeat unresolved alerts
+  hourly before Alertmanager sends the resolved notification. Grafana
+  provisioning deletes
   the retired `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs
   so persisted Grafana PVC state does not keep retrying removed integrations.
-  OpenClaw receives the same hook token through `openclaw-secrets` as
+  OpenClaw separately receives its hook token through `openclaw-secrets` as
   `GRAFANA_ALERT_HOOK_TOKEN`; bootstrap
   expands and JSON-encodes that runtime value before writing `hooks.token`,
   because OpenClaw rejects SecretRef objects for that hook-token surface.
+  Alertmanager does not call the hook because its standard webhook body lacks
+  OpenClaw's required `message` field.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - Cordium uses the `cordium-agent-auth` ExternalSecret in `octelium`, sourced

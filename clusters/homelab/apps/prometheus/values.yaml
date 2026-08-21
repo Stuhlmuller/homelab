@@ -47,9 +47,6 @@ alertmanager:
     podMetadata:
       annotations:
         homelab.rst.io/discord-webhook-ssm-version: "2"
-        homelab.rst.io/openclaw-alert-hook-ssm-version: "1"
-    secrets:
-      - alertmanager-openclaw-alert-hook
     storage:
       volumeClaimTemplate:
         spec:
