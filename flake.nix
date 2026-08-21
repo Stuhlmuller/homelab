@@ -25,16 +25,43 @@
             inherit system;
           };
           basePackages = with pkgs; [
+            actionlint
+            age
+            argocd
             awscli2
+            bash
+            cloudflared
             conftest
+            coreutils
+            curl
+            findutils
             gh
+            git
             gitleaks
+            gnugrep
+            gnused
+            gnutar
+            gzip
+            jq
+            k9s
+            kubernetes-helm
             kubectl
+            kustomize
             miniupnpc
+            nixVersions.latest
+            octelium
             opentofu
+            openssh
+            pre-commit
             ripgrep
+            shellcheck
+            shfmt
+            sops
             talosctl
             terragrunt
+            unzip
+            yamllint
+            yq-go
           ];
           checkovPackages = pkgs.lib.optionals (system != "x86_64-darwin") [
             pkgs.checkov
