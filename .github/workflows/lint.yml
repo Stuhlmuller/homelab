@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      issues: write
       statuses: write
     steps:
       - name: Checkout code
@@ -24,6 +23,7 @@ jobs:
         uses: super-linter/super-linter@4ce20838b8ab83717e78138c5b3a1407148e0918  # v8.7.0
         env:
           DEFAULT_BRANCH: ${{ github.event.pull_request.base.ref }}
+          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_BASH: true

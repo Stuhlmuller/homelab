@@ -195,7 +195,8 @@ run_status() {
 for attempt in $(seq 1 "${OCTELIUM_CONNECT_ATTEMPTS}"); do
   : >"${OCTELIUM_CONNECT_LOG}"
   if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
-    sudo -E "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 || true
+    sudo -E "${connect_cmd[@]}" 2>&1 |
+      tee "${OCTELIUM_CONNECT_LOG}" >/dev/null || true
   else
     "${connect_cmd[@]}" >"${OCTELIUM_CONNECT_LOG}" 2>&1 || true
   fi
