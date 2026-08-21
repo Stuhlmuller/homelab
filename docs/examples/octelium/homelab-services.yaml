@@ -407,6 +407,35 @@ spec:
 ---
 kind: Service
 metadata:
+  name: multica
+spec:
+  displayName: Multica
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
+  config:
+    upstream:
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
+    http:
+      header:
+        forwardedMode: TRANSPARENT
+        host:
+          value: multica.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: multica.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
+---
+kind: Service
+metadata:
   name: n8n
 spec:
   displayName: n8n
@@ -429,6 +458,35 @@ spec:
         addRequestHeaders:
           - key: X-Forwarded-Host
             value: n8n.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
+---
+kind: Service
+metadata:
+  name: nofx
+spec:
+  displayName: NOFX
+  isPublic: true
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
+  config:
+    upstream:
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
+    http:
+      header:
+        forwardedMode: TRANSPARENT
+        host:
+          value: nofx.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: nofx.stinkyboi.com
           - key: X-Forwarded-Port
             value: "443"
           - key: X-Forwarded-Proto

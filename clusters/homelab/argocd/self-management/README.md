@@ -18,6 +18,9 @@ self-heal are part of the repository desired state, so changes to the source
 path, revision, or sync policy must still be reviewed in git instead of patched
 as permanent live mutations.
 
+`cmd-params-configmap.yaml` bounds sync operations to 15 minutes so a failed
+resource cannot leave an Application operation running forever.
+
 Keep the `homelab` AppProject source repository, destination namespace, and
 cluster-resource allow-lists aligned with the Applications registered under
 `IaC/live/argocd-apps`. If an app needs a new chart repository, namespace, or

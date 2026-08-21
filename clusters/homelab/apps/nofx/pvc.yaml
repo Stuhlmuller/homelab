@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nofx-data
+  namespace: nofx
+  labels:
+    app.kubernetes.io/name: nofx
+    app.kubernetes.io/part-of: homelab-ai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 10Gi

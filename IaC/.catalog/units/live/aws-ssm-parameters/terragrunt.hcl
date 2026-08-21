@@ -222,6 +222,29 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/nofx/jwt-secret" = {
+      description = "NOFX JWT signing secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/nofx/data-encryption-key" = {
+      description = "NOFX data encryption key for encrypted application secrets."
+      generated = {
+        length  = 44
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/nofx/rsa-private-key" = {
+      description = "NOFX RSA private key used for browser-to-server transport encryption."
+      generated = {
+        kind = "rsa_private_key"
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/openclaw/app-secret" = {
       description = "OpenClaw application secret."
       generated = {
@@ -259,6 +282,22 @@ inputs = {
     }
     "/homelab/openclaw/github-app/private-key" = {
       description   = "OpenClaw GitHub App private key PEM."
+      initial_value = local.placeholder
+    }
+    "/homelab/multica/jwt-secret" = {
+      description = "Multica JWT signing secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/multica/postgres-password" = {
+      description = "Multica dedicated PostgreSQL password."
+      generated = {
+        length  = 40
+        special = false
+      }
       initial_value = local.placeholder
     }
     "/homelab/n8n/encryption-key" = {

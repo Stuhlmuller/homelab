@@ -6,14 +6,14 @@ Tags: #architecture #storage #stateful
 
 Kubernetes persistent storage is backed by a QNAP NFS export.
 
-| Setting | Value |
-| --- | --- |
-| NAS address | `10.1.0.2` |
-| Export | `/homelab` |
-| StorageClass | `nfs-default` |
-| Provisioner | `k8s-sigs.io/qnap-nfs` |
-| Reclaim policy | `Retain` |
-| Mount option | `nfsvers=3` |
+| Setting        | Value                  |
+| -------------- | ---------------------- |
+| NAS address    | `10.1.0.2`             |
+| Export         | `/homelab`             |
+| StorageClass   | `nfs-default`          |
+| Provisioner    | `k8s-sigs.io/qnap-nfs` |
+| Reclaim policy | `Retain`               |
+| Mount option   | `nfsvers=3`            |
 
 `platform-storage` owns the parent Argo CD Application, and the child
 `nfs-subdir-external-provisioner` Application owns the StorageClass.
@@ -31,8 +31,9 @@ The Cordium worker patch also sets `user.max_user_namespaces=28633` only on
 `zimaboard-1`, because each Workspace starts a rootless Podman container and
 Talos otherwise disables the required user namespaces. The Cordium Application
 also owns a node-pinned DaemonSet whose root init container can write only that
-host sysctl file whenever GitOps or a node reboot recreates the Pod; its
-steady-state container is unprivileged and exposes readiness from the live
+host sysctl file whenever GitOps or a node reboot recreates the Pod. The init
+container is privileged because Talos protects host sysctls even from UID 0;
+the steady-state container is unprivileged and exposes readiness from the live
 value.
 
 `media-postgres` is an explicit exception. Its active 20 Gi volume is a
@@ -43,9 +44,11 @@ QNAP latency from the live database but couples recovery to the single
 control-plane node and its system disk.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
-and Sonarr use static PV/PVC pairs against the QNAP `/media` export for
-downloads, movies, and TV library data. Read-only `showmount -e 10.1.0.2`
-verified `/media` and `/homelab` on 2026-05-26.
+and Sonarr keep active app config on retained local volumes pinned to
+`zimaboard-0`, while using retained NFS claims as migration sources and nightly
+archive targets. Their media paths still use static PV/PVC pairs against the
+QNAP `/media` export for downloads, movies, and TV library data. Read-only
+`showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
 ## Stateful Workload Gate
 
@@ -62,17 +65,22 @@ ready, but they must not be treated as production-ready until:
 
 The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral
 Redis, blob storage, and config state; Prometheus, Grafana, Deluge, Dispatcharr
-with dedicated PostgreSQL, media-postgres, n8n-postgres, octelium-storage
-PostgreSQL/Redis, Octelium Enterprise package
-stores (`octelium-rscstore`, `octelium-logstore`, `octelium-metricstore`),
-Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot. OpenClaw keeps
-auth, sessions, workspace, and application state on its PVC, but mounts its
-rebuildable per-agent Codex app-server home from a pod-local `emptyDir` so
-native thread backfills and diagnostics cannot stall turns over NFS. The volume
-is capped at `2Gi` to protect node storage. See
+with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
+backend upload PVCs, n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium
+Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
+`octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
+NOFX SQLite state, and OctoBot. OpenClaw keeps auth, sessions, workspace, and
+application state on its PVC, but mounts its rebuildable per-agent Codex
+app-server home from a
+pod-local `emptyDir` so native thread backfills and diagnostics cannot stall
+turns over NFS. The volume is capped at `2Gi` to protect node storage. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
+The 2026-08-21 rscstore recovery preserves an unreplayable DuckDB WAL by
+renaming it on the retained PVC before starting from the last valid checkpoint.
+The completion marker makes retries read-only; the quarantined WAL is not
+deleted automatically.
 
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
@@ -118,6 +126,19 @@ observed NFS client path, but QNAP NFS remains a database availability risk.
 Its availability is required for Octelium service publication, including the
 CI Kubernetes API tunnel.
 
+Multica uses the standard `nfs-default` class for its dedicated pgvector
+PostgreSQL data and backend uploads. Treat those claims as a matched recovery
+set: restore the database and upload PVCs from the same backup point before
+resuming app sync, and preserve both PVCs during rollback unless intentionally
+rebuilding the Multica instance. The first rollout is registered as stateful but
+should stay in the stateful workload gate until backup and restore validation is
+completed in `docs/storage-nfs.md`.
+
+NOFX uses a single retained `nfs-default` claim for backend SQLite data and log
+state at `/app/data`. The first rollout is registered as stateful but should
+stay in the stateful workload gate until PVC smoke testing and backup/restore
+expectations are recorded in `docs/storage-nfs.md`.
+
 Deluge's active 5 Gi config volume is a retained static `hostPath` PV at
 `/var/lib/deluge`, pinned to `zimaboard-0`. The initial guarded cold copy took
 4 minutes 6 seconds for roughly 5.2 MB, demonstrating the QNAP stall on the old
@@ -160,6 +181,7 @@ trigger a silent redownload.
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/cordium/cluster-config.yaml`
+- `clusters/homelab/apps/multica`
 - `.talos/patches/worker-zimaboard-1.yaml`
 - `.talos/patches/worker-cordium-user-namespaces.yaml`
 - `.talos/patches/worker-cordium-user-namespaces-rollback.yaml`
@@ -167,6 +189,8 @@ trigger a silent redownload.
 - `clusters/homelab/apps/deluge/local-storage.yaml`
 - `clusters/homelab/apps/radarr/local-storage.yaml`
 - `clusters/homelab/apps/radarr/migrate-config.sh`
+- `clusters/homelab/apps/sonarr/local-storage.yaml`
+- `clusters/homelab/apps/sonarr/migrate-config.sh`
 - `clusters/homelab/apps/media-postgres`
 - `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`

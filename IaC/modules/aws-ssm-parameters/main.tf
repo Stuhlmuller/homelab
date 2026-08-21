@@ -68,10 +68,10 @@ locals {
     name => parameter
     if try(parameter.generated.source_parameter, null) == null && try(parameter.generated.kind, "password") == "password"
   }
-  ecdsa_generated_parameters = {
+  private_key_generated_parameters = {
     for name, parameter in local.generated_parameters :
     name => parameter
-    if try(parameter.generated.source_parameter, null) == null && try(parameter.generated.kind, "password") == "ecdsa_private_key"
+    if try(parameter.generated.source_parameter, null) == null && contains(["ecdsa_private_key", "rsa_private_key"], try(parameter.generated.kind, "password"))
   }
   sourced_generated_parameters = {
     for name, parameter in local.generated_parameters :
@@ -82,13 +82,13 @@ locals {
     for name, parameter in local.random_generated_parameters :
     name => "${try(parameter.generated.prefix, "")}${random_password.generated[name].result}"
   }
-  ecdsa_generated_values = {
-    for name, parameter in local.ecdsa_generated_parameters :
+  private_key_generated_values = {
+    for name, parameter in local.private_key_generated_parameters :
     name => tls_private_key.generated[name].private_key_pem
   }
   direct_generated_values = merge(
     local.random_generated_values,
-    local.ecdsa_generated_values,
+    local.private_key_generated_values,
   )
   generated_values = merge(
     local.direct_generated_values,
@@ -108,10 +108,11 @@ resource "random_password" "generated" {
 }
 
 resource "tls_private_key" "generated" {
-  for_each = local.ecdsa_generated_parameters
+  for_each = local.private_key_generated_parameters
 
-  algorithm   = "ECDSA"
-  ecdsa_curve = "P256"
+  algorithm   = each.value.generated.kind == "rsa_private_key" ? "RSA" : "ECDSA"
+  ecdsa_curve = each.value.generated.kind == "rsa_private_key" ? null : "P256"
+  rsa_bits    = each.value.generated.kind == "rsa_private_key" ? 2048 : null
 }
 
 resource "aws_ssm_parameter" "this" {

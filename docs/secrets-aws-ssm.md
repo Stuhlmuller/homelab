@@ -105,11 +105,11 @@ stack because Terraform manages the Kubernetes Secret.
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
-| prometheus | `alertmanager-openclaw-alert-hook` | `alertmanager-openclaw-alert-hook` | `/homelab/grafana/openclaw-alert-hook-token` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
+| multica | `multica-secrets` | `multica-secrets` | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password` |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
@@ -133,6 +133,8 @@ Terragrunt-generated internal values:
 - `/homelab/affine/private-key` (P-256 ECDSA PEM)
 - `/homelab/litellm/master-key`
 - `/homelab/media-postgres/app-password`
+- `/homelab/multica/jwt-secret`
+- `/homelab/multica/postgres-password`
 - `/homelab/n8n/encryption-key`
 - `/homelab/n8n/postgres-admin-password`
 - `/homelab/n8n/postgres-app-password`
@@ -325,21 +327,18 @@ application password is also rendered into `n8n-postgres-client` and mounted
 into n8n as a file read through `DB_POSTGRESDB_PASSWORD_FILE`.
 
 Alertmanager materializes the Discord webhook at
-`/homelab/grafana/discord-webhook-url` and the generated OpenClaw alert hook
-token at `/homelab/grafana/openclaw-alert-hook-token` through Prometheus-owned
-External Secrets. Grafana-managed alerts route to the in-cluster Alertmanager
-contact point, and Alertmanager fans out to Discord and OpenClaw with
-file-backed credentials mounted from `alertmanager-discord-webhook` and
-`alertmanager-openclaw-alert-hook`. Grafana provisioning deletes the retired
+`/homelab/grafana/discord-webhook-url` through a Prometheus-owned External
+Secret. Grafana-managed alerts route to the in-cluster Alertmanager contact
+point, and Alertmanager sends them to Discord with the URL rendered into the
+controller-managed `alertmanager-discord-webhook` config Secret. Grafana
+provisioning deletes the retired
 direct `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs so
 persisted Grafana state cannot keep retrying removed integrations. If the
 Discord webhook is replaced in SSM, bump
 `homelab.rst.io/discord-webhook-ssm-version` on
-`alertmanager-discord-webhook` and Alertmanager pod metadata. If the OpenClaw
-hook token rotates, bump `homelab.rst.io/openclaw-alert-hook-ssm-version` on
-`alertmanager-openclaw-alert-hook` and Alertmanager pod metadata, and bump
-`homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so
-`/hooks/agent` keeps the same bearer token.
+`alertmanager-discord-webhook` and Alertmanager pod metadata. The separate
+OpenClaw hook token remains an OpenClaw-owned caller contract; Alertmanager's
+standard webhook body is incompatible with its required `message` payload.
 
 Policy Bot stores its GitHub App credentials in SSM and renders them into the
 file-backed `policy-bot-config` Kubernetes Secret. Replace the GitHub App ID,

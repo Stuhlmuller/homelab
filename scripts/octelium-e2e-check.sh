@@ -7,8 +7,6 @@ CONTROL_NAMESPACE="octelium"
 CATALOG="docs/examples/octelium/homelab-services.yaml"
 IDP_NAME="entra"
 TEST_PATH="/"
-CLIENT_IMPLEMENTATION="gvisor"
-APP_GATEWAY_SERVICE="homelab-app-gateway.homelab"
 OCTELIUMCTL_TIMEOUT_SECONDS=20
 HOMELAB_KUBECONFIG=""
 HOMELAB_CONTEXT=""
@@ -59,7 +57,7 @@ while [ "$#" -gt 0 ]; do
       shift 2
       ;;
     --client-implementation)
-      CLIENT_IMPLEMENTATION="$2"
+      # Deprecated; accepted for compatibility.
       shift 2
       ;;
     --homelab-kubeconfig)
@@ -108,6 +106,7 @@ deluge.stinkyboi.com
 grafana.stinkyboi.com
 kiali.stinkyboi.com
 litellm.stinkyboi.com
+multica.stinkyboi.com
 n8n.stinkyboi.com
 octobot.stinkyboi.com
 openclaw.stinkyboi.com
@@ -133,6 +132,7 @@ grafana
 homelab-demo.homelab
 kiali
 litellm
+multica
 n8n
 octobot
 openclaw
@@ -456,7 +456,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Octelium public Services have duplicate primary hostnames: $(tr '\n' ' ' <<<"${DUPLICATE_PRIMARY_HOSTNAMES}")"
     fi
-    for SERVICE in affine argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine argocd compass cordium deluge grafana kiali litellm multica n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public"
       else
@@ -468,7 +468,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Octelium Service affine is not anonymous for native-client access"
     fi
-    for SERVICE in argocd compass cordium deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in argocd compass cordium deluge grafana kiali litellm multica n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} still requires authentication"
       else
@@ -480,7 +480,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Cordium package-managed default.cordium WEB Service is missing or invalid"
     fi
-    for SERVICE in affine argocd compass deluge grafana kiali litellm n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine argocd compass deluge grafana kiali litellm multica n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.config.upstream.url == "https://istio-ingressgateway.istio-system.svc.cluster.local:443" and .spec.config.tls.insecureSkipVerify == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} uses the non-redirecting Istio HTTPS upstream"
       else

@@ -1,0 +1,67 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sonarr-config-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: sonarr-config-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: sonarr
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  claimRef:
+    name: sonarr-config-local
+    namespace: media
+  hostPath:
+    # One static volume avoids a cluster-wide provisioner; move this to a Talos
+    # UserVolume if node-local recovery or growth demands it.
+    path: /var/lib/sonarr
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-0
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: sonarr-config-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sonarr-config-local
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: sonarr
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: sonarr-config-local
+  volumeMode: Filesystem
+  volumeName: sonarr-config-local

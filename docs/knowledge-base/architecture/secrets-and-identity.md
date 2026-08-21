@@ -61,19 +61,22 @@ roles need identity-based KMS permissions for both keys.
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.
 - Alertmanager owns notification delivery credentials for Grafana-managed
-  alerts. The Prometheus app materializes `alertmanager-discord-webhook` and
-  `alertmanager-openclaw-alert-hook` ExternalSecrets in `monitoring`, sourced
-  from `/homelab/grafana/discord-webhook-url` and
-  `/homelab/grafana/openclaw-alert-hook-token`. Grafana routes alerts to the
-  in-cluster Alertmanager contact point, Alertmanager fans out with file-backed
-  credentials, and both routing layers repeat unresolved alerts hourly before
-  Alertmanager sends the resolved notification. Grafana provisioning deletes
+  alerts. The Prometheus app materializes the
+  `alertmanager-discord-webhook` ExternalSecret in `monitoring`, sourced from
+  `/homelab/grafana/discord-webhook-url`. Grafana routes alerts to the
+  in-cluster Alertmanager contact point. External Secrets renders the Discord
+  URL into Alertmanager's runtime config Secret because the Operator schema has
+  no Discord URL-file field. Both routing layers repeat unresolved alerts
+  hourly before Alertmanager sends the resolved notification. Grafana
+  provisioning deletes
   the retired `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs
   so persisted Grafana PVC state does not keep retrying removed integrations.
-  OpenClaw receives the same hook token through `openclaw-secrets` as
+  OpenClaw separately receives its hook token through `openclaw-secrets` as
   `GRAFANA_ALERT_HOOK_TOKEN`; bootstrap
   expands and JSON-encodes that runtime value before writing `hooks.token`,
   because OpenClaw rejects SecretRef objects for that hook-token surface.
+  Alertmanager does not call the hook because its standard webhook body lacks
+  OpenClaw's required `message` field.
 - Tailscale operator OAuth uses the `tailscale-oauth` ExternalSecret and the
   target Secret `operator-oauth`.
 - Cordium uses the `cordium-agent-auth` ExternalSecret in `octelium`, sourced
@@ -92,6 +95,25 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
   remain operator-configured and must not be committed.
+- Multica uses generated `/homelab/multica/jwt-secret` and
+  `/homelab/multica/postgres-password` values. The `multica-secrets`
+  ExternalSecret in the `ai` namespace renders both parameters into the target
+  Secret `multica-secrets` with `refreshPolicy: OnChange` and
+  `deletionPolicy: Retain`. Rotate generated JWT and PostgreSQL values through
+  the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
+  catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack;
+  do not hand-edit
+  `/homelab/multica/postgres-password`, because future applies restore the
+  repository-owned generated value. PostgreSQL password rotation also requires
+  the database-role procedure in [[runbooks/secrets-aws-ssm]] before rolling
+  consumers, since changing SSM alone does not update the retained PostgreSQL
+  role on an initialized PVC. Preserve the target Secret and PostgreSQL PVC
+  during rollback unless intentionally rebuilding the instance.
+- NOFX uses generated `/homelab/nofx/jwt-secret`,
+  `/homelab/nofx/data-encryption-key`, and
+  `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
+  generated through the shared SSM parameter module and enables browser-side
+  transport encryption without committing key material.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token
@@ -103,7 +125,7 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-  homelab-octelium-public`. The same tunnel is the external callback backbone
+homelab-octelium-public`. The same tunnel is the external callback backbone
   for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.

@@ -60,3 +60,15 @@ the homelab flake.
 
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
+
+## Sonarr
+
+Sonarr runs behind Octelium with `AuthenticationMethod=External` and
+`AuthenticationRequired=DisabledForLocalAddresses`. Its startup path mirrors the
+Radarr auth recovery pattern: migrate active config from the retained NFS claim
+to `sonarr-config-local` on `zimaboard-0`, normalize the local `config.xml` in
+init containers, remove legacy auth tags, pass matching `SONARR__AUTH__*`
+environment settings, and skip the linuxserver default config init script so
+the app does not reintroduce stale authentication state on restart. Keep the
+legacy NFS claim as the read-only migration source and nightly archive target
+until live cutover and first-backup validation are complete.

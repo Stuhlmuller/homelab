@@ -224,6 +224,7 @@ hostnames=(
   "kiali.${domain}"
   "kubernetes-api-ci.${domain}"
   "litellm.${domain}"
+  "multica.${domain}"
   "n8n.${domain}"
   "n8n-webhook.${domain}"
   "octobot.${domain}"

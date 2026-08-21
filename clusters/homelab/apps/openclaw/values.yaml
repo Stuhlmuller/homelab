@@ -4,12 +4,13 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    revisionHistoryLimit: 1
     pod:
       automountServiceAccountToken: false
       annotations:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
-        homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "1"
+        homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
       operator-toolbox:
@@ -24,16 +25,40 @@ controllers:
           - |
             export NIX_CONFIG="experimental-features = nix-command flakes"
             nix profile install --profile /toolbox/profile \
+              "$NIXPKGS_REF#actionlint" \
               "$NIXPKGS_REF#argocd" \
+              "$NIXPKGS_REF#awscli2" \
+              "$NIXPKGS_REF#bash" \
+              "$NIXPKGS_REF#cloudflared" \
+              "$NIXPKGS_REF#conftest" \
+              "$NIXPKGS_REF#coreutils" \
+              "$NIXPKGS_REF#curl" \
+              "$NIXPKGS_REF#findutils" \
               "$NIXPKGS_REF#gh" \
+              "$NIXPKGS_REF#git" \
+              "$NIXPKGS_REF#gitleaks" \
+              "$NIXPKGS_REF#gnugrep" \
+              "$NIXPKGS_REF#gnused" \
+              "$NIXPKGS_REF#gnutar" \
+              "$NIXPKGS_REF#gzip" \
               "$NIXPKGS_REF#jq" \
+              "$NIXPKGS_REF#k9s" \
+              "$NIXPKGS_REF#kubernetes-helm" \
               "$NIXPKGS_REF#kubectl" \
+              "$NIXPKGS_REF#kustomize" \
               "$NIXPKGS_REF#nix" \
               "$NIXPKGS_REF#opentofu" \
+              "$NIXPKGS_REF#openssh" \
               "$NIXPKGS_REF#pre-commit" \
               "$NIXPKGS_REF#ripgrep" \
+              "$NIXPKGS_REF#shellcheck" \
+              "$NIXPKGS_REF#shfmt" \
+              "$NIXPKGS_REF#sops" \
               "$NIXPKGS_REF#talosctl" \
-              "$NIXPKGS_REF#terragrunt"
+              "$NIXPKGS_REF#terragrunt" \
+              "$NIXPKGS_REF#unzip" \
+              "$NIXPKGS_REF#yamllint" \
+              "$NIXPKGS_REF#yq-go"
             mkdir -p /nix-shared/store /nix-shared/var/nix
             cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
