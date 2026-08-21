@@ -42,7 +42,32 @@ spec:
                 - /bin/sh
                 - -ec
                 - |
-                  body='<?xml version="1.0"?>
+                  control_url="http://10.1.0.1:49152/upnp/control/WANIPConnection0"
+                  soap() {
+                    action="$1"
+                    body="$2"
+                    wget -qO- -T 10 \
+                      --header='Content-Type: text/xml; charset="utf-8"' \
+                      --header="SOAPAction: \"urn:schemas-upnp-org:service:WANIPConnection:1#$action\"" \
+                      --post-data="$body" \
+                      "$control_url"
+                  }
+
+                  delete_body='<?xml version="1.0"?>
+                  <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+                    <s:Body>
+                      <u:DeletePortMapping xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">
+                        <NewRemoteHost></NewRemoteHost><NewExternalPort>8443</NewExternalPort><NewProtocol>TCP</NewProtocol>
+                      </u:DeletePortMapping>
+                    </s:Body>
+                  </s:Envelope>'
+                  delete_response="$(soap DeletePortMapping "$delete_body" || true)"
+                  case "$delete_response" in
+                    *DeletePortMappingResponse*|*NoSuchEntryInArray*) ;;
+                    *) echo "error: router did not confirm deleting stale Octelium API mapping" >&2; exit 1 ;;
+                  esac
+
+                  add_body='<?xml version="1.0"?>
                   <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
                     <s:Body>
                       <u:AddPortMapping xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">
@@ -52,14 +77,10 @@ spec:
                       </u:AddPortMapping>
                     </s:Body>
                   </s:Envelope>'
-                  response="$(wget -qO- -T 10 \
-                    --header='Content-Type: text/xml; charset="utf-8"' \
-                    --header='SOAPAction: "urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"' \
-                    --post-data="$body" \
-                    http://10.1.0.1:49152/upnp/control/WANIPConnection0)"
-                  case "$response" in
+                  add_response="$(soap AddPortMapping "$add_body")"
+                  case "$add_response" in
                     *AddPortMappingResponse*) echo "refreshed TCP/8443 to 10.1.0.200:30443 for 86400 seconds" ;;
-                    *) echo "error: router did not confirm the Octelium API mapping" >&2; exit 1 ;;
+                    *) echo "error: router did not confirm adding the Octelium API mapping" >&2; exit 1 ;;
                   esac
               resources:
                 requests:
