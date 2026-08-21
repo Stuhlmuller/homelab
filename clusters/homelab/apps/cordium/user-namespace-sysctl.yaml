@@ -8,6 +8,7 @@ metadata:
     checkov.io/skip2: CKV_K8S_20=Host sysctl writes require privilege escalation during the one-shot init.
     checkov.io/skip3: CKV_K8S_28=Privileged init receives all capabilities; the steady-state container drops all.
     checkov.io/skip4: CKV_K8S_37=Privileged init receives all capabilities; the steady-state container drops all.
+    checkov.io/skip5: CKV_K8S_11=The idle probe container keeps a request but no CPU quota to avoid false throttling alerts.
   labels:
     app.kubernetes.io/name: cordium-user-namespace-sysctl
     app.kubernetes.io/part-of: cordium
@@ -96,7 +97,6 @@ spec:
               cpu: 5m
               memory: 8Mi
             limits:
-              cpu: 100m
               memory: 16Mi
       terminationGracePeriodSeconds: 5
       volumes:
