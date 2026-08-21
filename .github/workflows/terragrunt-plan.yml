@@ -27,6 +27,7 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+  KUBE_INSECURE_SKIP_TLS_VERIFY: "true"
   OCTELIUM_DOMAIN: stinkyboi.com
   OCTELIUM_IMPLEMENTATION: gvisor
   OCTELIUM_KUBE_LOCAL_PORT: 16443
@@ -159,6 +160,7 @@ jobs:
           OCTELIUM_DOMAIN: ${{ env.OCTELIUM_DOMAIN }}
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_INSECURE_SKIP_TLS_VERIFY: ${{ env.KUBE_INSECURE_SKIP_TLS_VERIFY }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |
           nix develop --command bash <<'EOF'
