@@ -9,6 +9,25 @@ controllers:
       annotations:
         homelab.rst.io/trading-mode: "ui-configured"
         homelab.rst.io/live-trading-autostart: "false"
+    initContainers:
+      reconcile-tentacles:
+        image:
+          repository: drakkarsoftware/octobot
+          tag: "2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
+        command:
+          - /bin/sh
+          - -ec
+          - |
+            marker=/octobot/tentacles/.homelab-octobot-2.1.1
+            [ -f "$marker" ] && exit 0
+            OctoBot tentacles --install --all --force
+            touch "$marker"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            memory: 1Gi
     containers:
       app:
         image:

@@ -48,6 +48,16 @@ Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep
 steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
+## OpenClaw
+
+OpenClaw persists runtime state on the `openclaw` PVC under `/data/openclaw`.
+The `operator-toolbox` init container installs the operator command set with
+Nix, then shares both `/toolbox/profile` and `/nix` with the app and bootstrap
+containers. Keep the copied Nix database and shared store as a matched unit:
+copying only the profile runtime closure while copying the full database leaves
+missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
+the homelab flake.
+
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
 

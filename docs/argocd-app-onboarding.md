@@ -10,36 +10,38 @@ requested workloads.
 
 ## Applications
 
-| App | Kind | Namespace | GitOps path | Terragrunt path | Auto-sync | Dependencies |
-| --- | --- | --- | --- | --- | --- | --- |
-| platform-dns | support | `kube-system` | `clusters/homelab/platform/dns` | `IaC/live/argocd-apps/platform-dns` | Yes, no prune | Argo CD bootstrap |
-| platform-storage | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | Yes | QNAP NFS export validation |
-| media-postgres | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | Yes | external-secrets, platform-storage |
-| n8n-postgres | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | Yes | external-secrets, platform-storage |
-| github-actions-runner | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | Yes | none |
-| affine | requested | `affine` | `clusters/homelab/apps/affine` | `IaC/live/argocd-apps/affine` | Yes | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage |
-| argocd-image-updater | requested | `argocd` | `clusters/homelab/apps/argocd-image-updater` | `IaC/live/argocd-apps/argocd-image-updater` | Yes | external-secrets |
-| external-secrets | requested | `external-secrets` | `clusters/homelab/apps/external-secrets` | `IaC/live/argocd-apps/external-secrets` | Yes | platform-dns |
-| cert-manager | requested | `cert-manager` | `clusters/homelab/apps/cert-manager` | `IaC/live/argocd-apps/cert-manager` | Yes | external-secrets |
-| istio | requested | `istio-system` | `clusters/homelab/apps/istio` | `IaC/live/argocd-apps/istio` | Yes | cert-manager |
-| tailscale | requested | `tailscale` | `clusters/homelab/apps/tailscale` | `IaC/live/argocd-apps/tailscale` | Yes | external-secrets, istio |
-| octelium | requested | `octelium-client` | `clusters/homelab/apps/octelium` | `IaC/live/argocd-apps/octelium` | Yes | external-secrets, istio |
-| octelium-enterprise | requested | `octelium` | `clusters/homelab/apps/octelium-enterprise` | `IaC/live/argocd-apps/octelium-enterprise` | Yes | octelium-cluster, octelium-storage, platform-storage |
-| prometheus | requested | `monitoring` | `clusters/homelab/apps/prometheus` | `IaC/live/argocd-apps/prometheus` | Yes | external-secrets, platform-storage |
-| grafana | requested | `monitoring` | `clusters/homelab/apps/grafana` | `IaC/live/argocd-apps/grafana` | Yes | external-secrets, cert-manager, istio, prometheus, platform-storage |
-| kiali | requested | `monitoring` | `clusters/homelab/apps/kiali` | `IaC/live/argocd-apps/kiali` | Yes | istio, prometheus, grafana |
-| compass | requested | `monitoring` | `clusters/homelab/apps/compass` | `IaC/live/argocd-apps/compass` | Yes | cert-manager, istio, prometheus |
-| descheduler | requested | `kube-system` | `clusters/homelab/apps/descheduler/values.yaml` | `IaC/live/argocd-apps/descheduler` | Yes | prometheus |
-| deluge | requested | `media` | `clusters/homelab/apps/deluge` | `IaC/live/argocd-apps/deluge` | Yes | cert-manager, istio, platform-storage |
-| dispatcharr | requested | `media` | `clusters/homelab/apps/dispatcharr` | `IaC/live/argocd-apps/dispatcharr` | Yes | external-secrets, cert-manager, istio, platform-storage |
-| prowlarr | requested | `media` | `clusters/homelab/apps/prowlarr` | `IaC/live/argocd-apps/prowlarr` | Yes | cert-manager, istio, media-postgres, platform-storage |
-| radarr | requested | `media` | `clusters/homelab/apps/radarr` | `IaC/live/argocd-apps/radarr` | Yes | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
-| sonarr | requested | `media` | `clusters/homelab/apps/sonarr` | `IaC/live/argocd-apps/sonarr` | Yes | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage |
-| litellm | requested | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | Yes | external-secrets, cert-manager, istio, platform-storage |
-| openclaw | requested | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Yes | external-secrets, cert-manager, istio, litellm, platform-storage |
-| n8n | requested | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | Yes | external-secrets, cert-manager, istio, platform-storage, n8n-postgres |
-| policy-bot | requested | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | Yes | external-secrets, cert-manager, istio |
-| octobot | requested | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | Yes | cert-manager, istio, platform-storage |
+| App                   | Kind                      | Namespace               | GitOps path                                     | Terragrunt path                              | Auto-sync     | Dependencies                                                                       |
+| --------------------- | ------------------------- | ----------------------- | ----------------------------------------------- | -------------------------------------------- | ------------- | ---------------------------------------------------------------------------------- |
+| platform-dns          | support                   | `kube-system`           | `clusters/homelab/platform/dns`                 | `IaC/live/argocd-apps/platform-dns`          | Yes, no prune | Argo CD bootstrap                                                                  |
+| platform-storage      | support                   | cluster-scoped          | `clusters/homelab/platform/storage`             | `IaC/live/argocd-apps/platform-storage`      | Yes           | QNAP NFS export validation                                                         |
+| metrics-server        | support                   | `kube-system`           | official `metrics-server` Helm chart            | `IaC/live/argocd-apps/metrics-server`        | Yes           | Kubernetes API and node kubelets                                                   |
+| media-postgres        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`          | `IaC/live/argocd-apps/media-postgres`        | Yes           | external-secrets, platform-storage                                                 |
+| n8n-postgres          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`            | `IaC/live/argocd-apps/n8n-postgres`          | Yes           | external-secrets, platform-storage                                                 |
+| github-actions-runner | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner`   | `IaC/live/argocd-apps/github-actions-runner` | Yes           | none                                                                               |
+| affine                | requested                 | `affine`                | `clusters/homelab/apps/affine`                  | `IaC/live/argocd-apps/affine`                | Yes           | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage |
+| argocd-image-updater  | requested                 | `argocd`                | `clusters/homelab/apps/argocd-image-updater`    | `IaC/live/argocd-apps/argocd-image-updater`  | Yes           | external-secrets                                                                   |
+| external-secrets      | requested                 | `external-secrets`      | `clusters/homelab/apps/external-secrets`        | `IaC/live/argocd-apps/external-secrets`      | Yes           | platform-dns                                                                       |
+| cert-manager          | requested                 | `cert-manager`          | `clusters/homelab/apps/cert-manager`            | `IaC/live/argocd-apps/cert-manager`          | Yes           | external-secrets                                                                   |
+| istio                 | requested                 | `istio-system`          | `clusters/homelab/apps/istio`                   | `IaC/live/argocd-apps/istio`                 | Yes           | cert-manager                                                                       |
+| tailscale             | requested                 | `tailscale`             | `clusters/homelab/apps/tailscale`               | `IaC/live/argocd-apps/tailscale`             | Yes           | external-secrets, istio                                                            |
+| octelium              | requested                 | `octelium-client`       | `clusters/homelab/apps/octelium`                | `IaC/live/argocd-apps/octelium`              | Yes           | external-secrets, istio                                                            |
+| octelium-enterprise   | requested                 | `octelium`              | `clusters/homelab/apps/octelium-enterprise`     | `IaC/live/argocd-apps/octelium-enterprise`   | Yes           | octelium-cluster, octelium-storage, platform-storage                               |
+| prometheus            | requested                 | `monitoring`            | `clusters/homelab/apps/prometheus`              | `IaC/live/argocd-apps/prometheus`            | Yes           | external-secrets, platform-storage                                                 |
+| grafana               | requested                 | `monitoring`            | `clusters/homelab/apps/grafana`                 | `IaC/live/argocd-apps/grafana`               | Yes           | external-secrets, cert-manager, istio, prometheus, platform-storage                |
+| kiali                 | requested                 | `monitoring`            | `clusters/homelab/apps/kiali`                   | `IaC/live/argocd-apps/kiali`                 | Yes           | istio, prometheus, grafana                                                         |
+| compass               | requested                 | `monitoring`            | `clusters/homelab/apps/compass`                 | `IaC/live/argocd-apps/compass`               | Yes           | cert-manager, istio, prometheus                                                    |
+| descheduler           | requested                 | `kube-system`           | `clusters/homelab/apps/descheduler/values.yaml` | `IaC/live/argocd-apps/descheduler`           | Yes           | prometheus                                                                         |
+| deluge                | requested                 | `media`                 | `clusters/homelab/apps/deluge`                  | `IaC/live/argocd-apps/deluge`                | Yes           | cert-manager, istio, platform-storage                                              |
+| dispatcharr           | requested                 | `media`                 | `clusters/homelab/apps/dispatcharr`             | `IaC/live/argocd-apps/dispatcharr`           | Yes           | external-secrets, cert-manager, istio, platform-storage                            |
+| prowlarr              | requested                 | `media`                 | `clusters/homelab/apps/prowlarr`                | `IaC/live/argocd-apps/prowlarr`              | Yes           | cert-manager, istio, media-postgres, platform-storage                              |
+| radarr                | requested                 | `media`                 | `clusters/homelab/apps/radarr`                  | `IaC/live/argocd-apps/radarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage            |
+| sonarr                | requested                 | `media`                 | `clusters/homelab/apps/sonarr`                  | `IaC/live/argocd-apps/sonarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage            |
+| litellm               | requested                 | `ai`                    | `clusters/homelab/apps/litellm`                 | `IaC/live/argocd-apps/litellm`               | Yes           | external-secrets, cert-manager, istio, platform-storage                            |
+| openclaw              | requested                 | `ai`                    | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`              | Yes           | external-secrets, cert-manager, istio, litellm, platform-storage                   |
+| n8n                   | requested                 | `automation`            | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                   | Yes           | external-secrets, cert-manager, istio, platform-storage, n8n-postgres              |
+| nofx                  | requested                 | `nofx`                  | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                  | Yes           | external-secrets, istio, octelium, platform-storage                                |
+| policy-bot            | requested                 | `automation`            | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`            | Yes           | external-secrets, cert-manager, istio                                              |
+| octobot               | requested                 | `finance`               | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`               | Yes           | cert-manager, istio, platform-storage                                              |
 
 ## Dependency Readiness
 

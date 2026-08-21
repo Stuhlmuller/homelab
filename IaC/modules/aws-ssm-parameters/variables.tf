@@ -17,9 +17,9 @@ variable "parameters" {
   validation {
     condition = alltrue([
       for parameter in values(var.parameters) :
-      contains(["password", "ecdsa_private_key"], try(parameter.generated.kind, "password"))
+      contains(["password", "ecdsa_private_key", "rsa_private_key"], try(parameter.generated.kind, "password"))
     ])
-    error_message = "Generated SSM parameters must use kind password or ecdsa_private_key."
+    error_message = "Generated SSM parameters must use kind password, ecdsa_private_key, or rsa_private_key."
   }
 
   validation {

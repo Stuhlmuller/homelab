@@ -98,13 +98,19 @@ roles need identity-based KMS permissions for both keys.
   Secret `multica-secrets` with `refreshPolicy: OnChange` and
   `deletionPolicy: Retain`. Rotate generated JWT and PostgreSQL values through
   the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
-  catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack; do not hand-edit
+  catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack;
+  do not hand-edit
   `/homelab/multica/postgres-password`, because future applies restore the
   repository-owned generated value. PostgreSQL password rotation also requires
   the database-role procedure in [[runbooks/secrets-aws-ssm]] before rolling
   consumers, since changing SSM alone does not update the retained PostgreSQL
   role on an initialized PVC. Preserve the target Secret and PostgreSQL PVC
   during rollback unless intentionally rebuilding the instance.
+- NOFX uses generated `/homelab/nofx/jwt-secret`,
+  `/homelab/nofx/data-encryption-key`, and
+  `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
+  generated through the shared SSM parameter module and enables browser-side
+  transport encryption without committing key material.
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token
@@ -116,7 +122,7 @@ roles need identity-based KMS permissions for both keys.
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-  homelab-octelium-public`. The same tunnel is the external callback backbone
+homelab-octelium-public`. The same tunnel is the external callback backbone
   for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.

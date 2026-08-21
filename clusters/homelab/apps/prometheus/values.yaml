@@ -2,6 +2,12 @@ grafana:
   enabled: false
 nodeExporter:
   enabled: false
+kube-state-metrics:
+  podAnnotations:
+    homelab.rst.io/recovery-revision: "2026-08-21"
+prometheusOperator:
+  podAnnotations:
+    homelab.rst.io/recovery-revision: "2026-08-21"
 defaultRules:
   rules:
     kubeControllerManager: false
