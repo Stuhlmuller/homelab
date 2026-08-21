@@ -332,8 +332,9 @@ Alertmanager materializes the Discord webhook at
 token at `/homelab/grafana/openclaw-alert-hook-token` through Prometheus-owned
 External Secrets. Grafana-managed alerts route to the in-cluster Alertmanager
 contact point, and Alertmanager fans out to Discord and OpenClaw with
-file-backed credentials mounted from `alertmanager-discord-webhook` and
-`alertmanager-openclaw-alert-hook`. Grafana provisioning deletes the retired
+the Discord URL rendered into the controller-managed
+`alertmanager-discord-webhook` config Secret and the OpenClaw token mounted
+from `alertmanager-openclaw-alert-hook`. Grafana provisioning deletes the retired
 direct `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs so
 persisted Grafana state cannot keep retrying removed integrations. If the
 Discord webhook is replaced in SSM, bump

@@ -18,9 +18,10 @@ controllers:
           - /bin/sh
           - -ec
           - |
-            marker=/octobot/tentacles/.homelab-octobot-2.1.1
+            marker=/octobot/tentacles/.homelab-octobot-2.1.1-compatible
             [ -f "$marker" ] && exit 0
-            OctoBot tentacles --install --all --force
+            OctoBot tentacles --install --all --force \
+              --location https://tentacles.octobot.online/officials/packages/full/base/2.1.1/any_platform.zip
             touch "$marker"
         resources:
           requests:
