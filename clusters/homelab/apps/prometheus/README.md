@@ -11,21 +11,19 @@ non-chart alert rules load without a Helm release label.
 
 Alertmanager owns homelab notification fanout. Grafana-managed alerts route to
 the `homelab-alertmanager` Grafana contact point, which posts alerts to this
-Alertmanager. Alertmanager then delivers notifications to Discord with the
-native Discord receiver and to OpenClaw's authenticated `/hooks/agent` endpoint
-with a bearer-token webhook receiver.
+Alertmanager. Alertmanager then delivers notifications to Discord with its
+native Discord receiver.
 
 The root route repeats notifications every hour while an alert remains active.
 Discord also receives a resolved notification after the alert clears because
 its receiver has `send_resolved` enabled. Keep the Grafana notification policy
 repeat interval aligned with this route so both stages preserve that cadence.
 
-The `alertmanager-discord-webhook` and `alertmanager-openclaw-alert-hook`
-ExternalSecrets read the existing `/homelab/grafana/discord-webhook-url` and
-`/homelab/grafana/openclaw-alert-hook-token` SSM parameters. The Alertmanager
-pods mount those target Secrets under `/etc/alertmanager/secrets/` so the
-receiver config uses file-backed credentials instead of committing secret
-values or depending on Grafana-owned runtime state.
+The `alertmanager-discord-webhook` ExternalSecret reads the existing
+`/homelab/grafana/discord-webhook-url` SSM parameter. External Secrets renders
+the Discord URL into Alertmanager's runtime config Secret because the
+Prometheus Operator schema does not support `webhook_url_file` for Discord.
+The secret is not committed.
 
 ## Argo CD Metrics
 

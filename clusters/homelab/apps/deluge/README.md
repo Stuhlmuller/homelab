@@ -56,9 +56,11 @@ AirVPN port fixed only for incoming connections; pinning outgoing connections
 to the same single port can leave torrents unable to make enough peer
 connections. If the sidecar cannot connect to Deluge and apply the port
 configuration immediately, it keeps retrying in the background instead of
-blocking the UI service endpoint. Pod readiness is gated by Gluetun, so traffic
-still fails closed when the VPN healthcheck fails. Deluge daemon health is
-covered separately by the app liveness probe and exported RPC metric.
+blocking the UI service endpoint. Pod readiness is gated by both Gluetun and
+the local Deluge Web listener, so Sonarr and Radarr do not receive a ready
+Service endpoint while the web API on port `8112` is still refusing
+connections. Deluge daemon health is covered separately by the app startup and
+liveness probes plus the exported RPC metric.
 
 A `daemon-metrics` sidecar runs `deluge-console -c /config status` and probes
 Gluetun's local health endpoint on each scrape. It exposes

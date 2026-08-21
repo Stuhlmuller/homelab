@@ -203,6 +203,7 @@ external_secret_allowed_prefixes := {
 	"github-actions-runner": {"/homelab/github-actions-runner/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
+	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
 	"octelium-client": {"/homelab/octelium/"},
 	"octelium-public": {"/homelab/octelium/"},

@@ -1,0 +1,182 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nofx-backend
+  namespace: nofx
+  annotations:
+    checkov.io/skip1: CKV_K8S_35=NOFX reads its existing runtime secret contract from environment variables.
+  labels:
+    app.kubernetes.io/name: nofx
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: homelab-ai
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nofx
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nofx
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: homelab-ai
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10000
+        runAsGroup: 10000
+        runAsNonRoot: true
+        runAsUser: 10000
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
+      containers:
+        - name: backend
+          image: ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: TZ
+              value: America/Los_Angeles
+            - name: API_SERVER_PORT
+              value: "8080"
+            - name: AI_MAX_TOKENS
+              value: "8000"
+            - name: DB_TYPE
+              value: sqlite
+            - name: DB_PATH
+              value: /app/data/data.db
+            - name: TRANSPORT_ENCRYPTION
+              value: "true"
+            - name: EXPERIENCE_IMPROVEMENT
+              value: "false"
+          envFrom:
+            - secretRef:
+                name: nofx-secrets
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: nofx-data
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nofx-frontend
+  namespace: nofx
+  labels:
+    app.kubernetes.io/name: nofx
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: homelab-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nofx
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nofx
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: homelab-ai
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10000
+        runAsGroup: 10000
+        runAsNonRoot: true
+        runAsUser: 10000
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
+      containers:
+        - name: frontend
+          image: ghcr.io/nofxaios/nofx/nofx-frontend:stable@sha256:6c1e56336433e82eb5e750034d2991a8dbebd89a6b19119c4b12601ef1842887
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /var/run
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

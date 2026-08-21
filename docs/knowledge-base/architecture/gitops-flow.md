@@ -16,6 +16,11 @@ Infrastructure and application registration are modeled through Terragrunt and
 OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
 that point back at repository-owned manifests, Helm values, or Kustomize
 overlays.
+Argo CD globally terminates sync operations after 15 minutes so one unhealthy
+resource cannot hold an Application operation forever and block later reviewed
+revisions.
+The bootstrap chart carries a revision annotation on the application-controller
+Pod so command-parameter changes restart the controller and take effect.
 
 `IaC/operator` is the deliberate exception to workflow-driven apply. It owns
 bootstrap permissions that the GitHub OIDC role must never change for itself;

@@ -151,8 +151,17 @@ destroy_deleted_terragrunt_units
 
 echo "::group::Argo CD bootstrap apply"
 (
-  cd IaC/bootstrap
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/bootstrap/argocd')" --non-interactive --parallelism 1 -- apply -no-color -auto-approve
+  cd IaC/bootstrap/argocd
+  terragrunt init -no-color
+  if ! terragrunt state list -no-color 2>/dev/null | grep -Fxq 'helm_release.this'; then
+    if helm status argocd --namespace argocd >/dev/null 2>&1; then
+      echo "Adopting existing Argo CD Helm release into OpenTofu state."
+      terragrunt import -no-color helm_release.this argocd/argocd
+    else
+      echo "Argo CD Helm release is absent; OpenTofu will install it."
+    fi
+  fi
+  terragrunt apply -no-color -auto-approve
 )
 echo "::endgroup::"
 

@@ -37,6 +37,12 @@ that replacement clears the package-adopted rolling-update field from live
 Deployments. Do not keep an explicit `rollingUpdate: null` field because it can
 compare differently from the live object's absent field.
 
+`octeliumee-rscstore` includes an incident-specific, completion-marked init
+container for the 2026-08-21 DuckDB recovery. It renames the unreplayable
+`store.db.wal` to `store.db.wal.quarantined-20260821` before startup and never
+deletes it. Remove the init container only after rscstore is healthy and the
+preserved WAL is no longer needed for forensic recovery.
+
 The `svc-console-octelium`, `svc-dirsync-octelium`,
 `svc-enterprise-octelium-api`, and `svc-public-octelium` Deployments are
 generated service proxies. The committed package capture keeps their images
