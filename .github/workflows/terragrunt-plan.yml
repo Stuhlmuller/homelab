@@ -106,7 +106,7 @@ jobs:
           requires_live_plan=false
           while IFS= read -r changed_path; do
             case "${changed_path}" in
-              IaC/*|flake.nix|flake.lock|policy/*)
+              IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
               scripts/ci/install-kubeconfig.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
@@ -161,9 +161,9 @@ jobs:
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |
           {
-            printf '## Terragrunt Plan Output\n\n'
-            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
-            printf 'Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check.\n'
+            printf "## Terragrunt Plan Output\n\n"
+            printf "> Live Terragrunt plan skipped because this pull request did not change \`IaC/**\`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n"
+            printf "Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check.\n"
           } >"${TERRAGRUNT_PLAN_MARKDOWN}"
 
       - name: Update PR Description With Plan Or Skip Note

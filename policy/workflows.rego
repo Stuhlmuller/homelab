@@ -34,6 +34,7 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
+	not break_glass_kubeconfig_workflow
 	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q touches live homelab access but does not provide an Octelium clientless access token", [name])
@@ -41,13 +42,14 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
+	not break_glass_kubeconfig_workflow
 	value := workflow_env_value("KUBE_API_SERVER_URL")
 	value != "https://kubernetes-api-ci.stinkyboi.com"
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must reach Kubernetes through the Octelium clientless endpoint", [name])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
 has_event(events, event) if {
 	events == event
@@ -60,7 +62,24 @@ has_event(events, event) if {
 
 has_event(events, event) if {
 	is_object(events)
-	events[event]
+	object.keys(events)[_] == event
+}
+
+only_event(events, event) if {
+	events == event
+}
+
+only_event(events, event) if {
+	is_array(events)
+	count(events) == 1
+	events[0] == event
+}
+
+only_event(events, event) if {
+	is_object(events)
+	keys := object.keys(events)
+	count(keys) == 1
+	keys[_] == event
 }
 
 external_action_reference(uses) if {
@@ -85,7 +104,44 @@ live_homelab_workflow if {
 }
 
 live_homelab_workflow if {
-	workflow_step_env_has("KUBE_CONFIG_B64")
+	workflow_env_has("KUBE_CONFIG_B64")
+}
+
+break_glass_kubeconfig_workflow if {
+	object.get(input, "name", "") == "Break Glass Multica Recovery"
+	only_event(workflow_events, "workflow_dispatch")
+	not kubeconfig_env_in_unguarded_scope
+}
+
+kubeconfig_env_in_unguarded_scope if {
+	workflow_top_env_has("KUBE_CONFIG_B64")
+}
+
+kubeconfig_env_in_unguarded_scope if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	workflow_job_env_has(job, "KUBE_CONFIG_B64")
+	not guarded_break_glass_job(job_name, job)
+}
+
+guarded_break_glass_job(job_name, job) if {
+	job_name == "recover"
+	object.get(job, "if", "") == "github.ref == 'refs/heads/main'"
+	environment := object.get(job, "environment", {})
+	object.get(environment, "name", "") == "homelab-production"
+}
+
+workflow_job_env_has(job, key) if {
+	env := object.get(job, "env", {})
+	object.get(env, key, null) != null
+}
+
+workflow_job_env_has(job, key) if {
+	steps := object.get(job, "steps", [])
+	some index
+	step := steps[index]
+	env := object.get(step, "env", {})
+	object.get(env, key, null) != null
 }
 
 workflow_run_contains(needle) if {
@@ -96,6 +152,21 @@ workflow_run_contains(needle) if {
 	step := steps[index]
 	run := lower(sprintf("%v", [object.get(step, "run", "")]))
 	contains(run, lower(needle))
+}
+
+workflow_env_has(key) if {
+	workflow_top_env_has(key)
+}
+
+workflow_env_has(key) if {
+	jobs := object.get(input, "jobs", {})
+	some _, job in jobs
+	workflow_job_env_has(job, key)
+}
+
+workflow_top_env_has(key) if {
+	env := object.get(input, "env", {})
+	object.get(env, key, null) != null
 }
 
 workflow_step_env_has(key) if {
