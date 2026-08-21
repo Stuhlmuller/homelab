@@ -20,7 +20,7 @@ controllers:
           - |
             marker=/octobot/tentacles/.homelab-octobot-2.1.1-compatible-v2
             [ -f "$marker" ] && exit 0
-            OctoBot tentacles --uninstall --force \
+            printf 'y\n' | OctoBot tentacles --uninstall \
               simple_market_making_trading_mode octobot_process_operators
             OctoBot tentacles --install --all --force \
               --location https://tentacles.octobot.online/officials/packages/full/base/2.1.1/any_platform.zip
