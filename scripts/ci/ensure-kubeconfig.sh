@@ -3,6 +3,8 @@ set -euo pipefail
 
 : "${KUBE_API_SERVER_URL:?KUBE_API_SERVER_URL must contain the public Octelium Kubernetes URL}"
 : "${OCTELIUM_AUTH_TOKEN:?OCTELIUM_AUTH_TOKEN must contain the Octelium clientless access token}"
+OCTELIUM_DOMAIN="${OCTELIUM_DOMAIN:-stinkyboi.com}"
+export OCTELIUM_DOMAIN
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

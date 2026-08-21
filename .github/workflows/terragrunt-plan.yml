@@ -27,6 +27,7 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+  OCTELIUM_DOMAIN: stinkyboi.com
 
 jobs:
   static-policy:
@@ -126,9 +127,11 @@ jobs:
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          OCTELIUM_DOMAIN: ${{ env.OCTELIUM_DOMAIN }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
+          test -n "${OCTELIUM_DOMAIN}" || { echo "OCTELIUM_DOMAIN must be set for Octelium fallback."; exit 1; }
 
       - name: Configure AWS Credentials
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
@@ -145,6 +148,7 @@ jobs:
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          OCTELIUM_DOMAIN: ${{ env.OCTELIUM_DOMAIN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |

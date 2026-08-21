@@ -179,7 +179,7 @@ fi
 run_status() {
   local status_cmd
 
-  status_cmd=("${OCTELIUM_BIN}" --homedir "${OCTELIUM_HOMEDIR}" status)
+  status_cmd=("${OCTELIUM_BIN}" --homedir "${OCTELIUM_HOMEDIR}" status --domain "${OCTELIUM_DOMAIN}")
   if [ "${OCTELIUM_USE_SUDO}" = "true" ]; then
     status_cmd=(sudo -E "${status_cmd[@]}")
   fi
