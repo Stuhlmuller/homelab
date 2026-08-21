@@ -7,12 +7,14 @@ under `/data/openclaw`.
 
 ## Resource Profile
 
-The app container requests `1` CPU and `2Gi` memory, with a `6Gi` memory limit
-and no CPU limit so Codex-backed agent work can burst when node capacity is
-available. The bootstrap init container requests `500m` CPU and `1Gi` memory
-with a `3Gi` memory limit because it validates config and installs channel
-plugins during startup. The local TCP proxy stays small at `25m` CPU and
-`64Mi` memory requested with a `256Mi` memory limit.
+The operator-toolbox init container requests `1` CPU and `768Mi` memory, with a
+`6Gi` memory limit for the Nix profile and shared store copy. The app container
+also requests `1` CPU and `768Mi` memory, with a `6Gi` memory limit and no CPU
+limit so Codex-backed agent work can burst when node capacity is available. The
+bootstrap init container requests `500m` CPU and `512Mi` memory with a `3Gi`
+memory limit because it validates config and installs channel plugins during
+startup. The local TCP proxy stays small at `25m` CPU and `64Mi` memory
+requested with a `256Mi` memory limit.
 
 ## Workspace Runtime Setup
 

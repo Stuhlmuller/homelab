@@ -57,6 +57,11 @@ containers. Keep the copied Nix database and shared store as a matched unit:
 copying only the profile runtime closure while copying the full database leaves
 missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
 the homelab flake.
+OpenClaw's current scheduling profile keeps both the operator toolbox and app
+containers at `768Mi` memory requests, while bootstrap is `512Mi`, with higher
+memory limits retained for bursty Nix and agent work. Treat that lower request
+profile as deliberate overcommit headroom, not evidence that the limits or
+complete-store copy are unnecessary.
 
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
