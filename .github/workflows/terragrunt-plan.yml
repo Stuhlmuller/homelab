@@ -150,8 +150,7 @@ jobs:
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
-          bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
+          bash scripts/ci/ensure-kubeconfig.sh
           bash scripts/ci/terragrunt-plan.sh
           EOF
 
