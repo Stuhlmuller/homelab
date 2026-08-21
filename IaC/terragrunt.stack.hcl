@@ -1561,6 +1561,9 @@ unit "argocd_apps_metrics_server" {
             targetRevision = "3.13.1"
             helm = {
               releaseName = "metrics-server"
+              valuesObject = {
+                args = ["--kubelet-insecure-tls"]
+              }
             }
           }
         ]
