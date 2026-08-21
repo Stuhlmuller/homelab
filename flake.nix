@@ -52,6 +52,7 @@
             pkgs.stdenv.mkDerivation {
               pname = "octelium";
               inherit version;
+              sourceRoot = ".";
 
               src = pkgs.fetchurl {
                 url = "https://github.com/octelium/octelium/releases/download/v${version}/octelium-${source.platform}.tar.gz";
@@ -78,6 +79,7 @@
             gh
             git
             gitleaks
+            gnupg
             gnugrep
             gnused
             gnutar
