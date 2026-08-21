@@ -2,6 +2,23 @@ name: Homelab Diagnostics
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: Workload to inspect or repair
+        required: true
+        default: octobot
+        type: choice
+        options:
+          - octobot
+          - grafana
+      action:
+        description: Diagnostic action to run
+        required: true
+        default: restart
+        type: choice
+        options:
+          - inspect
+          - restart
 
 permissions: {}
 
@@ -9,13 +26,13 @@ env:
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
 
 jobs:
-  grafana:
+  diagnostics:
     runs-on: ubuntu-24.04
     environment:
       name: homelab-plan
     permissions:
       contents: read
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -38,37 +55,75 @@ jobs:
 
       - name: Verify Diagnostic Inputs
         env:
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
+          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a homelab-plan environment secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
 
-      - name: Run Grafana Diagnostics Through Octelium
+      - name: Run Kubernetes Diagnostics Through Octelium
         env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          ACTION: ${{ inputs.action }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          TARGET: ${{ inputs.target }}
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version
-          kubectl -n monitoring get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
-            -l app.kubernetes.io/name=grafana -o wide
-          kubectl -n monitoring describe deployment grafana
-          kubectl -n monitoring describe service grafana
-          kubectl -n monitoring get events \
-            --field-selector involvedObject.namespace=monitoring \
-            --sort-by=.lastTimestamp | tail -80
-          for pod in $(kubectl -n monitoring get pod \
-            -l app.kubernetes.io/name=grafana \
+
+          case "${TARGET}" in
+            octobot)
+              namespace=finance
+              deployment=octobot
+              selector=app.kubernetes.io/instance=octobot
+              ;;
+            grafana)
+              namespace=monitoring
+              deployment=grafana
+              selector=app.kubernetes.io/name=grafana
+              ;;
+            *)
+              echo "unsupported target: ${TARGET}" >&2
+              exit 2
+              ;;
+          esac
+
+          echo "::group::${TARGET} resources before ${ACTION}"
+          kubectl -n "${namespace}" get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
+            -l "${selector}" -o wide || true
+          kubectl -n "${namespace}" get deploy "${deployment}" -o wide || true
+          kubectl -n "${namespace}" describe deployment "${deployment}" || true
+          kubectl -n "${namespace}" get events \
+            --field-selector involvedObject.namespace="${namespace}" \
+            --sort-by=.lastTimestamp | tail -100 || true
+          echo "::endgroup::"
+
+          if [[ "${ACTION}" == "restart" ]]; then
+            kubectl -n "${namespace}" rollout restart "deployment/${deployment}"
+            kubectl -n "${namespace}" rollout status "deployment/${deployment}" --timeout=7m
+          fi
+
+          echo "::group::${TARGET} resources after ${ACTION}"
+          kubectl -n "${namespace}" get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
+            -l "${selector}" -o wide || true
+          kubectl -n "${namespace}" get deploy "${deployment}" -o jsonpath='{range .spec.template.spec.containers[*]}{.name}{"="}{.image}{"\n"}{end}' || true
+          echo
+          echo "::endgroup::"
+
+          for pod in $(kubectl -n "${namespace}" get pod \
+            -l "${selector}" \
             -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do
             echo "::group::describe ${pod}"
-            kubectl -n monitoring describe pod "${pod}"
+            kubectl -n "${namespace}" describe pod "${pod}" || true
             echo "::endgroup::"
             echo "::group::logs ${pod}"
-            kubectl -n monitoring logs "${pod}" --all-containers --tail=200 || true
+            kubectl -n "${namespace}" logs "${pod}" --all-containers --tail=200 || true
             echo "::endgroup::"
             echo "::group::previous logs ${pod}"
-            kubectl -n monitoring logs "${pod}" --all-containers --previous --tail=200 || true
+            kubectl -n "${namespace}" logs "${pod}" --all-containers --previous --tail=200 || true
             echo "::endgroup::"
           done
           EOF
