@@ -1525,6 +1525,81 @@ unit "argocd_apps_media_postgres" {
   }
 }
 
+unit "argocd_apps_metrics_server" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/metrics-server"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = []
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "metrics-server"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "kube-system"
+        }
+
+        sources = [
+          {
+            chart          = "metrics-server"
+            repoURL        = "https://kubernetes-sigs.github.io/metrics-server/"
+            targetRevision = "3.13.1"
+            helm = {
+              releaseName = "metrics-server"
+              valuesObject = {
+                args = ["--kubelet-insecure-tls"]
+              }
+            }
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=false",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "2m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "purpose"
+            value = "provides metrics.k8s.io for HPA and kubectl top"
+          }
+        ]
+      }
+    }
+  }
+}
+
 unit "argocd_apps_multica" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/multica"
@@ -1616,6 +1691,89 @@ unit "argocd_apps_multica" {
           {
             name  = "rollout"
             value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, NFS, Istio, and Octelium are healthy"
+          },
+          {
+            name  = "storage"
+            value = "docs/storage-nfs.md"
+          }
+        ]
+      }
+    }
+  }
+}
+
+unit "argocd_apps_nofx" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/nofx"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "external-secrets",
+      "istio",
+      "octelium",
+      "platform-storage"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "nofx"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "nofx"
+        }
+
+        sources = [
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/nofx"
+            kustomize      = {}
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "3m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "url"
+            value = "https://nofx.stinkyboi.com"
+          },
+          {
+            name  = "rollout"
+            value = "automated after generated SSM secrets, External Secrets, NFS, Istio, and Octelium are healthy"
           },
           {
             name  = "storage"

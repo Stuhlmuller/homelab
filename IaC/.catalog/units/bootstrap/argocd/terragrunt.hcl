@@ -89,6 +89,9 @@ inputs = {
 
       controller = {
         metrics = local.argocd_metrics
+        podAnnotations = {
+          "homelab.stuhlmuller.dev/sync-timeout-revision" = "v1"
+        }
       }
 
       repoServer = {
