@@ -127,7 +127,7 @@ configure_octelium_api_host_alias() {
   if [ -w /etc/hosts ]; then
     cat "${hosts_tmp}" >/etc/hosts
   elif command -v sudo >/dev/null 2>&1; then
-    sudo tee /etc/hosts <"${hosts_tmp}" >/dev/null
+    cat "${hosts_tmp}" | sudo tee /etc/hosts >/dev/null
   else
     rm -f "${hosts_tmp}"
     echo "Cannot write /etc/hosts and sudo is not available." >&2
