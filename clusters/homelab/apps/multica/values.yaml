@@ -20,7 +20,7 @@ existingSecret: multica-secrets
 
 postgres:
   external:
-    enabled: false
+    enabled: true
   database: multica
   user: multica
   persistence:
