@@ -31,8 +31,9 @@ The Cordium worker patch also sets `user.max_user_namespaces=28633` only on
 `zimaboard-1`, because each Workspace starts a rootless Podman container and
 Talos otherwise disables the required user namespaces. The Cordium Application
 also owns a node-pinned DaemonSet whose root init container can write only that
-host sysctl file whenever GitOps or a node reboot recreates the Pod; its
-steady-state container is unprivileged and exposes readiness from the live
+host sysctl file whenever GitOps or a node reboot recreates the Pod. The init
+container is privileged because Talos protects host sysctls even from UID 0;
+the steady-state container is unprivileged and exposes readiness from the live
 value.
 
 `media-postgres` is an explicit exception. Its active 20 Gi volume is a

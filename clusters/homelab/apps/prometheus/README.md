@@ -20,10 +20,11 @@ repeat interval aligned with this route so both stages preserve that cadence.
 
 The `alertmanager-discord-webhook` and `alertmanager-openclaw-alert-hook`
 ExternalSecrets read the existing `/homelab/grafana/discord-webhook-url` and
-`/homelab/grafana/openclaw-alert-hook-token` SSM parameters. The Alertmanager
-pods mount those target Secrets under `/etc/alertmanager/secrets/` so the
-receiver config uses file-backed credentials instead of committing secret
-values or depending on Grafana-owned runtime state.
+`/homelab/grafana/openclaw-alert-hook-token` SSM parameters. External Secrets
+renders the Discord URL into Alertmanager's runtime config Secret because the
+Prometheus Operator schema does not support `webhook_url_file` for Discord.
+The OpenClaw bearer token remains file-backed under
+`/etc/alertmanager/secrets/`; neither secret is committed.
 
 ## Argo CD Metrics
 

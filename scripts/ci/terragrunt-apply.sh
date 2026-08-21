@@ -161,9 +161,7 @@ echo "::group::Argo CD bootstrap apply"
       echo "Argo CD Helm release is absent; OpenTofu will install it."
     fi
   fi
-  cd ../../..
-  cd IaC/bootstrap
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/bootstrap/argocd')" --non-interactive --parallelism 1 -- apply -no-color -auto-approve
+  terragrunt apply -no-color -auto-approve
 )
 echo "::endgroup::"
 

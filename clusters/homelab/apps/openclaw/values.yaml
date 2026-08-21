@@ -4,6 +4,7 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    revisionHistoryLimit: 1
     pod:
       automountServiceAccountToken: false
       annotations:

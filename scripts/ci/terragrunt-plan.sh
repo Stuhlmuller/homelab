@@ -194,8 +194,8 @@ clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applica
 
 echo "::group::Argo CD bootstrap plan"
 (
-  cd IaC/bootstrap
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/bootstrap/argocd')" --parallelism 1 -- plan -lock=false -no-color
+  cd IaC/bootstrap/argocd
+  terragrunt plan -lock=false -no-color
 )
 echo "::endgroup::"
 if ! render_plan_out_if_present "Argo CD bootstrap" "IaC/bootstrap/argocd"; then

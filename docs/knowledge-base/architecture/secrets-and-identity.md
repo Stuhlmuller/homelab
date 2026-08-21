@@ -65,9 +65,11 @@ roles need identity-based KMS permissions for both keys.
   `alertmanager-openclaw-alert-hook` ExternalSecrets in `monitoring`, sourced
   from `/homelab/grafana/discord-webhook-url` and
   `/homelab/grafana/openclaw-alert-hook-token`. Grafana routes alerts to the
-  in-cluster Alertmanager contact point, Alertmanager fans out with file-backed
-  credentials, and both routing layers repeat unresolved alerts hourly before
-  Alertmanager sends the resolved notification. Grafana provisioning deletes
+  in-cluster Alertmanager contact point. External Secrets renders the Discord
+  URL into Alertmanager's runtime config Secret because the Operator schema has
+  no Discord URL-file field; the OpenClaw bearer token remains file-backed.
+  Both routing layers repeat unresolved alerts hourly before Alertmanager sends
+  the resolved notification. Grafana provisioning deletes
   the retired `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs
   so persisted Grafana PVC state does not keep retrying removed integrations.
   OpenClaw receives the same hook token through `openclaw-secrets` as
