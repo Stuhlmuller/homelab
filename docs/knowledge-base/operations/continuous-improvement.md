@@ -454,15 +454,15 @@ policy`.
   from a `2Gi` pod-local `emptyDir` while leaving durable OpenClaw state on the
   PVC. On 2026-08-22, the shared Nix store alone measured `2.7Gi`; the old
   `3Gi` app limit then evicted the pod while its replacement reproduced the
-  same base footprint. Desired state now requests `3Gi` and limits `6Gi`,
-  leaving room for the separately capped `2Gi` Codex runtime and writable-layer
-  overhead.
+  same base footprint. Desired state now requests `5Gi` and limits `6Gi`,
+  reserving the separately capped `2Gi` Codex runtime while retaining headroom
+  for writable-layer and log overhead.
 - **Risk:** Codex-native threads, indexes, caches, and diagnostics reset with a
   pod replacement. OpenClaw retains its own session history and OAuth profile.
 - **Validation:** PR #672 rolled out at commit `d858083b`. The pod-local Codex
   home was 109 MiB, a minimal turn returned `OPENCLAW_OK` in 7.3 seconds, and
   the ready pod retained zero restarts. After the storage-envelope change
-  rolls out, verify the replacement pod requests `3Gi`, limits `6Gi`, and
+  rolls out, verify the replacement pod requests `5Gi`, limits `6Gi`, and
   remains ready without another `Evicted` replacement.
 
 - **Status:** fixed
