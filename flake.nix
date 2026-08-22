@@ -62,9 +62,13 @@
               installPhase = ''
                 runHook preInstall
                 install -Dm755 octelium "$out/bin/octelium"
+                ln -s "$out/bin/octelium" "$out/bin/octeliumctl"
                 runHook postInstall
               '';
             };
+          browserPackages = pkgs.lib.optionals pkgs.stdenv.isLinux [
+            pkgs.chromium
+          ];
           basePackages = with pkgs; [
             actionlint
             age
@@ -104,7 +108,7 @@
             yamllint
             yq-go
             octeliumPackage
-          ];
+          ] ++ browserPackages;
           checkovPackages = pkgs.lib.optionals (system != "x86_64-darwin") [
             pkgs.checkov
           ];
