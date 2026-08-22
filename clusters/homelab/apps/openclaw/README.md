@@ -160,6 +160,17 @@ kubectl -n ai exec deploy/openclaw -c app -- openclaw channels list
 kubectl -n ai exec deploy/openclaw -c app -- openclaw channels status --probe
 ```
 
+OpenClaw's `cluster.local/ns/ai/sa/openclaw` Istio principal is allowed to call
+Grafana, Prometheus, and Alertmanager in-cluster for alert triage. Prefer the
+in-cluster service URLs during diagnostics so Claw can inspect live state without
+depending on a human browser Octelium session:
+
+```sh
+curl -sS http://grafana.monitoring/api/health
+curl -sS http://prometheus-kube-prometheus-prometheus.monitoring:9090/-/ready
+curl -sS http://prometheus-kube-prometheus-alertmanager.monitoring:9093/-/ready
+```
+
 The Discord bot must be invited to the target server and channel with at least
 the permissions OpenClaw reports as required for Discord, including viewing the
 channel and sending messages.

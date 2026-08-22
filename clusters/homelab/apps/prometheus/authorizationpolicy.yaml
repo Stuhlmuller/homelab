@@ -14,6 +14,7 @@ spec:
         - source:
             principals:
               - cluster.local/ns/monitoring/sa/grafana
+              - cluster.local/ns/ai/sa/openclaw
               - cluster.local/ns/monitoring/sa/kiali-service-account
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
 ---
@@ -33,6 +34,7 @@ spec:
         - source:
             principals:
               - cluster.local/ns/monitoring/sa/grafana
+              - cluster.local/ns/ai/sa/openclaw
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-alertmanager
               - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
 ---
