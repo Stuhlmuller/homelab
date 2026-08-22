@@ -109,6 +109,9 @@ jobs:
               IaC/*|flake.nix|flake.lock|policy/*)
                 requires_live_plan=true
                 ;;
+              clusters/homelab/apps/*|clusters/homelab/platform/*|clusters/homelab/argocd/*)
+                requires_live_plan=true
+                ;;
               scripts/ci/install-kubeconfig.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
                 requires_live_plan=true
                 ;;
@@ -162,7 +165,7 @@ jobs:
         run: |
           {
             printf '## Terragrunt Plan Output\n\n'
-            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
+            printf '> Live Terragrunt plan skipped because this pull request did not change `IaC/**`, `clusters/homelab/apps/**`, `clusters/homelab/platform/**`, `clusters/homelab/argocd/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.\n\n'
             printf 'Rendered Conftest policies still ran for workflows and Kubernetes manifests in this required check.\n'
           } >"${TERRAGRUNT_PLAN_MARKDOWN}"
 
