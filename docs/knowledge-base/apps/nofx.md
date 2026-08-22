@@ -30,3 +30,5 @@ both deployments ready with zero restarts, the 10 GiB claim bound, and the
 ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
 gate are owned by `clusters/homelab/apps/octelium-public`,
 `scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
+The DNS reconciler's `--tunnel-only` mode can repair app CNAMEs off-LAN without
+touching the separately UPnP-gated Octelium API A record.
