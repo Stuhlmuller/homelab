@@ -23,6 +23,7 @@ jobs:
       AWS_REGION: us-west-2
       AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
       KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+      KUBE_INSECURE_SKIP_TLS_VERIFY: "true"
     steps:
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -64,6 +65,7 @@ jobs:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_INSECURE_SKIP_TLS_VERIFY: ${{ env.KUBE_INSECURE_SKIP_TLS_VERIFY }}
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
