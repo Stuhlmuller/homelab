@@ -409,6 +409,14 @@ scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-public-dns.sh
 ```
 
+When off the homelab LAN, reconcile only the public-tunnel records without
+changing the API A record or bypassing its UPnP safety gate:
+
+```sh
+scripts/octelium-public-dns.sh --tunnel-only --dry-run
+scripts/octelium-public-dns.sh --tunnel-only
+```
+
 The gateway reconciler prevents `_gw-*` names from falling through to stale
 wildcard records. The public reconciler verifies the CronJob-owned API mapping,
 creates its proxied A record, then creates exact proxied CNAME records to the named Cloudflare
@@ -416,6 +424,8 @@ Tunnel target for `stinkyboi.com`, portal and browser aliases,
 `console.stinkyboi.com`, app hostnames such as `grafana.stinkyboi.com`, and
 callback hostnames such as `n8n-webhook.stinkyboi.com` and
 `policy-bot-hook.stinkyboi.com`.
+`--tunnel-only` skips the API hostname entirely; a later full run from the
+homelab LAN remains responsible for verifying and reconciling that record.
 
 ## Octelium Enterprise Package
 

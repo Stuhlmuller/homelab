@@ -7,6 +7,7 @@ aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 tunnel_id_parameter="/homelab/octelium/cloudflare-tunnel-id"
 dry_run="false"
+tunnel_only="false"
 api_origin_ip="10.1.0.200"
 api_origin_port="30443"
 api_public_port="8443"
@@ -31,6 +32,7 @@ Options:
                                   Default: /homelab/cert-manager/cloudflare-api-token
   --tunnel-id-parameter NAME      SSM parameter containing the Cloudflare Tunnel UUID.
                                   Default: /homelab/octelium/cloudflare-tunnel-id
+  --tunnel-only                   Reconcile tunnel CNAMEs without the LAN-only API record.
   --dry-run                       Print intended DNS changes without writing.
   -h, --help                      Show this help.
 USAGE
@@ -58,6 +60,10 @@ while [[ $# -gt 0 ]]; do
       tunnel_id_parameter="$2"
       shift 2
       ;;
+    --tunnel-only)
+      tunnel_only="true"
+      shift
+      ;;
     --dry-run)
       dry_run="true"
       shift
@@ -84,7 +90,9 @@ require_command() {
 require_command aws
 require_command curl
 require_command jq
-require_command upnpc
+if [[ "$tunnel_only" == "false" ]]; then
+  require_command upnpc
+fi
 
 cloudflare_token="$(
   aws ssm get-parameter \
@@ -137,11 +145,7 @@ zone_id="$(
 
 tunnel_target="${tunnel_id}.cfargotunnel.com"
 api_hostname="octelium-api.${domain}"
-
-upnp_status="$(upnpc -s 2>/dev/null)"
-public_ipv4="$(
-  awk -F ' = ' '/^ExternalIPAddress = / { print $2; exit }' <<<"$upnp_status"
-)"
+public_ipv4=""
 
 valid_ipv4() {
   local value="$1"
@@ -153,11 +157,6 @@ valid_ipv4() {
     ((10#$octet <= 255)) || return 1
   done
 }
-
-if ! valid_ipv4 "$public_ipv4"; then
-  echo "error: UPnP did not return a valid public IPv4 address" >&2
-  exit 1
-fi
 
 verify_api_port_mapping() {
   local grpc_status mapping_current mappings
@@ -206,7 +205,17 @@ verify_api_port_mapping() {
   echo "Octelium API TCP/${api_public_port} mapping and origin are current"
 }
 
-verify_api_port_mapping
+if [[ "$tunnel_only" == "false" ]]; then
+  upnp_status="$(upnpc -s 2>/dev/null)"
+  public_ipv4="$(
+    awk -F ' = ' '/^ExternalIPAddress = / { print $2; exit }' <<<"$upnp_status"
+  )"
+  if ! valid_ipv4 "$public_ipv4"; then
+    echo "error: UPnP did not return a valid public IPv4 address" >&2
+    exit 1
+  fi
+  verify_api_port_mapping
+fi
 
 hostnames=(
   "$domain"
@@ -326,6 +335,9 @@ upsert_record() {
 
 for hostname in "${hostnames[@]}"; do
   if [[ "$hostname" == "$api_hostname" ]]; then
+    if [[ "$tunnel_only" == "true" ]]; then
+      continue
+    fi
     delete_exact_records "$hostname" AAAA
     delete_exact_records "$hostname" CNAME
     upsert_record A "$hostname" "$public_ipv4"
