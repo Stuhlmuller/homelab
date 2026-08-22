@@ -63,7 +63,9 @@ spec:
                   </s:Envelope>'
                   delete_response="$(soap DeletePortMapping "$delete_body" || true)"
                   case "$delete_response" in
-                    *DeletePortMappingResponse*|*NoSuchEntryInArray*) ;;
+                    # BusyBox wget may drop the SOAP fault body for an expected
+                    # missing mapping; AddPortMapping below still verifies reachability.
+                    *DeletePortMappingResponse*|*NoSuchEntryInArray*|"") ;;
                     *) echo "error: router did not confirm deleting stale Octelium API mapping" >&2; exit 1 ;;
                   esac
 
