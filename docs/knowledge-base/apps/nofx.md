@@ -1,8 +1,8 @@
 ---
 title: NOFX
 type: app
-status: proposed
-updated: 2026-08-21
+status: active
+updated: 2026-08-22
 ---
 
 NOFX is deployed as a private homelab trading app at
@@ -23,3 +23,9 @@ contract from AWS SSM:
 
 The service is intentionally exposed only through the Octelium tailnet gateway;
 the Istio `VirtualService` has `homelab.rst.io/public-funnel: "false"`.
+
+Live validation on 2026-08-22 found the Argo CD Application synced and healthy,
+both deployments ready with zero restarts, the 10 GiB claim bound, and the
+ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
+gate are owned by `clusters/homelab/apps/octelium-public`,
+`scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.

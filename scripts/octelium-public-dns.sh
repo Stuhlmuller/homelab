@@ -227,6 +227,7 @@ hostnames=(
   "multica.${domain}"
   "n8n.${domain}"
   "n8n-webhook.${domain}"
+  "nofx.${domain}"
   "octobot.${domain}"
   "openclaw.${domain}"
   "policy-bot.${domain}"
