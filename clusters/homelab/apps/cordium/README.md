@@ -114,6 +114,11 @@ Argo CD then syncs the `cordium` Application and runs the genesis hook. If the
 hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change, bump
 `homelab.rst.io/cordium-genesis-revision` on the Job template.
 
+To rerun only the ClusterConfig hook, bump
+`homelab.rst.io/cordium-cluster-config-revision` in `kustomization.yaml`. That
+changes the tracked ConfigMap metadata, starts one Argo CD sync, and leaves the
+ClusterConfig payload and genesis resources unchanged.
+
 Create the policy-bound agent credential and store it in
 `/homelab/cordium/agent-auth-token` before applying the stack:
 
