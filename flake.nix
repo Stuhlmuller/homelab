@@ -84,7 +84,6 @@
             gnused
             gnutar
             gzip
-            httpie
             jq
             k9s
             kubernetes-helm
