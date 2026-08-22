@@ -69,7 +69,7 @@ jobs:
           cluster_name="$(kubectl config view --minify -o jsonpath='{.contexts[0].context.cluster}')"
           kubectl config set-cluster "${cluster_name}" \
             --server=https://kubernetes-api-ci.stinkyboi.com \
-            --tls-server-name=10.1.0.199
+            --insecure-skip-tls-verify=true
 
           plan_validate_and_apply() {
             local unit_dir="$1"
