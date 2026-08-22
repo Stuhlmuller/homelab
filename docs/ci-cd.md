@@ -158,6 +158,7 @@ rules and tighter rotation:
 | --- | --- | --- |
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
+| `KUBE_CONFIG_B64` | repository; temporary break-glass only | Base64-encoded kubeconfig used only by the manual `Break Glass NOFX Recovery` workflow while the normal Octelium CI credential is repaired. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
 has no runtime consumer. Its declaration and preexisting-parameter adoption
@@ -177,6 +178,23 @@ has been configured:
 | `AZUREAD_TENANT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra tenant ID used by the AzureAD provider. |
 
 ## Octelium CI Access Setup
+
+The normal plan and apply path must keep using `OCTELIUM_CI_AUTH_TOKEN` and the
+clientless `kubernetes-api-ci` Service. Do not add kubeconfig material to the
+normal plan or apply jobs.
+
+For temporary NOFX recovery only, create `KUBE_CONFIG_B64` from an existing
+operator kubeconfig on a trusted machine:
+
+```sh
+base64 -w0 ~/.kube/config
+```
+
+Store the output as a repository secret named `KUBE_CONFIG_B64`, dispatch
+`Break Glass NOFX Recovery` from `main`, and remove or rotate the secret after
+the recovery run finishes. The secret is intentionally repository-scoped because
+the workflow is `workflow_dispatch`-only, guarded by the `homelab-production`
+environment, and exits unless it runs on `refs/heads/main`.
 
 The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
