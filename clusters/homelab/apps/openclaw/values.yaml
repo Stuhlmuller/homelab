@@ -266,7 +266,7 @@ controllers:
 
             openclaw config set --strict-json \
               agents.defaults.sandbox.mode \
-              '"non-main"'
+              '"off"'
 
             openclaw config set --strict-json \
               tools.fs.workspaceOnly \
