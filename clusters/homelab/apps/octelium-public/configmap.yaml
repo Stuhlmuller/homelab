@@ -92,6 +92,10 @@ data:
         originRequest:
           originServerName: n8n-webhook.stinkyboi.com
           httpHostHeader: n8n-webhook.stinkyboi.com
+      - hostname: nofx.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: nofx.stinkyboi.com
       - hostname: octobot.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
