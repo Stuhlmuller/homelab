@@ -109,7 +109,7 @@ jobs:
               IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
-              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
+              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/ensure-kubeconfig.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
                 requires_live_plan=true
                 ;;
             esac
@@ -126,9 +126,11 @@ jobs:
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
+          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a repository secret."; exit 1; }
 
       - name: Configure AWS Credentials
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
@@ -145,13 +147,13 @@ jobs:
         if: steps.live-plan-scope.outputs.requires-live-plan == 'true'
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
           TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
-          bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
+          bash scripts/ci/ensure-kubeconfig.sh
           bash scripts/ci/terragrunt-plan.sh
           EOF
 
