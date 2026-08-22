@@ -58,6 +58,12 @@ copying only the profile runtime closure while copying the full database leaves
 missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
 the homelab flake.
 
+The homelab dev shell carries a custom fixed-output Octelium CLI package in
+`flake.nix` instead of relying on the nixpkgs package. Treat the version, four
+platform archive names, and four hashes as one contract: upgrade all supported
+systems together, verify the release archives with Nix hash checks, and smoke
+test `octelium version` on Linux and Darwin before trusting the package in CI.
+
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
 

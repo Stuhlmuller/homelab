@@ -211,6 +211,13 @@ gate behavior. The live plan, apply, and diagnostics jobs verify the Octelium
 Kubernetes access path with `kubectl --request-timeout=15s version` after
 `scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig.
 
+Trusted same-repository PRs enter the protected `homelab-plan` live-plan path
+when they change `IaC/**`, `clusters/homelab/apps/**`,
+`clusters/homelab/platform/**`, `clusters/homelab/argocd/**`, flake inputs,
+OpenTofu/Terragrunt policy inputs, or live-plan helper scripts. Docs-only,
+workflow-only, and other manifest changes still run Conftest with an explicit
+live-plan skip note.
+
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
 changes, the scripts plan or apply the matching generated unit groups instead

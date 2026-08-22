@@ -8,10 +8,12 @@ This repository uses GitHub Actions for the review and rollout path:
   and `validate`.
 - `Terragrunt Plan` runs on pull requests. It always runs static checks and
   Checkov first. Trusted same-repository pull requests then inspect the changed
-  paths. If the change touches `IaC/**`, flake inputs, OpenTofu/Terragrunt
-  policy inputs, or live-plan helper scripts, the job connects to Octelium, runs
-  a live Terragrunt plan, and updates the managed plan section in the PR
-  description. Manifest-only, workflow-only, and docs-only changes skip the
+  paths. If the change touches `IaC/**`, `clusters/homelab/apps/**`,
+  `clusters/homelab/platform/**`, `clusters/homelab/argocd/**`, flake inputs,
+  OpenTofu/Terragrunt policy inputs, or live-plan helper scripts, the job
+  connects to Octelium, runs a live Terragrunt plan, and updates the managed
+  plan section in the PR description. Workflow-only, docs-only, and manifest
+  changes outside the live-plan cluster trees skip the
   Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
   policies and replace the managed PR plan section with an explicit skip note.
   Forked pull requests run Conftest after the live plan skip notice.
