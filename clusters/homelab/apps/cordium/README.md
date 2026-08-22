@@ -214,6 +214,14 @@ talosctl --talosconfig .talos/talosconfig \
 talosctl --talosconfig .talos/talosconfig \
   --endpoints 10.1.0.199 \
   --nodes 10.1.0.201 \
+  reboot
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.201 \
+  health
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.201 \
   read /proc/sys/user/max_user_namespaces
 ```
 
