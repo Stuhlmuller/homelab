@@ -102,9 +102,11 @@ jobs:
       - name: Verify Production Apply Inputs
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
         run: |
           test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-production environment variable or secret."; exit 1; }
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-production environment secret."; exit 1; }
+          test -n "${KUBE_CONFIG_B64}" || { echo "KUBE_CONFIG_B64 must be set as a repository secret."; exit 1; }
 
       - name: Configure AWS Credentials
         # aws-actions/configure-aws-credentials@v6.1.1
@@ -119,11 +121,11 @@ jobs:
       - name: Run Live Terragrunt Apply
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_CONFIG_B64: ${{ secrets.KUBE_CONFIG_B64 }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
           nix develop --command bash <<'EOF'
           set -euo pipefail
-          bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
+          bash scripts/ci/ensure-kubeconfig.sh
           bash scripts/ci/terragrunt-apply.sh
           EOF
