@@ -160,13 +160,16 @@ curl -I https://cordium.stinkyboi.com
 Verify the human developer path end to end with the public repository:
 
 ```sh
-cordium run --repository https://github.com/Stuhlmuller/homelab.git
+cordium run --file clusters/homelab/apps/cordium/workspace-homelab.yaml
 ```
 
-In the resulting Workspace terminal, confirm the clone and then exit:
+The workspace spec uses the `nixos/nix:2.35.0` Docker image and hydrates the
+repo flake during Workspace creation. In the resulting Workspace terminal,
+confirm the clone, Nix runtime, and then exit:
 
 ```sh
 git -C /workspace/repo remote get-url origin
+nix --version
 exit
 ```
 
