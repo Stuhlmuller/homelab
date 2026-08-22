@@ -9,12 +9,14 @@ under `/data/openclaw`.
 
 The app container requests `1` CPU and `2Gi` memory, with a `6Gi` memory limit
 and no CPU limit so Codex-backed agent work can burst when node capacity is
-available. It requests `3Gi` and limits `6Gi` of ephemeral storage: the shared
+available. It requests `5Gi` and limits `6Gi` of ephemeral storage: the shared
 Nix store uses about `2.7Gi`, while the separately capped Codex runtime can use
-up to `2Gi`. The bootstrap init container requests `500m` CPU and `1Gi` memory
-with a `3Gi` memory limit because it validates config and installs channel
-plugins during startup. The local TCP proxy stays small at `25m` CPU and
-`64Mi` memory requested with a `256Mi` memory limit.
+up to `2Gi`. The `5Gi` request reserves that expected footprint; the `6Gi`
+limit leaves room for the writable layer and logs. The bootstrap init container
+requests `500m` CPU and `1Gi` memory with a `3Gi` memory limit because it
+validates config and installs channel plugins during startup. The local TCP
+proxy stays small at `25m` CPU and `64Mi` memory requested with a `256Mi`
+memory limit.
 
 ## Workspace Runtime Setup
 
