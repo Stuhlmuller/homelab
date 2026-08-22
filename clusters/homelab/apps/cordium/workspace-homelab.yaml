@@ -1,0 +1,13 @@
+spec:
+  image:
+    registry:
+      url: nixos/nix:2.35.0
+  repository:
+    url: https://github.com/Stuhlmuller/homelab.git
+  runtime:
+    tasks:
+      - name: hydrate-dev-shell
+        type: ON_CREATE
+        workingDir: /workspace/repo
+        run: |
+          nix --extra-experimental-features 'nix-command flakes' develop --command true
