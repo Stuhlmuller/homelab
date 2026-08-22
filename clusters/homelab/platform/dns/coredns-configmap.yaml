@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/name: coredns
     app.kubernetes.io/part-of: homelab
   annotations:
-    homelab.rst.io/managed-reason: "Use explicit public resolvers for External Secrets and ACME DNS-01 stability."
+    homelab.rst.io/managed-reason: "Use stable public resolvers and an internal Octelium API route."
 data:
   Corefile: |
     .:53 {
@@ -22,6 +22,7 @@ data:
         }
         prometheus :9153
 
+        rewrite name exact octelium-api.stinkyboi.com octelium-api-ingressgateway.istio-system.svc.cluster.local
         kubernetes cluster.local in-addr.arpa ip6.arpa {
             pods insecure
             fallthrough in-addr.arpa ip6.arpa

@@ -353,10 +353,10 @@ controllers:
           requests:
             cpu: 1
             memory: 2Gi
-            ephemeral-storage: 512Mi
+            ephemeral-storage: 3Gi
           limits:
             memory: 6Gi
-            ephemeral-storage: 3Gi
+            ephemeral-storage: 6Gi
         probes:
           startup:
             enabled: true
