@@ -34,6 +34,8 @@ Argo CD parameter overrides as steady state.
 Cordium's CLI-native `ClusterConfig` is packaged into a generated ConfigMap and
 applied by an Argo CD PostSync hook after the upstream genesis hook completes.
 This keeps the non-Kubernetes API resource on the same reviewed GitOps path.
+Its ConfigMap generator annotation is the narrow rerun trigger when only that
+hook needs reconciliation.
 The Cordium Application is allowed to deploy control resources to `octelium`
 and workspace support resources to the dedicated `cordium` namespace.
 The Cordium Application prunes removed repository-owned Kubernetes manifests;
@@ -48,7 +50,7 @@ outside Argo CD's tracking and are unaffected by that setting.
 | Terragrunt stack entry point | `IaC/terragrunt.stack.hcl` |
 | Terragrunt unit templates | `IaC/.catalog/units` |
 | Generated Argo CD bootstrap unit | `IaC/bootstrap/argocd` |
-| Generated operator-owned AWS apply-role policy unit | `IaC/operator/github-actions-role-policy` |
+| Operator AWS apply-role policy | `IaC/operator/github-actions-role-policy` |
 | Generated Argo CD app registrations | `IaC/live/argocd-apps/<app>` |
 | Argo CD Application module | `IaC/modules/argocd-application-kubernetes` |
 | App desired state | `clusters/homelab/apps/<app>` |

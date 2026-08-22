@@ -13,3 +13,6 @@ configMapGenerator:
     namespace: octelium
     files:
       - cluster-config.yaml
+    options:
+      annotations:
+        homelab.rst.io/cordium-cluster-config-revision: "20260822"

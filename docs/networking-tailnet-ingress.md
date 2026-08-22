@@ -14,8 +14,8 @@ external-service backbone in steady state.
 
 Exact app, callback, and browser control-plane records such as
 `grafana.stinkyboi.com`, `n8n-webhook.stinkyboi.com`,
-`policy-bot-hook.stinkyboi.com`, and `portal.stinkyboi.com` must be proxied CNAMEs to the
-`homelab-octelium-public` Cloudflare Tunnel target,
+`policy-bot-hook.stinkyboi.com`, and `portal.stinkyboi.com` must be proxied
+CNAMEs to the `homelab-octelium-public` Cloudflare Tunnel target,
 `<tunnel-uuid>.cfargotunnel.com`. Public DNS answers should be Cloudflare
 anycast addresses, not Octelium private service IPs or the old tailnet
 LoadBalancer IP.
@@ -35,12 +35,18 @@ See Cloudflare's
 [gRPC limitation](https://developers.cloudflare.com/network/grpc-connections/#limitations)
 for the public-hostname restriction.
 
+Inside Kubernetes, `platform-dns` rewrites the same API hostname to the
+dedicated `octelium-api-ingressgateway` Service. Clients keep the original
+hostname for TLS and SNI while bypassing the WAN mapping and hairpin NAT. This
+split-horizon route is cluster-only; public DNS remains unchanged.
+
 The public tunnel forwards app UI hostnames to the Octelium public ingress
 dataplane so Octelium can select the matching `WEB` Service and apply its
 declared clientless or anonymous access mode.
-The tunnel forwards the Octelium Cluster and portal browser hostnames, Enterprise
-console, and unauthenticated callback hostnames to the in-cluster Istio gateway,
-where explicit `VirtualService` objects keep backend routing narrow.
+The tunnel forwards the Octelium Cluster and portal browser hostnames,
+Enterprise console, and unauthenticated callback hostnames to the in-cluster
+Istio gateway, where explicit `VirtualService` objects keep backend routing
+narrow.
 
 Cloudflare edge TLS and the origin certificate must cover the apex plus
 first-level `*.stinkyboi.com` names. That free Cloudflare certificate shape is
@@ -86,8 +92,9 @@ The router mapping exposes only public TCP/8443 and targets worker
 The host-networked CronJob must run on that worker because the Xfinity UPnP
 implementation rejects mappings submitted by a different LAN client. It
 refreshes the Xfinity gateway's minimum 86,400-second lease every five minutes,
-so reverting or suspending the CronJob closes the WAN listener within 24 hours. Requests
-still terminate at the Octelium API and require Octelium authentication.
+so reverting or suspending the CronJob closes the WAN listener within 24 hours.
+Requests still terminate at the Octelium API and require Octelium
+authentication.
 If the mapping exists but WAN connections time out, use Xfinity Advanced
 Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
 [documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
