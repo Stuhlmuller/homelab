@@ -21,8 +21,8 @@ Validate that Octelium is the homelab backbone for app access, CI reachability,
 VPN entry points, and reviewed public callbacks.
 The check requires a running Octelium Cluster, an applied homelab service
 catalog, an active octelium-client connector, and public WEB access for the
-existing app FQDNs. AFFiNE is anonymous at Octelium so its native client can
-use AFFiNE's own authentication; the other app Services remain clientless.
+existing app FQDNs. AFFiNE and NOFX are anonymous at Octelium and use their
+own authentication; the other app Services remain clientless.
 
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
@@ -465,12 +465,14 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
     done
-    if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-      pass "Octelium Service affine permits native-client access through AFFiNE authentication"
-    else
-      fail "Octelium Service affine is not anonymous for native-client access"
-    fi
-    for SERVICE in argocd compass cordium deluge grafana kiali litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine nofx; do
+      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+        pass "Octelium Service ${SERVICE} delegates login to the application"
+      else
+        fail "Octelium Service ${SERVICE} is not anonymous"
+      fi
+    done
+    for SERVICE in argocd compass cordium deluge grafana kiali litellm multica n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} still requires authentication"
       else
