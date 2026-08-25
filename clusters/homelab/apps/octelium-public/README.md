@@ -29,10 +29,11 @@ tokens.
 
 ## Routing
 
-`cloudflared` forwards the browser-facing Octelium control-plane hostnames to the in-cluster
-Istio gateway at `https://istio-ingressgateway.istio-system.svc.cluster.local:443`
-while setting the matching origin SNI and Host header. Istio then uses the
-existing `octelium-cluster` `VirtualService` to route to
+`cloudflared` forwards the browser-facing Octelium control-plane hostnames to
+the in-cluster Istio gateway at
+`https://istio-ingressgateway.istio-system.svc.cluster.local:443` while setting
+the matching origin SNI and Host header. Istio then uses the existing
+`octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
 The `octelium-api.stinkyboi.com` CLI hostname does not use this public-hostname
 tunnel because Cloudflare does not support gRPC streams on that route type.
@@ -43,15 +44,16 @@ hostname-specific Origin Rule sends that traffic to WAN TCP/8443, which the
 `scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. The
 gateway accepts Cloudflare origin TLS without SNI, but its separate
 `octelium-api` `VirtualService` routes only the API Host, so app hostnames
-cannot bypass their Tunnel and Octelium clientless path through the WAN mapping. The connector
-remains pinned to `2026.7.3` for browser, app, and callback routes.
+cannot bypass their Tunnel and Octelium clientless path through the WAN
+mapping. The connector remains pinned to `2026.7.3` for browser, app, and
+callback routes.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
 original Host headers. Octelium uses that public FQDN to select the matching
 `WEB` Service and then proxy to the existing Istio app route. The Services
-enforce login except for AFFiNE's reviewed anonymous transport, where AFFiNE
-owns authentication so its native client can connect.
+enforce login except for AFFiNE's and NOFX's reviewed anonymous transport; each
+application owns authentication, and AFFiNE's native client can connect.
 `cloudflared` reads this routing table only when the pod starts. Whenever
 `configmap.yaml` changes, update the
 `homelab.rst.io/cloudflared-config-revision` pod-template annotation in
