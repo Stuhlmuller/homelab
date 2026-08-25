@@ -24,12 +24,13 @@ rejects the operator-managed proxy Pods before they can start.
 
 ## Version
 
-`IaC/live/argocd-apps/tailscale/terragrunt.hcl` pins the upstream
-`tailscale-operator` Helm chart. Version `1.98.3` is the first rollout target
-after the Tailscale admin console reported a known vulnerability on the older
-operator-managed devices. If the upgrade regresses operator login, connector
-readiness, or proxy Pod startup, roll back by reverting the chart
-`target_revision` to `1.84.3` and syncing the Argo CD Application.
+`IaC/terragrunt.stack.hcl` pins the upstream `tailscale-operator` Helm chart at
+`1.102.3`. This release updates the operator and its managed proxy image,
+recreating the exit-node Pod and replacing a failed PeerAPI DNS listener. It
+also includes Tailscale security fix TS-2026-011. If the rollout regresses
+operator login, connector readiness, or proxy Pod startup, revert the change
+and sync the Argo CD Application; the prior `1.98.3` release restores service
+but lacks that security fix.
 
 ## Homelab Exit Node
 
@@ -85,3 +86,9 @@ operator-managed proxy Pod is running in the `tailscale` namespace. Then select
 `homelab-exit-node` as the exit node from a tailnet client and confirm the
 client egress IP changes to the homelab network while local homelab LAN
 addresses remain reachable.
+
+If connecting through the exit node removes internet access while the client
+still reports connected, inspect client logs for a timed-out PeerAPI resolver
+such as `http://<exit-node-tailnet-ip>:<port>/dns-query`. Reconcile this app to
+apply the pinned operator/proxy upgrade and roll the managed proxy Pod, then
+reconnect the client and repeat the egress and DNS checks above.
