@@ -75,6 +75,22 @@ policy`.
   discovery that still originates from `zimaboard-0`; verify the router lease,
   public `grpc-status: 16`, and an authenticated CLI call after rollout.
 
+- **Status:** mitigated; hardware diagnosis pending
+- **Area:** Acer control plane / storage integrity
+- **Evidence:** On 2026-08-25, two OpenClaw image modules on `acer` contained
+  bit-flipped source bytes. The API server also could not decode the
+  `clustersecretstores.external-secrets.io` CRD or decrypt obsolete Argo CD
+  Helm history revision `v6` and generated `media-postgres-arr-env`, preventing
+  CRD and Secret informer sync. The dated
+  `scripts/recover-kubernetes-storage-20260825.sh` recovery snapshots etcd,
+  removes only those corrupt records, and reschedules OpenClaw away from
+  `acer`; desired state keeps it excluded.
+- **Risk:** Other image layers or etcd records may be damaged, and the single
+  control-plane node remains a cluster-wide failure domain.
+- **Next step:** renew authenticated Talos access, take an off-node etcd
+  snapshot, then test or replace `acer` memory and system storage before
+  allowing workloads to schedule there again.
+
 - **Status:** mitigated; local database storage still required
 - **Area:** Octelium / access recovery
 - **Evidence:** On 2026-07-29, an NFS-backed `octelium-postgres` stall made the

@@ -265,3 +265,151 @@ baseline from the parent audit is Talos `v1.11.3` and Kubernetes `v1.34.1`.
 - If a version change requires machine-config schema migration, commit the
   desired config update first, render it locally, and validate it before the
   live upgrade.
+
+## Corrupt Kubernetes Object Recovery
+
+Use `scripts/recover-kubernetes-storage-20260825.sh` only for the exact
+2026-08-25 incident recorded in the knowledge base. It verifies the known
+decode failures and the healthy deployed Argo CD Helm revision before changing
+state. With `--execute`, it runs a transient etcd client on `acer`, saves an
+etcd snapshot at
+`/var/mnt/etcd-before-corruption-repair-20260825.db`, removes only the
+corrupt keys, waits for API and CRD recovery, then reschedules OpenClaw off
+`acer`.
+
+### Restore the incident snapshot
+
+Use this rollback only if the exact-key deletion removes unexpected state or
+reconciliation does not recover. It rebuilds the single-member etcd cluster
+from the pre-repair snapshot, so schedule a maintenance window and confirm
+authenticated Talos access and physical console access first.
+
+The Talos reset wipes `acer`'s `EPHEMERAL` partition, including the active
+`media-postgres` data. First commit and merge a temporary client-writer fence:
+set `controllers.<app>.replicas: 0` in the Sonarr, Radarr, and Prowlarr
+`values.yaml` files. Wait for Argo CD to sync and require this command to find
+no pods:
+
+```sh
+kubectl -n media get pod \
+  -l 'app.kubernetes.io/name in (sonarr,radarr,prowlarr)'
+```
+
+Prepare and review a second PR that sets `media-postgres-local` replicas to `0`
+in `clusters/homelab/apps/media-postgres/statefulset.yaml` and sets
+`suspend: true` in
+`clusters/homelab/apps/media-postgres/backup-cronjob.yaml`, but do not merge it
+yet. With all database clients fenced, create a fresh verified recovery set on
+QNAP through the dated repository-owned path:
+
+```sh
+scripts/recover-kubernetes-storage-20260825.sh --prepare-restore
+```
+
+The command creates the Job with an unschedulable toleration so it can run while
+`acer` is quarantined. It checks all six custom-format dumps and their SHA-256
+checksums, cordons `acer`, and stops PostgreSQL before printing `completed
+backup <BACKUP_ID>:` with the matching
+`/backup/logical-backups/<BACKUP_ID>` path. Record `BACKUP_ID` for the restore.
+
+Merge the prepared PostgreSQL fence PR immediately. Wait for Argo CD to sync,
+then require the first command to print no Ready database pod and the second to
+print no active backup Job:
+
+```sh
+kubectl -n media get pod \
+  -l app.kubernetes.io/name=media-postgres,app.kubernetes.io/instance=local \
+  -o jsonpath='{range .items[*]}{.status.conditions[?(@.type=="Ready")].status}{"\n"}{end}'
+kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup \
+  -o jsonpath='{range .items[?(@.status.active)]}{.metadata.name}{"\n"}{end}'
+```
+
+Copy the snapshot off `acer` before wiping its ephemeral partition:
+
+```sh
+talosctl --talosconfig .talos/talosconfig --nodes 10.1.0.199 \
+  cp /var/mnt/etcd-before-corruption-repair-20260825.db \
+  ./etcd-before-corruption-repair-20260825.db
+```
+
+Reset only the ephemeral partition, wait until `talosctl service etcd` reports
+`Preparing`, then recover the snapshot:
+
+```sh
+talosctl --talosconfig .talos/talosconfig --nodes 10.1.0.199 \
+  reset --graceful=false --reboot --system-labels-to-wipe=EPHEMERAL
+talosctl --talosconfig .talos/talosconfig --nodes 10.1.0.199 service etcd
+talosctl --talosconfig .talos/talosconfig --nodes 10.1.0.199 \
+  bootstrap --recover-from=./etcd-before-corruption-repair-20260825.db
+```
+
+The bootstrap result must print the snapshot hash, revision, total keys, and
+size. The restored Node object predates the quarantine. As soon as the API
+answers, re-cordon `acer` before any other Kubernetes operation and require the
+verification to print `true`:
+
+```sh
+kubectl cordon acer
+kubectl get node acer -o jsonpath='{.spec.unschedulable}{"\n"}'
+```
+
+Then verify etcd is healthy and the API is live:
+
+```sh
+talosctl --talosconfig .talos/talosconfig --nodes 10.1.0.199 etcd status
+kubectl get --raw=/livez
+kubectl -n argocd get secret sh.helm.release.v1.argocd.v14 \
+  -o jsonpath='{.metadata.labels.status}{"\n"}'
+```
+
+Expected results are a healthy single etcd member, `ok`, and `deployed`. The
+snapshot intentionally restores the three corrupt records too; their recorded
+decode failures should return. Stop and revise the exact-key repair if any
+other state differs.
+
+Do not invoke the PostgreSQL recovery overlay yet. If the rollback was caused
+by an unrelated failure and the three-key scope is still valid, rerun the
+dated repair; otherwise commit and review a revised exact-key recovery before
+changing live state:
+
+```sh
+scripts/recover-kubernetes-storage-20260825.sh --execute
+```
+
+Require the repair to complete, then verify API, External Secrets, and Argo CD
+reconciliation:
+
+```sh
+kubectl get --raw=/readyz
+kubectl get crd clustersecretstores.external-secrets.io -o name
+kubectl -n media get secret media-postgres-arr-env -o name
+kubectl -n external-secrets rollout status deployment/external-secrets \
+  --timeout=5m
+kubectl -n argocd rollout status statefulset/argocd-application-controller \
+  --timeout=5m
+kubectl -n argocd get application media-postgres \
+  -o jsonpath='{.status.sync.status}{"\t"}{.status.health.status}{"\n"}'
+```
+
+Expected results are `ok`, both object names, successful controller rollouts,
+and `Synced` plus `Healthy`. The dated repair also validates all expected keys
+in `media-postgres-arr-env`; do not continue if it exits before its success
+message.
+
+Before unfencing PostgreSQL or starting the media apps, use the recorded
+`BACKUP_ID` and the two-revision recovery-overlay procedure in
+[`clusters/homelab/apps/media-postgres/README.md`](../clusters/homelab/apps/media-postgres/README.md#backup-and-restore).
+The overlay follow-up revision must return the Application to the base path,
+set `media-postgres-local` back to one replica in `statefulset.yaml`, and set
+`suspend: false` in `backup-cronjob.yaml`. Uncordon `acer` only after the
+restore Job succeeds and memory and system-storage diagnostics clear the
+suspected hardware. Then require
+PostgreSQL readiness, all six databases, successful queries, and a new verified
+backup. Finally, merge a reviewed client-unfence revision that removes the
+temporary `controllers.<app>.replicas: 0` overrides from the Sonarr, Radarr,
+and Prowlarr values. Wait for all three Deployments to become available, then
+test an indexer search in Prowlarr, Sonarr, and Radarr. This follows the
+[Talos disaster-recovery procedure](https://docs.siderolabs.com/talos/v1.11/build-and-extend-talos/cluster-operations-and-maintenance/disaster-recovery).
+
+The script is intentionally not parameterized. A future corrupt object needs a
+new evidence-backed recovery revision, not broader access to etcd deletion.
