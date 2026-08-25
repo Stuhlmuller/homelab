@@ -37,7 +37,10 @@ but lacks that security fix.
 `exit-node-connector.yaml` creates a cluster-scoped Tailscale `Connector` named
 `homelab-exit-node`. The operator creates one proxy device with hostname
 `homelab-exit-node`, tags it as `tag:k8s`, advertises it as an exit node, and
-advertises the homelab LAN route `10.1.0.0/24`.
+advertises the homelab LAN route `10.1.0.0/24`. Its `ProxyClass` stamps a
+`recovery-generation` annotation onto the proxy Pod template. Increment that
+value to force an Argo CD-driven rolling restart when the external Kubernetes
+API path depends on the failed connector.
 
 Tailnet policy must allow the operator tag to own `tag:k8s`:
 
