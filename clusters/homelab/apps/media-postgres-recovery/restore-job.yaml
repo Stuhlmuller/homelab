@@ -25,6 +25,10 @@ spec:
       automountServiceAccountToken: false
       nodeSelector:
         kubernetes.io/hostname: acer
+      tolerations:
+        - key: node.kubernetes.io/unschedulable
+          operator: Exists
+          effect: NoSchedule
       restartPolicy: Never
       securityContext:
         runAsGroup: 65534

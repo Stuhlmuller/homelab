@@ -16,6 +16,10 @@ spec:
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: media-postgres-backup
+        app.kubernetes.io/part-of: homelab-media
     spec:
       activeDeadlineSeconds: 1800
       backoffLimit: 1

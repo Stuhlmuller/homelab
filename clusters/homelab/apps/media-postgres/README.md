@@ -83,7 +83,7 @@ remaining NFS-backed config, but not the active database files.
 The init script creates the logical databases that Servarr expects:
 
 | App | Main database | Log database |
-|-----|---------------|--------------|
+| --- | --- | --- |
 | Sonarr | `sonarr-main` | `sonarr-log` |
 | Radarr | `radarr-main` | `radarr-log` |
 | Prowlarr | `prowlarr-main` | `prowlarr-log` |
@@ -214,23 +214,30 @@ kubectl -n media exec statefulset/media-postgres-local -- \
 The recovery overlay is
 `clusters/homelab/apps/media-postgres-recovery`. It renders the complete base
 application while patching the writer to zero replicas and suspending the
-backup CronJob before the restore Job. Use two reviewed Git revisions:
+backup CronJob before the restore Job. The restore Job tolerates only the
+`node.kubernetes.io/unschedulable` taint so it can recover the node-local volume
+while `acer` remains cordoned. Use two reviewed Git revisions:
 
 1. Before changing desired state, confirm no backup Job is active and verify
    `acer` has room for both the current and restored data directories. Read the
    exact completed `BACKUP_ID` from the latest successful backup Job log.
 2. Change both `BACKUP_ID` and the timestamp/revision in the restore Job name,
-   then change the
-   `media-postgres` Application source path in
-   `IaC/live/argocd-apps/media-postgres/terragrunt.hcl` to the recovery overlay.
-   Merge and apply that Terragrunt unit through the declared workflow.
+   then change `sources[0].path` in the committed
+   `unit "argocd_apps_media_postgres"` block in `IaC/terragrunt.stack.hcl` to
+   `clusters/homelab/apps/media-postgres-recovery`. From `IaC/`, run
+   `terragrunt stack generate`, review and merge the revision, then plan and
+   apply the generated `live/argocd-apps/media-postgres` unit through the
+   declared workflow.
 3. Confirm `media-postgres-local` has no pod, no backup Job is active, and the
    uniquely named restore Job completed. A live writer makes the Job fail
    closed. A PVC marker also keeps the base writer stopped until the directory
    swap completes; after a failure, retry the same `BACKUP_ID` under another
    unique Job name before returning to the base overlay.
-4. In the follow-up revision, return the Application source path to
-   `clusters/homelab/apps/media-postgres`. This removes the restore Job,
+4. In the follow-up revision, return the same committed stack source path to
+   `clusters/homelab/apps/media-postgres`, set `media-postgres-local` back to
+   one replica in `statefulset.yaml`, and set `suspend: false` in
+   `backup-cronjob.yaml`. Regenerate the stack, review and merge the revision,
+   then plan and apply the generated unit. This removes the restore Job,
    resumes nightly backups, and starts the restored writer.
 
 Never point Argo CD at only `restore-job.yaml`, and never run the restore with a

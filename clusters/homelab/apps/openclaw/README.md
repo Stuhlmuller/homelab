@@ -18,6 +18,11 @@ validates config and installs channel plugins during startup. The local TCP
 proxy stays small at `25m` CPU and `64Mi` memory requested with a `256Mi`
 memory limit.
 
+OpenClaw excludes the `acer` control-plane node from scheduling. The 2026-08-25
+recovery found bit corruption in both its cached image and control-plane etcd
+records on that node. Remove the affinity only after `acer` storage and memory
+have passed offline diagnostics and fresh image reads remain stable.
+
 ## Workspace Runtime Setup
 
 The OpenClaw PVC is backed by the QNAP NFS share, so files under `/data/openclaw`
