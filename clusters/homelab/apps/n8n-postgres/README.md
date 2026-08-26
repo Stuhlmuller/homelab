@@ -47,17 +47,12 @@ PostgreSQL from its Service after six failed checks, but startup and liveness
 failures tolerate 30 minutes of QNAP recovery and shutdown receives 120 seconds
 to finish. This reduces forced crash recovery after an NFS stall.
 
-Recovery from the 2026-08-03 stale-lock incident is staged. Phase 1 fenced the
-StatefulSet at zero replicas without modifying its retained PVC; live
-validation confirmed `n8n-postgres-0` was absent and no process or pod still
-used the claim. Phase 2 declares that retained claim at sync wave `-2`, runs the
-incident-specific `n8n-postgres-stale-lock-recovery-20260803` Sync hook at wave
-`-1`, and restores one replica at wave `0`.
-
-The hook removes only `pgdata/postmaster.pid`, verifies its absence, then
-writes a durable completion marker. A retry that sees the marker leaves the
-database files unchanged, so it cannot remove a live server lock. Remove the
-one-shot hook from desired state after recovery validation passes.
+Recovery from the 2026-08-03 stale-lock incident completed in two reconciled
+phases. Phase 1 fenced the StatefulSet at zero replicas and confirmed no pod or
+process used its retained claim. Phase 2 used an incident-specific Sync hook to
+remove only `pgdata/postmaster.pid`, write a durable marker, and restore one
+replica. The one-shot hook is now removed from desired state; the explicit
+retained claim and recovery-aware probes remain.
 
 ## Validation
 
@@ -94,9 +89,10 @@ curl -sS -o /dev/null -w '%{http_code}\n' \
   https://n8n-webhook.stinkyboi.com/webhook/__missing__
 ```
 
-Expected phase-two results: Argo records the recovery hook as succeeded, the
-marker exists, PostgreSQL and n8n are ready, SQL prints `1`, and the public
-callback no longer returns HTTP 503. Preserve the PVC throughout recovery.
+Revision `6c6f1182` passed phase two: Argo recorded the hook as succeeded, the
+marker existed, PostgreSQL became ready with zero restarts, SQL printed `1`,
+n8n became ready, and the public callback returned HTTP 404 instead of 503. The
+original PVC remained bound throughout recovery.
 
 ## Backup And Restore
 
