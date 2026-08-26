@@ -4,9 +4,10 @@ This path owns the repo-managed Tailscale operator support resources that are
 applied alongside the upstream `tailscale-operator` Helm chart.
 
 `namespace.yaml` owns the Pod Security labels for the `tailscale` namespace.
-The operator-managed proxy Pods require privileged mode for kernel networking,
-so this namespace intentionally uses privileged Pod Security enforcement while
-the application Services remain reachable only through the tailnet.
+The operator-managed exit-node Connector proxy requires privileged mode for
+kernel networking, so this namespace intentionally uses privileged Pod Security
+enforcement. Tailscale does not expose application Services; Octelium owns human
+app access.
 
 ## Runtime Secret
 
@@ -17,10 +18,10 @@ SSM Parameter Store. The Tailscale OAuth client must have the `Devices Core`,
 ## Pod Security
 
 `namespace.yaml` labels the `tailscale` namespace for privileged Pod Security
-admission. The upstream operator creates privileged proxy Pods for connector and
-load-balancer devices so they can configure packet forwarding and Tailscale
+admission. The upstream operator creates a privileged proxy Pod for the
+exit-node Connector so it can configure packet forwarding and Tailscale
 networking. Without this label, the cluster's baseline Pod Security policy
-rejects the operator-managed proxy Pods before they can start.
+rejects the operator-managed proxy Pod before it can start.
 
 ## Version
 

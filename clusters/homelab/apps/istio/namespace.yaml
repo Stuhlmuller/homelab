@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: istio-system
   annotations:
-    homelab.rst.io/privileged-namespace-justification: Tailnet ingress proxy workloads require privileged network access.
+    homelab.rst.io/privileged-namespace-justification: Istio CNI and ambient dataplane components require privileged network access.
   labels:
     app.kubernetes.io/name: istio-system
     app.kubernetes.io/part-of: homelab

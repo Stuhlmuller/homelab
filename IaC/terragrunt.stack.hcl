@@ -3363,10 +3363,7 @@ unit "argocd_apps_tailscale" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "istio"
-    ]
+    dependencies = ["external-secrets"]
     manifest = {
       apiVersion = "argoproj.io/v1alpha1"
       kind       = "Application"

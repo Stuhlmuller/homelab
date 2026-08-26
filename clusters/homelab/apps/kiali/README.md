@@ -20,7 +20,8 @@ kiali.homelab
 The Octelium service is the target human access path. The existing
 `https://kiali.stinkyboi.com` hostname resolves to the Octelium service address
 and reaches Kiali through the published `kiali.homelab` Service. Do not add a
-public Funnel route for Kiali.
+public Funnel route for Kiali. The primary Istio gateway is `ClusterIP` only;
+Kiali has no direct Tailscale LoadBalancer path around Octelium authentication.
 
 Kiali uses `auth.strategy: anonymous` and `deployment.view_only_mode: true`,
 with an Istio `AuthorizationPolicy` that allows Octelium service-proxy traffic
@@ -50,14 +51,19 @@ After Argo CD syncs the application:
 argocd app get kiali
 kubectl -n monitoring get kiali kiali
 kubectl -n monitoring get deploy,svc kiali
+kubectl -n istio-system get service istio-ingressgateway \
+  -o jsonpath='{.spec.type}{" "}{.spec.loadBalancerClass}{"\n"}'
+kubectl -n tailscale get statefulset,pod \
+  -l tailscale.com/parent-resource=istio-ingressgateway
 curl -I https://kiali.stinkyboi.com
 ```
 
 Expected result: the Argo CD Application is `Synced` and `Healthy`, the Kiali
 custom resource reports a successful reconciliation, the Deployment and Service
-exist in `monitoring`, and the `kiali.stinkyboi.com` hostname responds through
-Octelium.
+exist in `monitoring`, the primary gateway reports `ClusterIP` with no load
+balancer class, no Tailscale proxy remains for that Service, and the
+`kiali.stinkyboi.com` hostname responds through Octelium.
 
-Rollback by reverting the `kiali` Application registration and this desired
-state path, then syncing Argo CD. Let the Kiali CR delete cleanly before
-removing the operator chart so the operator can remove its managed resources.
+If this `ClusterIP` path breaks Octelium routing, revert the Istio gateway
+Service change and sync Istio. Do not restore direct Tailscale exposure until
+that path has its own authentication policy.
