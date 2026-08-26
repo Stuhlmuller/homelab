@@ -130,11 +130,21 @@ prepare_terragrunt_filter_base() {
   local head_ref
 
   if ! base_ref="$(terragrunt_filter_base_ref)"; then
-    echo "::warning::No usable Terragrunt --filter-affected base ref was available; applying all current unit groups. Deleted-unit destroy detection is unavailable."
-    return 0
+    echo "No usable Terragrunt --filter-affected base ref is available; refusing to skip deleted-unit detection." >&2
+    return 1
   fi
 
   head_ref="$(terragrunt_filter_head_ref)"
+
+  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
+    echo "Terragrunt --filter-affected base ${base_ref} is unavailable; refusing to skip deleted-unit detection." >&2
+    return 1
+  fi
+
+  if ! git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
+    echo "Terragrunt --filter-affected head ${head_ref} is unavailable." >&2
+    return 1
+  fi
 
   export TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF="$base_ref"
   export TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF="$head_ref"
@@ -143,19 +153,7 @@ prepare_terragrunt_filter_base() {
     return 0
   fi
 
-  if [[ -z "$base_ref" || "$base_ref" =~ ^0+$ ]]; then
-    echo "::warning::No usable Terragrunt --filter-affected base ref was available; applying all current unit groups. Deleted-unit destroy detection is unavailable."
-    return 0
-  fi
-
-  if ! git rev-parse --verify --quiet "${base_ref}^{commit}" >/dev/null; then
-    echo "::warning::Terragrunt --filter-affected base ${base_ref} is unavailable; using the existing main ref."
-    return 0
-  fi
-
-  if git rev-parse --verify --quiet "${head_ref}^{commit}" >/dev/null; then
-    git switch --detach --quiet "$head_ref"
-  fi
+  git switch --detach --quiet "$head_ref"
 
   git branch --force main "$base_ref"
 }

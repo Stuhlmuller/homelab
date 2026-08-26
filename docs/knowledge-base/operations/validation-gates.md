@@ -235,11 +235,10 @@ blocks; unrelated stack changes do not require Azure credentials.
 
 Production applies resolve their affected-unit base from the latest successful
 `Terragrunt Apply` workflow `head_sha`, not the immediately preceding push. A
-missing, unreachable, or non-ancestor result uses the zero-SHA sentinel, which
-applies every current unit group and warns that deleted-unit retirement is not
-possible without a trustworthy successful base. Manual-dispatch secret scans
-cover `HEAD^..HEAD`; the working-tree Gitleaks scan still covers the complete
-checkout.
+missing, unreachable, or non-ancestor result fails closed so an apply cannot
+become the new successful checkpoint while skipping an unknown deleted-unit
+range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the working-tree
+Gitleaks scan still covers the complete checkout.
 
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
 that route is the failed dependency, restore reviewed

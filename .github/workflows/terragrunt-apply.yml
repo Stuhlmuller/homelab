@@ -92,25 +92,27 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          zero_sha="0000000000000000000000000000000000000000"
-          base_sha=""
 
           if ! base_sha="$(
             gh api \
               "repos/${GH_REPO}/actions/workflows/terragrunt-apply.yml/runs?branch=main&status=success&per_page=1" \
               --jq '.workflow_runs[0].head_sha // empty'
           )"; then
-            base_sha=""
+            echo "::error::Unable to resolve the latest successful Terragrunt Apply SHA."
+            exit 1
           fi
 
-          if [[ -n "${base_sha}" ]] &&
-            git merge-base --is-ancestor "${base_sha}" "${APPLY_HEAD_SHA}"; then
-            echo "Using last successful Terragrunt Apply ${base_sha} as the affected-unit base."
-          else
-            base_sha="${zero_sha}"
-            echo "::warning::No usable successful Terragrunt Apply SHA was found; applying all current unit groups. Deleted-unit retirement requires a known successful base."
+          if [[ -z "${base_sha}" ]]; then
+            echo "::error::No successful Terragrunt Apply SHA exists; refusing to checkpoint an unknown deleted-unit range."
+            exit 1
           fi
 
+          if ! git merge-base --is-ancestor "${base_sha}" "${APPLY_HEAD_SHA}"; then
+            echo "::error::The latest successful Terragrunt Apply ${base_sha} is not an ancestor of ${APPLY_HEAD_SHA}."
+            exit 1
+          fi
+
+          echo "Using last successful Terragrunt Apply ${base_sha} as the affected-unit base."
           printf 'APPLY_BASE_SHA=%s\n' "${base_sha}" >>"${GITHUB_ENV}"
 
       - name: Install Nix

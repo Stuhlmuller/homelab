@@ -111,9 +111,8 @@ contract for Grafana.
   compare against the PR base branch. Production applies query the latest
   successful `Terragrunt Apply` run and use its `head_sha`, including manual
   dispatches. When that run is absent, unavailable, or not an ancestor of the
-  current `main`, the workflow safely applies every current unit group. Without
-  a trustworthy successful base it cannot infer which removed units need
-  retirement, so the run emits that limitation as a warning.
+  current `main`, the workflow fails closed because it cannot safely infer which
+  removed units need retirement.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`

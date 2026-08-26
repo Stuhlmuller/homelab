@@ -598,9 +598,9 @@ policy`.
 - **Risk:** using only the immediately preceding push could let a failed apply's
   units fall out of every later affected set; scanning all reachable history on
   manual dispatch also re-raised unrelated historical findings.
-- **Next step:** keep `actions: read` on the apply job. If no trustworthy
-  successful base exists, apply all current unit groups and retain the explicit
-  warning that deleted-unit retirement cannot be inferred.
+- **Next step:** keep `actions: read` on the apply job and fail closed when no
+  trustworthy successful base exists, so an unknown deleted-unit range is never
+  checkpointed as successfully applied.
 - **Status:** open
 - **Area:** secrets / CI/CD
 - **Evidence:** June 2026 security audit found
