@@ -100,7 +100,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false,
       "queue": "max"
-    }
+    } and
+    (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run | contains("event=push"))
   ' >/dev/null
 echo "::endgroup::"
 

@@ -256,8 +256,9 @@ shared root inputs they consume; unrelated stack changes do not require Azure
 credentials.
 
 Production applies resolve their affected-unit base from the latest successful
-`Terragrunt Apply` workflow `head_sha`, not the immediately preceding push. A
-missing, unreachable, or non-ancestor result fails closed so an apply cannot
+push-triggered `Terragrunt Apply` workflow `head_sha`, not the immediately
+preceding push. Targeted manual reconciliations never advance that checkpoint.
+A missing, unreachable, or non-ancestor result fails closed so an apply cannot
 become the new successful checkpoint while skipping an unknown deleted-unit
 range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the working-tree
 Gitleaks scan still covers the complete checkout.
