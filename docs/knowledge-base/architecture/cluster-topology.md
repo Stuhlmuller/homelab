@@ -76,6 +76,12 @@ new Service, ingress, port, node label, or controller-owned Deployment patch.
 Seven-day measurements put their combined memory near 146 MiB at p95 and
 166 MiB at maximum; each temporary container is capped at 256 MiB.
 
+The two temporary Vigil Pods intentionally use only the primary Kubernetes
+network. The ingress Envoy resolves their existing Kubernetes Services, and
+Vigil listens on all Pod interfaces. Attaching Octelium's secondary Multus
+network would require the privileged gateway agent that is deliberately absent
+from the control-plane node.
+
 Remove the file from the Enterprise Kustomization after a real dataplane node is
 Ready and the package-managed `octelium-ingress-dataplane`,
 `svc-octobot-homelab`, and `svc-kubernetes-api-ci-default` Deployments each have
