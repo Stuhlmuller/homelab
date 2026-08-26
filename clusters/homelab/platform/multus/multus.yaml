@@ -1,5 +1,5 @@
-# Adapted from the upstream Multus thick DaemonSet v4.2.4 for Talos Linux.
-# Source: https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.2.4/deployments/multus-daemonset-thick.yml
+# Adapted from the upstream Multus thick DaemonSet v4.3.0 for Talos Linux.
+# Source: https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.3.0/deployments/multus-daemonset-thick.yml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -123,6 +123,7 @@ data:
         "logLevel": "verbose",
         "logToStderr": true,
         "cniConfigDir": "/host/etc/cni/net.d",
+        "connectionLimit": 4,
         "multusAutoconfigDir": "/host/etc/cni/net.d",
         "multusConfigFile": "auto",
         "socketDir": "/host/run/multus/"
@@ -149,6 +150,7 @@ metadata:
     checkov.io/skip13: CKV_K8S_16=Multus must run privileged to install and serve host CNI binaries.
     checkov.io/skip14: CKV_K8S_17=Multus uses hostPID as part of the upstream thick CNI DaemonSet.
     checkov.io/skip15: CKV_K8S_19=Multus uses hostNetwork as part of the upstream thick CNI DaemonSet.
+    checkov.io/skip16: CKV_K8S_11=CPU throttling can block node CNI.
   labels:
     app: multus
     app.kubernetes.io/name: multus
@@ -178,7 +180,7 @@ spec:
       serviceAccountName: multus
       initContainers:
         - name: install-multus-binary
-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.2.4-thick@sha256:3c20900b5381fac7f9cbbdfac8370ea10a2f6ed7fbecc678384a9db57047abb1
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9
           imagePullPolicy: Always
           command:
             - /usr/src/multus-cni/bin/install_multus
@@ -202,7 +204,7 @@ spec:
               mountPropagation: Bidirectional
       containers:
         - name: kube-multus
-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.2.4-thick@sha256:3c20900b5381fac7f9cbbdfac8370ea10a2f6ed7fbecc678384a9db57047abb1
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9
           imagePullPolicy: Always
           command:
             - /usr/src/multus-cni/bin/multus-daemon
@@ -211,8 +213,7 @@ spec:
               cpu: 100m
               memory: 128Mi
             limits:
-              cpu: 100m
-              memory: 256Mi
+              memory: 512Mi
           securityContext:
             privileged: true
           terminationMessagePolicy: FallbackToLogsOnError
