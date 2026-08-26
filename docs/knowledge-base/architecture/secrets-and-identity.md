@@ -166,17 +166,20 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   Octelium Enterprise license material, if required for commercial or
   production use, also stays outside git; add only a safe SSM or
   ExternalSecret contract in a future change if the package needs one.
-- The GitHub Actions AWS OIDC apply role is an external bootstrap identity.
-  Its additive SSM reader-policy lifecycle grant is declared in
-  `IaC/operator/github-actions-role-policy` and applied only with a reviewed
-  administrator session. CI must not traverse `IaC/operator` or gain permission
-  to replace its own attachment. The grant is bounded to policy slots `00`
-  through `09` and the exact `homelab-ssm-parameter-readers` group. The unit
-  also adopts `external-secrets_aws-ssm-auth`, removes direct user policies,
-  and caps it with an operator-owned boundary that allows only homelab SSM reads
-  and runtime-secret KMS decrypt/describe access. The live trust-policy scope
-  remains a separately tracked finding in
-  [[../operations/continuous-improvement]].
+- The GitHub Actions AWS OIDC apply role is an operator-owned bootstrap
+  identity. `IaC/operator/github-actions-role-policy` owns the existing
+  `Github-TF-State` role's trust policy and additive SSM reader-policy lifecycle
+  grant. Trust is limited to the homelab `homelab-plan` and
+  `homelab-production` environments plus pull requests and `main` in
+  `Stuhlmuller/github-iac`. Apply it only with a reviewed administrator session;
+  the first rollout must import the existing role before planning. CI must not
+  traverse `IaC/operator` or gain permission to replace its own attachment. The
+  grant is bounded to policy slots `00` through `09` and the exact
+  `homelab-ssm-parameter-readers` group. The unit also adopts
+  `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
+  with an operator-owned boundary that allows only homelab SSM reads and
+  runtime-secret KMS decrypt/describe access. The pending administrator rollout
+  remains tracked in [[../operations/continuous-improvement]].
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,

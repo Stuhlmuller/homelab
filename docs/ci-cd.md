@@ -275,8 +275,9 @@ limited to the same public Kubernetes Service.
 ## AWS Setup
 
 The workflows use `AWS_ROLE_TO_ASSUME_HOMELAB` for both trusted PR plans and
-protected post-merge applies. That role should trust GitHub OIDC only for this
-repository and the expected environment subjects:
+protected post-merge applies. The operator unit owns the role trust and permits
+only the two homelab environments plus the active `github-iac` pull-request and
+`main` workflows:
 
 ```json
 {
@@ -292,6 +293,8 @@ repository and the expected environment subjects:
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
           "token.actions.githubusercontent.com:sub": [
+            "repo:Stuhlmuller/github-iac:pull_request",
+            "repo:Stuhlmuller/github-iac:ref:refs/heads/main",
             "repo:Stuhlmuller/homelab:environment:homelab-plan",
             "repo:Stuhlmuller/homelab:environment:homelab-production"
           ]
@@ -324,11 +327,13 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 ```
 
-Before the first plan, import the existing External Secrets user when
-`state list` does not yet contain `aws_iam_user.external_secrets`. Do not repeat
-the import after the address is present:
+Before the first plan, import the existing GitHub Actions role and External
+Secrets user when their state addresses are absent. Do not repeat an import
+after its address is present:
 
 ```sh
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
+  'aws_iam_role.github_actions' Github-TF-State
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
 ```
