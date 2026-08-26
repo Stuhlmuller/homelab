@@ -191,15 +191,18 @@ Validate the exit node after Argo CD syncs Tailscale:
 ```sh
 kubectl get connector homelab-exit-node
 kubectl wait connector homelab-exit-node --for=condition=ConnectorReady=true --timeout=5m
-kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=homelab-exit-node
+kubectl -n tailscale get deployment,statefulset,pod
+kubectl -n istio-system get service istio-ingressgateway
 ```
 
-Expected result: the connector reports exit-node status and the
-`10.1.0.0/24` subnet route, its ready condition is true, and a single Tailscale
-proxy Pod is running. Then select `homelab-exit-node` on a client and verify the
-public egress IP changes to the homelab network while homelab LAN addresses in
-`10.1.0.0/24` remain reachable. Keep local-network access enabled on clients
-that still need their nearby LAN access while using the exit node.
+Expected result: the operator and both managed proxy Pods use the chart's
+`v1.102.3` image, each StatefulSet has matching current and update revisions,
+the connector reports exit-node status and the `10.1.0.0/24` route, and the
+Istio Service retains its Tailscale address. The singleton proxies roll
+separately during upgrades, so brief interruptions are expected. Then select
+`homelab-exit-node` on a client and verify DNS, HTTPS egress, and LAN access.
+Keep local-network access enabled on clients that still need their nearby LAN
+while using the exit node.
 
 ## Policy Bot Webhook Callback
 

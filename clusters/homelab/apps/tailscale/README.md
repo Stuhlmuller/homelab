@@ -24,12 +24,12 @@ rejects the operator-managed proxy Pods before they can start.
 
 ## Version
 
-`IaC/live/argocd-apps/tailscale/terragrunt.hcl` pins the upstream
-`tailscale-operator` Helm chart. Version `1.98.3` is the first rollout target
-after the Tailscale admin console reported a known vulnerability on the older
-operator-managed devices. If the upgrade regresses operator login, connector
-readiness, or proxy Pod startup, roll back by reverting the chart
-`target_revision` to `1.84.3` and syncing the Argo CD Application.
+`IaC/terragrunt.stack.hcl` pins the upstream `tailscale-operator` Helm chart at
+`1.102.3`. The chart updates both the operator and its managed proxy image and
+includes Tailscale security fix TS-2026-011. The two singleton proxies roll
+separately, briefly interrupting the exit-node and Istio tailnet paths. If the
+upgrade regresses operator login, connector readiness, or proxy startup,
+revert the chart to `1.98.3` and sync the Argo CD Application.
 
 ## Homelab Exit Node
 
@@ -76,12 +76,13 @@ After Argo CD syncs the `tailscale` Application:
 ```sh
 kubectl get connector homelab-exit-node
 kubectl wait connector homelab-exit-node --for=condition=ConnectorReady=true --timeout=5m
-kubectl -n tailscale get statefulset,pod -l tailscale.com/parent-resource=homelab-exit-node
+kubectl -n tailscale get deployment,statefulset,pod
+kubectl -n istio-system get service istio-ingressgateway
 ```
 
-Expected result: the connector reports `ISEXITNODE` as `true`, the connector
-condition is ready, the advertised route includes `10.1.0.0/24`, and one
-operator-managed proxy Pod is running in the `tailscale` namespace. Then select
-`homelab-exit-node` as the exit node from a tailnet client and confirm the
-client egress IP changes to the homelab network while local homelab LAN
-addresses remain reachable.
+Expected result: the operator and both managed proxy Pods run `v1.102.3`, both
+StatefulSets have matching current and update revisions, the connector reports
+`ISEXITNODE` as `true`, its condition is ready, the advertised route includes
+`10.1.0.0/24`, and the Istio Service retains its Tailscale address. Then select
+`homelab-exit-node` on a client and verify DNS, HTTPS egress, and access to a
+LAN address in `10.1.0.0/24`.
