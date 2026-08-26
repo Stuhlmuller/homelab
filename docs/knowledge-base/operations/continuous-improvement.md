@@ -56,6 +56,9 @@ Claw-authored commits and PR titles should use Conventional Commit format, for
 example `docs: update homelab runbook` or `fix: tighten openclaw network
 policy`.
 
+GitHub vulnerability alerts must stay enabled; Renovate owns security-fix PRs,
+while Dependabot automated fixes stay disabled to avoid duplicate PRs.
+
 ## Open Findings
 
 - **Status:** implemented; rollout verification pending
