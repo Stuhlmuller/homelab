@@ -41,10 +41,11 @@ against PostgreSQL.
 
 ## NFS Interruption Recovery
 
-The readiness probe removes PostgreSQL from its Service after six failed
-checks, but startup and liveness failures now tolerate 30 minutes of QNAP
-recovery and shutdown receives 120 seconds to finish. This reduces forced
-crash recovery after an NFS stall.
+The readiness and liveness probes execute `SELECT 1`, so accepting a socket
+without completing database work does not count as healthy. Readiness removes
+PostgreSQL from its Service after six failed checks, but startup and liveness
+failures tolerate 30 minutes of QNAP recovery and shutdown receives 120 seconds
+to finish. This reduces forced crash recovery after an NFS stall.
 
 Recovery from the 2026-08-03 stale-lock incident is staged. Phase 1 fenced the
 StatefulSet at zero replicas without modifying its retained PVC; live

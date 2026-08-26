@@ -97,11 +97,13 @@ spec:
           readinessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - dispatcharr
                 - -d
                 - dispatcharr
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -109,15 +111,17 @@ spec:
           livenessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - dispatcharr
                 - -d
                 - dispatcharr
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 60
           resources:
             requests:
               cpu: 100m
