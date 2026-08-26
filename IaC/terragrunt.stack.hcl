@@ -3394,7 +3394,7 @@ unit "argocd_apps_tailscale" {
             repoURL        = "https://pkgs.tailscale.com/helmcharts"
             chart          = "tailscale-operator"
             path           = "."
-            targetRevision = "1.98.3"
+            targetRevision = "1.102.3"
             helm = {
               releaseName = "tailscale-operator"
               valueFiles  = ["$values/clusters/homelab/apps/tailscale/values.yaml"]
