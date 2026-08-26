@@ -12,12 +12,13 @@ bootstrap policy reproducible and reviewable.
 
 ## GitHub Actions apply-role policy
 
-`github-actions-role-policy` attaches one managed policy to the existing
-`Github-TF-State` role. The grant is limited to the ten exact managed-policy
-slots `homelab-ssm-parameter-reader-00` through `-09` and attachments to the
-exact `homelab-ssm-parameter-readers` group. Tagged creation must retain the
-homelab project tag and the repository's standard tag-key set. The role cannot
-manage this bootstrap policy, its own attachment, or another role.
+`github-actions-role-policy` owns the existing `Github-TF-State` role trust and
+attaches one managed policy. Trust is limited to the two homelab environments
+plus pull requests and `main` in the active `Stuhlmuller/github-iac` consumer.
+The permission grant is limited to the ten exact managed-policy slots
+`homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
+`homelab-ssm-parameter-readers` group. The role cannot manage this bootstrap
+policy, its own attachment, or another role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and applies an operator-owned
@@ -37,18 +38,20 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -
 ```
 
 On the first rollout, or if the encrypted operator state must be reconstructed,
-list the state and import the existing IAM user when its address is absent. The
-import must happen before the first plan so OpenTofu adopts the user instead of
-attempting to create a duplicate:
+list the state and import the existing IAM role or user when either address is
+absent. Import before the first plan so OpenTofu adopts both objects instead of
+attempting to create duplicates:
 
 ```sh
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
+  'aws_iam_role.github_actions' Github-TF-State
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
 ```
 
-Do not repeat the import when `state list` already contains
-`aws_iam_user.external_secrets`. Save, review, and apply the same plan:
+Do not repeat an import when `state list` already contains its address. Save,
+review, and apply the same plan:
 
 ```sh
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color

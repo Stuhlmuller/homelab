@@ -6,6 +6,10 @@ data "aws_kms_alias" "runtime_secret" {
   name = var.kms_key_id
 }
 
+data "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
+}
+
 locals {
   parameter_reader_group_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:group/${var.parameter_reader_group_name}"
   parameter_reader_policy_arns = [
@@ -84,6 +88,35 @@ data "aws_iam_policy_document" "parameter_reader_administration" {
   }
 }
 
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      identifiers = [data.aws_iam_openid_connect_provider.github_actions.arn]
+      type        = "Federated"
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values = [
+        "repo:Stuhlmuller/github-iac:pull_request",
+        "repo:Stuhlmuller/github-iac:ref:refs/heads/main",
+        "repo:Stuhlmuller/homelab:environment:homelab-plan",
+        "repo:Stuhlmuller/homelab:environment:homelab-production",
+      ]
+    }
+  }
+}
+
 data "aws_iam_policy_document" "external_secrets_boundary" {
   statement {
     sid    = "ReadHomelabParameters"
@@ -119,8 +152,18 @@ resource "aws_iam_policy" "parameter_reader_administration" {
   tags        = var.tags
 }
 
+resource "aws_iam_role" "github_actions" {
+  name               = var.apply_role_name
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
+  tags               = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_iam_role_policy_attachment" "parameter_reader_administration" {
-  role       = var.apply_role_name
+  role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.parameter_reader_administration.arn
 }
 

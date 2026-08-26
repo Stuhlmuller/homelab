@@ -27,17 +27,20 @@ terragrunt --log-disable validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
+  'aws_iam_role.github_actions' Github-TF-State
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
 ```
 
-Run the import only on the first rollout, or during state recovery, when
-`state list` does not contain `aws_iam_user.external_secrets`. Backend-free
-validation deliberately leaves the working directory detached from shared
-state, so the authenticated `init -reconfigure` must precede every import,
-production plan, or apply from that directory.
+Run each import only on the first rollout, or during state recovery, when
+`state list` does not contain its address: `aws_iam_role.github_actions` or
+`aws_iam_user.external_secrets`. Backend-free validation deliberately leaves
+the working directory detached from shared state, so the authenticated
+`init -reconfigure` must precede every import, production plan, or apply from
+that directory.
 
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
