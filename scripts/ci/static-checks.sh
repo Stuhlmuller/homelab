@@ -20,10 +20,16 @@ echo "::endgroup::"
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/live/argocd-apps
-  terragrunt_stack_changed() { [[ "$1" == "IaC/live/argocd-apps" ]]; }
+  terragrunt_stack_changed() { return 0; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
-  terragrunt_stack_changed() { return 1; }
+  terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
+  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
+  [[ "$(TERRAGRUNT_ARGOCD_APP=github-actions-runner terragrunt_argocd_app_filter)" == "github-actions-runner" ]]
+  if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
+    echo "Unsafe Argo CD Application unit filter was accepted" >&2
+    exit 1
+  fi
 )
 echo "::endgroup::"
 

@@ -139,6 +139,45 @@ adopt_existing_ssm_parameters() {
   done
 }
 
+plan_and_apply_argocd_apps() {
+  local filter
+  local plan_dir
+  local plan_json_files=()
+
+  plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-argocd-apps.XXXXXX")"
+  cleanup_dirs+=("$plan_dir")
+
+  (
+    cd IaC/live/argocd-apps
+    filter="$(terragrunt_argocd_app_filter)"
+    terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 --source-update \
+      --out-dir "$plan_dir" --json-out-dir "$plan_dir" -- plan -no-color
+  )
+
+  while IFS= read -r plan_json_file; do
+    plan_json_files+=("$plan_json_file")
+  done < <(find "$plan_dir" -name tfplan.json -type f -print | sort)
+
+  if ((${#plan_json_files[@]} == 0)); then
+    echo "No affected Argo CD Application registration units require apply."
+    return
+  fi
+
+  conftest test --policy policy --output github "${plan_json_files[@]}"
+  if jq -s -e 'any(.[]; any(.resource_changes[]?; .type == "kubernetes_manifest" and (.change.actions | index("delete"))))' \
+    "${plan_json_files[@]}" >/dev/null; then
+    echo "Argo CD Application replacement or deletion requires explicit state repair or deleted-unit handling." >&2
+    return 1
+  fi
+
+  (
+    cd IaC/live/argocd-apps
+    filter="$(terragrunt_argocd_app_filter)"
+    terragrunt run --all --filter "$filter" --non-interactive --parallelism 1 \
+      --out-dir "$plan_dir" -- apply -no-color
+  )
+}
+
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
 
@@ -205,10 +244,7 @@ fi
 echo "::endgroup::"
 
 echo "::group::Argo CD Application registration apply"
-(
-  cd IaC/live/argocd-apps
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
-)
+plan_and_apply_argocd_apps
 echo "::endgroup::"
 
 echo "::group::External Secrets AWS auth Secret state adoption"

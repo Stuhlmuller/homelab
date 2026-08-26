@@ -236,11 +236,18 @@ CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
 changes, the scripts plan or apply the matching generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files. Stack, catalog, module, shared root/provider, toolchain, Terraform-policy,
-execution-script, and tracked generated-group changes such as provider locks use
-the local `*` because each command runs from its generated-unit root. Affected-
-only runs combine the repository-relative group with the Git selector so
-Terragrunt cannot queue another unit group.
+files. Stack, catalog, module, shared root/provider, and tracked generated-group
+changes such as provider locks use the local `*` because each command runs from
+its generated-unit root. Plan-only toolchain, Terraform-policy, and execution-
+script changes also refresh every plan without widening production apply scope.
+Affected-only runs combine the repository-relative group with the Git selector
+so Terragrunt cannot queue another unit group. Saved plans can live in generated
+module caches; the plan gate discovers them there and writes policy JSON beside
+each generated unit.
+Production Argo CD Application registration saves each affected plan, evaluates
+the Terraform policy JSON, rejects manifest replacement/deletion, then applies
+that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
+name to reconcile committed desired state without widening the run to its group.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production

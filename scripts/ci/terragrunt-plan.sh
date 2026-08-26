@@ -29,9 +29,17 @@ clear_plan_artifacts() {
   find "$@" \( -name plan.out -o -name plan.json \) -type f -delete
 }
 
+plan_out_for_unit() {
+  local unit_dir
+
+  unit_dir="$(cd "$1" && pwd -P)"
+  find "$unit_dir" -name plan.out -type f -print -quit
+}
+
 render_plan_out() {
   local title="$1"
   local unit_dir="$2"
+  local plan_file="$3"
 
   {
     printf '<details>\n'
@@ -39,7 +47,7 @@ render_plan_out() {
     printf '~~~~text\n'
     (
       cd "$unit_dir"
-      terragrunt --log-disable show -no-color plan.out
+      terragrunt --log-disable show -no-color "$plan_file"
     )
     printf '~~~~\n\n'
     printf '</details>\n\n'
@@ -49,9 +57,10 @@ render_plan_out() {
 render_plan_out_if_present() {
   local title="$1"
   local unit_dir="$2"
+  local plan_file
 
-  if [[ -f "${unit_dir}/plan.out" ]]; then
-    render_plan_out "$title" "$unit_dir"
+  if plan_file="$(plan_out_for_unit "$unit_dir")" && [[ -n "$plan_file" ]]; then
+    render_plan_out "$title" "$unit_dir" "$plan_file"
     return 0
   fi
 
@@ -60,11 +69,12 @@ render_plan_out_if_present() {
 
 render_plan_json_if_present() {
   local unit_dir="$1"
+  local plan_file
 
-  if [[ -f "${unit_dir}/plan.out" ]]; then
+  if plan_file="$(plan_out_for_unit "$unit_dir")" && [[ -n "$plan_file" ]]; then
     (
       cd "$unit_dir"
-      terragrunt --log-disable show -json plan.out >plan.json
+      terragrunt --log-disable show -json "$plan_file" >plan.json
     )
     return 0
   fi
@@ -208,7 +218,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
@@ -237,7 +247,7 @@ echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
+    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*' true)" --parallelism 1 --source-update -- plan -lock=false -no-color
   )
 
   planned_azuread_count=0

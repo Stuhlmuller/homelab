@@ -840,7 +840,6 @@ unit "argocd_apps_github_actions_runner" {
 
         syncPolicy = {
           automated = {
-            # Empty source is intentional; keep pruning enabled through retirement.
             allowEmpty = true
             enabled    = true
             prune      = true
@@ -1012,7 +1011,6 @@ unit "argocd_apps_grafana_alert_cleanup" {
 
         syncPolicy = {
           automated = {
-            # Empty source is intentional; keep pruning enabled through retirement.
             allowEmpty = true
             enabled    = true
             prune      = true
