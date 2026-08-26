@@ -101,14 +101,12 @@ validation passed with zero pod restarts. The incident-only hook is now removed
 from desired state, while the explicit retained claim, 30-minute startup and
 liveness windows, and 120-second termination grace remain.
 
-`n8n-postgres` was fenced at zero replicas for phase one of the 2026-08-03
-stale-lock recovery; live validation confirmed the pod and old process were
-absent while the retained claim stayed bound. Phase two declares that claim at
-sync wave `-2` and uses the idempotent
-`n8n-postgres-stale-lock-recovery-20260803` Sync hook at wave `-1` to remove
-only `postmaster.pid` before restoring one replica at wave `0`. A durable marker
-makes retries read-only after success. The restored pod has 30-minute startup
-and liveness windows plus a 120-second termination grace period.
+`n8n-postgres` completed its fenced 2026-08-03 stale-lock recovery. The
+incident hook removed only `postmaster.pid`, wrote a durable marker, and
+restored one replica with zero PostgreSQL restarts. Live checks passed for SQL,
+n8n readiness, and the public callback. The hook is now removed; the explicit
+retained claim, 30-minute startup and liveness windows, and 120-second
+termination grace remain.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
