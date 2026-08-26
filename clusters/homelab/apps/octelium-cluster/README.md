@@ -20,6 +20,13 @@ The Enterprise console is the exception: `console.stinkyboi.com` routes to the
 package-owned `svc-console-octelium` Service so the public URL stays first-level
 and does not require the nested `console.octelium.stinkyboi.com` hostname.
 
+The fixed-size HPA keeps two dataplane ingress replicas even though `octops`
+creates the Deployment with one. A PodDisruptionBudget retains one replica
+during voluntary maintenance. The cluster Descheduler's `RemoveDuplicates`
+plugin separates the replicas across eligible nodes on its 30-minute schedule.
+Before `octops init`, the HPA can report a missing target; it converges after
+the package creates the Deployment.
+
 Client VPN traffic uses Octelium Gateway hostnames generated from the cluster
 domain, such as `_gw-*.stinkyboi.com`, not the Istio front-proxy route. After
 `octops` creates or updates Gateway status, run
@@ -40,6 +47,8 @@ repo-owned `octelium-public` connector.
 ```sh
 kubectl -n istio-system get destinationrule octelium-cluster-dataplane
 kubectl -n octelium get svc octelium-ingress-dataplane
+kubectl -n octelium get hpa,pdb octelium-ingress-dataplane
+kubectl -n octelium get pods -l octelium.com/component=ingress-dataplane -o wide
 kubectl -n istio-system get virtualservice octelium-cluster
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-public-dns.sh --dry-run
