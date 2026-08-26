@@ -66,6 +66,24 @@ Before assigning its label, remove the stale services, set representative proxy
 requests, and validate the chosen node against measured use. The declarative
 label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 
+### Temporary August 2026 recovery
+
+While both labeled dataplane nodes are NotReady,
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs only
+the Octelium ingress, OctoBot service proxy, and CI Kubernetes API service proxy
+on `acer`. Their existing Service selector labels restore those paths without a
+new Service, ingress, port, node label, or controller-owned Deployment patch.
+Seven-day measurements put their combined memory near 146 MiB at p95 and
+166 MiB at maximum; each temporary container is capped at 256 MiB.
+
+Remove the file from the Enterprise Kustomization after a real dataplane node is
+Ready and the package-managed `octelium-ingress-dataplane`,
+`svc-octobot-homelab`, and `svc-kubernetes-api-ci-default` Deployments each have
+a Ready replica. The `octelium-enterprise` Application prunes the three uniquely
+named temporary Deployments. Then verify the two original Services have only
+native ready endpoints, `https://octobot.stinkyboi.com` no longer returns 502,
+and the CI Kubernetes API preflight succeeds.
+
 Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
 capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
 limits simultaneous Unix-socket connections to the thick daemon so its
