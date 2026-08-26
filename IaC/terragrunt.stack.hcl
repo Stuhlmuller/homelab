@@ -1109,6 +1109,12 @@ unit "argocd_apps_istio" {
               releaseName          = "istiod"
               skipSchemaValidation = true
               valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+              parameters = [
+                {
+                  name  = "pilot.resources.requests.memory"
+                  value = "512Mi"
+                }
+              ]
             }
           },
           {
@@ -1131,6 +1137,12 @@ unit "argocd_apps_istio" {
               releaseName          = "ztunnel"
               skipSchemaValidation = true
               valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+              parameters = [
+                {
+                  name  = "resources.requests.memory"
+                  value = "256Mi"
+                }
+              ]
             }
           },
           {
