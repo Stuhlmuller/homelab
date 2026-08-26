@@ -8,8 +8,6 @@ credential_name="homelab-ci"
 user_name="homelab-ci"
 policy_name="homelab-ci-kubernetes-api-access"
 secret_name="OCTELIUM_CI_AUTH_TOKEN"
-credential_type="access-token"
-session_type="clientless"
 octelium_homedir=""
 octelium_proxy=""
 apply_catalog="true"
@@ -42,8 +40,6 @@ Options:
                                Default: homelab-ci-kubernetes-api-access
   --secret-name NAME           GitHub environment secret name.
                                Default: OCTELIUM_CI_AUTH_TOKEN
-  --credential-type TYPE       Octelium credential type. Default: access-token
-  --session-type TYPE          Octelium session type. Default: clientless
   --homedir PATH               Octelium CLI homedir to use for authentication.
                                Useful for bootstrap recovery sessions.
   --octelium-proxy URL         Proxy URL used only for octeliumctl commands.
@@ -92,14 +88,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --secret-name)
       secret_name="$2"
-      shift 2
-      ;;
-    --credential-type)
-      credential_type="$2"
-      shift 2
-      ;;
-    --session-type)
-      session_type="$2"
       shift 2
       ;;
     --homedir)
@@ -203,8 +191,6 @@ validate_name "$credential_name" "--credential-name"
 validate_name "$user_name" "--user"
 validate_name "$policy_name" "--policy"
 validate_name "$secret_name" "--secret-name"
-case "$credential_type" in access-token|auth-token|oauth2) ;; *) echo "error: unsupported --credential-type: $credential_type" >&2; exit 1 ;; esac
-case "$session_type" in client|clientless) ;; *) echo "error: unsupported --session-type: $session_type" >&2; exit 1 ;; esac
 for env_name in "${environments[@]}"; do
   validate_name "$env_name" "--env"
 done
@@ -382,12 +368,10 @@ ensure_existing_credential_spec() {
   if jq -e \
     --arg user "$user_name" \
     --arg policy "$policy_name" \
-    --arg credential_type "$credential_type" \
-    --arg session_type "$session_type" \
     '
       .spec.user == $user and
-      .spec.type == ($credential_type | ascii_upcase | gsub("-"; "_")) and
-      .spec.sessionType == ($session_type | ascii_upcase) and
+      .spec.type == "ACCESS_TOKEN" and
+      .spec.sessionType == "CLIENTLESS" and
       (.spec.authorization.policies // []) == [$policy]
     ' <<<"$existing_credential_json" >/dev/null; then
     echo "Existing Octelium credential ${credential_name} already targets User ${user_name} with Policy ${policy_name}."
@@ -395,16 +379,14 @@ ensure_existing_credential_spec() {
   fi
 
   credential_spec="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential-spec.XXXXXX.yaml")"
-  local credential_type_value="${credential_type^^}"
-  credential_type_value="${credential_type_value//-/_}"
   {
     printf 'kind: Credential\n'
     printf 'metadata:\n'
     printf '  name: %s\n' "$credential_name"
     printf 'spec:\n'
-    printf '  type: %s\n' "$credential_type_value"
+    printf '  type: ACCESS_TOKEN\n'
     printf '  user: %s\n' "$user_name"
-    printf '  sessionType: %s\n' "${session_type^^}"
+    printf '  sessionType: CLIENTLESS\n'
     printf '  authorization:\n'
     printf '    policies:\n'
     printf '      - %s\n' "$policy_name"
@@ -429,8 +411,8 @@ create_args=(
   --domain "$domain"
   --user "$user_name"
   --policy "$policy_name"
-  --type "$credential_type"
-  --session-type "$session_type"
+  --type access-token
+  --session-type clientless
   -o json
 )
 

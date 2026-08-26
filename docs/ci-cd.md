@@ -291,7 +291,33 @@ scripts/octelium-ci-credential.sh \
 ```
 
 The helper updates the same GitHub environment secrets. The recovery user is
-limited to the same public Kubernetes Service.
+limited to the same public Kubernetes Service, but its default clientless
+Session expires after two hours. Before then, restore the primary credential,
+verify both GitHub environments, and remove the temporary recovery resources:
+
+```sh
+scripts/octelium-ci-credential.sh --homedir /tmp/octelium-admin
+
+primary_sha="$(gh api repos/Stuhlmuller/homelab/commits/main --jq .sha)"
+gh workflow run homelab-diagnostics.yml --ref main
+gh workflow run terragrunt-apply.yml --ref main
+gh run list --workflow homelab-diagnostics.yml --commit "$primary_sha" --event workflow_dispatch --limit 1 --json status,conclusion,url --jq '.[0]'
+gh run list --workflow terragrunt-apply.yml --commit "$primary_sha" --event workflow_dispatch --limit 1 --json status,conclusion,url --jq '.[0]'
+```
+
+Repeat the two `gh run list` commands until both report `completed` and
+`success`, then clean up:
+
+```sh
+scripts/octelium-ci-credential.sh \
+  --homedir /tmp/octelium-admin \
+  --skip-catalog \
+  --user homelab-ci-recovery \
+  --delete-user-sessions-only
+octeliumctl --homedir /tmp/octelium-admin delete credential homelab-ci-recovery --domain stinkyboi.com
+octeliumctl --homedir /tmp/octelium-admin delete user homelab-ci-recovery --domain stinkyboi.com
+octeliumctl --homedir /tmp/octelium-admin delete policy ci-recovery-access --domain stinkyboi.com
+```
 
 ## AWS Setup
 
