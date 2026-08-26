@@ -60,19 +60,18 @@ policy`.
 
 - **Status:** implemented; rollout verification pending
 - **Area:** Octelium / public gRPC transport
-- **Evidence:** During the 2026-08-25 NOFX catalog rollout,
-  `octelium-api.stinkyboi.com` returned Cloudflare HTTP 522 after the protected
-  origin-rule workflow succeeded. The router refused the CronJob's former
-  hard-coded `10.1.0.1:49152` control endpoint, while the dedicated
-  `10.1.0.200:30443` NodePort returned the expected unauthenticated
-  `grpc-status: 16`. A TLS-preserving local CONNECT proxy to that NodePort
-  allowed the signed PR `#719` catalog to apply and live verification to pass.
-  PR `#734` replaces the fixed SOAP endpoint with native IGD discovery while
-  preserving the required `zimaboard-0` source address.
-- **Risk:** Router control-port changes prevent `octelium-api-upnp` from
-  renewing TCP/8443, leaving public CLI, VPN, and admin operations unavailable
-  even while portal and app tunnel traffic remains healthy.
-- **Next step:** After rollout, verify the router lease, public
+- **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
+  run for 20 days. A stale router control endpoint caused the earlier failures;
+  after PR `#734` replaced it with IGD discovery, the repaired jobs could not
+  schedule because their only target, `zimaboard-0`, was NotReady. The
+  86,400-second lease had expired. Direct TLS probes to NodePort `30443` on
+  Ready `zimaboard-1` at `10.1.0.201` returned the expected unauthenticated
+  `grpc-status: 16`. Desired state now runs the host-networked lease job on
+  that worker and maps WAN TCP/8443 to `10.1.0.201:30443`.
+- **Risk:** Losing the selected worker longer than one day expires the public
+  CLI, VPN, and admin path while browser and app tunnel traffic remains healthy.
+- **Next step:** After rollout, verify the CronJob succeeds, the router lease
+  targets `10.1.0.201:30443`, public
   `grpc-status: 16`, and an authenticated CLI call.
 
 - **Status:** mitigated; hardware diagnosis pending

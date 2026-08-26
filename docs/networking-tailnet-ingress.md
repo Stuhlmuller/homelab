@@ -26,7 +26,7 @@ hostnames do not support the long-running gRPC stream used by
 address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
 that address through UPnP, verifies the leased mapping maintained by the
 `octelium-api-upnp` CronJob to the dedicated `octelium-api-ingressgateway`
-NodePort at `10.1.0.200:30443`, verifies the origin gRPC response, and
+NodePort at `10.1.0.201:30443`, verifies the origin gRPC response, and
 reconciles the record. The dedicated gateway accepts Cloudflare origin TLS
 without SNI, but a separate `VirtualService` routes only
 `octelium-api.stinkyboi.com`; browser, app, and callback hostnames remain
@@ -91,7 +91,7 @@ an internal Istio TLS-routing resource. A separate gateway-chart release and
 workload selector and API-only `VirtualService` are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
 The router mapping exposes only public TCP/8443 and targets worker
-`zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
+`zimaboard-1` at `10.1.0.201`; no public HTTP or status NodePort is declared.
 The host-networked CronJob must run on that worker because the Xfinity UPnP
 implementation rejects mappings submitted by a different LAN client. It
 refreshes the Xfinity gateway's minimum 86,400-second lease every five minutes,
@@ -99,7 +99,7 @@ so reverting or suspending the CronJob closes the WAN listener within 24 hours.
 Requests still terminate at the Octelium API and require Octelium
 authentication.
 If the mapping exists but WAN connections time out, use Xfinity Advanced
-Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
+Security's device-specific **Allow Access** flow for `zimaboard-1`; Xfinity
 [documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
 that Advanced Security can block all inbound traffic to a forwarded device.
 Cloudflare rules must match
