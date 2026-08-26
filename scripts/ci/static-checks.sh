@@ -36,6 +36,17 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Octelium CI credential lifetime"
+yq -e '
+  select(.kind == "User" and .metadata.name == "homelab-ci") |
+  (
+    .spec.type == "WORKLOAD" and
+    .spec.session.clientlessDuration.days == 30 and
+    .spec.session.accessTokenDuration.days == 30
+  )
+' docs/examples/octelium/homelab-services.yaml >/dev/null
+echo "::endgroup::"
+
 echo "::group::Renovate config"
 jq empty renovate.json
 echo "::endgroup::"

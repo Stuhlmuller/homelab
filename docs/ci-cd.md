@@ -83,6 +83,8 @@ contract for Grafana.
   existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
   This avoids the IPv6-only Gateway QUIC path, while the
   `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
+  The dedicated User gives both its clientless session and access token a
+  30-day lifetime; rotate the credential every 21 days.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
 - The upstream kubeconfig is stored only as the Octelium Secret
@@ -226,7 +228,8 @@ narrower NOFX reconciliation after the Octelium Kubernetes route works again.
 The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
 
-- workload User `homelab-ci`;
+- workload User `homelab-ci` with matching 30-day clientless-session and
+  access-token lifetimes;
 - Policy `homelab-ci-kubernetes-api-access`, which allows only the public
   clientless Kubernetes Service;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
@@ -247,9 +250,13 @@ the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 For existing credentials, the helper verifies GitHub environment secret write
 access by writing and deleting a temporary preflight secret, reconciles the
 credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, then rotates the token. It refuses to
-rotate an existing credential when GitHub secret updates are disabled, because
-that would invalidate the old CI token without storing the replacement.
+`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
+User so Octelium cannot reuse its old expiry, then rotates the token. It
+refuses to rotate an existing credential when GitHub secret updates are
+disabled, because that would invalidate the old CI token without storing the
+replacement.
+Run rotation in a quiet window: deleting the old Session invalidates the
+current bearer before the two GitHub environment secrets are updated.
 When recovering through a temporary Octelium CLI session, pass that session
 directory with `--homedir /tmp/octelium-admin`. If the public Octelium API path
 is not carrying authenticated admin CLI calls reliably, point `--octelium-proxy`
@@ -261,12 +268,14 @@ because it can print the generated token. If the helper cannot reach GitHub,
 fix `gh auth status` or the target environment permissions, then rerun the
 helper so the token is captured and stored without being displayed.
 
-Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after catalog policy
-changes, after runner image changes, and on a regular schedule. Reconcile the
+Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
+policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
-CI receives `401` or `403` from authenticated `kubectl` against
-`kubernetes-api-ci`, reapply the catalog, reconcile the Secret, and rotate the
-credential with `scripts/octelium-ci-credential.sh`.
+CI receives Octelium `401` from authenticated `kubectl` against
+`kubernetes-api-ci`, reapply the catalog and rotate the credential with
+`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
+failure before rotating. Reconcile the upstream kubeconfig Secret when its
+Kubernetes credential changes.
 If the credential must be recovered, apply
 `docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
 credential to `homelab-ci-recovery` with the same helper. The recovery user is
