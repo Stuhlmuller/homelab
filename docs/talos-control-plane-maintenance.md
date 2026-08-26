@@ -175,8 +175,8 @@ only one exact node at a time:
 | `zimaboard-1` | `10.1.0.201` |
 | `zimaboard-2` | `10.1.0.202` |
 
-Confirm Talos still answers, then reboot and require the node plus every
-assigned non-terminal pod, including node-pinned workloads, to become ready:
+Select one worker, confirm its Talos API answers, and require every node and
+non-terminal pod to be ready before reboot:
 
 ```sh
 node_name=zimaboard-0
@@ -192,6 +192,21 @@ talosctl --talosconfig .talos/talosconfig \
   --nodes "$node_ip" \
   get services
 
+kubectl wait --for=condition=Ready node --all --timeout=1m &&
+  kubectl wait --for=condition=Ready pod --all --all-namespaces \
+    --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+    --timeout=1m
+```
+
+If either preflight wait fails, do not reboot. This routine runbook does not
+cover degraded-state maintenance; recover the unavailable node or workload
+through its reviewed repository-owned path, or add that path first, then repeat
+the preflight.
+
+Only after preflight succeeds, reboot and require fresh node and cluster-wide
+workload readiness, including unbound `Pending` replacements:
+
+```sh
 talosctl --talosconfig .talos/talosconfig \
   --endpoints 10.1.0.199 \
   --nodes "$node_ip" \
@@ -199,14 +214,14 @@ talosctl --talosconfig .talos/talosconfig \
 
 kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
 kubectl wait --for=condition=Ready pod --all --all-namespaces \
-  --field-selector "spec.nodeName=$node_name,status.phase!=Succeeded,status.phase!=Failed" \
+  --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
   --timeout=10m
 ```
 
 If either readiness check times out, do not reboot another worker. Inspect the
-affected pods with `kubectl get pods -A -o wide --field-selector
-"spec.nodeName=$node_name"`, then use the workload's repository-backed recovery
-path; do not delete, restart, or patch live pods by hand.
+affected pods with `kubectl get pods -A -o wide`, then use the workload's
+repository-backed recovery path; do not delete, restart, or patch live pods by
+hand.
 
 If a normal reboot completes but the node remains stuck and the Talos API still
 answers, retry the reboot with `--mode=powercycle`. Never add `--insecure` for

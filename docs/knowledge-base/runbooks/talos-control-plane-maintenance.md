@@ -10,8 +10,8 @@ and repository-owned patches for control-plane changes.
 
 For remote ZimaBoard recovery, the canonical runbook maps each worker to its
 Talos address and uses authenticated `talosctl reboot`; reboot one worker at a
-time, verify node and node-pinned workload readiness, and never fall back to
-`--insecure`.
+time only from a healthy cluster, verify node and cluster-wide workload
+readiness, and never fall back to `--insecure`.
 
 The canonical runbook also owns the dated 2026-08-25 corrupt-object recovery.
 That recovery is exact-key and snapshot-first, with a Talos snapshot-restore
