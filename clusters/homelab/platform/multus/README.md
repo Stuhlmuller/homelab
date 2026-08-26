@@ -25,5 +25,9 @@ kubectl -n kube-system get pods -l app=multus
 kubectl -n kube-system top pod -l app=multus --containers
 ```
 
-Rollback is to remove the `platform-multus` Argo CD Application only after all
-workloads that require Multus have been removed.
+To roll back the version, restore both image references to
+`v4.2.4-thick@sha256:3c20900b5381fac7f9cbbdfac8370ea10a2f6ed7fbecc678384a9db57047abb1`
+and remove `connectionLimit` from `multus-daemon-config` in the same change.
+
+Removing the `platform-multus` Argo CD Application removes the service; it is
+safe only after all workloads that require Multus have been removed.
