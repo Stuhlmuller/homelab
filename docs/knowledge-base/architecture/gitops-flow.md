@@ -86,6 +86,14 @@ fields remain declarative. Production logs can include Terragrunt's internal
 `tofu apply` subprocess even though the operator entrypoint remains the
 Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
 
+Ordinary workloads use the `homelab-workloads` AppProject when their rendered
+resources need no cluster scope. Its first tranche is Dispatcharr, OpenClaw,
+Policy Bot, and Prowlarr. Platform controllers, namespace-owning applications,
+and applications with audited cluster-resource requirements remain in the
+`homelab` project. `n8n-postgres` remains there because its existing managed
+namespace metadata requires access to the cluster-scoped `automation`
+Namespace.
+
 `platform-crossplane` currently installs only Crossplane core through the
 upstream Helm chart. Before Argo CD owns Crossplane Provider, Composition, or
 managed-resource manifests, add the Crossplane-recommended Argo CD tracking and
