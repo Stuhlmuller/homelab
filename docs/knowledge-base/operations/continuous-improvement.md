@@ -61,7 +61,9 @@ policy`.
 - **Status:** implemented; rollout verification pending
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
-  run for 20 days because every pod was pinned to NotReady `zimaboard-0`; its
+  run for 20 days. A stale router control endpoint caused the earlier failures;
+  after PR `#734` replaced it with IGD discovery, the repaired jobs could not
+  schedule because their only target, `zimaboard-0`, was NotReady. The
   86,400-second lease had expired. Direct TLS probes to NodePort `30443` on
   Ready `zimaboard-1` at `10.1.0.201` returned the expected unauthenticated
   `grpc-status: 16`. Desired state now runs the host-networked lease job on
