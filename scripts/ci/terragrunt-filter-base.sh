@@ -68,7 +68,13 @@ terragrunt_stack_unit_paths_at_ref() {
 
 terragrunt_stack_changed() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
+  local generated_group="${1:-}"
   local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
+  local paths=(IaC/terragrunt.stack.hcl IaC/.catalog IaC/modules)
+
+  if [[ -n "$generated_group" ]]; then
+    paths+=("$generated_group")
+  fi
 
   if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
     return 0
@@ -86,13 +92,14 @@ terragrunt_stack_changed() {
     return 0
   fi
 
-  ! git diff --quiet "$base_ref" "$head_ref" -- IaC/terragrunt.stack.hcl IaC/.catalog IaC/modules
+  ! git diff --quiet "$base_ref" "$head_ref" -- "${paths[@]}"
 }
 
 terragrunt_changed_filter() {
   local all_filter="$1"
+  local generated_group="${all_filter%/*}"
 
-  if terragrunt_stack_changed; then
+  if terragrunt_stack_changed "$generated_group"; then
     printf '*\n'
   else
     printf '%s | [main...HEAD]\n' "$all_filter"
