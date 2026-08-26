@@ -135,6 +135,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-github)
       update_github="false"
+      delete_user_sessions="false"
       shift
       ;;
     --dry-run)
@@ -334,22 +335,6 @@ delete_user_sessions_for_user() {
   done
 }
 
-if [[ "$delete_user_sessions" == "true" ]]; then
-  delete_user_sessions_for_user
-fi
-
-if [[ "$rotate_credential" != "true" ]]; then
-  echo "Octelium user session cleanup complete."
-  exit 0
-fi
-
-credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
-cleanup() {
-  rm -f "$credential_json"
-}
-trap cleanup EXIT
-chmod 0600 "$credential_json"
-
 credential_exists="false"
 existing_credential_json=""
 ensure_existing_credential_spec() {
@@ -415,19 +400,78 @@ create_args=(
   -o json
 )
 
-if existing_credential_json="$(run_octeliumctl get cred "$credential_name" --domain "$domain" -o json 2>/dev/null)"; then
-  credential_exists="true"
-  if [[ "$update_github" != "true" ]]; then
-    echo "error: refusing to rotate existing credential ${credential_name} while GitHub secret update is disabled" >&2
+if [[ "$rotate_credential" == "true" ]]; then
+  credentials_json=""
+  if ! credentials_json="$(
+    run_octeliumctl get creds \
+      --items-per-page 1000 \
+      --domain "$domain" \
+      -o json 2>&1
+  )"; then
+    echo "error: could not list Octelium credentials before session reset" >&2
+    printf '%s\n' "$credentials_json" >&2
     exit 1
   fi
-  ensure_existing_credential_spec
+
+  if ! grep -Eq '^[[:space:]]*No Credentials found[[:space:]]*$' <<<"$credentials_json"; then
+    if ! jq -e 'type == "object" and (.items | type == "array")' >/dev/null 2>&1 <<<"$credentials_json"; then
+      echo "error: octeliumctl returned non-JSON credential output" >&2
+      printf '%s\n' "$credentials_json" >&2
+      exit 1
+    fi
+
+    credential_count="$(
+      jq -r \
+        --arg name "$credential_name" \
+        '[.items[] | select(.metadata.name == $name)] | length' \
+        <<<"$credentials_json"
+    )"
+    if [[ "$credential_count" -gt 1 ]]; then
+      echo "error: multiple Octelium credentials named ${credential_name}" >&2
+      exit 1
+    fi
+    if [[ "$credential_count" -eq 1 ]]; then
+      credential_exists="true"
+      existing_credential_json="$(
+        jq -c \
+          --arg name "$credential_name" \
+          '.items[] | select(.metadata.name == $name)' \
+          <<<"$credentials_json"
+      )"
+    fi
+  fi
+
+  if [[ "$credential_exists" == "true" ]]; then
+    if [[ "$update_github" != "true" ]]; then
+      echo "error: refusing to rotate existing credential ${credential_name} while GitHub secret update is disabled" >&2
+      exit 1
+    fi
+    ensure_existing_credential_spec
+    create_args+=(--rotate)
+  fi
+fi
+
+if [[ "$delete_user_sessions" == "true" ]]; then
+  delete_user_sessions_for_user
+fi
+
+if [[ "$rotate_credential" != "true" ]]; then
+  echo "Octelium user session cleanup complete."
+  exit 0
+fi
+
+credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
+cleanup() {
+  rm -f "$credential_json"
+}
+trap cleanup EXIT
+chmod 0600 "$credential_json"
+
+if [[ "$credential_exists" == "true" ]]; then
   echo "Rotating existing Octelium credential ${credential_name}..."
-  create_args+=(--rotate)
 else
   echo "Creating Octelium credential ${credential_name}..."
 fi
-
 run_octeliumctl "${create_args[@]}" "$credential_name" >"$credential_json"
 
 credential_token="$(
