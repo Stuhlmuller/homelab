@@ -1,6 +1,6 @@
 ---
-# Temporary: remove after a native dataplane node is Ready and the eight
-# package-managed Deployments represented here have Ready replicas.
+# Temporary: use the capacity, 24-hour stability, and direct native Pod-probe
+# removal gate in docs/knowledge-base/architecture/cluster-topology.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
