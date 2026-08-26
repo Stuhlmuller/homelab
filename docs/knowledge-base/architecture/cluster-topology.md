@@ -40,6 +40,10 @@ Terragrunt manages `octelium.com/node-mode-cordium=` on `zimaboard-1` because
 Cordium-generated Workspace Pods require that selector. Of the worker nodes,
 `zimaboard-1` has enough memory for the default Workspace limit and lower
 reserved load than `zimaboard-0`; `zimaboard-2` is too small.
+Octelium dataplane workloads are eligible on `zimaboard-0` and the 16 GB
+`acer` node. The 2 GB `zimaboard-2` node is deliberately excluded because a
+2026-08-26 failover scheduled more than 50 generated proxies there and made its
+kubelet unresponsive within a minute.
 Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.

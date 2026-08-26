@@ -518,9 +518,12 @@ Terragrunt/OpenTofu manages the Octelium node labels:
 
 | Node | Octelium label |
 | --- | --- |
+| `acer` | `octelium.com/node-mode-dataplane=` |
 | `zimaboard-0` | `octelium.com/node-mode-dataplane=` |
 | `zimaboard-1` | `octelium.com/node-mode-controlplane=`, `octelium.com/node-mode-cordium=` |
-| `zimaboard-2` | `octelium.com/node-mode-dataplane=` |
+
+`zimaboard-2` is intentionally ineligible for dataplane workloads. Its 2 GB
+memory capacity cannot absorb the generated service proxies during a failover.
 
 Argo CD manages:
 

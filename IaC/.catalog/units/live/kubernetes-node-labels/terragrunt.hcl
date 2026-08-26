@@ -12,15 +12,15 @@ terraform {
 
 inputs = {
   node_labels = {
+    acer = {
+      "octelium.com/node-mode-dataplane" = ""
+    }
     zimaboard-0 = {
       "octelium.com/node-mode-dataplane" = ""
     }
     zimaboard-1 = {
       "octelium.com/node-mode-controlplane" = ""
       "octelium.com/node-mode-cordium"      = ""
-    }
-    zimaboard-2 = {
-      "octelium.com/node-mode-dataplane" = ""
     }
   }
 }
