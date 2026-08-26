@@ -41,8 +41,9 @@ compare differently from the live object's absent field.
 container for the 2026-08-26 DuckDB recovery. It renames the unreplayable
 `store.db.wal` to `store.db.wal.quarantined-20260826` before startup and never
 deletes it. The earlier `20260821` marker and quarantined WAL remain untouched.
-Remove the init container only after rscstore is healthy and the preserved WAL
-is no longer needed for forensic recovery.
+If the new quarantine already exists while its completion marker is absent, the
+init container fails instead of overwriting evidence. Remove it only after
+rscstore is healthy and the preserved WAL is no longer needed for recovery.
 
 The `svc-console-octelium`, `svc-dirsync-octelium`,
 `svc-enterprise-octelium-api`, and `svc-public-octelium` Deployments are

@@ -81,7 +81,8 @@ The latest rscstore recovery preserves the unreplayable 2026-08-26 DuckDB WAL
 by renaming it on the retained PVC before starting from the last valid
 checkpoint. A new completion marker leaves the earlier 2026-08-21 recovery
 artifacts untouched and makes retries read-only; quarantined WALs are not
-deleted automatically.
+deleted automatically. Recovery fails closed rather than overwrite a dated
+quarantine if its completion marker is missing.
 
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
