@@ -36,14 +36,27 @@ done < <(
 )
 echo "::endgroup::"
 
-echo "::group::Octelium CI credential lifetime"
+echo "::group::Octelium CI credential lifetime and scope"
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
     ($users | length) == 1 and
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
-    $users[0].spec.session.accessTokenDuration == {"days": 30}
+    $users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($policies | length) == 1 and
+    $policies[0].spec.rules == [{
+      "name": "kubernetes-api-service",
+      "effect": "ALLOW",
+      "condition": {"all": {"of": [
+        {"match": "ctx.user.metadata.name == \"homelab-ci\""},
+        {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+        {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+        {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+        {"match": "ctx.service.spec.mode == \"KUBERNETES\""}
+      ]}}
+    }]
   ' >/dev/null
 echo "::endgroup::"
 

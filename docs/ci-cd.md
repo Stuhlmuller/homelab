@@ -278,9 +278,19 @@ CI receives Octelium `401` from authenticated `kubectl` against
 `scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
 failure before rotating. Reconcile the upstream kubeconfig Secret when its
 Kubernetes credential changes.
-If the credential must be recovered, apply
-`docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
-credential to `homelab-ci-recovery` with the same helper. The recovery user is
+If the credential must be recovered, apply the recovery catalog and use its
+distinct User, Policy, and credential name:
+
+```sh
+octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-ci-recovery.yaml
+scripts/octelium-ci-credential.sh \
+  --skip-catalog \
+  --user homelab-ci-recovery \
+  --credential-name homelab-ci-recovery \
+  --policy ci-recovery-access
+```
+
+The helper updates the same GitHub environment secrets. The recovery user is
 limited to the same public Kubernetes Service.
 
 ## AWS Setup

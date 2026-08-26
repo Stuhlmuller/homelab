@@ -287,6 +287,32 @@ if [[ "$apply_catalog" == "true" ]]; then
   retire_legacy_ci_service
 fi
 
+validate_target_user() {
+  local user_json
+
+  if [[ "$rotate_credential" != "true" && "$delete_user_sessions" != "true" ]]; then
+    return 0
+  fi
+
+  if ! user_json="$(
+    run_octeliumctl get user "$user_name" --domain "$domain" -o json 2>&1
+  )"; then
+    echo "error: could not read Octelium User ${user_name}" >&2
+    printf '%s\n' "$user_json" >&2
+    exit 1
+  fi
+  if ! jq -e \
+    --arg user "$user_name" \
+    'type == "object" and .metadata.name == $user and .spec.type == "WORKLOAD"' \
+    >/dev/null 2>&1 <<<"$user_json"; then
+    echo "error: refusing to rotate or delete sessions for non-WORKLOAD User ${user_name}" >&2
+    exit 1
+  fi
+
+  echo "Verified Octelium User ${user_name} is a dedicated WORKLOAD User."
+}
+
+validate_target_user
 preflight_github_secret_targets
 
 delete_user_sessions_for_user() {
@@ -306,8 +332,10 @@ delete_user_sessions_for_user() {
     echo "No Octelium sessions found for User ${user_name}."
     return 0
   fi
-  if ! jq -e . >/dev/null 2>&1 <<<"$sessions_json"; then
-    echo "error: octeliumctl returned non-JSON session output" >&2
+  if ! jq -e \
+    'type == "object" and (.items | type == "array") and all(.items[]; (.metadata.name | type == "string" and length > 0))' \
+    >/dev/null 2>&1 <<<"$sessions_json"; then
+    echo "error: octeliumctl returned invalid session output" >&2
     printf '%s\n' "$sessions_json" >&2
     exit 1
   fi
@@ -318,7 +346,7 @@ delete_user_sessions_for_user() {
     fi
   done < <(
     jq -r '
-      .items[]? |
+      .items[] |
       .metadata.name
     ' <<<"$sessions_json"
   )
