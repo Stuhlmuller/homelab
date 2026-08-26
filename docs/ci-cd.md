@@ -259,10 +259,10 @@ Run rotation in a quiet window: deleting the old Session invalidates the
 current bearer before the two GitHub environment secrets are updated. After
 token generation, the helper retries each secret write until both environments
 hold the replacement; if interrupted, rerun the helper.
-When recovering through a temporary Octelium CLI session, pass that session
-directory with `--homedir /tmp/octelium-admin`. If the public Octelium API path
-is not carrying authenticated admin CLI calls reliably, point `--octelium-proxy`
-at a local CONNECT proxy that forwards `octelium-api.stinkyboi.com:443` to the
+When recovering through a temporary Octelium CLI session, pass the unique home
+created by the recovery block below. If the public Octelium API path is not
+carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
+local CONNECT proxy that forwards `octelium-api.stinkyboi.com:443` to the
 in-cluster Istio gateway.
 
 Avoid running raw `octeliumctl create cred` in shared terminals or CI logs
@@ -295,8 +295,12 @@ only after Octelium confirms logout:
   close_admin_session() {
     exit_status=$?
     trap - EXIT
-    if ! octeliumctl --homedir "$octelium_homedir" logout --domain "$domain"; then
-      echo "error: logout failed; retained ${octelium_homedir} for retry" >&2
+    if ! octeliumctl \
+      --homedir "$octelium_homedir" \
+      --domain "$domain" \
+      --logout \
+      get clusterconfig >/dev/null; then
+      echo "error: server revocation failed; retained ${octelium_homedir} for retry" >&2
       exit 1
     fi
     rm -rf -- "$octelium_homedir"
@@ -311,10 +315,53 @@ only after Octelium confirms logout:
 
 The helper applies the primary catalog with checked resource verification,
 invalidates its stale Sessions, and writes the replacement token to both GitHub
-environments. Verify the exact `main` commit with the Homelab Diagnostics and
-Terragrunt Apply workflows. If either fails because the token is unusable,
-rerun the same recovery block; no second short-lived recovery identity is
-needed.
+environments. Dispatch and bind verification to the exact `main` commit:
+
+```sh
+set -euo pipefail
+github_repo=Stuhlmuller/homelab
+main_sha="$(gh api "repos/${github_repo}/commits/main" --jq .sha)"
+
+run_and_watch() {
+  workflow="$1"
+  before_id="$(
+    gh run list \
+      --repo "$github_repo" \
+      --workflow "$workflow" \
+      --event workflow_dispatch \
+      --limit 1 \
+      --json databaseId \
+      --jq '.[0].databaseId // 0'
+  )"
+  gh workflow run "$workflow" --repo "$github_repo" --ref main
+
+  run_id=""
+  for _ in {1..30}; do
+    run_id="$(
+      gh run list \
+        --repo "$github_repo" \
+        --workflow "$workflow" \
+        --event workflow_dispatch \
+        --commit "$main_sha" \
+        --limit 20 \
+        --json databaseId \
+        --jq "[.[] | select(.databaseId > ${before_id})] | max_by(.databaseId).databaseId // empty"
+    )"
+    test -z "$run_id" || break
+    sleep 2
+  done
+  test -n "$run_id"
+  test "$(gh run view "$run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+  gh run watch "$run_id" --repo "$github_repo" --exit-status
+}
+
+run_and_watch homelab-diagnostics.yml
+run_and_watch terragrunt-apply.yml
+```
+
+Both exact-head runs must exit successfully. If either fails because the token
+is unusable, rerun the same recovery block; no second short-lived recovery
+identity is needed.
 
 ## AWS Setup
 
