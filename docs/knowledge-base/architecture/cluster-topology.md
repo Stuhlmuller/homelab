@@ -70,11 +70,11 @@ label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 
 While both labeled dataplane nodes are NotReady,
 `clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs only
-the Octelium ingress, OctoBot service proxy, and CI Kubernetes API service proxy
-on `acer`. Their existing Service selector labels restore those paths without a
-new Service, ingress, port, node label, or controller-owned Deployment patch.
-Seven-day measurements put their combined memory near 146 MiB at p95 and
-166 MiB at maximum; each temporary container is capped at 256 MiB.
+the Octelium ingress, shared Octovigil authorization service, OctoBot service
+proxy, and CI Kubernetes API service proxy on `acer`. Their existing Service
+selector labels restore those paths without a new Service, ingress, port, node
+label, or controller-owned Deployment patch. Each temporary container is capped
+at 256 MiB.
 
 The two temporary Vigil Pods intentionally use only the primary Kubernetes
 network. The ingress Envoy resolves their existing Kubernetes Services, and
@@ -84,11 +84,12 @@ from the control-plane node.
 
 Remove the file from the Enterprise Kustomization after a real dataplane node is
 Ready and the package-managed `octelium-ingress-dataplane`,
-`svc-octobot-homelab`, and `svc-kubernetes-api-ci-default` Deployments each have
-a Ready replica. The `octelium-enterprise` Application prunes the three uniquely
-named temporary Deployments. Then verify the two original Services have only
-native ready endpoints, `https://octobot.stinkyboi.com` no longer returns 502,
-and the CI Kubernetes API preflight succeeds.
+`octelium-octovigil`, `svc-octobot-default`, and
+`svc-kubernetes-api-ci-default` Deployments each have a Ready replica. The
+`octelium-enterprise` Application prunes the four uniquely named temporary
+Deployments. Then verify the three original Services have only native ready
+endpoints, `https://octobot.stinkyboi.com` no longer returns 502, and the CI
+Kubernetes API preflight succeeds.
 
 Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
 capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)

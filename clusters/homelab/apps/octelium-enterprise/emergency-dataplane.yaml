@@ -1,5 +1,5 @@
 ---
-# Temporary: remove after a native dataplane node is Ready and the three
+# Temporary: remove after a native dataplane node is Ready and the four
 # package-managed Deployments represented here have Ready replicas.
 apiVersion: apps/v1
 kind: Deployment
@@ -98,7 +98,85 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: emergency-octelium-octobot
+  name: emergency-octelium-octovigil
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Octovigil image declares non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The native octelium-octovigil NetworkPolicy selects this temporary replica.
+  labels:
+    app: octelium
+    octelium.com/component: octovigil
+    octelium.com/component-type: cluster
+    homelab.rst.io/emergency-dataplane: octovigil
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: octovigil
+      octelium.com/component-type: cluster
+      homelab.rst.io/emergency-dataplane: octovigil
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: octovigil
+        octelium.com/component-type: cluster
+        homelab.rst.io/emergency-dataplane: octovigil
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: octovigil
+          image: ghcr.io/octelium/octelium-octovigil:0.35.0@sha256:907e4c87e6e3923d52bb14143c2a5156afc6f56c7001994034f232396182fb99
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: grpc
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            grpc:
+              port: 49090
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49090
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-octobot-public
   namespace: octelium
   annotations:
     checkov.io/skip1: CKV_K8S_40=The Vigil image declares non-root UID 3454; this temporary copy preserves the validated package identity.
@@ -107,10 +185,10 @@ metadata:
     app: octelium
     octelium.com/component: svc
     octelium.com/component-type: cluster
-    octelium.com/namespace: homelab
-    octelium.com/svc: octobot.homelab
-    octelium.com/svc-uid: b8320007-9841-4bdf-85cc-93a904b90574
-    homelab.rst.io/emergency-dataplane: octobot
+    octelium.com/namespace: default
+    octelium.com/svc: octobot.default
+    octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
+    homelab.rst.io/emergency-dataplane: octobot-public
 spec:
   replicas: 1
   revisionHistoryLimit: 2
@@ -121,20 +199,20 @@ spec:
       app: octelium
       octelium.com/component: svc
       octelium.com/component-type: cluster
-      octelium.com/namespace: homelab
-      octelium.com/svc: octobot.homelab
-      octelium.com/svc-uid: b8320007-9841-4bdf-85cc-93a904b90574
-      homelab.rst.io/emergency-dataplane: octobot
+      octelium.com/namespace: default
+      octelium.com/svc: octobot.default
+      octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
+      homelab.rst.io/emergency-dataplane: octobot-public
   template:
     metadata:
       labels:
         app: octelium
         octelium.com/component: svc
         octelium.com/component-type: cluster
-        octelium.com/namespace: homelab
-        octelium.com/svc: octobot.homelab
-        octelium.com/svc-uid: b8320007-9841-4bdf-85cc-93a904b90574
-        homelab.rst.io/emergency-dataplane: octobot
+        octelium.com/namespace: default
+        octelium.com/svc: octobot.default
+        octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
+        homelab.rst.io/emergency-dataplane: octobot-public
     spec:
       automountServiceAccountToken: false
       nodeSelector:
@@ -153,9 +231,9 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
-              value: b8320007-9841-4bdf-85cc-93a904b90574
+              value: edf7e56a-34bd-475a-9865-e7a36525c7df
             - name: OCTELIUM_SVC_NAME
-              value: octobot.homelab
+              value: octobot.default
             - name: OCTELIUM_REGION_NAME
               value: default
             - name: OCTELIUM_REGION_UID
