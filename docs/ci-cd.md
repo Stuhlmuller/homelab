@@ -282,8 +282,12 @@ If the credential must be recovered, apply the recovery catalog and use its
 distinct User, Policy, and credential name:
 
 ```sh
-octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-ci-recovery.yaml
+octelium_homedir=/tmp/octelium-admin
+mkdir -p "$octelium_homedir"
+octeliumctl --homedir "$octelium_homedir" login --domain stinkyboi.com --web
+octeliumctl --homedir "$octelium_homedir" apply --domain stinkyboi.com docs/examples/octelium/homelab-ci-recovery.yaml
 scripts/octelium-ci-credential.sh \
+  --homedir "$octelium_homedir" \
   --skip-catalog \
   --user homelab-ci-recovery \
   --credential-name homelab-ci-recovery \
@@ -296,27 +300,77 @@ Session expires after two hours. Before then, restore the primary credential,
 verify both GitHub environments, and remove the temporary recovery resources:
 
 ```sh
-scripts/octelium-ci-credential.sh --homedir /tmp/octelium-admin
+set -euo pipefail
 
-primary_sha="$(gh api repos/Stuhlmuller/homelab/commits/main --jq .sha)"
-gh workflow run homelab-diagnostics.yml --ref main
-gh workflow run terragrunt-apply.yml --ref main
-gh run list --workflow homelab-diagnostics.yml --commit "$primary_sha" --event workflow_dispatch --limit 1 --json status,conclusion,url --jq '.[0]'
-gh run list --workflow terragrunt-apply.yml --commit "$primary_sha" --event workflow_dispatch --limit 1 --json status,conclusion,url --jq '.[0]'
+octelium_homedir=/tmp/octelium-admin
+github_repo=Stuhlmuller/homelab
+scripts/octelium-ci-credential.sh --homedir "$octelium_homedir"
+
+latest_workflow_run_id() {
+  gh run list \
+    --repo "$github_repo" \
+    --workflow "$1" \
+    --event workflow_dispatch \
+    --limit 1 \
+    --json databaseId \
+    --jq '.[0].databaseId // 0'
+}
+
+find_new_workflow_run_id() {
+  local workflow="$1"
+  local before_id="$2"
+  local expected_sha="$3"
+  local run_id
+
+  for _ in {1..30}; do
+    if run_id="$(
+      gh run list \
+        --repo "$github_repo" \
+        --workflow "$workflow" \
+        --event workflow_dispatch \
+        --limit 20 \
+        --json databaseId,headSha |
+        jq -er \
+          --argjson before_id "$before_id" \
+          --arg expected_sha "$expected_sha" \
+          '[.[] | select(.databaseId > $before_id and .headSha == $expected_sha)] | max_by(.databaseId).databaseId'
+    )"; then
+      printf '%s\n' "$run_id"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "error: no new ${workflow} run appeared for ${expected_sha}" >&2
+  return 1
+}
+
+diagnostics_before_id="$(latest_workflow_run_id homelab-diagnostics.yml)"
+apply_before_id="$(latest_workflow_run_id terragrunt-apply.yml)"
+primary_sha="$(gh api "repos/${github_repo}/commits/main" --jq .sha)"
+
+gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main
+gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main
+
+diagnostics_run_id="$(find_new_workflow_run_id homelab-diagnostics.yml "$diagnostics_before_id" "$primary_sha")"
+apply_run_id="$(find_new_workflow_run_id terragrunt-apply.yml "$apply_before_id" "$primary_sha")"
+test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$primary_sha"
+test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$primary_sha"
+gh run watch "$diagnostics_run_id" --repo "$github_repo" --exit-status
+gh run watch "$apply_run_id" --repo "$github_repo" --exit-status
 ```
 
-Repeat the two `gh run list` commands until both report `completed` and
-`success`, then clean up:
+Only after both exact runs succeed, clean up:
 
 ```sh
+octelium_homedir=/tmp/octelium-admin
 scripts/octelium-ci-credential.sh \
-  --homedir /tmp/octelium-admin \
+  --homedir "$octelium_homedir" \
   --skip-catalog \
   --user homelab-ci-recovery \
   --delete-user-sessions-only
-octeliumctl --homedir /tmp/octelium-admin delete credential homelab-ci-recovery --domain stinkyboi.com
-octeliumctl --homedir /tmp/octelium-admin delete user homelab-ci-recovery --domain stinkyboi.com
-octeliumctl --homedir /tmp/octelium-admin delete policy ci-recovery-access --domain stinkyboi.com
+octeliumctl --homedir "$octelium_homedir" delete credential homelab-ci-recovery --domain stinkyboi.com
+octeliumctl --homedir "$octelium_homedir" delete user homelab-ci-recovery --domain stinkyboi.com
+octeliumctl --homedir "$octelium_homedir" delete policy ci-recovery-access --domain stinkyboi.com
 ```
 
 ## AWS Setup
