@@ -1,55 +1,9 @@
----
+# Keep this until the Terragrunt-owned Application has switched to the
+# marker-only retirement source. Existing live Applications still read this
+# file directly from main, so a merge stops the controller even if that apply
+# is delayed.
 crds:
   install: true
   keep: true
 
-createClusterRoles: true
-
-config:
-  argocd.namespace: argocd
-  watch.namespaces: argocd
-  interval: 12h
-  log.level: info
-  kube.events: true
-  max_concurrent_apps: "5"
-  max_concurrent_reconciles: "2"
-  git.user: homelab-argocd-image-updater
-  git.email: homelab-argocd-image-updater@example.invalid
-  git.commit-sign-off: false
-  git.commit-message-template: |
-    chore: update images for {{ .AppName }}
-
-    {{ range .AppChanges -}}
-    Updates {{ .Image }} from {{ .OldTag }} to {{ .NewTag }}.
-    {{ end -}}
-  registries:
-    - name: Docker Hub
-      api_url: https://registry-1.docker.io
-      prefix: docker.io
-      default: true
-      defaultns: library
-      ping: true
-    - name: GitHub Container Registry
-      api_url: https://ghcr.io
-      prefix: ghcr.io
-      ping: true
-    - name: Quay
-      api_url: https://quay.io
-      prefix: quay.io
-      ping: false
-    - name: LinuxServer
-      api_url: https://lscr.io
-      prefix: lscr.io
-      ping: false
-
-metrics:
-  enabled: true
-  serviceMonitor:
-    enabled: false
-
-resources:
-  requests:
-    cpu: 25m
-    memory: 64Mi
-  limits:
-    memory: 256Mi
+replicaCount: 0

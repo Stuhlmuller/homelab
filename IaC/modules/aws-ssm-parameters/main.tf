@@ -46,9 +46,12 @@ resource "aws_kms_alias" "this" {
 }
 
 locals {
-  effective_kms_key_id   = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
-  effective_kms_key_arn  = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
-  parameter_reader_names = setunion(toset(keys(var.parameters)), var.additional_parameter_reader_names)
+  effective_kms_key_id  = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
+  effective_kms_key_arn = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
+  parameter_reader_names = setunion(toset([
+    for name, parameter in var.parameters : name
+    if parameter.reader_access
+  ]), var.additional_parameter_reader_names)
   parameter_reader_policy_chunks = length(var.parameter_reader_iam_user_names) > 0 ? {
     for index, names in chunklist(sort(tolist(local.parameter_reader_names)), 25) :
     format("%02d", index) => names

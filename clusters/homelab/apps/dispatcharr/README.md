@@ -16,9 +16,11 @@ manager at `https://dispatcharr.stinkyboi.com`.
 
 The modular mode avoids the upstream all-in-one container's embedded PostgreSQL
 ownership reconciliation under `/data/db`, which is not compatible with the
-QNAP NFS export's squashed UID behavior. The Pod still mounts a memory-backed
-`/dev/shm` volume larger than the container runtime default for worker and
-stream-processing scratch space.
+QNAP NFS export's squashed UID behavior. PostgreSQL readiness and liveness
+execute `SELECT 1`, so accepting a socket without completing database work does
+not count as healthy. The Pod still mounts a memory-backed `/dev/shm` volume
+larger than the container runtime default for worker and stream-processing
+scratch space.
 
 ## Storage
 
@@ -26,8 +28,8 @@ The `data` PVC uses `nfs-default` and stores Dispatcharr uploads, file-backed
 runtime data, and first-run admin configuration. PostgreSQL data lives in the
 dedicated `dispatcharr-postgres` PVC. Treat both as production state and include
 them with normal NFS backup coverage before relying on the service. The database
-has a 30-minute startup window and 120-second termination grace so NFS-backed
-crash recovery can complete without a liveness restart loop.
+has 30-minute startup and runtime liveness windows plus a 120-second termination
+grace so NFS-backed recovery can complete without a restart loop.
 
 ## First Run
 

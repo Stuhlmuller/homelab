@@ -18,9 +18,9 @@ Raw manifests are wired through each app's Argo CD multi-source configuration.
 No file in this tree may contain secret values, private keys, raw certificate
 material, private kubeconfigs, or private hostnames.
 
-Repo-declared workload images that should move automatically must also be listed
-in `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`; Image Updater
-opens pull requests for those values instead of relying on live-only overrides.
+Renovate opens reviewed pull requests for repo-declared workload images. Every
+committed image must remain pinned as `tag@sha256:digest`; do not rely on
+live-only Argo CD image overrides.
 
 Human app access targets the Octelium `.homelab` service catalog in
 `docs/examples/octelium/homelab-services.yaml`. App `VirtualService` objects are
