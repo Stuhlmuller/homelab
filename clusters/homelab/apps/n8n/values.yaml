@@ -6,6 +6,12 @@ controllers:
       identifier: n8n
     pod:
       automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
     strategy: Recreate
     initContainers:
       wait-for-postgres:
@@ -47,6 +53,9 @@ controllers:
           capabilities:
             drop:
               - ALL
+          runAsGroup: 65534
+          runAsNonRoot: true
+          runAsUser: 65534
     containers:
       app:
         image:
@@ -99,6 +108,11 @@ controllers:
             memory: 512Mi
           limits:
             memory: 2Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         probes:
           startup:
             enabled: true
