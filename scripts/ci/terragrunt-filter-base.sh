@@ -90,10 +90,12 @@ terragrunt_stack_changed() {
 }
 
 terragrunt_changed_filter() {
+  local all_filter="$1"
+
   if terragrunt_stack_changed; then
     printf '*\n'
   else
-    printf '* | [main...HEAD]\n'
+    printf '%s | [main...HEAD]\n' "$all_filter"
   fi
 }
 

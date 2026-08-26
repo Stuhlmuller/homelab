@@ -236,8 +236,9 @@ CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
 changes, the scripts plan or apply the matching generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files. The group filter is the local `*` because each command runs from its
-generated-unit root; a repository-relative filter discovers no units.
+files. Full-catalog refreshes use the local `*` because each command runs from
+its generated-unit root. Affected-only runs combine the repository-relative
+group with the Git selector so Terragrunt cannot queue another unit group.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
