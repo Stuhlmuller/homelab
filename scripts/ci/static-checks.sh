@@ -60,6 +60,26 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   ' >/dev/null
 echo "::endgroup::"
 
+echo "::group::Exact workflow dispatch commits"
+for workflow in \
+  .github/workflows/homelab-diagnostics.yml \
+  .github/workflows/terragrunt-apply.yml; do
+  yq -o=json '.' "$workflow" |
+    jq -e '
+      .on.workflow_dispatch.inputs.expected_sha.required == true and
+      ([
+        .jobs[].steps[]? |
+        select(
+          .name == "Verify Dispatch Commit" and
+          .env.ACTUAL_SHA == "${{ github.sha }}" and
+          .env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+          (.run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
+        )
+      ] | length) == 1
+    ' >/dev/null
+done
+echo "::endgroup::"
+
 echo "::group::Renovate config"
 jq empty renovate.json
 echo "::endgroup::"

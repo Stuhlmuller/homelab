@@ -2,6 +2,11 @@ name: Homelab Diagnostics
 
 on:
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact main commit to diagnose
+        required: true
+        type: string
 
 permissions: {}
 
@@ -17,6 +22,12 @@ jobs:
       contents: read
     timeout-minutes: 15
     steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:

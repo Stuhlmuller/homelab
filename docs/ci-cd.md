@@ -322,41 +322,73 @@ set -euo pipefail
 github_repo=Stuhlmuller/homelab
 main_sha="$(gh api "repos/${github_repo}/commits/main" --jq .sha)"
 
-run_and_watch() {
-  workflow="$1"
-  before_id="$(
-    gh run list \
-      --repo "$github_repo" \
-      --workflow "$workflow" \
-      --event workflow_dispatch \
-      --limit 1 \
-      --json databaseId \
-      --jq '.[0].databaseId // 0'
-  )"
-  gh workflow run "$workflow" --repo "$github_repo" --ref main
+latest_run_id() {
+  gh run list \
+    --repo "$github_repo" \
+    --workflow "$1" \
+    --event workflow_dispatch \
+    --limit 1 \
+    --json databaseId \
+    --jq '.[0].databaseId // 0'
+}
 
-  run_id=""
+find_new_run_id() {
+  local workflow="$1"
+  local before_id="$2"
+  local run_id
   for _ in {1..30}; do
     run_id="$(
       gh run list \
         --repo "$github_repo" \
         --workflow "$workflow" \
         --event workflow_dispatch \
-        --commit "$main_sha" \
         --limit 20 \
         --json databaseId \
         --jq "[.[] | select(.databaseId > ${before_id})] | max_by(.databaseId).databaseId // empty"
     )"
-    test -z "$run_id" || break
+    if test -n "$run_id"; then
+      printf '%s\n' "$run_id"
+      return 0
+    fi
     sleep 2
   done
-  test -n "$run_id"
-  test "$(gh run view "$run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
-  gh run watch "$run_id" --repo "$github_repo" --exit-status
+  echo "error: no new ${workflow} run appeared" >&2
+  return 1
 }
 
-run_and_watch homelab-diagnostics.yml
-run_and_watch terragrunt-apply.yml
+wait_for_success() {
+  local run_id="$1"
+  local state
+  for _ in {1..360}; do
+    state="$(
+      gh run view "$run_id" \
+        --repo "$github_repo" \
+        --json conclusion,status \
+        --jq '.status + " " + (.conclusion // "")'
+    )"
+    case "$state" in
+      "completed success") return 0 ;;
+      "completed "*) echo "error: run ${run_id} ended ${state}" >&2; return 1 ;;
+    esac
+    sleep 30
+  done
+  echo "error: run ${run_id} did not finish within three hours" >&2
+  return 1
+}
+
+diagnostics_before_id="$(latest_run_id homelab-diagnostics.yml)"
+apply_before_id="$(latest_run_id terragrunt-apply.yml)"
+gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main \
+  -f expected_sha="$main_sha"
+gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
+  -f expected_sha="$main_sha"
+
+diagnostics_run_id="$(find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id")"
+apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
+test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+wait_for_success "$diagnostics_run_id"
+wait_for_success "$apply_run_id"
 ```
 
 Both exact-head runs must exit successfully. If either fails because the token

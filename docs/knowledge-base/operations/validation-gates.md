@@ -150,6 +150,9 @@ CI/CD Octelium changes should also pass shell syntax checks for
 Session and access-token lifetimes before applying it with `octeliumctl`.
 Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
+The static gate also requires manual Homelab Diagnostics and Terragrunt Apply
+dispatches to carry an exact expected `main` SHA and fail before work when the
+resolved workflow commit differs.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
