@@ -82,10 +82,13 @@ the policy. Unauthenticated callback routes must also carry
 `homelab.rst.io/public-callback-reviewed: "true"`, and a non-empty
 `homelab.rst.io/public-callback-purpose`.
 
-The primary Istio ingressgateway Service remains a Tailscale `LoadBalancer`
-with `allocateLoadBalancerNodePorts: false`. A separate gateway-chart release
-and `octelium-api-gateway` TLS configuration expose fixed NodePort `30443`.
-Its workload selector and API-only `VirtualService` are separate from
+The primary `istio-ingressgateway` Service is `ClusterIP` only and has no
+Tailscale LoadBalancer. Octelium service proxies and `octelium-public` reach it
+through cluster DNS, so app routes cannot bypass Octelium through a tailnet
+device. The existing `tailnet-gateway` object keeps its legacy name but is only
+an internal Istio TLS-routing resource. A separate gateway-chart release and
+`octelium-api-gateway` TLS configuration expose fixed NodePort `30443`. Its
+workload selector and API-only `VirtualService` are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
 The router mapping exposes only public TCP/8443 and targets worker
 `zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.

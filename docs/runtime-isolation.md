@@ -121,7 +121,7 @@ workload that needs it.
 | `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`. | `scripts/octelium-cluster-bootstrap.sh` |
 | `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface. | `clusters/homelab/apps/octelium/namespace.yaml` |
 | `cordium` | Cordium-generated Workspace Pods run as privileged root containers with an unconfined AppArmor profile. | `clusters/homelab/apps/cordium/namespace.yaml` |
-| `tailscale` | Tailscale operator proxy Pods need privileged networking for connector and load-balancer devices. | `clusters/homelab/apps/tailscale/namespace.yaml` |
+| `tailscale` | The Tailscale exit-node Connector proxy needs privileged networking. | `clusters/homelab/apps/tailscale/namespace.yaml` |
 
 ## Baseline Workloads
 

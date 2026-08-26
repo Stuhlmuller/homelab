@@ -615,19 +615,21 @@ policy`.
 - **Next step:** keep this finding open until the migration applies, older S3
   versions of this stack's exact state object are removed, and the External
   Secrets IAM access key is rotated with a matching committed revision bump.
-- **Status:** open
+- **Status:** open; Kiali tailnet bypass fixed
 - **Area:** platform service / GitOps
 - **Evidence:** June 2026 security audit found remaining structural hardening
-  work: the shared Argo CD AppProject can still deploy cluster-scoped RBAC,
-  Kiali remains anonymous/view-only on the tailnet, several app-template
-  workloads need explicit restricted container security contexts. n8n is the
-  first app-template workload hardened with its upstream UID/GID `1000`,
-  `RuntimeDefault` seccomp, no privilege escalation, and no Linux capabilities.
+  work: the shared Argo CD AppProject can still deploy cluster-scoped RBAC and
+  several app-template workloads need explicit restricted container security
+  contexts. n8n is the first app-template workload hardened with its upstream
+  UID/GID `1000`, `RuntimeDefault` seccomp, no privilege escalation, and no
+  Linux capabilities. Kiali's anonymous/view-only UI is now reachable by humans
+  only after Octelium authentication; the former direct Tailscale LoadBalancer
+  path was removed by making the primary Istio gateway `ClusterIP` only.
 - **Risk:** these are reviewability, reconnaissance, and lateral-movement risks
   that are larger than a single safe patch.
-- **Next step:** split AppProjects, add Kiali identity controls, harden
-  the remaining compatible app-template values, and keep shared platform
-  changes small enough to validate independently.
+- **Next step:** split AppProjects, harden the remaining compatible app-template
+  values, and keep shared platform changes small enough to validate
+  independently.
 - **Status:** fixed
 - **Area:** infrastructure supply chain
 - **Evidence:** The Terragrunt catalog release tag `0.4.0` was verified with

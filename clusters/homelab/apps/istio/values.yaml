@@ -10,11 +10,7 @@ pilot:
 meshConfig:
   accessLogFile: /dev/stdout
 service:
-  allocateLoadBalancerNodePorts: false
-  annotations:
-    homelab.rst.io/pod-security: tailscale-proxy-requires-privileged
-    tailscale.com/hostname: homelab-istio
-  loadBalancerClass: tailscale
+  type: ClusterIP
 gateways:
   istio-ingressgateway:
     enabled: true
