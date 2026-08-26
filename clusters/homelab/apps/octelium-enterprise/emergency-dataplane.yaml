@@ -176,7 +176,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: emergency-octelium-octobot
+  name: emergency-octelium-octobot-public
   namespace: octelium
   annotations:
     checkov.io/skip1: CKV_K8S_40=The Vigil image declares non-root UID 3454; this temporary copy preserves the validated package identity.
@@ -188,7 +188,7 @@ metadata:
     octelium.com/namespace: default
     octelium.com/svc: octobot.default
     octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
-    homelab.rst.io/emergency-dataplane: octobot
+    homelab.rst.io/emergency-dataplane: octobot-public
 spec:
   replicas: 1
   revisionHistoryLimit: 2
@@ -202,7 +202,7 @@ spec:
       octelium.com/namespace: default
       octelium.com/svc: octobot.default
       octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
-      homelab.rst.io/emergency-dataplane: octobot
+      homelab.rst.io/emergency-dataplane: octobot-public
   template:
     metadata:
       labels:
@@ -212,7 +212,7 @@ spec:
         octelium.com/namespace: default
         octelium.com/svc: octobot.default
         octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
-        homelab.rst.io/emergency-dataplane: octobot
+        homelab.rst.io/emergency-dataplane: octobot-public
     spec:
       automountServiceAccountToken: false
       nodeSelector:
