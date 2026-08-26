@@ -58,22 +58,22 @@ policy`.
 
 ## Open Findings
 
-- **Status:** open; local proxy workaround verified
+- **Status:** implemented; rollout verification pending
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** During the 2026-08-25 NOFX catalog rollout,
   `octelium-api.stinkyboi.com` returned Cloudflare HTTP 522 after the protected
-  origin-rule workflow succeeded. The router refused the CronJob's hard-coded
-  `10.1.0.1:49152` control endpoint, while the dedicated
+  origin-rule workflow succeeded. The router refused the CronJob's former
+  hard-coded `10.1.0.1:49152` control endpoint, while the dedicated
   `10.1.0.200:30443` NodePort returned the expected unauthenticated
   `grpc-status: 16`. A TLS-preserving local CONNECT proxy to that NodePort
   allowed the signed PR `#719` catalog to apply and live verification to pass.
+  PR `#734` replaces the fixed SOAP endpoint with native IGD discovery while
+  preserving the required `zimaboard-0` source address.
 - **Risk:** Router control-port changes prevent `octelium-api-upnp` from
   renewing TCP/8443, leaving public CLI, VPN, and admin operations unavailable
   even while portal and app tunnel traffic remains healthy.
-- **Next step:** Replace the hard-coded UPnP control URL in
-  `clusters/homelab/apps/istio/octelium-api-upnp.yaml` with tested IGD
-  discovery that still originates from `zimaboard-0`; verify the router lease,
-  public `grpc-status: 16`, and an authenticated CLI call after rollout.
+- **Next step:** After rollout, verify the router lease, public
+  `grpc-status: 16`, and an authenticated CLI call.
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity

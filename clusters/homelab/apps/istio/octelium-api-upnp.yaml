@@ -37,30 +37,14 @@ spec:
               type: RuntimeDefault
           containers:
             - name: reconcile
-              image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
-              command:
-                - /bin/sh
-                - -ec
-                - |
-                  body='<?xml version="1.0"?>
-                  <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
-                    <s:Body>
-                      <u:AddPortMapping xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1">
-                        <NewRemoteHost></NewRemoteHost><NewExternalPort>8443</NewExternalPort><NewProtocol>TCP</NewProtocol>
-                        <NewInternalPort>30443</NewInternalPort><NewInternalClient>10.1.0.200</NewInternalClient>
-                        <NewEnabled>1</NewEnabled><NewPortMappingDescription>octelium-api</NewPortMappingDescription><NewLeaseDuration>86400</NewLeaseDuration>
-                      </u:AddPortMapping>
-                    </s:Body>
-                  </s:Envelope>'
-                  response="$(wget -qO- -T 10 \
-                    --header='Content-Type: text/xml; charset="utf-8"' \
-                    --header='SOAPAction: "urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping"' \
-                    --post-data="$body" \
-                    http://10.1.0.1:49152/upnp/control/WANIPConnection0)"
-                  case "$response" in
-                    *AddPortMappingResponse*) echo "refreshed TCP/8443 to 10.1.0.200:30443 for 86400 seconds" ;;
-                    *) echo "error: router did not confirm the Octelium API mapping" >&2; exit 1 ;;
-                  esac
+              image: docker.io/queeup/upnpc-container:v2.3.3-r2@sha256:5bf14ccbe1cac2994e34c01bc6a677010e68e28705c6176a9ef7b3ebfbf5bec6
+              args:
+                - -a
+                - 10.1.0.200
+                - "30443"
+                - "8443"
+                - TCP
+                - "86400"
               resources:
                 requests:
                   cpu: 5m
