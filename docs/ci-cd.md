@@ -20,7 +20,9 @@ This repository uses GitHub Actions for the review and rollout path:
   before connecting to Octelium and applying the live Terragrunt phases in
   order: Argo CD bootstrap, SSM parameter declarations, Entra application
   registrations, Argo CD Application registrations, and Kubernetes secret
-  materialization.
+  materialization. A run compares against the latest successful
+  `Terragrunt Apply` SHA so a failed run's unapplied changes remain in the next
+  affected-unit range.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -105,11 +107,12 @@ contract for Grafana.
   OpenTofu internally; do not copy those cache-directory commands as the
   operator recovery path.
 - Terragrunt plan and apply phases use `--filter-affected` so only units
-  changed between `main` and `HEAD` are queued. In CI, the helper script
-  prepares the local `main` ref for that comparison: pull request plans compare
-  against the PR base branch, while push applies compare against the previous
-  `main` SHA from the GitHub event. Manual apply dispatches compare against
-  `HEAD^`.
+  changed between the selected base and `HEAD` are queued. Pull request plans
+  compare against the PR base branch. Production applies query the latest
+  successful `Terragrunt Apply` run and use its `head_sha`, including manual
+  dispatches. When that run is absent, unavailable, or not an ancestor of the
+  current `main`, the workflow fails closed because it cannot safely infer which
+  removed units need retirement.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`
@@ -158,7 +161,6 @@ rules and tighter rotation:
 | --- | --- | --- |
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
-| `KUBE_CONFIG_B64` | repository; temporary break-glass only | Base64-encoded kubeconfig used only by the manual `Break Glass NOFX Recovery` workflow while the normal Octelium CI credential is repaired. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
 has no runtime consumer. Its declaration and preexisting-parameter adoption
@@ -183,18 +185,43 @@ The normal plan and apply path must keep using `OCTELIUM_CI_AUTH_TOKEN` and the
 clientless `kubernetes-api-ci` Service. Do not add kubeconfig material to the
 normal plan or apply jobs.
 
-For temporary NOFX recovery only, create `KUBE_CONFIG_B64` from an existing
-operator kubeconfig on a trusted machine:
+GitHub-hosted runners have no independent route to the private Kubernetes API.
+`Break Glass NOFX Recovery` also installs its kubeconfig through Octelium, so it
+cannot repair an Octelium outage and does not consume a repository kubeconfig
+secret.
+
+When recovery requires the committed `kubernetes-node-labels` state while
+Octelium is unavailable, use a reviewed `main` checkout on a trusted LAN
+machine whose operator kubeconfig points directly at the canonical API
+endpoint. Apply only that unit through its normal Terragrunt state and provider
+path:
 
 ```sh
-base64 -w0 ~/.kube/config
+nix develop --command aws sso login --profile default
+
+nix develop --command bash <<'EOF'
+set -euo pipefail
+
+test "$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')" = \
+  "https://10.1.0.199:6443"
+kubectl --request-timeout=15s version
+
+(cd IaC && terragrunt stack generate)
+cd IaC/live/kubernetes-node-labels
+rm -f plan.out plan.json
+terragrunt --log-disable init -reconfigure -no-color
+terragrunt plan -out=plan.out -no-color
+terragrunt --log-disable show -json plan.out >plan.json
+conftest test --policy ../../../policy --output github plan.json
+terragrunt apply -no-color plan.out
+EOF
 ```
 
-Store the output as a repository secret named `KUBE_CONFIG_B64`, dispatch
-`Break Glass NOFX Recovery` from `main`, and remove or rotate the secret after
-the recovery run finishes. The secret is intentionally repository-scoped because
-the workflow is `workflow_dispatch`-only, guarded by the `homelab-production`
-environment, and exits unless it runs on `refs/heads/main`.
+The AWS CLI `default` profile needs access to the shared S3/KMS state backend.
+The kubeconfig must remain only on the trusted LAN machine. After Octelium is
+healthy, rerun the normal protected `Terragrunt Apply` workflow to reconcile
+the complete affected range. Use `Break Glass NOFX Recovery` only for its
+narrower NOFX reconciliation after the Octelium Kubernetes route works again.
 
 The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
@@ -398,5 +425,7 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
 
-Manual apply dispatches compare against `HEAD^`; use the normal post-merge push
-path when the affected-unit range needs to span multiple commits.
+Every production apply, including manual dispatch, compares against the latest
+successful `Terragrunt Apply` SHA. Rerunning after one or more failed applies
+therefore keeps the full unapplied range instead of considering only the newest
+commit.

@@ -5,6 +5,9 @@ on:
 
 permissions: {}
 
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
 concurrency:
   group: break-glass-nofx-recovery
   cancel-in-progress: false
@@ -22,7 +25,6 @@ jobs:
     env:
       AWS_REGION: us-west-2
       AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
-      KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
     steps:
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd

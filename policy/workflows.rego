@@ -34,7 +34,6 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
-	not break_glass_recovery_workflow
 	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q touches live homelab access but does not provide an Octelium clientless access token", [name])
@@ -42,7 +41,6 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
-	not break_glass_recovery_workflow
 	value := workflow_env_value("KUBE_API_SERVER_URL")
 	value != "https://kubernetes-api-ci.stinkyboi.com"
 	name := object.get(input, "name", "<unnamed workflow>")
@@ -84,15 +82,6 @@ live_homelab_workflow if {
 
 live_homelab_workflow if {
 	workflow_run_contains("scripts/ci/terragrunt-apply.sh")
-}
-
-live_homelab_workflow if {
-	workflow_step_env_has("KUBE_CONFIG_B64")
-}
-
-break_glass_recovery_workflow if {
-	name := object.get(input, "name", "")
-	startswith(name, "Break Glass ")
 }
 
 workflow_run_contains(needle) if {
