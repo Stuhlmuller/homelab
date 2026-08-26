@@ -25,7 +25,6 @@ utility, not as an app, callback, or CI access path.
 | `metrics-server`        | support                   | `kube-system`           | official `metrics-server` Helm chart          | `IaC/live/argocd-apps/metrics-server`        | Kubernetes API and node kubelets                            |
 | `platform-crossplane`   | support                   | `crossplane-system`     | `clusters/homelab/platform/crossplane`        | `IaC/live/argocd-apps/platform-crossplane`   | Argo CD bootstrap                                           |
 | `octelium-storage`      | support                   | `octelium-storage`      | `clusters/homelab/apps/octelium-storage`      | `IaC/live/argocd-apps/octelium-storage`      | external-secrets, platform-storage                          |
-| `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none                                                        |
 | `media-postgres`        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`        | `IaC/live/argocd-apps/media-postgres`        | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres`          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`          | `IaC/live/argocd-apps/n8n-postgres`          | external-secrets, platform-storage                          |
 

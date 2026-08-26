@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-alert-cleanup-retirement
-  namespace: monitoring
-  labels:
-    app.kubernetes.io/name: grafana-alert-cleanup-retirement
-    app.kubernetes.io/part-of: homelab
