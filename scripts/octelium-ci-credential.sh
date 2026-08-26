@@ -497,10 +497,19 @@ if [[ -z "$credential_token" ]]; then
   exit 1
 fi
 
+set_github_environment_secret() {
+  local env_name="$1"
+
+  until printf '%s' "$credential_token" |
+    gh secret set "$secret_name" --repo "$github_repo" --env "$env_name" >/dev/null; do
+    echo "GitHub environment ${env_name} update failed; retrying in 5 seconds." >&2
+    sleep 5
+  done
+}
+
 if [[ "$update_github" == "true" ]]; then
   for env_name in "${environments[@]}"; do
-    printf '%s' "$credential_token" |
-      gh secret set "$secret_name" --repo "$github_repo" --env "$env_name" >/dev/null
+    set_github_environment_secret "$env_name"
     echo "Updated ${secret_name} in GitHub environment ${env_name}"
   done
 else

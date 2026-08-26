@@ -157,7 +157,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   method and Kubernetes API Service separately. The User owns matching 30-day
   clientless-session and access-token lifetimes. Rotate it every 21 days with
   `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
-  Sessions first so Octelium cannot retain an older Session expiry.
+  Sessions first so Octelium cannot retain an older Session expiry, then retries
+  GitHub environment writes until both store the replacement token.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

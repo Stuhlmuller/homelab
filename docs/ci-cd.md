@@ -256,7 +256,9 @@ refuses to rotate an existing credential when GitHub secret updates are
 disabled, because that would invalidate the old CI token without storing the
 replacement.
 Run rotation in a quiet window: deleting the old Session invalidates the
-current bearer before the two GitHub environment secrets are updated.
+current bearer before the two GitHub environment secrets are updated. After
+token generation, the helper retries each secret write until both environments
+hold the replacement; if interrupted, rerun the helper.
 When recovering through a temporary Octelium CLI session, pass that session
 directory with `--homedir /tmp/octelium-admin`. If the public Octelium API path
 is not carrying authenticated admin CLI calls reliably, point `--octelium-proxy`
