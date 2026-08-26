@@ -111,11 +111,11 @@ makes retries read-only after success. The restored pod has 30-minute startup
 and liveness windows plus a 120-second termination grace period.
 
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
-120-second termination grace period. Its readiness probe executes `SELECT 1`
-instead of treating socket acceptance as usable database service. The writable
-`media-postgres-local` StatefulSet mounts only local storage; a one-time
-PID/socket fence prevents it from overlapping the staged writer. The legacy
-NFS-backed StatefulSet stays declared at zero replicas, and the sibling
+120-second termination grace period. Its readiness and liveness probes execute
+`SELECT 1` instead of treating socket acceptance as usable database service.
+The writable `media-postgres-local` StatefulSet mounts only local storage; a
+one-time PID/socket fence prevents it from overlapping the staged writer. The
+legacy NFS-backed StatefulSet stays declared at zero replicas, and the sibling
 `media-postgres-recovery` overlay fences the writer and backup schedule before
 a logical restore. See `clusters/homelab/apps/media-postgres/README.md` for the
 failure mode and operator response.

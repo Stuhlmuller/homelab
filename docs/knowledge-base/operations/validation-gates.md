@@ -75,12 +75,13 @@ helm template <release> <chart> -f clusters/homelab/apps/<app>/values.yaml
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
-For Image Updater changes, also render the controller overlay and confirm the
-managed write-back targets stay intentional:
+For image automation changes, render the retirement source, validate Renovate,
+and confirm no image bypasses digest policy:
 
 ```sh
 kubectl kustomize clusters/homelab/apps/argocd-image-updater
-rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-image-updater/imageupdater.yaml
+npx --yes --package renovate renovate-config-validator renovate.json
+nix develop --command bash scripts/ci/static-checks.sh
 ```
 
 For `platform-dns` changes, render the overlay and compare upstream answers
@@ -231,6 +232,20 @@ the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
 Azure credential gate compares only AzureAD unit sources and AzureAD stack
 blocks; unrelated stack changes do not require Azure credentials.
+
+Production applies resolve their affected-unit base from the latest successful
+`Terragrunt Apply` workflow `head_sha`, not the immediately preceding push. A
+missing, unreachable, or non-ancestor result fails closed so an apply cannot
+become the new successful checkpoint while skipping an unknown deleted-unit
+range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the working-tree
+Gitleaks scan still covers the complete checkout.
+
+GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
+that route is the failed dependency, restore reviewed
+`IaC/live/kubernetes-node-labels` state from a trusted LAN machine with a direct
+`https://10.1.0.199:6443` kubeconfig, shared-backend AWS credentials, a saved
+Terragrunt plan, and the Terraform-plan Conftest gate documented in
+`docs/ci-cd.md`. No repository kubeconfig secret is part of that recovery path.
 
 The trusted GitHub Actions PR plan job is serialized with a shared concurrency
 group because it reads the same OpenTofu S3 backend state across pull requests.

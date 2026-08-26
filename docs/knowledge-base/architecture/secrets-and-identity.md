@@ -52,11 +52,11 @@ roles need identity-based KMS permissions for both keys.
   the `email_verified` claim. The bootstrap RBAC policy also binds
   `rodman@stuhlmuller.net` directly to `role:admin` through the configured
   `email` scope so operator access does not depend on group-claim setup.
-- Argo CD Image Updater uses the `argocd-image-updater-git` ExternalSecret for
-  GitHub App credentials that open image update pull requests through Git
-  write-back. It refreshes on ExternalSecret changes; bump the non-secret
-  `homelab.rst.io/github-app-credentials-ssm-version` annotation after SSM
-  credential replacement. Its SSM contract is summarized in
+- Argo CD Image Updater's GitHub App credential contract is retired. The
+  ExternalSecret and generated Secret have no runtime consumer; Renovate owns
+  image update pull requests. Its three SSM paths remain declared only as
+  OpenTofu state tombstones, excluded from the External Secrets reader IAM
+  policy, until a separate reviewed secret-retirement change. See
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`.

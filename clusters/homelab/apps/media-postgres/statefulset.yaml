@@ -194,11 +194,13 @@ spec:
           livenessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - media_apps
                 - -d
                 - media_apps
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5
@@ -408,11 +410,13 @@ spec:
           livenessProbe:
             exec:
               command:
-                - pg_isready
+                - psql
                 - -U
                 - media_apps
                 - -d
                 - media_apps
+                - -Atqc
+                - SELECT 1
             initialDelaySeconds: 30
             periodSeconds: 30
             timeoutSeconds: 5

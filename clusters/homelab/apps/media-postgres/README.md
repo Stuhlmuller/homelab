@@ -65,11 +65,11 @@ unacceptable.
 ## Recovery Probes
 
 The startup probe allows PostgreSQL up to 30 minutes to finish crash recovery
-before Kubernetes enables its liveness and readiness probes. Readiness executes
-`SELECT 1`, so a process that merely accepts a socket while database work is
-stalled is removed from the Service. Liveness remains the recovery-tolerant
-`pg_isready` check and requires 30 minutes of continuous failures before
-restarting PostgreSQL.
+before Kubernetes enables its liveness and readiness probes. Readiness and
+liveness execute `SELECT 1`, so a process that merely accepts a socket while
+database work is stalled does not count as healthy. Readiness removes it from
+the Service quickly; liveness requires 30 minutes of continuous query failures
+before restarting PostgreSQL.
 
 The pod also has a 120-second termination grace period so PostgreSQL has more
 time to finish a fast shutdown without being forcibly killed. If startup

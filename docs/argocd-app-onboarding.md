@@ -19,7 +19,7 @@ requested workloads.
 | n8n-postgres          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`            | `IaC/live/argocd-apps/n8n-postgres`          | Yes           | external-secrets, platform-storage                                                 |
 | github-actions-runner | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner`   | `IaC/live/argocd-apps/github-actions-runner` | Yes           | none                                                                               |
 | affine                | requested                 | `affine`                | `clusters/homelab/apps/affine`                  | `IaC/live/argocd-apps/affine`                | Yes           | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage |
-| argocd-image-updater  | requested                 | `argocd`                | `clusters/homelab/apps/argocd-image-updater`    | `IaC/live/argocd-apps/argocd-image-updater`  | Yes           | external-secrets                                                                   |
+| argocd-image-updater  | retired/prune placeholder | `argocd`                | `clusters/homelab/apps/argocd-image-updater`    | `IaC/live/argocd-apps/argocd-image-updater`  | Yes           | none                                                                               |
 | external-secrets      | requested                 | `external-secrets`      | `clusters/homelab/apps/external-secrets`        | `IaC/live/argocd-apps/external-secrets`      | Yes           | platform-dns                                                                       |
 | cert-manager          | requested                 | `cert-manager`          | `clusters/homelab/apps/cert-manager`            | `IaC/live/argocd-apps/cert-manager`          | Yes           | external-secrets                                                                   |
 | istio                 | requested                 | `istio-system`          | `clusters/homelab/apps/istio`                   | `IaC/live/argocd-apps/istio`                 | Yes           | cert-manager                                                                       |
@@ -98,10 +98,11 @@ a second module-specific schema.
 
 ## Image Updates
 
-Repo-declared workload images are managed by Argo CD Image Updater through
-`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`. Image updates
-use Git write-back pull requests against `main`; do not add live-only Argo CD
-parameter overrides for image drift.
+Renovate manages repo-declared workload image tags and digests through reviewed
+pull requests against `main`. All committed images must be pinned as
+`tag@sha256:digest`; do not add live-only Argo CD parameter overrides for image
+drift. The retired Image Updater Application remains only as a pruning
+placeholder until the checks in `docs/argocd-image-updater.md` pass.
 
 ## Sync And Health Exception Record
 

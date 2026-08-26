@@ -122,7 +122,7 @@ unit "argocd_apps_argocd_image_updater" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = ["external-secrets"]
+    dependencies = []
     manifest = {
       apiVersion = "argoproj.io/v1alpha1"
       kind       = "Application"
@@ -147,25 +147,6 @@ unit "argocd_apps_argocd_image_updater" {
 
         sources = [
           {
-            repoURL        = "https://argoproj.github.io/argo-helm"
-            chart          = "argocd-image-updater"
-            path           = "."
-            targetRevision = "1.2.2"
-            helm = {
-              releaseName = "argocd-image-updater"
-              valueFiles  = ["$values/clusters/homelab/apps/argocd-image-updater/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/argocd-image-updater"
@@ -175,7 +156,7 @@ unit "argocd_apps_argocd_image_updater" {
 
         syncPolicy = {
           automated = {
-            allowEmpty = false
+            allowEmpty = true
             enabled    = true
             prune      = true
             selfHeal   = true
@@ -196,8 +177,8 @@ unit "argocd_apps_argocd_image_updater" {
 
         info = [
           {
-            name  = "image-updates"
-            value = "docs/argocd-image-updater.md"
+            name  = "purpose"
+            value = "retirement tombstone; Renovate owns repository image updates"
           }
         ]
       }

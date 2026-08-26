@@ -1,18 +1,17 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":automergeAll"],
-  "automerge": false,
+  "extends": ["config:recommended"],
+  "kubernetes": {
+    "managerFilePatterns": ["/^clusters/homelab/.+\\.ya?ml$/"]
+  },
+  "pinDigests": true,
   "packageRules": [
     {
-      "description": "Image updates are owned by Argo CD Image Updater.",
-      "matchManagers": ["helm-values"],
+      "description": "Keep OctoBot on the last image compatible with its retained config.",
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["adinhodovic/compass", "ghcr.io/n8n-io/n8n"],
-      "matchFileNames": [
-        "clusters/homelab/apps/compass/values.yaml",
-        "clusters/homelab/apps/n8n/values.yaml"
-      ],
-      "enabled": false
+      "matchPackageNames": ["drakkarsoftware/octobot"],
+      "matchFileNames": ["clusters/homelab/apps/octobot/values.yaml"],
+      "allowedVersions": "2.1.1"
     }
   ],
   "lockFileMaintenance": {

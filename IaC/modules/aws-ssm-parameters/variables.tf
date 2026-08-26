@@ -11,6 +11,7 @@ variable "parameters" {
       special          = optional(bool, false)
     }))
     initial_value = optional(string, "REPLACE_ME")
+    reader_access = optional(bool, true)
     tier          = optional(string, "Standard")
   }))
 

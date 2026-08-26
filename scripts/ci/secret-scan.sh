@@ -164,6 +164,10 @@ git_history_log_opts() {
         fi
       fi
       ;;
+    workflow_dispatch)
+      printf 'HEAD^..HEAD\n'
+      return 0
+      ;;
     push)
       local before after zero_sha
       before="$(github_event_value before)"
