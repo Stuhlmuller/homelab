@@ -33,8 +33,11 @@ EOF
 }
 
 inputs = {
-  name      = "aws-ssm-auth"
-  namespace = "external-secrets"
+  aws_region = local.aws_region
+  name       = "aws-ssm-auth"
+  namespace  = "external-secrets"
+
+  data_revision = 1
 
   labels = {
     "app.kubernetes.io/managed-by" = "terragrunt"

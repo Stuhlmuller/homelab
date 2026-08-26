@@ -84,9 +84,17 @@ Bootstrap order:
 3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
 The Kubernetes Secret stack refuses to apply while either SSM value is empty or
-still set to `REPLACE_ME`. The decrypted credential values are not committed to
-git, but they are copied into the encrypted OpenTofu remote state for that
-stack because Terraform manages the Kubernetes Secret.
+still set to `REPLACE_ME`. OpenTofu opens both values through the AWS provider's
+ephemeral SSM resource and passes them only to the Kubernetes provider's
+write-only Secret field, so decrypted credentials are omitted from plan and
+state files. Increment the committed `data_revision` in the stack whenever
+either SSM value is rotated so the provider rewrites the write-only field.
+
+The first apply of this write-only flow removes the old readable Secret data
+and decrypted SSM data source from the current state. That apply does not erase
+older S3 object versions. Before closing a credential-exposure finding, remove
+the exact older versions of this stack's state object and rotate the IAM access
+key; never print or copy an old state body while checking it.
 
 | App | ExternalSecret | Target Secret | SSM parameters |
 | --- | --- | --- | --- |

@@ -1,21 +1,24 @@
-data "aws_ssm_parameter" "secret_data" {
+data "aws_caller_identity" "current" {}
+
+ephemeral "aws_ssm_parameter" "secret_data" {
   for_each = var.data_ssm_parameter_names
 
-  name            = each.value
+  arn             = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/${trimprefix(each.value, "/")}"
   with_decryption = true
+
+  lifecycle {
+    postcondition {
+      condition     = trimspace(self.value) != "" && trimspace(self.value) != var.placeholder_value
+      error_message = "SSM parameter ${each.value} is empty or still set to the placeholder value."
+    }
+  }
 }
 
 locals {
   secret_data = {
-    for key, parameter in data.aws_ssm_parameter.secret_data :
+    for key, parameter in ephemeral.aws_ssm_parameter.secret_data :
     key => parameter.value
   }
-
-  invalid_secret_keys = [
-    for key, value in local.secret_data :
-    key
-    if trimspace(nonsensitive(value)) == "" || trimspace(nonsensitive(value)) == var.placeholder_value
-  ]
 }
 
 resource "kubernetes_secret_v1" "this" {
@@ -26,13 +29,7 @@ resource "kubernetes_secret_v1" "this" {
     annotations = var.annotations
   }
 
-  data = local.secret_data
-  type = var.type
-
-  lifecycle {
-    precondition {
-      condition     = length(local.invalid_secret_keys) == 0
-      error_message = "SSM parameters for Kubernetes Secret keys ${join(", ", local.invalid_secret_keys)} are empty or still set to the placeholder value."
-    }
-  }
+  data_wo          = local.secret_data
+  data_wo_revision = var.data_revision
+  type             = var.type
 }

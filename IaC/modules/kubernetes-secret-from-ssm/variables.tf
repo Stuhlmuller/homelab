@@ -8,9 +8,25 @@ variable "namespace" {
   type        = string
 }
 
+variable "aws_region" {
+  description = "AWS region containing the SSM parameters."
+  type        = string
+}
+
 variable "data_ssm_parameter_names" {
   description = "Map of Kubernetes Secret keys to encrypted AWS SSM parameter names."
   type        = map(string)
+}
+
+variable "data_revision" {
+  description = "Revision of the write-only Kubernetes Secret data; increment after rotating an SSM value."
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.data_revision >= 1 && floor(var.data_revision) == var.data_revision
+    error_message = "data_revision must be a positive integer."
+  }
 }
 
 variable "type" {

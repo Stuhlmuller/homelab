@@ -603,17 +603,16 @@ policy`.
   checkpointed as successfully applied.
 - **Status:** open
 - **Area:** secrets / CI/CD
-- **Evidence:** June 2026 security audit found
-  `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terragrunt.hcl`
-  still sources `../../../modules/kubernetes-secret-from-ssm`, whose module
-  reads decrypted SSM values into a Kubernetes Secret resource and OpenTofu
-  state.
+- **Evidence:** the August 2026 remediation changes the bootstrap module to an
+  OpenTofu 1.11 ephemeral `aws_ssm_parameter` read and Kubernetes
+  `data_wo`/`data_wo_revision` write. Provider schemas for AWS `6.56.0` and
+  Kubernetes `3.2.1` support that path without persisting decrypted values.
 - **Risk:** decrypted External Secrets AWS provider credentials could otherwise
   be exposed to anyone or anything with access to OpenTofu state, plan caches, or
   CI artifacts.
-- **Next step:** keep this finding open until repo-owned remediation replaces
-  the state-writing stack, removes any older state object that contained the
-  Kubernetes Secret data, and rotates the External Secrets IAM access key.
+- **Next step:** keep this finding open until the migration applies, older S3
+  versions of this stack's exact state object are removed, and the External
+  Secrets IAM access key is rotated with a matching committed revision bump.
 - **Status:** open
 - **Area:** platform service / GitOps
 - **Evidence:** June 2026 security audit found remaining structural hardening
