@@ -198,8 +198,7 @@ endpoint. Apply only that unit through its normal Terragrunt state and provider
 path:
 
 ```sh
-export AWS_PROFILE="<state-backend-profile>"
-nix develop --command aws sso login --profile "$AWS_PROFILE"
+nix develop --command aws sso login --profile default
 
 nix develop --command bash <<'EOF'
 set -euo pipefail
@@ -219,11 +218,11 @@ terragrunt apply -no-color plan.out
 EOF
 ```
 
-The AWS profile needs access to the shared S3/KMS state backend. The kubeconfig
-must remain only on the trusted LAN machine. After Octelium is healthy, rerun
-the normal protected `Terragrunt Apply` workflow to reconcile the complete
-affected range. Use `Break Glass NOFX Recovery` only for its narrower NOFX
-reconciliation after the Octelium Kubernetes route works again.
+The AWS CLI `default` profile needs access to the shared S3/KMS state backend.
+The kubeconfig must remain only on the trusted LAN machine. After Octelium is
+healthy, rerun the normal protected `Terragrunt Apply` workflow to reconcile
+the complete affected range. Use `Break Glass NOFX Recovery` only for its
+narrower NOFX reconciliation after the Octelium Kubernetes route works again.
 
 The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
