@@ -19,6 +19,7 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
 (
+  cd IaC/live/argocd-apps
   terragrunt_stack_changed() { [[ "$1" == "IaC/live/argocd-apps" ]]; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
   terragrunt_stack_changed() { return 1; }

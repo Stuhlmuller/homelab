@@ -70,10 +70,27 @@ terragrunt_stack_changed() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
   local generated_group="${1:-}"
   local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
-  local paths=(IaC/terragrunt.stack.hcl IaC/.catalog IaC/modules)
+  local repo_root
+  local paths=(
+    IaC/terragrunt.stack.hcl
+    IaC/.catalog
+    IaC/modules
+    IaC/root.hcl
+    IaC/kubernetes-provider.hcl
+    flake.nix
+    flake.lock
+    policy/terraform.rego
+    scripts/ci/terragrunt-filter-base.sh
+    scripts/ci/terragrunt-plan.sh
+    scripts/ci/terragrunt-apply.sh
+  )
 
   if [[ -n "$generated_group" ]]; then
     paths+=("$generated_group")
+  fi
+
+  if ! repo_root="$(git rev-parse --show-toplevel)"; then
+    return 0
   fi
 
   if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
@@ -92,7 +109,7 @@ terragrunt_stack_changed() {
     return 0
   fi
 
-  ! git diff --quiet "$base_ref" "$head_ref" -- "${paths[@]}"
+  ! git -C "$repo_root" diff --quiet "$base_ref" "$head_ref" -- "${paths[@]}"
 }
 
 terragrunt_changed_filter() {
