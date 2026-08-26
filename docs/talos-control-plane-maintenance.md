@@ -175,7 +175,8 @@ only one exact node at a time:
 | `zimaboard-1` | `10.1.0.201` |
 | `zimaboard-2` | `10.1.0.202` |
 
-Confirm Talos still answers, then reboot and wait for Kubernetes readiness:
+Confirm Talos still answers, then reboot and require the node plus every
+assigned non-terminal pod, including node-pinned workloads, to become ready:
 
 ```sh
 node_name=zimaboard-0
@@ -197,7 +198,15 @@ talosctl --talosconfig .talos/talosconfig \
   reboot --wait
 
 kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+kubectl wait --for=condition=Ready pod --all --all-namespaces \
+  --field-selector "spec.nodeName=$node_name,status.phase!=Succeeded,status.phase!=Failed" \
+  --timeout=10m
 ```
+
+If either readiness check times out, do not reboot another worker. Inspect the
+affected pods with `kubectl get pods -A -o wide --field-selector
+"spec.nodeName=$node_name"`, then use the workload's repository-backed recovery
+path; do not delete, restart, or patch live pods by hand.
 
 If a normal reboot completes but the node remains stuck and the Talos API still
 answers, retry the reboot with `--mode=powercycle`. Never add `--insecure` for
