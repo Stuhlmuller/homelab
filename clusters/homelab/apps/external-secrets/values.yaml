@@ -7,4 +7,3 @@ webhook:
   replicaCount: 1
 certController:
   replicaCount: 1
-

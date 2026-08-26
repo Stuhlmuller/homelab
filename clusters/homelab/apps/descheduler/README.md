@@ -8,4 +8,3 @@ The first policy is intentionally conservative:
 - Start with balancing and anti-affinity cleanup only.
 
 Expand the policy only in a follow-up PR with live validation evidence.
-
