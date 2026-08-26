@@ -23,10 +23,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: terragrunt-apply-production
-  cancel-in-progress: false
-
 env:
   AWS_REGION: us-east-1
   KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
@@ -76,6 +72,9 @@ jobs:
     name: Terragrunt Apply
     needs:
       - static-policy
+    concurrency:
+      group: terragrunt-apply-production
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     environment:
       name: homelab-production

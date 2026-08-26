@@ -61,23 +61,30 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
-for workflow in \
-  .github/workflows/homelab-diagnostics.yml \
-  .github/workflows/terragrunt-apply.yml; do
+for workflow_job in \
+  '.github/workflows/homelab-diagnostics.yml:grafana' \
+  '.github/workflows/terragrunt-apply.yml:static-policy'; do
+  workflow="${workflow_job%%:*}"
+  job="${workflow_job##*:}"
   yq -o=json '.' "$workflow" |
-    jq -e '
+    jq -e --arg job "$job" '
       .on.workflow_dispatch.inputs.expected_sha.required == true and
-      ([
-        .jobs[].steps[]? |
-        select(
-          .name == "Verify Dispatch Commit" and
-          .env.ACTUAL_SHA == "${{ github.sha }}" and
-          .env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
-          (.run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
-        )
-      ] | length) == 1
+      .jobs[$job].steps[0].name == "Verify Dispatch Commit" and
+      .jobs[$job].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
+      .jobs[$job].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+      (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done
+yq -o=json '.' .github/workflows/terragrunt-apply.yml |
+  jq -e '
+    (.concurrency == null) and
+    .jobs["static-policy"].steps[0].if == "github.event_name == '\''workflow_dispatch'\''" and
+    .jobs["terragrunt-apply"].needs == ["static-policy"] and
+    .jobs["terragrunt-apply"].concurrency == {
+      "group": "terragrunt-apply-production",
+      "cancel-in-progress": false
+    }
+  ' >/dev/null
 echo "::endgroup::"
 
 echo "::group::Renovate config"

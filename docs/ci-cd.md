@@ -357,22 +357,28 @@ find_new_run_id() {
 }
 
 wait_for_success() {
-  local run_id="$1"
+  local all_complete
+  local run_id
   local state
   for _ in {1..360}; do
-    state="$(
-      gh run view "$run_id" \
-        --repo "$github_repo" \
-        --json conclusion,status \
-        --jq '.status + " " + (.conclusion // "")'
-    )"
-    case "$state" in
-      "completed success") return 0 ;;
-      "completed "*) echo "error: run ${run_id} ended ${state}" >&2; return 1 ;;
-    esac
+    all_complete=true
+    for run_id in "$@"; do
+      state="$(
+        gh run view "$run_id" \
+          --repo "$github_repo" \
+          --json conclusion,status \
+          --jq '.status + " " + (.conclusion // "")'
+      )"
+      case "$state" in
+        "completed success") ;;
+        "completed "*) echo "error: run ${run_id} ended ${state}" >&2; return 1 ;;
+        *) all_complete=false ;;
+      esac
+    done
+    test "$all_complete" = false || return 0
     sleep 30
   done
-  echo "error: run ${run_id} did not finish within three hours" >&2
+  echo "error: verification runs did not finish within three hours" >&2
   return 1
 }
 
@@ -387,8 +393,7 @@ diagnostics_run_id="$(find_new_run_id homelab-diagnostics.yml "$diagnostics_befo
 apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
 test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
 test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
-wait_for_success "$diagnostics_run_id"
-wait_for_success "$apply_run_id"
+wait_for_success "$diagnostics_run_id" "$apply_run_id"
 ```
 
 Both exact-head runs must exit successfully. If either fails because the token
