@@ -278,100 +278,43 @@ CI receives Octelium `401` from authenticated `kubectl` against
 `scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
 failure before rotating. Reconcile the upstream kubeconfig Secret when its
 Kubernetes credential changes.
-If the credential must be recovered, apply the recovery catalog and use its
-distinct User, Policy, and credential name:
+Recover the primary credential directly with the checked helper. Run this block
+from the repository root; it uses a private, unique admin home and removes it
+only after Octelium confirms logout:
 
 ```sh
-octelium_homedir=/tmp/octelium-admin
-mkdir -p "$octelium_homedir"
-octeliumctl --homedir "$octelium_homedir" login --domain stinkyboi.com --web
-octeliumctl --homedir "$octelium_homedir" apply --domain stinkyboi.com docs/examples/octelium/homelab-ci-recovery.yaml
-scripts/octelium-ci-credential.sh \
-  --homedir "$octelium_homedir" \
-  --skip-catalog \
-  --user homelab-ci-recovery \
-  --credential-name homelab-ci-recovery \
-  --policy ci-recovery-access
-```
+(
+  set -euo pipefail
+  domain=stinkyboi.com
+  octelium_tmp_root="${TMPDIR:-/tmp}"
+  octelium_tmp_root="${octelium_tmp_root%/}"
+  octelium_homedir="$(mktemp -d "${octelium_tmp_root}/octelium-admin.XXXXXX")"
+  chmod 0700 "$octelium_homedir"
 
-The helper updates the same GitHub environment secrets. The recovery user is
-limited to the same public Kubernetes Service, but its default clientless
-Session expires after two hours. Before then, restore the primary credential,
-verify both GitHub environments, and remove the temporary recovery resources:
-
-```sh
-set -euo pipefail
-
-octelium_homedir=/tmp/octelium-admin
-github_repo=Stuhlmuller/homelab
-scripts/octelium-ci-credential.sh --homedir "$octelium_homedir"
-
-latest_workflow_run_id() {
-  gh run list \
-    --repo "$github_repo" \
-    --workflow "$1" \
-    --event workflow_dispatch \
-    --limit 1 \
-    --json databaseId \
-    --jq '.[0].databaseId // 0'
-}
-
-find_new_workflow_run_id() {
-  local workflow="$1"
-  local before_id="$2"
-  local expected_sha="$3"
-  local run_id
-
-  for _ in {1..30}; do
-    if run_id="$(
-      gh run list \
-        --repo "$github_repo" \
-        --workflow "$workflow" \
-        --event workflow_dispatch \
-        --limit 20 \
-        --json databaseId,headSha |
-        jq -er \
-          --argjson before_id "$before_id" \
-          --arg expected_sha "$expected_sha" \
-          '[.[] | select(.databaseId > $before_id and .headSha == $expected_sha)] | max_by(.databaseId).databaseId'
-    )"; then
-      printf '%s\n' "$run_id"
-      return 0
+  # shellcheck disable=SC2329 # Invoked by the EXIT trap.
+  close_admin_session() {
+    exit_status=$?
+    trap - EXIT
+    if ! octeliumctl --homedir "$octelium_homedir" logout --domain "$domain"; then
+      echo "error: logout failed; retained ${octelium_homedir} for retry" >&2
+      exit 1
     fi
-    sleep 2
-  done
-  echo "error: no new ${workflow} run appeared for ${expected_sha}" >&2
-  return 1
-}
+    rm -rf -- "$octelium_homedir"
+    exit "$exit_status"
+  }
+  trap close_admin_session EXIT
 
-diagnostics_before_id="$(latest_workflow_run_id homelab-diagnostics.yml)"
-apply_before_id="$(latest_workflow_run_id terragrunt-apply.yml)"
-primary_sha="$(gh api "repos/${github_repo}/commits/main" --jq .sha)"
-
-gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main
-gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main
-
-diagnostics_run_id="$(find_new_workflow_run_id homelab-diagnostics.yml "$diagnostics_before_id" "$primary_sha")"
-apply_run_id="$(find_new_workflow_run_id terragrunt-apply.yml "$apply_before_id" "$primary_sha")"
-test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$primary_sha"
-test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$primary_sha"
-gh run watch "$diagnostics_run_id" --repo "$github_repo" --exit-status
-gh run watch "$apply_run_id" --repo "$github_repo" --exit-status
+  octeliumctl --homedir "$octelium_homedir" login --domain "$domain" --web
+  scripts/octelium-ci-credential.sh --homedir "$octelium_homedir"
+)
 ```
 
-Only after both exact runs succeed, clean up:
-
-```sh
-octelium_homedir=/tmp/octelium-admin
-scripts/octelium-ci-credential.sh \
-  --homedir "$octelium_homedir" \
-  --skip-catalog \
-  --user homelab-ci-recovery \
-  --delete-user-sessions-only
-octeliumctl --homedir "$octelium_homedir" delete credential homelab-ci-recovery --domain stinkyboi.com
-octeliumctl --homedir "$octelium_homedir" delete user homelab-ci-recovery --domain stinkyboi.com
-octeliumctl --homedir "$octelium_homedir" delete policy ci-recovery-access --domain stinkyboi.com
-```
+The helper applies the primary catalog with checked resource verification,
+invalidates its stale Sessions, and writes the replacement token to both GitHub
+environments. Verify the exact `main` commit with the Homelab Diagnostics and
+Terragrunt Apply workflows. If either fails because the token is unusable,
+rerun the same recovery block; no second short-lived recovery identity is
+needed.
 
 ## AWS Setup
 
