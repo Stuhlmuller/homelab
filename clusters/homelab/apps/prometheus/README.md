@@ -16,6 +16,8 @@ The root route repeats notifications every hour while an alert remains active.
 Discord also receives a resolved notification after the alert clears because
 its receiver has `send_resolved` enabled. Keep the Grafana notification policy
 repeat interval aligned with this route so both stages preserve that cadence.
+Alerts are grouped by alert name and namespace so one workload incident sends
+one Discord notification instead of one request per pod or container.
 
 The `alertmanager-discord-webhook` ExternalSecret reads the existing
 `/homelab/grafana/discord-webhook-url` SSM parameter. External Secrets renders
