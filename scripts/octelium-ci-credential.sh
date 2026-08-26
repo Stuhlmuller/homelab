@@ -183,7 +183,7 @@ fi
 
 run_octeliumctl() {
   if [[ -n "$octelium_proxy" ]]; then
-    HTTPS_PROXY="$octelium_proxy" ALL_PROXY="$octelium_proxy" NO_PROXY= \
+    HTTPS_PROXY="$octelium_proxy" ALL_PROXY="$octelium_proxy" NO_PROXY='' \
       "${octeliumctl_cmd[@]}" "$@"
   else
     "${octeliumctl_cmd[@]}" "$@"
@@ -345,6 +345,12 @@ ensure_existing_credential_spec() {
     return 0
   fi
 
+  if ! jq -e --arg user "$user_name" '.spec.user == $user' \
+    <<<"$existing_credential_json" >/dev/null; then
+    echo "error: refusing to rebind existing credential ${credential_name} from another User" >&2
+    exit 1
+  fi
+
   if jq -e \
     --arg user "$user_name" \
     --arg policy "$policy_name" \
@@ -451,6 +457,15 @@ if [[ "$rotate_credential" == "true" ]]; then
   fi
 fi
 
+if [[ "$rotate_credential" == "true" ]]; then
+  credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
+  cleanup() {
+    rm -f "$credential_json"
+  }
+  trap cleanup EXIT
+  chmod 0600 "$credential_json"
+fi
+
 if [[ "$delete_user_sessions" == "true" ]]; then
   delete_user_sessions_for_user
 fi
@@ -459,13 +474,6 @@ if [[ "$rotate_credential" != "true" ]]; then
   echo "Octelium user session cleanup complete."
   exit 0
 fi
-
-credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
-cleanup() {
-  rm -f "$credential_json"
-}
-trap cleanup EXIT
-chmod 0600 "$credential_json"
 
 if [[ "$credential_exists" == "true" ]]; then
   echo "Rotating existing Octelium credential ${credential_name}..."
