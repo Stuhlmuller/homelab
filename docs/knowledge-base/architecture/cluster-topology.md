@@ -70,26 +70,32 @@ label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 
 While both labeled dataplane nodes are NotReady,
 `clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs only
-the Octelium ingress, shared Octovigil authorization service, OctoBot service
-proxy, and CI Kubernetes API service proxy on `acer`. Their existing Service
-selector labels restore those paths without a new Service, ingress, port, node
-label, or controller-owned Deployment patch. Each temporary container is capped
-at 256 MiB.
+the Octelium ingress, shared Octovigil authorization service, OctoBot and CI
+service proxies, and the Portal, login, Auth API, and admin API on `acer`. Their
+existing Service selector labels restore those paths without a new Service,
+ingress, port, node label, or controller-owned Deployment patch. Temporary
+containers are capped at 256 MiB except the measured Auth API and admin API
+managed containers, which request 384 MiB and are capped at 512 MiB.
 
-The two temporary Vigil Pods intentionally use only the primary Kubernetes
-network. The ingress Envoy resolves their existing Kubernetes Services, and
-Vigil listens on all Pod interfaces. Attaching Octelium's secondary Multus
-network would require the privileged gateway agent that is deliberately absent
-from the control-plane node.
+The six temporary service-proxy Pods intentionally use only the primary
+Kubernetes network. The ingress Envoy resolves their existing Kubernetes
+Services, and Vigil listens on all Pod interfaces. Attaching Octelium's
+secondary Multus network would require the privileged gateway agent that is
+deliberately absent from the control-plane node.
 
-Remove the file from the Enterprise Kustomization after a real dataplane node is
-Ready and the package-managed `octelium-ingress-dataplane`,
-`octelium-octovigil`, `svc-octobot-default`, and
-`svc-kubernetes-api-ci-default` Deployments each have a Ready replica. The
-`octelium-enterprise` Application prunes the four uniquely named temporary
-Deployments. Then verify the three original Services have only native ready
-endpoints, `https://octobot.stinkyboi.com` no longer returns 502, and the CI
-Kubernetes API preflight succeeds.
+Do not remove the file merely because one dataplane node reports Ready;
+`zimaboard-2` alone does not have enough capacity. First validate the replacement
+node against measured use plus startup and rolling-update headroom. Keep the
+full native fleet on it for 24 hours with a stable Ready condition and restart
+counts. The package-managed `octelium-ingress-dataplane`,
+`octelium-octovigil`, `svc-octobot-default`,
+`svc-kubernetes-api-ci-default`, `svc-portal-default`, `svc-default-default`,
+`svc-auth-octelium-api`, and `svc-default-octelium-api` Deployments must each
+have a Ready replica. Before pruning, probe the native Pod IPs directly—not the
+selector-balanced Services—for Portal, login, Auth API, admin API, OctoBot, and
+the CI Kubernetes API. Then remove the file from the Enterprise Kustomization;
+the `octelium-enterprise` Application prunes the eight uniquely named temporary
+Deployments. Reverify native-only endpoints and the public paths afterward.
 
 Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
 capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
