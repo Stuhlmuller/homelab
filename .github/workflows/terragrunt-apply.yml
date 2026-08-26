@@ -75,6 +75,7 @@ jobs:
     concurrency:
       group: terragrunt-apply-production
       cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-24.04
     environment:
       name: homelab-production

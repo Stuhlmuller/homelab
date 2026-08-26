@@ -153,7 +153,8 @@ catalog apply because the include flag replaces the default resource-kind list.
 The static gate requires manual Homelab Diagnostics and Terragrunt Apply
 dispatches to carry an exact expected `main` SHA and fail before work when the
 resolved workflow commit differs. Terragrunt Apply acquires its production
-concurrency lock only in the live job downstream of that guard.
+concurrency lock only in the live job downstream of that guard and retains the
+full pending queue.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,

@@ -82,7 +82,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
-      "cancel-in-progress": false
+      "cancel-in-progress": false,
+      "queue": "max"
     }
   ' >/dev/null
 echo "::endgroup::"
