@@ -130,7 +130,7 @@ prepare_terragrunt_filter_base() {
   local head_ref
 
   if ! base_ref="$(terragrunt_filter_base_ref)"; then
-    echo "::warning::No usable Terragrunt --filter-affected base ref was available; using the existing main ref."
+    echo "::warning::No usable Terragrunt --filter-affected base ref was available; applying all current unit groups. Deleted-unit destroy detection is unavailable."
     return 0
   fi
 
@@ -144,7 +144,7 @@ prepare_terragrunt_filter_base() {
   fi
 
   if [[ -z "$base_ref" || "$base_ref" =~ ^0+$ ]]; then
-    echo "::warning::No usable Terragrunt --filter-affected base ref was available; using the existing main ref."
+    echo "::warning::No usable Terragrunt --filter-affected base ref was available; applying all current unit groups. Deleted-unit destroy detection is unavailable."
     return 0
   fi
 

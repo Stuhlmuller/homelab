@@ -589,6 +589,18 @@ policy`.
   empty Terragrunt unit at each deleted path, rely on `IaC/root.hcl` to target
   the original backend key, list the remote-state resources, and apply the saved
   destroy plan before applying the current checkout.
+- **Status:** fixed
+- **Area:** CI/CD
+- **Evidence:** `.github/workflows/terragrunt-apply.yml` now resolves the latest
+  successful workflow `head_sha` and validates it as an ancestor before setting
+  the Terragrunt affected-unit base. `scripts/ci/secret-scan.sh` scopes manual
+  dispatch history scanning to `HEAD^..HEAD`.
+- **Risk:** using only the immediately preceding push could let a failed apply's
+  units fall out of every later affected set; scanning all reachable history on
+  manual dispatch also re-raised unrelated historical findings.
+- **Next step:** keep `actions: read` on the apply job. If no trustworthy
+  successful base exists, apply all current unit groups and retain the explicit
+  warning that deleted-unit retirement cannot be inferred.
 - **Status:** open
 - **Area:** secrets / CI/CD
 - **Evidence:** June 2026 security audit found

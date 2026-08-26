@@ -67,6 +67,7 @@ jobs:
     environment:
       name: homelab-production
     permissions:
+      actions: read
       contents: read
       id-token: write
     timeout-minutes: 90
@@ -75,7 +76,6 @@ jobs:
       ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
       ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
-      APPLY_BASE_SHA: ${{ github.event.before }}
       APPLY_HEAD_SHA: ${{ github.sha }}
     steps:
       - name: Check Out Repository
@@ -84,6 +84,33 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Resolve Last Successful Apply
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          zero_sha="0000000000000000000000000000000000000000"
+          base_sha=""
+
+          if ! base_sha="$(
+            gh api \
+              "repos/${GH_REPO}/actions/workflows/terragrunt-apply.yml/runs?branch=main&status=success&per_page=1" \
+              --jq '.workflow_runs[0].head_sha // empty'
+          )"; then
+            base_sha=""
+          fi
+
+          if [[ -n "${base_sha}" ]] &&
+            git merge-base --is-ancestor "${base_sha}" "${APPLY_HEAD_SHA}"; then
+            echo "Using last successful Terragrunt Apply ${base_sha} as the affected-unit base."
+          else
+            base_sha="${zero_sha}"
+            echo "::warning::No usable successful Terragrunt Apply SHA was found; applying all current unit groups. Deleted-unit retirement requires a known successful base."
+          fi
+
+          printf 'APPLY_BASE_SHA=%s\n' "${base_sha}" >>"${GITHUB_ENV}"
 
       - name: Install Nix
         # cachix/install-nix-action@v31

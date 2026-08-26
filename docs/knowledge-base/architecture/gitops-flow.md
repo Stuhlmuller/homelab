@@ -27,6 +27,13 @@ bootstrap permissions that the GitHub OIDC role must never change for itself;
 an administrator still uses reviewed Terragrunt/OpenTofu desired state and the
 shared remote backend to apply those units.
 
+Octelium recovery has one transport exception, not a desired-state exception:
+a trusted LAN operator may apply the reviewed `kubernetes-node-labels`
+Terragrunt unit through the canonical private API and shared remote backend when
+GitHub-hosted runners cannot reach that API through Octelium. The repository
+unit, saved plan, policy check, and normal Terragrunt state remain authoritative;
+no ad hoc Kubernetes mutation or GitHub kubeconfig secret is introduced.
+
 Argo CD Image Updater follows the same review path for repo-declared workload
 images: it writes changes to GitHub pull requests instead of keeping live-only
 Argo CD parameter overrides as steady state.
