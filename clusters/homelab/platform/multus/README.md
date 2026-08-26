@@ -9,8 +9,9 @@ This app intentionally owns only Multus. Octelium node labels are managed by the
 `IaC/live/kubernetes-node-labels` Terragrunt unit, and the Octelium Cluster is
 initialized through `scripts/octelium-cluster-bootstrap.sh`.
 
-The Multus daemon keeps a 128Mi request and 256Mi limit because Octelium service
-pod attachment churn exceeded the upstream-thin 50Mi budget during bootstrap on
+The Multus 4.3 daemon limits itself to four concurrent CNI requests. It keeps a
+128Mi memory request and 512Mi limit, with no CPU limit, so Octelium service pod
+attachment churn cannot exhaust the daemon or throttle pod networking on
 `zimaboard-0`.
 
 ## Validation
@@ -21,6 +22,7 @@ After Argo CD syncs this app:
 kubectl get crd network-attachment-definitions.k8s.cni.cncf.io
 kubectl -n kube-system rollout status daemonset/kube-multus-ds
 kubectl -n kube-system get pods -l app=multus
+kubectl -n kube-system top pod -l app=multus --containers
 ```
 
 Rollback is to remove the `platform-multus` Argo CD Application only after all

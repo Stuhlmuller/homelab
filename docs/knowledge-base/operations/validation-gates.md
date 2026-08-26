@@ -107,6 +107,17 @@ bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/o
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
+After a Multus rollout or burst of Octelium service pod replacements, verify
+all Multus pods remain ready and below their 512Mi memory limit. A daemon at its
+limit plus `multus-shim` timeouts means the Octelium ingress can lose every
+endpoint while Argo CD still reports `platform-multus` healthy.
+
+```sh
+kubectl -n kube-system rollout status daemonset/kube-multus-ds
+kubectl -n kube-system top pod -l app=multus --containers
+kubectl -n octelium get events --field-selector reason=FailedCreatePodSandBox
+```
+
 After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
 checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
 PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
