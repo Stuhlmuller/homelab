@@ -24,8 +24,8 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
 - Cache and jobs: dedicated authenticated Redis 8.2 with AOF and RDB
   persistence disabled, matching AFFiNE's official deployment model. Redis
   runtime files use a 256 Mi node-local `emptyDir`, so cache and queue churn
-  cannot issue NFS writes. The former 5 Gi NFS claim remains mounted read-only
-  at `/retained-data` for rollback and is not active Redis storage.
+  cannot issue NFS writes. The former 5 Gi NFS claim remains retained but
+  unmounted for manual rollback and is not active Redis storage.
 - Application state: uploaded blobs use a 50 Gi retained PVC; the AFFiNE config
   directory uses a 1 Gi retained PVC. The committed `config.json` is mounted
   read-only so security, storage, and URL behavior remain declarative.
@@ -153,7 +153,7 @@ of the PostgreSQL, storage, and config claims. Restore PostgreSQL and the
 blob/config claims from the same recovery point. Redis is intentionally
 ephemeral: a pod or node restart clears caches and can discard queued work, so
 verify background jobs after recovery. The former Redis AOF claim is retained
-only as a rollback artifact while this mitigation is evaluated. Roll
+unmounted as a manual rollback artifact. Roll
 application code back through Git; never delete retained claims as part of a
 rollback. After the `0.27.0` database migration has run, do not roll application
 code back to `0.26.x` against the migrated database. Restore the pre-upgrade

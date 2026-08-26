@@ -88,7 +88,9 @@ AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
 reaching the QNAP. PostgreSQL remains durable on NFS with WAL compression and
-checkpoint pacing; synchronous commit remains enabled.
+checkpoint pacing; synchronous commit remains enabled. The former 5 Gi Redis
+AOF claim remains retained by the StatefulSet template but unmounted, preserving
+its data without keeping it on the pod I/O path.
 
 `affine-postgres` was fenced at zero replicas during the first phase of the
 2026-07-20 stale-lock recovery; live validation confirmed the pod was absent

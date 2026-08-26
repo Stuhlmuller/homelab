@@ -56,6 +56,7 @@ and liveness recovery windows are 30 minutes, with 120 seconds for shutdown.
 AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
+AFFiNE's former 5 Gi Redis AOF claim remains retained but unmounted.
 
 ## Requested Applications
 

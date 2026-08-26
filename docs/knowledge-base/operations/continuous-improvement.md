@@ -368,7 +368,7 @@ policy`.
   `up{job="kube-state-metrics"} == 1` and that the kube-state-metrics-backed
   Grafana rules return live series.
 
-- **Status:** mitigated; 30-minute rollout validation passed
+- **Status:** mitigated; obsolete mount removal prepared for rollout
 - **Area:** AFFiNE / storage I/O
 - **Evidence:** The operator reported that QNAP responsiveness returned several
   minutes after AFFiNE, its PostgreSQL database, and Redis were scaled to zero.
@@ -376,20 +376,23 @@ policy`.
   official deployment does not use: AOF with an NFS `fsync` every second and an
   RDB snapshot after 1,000 changes in 60 seconds. AOF rewrites and RDB snapshots
   can rewrite the full Redis dataset. The deployed mitigation now uses a
-  node-local `emptyDir` for Redis, retains the former NFS claim read-only, and
+  node-local `emptyDir` for Redis, retains the former NFS claim, and
   paces/compresses PostgreSQL checkpoint and WAL writes. During the 2026-07-16
   rollout, AFFiNE stayed synced, healthy, and restart-free for more than 30
   minutes. Redis reported AOF and RDB persistence disabled. The `acer` NFS
   client averaged about 4.2 RPC/s, 0.49 writes/s, and 0.27 commits/s with no
   retransmissions; wired QNAP latency remained sub-millisecond with no packet
-  loss.
+  loss. Read-only validation on 2026-08-26 reconfirmed AFFiNE Synced and
+  Healthy, Redis Ready with AOF and RDB disabled, and
+  `data-affine-redis-0` Bound. Desired state now removes only the obsolete
+  `/retained-data` mount while preserving the claim template and its data.
 - **Risk:** Redis is now ephemeral, so a pod or node restart can discard cache
   entries and queued work. PostgreSQL remains durable on the QNAP and still
   needs normal backup and latency monitoring.
-- **Next step:** keep the mitigation. Retain the former Redis claim until the
-  rollback window closes, then remove it through the normal GitOps workflow.
-  Track remaining operator-to-wired latency under the separate networking
-  finding below.
+- **Next step:** sync the cleanup revision, verify Redis remains Ready without a
+  `/retained-data` mount, and confirm `data-affine-redis-0` remains Bound. Keep
+  the PVC as an unmounted rollback artifact. Track remaining operator-to-wired
+  latency under the separate networking finding below.
 
 - **Status:** open
 - **Area:** networking / storage access
