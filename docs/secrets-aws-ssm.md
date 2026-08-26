@@ -91,7 +91,7 @@ stack because Terraform manages the Kubernetes Secret.
 | App | ExternalSecret | Target Secret | SSM parameters |
 | --- | --- | --- | --- |
 | argocd | `argocd-oidc-sso` | `argocd-oidc-sso` | `/homelab/argocd/oidc/issuer`, `/homelab/argocd/oidc/client-id`, `/homelab/argocd/oidc/client-secret` |
-| argocd-image-updater | `argocd-image-updater-git` | `argocd-image-updater-git` | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` |
+| argocd-image-updater | retired; no ExternalSecret consumer | none | `/homelab/argocd-image-updater/github-app/id`, `/homelab/argocd-image-updater/github-app/installation-id`, `/homelab/argocd-image-updater/github-app/private-key` state tombstones |
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | cordium | `cordium-agent-auth` | `cordium-agent-auth-v1` | `/homelab/cordium/agent-auth-token` |
@@ -121,6 +121,11 @@ not an active secret contract and has no ExternalSecret consumer. It remains in
 the OpenTofu declaration as a state tombstone because policy rejects SSM
 parameter deletion; remove it only through a reviewed repository-owned state
 and secret-retirement workflow.
+
+The retired `/homelab/argocd-image-updater/github-app/*` parameters likewise
+have no ExternalSecret, workload consumer, or reader IAM grant. They remain
+declared only as OpenTofu state tombstones; remove their values and state
+through a separate reviewed secret-retirement workflow.
 
 For Argo CD, `/homelab/argocd/oidc/issuer` is a compatibility copy for the
 generated Secret and should match the literal Microsoft Entra issuer committed
@@ -255,15 +260,6 @@ to read the zone and edit DNS records for `stinkyboi.com`; do not store the
 token itself in git. The cert-manager ExternalSecret refreshes this value every
 five minutes so DNS-01 token rotations converge quickly without hand-editing the
 Kubernetes Secret.
-
-Argo CD Image Updater stores its GitHub App write-back credential in
-`argocd-image-updater-git`. Replace the GitHub App ID, installation ID, and
-private key placeholders in SSM before relying on automated image update pull
-requests. The GitHub App needs repository contents write access and pull-request
-write access for `Stuhlmuller/homelab`; the private key must stay outside git.
-The ExternalSecret uses `refreshPolicy: OnChange`; bump
-`homelab.rst.io/github-app-credentials-ssm-version` after SSM value replacement
-so External Secrets refreshes the Kubernetes Secret.
 
 ## Microsoft Entra SSO Bootstrap
 

@@ -51,16 +51,19 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/argocd-image-updater/github-app/id" = {
-      description   = "GitHub App ID used by Argo CD Image Updater to open image update pull requests."
+      description   = "Retired Image Updater GitHub App ID retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/argocd-image-updater/github-app/installation-id" = {
-      description   = "GitHub App installation ID used by Argo CD Image Updater to open image update pull requests."
+      description   = "Retired Image Updater GitHub App installation ID retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/argocd-image-updater/github-app/private-key" = {
-      description   = "GitHub App private key used by Argo CD Image Updater to open image update pull requests."
+      description   = "Retired Image Updater GitHub App private key retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/affine/postgres-password" = {
       description = "AFFiNE dedicated PostgreSQL application password."
