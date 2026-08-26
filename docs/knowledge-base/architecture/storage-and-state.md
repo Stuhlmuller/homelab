@@ -77,9 +77,10 @@ turns over NFS. The volume is capped at `2Gi` to protect node storage. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
-The 2026-08-21 rscstore recovery preserves an unreplayable DuckDB WAL by
-renaming it on the retained PVC before starting from the last valid checkpoint.
-The completion marker makes retries read-only; the quarantined WAL is not
+The latest rscstore recovery preserves the unreplayable 2026-08-26 DuckDB WAL
+by renaming it on the retained PVC before starting from the last valid
+checkpoint. A new completion marker leaves the earlier 2026-08-21 recovery
+artifacts untouched and makes retries read-only; quarantined WALs are not
 deleted automatically.
 
 AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
