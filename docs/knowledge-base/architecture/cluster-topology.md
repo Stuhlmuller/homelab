@@ -44,6 +44,45 @@ Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
 
+### Octelium dataplane capacity
+
+Terragrunt currently assigns the Octelium dataplane label to `zimaboard-0` and
+`zimaboard-2`. The August 2026 outage showed that this is not resilient enough:
+a failover can start 51 dataplane-selected Deployments plus the node-local
+gateway agent at once. Seven-day measurements put the full fleet near 3.1 GiB
+memory at p95, while its declared memory requests total only about 315 MiB.
+
+Do not use the existing control-plane node or `zimaboard-1` as the replacement
+dataplane target. The control-plane node has etcd and rollout pod-slot risk;
+`zimaboard-1` already hosts the Octelium control plane and stateful workloads.
+After the 16 stale `*.homelab` service proxies are removed, the retained
+dataplane still uses about 2.7 GiB memory at p95 and creates 35 Deployment Pods
+plus the gateway agent.
+
+The durable recovery requirement is a dedicated third dataplane-capable worker
+with enough real memory and pod capacity for that retained fleet plus startup
+and rolling-update headroom. No hardware choice or sizing is declared yet.
+Before assigning its label, remove the stale services, set representative proxy
+requests, and validate the chosen node against measured use. The declarative
+label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
+
+Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
+capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
+limits simultaneous Unix-socket connections to the thick daemon so its
+delegated CNI child processes stay within the daemon container's memory budget.
+It does not limit scheduler placement or the final number of proxy Pods. During
+the August 2026 failure, the limit was already
+`4`: 51 dataplane-selected Pods were created in eight seconds, an unrelated
+client Pod joined the same window, container starts continued for about 27
+seconds, and `zimaboard-2` became NotReady 44 seconds later. Multus peaked near
+`24Mi` memory and `162m` CPU, far below its `512Mi` memory limit, with no
+observed container OOM event before telemetry stopped. The node exposes only
+about `1.28Gi` allocatable memory, so even the retained fleet's `2.7Gi` p95
+cannot reach steady state there. A lower connection limit would only queue CNI
+work and can add head-of-line delay to every node-local CNI operation; it would
+not remove the overcommit. Revisit the value only with a controlled startup
+test on a correctly sized dedicated dataplane worker.
+
 ## Canonical Endpoints
 
 - Talos endpoint: `10.1.0.199`

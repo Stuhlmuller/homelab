@@ -90,6 +90,19 @@ gate.
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | external-secrets, cert-manager, istio                                              |
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | cert-manager, istio, platform-storage                                              |
 
+## Worker Resource Contracts
+
+- OpenClaw requests `1` CPU and `2Gi` memory for the app and caps it at
+  `1500m` and `6Gi`; its init containers have matching CPU limits, and required
+  affinity keeps the workload off Octelium dataplane nodes.
+- Deluge, its Gluetun and helper sidecars, Prowlarr, Radarr, and Sonarr all have
+  explicit CPU and memory requests and limits derived from the 2026-08-26
+  seven-day Prometheus sample. Deluge port reconciliation is low-frequency and
+  its metrics endpoint serves a one-minute cache instead of spawning console
+  commands per scrape.
+- Keep the measured values and the post-rollout remeasurement rule in
+  [[application-notes#Zimaboard-0 Resource Envelope]].
+
 ## Mesh Policy Summary
 
 Istio ambient is committed for the `affine`, `ai`, `automation`, and `monitoring`

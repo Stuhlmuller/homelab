@@ -7,21 +7,27 @@ under `/data/openclaw`.
 
 ## Resource Profile
 
-The app container requests `1` CPU and `2Gi` memory, with a `6Gi` memory limit
-and no CPU limit so Codex-backed agent work can burst when node capacity is
-available. It requests `5Gi` and limits `6Gi` of ephemeral storage: the shared
+The app container requests `1` CPU and `2Gi` memory, with `1500m` CPU and `6Gi`
+memory limits. Seven days of five-minute samples measured about `1` CPU and
+`1.8Gi` memory at p95. Multiple pod series exceeded `4Gi`, maxima approached
+`6Gi`, and three terminated as OOMKilled. The CPU limit throttles rare bursts
+before they can starve a four-core worker; the existing memory limit avoids a
+known regression while the pod is kept off Octelium dataplane nodes. It requests
+`5Gi` and limits `6Gi` of ephemeral storage: the shared
 Nix store uses about `2.7Gi`, while the separately capped Codex runtime can use
 up to `2Gi`. The `5Gi` request reserves that expected footprint; the `6Gi`
-limit leaves room for the writable layer and logs. The bootstrap init container
-requests `500m` CPU and `1Gi` memory with a `3Gi` memory limit because it
-validates config and installs channel plugins during startup. The local TCP
-proxy stays small at `25m` CPU and `64Mi` memory requested with a `256Mi`
-memory limit.
+limit leaves room for the writable layer and logs. The `operator-toolbox` init
+container requests `1` CPU and `2Gi` memory and limits `1500m` CPU and `3Gi`
+memory. The bootstrap init container requests `500m` CPU and `1Gi` memory and
+limits `1200m` CPU and `2Gi` memory. The local TCP proxy stays small at `25m`
+CPU and `64Mi` memory requested, with `50m` CPU and `128Mi` memory limits.
 
-OpenClaw excludes the `acer` control-plane node from scheduling. The 2026-08-25
-recovery found bit corruption in both its cached image and control-plane etcd
-records on that node. Remove the affinity only after `acer` storage and memory
-have passed offline diagnostics and fresh image reads remain stable.
+OpenClaw excludes the `acer` control-plane node and every Octelium dataplane
+node from scheduling. The 2026-08-25 recovery found bit corruption in both
+`acer`'s cached image and control-plane etcd records. The dataplane exclusion
+keeps OpenClaw's measured memory peaks from evicting ingress proxies. Remove
+either affinity only after the affected node role has dedicated capacity and
+passes its documented validation.
 
 ## Workspace Runtime Setup
 

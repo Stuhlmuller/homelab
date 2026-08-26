@@ -44,36 +44,35 @@ shared `DELUGE_INCOMING_PORT` value. A `port-config` sidecar shares the Deluge
 config volume and applies:
 
 ```sh
-deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT}); config --set random_outgoing_ports true; config --set outgoing_ports (0, 0)"
+deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT}); config --set random_outgoing_ports true"
 ```
 
-The sidecar retries while Deluge starts and verifies that Deluge reports the
-configured `listen_ports` and random outgoing port behavior. It still asks
-Deluge to reset `outgoing_ports` to the default range, but verification only
-depends on random outgoing mode because Deluge can keep reporting its prior
-stored range while honoring `random_outgoing_ports: True`. Keep the forwarded
-AirVPN port fixed only for incoming connections; pinning outgoing connections
-to the same single port can leave torrents unable to make enough peer
-connections. If the sidecar cannot connect to Deluge and apply the port
-configuration immediately, it keeps retrying in the background instead of
-blocking the UI service endpoint. Pod readiness is gated by both Gluetun and
-the local Deluge Web listener, so Sonarr and Radarr do not receive a ready
-Service endpoint while the web API on port `8112` is still refusing
-connections. Deluge daemon health is covered separately by the app startup and
-liveness probes plus the exported RPC metric.
+The sidecar verifies the typed values in `/config/core.conf` through Deluge's
+Python `Config` API instead of matching human-formatted console output. When
+state differs, it applies the complete idempotent command, waits 60 seconds
+between startup retries, and rechecks every five minutes after convergence.
+Keep the forwarded AirVPN port fixed only for incoming connections; pinning
+outgoing connections to the same single port can leave torrents unable to make
+enough peer connections. A failed reconciliation remains non-blocking for the
+UI, but removes the local convergence marker and emits a sidecar error. Pod
+readiness is gated by both Gluetun and the local Deluge Web listener, so Sonarr
+and Radarr do not receive a ready Service endpoint while the web API on port
+`8112` is still refusing connections. Deluge daemon health is covered
+separately by the app startup and liveness probes plus the exported RPC metric.
 
-A `daemon-metrics` sidecar runs `deluge-console -c /config status` and probes
-Gluetun's local health endpoint on each scrape. It exposes
+A `daemon-metrics` sidecar refreshes `deluge-console -c /config status` and the
+Gluetun local health endpoint once per minute, then serves that cached snapshot
+without spawning a console process for every Prometheus scrape. It exposes
 `deluge_daemon_rpc_healthy` and `deluge_vpn_healthy` on the service `metrics`
-port as Prometheus text format. Each scrape runs a fresh bounded status check
-so one stuck `deluge-console` process cannot leave Prometheus reading a stale
-unhealthy cache after Deluge recovers. Prometheus scrapes them through
+port as Prometheus text format. The cache starts unhealthy and every refresh is
+bounded, so a stuck console process cannot block the HTTP metrics endpoint.
+Prometheus scrapes it through
 `clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
 alerts when either metric is missing or failing. Prometheus samples every 45
-seconds with a 30-second deadline; the daemon RPC is capped at 20 seconds so
-transient NFS latency does not immediately look like a hard daemon outage. This
-catches both a failed VPN sidecar and the case where Kubernetes and Gluetun look healthy but `deluged`
-cannot restore state or accept console connections.
+seconds with a 30-second deadline; the cached daemon RPC refresh is capped at
+20 seconds so transient storage latency does not block scrapes. This catches
+both a failed VPN sidecar and the case where Kubernetes and Gluetun look
+healthy but `deluged` cannot restore state or accept console connections.
 
 ## Download Paths
 

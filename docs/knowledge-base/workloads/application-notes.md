@@ -58,6 +58,26 @@ copying only the profile runtime closure while copying the full database leaves
 missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
 the homelab flake.
 
+## Zimaboard-0 Resource Envelope
+
+A seven-day Prometheus review on 2026-08-26 found that scheduling requests did
+not describe the work pinned to `zimaboard-0`. Deluge's `port-config` helper
+used about `905m` CPU at p95 while retrying a console-output false negative
+every two seconds, and `daemon-metrics` used about `296m` because every scrape
+spawned `deluge-console`. The Deluge app itself measured `437m` CPU and `213Mi`
+memory at p95. Prowlarr, Radarr, and Sonarr stayed below `24m` CPU p95 but each
+needed roughly `134-171Mi` memory. OpenClaw measured about `995m` CPU and
+`1.8Gi` memory at p95. Multiple app pod series exceeded `4Gi`, maxima approached
+`6Gi`, and three containers terminated as OOMKilled.
+
+Desired state now bounds every long-running container. Deluge verifies typed
+`core.conf` values, backs failed startup reconciliation off to 60 seconds,
+rechecks every five minutes, and refreshes cached health metrics once per
+minute. OpenClaw caps init and app CPU bursts and cannot schedule on an Octelium
+dataplane node; its `6Gi` memory limit remains because observed use exceeded
+`4Gi`. The three Servarr apps have explicit requests and limits. Re-measure
+after 48 hours of healthy runtime before raising a limit or relaxing affinity.
+
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
 
