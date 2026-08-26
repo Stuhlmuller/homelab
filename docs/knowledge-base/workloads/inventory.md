@@ -43,7 +43,8 @@ credentials yet.
 
 `media-postgres` keeps recovery-aware 30-minute startup and runtime liveness
 windows plus a 120-second termination grace period, but active data now uses a
-retained local volume pinned to `acer`. Readiness executes a real SQL query.
+retained local volume pinned to `acer`. Readiness and liveness execute a real
+SQL query.
 The clean writable StatefulSet has no active NFS mount and uses a one-time
 old-writer fence. A nightly CronJob writes verified 14-day logical backups to
 the former NFS claim; the sibling recovery overlay fences both before restore.
@@ -52,6 +53,9 @@ the former NFS claim; the sibling recovery overlay fences both before restore.
 `n8n-postgres-stale-lock-recovery-20260803` Sync hook after phase-one live
 validation confirmed zero writers and the original bound claim. Its startup
 and liveness recovery windows are 30 minutes, with 120 seconds for shutdown.
+AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
+execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
+gate.
 
 ## Requested Applications
 
