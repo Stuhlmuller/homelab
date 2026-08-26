@@ -17,6 +17,15 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Terragrunt generated-unit filters"
+(
+  terragrunt_stack_changed() { return 0; }
+  [[ "$(terragrunt_changed_filter)" == "*" ]]
+  terragrunt_stack_changed() { return 1; }
+  [[ "$(terragrunt_changed_filter)" == "* | [main...HEAD]" ]]
+)
+echo "::endgroup::"
+
 echo "::group::Operator OpenTofu validation"
 (
   cd IaC/operator/github-actions-role-policy

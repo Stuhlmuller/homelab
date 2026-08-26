@@ -208,7 +208,7 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter)" --parallelism 1 --source-update -- plan -lock=false -no-color
 )
 echo "::endgroup::"
 
@@ -237,7 +237,7 @@ echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*')" --parallelism 1 --source-update -- plan -lock=false -no-color
+    terragrunt run --all --filter "$(terragrunt_changed_filter)" --parallelism 1 --source-update -- plan -lock=false -no-color
   )
 
   planned_azuread_count=0
