@@ -38,10 +38,12 @@ Deployments. Do not keep an explicit `rollingUpdate: null` field because it can
 compare differently from the live object's absent field.
 
 `octeliumee-rscstore` includes an incident-specific, completion-marked init
-container for the 2026-08-21 DuckDB recovery. It renames the unreplayable
-`store.db.wal` to `store.db.wal.quarantined-20260821` before startup and never
-deletes it. Remove the init container only after rscstore is healthy and the
-preserved WAL is no longer needed for forensic recovery.
+container for the 2026-08-26 DuckDB recovery. It renames the unreplayable
+`store.db.wal` to `store.db.wal.quarantined-20260826` before startup and never
+deletes it. The earlier `20260821` marker and quarantined WAL remain untouched.
+If the new quarantine already exists while its completion marker is absent, the
+init container fails instead of overwriting evidence. Remove it only after
+rscstore is healthy and the preserved WAL is no longer needed for recovery.
 
 The `svc-console-octelium`, `svc-dirsync-octelium`,
 `svc-enterprise-octelium-api`, and `svc-public-octelium` Deployments are

@@ -743,10 +743,12 @@ spec:
         - /bin/sh
         - -ec
         - |
-          marker=/octelium-data/.homelab-rscstore-wal-recovery-20260821
+          marker=/octelium-data/.homelab-rscstore-wal-recovery-20260826
           [ -f "$marker" ] && exit 0
           if [ -f /octelium-data/store.db.wal ]; then
-            mv /octelium-data/store.db.wal /octelium-data/store.db.wal.quarantined-20260821
+            quarantine=/octelium-data/store.db.wal.quarantined-20260826
+            [ ! -e "$quarantine" ] || { echo "error: $quarantine already exists" >&2; exit 1; }
+            mv /octelium-data/store.db.wal "$quarantine"
           fi
           touch "$marker"
         image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
