@@ -67,7 +67,11 @@ roles need identity-based KMS permissions for both keys.
   in-cluster Alertmanager contact point. External Secrets renders the Discord
   URL into Alertmanager's runtime config Secret because the Operator schema has
   no Discord URL-file field. Both routing layers repeat unresolved alerts
-  hourly before Alertmanager sends the resolved notification. Grafana
+  hourly before Alertmanager sends the resolved notification. Alertmanager
+  groups by alert name and namespace so pod-level incident fan-out does not
+  exhaust Discord's webhook rate limit. Its bounded Discord template reports
+  only status, alert name, namespace, and counts, avoiding oversized grouped
+  payloads. Grafana
   provisioning deletes
   the retired `homelab-discord` and `homelab-openclaw-alert-hook` receiver UIDs
   so persisted Grafana PVC state does not keep retrying removed integrations.
