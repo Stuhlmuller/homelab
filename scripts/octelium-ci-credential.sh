@@ -8,14 +8,12 @@ credential_name="homelab-ci"
 user_name="homelab-ci"
 policy_name="homelab-ci-kubernetes-api-access"
 secret_name="OCTELIUM_CI_AUTH_TOKEN"
-credential_type="access-token"
-session_type="clientless"
 octelium_homedir=""
 octelium_proxy=""
 apply_catalog="true"
 update_github="true"
 rotate_credential="true"
-delete_user_sessions="false"
+delete_user_sessions="true"
 dry_run="false"
 environments=("homelab-plan" "homelab-production")
 
@@ -42,15 +40,13 @@ Options:
                                Default: homelab-ci-kubernetes-api-access
   --secret-name NAME           GitHub environment secret name.
                                Default: OCTELIUM_CI_AUTH_TOKEN
-  --credential-type TYPE       Octelium credential type. Default: access-token
-  --session-type TYPE          Octelium session type. Default: clientless
   --homedir PATH               Octelium CLI homedir to use for authentication.
                                Useful for bootstrap recovery sessions.
   --octelium-proxy URL         Proxy URL used only for octeliumctl commands.
                                Useful with a local CONNECT proxy during recovery.
-  --delete-user-sessions       Delete active Octelium sessions for --user before
-                               rotating the credential.
-  --delete-user-sessions-only  Delete active Octelium sessions for --user without
+  --delete-user-sessions       Delete all Octelium sessions for --user before
+                               rotating the credential. This is the default.
+  --delete-user-sessions-only  Delete all Octelium sessions for --user without
                                applying the catalog, rotating a credential, or
                                updating GitHub.
   --env NAME                   GitHub environment to update. May be repeated.
@@ -94,14 +90,6 @@ while [[ $# -gt 0 ]]; do
       secret_name="$2"
       shift 2
       ;;
-    --credential-type)
-      credential_type="$2"
-      shift 2
-      ;;
-    --session-type)
-      session_type="$2"
-      shift 2
-      ;;
     --homedir)
       octelium_homedir="$2"
       shift 2
@@ -135,6 +123,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-github)
       update_github="false"
+      delete_user_sessions="false"
       shift
       ;;
     --dry-run)
@@ -182,7 +171,7 @@ fi
 
 run_octeliumctl() {
   if [[ -n "$octelium_proxy" ]]; then
-    HTTPS_PROXY="$octelium_proxy" ALL_PROXY="$octelium_proxy" NO_PROXY= \
+    HTTPS_PROXY="$octelium_proxy" ALL_PROXY="$octelium_proxy" NO_PROXY='' \
       "${octeliumctl_cmd[@]}" "$@"
   else
     "${octeliumctl_cmd[@]}" "$@"
@@ -202,8 +191,6 @@ validate_name "$credential_name" "--credential-name"
 validate_name "$user_name" "--user"
 validate_name "$policy_name" "--policy"
 validate_name "$secret_name" "--secret-name"
-case "$credential_type" in access-token|auth-token|oauth2) ;; *) echo "error: unsupported --credential-type: $credential_type" >&2; exit 1 ;; esac
-case "$session_type" in client|clientless) ;; *) echo "error: unsupported --session-type: $session_type" >&2; exit 1 ;; esac
 for env_name in "${environments[@]}"; do
   validate_name "$env_name" "--env"
 done
@@ -213,7 +200,7 @@ if [[ "$dry_run" == "true" ]]; then
     echo "DRY-RUN would apply ${catalog} to ${domain}"
   fi
   if [[ "$delete_user_sessions" == "true" ]]; then
-    echo "DRY-RUN would delete active Octelium sessions for User ${user_name}"
+    echo "DRY-RUN would delete all Octelium sessions for User ${user_name}"
   fi
   if [[ "$rotate_credential" == "true" ]]; then
     echo "DRY-RUN would create or rotate Octelium credential ${credential_name} for User ${user_name} with Policy ${policy_name}"
@@ -224,6 +211,13 @@ if [[ "$dry_run" == "true" ]]; then
     printf '\n'
   fi
   exit 0
+fi
+
+if [[ "$delete_user_sessions" == "true" &&
+  "$rotate_credential" == "true" &&
+  "$update_github" != "true" ]]; then
+  echo "error: refusing to reset User ${user_name} sessions while GitHub secret updates are disabled" >&2
+  exit 1
 fi
 
 preflight_github_secret_targets() {
@@ -279,12 +273,38 @@ if [[ "$apply_catalog" == "true" ]]; then
   retire_legacy_ci_service
 fi
 
+validate_target_user() {
+  local user_json
+
+  if [[ "$rotate_credential" != "true" && "$delete_user_sessions" != "true" ]]; then
+    return 0
+  fi
+
+  if ! user_json="$(
+    run_octeliumctl get user "$user_name" --domain "$domain" -o json 2>&1
+  )"; then
+    echo "error: could not read Octelium User ${user_name}" >&2
+    printf '%s\n' "$user_json" >&2
+    exit 1
+  fi
+  if ! jq -e \
+    --arg user "$user_name" \
+    'type == "object" and .metadata.name == $user and .spec.type == "WORKLOAD"' \
+    >/dev/null 2>&1 <<<"$user_json"; then
+    echo "error: refusing to rotate or delete sessions for non-WORKLOAD User ${user_name}" >&2
+    exit 1
+  fi
+
+  echo "Verified Octelium User ${user_name} is a dedicated WORKLOAD User."
+}
+
+validate_target_user
 preflight_github_secret_targets
 
-delete_active_user_sessions() {
+delete_user_sessions_for_user() {
   local sessions_json
   local session_name
-  local active_session_names=()
+  local session_names=()
 
   sessions_json="$(
     run_octeliumctl get sessions \
@@ -295,54 +315,39 @@ delete_active_user_sessions() {
   )"
 
   if grep -Eq '^No Sessions found$' <<<"$sessions_json"; then
-    echo "No active Octelium sessions found for User ${user_name}."
+    echo "No Octelium sessions found for User ${user_name}."
     return 0
   fi
-  if ! jq -e . >/dev/null 2>&1 <<<"$sessions_json"; then
-    echo "error: octeliumctl returned non-JSON session output" >&2
+  if ! jq -e \
+    'type == "object" and (.items | type == "array") and all(.items[]; (.metadata.name | type == "string" and length > 0))' \
+    >/dev/null 2>&1 <<<"$sessions_json"; then
+    echo "error: octeliumctl returned invalid session output" >&2
     printf '%s\n' "$sessions_json" >&2
     exit 1
   fi
 
   while IFS= read -r session_name; do
     if [[ -n "$session_name" ]]; then
-      active_session_names+=("$session_name")
+      session_names+=("$session_name")
     fi
   done < <(
     jq -r '
-      .items[]? |
-      select(.spec.state == "ACTIVE") |
+      .items[] |
       .metadata.name
     ' <<<"$sessions_json"
   )
 
-  if [[ "${#active_session_names[@]}" -eq 0 ]]; then
-    echo "No active Octelium sessions found for User ${user_name}."
+  if [[ "${#session_names[@]}" -eq 0 ]]; then
+    echo "No Octelium sessions found for User ${user_name}."
     return 0
   fi
 
-  echo "Deleting ${#active_session_names[@]} active Octelium sessions for User ${user_name}..."
-  for session_name in "${active_session_names[@]}"; do
+  echo "Deleting ${#session_names[@]} Octelium sessions for User ${user_name}..."
+  for session_name in "${session_names[@]}"; do
     run_octeliumctl delete session "$session_name" --domain "$domain" >/dev/null
     echo "Deleted Octelium session ${session_name}"
   done
 }
-
-if [[ "$delete_user_sessions" == "true" ]]; then
-  delete_active_user_sessions
-fi
-
-if [[ "$rotate_credential" != "true" ]]; then
-  echo "Octelium user session cleanup complete."
-  exit 0
-fi
-
-credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
-cleanup() {
-  rm -f "$credential_json"
-}
-trap cleanup EXIT
-chmod 0600 "$credential_json"
 
 credential_exists="false"
 existing_credential_json=""
@@ -354,15 +359,19 @@ ensure_existing_credential_spec() {
     return 0
   fi
 
+  if ! jq -e --arg user "$user_name" '.spec.user == $user' \
+    <<<"$existing_credential_json" >/dev/null; then
+    echo "error: refusing to rebind existing credential ${credential_name} from another User" >&2
+    exit 1
+  fi
+
   if jq -e \
     --arg user "$user_name" \
     --arg policy "$policy_name" \
-    --arg credential_type "$credential_type" \
-    --arg session_type "$session_type" \
     '
       .spec.user == $user and
-      .spec.type == ($credential_type | ascii_upcase | gsub("-"; "_")) and
-      .spec.sessionType == ($session_type | ascii_upcase) and
+      .spec.type == "ACCESS_TOKEN" and
+      .spec.sessionType == "CLIENTLESS" and
       (.spec.authorization.policies // []) == [$policy]
     ' <<<"$existing_credential_json" >/dev/null; then
     echo "Existing Octelium credential ${credential_name} already targets User ${user_name} with Policy ${policy_name}."
@@ -370,16 +379,14 @@ ensure_existing_credential_spec() {
   fi
 
   credential_spec="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential-spec.XXXXXX.yaml")"
-  local credential_type_value="${credential_type^^}"
-  credential_type_value="${credential_type_value//-/_}"
   {
     printf 'kind: Credential\n'
     printf 'metadata:\n'
     printf '  name: %s\n' "$credential_name"
     printf 'spec:\n'
-    printf '  type: %s\n' "$credential_type_value"
+    printf '  type: ACCESS_TOKEN\n'
     printf '  user: %s\n' "$user_name"
-    printf '  sessionType: %s\n' "${session_type^^}"
+    printf '  sessionType: CLIENTLESS\n'
     printf '  authorization:\n'
     printf '    policies:\n'
     printf '      - %s\n' "$policy_name"
@@ -404,24 +411,85 @@ create_args=(
   --domain "$domain"
   --user "$user_name"
   --policy "$policy_name"
-  --type "$credential_type"
-  --session-type "$session_type"
+  --type access-token
+  --session-type clientless
   -o json
 )
 
-if existing_credential_json="$(run_octeliumctl get cred "$credential_name" --domain "$domain" -o json 2>/dev/null)"; then
-  credential_exists="true"
-  if [[ "$update_github" != "true" ]]; then
-    echo "error: refusing to rotate existing credential ${credential_name} while GitHub secret update is disabled" >&2
+if [[ "$rotate_credential" == "true" ]]; then
+  credentials_json=""
+  if ! credentials_json="$(
+    run_octeliumctl get creds \
+      --items-per-page 1000 \
+      --domain "$domain" \
+      -o json 2>&1
+  )"; then
+    echo "error: could not list Octelium credentials before session reset" >&2
+    printf '%s\n' "$credentials_json" >&2
     exit 1
   fi
-  ensure_existing_credential_spec
+
+  if ! grep -Eq '^[[:space:]]*No Credentials found[[:space:]]*$' <<<"$credentials_json"; then
+    if ! jq -e 'type == "object" and (.items | type == "array")' >/dev/null 2>&1 <<<"$credentials_json"; then
+      echo "error: octeliumctl returned non-JSON credential output" >&2
+      printf '%s\n' "$credentials_json" >&2
+      exit 1
+    fi
+
+    credential_count="$(
+      jq -r \
+        --arg name "$credential_name" \
+        '[.items[] | select(.metadata.name == $name)] | length' \
+        <<<"$credentials_json"
+    )"
+    if [[ "$credential_count" -gt 1 ]]; then
+      echo "error: multiple Octelium credentials named ${credential_name}" >&2
+      exit 1
+    fi
+    if [[ "$credential_count" -eq 1 ]]; then
+      credential_exists="true"
+      existing_credential_json="$(
+        jq -c \
+          --arg name "$credential_name" \
+          '.items[] | select(.metadata.name == $name)' \
+          <<<"$credentials_json"
+      )"
+    fi
+  fi
+
+  if [[ "$credential_exists" == "true" ]]; then
+    if [[ "$update_github" != "true" ]]; then
+      echo "error: refusing to rotate existing credential ${credential_name} while GitHub secret update is disabled" >&2
+      exit 1
+    fi
+    ensure_existing_credential_spec
+    create_args+=(--rotate)
+  fi
+fi
+
+if [[ "$rotate_credential" == "true" ]]; then
+  credential_json="$(mktemp "${TMPDIR:-/tmp}/octelium-ci-credential.XXXXXX.json")"
+  cleanup() {
+    rm -f "$credential_json"
+  }
+  trap cleanup EXIT
+  chmod 0600 "$credential_json"
+fi
+
+if [[ "$delete_user_sessions" == "true" ]]; then
+  delete_user_sessions_for_user
+fi
+
+if [[ "$rotate_credential" != "true" ]]; then
+  echo "Octelium user session cleanup complete."
+  exit 0
+fi
+
+if [[ "$credential_exists" == "true" ]]; then
   echo "Rotating existing Octelium credential ${credential_name}..."
-  create_args+=(--rotate)
 else
   echo "Creating Octelium credential ${credential_name}..."
 fi
-
 run_octeliumctl "${create_args[@]}" "$credential_name" >"$credential_json"
 
 credential_token="$(
@@ -439,10 +507,19 @@ if [[ -z "$credential_token" ]]; then
   exit 1
 fi
 
+set_github_environment_secret() {
+  local env_name="$1"
+
+  until printf '%s' "$credential_token" |
+    gh secret set "$secret_name" --repo "$github_repo" --env "$env_name" >/dev/null; do
+    echo "GitHub environment ${env_name} update failed; retrying in 5 seconds." >&2
+    sleep 5
+  done
+}
+
 if [[ "$update_github" == "true" ]]; then
   for env_name in "${environments[@]}"; do
-    printf '%s' "$credential_token" |
-      gh secret set "$secret_name" --repo "$github_repo" --env "$env_name" >/dev/null
+    set_github_environment_secret "$env_name"
     echo "Updated ${secret_name} in GitHub environment ${env_name}"
   done
 else

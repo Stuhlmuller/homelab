@@ -15,12 +15,13 @@ on:
       - "policy/**"
       - "scripts/**"
   workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact main commit to apply
+        required: true
+        type: string
 
 permissions: {}
-
-concurrency:
-  group: terragrunt-apply-production
-  cancel-in-progress: false
 
 env:
   AWS_REGION: us-east-1
@@ -33,6 +34,13 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Verify Dispatch Commit
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+
       - name: Check Out Repository
         # actions/checkout@v5
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -64,6 +72,10 @@ jobs:
     name: Terragrunt Apply
     needs:
       - static-policy
+    concurrency:
+      group: terragrunt-apply-production
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-24.04
     environment:
       name: homelab-production

@@ -83,6 +83,8 @@ contract for Grafana.
   existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
   This avoids the IPv6-only Gateway QUIC path, while the
   `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
+  The dedicated User gives both its clientless session and access token a
+  30-day lifetime; rotate the credential every 21 days.
   Trusted pull requests only open this live access path when the diff includes
   IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
 - The upstream kubeconfig is stored only as the Octelium Secret
@@ -226,7 +228,8 @@ narrower NOFX reconciliation after the Octelium Kubernetes route works again.
 The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
 
-- workload User `homelab-ci`;
+- workload User `homelab-ci` with matching 30-day clientless-session and
+  access-token lifetimes;
 - Policy `homelab-ci-kubernetes-api-access`, which allows only the public
   clientless Kubernetes Service;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
@@ -247,13 +250,19 @@ the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
 For existing credentials, the helper verifies GitHub environment secret write
 access by writing and deleting a temporary preflight secret, reconciles the
 credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, then rotates the token. It refuses to
-rotate an existing credential when GitHub secret updates are disabled, because
-that would invalidate the old CI token without storing the replacement.
-When recovering through a temporary Octelium CLI session, pass that session
-directory with `--homedir /tmp/octelium-admin`. If the public Octelium API path
-is not carrying authenticated admin CLI calls reliably, point `--octelium-proxy`
-at a local CONNECT proxy that forwards `octelium-api.stinkyboi.com:443` to the
+`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
+User so Octelium cannot reuse its old expiry, then rotates the token. It
+refuses to rotate an existing credential when GitHub secret updates are
+disabled, because that would invalidate the old CI token without storing the
+replacement.
+Run rotation in a quiet window: deleting the old Session invalidates the
+current bearer before the two GitHub environment secrets are updated. After
+token generation, the helper retries each secret write until both environments
+hold the replacement; if interrupted, rerun the helper.
+When recovering through a temporary Octelium CLI session, pass the unique home
+created by the recovery block below. If the public Octelium API path is not
+carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
+local CONNECT proxy that forwards `octelium-api.stinkyboi.com:443` to the
 in-cluster Istio gateway.
 
 Avoid running raw `octeliumctl create cred` in shared terminals or CI logs
@@ -261,16 +270,135 @@ because it can print the generated token. If the helper cannot reach GitHub,
 fix `gh auth status` or the target environment permissions, then rerun the
 helper so the token is captured and stored without being displayed.
 
-Rotate `OCTELIUM_CI_AUTH_TOKEN` on suspicious runs, after catalog policy
-changes, after runner image changes, and on a regular schedule. Reconcile the
+Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
+policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
-CI receives `401` or `403` from authenticated `kubectl` against
-`kubernetes-api-ci`, reapply the catalog, reconcile the Secret, and rotate the
-credential with `scripts/octelium-ci-credential.sh`.
-If the credential must be recovered, apply
-`docs/examples/octelium/homelab-ci-recovery.yaml` and rotate the GitHub
-credential to `homelab-ci-recovery` with the same helper. The recovery user is
-limited to the same public Kubernetes Service.
+CI receives Octelium `401` from authenticated `kubectl` against
+`kubernetes-api-ci`, reapply the catalog and rotate the credential with
+`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
+failure before rotating. Reconcile the upstream kubeconfig Secret when its
+Kubernetes credential changes.
+Recover the primary credential directly with the checked helper. Run this block
+from the repository root; it uses a private, unique admin home and removes it
+only after Octelium confirms logout:
+
+```sh
+(
+  set -euo pipefail
+  domain=stinkyboi.com
+  octelium_tmp_root="${TMPDIR:-/tmp}"
+  octelium_tmp_root="${octelium_tmp_root%/}"
+  octelium_homedir="$(mktemp -d "${octelium_tmp_root}/octelium-admin.XXXXXX")"
+  chmod 0700 "$octelium_homedir"
+
+  # shellcheck disable=SC2329 # Invoked by the EXIT trap.
+  close_admin_session() {
+    exit_status=$?
+    trap - EXIT
+    if ! octeliumctl \
+      --homedir "$octelium_homedir" \
+      --domain "$domain" \
+      --logout \
+      get clusterconfig >/dev/null; then
+      echo "error: server revocation failed; retained ${octelium_homedir} for retry" >&2
+      exit 1
+    fi
+    rm -rf -- "$octelium_homedir"
+    exit "$exit_status"
+  }
+  trap close_admin_session EXIT
+
+  octeliumctl --homedir "$octelium_homedir" login --domain "$domain" --web
+  scripts/octelium-ci-credential.sh --homedir "$octelium_homedir"
+)
+```
+
+The helper applies the primary catalog with checked resource verification,
+invalidates its stale Sessions, and writes the replacement token to both GitHub
+environments. Dispatch and bind verification to the exact `main` commit:
+
+```sh
+set -euo pipefail
+github_repo=Stuhlmuller/homelab
+main_sha="$(gh api "repos/${github_repo}/commits/main" --jq .sha)"
+
+latest_run_id() {
+  gh run list \
+    --repo "$github_repo" \
+    --workflow "$1" \
+    --event workflow_dispatch \
+    --limit 1 \
+    --json databaseId \
+    --jq '.[0].databaseId // 0'
+}
+
+find_new_run_id() {
+  local workflow="$1"
+  local before_id="$2"
+  local run_id
+  for _ in {1..30}; do
+    run_id="$(
+      gh run list \
+        --repo "$github_repo" \
+        --workflow "$workflow" \
+        --event workflow_dispatch \
+        --limit 20 \
+        --json databaseId \
+        --jq "[.[] | select(.databaseId > ${before_id})] | max_by(.databaseId).databaseId // empty"
+    )"
+    if test -n "$run_id"; then
+      printf '%s\n' "$run_id"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "error: no new ${workflow} run appeared" >&2
+  return 1
+}
+
+wait_for_success() {
+  local all_complete
+  local run_id
+  local state
+  for _ in {1..360}; do
+    all_complete=true
+    for run_id in "$@"; do
+      state="$(
+        gh run view "$run_id" \
+          --repo "$github_repo" \
+          --json conclusion,status \
+          --jq '.status + " " + (.conclusion // "")'
+      )"
+      case "$state" in
+        "completed success") ;;
+        "completed "*) echo "error: run ${run_id} ended ${state}" >&2; return 1 ;;
+        *) all_complete=false ;;
+      esac
+    done
+    test "$all_complete" = false || return 0
+    sleep 30
+  done
+  echo "error: verification runs did not finish within three hours" >&2
+  return 1
+}
+
+diagnostics_before_id="$(latest_run_id homelab-diagnostics.yml)"
+apply_before_id="$(latest_run_id terragrunt-apply.yml)"
+gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main \
+  -f expected_sha="$main_sha"
+gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
+  -f expected_sha="$main_sha"
+
+diagnostics_run_id="$(find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id")"
+apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
+test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+wait_for_success "$diagnostics_run_id" "$apply_run_id"
+```
+
+Both exact-head runs must exit successfully. If either fails because the token
+is unusable, rerun the same recovery block; no second short-lived recovery
+identity is needed.
 
 ## AWS Setup
 

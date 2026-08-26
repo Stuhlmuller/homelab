@@ -48,6 +48,10 @@ spec:
         all:
           of:
             - match: ctx.user.metadata.name == "homelab-ci"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENTLESS"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci.default"
+            - match: ctx.service.spec.mode == "KUBERNETES"
 ---
 kind: Policy
 metadata:
@@ -108,6 +112,11 @@ metadata:
   name: homelab-ci
 spec:
   type: WORKLOAD
+  session:
+    clientlessDuration:
+      days: 30
+    accessTokenDuration:
+      days: 30
 ---
 kind: User
 metadata:

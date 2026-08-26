@@ -146,9 +146,15 @@ CI/CD Octelium changes should also pass shell syntax checks for
 `scripts/octelium-ci-kubeconfig-secret.sh`. Validate that
 `docs/examples/octelium/homelab-services.yaml` parses and contains Service
 `kubernetes-api-ci` plus core `ClusterConfig` `default` with human
-`maxPerUser: 32` before applying it with `octeliumctl`. Apply the
-`ClusterConfig` with `--include ClusterConfig` before the normal catalog apply
-because the include flag replaces the default resource-kind list.
+`maxPerUser: 32`, and that User `homelab-ci` keeps matching 30-day clientless
+Session and access-token lifetimes before applying it with `octeliumctl`.
+Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
+catalog apply because the include flag replaces the default resource-kind list.
+The static gate requires manual Homelab Diagnostics and Terragrunt Apply
+dispatches to carry an exact expected `main` SHA and fail before work when the
+resolved workflow commit differs. Terragrunt Apply acquires its production
+concurrency lock only in the live job downstream of that guard and retains the
+full pending queue.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,

@@ -153,10 +153,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
   `homelab-production`; the CI connector does not pass Octelium `--scope`
-  flags on v0.35, while the policy-bound credential authorizes the Connect API
-  method and Kubernetes API Service separately. Rotate it with
-  `scripts/octelium-ci-credential.sh` after applying catalog policy changes so
-  the GitHub environments receive a token created against the current policy.
+  flags on v0.35. Its Session policy requires the exact WORKLOAD User,
+  CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
+  it must not grant the bearer access to other public Services. The User owns
+  matching 30-day clientless-session and access-token lifetimes. Rotate it every 21 days with
+  `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
+  Sessions first so Octelium cannot retain an older Session expiry, then retries
+  GitHub environment writes until both store the replacement token.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

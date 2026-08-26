@@ -77,7 +77,9 @@ They create:
   the Kubernetes API Service.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
-- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
+- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,
+  with matching 30-day clientless-session and access-token lifetimes. Rotate
+  its credential every 21 days with `scripts/octelium-ci-credential.sh`.
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
@@ -670,7 +672,9 @@ this clientless workload credential. The upstream kubeconfig lives only in the
 Octelium Secret `homelab-ci-kubeconfig`, created with
 `scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`. GitHub Actions
 uses the access token as the public Service bearer credential, avoiding the
-IPv6-only Gateway transport entirely.
+IPv6-only Gateway transport entirely. The rotation helper deletes this
+dedicated User's old Sessions before issuing the replacement, so Octelium
+creates a fresh 30-day Session instead of reusing the prior expiry.
 
 ## Rollback
 
