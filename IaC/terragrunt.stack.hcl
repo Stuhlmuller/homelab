@@ -156,7 +156,6 @@ unit "argocd_apps_argocd_image_updater" {
 
         syncPolicy = {
           automated = {
-            # Empty source is intentional; keep pruning enabled through retirement.
             allowEmpty = true
             enabled    = true
             prune      = true
