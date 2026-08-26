@@ -107,9 +107,9 @@ metadata:
     app: octelium
     octelium.com/component: svc
     octelium.com/component-type: cluster
-    octelium.com/namespace: homelab
-    octelium.com/svc: octobot.homelab
-    octelium.com/svc-uid: b8320007-9841-4bdf-85cc-93a904b90574
+    octelium.com/namespace: default
+    octelium.com/svc: octobot.default
+    octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
     homelab.rst.io/emergency-dataplane: octobot
 spec:
   replicas: 1
@@ -121,9 +121,9 @@ spec:
       app: octelium
       octelium.com/component: svc
       octelium.com/component-type: cluster
-      octelium.com/namespace: homelab
-      octelium.com/svc: octobot.homelab
-      octelium.com/svc-uid: b8320007-9841-4bdf-85cc-93a904b90574
+      octelium.com/namespace: default
+      octelium.com/svc: octobot.default
+      octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
       homelab.rst.io/emergency-dataplane: octobot
   template:
     metadata:
@@ -131,9 +131,9 @@ spec:
         app: octelium
         octelium.com/component: svc
         octelium.com/component-type: cluster
-        octelium.com/namespace: homelab
-        octelium.com/svc: octobot.homelab
-        octelium.com/svc-uid: b8320007-9841-4bdf-85cc-93a904b90574
+        octelium.com/namespace: default
+        octelium.com/svc: octobot.default
+        octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
         homelab.rst.io/emergency-dataplane: octobot
     spec:
       automountServiceAccountToken: false
@@ -153,9 +153,9 @@ spec:
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
-              value: b8320007-9841-4bdf-85cc-93a904b90574
+              value: edf7e56a-34bd-475a-9865-e7a36525c7df
             - name: OCTELIUM_SVC_NAME
-              value: octobot.homelab
+              value: octobot.default
             - name: OCTELIUM_REGION_NAME
               value: default
             - name: OCTELIUM_REGION_UID

@@ -84,7 +84,7 @@ from the control-plane node.
 
 Remove the file from the Enterprise Kustomization after a real dataplane node is
 Ready and the package-managed `octelium-ingress-dataplane`,
-`svc-octobot-homelab`, and `svc-kubernetes-api-ci-default` Deployments each have
+`svc-octobot-default`, and `svc-kubernetes-api-ci-default` Deployments each have
 a Ready replica. The `octelium-enterprise` Application prunes the three uniquely
 named temporary Deployments. Then verify the two original Services have only
 native ready endpoints, `https://octobot.stinkyboi.com` no longer returns 502,
