@@ -102,14 +102,21 @@ real URL and SNI preserved. The gate also probes the reviewed public callback
 hosts. If any probe fails, the gate should print one or more `FAIL:` lines and
 exit nonzero; a quiet early exit is a validation harness bug.
 
-For image automation, confirm the controller and selector CR exist before
-relying on update pull requests:
+For image automation, confirm the retired controller and credential consumer
+are absent and Renovate configuration remains valid:
 
 ```sh
+npx --yes --package renovate renovate-config-validator renovate.json
+kubectl -n argocd get configmap argocd-image-updater-retirement
 kubectl -n argocd get deploy argocd-image-updater-controller
 kubectl -n argocd get externalsecret argocd-image-updater-git
 kubectl -n argocd get imageupdater homelab-managed-images
 ```
+
+Expected result: Renovate configuration is valid, the marker exists, and the
+last three resource queries return `NotFound` after the marker-only Application
+has synced. Before its Terragrunt update, the Deployment may still exist with
+zero desired replicas.
 
 For Policy Bot, verify the app stays narrow before registering the GitHub App
 webhook URL:
@@ -276,14 +283,17 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 - Stateful readiness is blocked until `platform-storage` is synced and a PVC
   write/delete/recreate test passes.
 - `terragrunt hcl fmt --check` passed on 2026-05-24.
-- Focused `terragrunt --log-disable plan -no-color` passed for
-  `IaC/live/argocd-apps/argocd-image-updater` with `1 to add, 0 to change,
-  0 to destroy`.
+- Image Updater retirement validation passed on 2026-08-26: Terragrunt HCL
+  format/validation and the focused generated unit validation, all Kustomize
+  renders, Helm chart `1.2.2` rendering with zero replicas, Kubernetes client
+  schema dry-run, Renovate configuration validation, full static/Checkov
+  checks, Conftest policy checks, secret scan, and all-system flake evaluation.
+  The isolated clone had no production credentials, so the state-backed plans,
+  marker-only Application update, and retired SSM reader-IAM revocation remain
+  with the normal post-merge Terragrunt workflow.
 - `kubectl kustomize` passed for every app overlay under
   `clusters/homelab/apps`, for `clusters/homelab/argocd/self-management`, and
   for `clusters/homelab/platform/storage`.
-- `helm template` passed for `argocd-image-updater` chart `1.2.2` with
-  `clusters/homelab/apps/argocd-image-updater/values.yaml`.
 - Repository secret scan found no raw secret material. Matches were expected
   ExternalSecret names, AWS SSM paths, documentation references, and existing
   placeholder environment variable names.
@@ -343,5 +353,5 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 | Tailscale unavailable | Do not mark secondary LAN/egress as ready, but app, callback, CI, and VPN readiness should be evaluated through Octelium. |
 | Policy Bot webhook unreachable | Inspect the `policy-bot-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and Policy Bot webhook HMAC handling; do not expose additional Funnel routes. |
 | n8n webhook unreachable | Inspect the `n8n-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and n8n webhook path config; keep editor/API routes off the callback host. |
-| Image updater misconfiguration | Remove the affected `applicationRefs` image entry or write-back target from `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml`, then fix the repository desired state. |
+| Image update PR is incompatible | Add a narrow Renovate `allowedVersions` rule or close the PR, then document the workload-specific migration gate; never bypass digest pin checks. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

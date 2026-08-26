@@ -1,102 +1,86 @@
-# Argo CD Image Updater
+# Image Automation And Image Updater Retirement
 
-Argo CD Image Updater is installed as an Argo CD-managed Application from
-`IaC/live/argocd-apps/argocd-image-updater`. It uses the upstream Helm chart
-`argocd-image-updater` version `1.2.2` and runs in the `argocd` namespace.
+Renovate is the repository's image-update path. Its built-in Helm values,
+Kustomize, and Kubernetes managers open reviewed pull requests for image tags
+and digests. `scripts/ci/static-checks.sh` rejects every repo-declared
+container image that is not pinned as `tag@sha256:digest`.
 
-The `homelab-managed-images` `ImageUpdater` resource in
-`clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` manages every
-container image that this repository declares directly in workload Helm values
-or raw manifests:
+OctoBot remains limited to `2.1.1` in `renovate.json` because `2.1.13` rejects
+the retained PVC-backed `config.trading.paused` value. Other compatibility and
+stateful migration decisions happen during normal pull-request review.
 
-- `affine`: AFFiNE server/migration init container, pgvector PostgreSQL, and
-  Redis images; updates remain within AFFiNE `0.27`, pgvector `0.8` on
-  PostgreSQL 16, and Redis `8.2` until their stateful upgrade paths are
-  reviewed.
-- `deluge`: BusyBox, Gluetun, and Deluge containers.
-- `dispatcharr`: Dispatcharr web and Celery containers plus the Redis sidecar.
-  The dedicated PostgreSQL manifest remains review-pinned because this
-  multi-source Application uses its Image Updater write-back target for Helm
-  values.
-- `litellm`: LiteLLM database container.
-- `media-postgres`: PostgreSQL StatefulSet image.
-- `n8n-postgres`: n8n PostgreSQL StatefulSet image.
-- `n8n`: n8n app container.
-- `octobot`: OctoBot app container. OctoBot is currently allow-listed to
-  `2.1.1` because `2.1.13` rejected the existing PVC-backed
-  `config.trading.paused` field during startup migration.
-- `openclaw`: bootstrap, app, and proxy containers.
-- `policy-bot`: Policy Bot Deployment image.
-- `prowlarr`, `radarr`, and `sonarr`: PostgreSQL bootstrap and app containers.
+## Why Image Updater Was Retired
 
-Images owned only by upstream Helm chart defaults continue to move with chart
-version updates. Add explicit values and an `ImageUpdater` `applicationRefs`
-entry before treating a chart-default image as independently managed.
+Argo CD Image Updater had been unable to push since May 2026 because its GitHub
+App bot had no repository permission. Its stale Radarr selector also allowed
+only `5.x` while desired state was already pinned to `6.3.0`, so a successful
+reconcile could have proposed a downgrade. Renovate already covered the same
+repository sources without a second controller or write credential.
 
-## Write-back
+## Safe Retirement Sequence
 
-Image Updater uses Git write-back with GitHub pull-request mode. It does not
-patch Argo CD Applications in place as the steady-state path. For each update it
-pushes an `image-updater-*` branch and opens a pull request against `main`, so
-the normal review, CI, and Argo CD reconciliation path still applies.
+The retirement is safe if the Terragrunt apply is delayed or unavailable:
 
-The write-back credential is the Kubernetes Secret
-`argocd/argocd-image-updater-git`, created by the ExternalSecret at
-`clusters/homelab/apps/argocd-image-updater/externalsecret.yaml`.
-The ExternalSecret uses `refreshPolicy: OnChange`. After replacing GitHub App
-values in SSM, bump the
-`homelab.rst.io/github-app-credentials-ssm-version` annotation so External
-Secrets reconciles the in-cluster Secret without direct edits.
+1. The existing live Application still reads
+   `clusters/homelab/apps/argocd-image-updater/values.yaml` from `main`.
+   Merging sets its controller Deployment to zero replicas.
+2. The same Application auto-syncs the marker-only Kustomize source with prune
+   enabled. That removes the `homelab-managed-images` custom resource and the
+   `argocd-image-updater-git` ExternalSecret. The generated Secret is removed
+   with its owning ExternalSecret.
+3. The post-merge Terragrunt apply changes the Application to the marker-only
+   source. Argo CD then prunes the remaining Helm resources. The removed
+   `ImageUpdater` is sync wave `1`; the chart CRD is wave `0`. Argo CD prunes
+   higher waves first and stops before lower waves if a prune fails, so the CR
+   is gone before the CRD can be removed even if this apply wins the race with
+   the first auto-sync.
+4. The same Terragrunt workflow applies the SSM unit and removes the retired
+   parameter paths from the External Secrets reader IAM policy. The parameters
+   themselves remain state-managed tombstones.
 
-Required AWS SSM Parameter Store values:
+Keep the inert Application, ConfigMap, zero-replica values file, and lock file
+until Argo CD reports the marker revision synced and the retired controller
+resources are absent. A later reviewed change may then remove the Terragrunt
+unit and retirement directory.
 
-| Parameter | Secret key | Purpose |
-| --- | --- | --- |
-| `/homelab/argocd-image-updater/github-app/id` | `githubAppID` | GitHub App ID |
-| `/homelab/argocd-image-updater/github-app/installation-id` | `githubAppInstallationID` | GitHub App installation ID for this repository or owner |
-| `/homelab/argocd-image-updater/github-app/private-key` | `githubAppPrivateKey` | GitHub App private key |
-
-The GitHub App must be installed on `Stuhlmuller/homelab` with repository
-contents write access and pull-request write access. Store the private key as a
-SecureString outside git.
-
-## Update policy
-
-The global policy uses semantic-version updates and ignores `latest`, `main`,
-and `dev` tags. Images whose upstream tags are not plain semver use
-per-image `newest-build` rules with regular-expression allow lists.
-
-n8n is the exception: Image Updater follows the official GHCR `stable` tag by
-digest. n8n prereleases use ordinary semantic versions, and `docker.n8n.io` is
-backed by Docker Hub's anonymous pull limits, so semver selection can choose a
-prerelease while repeated manifest lookups can be rate-limited.
-
-Image Updater writes to the source paths that Argo CD already renders:
-
-- Helm values files use `helmvalues:/clusters/homelab/apps/<app>/values.yaml`.
-- Raw-manifest apps use `kustomization:/clusters/homelab/apps/<app>`.
-
-Because these paths are explicitly managed by Image Updater and reviewed through
-pull requests, `scripts/ci/static-checks.sh` allows tag-only image fields inside
-those write-back targets. Unmanaged image fields still must be pinned as
-`tag@sha256:digest`.
+The three `/homelab/argocd-image-updater/github-app/*` SSM parameters have no
+runtime consumer or External Secrets reader IAM grant. They remain declared
+only as OpenTofu state tombstones because the production policy rejects SSM
+parameter deletion. Retire those values and state through a separate reviewed
+secret-retirement workflow.
 
 ## Verification
 
+Before the Terragrunt Application update has applied, expect zero desired
+controller replicas and no active selector or credential consumer:
+
 ```sh
 kubectl -n argocd get deploy argocd-image-updater-controller
-kubectl -n argocd get externalsecret argocd-image-updater-git
-kubectl -n argocd get secret argocd-image-updater-git
 kubectl -n argocd get imageupdater homelab-managed-images
-kubectl -n argocd logs deploy/argocd-image-updater-controller
+kubectl -n argocd get externalsecret argocd-image-updater-git
 ```
 
-Expected result:
+After the Terragrunt apply and Argo CD sync:
 
-- The controller Deployment is available.
-- `argocd-image-updater-git` is synced from AWS SSM and contains the GitHub App
-  credential keys.
-- `homelab-managed-images` reports reconciliation status for the managed
-  Applications.
-- New image versions create GitHub pull requests rather than live-only Argo CD
-  parameter overrides.
+```sh
+argocd app get argocd-image-updater
+kubectl -n argocd get configmap argocd-image-updater-retirement
+kubectl -n argocd get deploy,serviceaccount,role,rolebinding \
+  -l app.kubernetes.io/instance=argocd-image-updater
+kubectl get clusterrole,clusterrolebinding \
+  -l app.kubernetes.io/instance=argocd-image-updater
+kubectl get crd imageupdaters.argocd-image-updater.argoproj.io
+```
+
+Expected result: the Application is `Synced` and `Healthy`, only the retirement
+ConfigMap remains managed by it, and the retired controller resources are
+absent. Do not delete the Terragrunt unit before this check passes.
+
+## Rollback
+
+Before the marker-only Application update, revert the retirement commit so the
+existing Application restores its chart values and manifests. After that
+update, revert and apply the restored Terragrunt unit so Argo CD owns the chart
+again. Reintroducing the controller also requires a reviewed, working write
+credential and corrected selectors; do not restore the broken contract merely
+to preserve the old topology.

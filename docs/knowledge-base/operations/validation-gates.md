@@ -75,12 +75,13 @@ helm template <release> <chart> -f clusters/homelab/apps/<app>/values.yaml
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
-For Image Updater changes, also render the controller overlay and confirm the
-managed write-back targets stay intentional:
+For image automation changes, render the retirement source, validate Renovate,
+and confirm no image bypasses digest policy:
 
 ```sh
 kubectl kustomize clusters/homelab/apps/argocd-image-updater
-rg -n "writeBackTarget|imageName|manifestTargets" clusters/homelab/apps/argocd-image-updater/imageupdater.yaml
+npx --yes --package renovate renovate-config-validator renovate.json
+nix develop --command bash scripts/ci/static-checks.sh
 ```
 
 For `platform-dns` changes, render the overlay and compare upstream answers

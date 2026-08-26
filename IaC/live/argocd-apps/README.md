@@ -34,9 +34,8 @@ they exist so dependency state is still delivered through Argo CD.
   exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under
   `clusters/homelab/apps/<app>/` or `clusters/homelab/platform/<service>/`.
-- Add repo-declared workload images to
-  `clusters/homelab/apps/argocd-image-updater/imageupdater.yaml` when they
-  should be kept current by Image Updater pull requests.
+- Keep repo-declared workload images pinned as `tag@sha256:digest`; Renovate
+  owns reviewed image update pull requests.
 - Keep retired Applications registered until the live Argo CD resource has
   synced to an empty target or has been explicitly destroyed. Deleting the
   Terragrunt directory alone leaves the live Application unmanaged.

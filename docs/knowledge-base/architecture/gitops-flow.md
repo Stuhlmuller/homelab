@@ -27,9 +27,9 @@ bootstrap permissions that the GitHub OIDC role must never change for itself;
 an administrator still uses reviewed Terragrunt/OpenTofu desired state and the
 shared remote backend to apply those units.
 
-Argo CD Image Updater follows the same review path for repo-declared workload
-images: it writes changes to GitHub pull requests instead of keeping live-only
-Argo CD parameter overrides as steady state.
+Renovate owns repo-declared workload image updates through reviewed pull
+requests. Static policy requires every committed image to keep a digest pin;
+live-only Argo CD parameter overrides are not steady state.
 
 Cordium's CLI-native `ClusterConfig` is packaged into a generated ConfigMap and
 applied by an Argo CD PostSync hook after the upstream genesis hook completes.
