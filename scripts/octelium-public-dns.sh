@@ -8,7 +8,7 @@ token_parameter="/homelab/cert-manager/cloudflare-api-token"
 tunnel_id_parameter="/homelab/octelium/cloudflare-tunnel-id"
 dry_run="false"
 tunnel_only="false"
-api_origin_ip="10.1.0.200"
+api_origin_ip="10.1.0.201"
 api_origin_port="30443"
 api_public_port="8443"
 
