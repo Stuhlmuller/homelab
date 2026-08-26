@@ -88,6 +88,13 @@ controllers:
           TZ: America/Los_Angeles
           PUID: "1000"
           PGID: "1000"
+        resources:
+          requests:
+            cpu: 25m
+            memory: 192Mi
+          limits:
+            cpu: 100m
+            memory: 256Mi
 service:
   app:
     controller: prowlarr

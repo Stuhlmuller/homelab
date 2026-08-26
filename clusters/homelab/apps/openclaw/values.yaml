@@ -16,6 +16,8 @@ controllers:
                     operator: NotIn
                     values:
                       - acer
+                  - key: octelium.com/node-mode-dataplane
+                    operator: DoesNotExist
       annotations:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
@@ -86,7 +88,8 @@ controllers:
             cpu: 1
             memory: 2Gi
           limits:
-            memory: 6Gi
+            cpu: 1500m
+            memory: 3Gi
       bootstrap-config:
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -96,7 +99,8 @@ controllers:
             cpu: 500m
             memory: 1Gi
           limits:
-            memory: 3Gi
+            cpu: 1200m
+            memory: 2Gi
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -364,6 +368,7 @@ controllers:
             memory: 2Gi
             ephemeral-storage: 5Gi
           limits:
+            cpu: 1500m
             memory: 6Gi
             ephemeral-storage: 6Gi
         probes:
@@ -479,7 +484,8 @@ controllers:
             cpu: 25m
             memory: 64Mi
           limits:
-            memory: 256Mi
+            cpu: 50m
+            memory: 128Mi
 service:
   app:
     controller: openclaw

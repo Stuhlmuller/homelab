@@ -169,14 +169,14 @@ validation are still pending; until then, the migration-only NFS mount remains
 in the pod template.
 
 Deluge keeps 30-minute startup and runtime liveness windows so guarded
-libtorrent recovery is not interrupted. The metrics sidecar computes fresh
-health every 45 seconds with a 20-second RPC cap and a 30-second Prometheus
-scrape deadline. When stale resume data points complete downloads at the
-incomplete root, the documented operator script selects only exact-size target
-files, adopts them with libtorrent's `dont_replace` move, and requires a full
-piece-hash recheck before completion is trusted. The command resumes hash-valid
-entries for seeding and pauses hash failures so stale catalog state cannot
-trigger a silent redownload.
+libtorrent recovery is not interrupted. The metrics sidecar refreshes cached
+health every 60 seconds with a 20-second RPC cap; Prometheus scrapes that cache
+every 45 seconds with a 30-second deadline. When stale resume data points
+complete downloads at the incomplete root, the documented operator script
+selects only exact-size target files, adopts them with libtorrent's
+`dont_replace` move, and requires a full piece-hash recheck before completion is
+trusted. The command resumes hash-valid entries for seeding and pauses hash
+failures so stale catalog state cannot trigger a silent redownload.
 
 ## Source Files
 
