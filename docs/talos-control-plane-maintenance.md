@@ -163,6 +163,47 @@ the operator has explicitly approved the live Talos apply sequence.
   the durable fix. Those are acceptable only for emergency recovery when the
   final desired state is immediately backfilled into this repository.
 
+## Remote Worker Reboot
+
+When physical access is unavailable and a ZimaBoard needs a restart, use its
+authenticated Talos API instead of waiting for a manual power cycle. Reboot
+only one exact node at a time:
+
+| Node | Talos address |
+| --- | --- |
+| `zimaboard-0` | `10.1.0.200` |
+| `zimaboard-1` | `10.1.0.201` |
+| `zimaboard-2` | `10.1.0.202` |
+
+Confirm Talos still answers, then reboot and wait for Kubernetes readiness:
+
+```sh
+node_name=zimaboard-0
+case "$node_name" in
+  zimaboard-0) node_ip=10.1.0.200 ;;
+  zimaboard-1) node_ip=10.1.0.201 ;;
+  zimaboard-2) node_ip=10.1.0.202 ;;
+  *) echo "unsupported worker: $node_name" >&2; exit 1 ;;
+esac
+
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes "$node_ip" \
+  get services
+
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes "$node_ip" \
+  reboot --wait
+
+kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+```
+
+If a normal reboot completes but the node remains stuck and the Talos API still
+answers, retry the reboot with `--mode=powercycle`. Never add `--insecure` for
+an already configured node. If authenticated Talos access is unavailable,
+stop; physical intervention is required.
+
 ## Talos And Kubernetes Upgrade Checklist
 
 Use this checklist before changing Talos or Kubernetes versions. The observed
