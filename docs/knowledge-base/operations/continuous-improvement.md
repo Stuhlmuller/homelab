@@ -419,11 +419,11 @@ organization-policy blocker is tracked below.
   unrelated workloads across the cluster. The nominal local-disk RPO is 24
   hours, but the actual RPO is the age of the newest verified set and can be
   older. n8n can recur until the shared storage failure is corrected.
-- **Next step:** remove the validated migration-only NFS mounts and init
-  containers from Radarr and Sonarr in a follow-up revision. Inspect QNAP pool,
-  disk, NFS-service, and network history because the same failure domain still
-  affects other NFS-backed workloads. Verify recovery clears each stale-backup
-  alert after its next successful Job.
+- **Next step:** the validated migration-only NFS mounts and init containers
+  are removed from Radarr and Sonarr desired state. Inspect QNAP pool, disk,
+  NFS-service, and network history because the same failure domain still affects
+  other NFS-backed workloads. Verify recovery clears each stale-backup alert
+  after its next successful Job.
 
 - **Status:** fixed; kubelet fallback retained
 - **Area:** monitoring / PostgreSQL availability
@@ -455,7 +455,7 @@ organization-policy blocker is tracked below.
   official deployment does not use: AOF with an NFS `fsync` every second and an
   RDB snapshot after 1,000 changes in 60 seconds. AOF rewrites and RDB snapshots
   can rewrite the full Redis dataset. The deployed mitigation now uses a
-  node-local `emptyDir` for Redis, retains the former NFS claim read-only, and
+  node-local `emptyDir` for Redis, retains the former NFS claim unmounted, and
   paces/compresses PostgreSQL checkpoint and WAL writes. During the 2026-07-16
   rollout, AFFiNE stayed synced, healthy, and restart-free for more than 30
   minutes. Redis reported AOF and RDB persistence disabled. The `acer` NFS
@@ -465,10 +465,9 @@ organization-policy blocker is tracked below.
 - **Risk:** Redis is now ephemeral, so a pod or node restart can discard cache
   entries and queued work. PostgreSQL remains durable on the QNAP and still
   needs normal backup and latency monitoring.
-- **Next step:** keep the mitigation. Retain the former Redis claim until the
-  rollback window closes, then remove it through the normal GitOps workflow.
-  Track remaining operator-to-wired latency under the separate networking
-  finding below.
+- **Next step:** keep the mitigation and retained, unmounted former Redis claim
+  until the rollback window closes. Track remaining operator-to-wired latency
+  under the separate networking finding below.
 
 - **Status:** open
 - **Area:** networking / storage access

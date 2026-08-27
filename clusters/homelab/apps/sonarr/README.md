@@ -34,23 +34,17 @@ and small app state out of the QNAP/NFS failure domain that previously caused
 slow config reads, PostgreSQL timeouts, and empty or malformed Servarr
 `config.xml` files.
 
-During the first rollout, the `migrate-config` init container mounts the legacy
-`sonarr-config` NFS claim read-only at `/legacy-config`, validates
-`config.xml`, and copies the tree into the local claim without copying
-`local-backups`. If the live `config.xml` is empty or malformed, the migration
-recovers the newest valid `sonarr_backup_*.zip` archive or a prior
-`config.xml.auth-recovery.*` file instead. A fresh install with an empty legacy
-claim gets a minimal local `config.xml` with a generated API key, while a
-non-empty legacy claim with unrecoverable config still fails the rollout for
-manual restore. A `.nfs-migration-complete` marker makes later restarts
-idempotent.
+The completed one-time migration copied and validated the legacy config tree,
+recovered a valid backup when needed, and wrote
+`.nfs-migration-complete`. Its init container, script ConfigMap, and read-only
+NFS mount are removed from steady state; `configure-postgres` now follows
+`prepare-config` directly.
 
 The `sonarr-config-backup` CronJob runs nightly on `zimaboard-0`, validates the
 local `config.xml`, and writes 14-day tarball archives back to
 `sonarr-config/local-backups` on NFS. The cutover and scheduled backup have
-been verified. Keep the legacy claim as the archive and rollback target; remove
-the migration-only Pod mount and init container through a follow-up GitOps
-change.
+been verified. Keep the legacy claim as the archive and rollback target; the
+backup CronJob is its only steady-state Sonarr consumer.
 
 ## Authentication
 
@@ -102,11 +96,6 @@ kubectl -n media describe pod -l app.kubernetes.io/name=sonarr
 
 Failure modes to look for:
 
-- `Sonarr config.xml is missing a closing </Config> tag`: restore the config PVC
-  from backup before another rollout.
-- `No Sonarr config with a closing Config tag and API key was recoverable`:
-  inspect the legacy NFS claim and restore a valid Sonarr backup archive before
-  retrying the rollout.
 - `must contain exactly one AuthenticationMethod=External`: inspect the
   init-container output and the PVC-backed XML for malformed or multiline auth
   tags.

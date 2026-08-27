@@ -28,25 +28,8 @@ controllers:
             add:
               - CHOWN
           readOnlyRootFilesystem: true
-      migrate-config:
-        dependsOn: prepare-config
-        image:
-          repository: lscr.io/linuxserver/radarr
-          tag: 6.3.0@sha256:a45b5ab0f850f39edb4cc9c95bbd967b52ddc3d4574a4dfb45561177db6c88f4
-        command:
-          - /bin/sh
-          - /scripts/migrate-config.sh
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          readOnlyRootFilesystem: true
-          runAsGroup: 1000
-          runAsNonRoot: true
-          runAsUser: 1000
       configure-postgres:
-        dependsOn: migrate-config
+        dependsOn: prepare-config
         image:
           repository: lscr.io/linuxserver/radarr
           tag: 6.3.0@sha256:a45b5ab0f850f39edb4cc9c95bbd967b52ddc3d4574a4dfb45561177db6c88f4
@@ -255,32 +238,10 @@ persistence:
       radarr:
         prepare-config:
           - path: /config
-        migrate-config:
-          - path: /config
         app:
           - path: /config
         configure-postgres:
           - path: /config
-  legacy-config:
-    # Migration-only: remove this mount and migrate-config after the local
-    # rollout marker and first scheduled backup are verified.
-    enabled: true
-    type: persistentVolumeClaim
-    existingClaim: radarr-config
-    advancedMounts:
-      radarr:
-        migrate-config:
-          - path: /legacy-config
-            readOnly: true
-  migration-script:
-    enabled: true
-    type: configMap
-    name: radarr-config-migration
-    advancedMounts:
-      radarr:
-        migrate-config:
-          - path: /scripts
-            readOnly: true
   media:
     enabled: true
     type: persistentVolumeClaim

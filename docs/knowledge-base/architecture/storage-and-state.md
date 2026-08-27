@@ -88,7 +88,8 @@ AFFiNE Redis deliberately disables AOF and RDB persistence and uses node-local
 `emptyDir` storage, matching the upstream deployment's ephemeral Redis model.
 This prevents per-second AOF `fsync` calls and snapshot/AOF rewrite bursts from
 reaching the QNAP. PostgreSQL remains durable on NFS with WAL compression and
-checkpoint pacing; synchronous commit remains enabled.
+checkpoint pacing; synchronous commit remains enabled. The former Redis AOF
+claim remains retained for rollback but is no longer mounted by Redis.
 
 `affine-postgres` was fenced at zero replicas during the first phase of the
 2026-07-20 stale-lock recovery; live validation confirmed the pod was absent
@@ -163,7 +164,8 @@ copies idempotent, while the old NFS claims remain archive and rollback targets.
 The 04:00 and 04:15 Pacific CronJobs write verified archives with 14-day
 retention. Read-only inspection on 2026-08-27 found both Applications `Synced`,
 both local claims `Bound`, and successful backup Jobs through 2026-08-25. The
-migration-only NFS mounts remain in the pod templates for follow-up cleanup.
+steady app pods no longer mount the legacy NFS claims; only the backup CronJobs
+mount them as archive and rollback targets.
 
 Deluge keeps 30-minute startup and runtime liveness windows so guarded
 libtorrent recovery is not interrupted. The metrics sidecar refreshes cached
@@ -187,9 +189,7 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/deluge/media-storage.yaml`
 - `clusters/homelab/apps/deluge/local-storage.yaml`
 - `clusters/homelab/apps/radarr/local-storage.yaml`
-- `clusters/homelab/apps/radarr/migrate-config.sh`
 - `clusters/homelab/apps/sonarr/local-storage.yaml`
-- `clusters/homelab/apps/sonarr/migrate-config.sh`
 - `clusters/homelab/apps/media-postgres`
 - `clusters/homelab/apps/media-postgres-recovery`
 - `clusters/homelab/apps/radarr/media-storage.yaml`

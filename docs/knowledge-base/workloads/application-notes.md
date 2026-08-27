@@ -89,11 +89,9 @@ source README before changing an application.
 
 Sonarr runs behind Octelium with `AuthenticationMethod=External` and
 `AuthenticationRequired=DisabledForLocalAddresses`. Its startup path mirrors the
-Radarr auth recovery pattern: migrate active config from the retained NFS claim
-to `sonarr-config-local` on `zimaboard-0`, normalize the local `config.xml` in
-init containers, remove legacy auth tags, pass matching `SONARR__AUTH__*`
-environment settings, and skip the linuxserver default config init script so
-the app does not reintroduce stale authentication state on restart. Keep the
-legacy NFS claim as the nightly archive and rollback target. The local cutover
-and first backup are validated; remove its migration-only Pod mount and init
-container through a follow-up GitOps change.
+Radarr auth recovery pattern: active config is on `sonarr-config-local` on
+`zimaboard-0`; init containers normalize the local `config.xml`, remove legacy
+auth tags, and pass matching `SONARR__AUTH__*` environment settings while the
+linuxserver default config init script stays disabled. The validated one-time
+NFS migration resources are removed. Keep the legacy NFS claim as the nightly
+archive and rollback target; only the backup CronJob mounts it.
