@@ -163,6 +163,71 @@ the operator has explicitly approved the live Talos apply sequence.
   the durable fix. Those are acceptable only for emergency recovery when the
   final desired state is immediately backfilled into this repository.
 
+## Remote Worker Reboot
+
+When physical access is unavailable and a ZimaBoard needs a restart, use its
+authenticated Talos API instead of waiting for a manual power cycle. Reboot
+only one exact node at a time:
+
+| Node | Talos address |
+| --- | --- |
+| `zimaboard-0` | `10.1.0.200` |
+| `zimaboard-1` | `10.1.0.201` |
+| `zimaboard-2` | `10.1.0.202` |
+
+Select one worker, confirm its Talos API answers, and require every node and
+non-terminal pod to be ready before reboot:
+
+```sh
+node_name=zimaboard-0
+case "$node_name" in
+  zimaboard-0) node_ip=10.1.0.200 ;;
+  zimaboard-1) node_ip=10.1.0.201 ;;
+  zimaboard-2) node_ip=10.1.0.202 ;;
+  *) echo "unsupported worker: $node_name" >&2; exit 1 ;;
+esac
+
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes "$node_ip" \
+  get services
+
+kubectl wait --for=condition=Ready node --all --timeout=1m &&
+  kubectl wait --for=condition=Ready pod --all --all-namespaces \
+    --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+    --timeout=1m
+```
+
+If either preflight wait fails, do not reboot. This routine runbook does not
+cover degraded-state maintenance; recover the unavailable node or workload
+through its reviewed repository-owned path, or add that path first, then repeat
+the preflight.
+
+Only after preflight succeeds, reboot and require fresh node and cluster-wide
+workload readiness, including unbound `Pending` replacements:
+
+```sh
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes "$node_ip" \
+  reboot --wait
+
+kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+kubectl wait --for=condition=Ready pod --all --all-namespaces \
+  --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+  --timeout=10m
+```
+
+If either readiness check times out, do not reboot another worker. Inspect the
+affected pods with `kubectl get pods -A -o wide`, then use the workload's
+repository-backed recovery path; do not delete, restart, or patch live pods by
+hand.
+
+If a normal reboot completes but the node remains stuck and the Talos API still
+answers, retry the reboot with `--mode=powercycle`. Never add `--insecure` for
+an already configured node. If authenticated Talos access is unavailable,
+stop; physical intervention is required.
+
 ## Talos And Kubernetes Upgrade Checklist
 
 Use this checklist before changing Talos or Kubernetes versions. The observed
