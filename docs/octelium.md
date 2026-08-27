@@ -462,6 +462,22 @@ declarations after the initial `octops` package install. Generated Secrets such
 as `sys-init-kek`, database credentials, license material, and kubeconfigs stay
 outside git.
 
+During the August 2026 two-node dataplane outage,
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` provides a
+bounded fallback on `acer`. It restores the ingress and shared authorization
+service, the Portal and API control paths, OctoBot, the CI Kubernetes API, and
+18 additional public WEB Services—19 public WEB fallbacks including
+OctoBot—without adding the control-plane node to the native dataplane pool. The
+fallback service Pods use only the primary
+Kubernetes network and reuse the existing generated Service selectors;
+`default.cordium` and `console.octelium` include their required managed
+sidecars. Refresh a fallback UID whenever Octelium recreates its Service.
+
+Do not remove the fallback after a single worker becomes Ready. Use the
+capacity, 24-hour native-fleet stability, direct native Pod probe, and public
+end-to-end gates in
+`docs/knowledge-base/architecture/cluster-topology.md`.
+
 The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments use `Recreate` because each store opens a
 DuckDB-backed `store.db` on its PVC. Do not change those workloads back to
