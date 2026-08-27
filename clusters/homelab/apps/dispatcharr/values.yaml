@@ -14,11 +14,19 @@ controllers:
         image:
           repository: ghcr.io/dispatcharr/dispatcharr
           tag: latest@sha256:df768adcb9993b58f5e67010cc802c8659b7f964cb1213ab7ff9bb9384db9145
+        command:
+          - /bin/bash
+          - -c
+          - |
+            usermod -s /bin/bash nobody
+            exec /app/docker/entrypoint.sh
         envFrom:
           - secretRef:
               name: dispatcharr-postgres-env
         env:
           TZ: America/Los_Angeles
+          PUID: "65534"
+          PGID: "65534"
           DISPATCHARR_ENV: modular
           REDIS_HOST: localhost
           REDIS_PORT: "6379"
