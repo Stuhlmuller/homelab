@@ -643,7 +643,7 @@ unit "argocd_apps_dispatcharr" {
       }
 
       spec = {
-        project = "homelab"
+        project = "homelab-workloads"
 
         destination = {
           name      = ""
@@ -2540,7 +2540,7 @@ unit "argocd_apps_openclaw" {
       }
 
       spec = {
-        project = "homelab"
+        project = "homelab-workloads"
 
         destination = {
           name      = ""
@@ -2926,7 +2926,7 @@ unit "argocd_apps_policy_bot" {
       }
 
       spec = {
-        project = "homelab"
+        project = "homelab-workloads"
 
         destination = {
           name      = ""
@@ -3097,7 +3097,7 @@ unit "argocd_apps_prowlarr" {
       }
 
       spec = {
-        project = "homelab"
+        project = "homelab-workloads"
 
         destination = {
           name      = ""

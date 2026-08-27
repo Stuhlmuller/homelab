@@ -7,7 +7,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
 spec:
-  description: Homelab GitOps applications managed from the public repository.
+  description: Homelab platform and applications with audited or pending cluster-scoped requirements.
   sourceRepos:
     - https://github.com/Stuhlmuller/homelab.git
     - https://argoproj.github.io/argo-helm

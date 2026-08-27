@@ -6,6 +6,7 @@ resources:
   - cmd-params-configmap.yaml
   - default-appproject.yaml
   - appproject.yaml
+  - workloads-appproject.yaml
   - application.yaml
   - oidc-external-secret.yaml
   - virtualservice.yaml

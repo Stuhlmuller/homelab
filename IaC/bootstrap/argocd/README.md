@@ -13,9 +13,9 @@ terragrunt apply
 The stack installs Argo CD into the `argocd` namespace with the pinned
 `argo-cd` chart version `9.5.15` and keeps the service internal with
 `ClusterIP`. After Helm succeeds, a Terragrunt `after_hook` waits for the Argo
-CD Application and AppProject CRDs, applies the repo-owned `homelab`
-AppProject, and then applies the `argocd-self-management` Application
-manifest.
+CD Application and AppProject CRDs, applies the repo-owned `homelab` and
+`homelab-workloads` AppProjects, and then applies the
+`argocd-self-management` Application manifest.
 
 The Helm values also configure Argo CD SSO through the bundled Dex server with
 an OpenID Connect connector. The browser-facing Argo CD URL and Microsoft Entra

@@ -702,21 +702,24 @@ organization-policy blocker is tracked below.
 - **Next step:** keep this finding open until the migration applies, older S3
   versions of this stack's exact state object are removed, and the External
   Secrets IAM access key is rotated with a matching committed revision bump.
-- **Status:** open; Kiali tailnet bypass fixed
+- **Status:** open; first AppProject tranche and Kiali tailnet bypass fixed
 - **Area:** platform service / GitOps
-- **Evidence:** June 2026 security audit found remaining structural hardening
-  work: the shared Argo CD AppProject can still deploy cluster-scoped RBAC and
-  several app-template workloads need explicit restricted container security
-  contexts. n8n is the first app-template workload hardened with its upstream
-  UID/GID `1000`, `RuntimeDefault` seccomp, no privilege escalation, and no
-  Linux capabilities. Kiali's anonymous/view-only UI is now reachable by humans
-  only after Octelium authentication; the former direct Tailscale LoadBalancer
-  path was removed by making the primary Istio gateway `ClusterIP` only.
+- **Evidence:** the `homelab-workloads` AppProject limits the first four
+  verified ordinary workloads to three namespaces, two source repositories,
+  and no cluster-scoped resources. Platform controllers, namespace-owning
+  apps, cluster-scoped storage apps, and later-tranche workloads remain in the
+  cluster-capable `homelab` project. `n8n-postgres` also remains there because
+  its `CreateNamespace` and managed metadata contract reconciles the
+  cluster-scoped `automation` Namespace. n8n is the first app-template workload
+  hardened with its upstream UID/GID `1000`, `RuntimeDefault` seccomp, no
+  privilege escalation, and no Linux capabilities. Kiali's anonymous UI is
+  now reachable by humans only after Octelium authentication; its direct
+  Tailscale path was removed.
 - **Risk:** these are reviewability, reconnaissance, and lateral-movement risks
   that are larger than a single safe patch.
-- **Next step:** split AppProjects, harden the remaining compatible app-template
-  values, and keep shared platform changes small enough to validate
-  independently.
+- **Next step:** stage namespace ownership transfers before migrating
+  namespace-owning workloads, migrate the next zero-cluster-resource tranche,
+  and harden remaining compatible app-template values independently.
 - **Status:** fixed
 - **Area:** infrastructure supply chain
 - **Evidence:** The Terragrunt catalog release tag `0.4.0` was verified with

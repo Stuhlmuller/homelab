@@ -6,8 +6,8 @@ its own steady-state configuration in the `homelab` cluster.
 Terragrunt owns only the first seed:
 
 - Install the Argo CD Helm release.
-- Create the `homelab` AppProject that scopes repository, chart source, and
-  destination access for this cluster.
+- Create the cluster-capable `homelab` AppProject and the namespace-limited
+  `homelab-workloads` AppProject.
 - Disable the wildcard `default` AppProject so new Applications must choose a
   reviewed project explicitly.
 - Create the `argocd-self-management` Application.
@@ -21,12 +21,13 @@ as permanent live mutations.
 `cmd-params-configmap.yaml` bounds sync operations to 15 minutes so a failed
 resource cannot leave an Application operation running forever.
 
-Keep the `homelab` AppProject source repository, destination namespace, and
-cluster-resource allow-lists aligned with the Applications registered under
-`IaC/live/argocd-apps`. If an app needs a new chart repository, namespace, or
-cluster-scoped kind, update `appproject.yaml` in the same PR as the app
-registration. Keep `default-appproject.yaml` intentionally empty unless this
-repository adopts another named AppProject with documented boundaries.
+Keep each named AppProject's sources, destinations, and resource allow-lists
+aligned with the Applications registered under `IaC/live/argocd-apps`.
+Ordinary applications that render no cluster resources belong in
+`homelab-workloads`. Keep platform controllers and applications that require
+audited cluster resources in `homelab`. Update the selected project manifest
+in the same PR as any new chart repository, namespace, or resource kind. Keep
+`default-appproject.yaml` intentionally empty.
 
 This path also owns the External Secrets Operator resources that create the
 `argocd-oidc-sso` Kubernetes Secret from AWS Systems Manager Parameter Store.

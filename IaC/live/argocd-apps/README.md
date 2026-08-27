@@ -24,10 +24,11 @@ they exist so dependency state is still delivered through Argo CD.
   locally authenticated Argo CD API provider for routine app registration.
 - Pass the `Application` as a raw `manifest` using Argo CD CRD field names such
   as `repoURL`, `targetRevision`, and `syncPolicy`.
-- Register Applications in the `homelab` AppProject. If an app needs a new
-  chart repository, destination namespace, or cluster-scoped kind, update
-  `clusters/homelab/argocd/self-management/appproject.yaml` before applying
-  the Application.
+- Register ordinary namespaced Applications in `homelab-workloads`. Keep
+  platform controllers and Applications that need audited cluster resources
+  in `homelab`. Update the selected project manifest under
+  `clusters/homelab/argocd/self-management` when a source, destination, or
+  resource requirement changes.
 - Declare every upstream relationship with `values.dependencies` as sibling app
   names, such as `external-secrets`, not generated relative paths.
 - Use `spec.syncPolicy.automated` with prune and self-heal by default. Any future
