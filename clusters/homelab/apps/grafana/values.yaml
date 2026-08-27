@@ -36,7 +36,7 @@ grafana.ini:
 podAnnotations:
   homelab.rst.io/alerting-provisioning-version: "16"
 plugins:
-  - https://github.com/grafana/grafana-infinity-datasource/releases/download/v4.0.0/yesoreyeram-infinity-datasource-4.0.0.zip;yesoreyeram-infinity-datasource
+  - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
 initChownData:
   enabled: false

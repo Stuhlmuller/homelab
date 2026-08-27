@@ -75,7 +75,10 @@ organization-policy blocker is tracked below.
   and fails fast so Kubernetes retries the complete download step with fresh
   output instead of accepting or concatenating partial JSON. An idempotent,
   verified, atomic pre-v13 SQLite copy provides a schema-rollback checkpoint
-  after the old pod stops and before Grafana 13 starts.
+  after the old pod stops and before Grafana 13 starts. The first Grafana 13
+  rollout exposed the chart's switch to `GF_PLUGINS_PREINSTALL_SYNC`; the
+  Infinity pin now uses its native `plugin-id@version` syntax instead of the
+  retired custom-URL syntax that made Grafana exit after startup.
 - **Risk:** A persistent Grafana.com outage still blocks remote dashboard
   downloads after retries. Grafana remains single-replica SQLite on NFS.
 - **Next step:** Keep the community chart current and retain `Recreate` while
