@@ -123,6 +123,24 @@ work and can add head-of-line delay to every node-local CNI operation; it would
 not remove the overcommit. Revisit the value only with a controlled startup
 test on a correctly sized dedicated dataplane worker.
 
+Retain Multus `v4.3.0` and `connectionLimit: 4`; a version rollback is rejected
+for this outage. The [v4.3.0 release](https://github.com/k8snetworkplumbingwg/multus-cni/releases/tag/v4.3.0)
+and [connection-limit implementation](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
+show an opt-in Unix-listener cap, while Kubernetes v1.34.1
+[GenericPLEG](https://github.com/kubernetes/kubernetes/blob/v1.34.1/pkg/kubelet/pleg/generic.go#L232-L258)
+gets pod state through CRI sandbox and container lists, not CNI. No controlled
+reproduction ties the limit to the worker hang, and rollback would remove its
+burst-memory protection while restarting the thick daemon.
+
+`kube-multus-ds` uses `system-node-critical` to prevent ordinary pods from
+starving node CNI on a recovered or saturated worker. This follows Kubernetes
+[critical DaemonSet guidance](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/#how-daemon-pods-are-scheduled),
+matches [Talos v1.11.3 Flannel](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/internal/k8stemplates/testdata/flannel-daemonset.yaml#L82),
+and addresses the version-independent condition in
+[Multus issue #1531](https://github.com/k8snetworkplumbingwg/multus-cni/issues/1531).
+It cannot revive an unreachable kubelet; the NotReady workers still require an
+operator reboot or physical recovery before GitOps can roll out this hardening.
+
 ## Canonical Endpoints
 
 - Talos endpoint: `10.1.0.199`
@@ -141,6 +159,8 @@ troubleshooting notes, fix the repository-owned desired state to use
 - `ONBOARDING.md`
 - `docs/talos-control-plane-maintenance.md`
 - `.talos/patches/controlplane-service-account-issuer.yaml`
+- `.talos/patches/worker-zimaboard-2.yaml`
+- `clusters/homelab/platform/multus`
 
 ## Maintenance Notes
 
