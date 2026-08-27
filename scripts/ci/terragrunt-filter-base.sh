@@ -146,6 +146,27 @@ terragrunt_argocd_app_filter() {
   printf '%s\n' "$unit"
 }
 
+terragrunt_argocd_app_state_repair_unit() {
+  case "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" in
+    false | "") return 0 ;;
+    true)
+      if [[ "${GITHUB_EVENT_NAME:-}" != "workflow_dispatch" ]]; then
+        echo "Argo CD Application state repair is allowed only through a protected manual dispatch." >&2
+        return 1
+      fi
+      if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+        echo "Argo CD Application state repair requires one exact argocd_app." >&2
+        return 1
+      fi
+      terragrunt_argocd_app_filter
+      ;;
+    *)
+      echo "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE must be true or false." >&2
+      return 1
+      ;;
+  esac
+}
+
 terragrunt_filter_base_ref() {
   local base_ref="${TERRAGRUNT_FILTER_BASE_SHA:-${APPLY_BASE_SHA:-}}"
 

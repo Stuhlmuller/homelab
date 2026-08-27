@@ -86,6 +86,12 @@ fields remain declarative. Production logs can include Terragrunt's internal
 `tofu apply` subprocess even though the operator entrypoint remains the
 Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
 
+Confirmed tainted Application state is repaired through the protected
+`Terragrunt Apply` dispatch with one exact `argocd_app` and
+`repair_argocd_app_state=true`. That path untaints only
+`kubernetes_manifest.this`, then reuses the normal policy-checked exact-unit
+plan and saved-plan apply; it does not expose a generic state mutation input.
+
 `platform-crossplane` currently installs only Crossplane core through the
 upstream Helm chart. Before Argo CD owns Crossplane Provider, Composition, or
 managed-resource manifests, add the Crossplane-recommended Argo CD tracking and

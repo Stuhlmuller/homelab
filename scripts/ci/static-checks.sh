@@ -25,11 +25,33 @@ echo "::group::Terragrunt generated-unit filters"
   terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
   [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
-  [[ "$(TERRAGRUNT_ARGOCD_APP=github-actions-runner terragrunt_argocd_app_filter)" == "github-actions-runner" ]]
+  [[ "$(TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_filter)" == "affine" ]]
   if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
     echo "Unsafe Argo CD Application unit filter was accepted" >&2
     exit 1
   fi
+  [[ -z "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=false terragrunt_argocd_app_state_repair_unit)" ]]
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=invalid terragrunt_argocd_app_state_repair_unit; then
+    echo "Invalid Argo CD Application state repair value was accepted" >&2
+    exit 1
+  fi
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=push \
+    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit; then
+    echo "Non-dispatch Argo CD Application state repair was accepted" >&2
+    exit 1
+  fi
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
+    terragrunt_argocd_app_state_repair_unit; then
+    echo "Untargeted Argo CD Application state repair was accepted" >&2
+    exit 1
+  fi
+  if TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
+    TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_state_repair_unit; then
+    echo "Unsafe Argo CD Application state repair target was accepted" >&2
+    exit 1
+  fi
+  [[ "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
+    TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine" ]]
 )
 echo "::endgroup::"
 
@@ -96,8 +118,16 @@ done
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
   jq -e '
     (.concurrency == null) and
+    .on.workflow_dispatch.inputs.repair_argocd_app_state == {
+      "description": "Untaint the selected Argo CD Application before reconciling it",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
     .jobs["static-policy"].steps[0].if == "github.event_name == '\''workflow_dispatch'\''" and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false,
@@ -105,6 +135,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     } and
     (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run | contains("event=push"))
   ' >/dev/null
+bash -n scripts/ci/terragrunt-apply.sh
+rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci/terragrunt-apply.sh
 echo "::endgroup::"
 
 echo "::group::Renovate config"

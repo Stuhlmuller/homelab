@@ -24,6 +24,11 @@ on:
         description: Optional exact Argo CD Application unit to reconcile
         required: false
         type: string
+      repair_argocd_app_state:
+        description: Untaint the selected Argo CD Application before reconciling it
+        required: false
+        default: false
+        type: boolean
 
 permissions: {}
 
@@ -98,6 +103,7 @@ jobs:
       ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
       APPLY_HEAD_SHA: ${{ github.sha }}
       TERRAGRUNT_ARGOCD_APP: ${{ inputs.argocd_app }}
+      TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
     steps:
       - name: Check Out Repository
         # actions/checkout@v5
