@@ -75,7 +75,7 @@ Grafana.com during pod startup, so first rollout depends on outbound HTTPS from
 the cluster to Grafana.com.
 
 | Folder | Dashboard | ID | Revision |
-|--------|-----------|----|----------|
+| --- | --- | --- | --- |
 | Kubernetes | Kubernetes / Views / Global | 15757 | 43 |
 | Kubernetes | Kubernetes / Views / Namespaces | 15758 | 46 |
 | Kubernetes | Kubernetes / Views / Pods | 15760 | 39 |
@@ -137,6 +137,8 @@ The provisioned rules cover:
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
 - Repository-owned PostgreSQL readiness probes missing or no longer succeeding
   for approximately 5 minutes.
+- Deluge, Radarr, Sonarr, or media PostgreSQL backups older than 30 hours,
+  including an established CronJob with no recorded success.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
 - Deluge VPN or daemon health missing or failing for 5 minutes, using the
@@ -224,7 +226,7 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the sixteen provisioned `homelab-*` alert rules
+`Entra ID` login path works, and the eighteen provisioned `homelab-*` alert rules
 are present under Grafana Alerting.
 
 ## Rollback
