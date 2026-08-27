@@ -120,17 +120,16 @@ organization-policy blocker is tracked below.
   configuration that enables dependency graph and Dependabot alerts for
   `Stuhlmuller/homelab` while leaving Dependabot security updates disabled.
 
-- **Status:** fixed in desired state; rollout pending
-- **Area:** Dispatcharr / NFS ownership
-- **Evidence:** The first live registration on 2026-08-27 created healthy
-  PostgreSQL and Redis containers, but the web container repeatedly exited when
-  nginx could not change `/data/cache/logos` from the QNAP anonymous owner
-  `65534` to its default UID `1000`. The image explicitly supports matching the
-  mount owner through `PUID` and `PGID`.
-- **Risk:** Dispatcharr cannot run migrations or serve its UI, and Celery waits
-  indefinitely for those migrations.
-- **Next step:** merge the UID/GID correction, then verify the replacement Pod,
-  Argo CD Application, and Octelium-protected UI are healthy.
+- **Status:** runtime fixed; GitOps convergence pending
+- **Area:** Dispatcharr / NFS ownership and StatefulSet normalization
+- **Evidence:** The UID/GID correction produced a healthy three-container web
+  Pod and ready PostgreSQL StatefulSet on 2026-08-27. Argo CD remains
+  `OutOfSync` only because the API adds `apiVersion` and `kind` to the live
+  PostgreSQL `volumeClaimTemplates` entry while desired state omits them.
+- **Risk:** Runtime is healthy, but the persistent false drift hides real
+  Dispatcharr changes and triggers redundant reconciliation.
+- **Next step:** declare the normalized PVC template type, then verify the
+  Application is `Synced` and `Healthy` after rollout.
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity
