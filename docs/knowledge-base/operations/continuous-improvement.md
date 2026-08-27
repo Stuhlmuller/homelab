@@ -98,7 +98,7 @@ organization-policy blocker is tracked below.
   `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
   hostnames, so use an explicit advanced wildcard.
 
-- **Status:** blocked by router and worker recovery
+- **Status:** open
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
   run for 20 days. A stale router control endpoint caused the earlier failures;
@@ -108,13 +108,15 @@ organization-policy blocker is tracked below.
   Ready `zimaboard-1` at `10.1.0.201` returned the expected unauthenticated
   `grpc-status: 16`. PR `#749` moved the host-networked lease job to that
   worker, but live IGD discovery reports no usable UPnP gateway; `zimaboard-0`
-  and `zimaboard-2` remain NotReady.
-- **Risk:** Losing the selected worker longer than one day expires the public
-  CLI, VPN, and admin path while browser and app tunnel traffic remains healthy.
-- **Next step:** Restore authenticated Talos access and the failed workers, then
-  enable UPnP or add a reviewed static Xfinity port forward for
+  and `zimaboard-2` remain NotReady. The public API hostname still times out.
+- **Risk:** Without a persistent WAN TCP/8443 mapping, the public CLI, VPN, and
+  admin path remains unavailable while browser and app tunnel traffic stays
+  healthy.
+- **Next step:** Add or request a repository-owned router configuration path.
+  Through that path, enable UPnP or configure TCP/8443 to
   `10.1.0.201:30443`; verify public `grpc-status: 16` and an authenticated CLI
-  call.
+  call. Track worker recovery separately in
+  [[architecture/cluster-topology]].
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation
