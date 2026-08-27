@@ -74,6 +74,10 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Prowlarr config normalization"
+bash scripts/ci/prowlarr-config-check.sh
+echo "::endgroup::"
+
 echo "::group::Octelium CI credential lifetime and scope"
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '

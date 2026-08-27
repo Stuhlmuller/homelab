@@ -22,7 +22,17 @@ persistent `/config` volume:
 ```
 
 The database password comes from AWS SSM Parameter Store through External
-Secrets. Do not commit it to this repository.
+Secrets. Do not commit it to this repository. The init container removes all
+existing copies of each managed PostgreSQL tag, writes one canonical value, and
+fails unless exactly one matching value remains.
+
+## Health Checks
+
+Startup, readiness, and liveness execute a loopback request to
+`/initialize.json` and discard its response body because it contains the live
+API key. Readiness fails after 30 seconds. Startup and liveness tolerate 30
+minutes of failure so a slow NFS-backed `/config` path is not turned into a
+restart loop.
 
 ## Migration Notes
 
