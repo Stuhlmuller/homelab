@@ -62,6 +62,25 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** fixed
+- **Area:** observability / Grafana startup and security
+- **Evidence:** Read-only inspection on 2026-08-27 found Grafana running the
+  chart-default `12.3.1` image, one imported dashboard truncated to zero bytes,
+  recurring `EOF` provisioning errors, and the known SQLite lock race between
+  Grafana's annotation and star migrations. The annotation migration completed
+  with `totalUpdated=0`. Desired state now uses maintained Grafana Community
+  chart `12.11.2` with Grafana `13.2.0`, where the racing star migration is
+  removed, plus the compatible Infinity datasource `4.0.0`. Desired state
+  deletes obsolete dashboard datasource rewrites, uses TLS-verified transfers,
+  and fails fast so Kubernetes retries the complete download step with fresh
+  output instead of accepting or concatenating partial JSON. An idempotent,
+  verified, atomic pre-v13 SQLite copy provides a schema-rollback checkpoint
+  after the old pod stops and before Grafana 13 starts.
+- **Risk:** A persistent Grafana.com outage still blocks remote dashboard
+  downloads after retries. Grafana remains single-replica SQLite on NFS.
+- **Next step:** Keep the community chart current and retain `Recreate` while
+  Grafana uses the single SQLite PVC.
+
 - **Status:** blocked by Cloudflare edge certificate subscription
 - **Area:** Cordium / public workspace TLS
 - **Evidence:** On 2026-08-27 wildcard DNS resolved
@@ -400,9 +419,8 @@ organization-policy blocker is tracked below.
 - **Next step:** remove the validated migration-only NFS mounts and init
   containers from Radarr and Sonarr in a follow-up revision. Inspect QNAP pool,
   disk, NFS-service, and network history because the same failure domain still
-  affects other NFS-backed workloads. Roll out the Grafana rule, confirm the
-  three stale backups alert while the current PostgreSQL backup does not, and
-  verify recovery clears each alert after its next successful Job.
+  affects other NFS-backed workloads. Verify recovery clears each stale-backup
+  alert after its next successful Job.
 
 - **Status:** fixed; kubelet fallback retained
 - **Area:** monitoring / PostgreSQL availability
