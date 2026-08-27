@@ -64,8 +64,13 @@ contract for Grafana.
   comments. The organization-member approval rule also opts into author and
   contributor approvals so matching Stuhlmuller approvals are not ignored as
   disqualified.
-- External GitHub Actions are pinned to full commit SHAs and checked by
-  Conftest.
+- External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
+  and rejected by the repository when a workflow references a mutable tag.
+- The `main` ruleset requires pull requests, squash-only linear history,
+  verified signatures, strict always-on checks, and blocks branch deletion and
+  force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
+  `Analyze (python)`, `analyze-actions`, and `release-dry-run`; path-conditional
+  Terragrunt checks remain visible without deadlocking unrelated pull requests.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions
   cache for the Nix store after Nix is installed and before the first
   `nix develop --command ...` step. The cache key is derived from the runner OS,
@@ -108,13 +113,16 @@ contract for Grafana.
   `Failed to execute "tofu ..."` line because Terragrunt shells out to
   OpenTofu internally; do not copy those cache-directory commands as the
   operator recovery path.
-- Terragrunt plan and apply phases use `--filter-affected` so only units
-  changed between the selected base and `HEAD` are queued. Pull request plans
-  compare against the PR base branch. Production applies query the latest
-  successful `Terragrunt Apply` run and use its `head_sha`, including manual
-  dispatches. When that run is absent, unavailable, or not an ancestor of the
-  current `main`, the workflow fails closed because it cannot safely infer which
-  removed units need retirement.
+- Application-registration and secret-materialization stack phases use
+  explicit `--filter` expressions so only units changed between the selected
+  base and `HEAD` are queued. Pull request plans compare against the PR base
+  branch. Production applies query the latest successful push-triggered
+  `Terragrunt Apply` run and use its `head_sha`; targeted manual dispatches do
+  not advance that checkpoint. A targeted manual Argo dispatch instead plans
+  and applies its exact named unit regardless of the affected range, then exits
+  before unrelated phases. When the push checkpoint is absent, unavailable, or
+  not an ancestor of the current `main`, the workflow fails closed because it
+  cannot safely infer which removed units need retirement.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`
@@ -129,7 +137,7 @@ contract for Grafana.
   SSM parameter declarations, apply Entra application registrations, apply Argo
   CD Application registrations serially, and finally materialize Kubernetes
   Secrets from SSM. Stack-wide apply phases use Terragrunt's explicit
-  `run --all --filter-affected --non-interactive -- apply ...` form so the run
+  `run --all --filter ... --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
 
@@ -146,18 +154,18 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. Keep this
-  unapproved if trusted branch authors should get automatic plans, or add
-  reviewers if every live plan should require a human gate.
+- `homelab-plan`: used by same-repository pull request plans. Require a
+  reviewer and approve only after reviewing the exact pull request diff; the
+  job checks out pull request code before using live write-capable identities.
 - `homelab-production`: used by post-merge applies. Require reviewers and limit
   deployment branches to `main`.
 
 Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Add
 `AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan` lets
 trusted pull requests render AzureAD application plans, otherwise that PR plan
-phase is skipped with a warning. Repository-level secrets also work, but
-environment secrets are preferred so production credentials can have approval
-rules and tighter rotation:
+phase is skipped with a warning. Keep live credentials environment-scoped so
+GitHub withholds them until the required reviewer approves the job; do not keep
+duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |
 | --- | --- | --- |
