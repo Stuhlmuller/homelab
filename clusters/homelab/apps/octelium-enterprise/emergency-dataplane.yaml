@@ -855,6 +855,1947 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: emergency-octelium-affine-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: affine.default
+    octelium.com/svc-uid: 519c31fe-45d7-49f3-8698-766082d91dbc
+    homelab.rst.io/emergency-dataplane: affine-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: affine.default
+      octelium.com/svc-uid: 519c31fe-45d7-49f3-8698-766082d91dbc
+      homelab.rst.io/emergency-dataplane: affine-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: affine.default
+        octelium.com/svc-uid: 519c31fe-45d7-49f3-8698-766082d91dbc
+        homelab.rst.io/emergency-dataplane: affine-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 519c31fe-45d7-49f3-8698-766082d91dbc
+            - name: OCTELIUM_SVC_NAME
+              value: affine.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-argocd-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: argocd.default
+    octelium.com/svc-uid: 374731cd-1bed-464c-9d1e-cabc06ea0d12
+    homelab.rst.io/emergency-dataplane: argocd-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: argocd.default
+      octelium.com/svc-uid: 374731cd-1bed-464c-9d1e-cabc06ea0d12
+      homelab.rst.io/emergency-dataplane: argocd-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: argocd.default
+        octelium.com/svc-uid: 374731cd-1bed-464c-9d1e-cabc06ea0d12
+        homelab.rst.io/emergency-dataplane: argocd-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 374731cd-1bed-464c-9d1e-cabc06ea0d12
+            - name: OCTELIUM_SVC_NAME
+              value: argocd.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-compass-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: compass.default
+    octelium.com/svc-uid: 2850ad68-4dc3-49a0-8f44-1ef521ed7afb
+    homelab.rst.io/emergency-dataplane: compass-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: compass.default
+      octelium.com/svc-uid: 2850ad68-4dc3-49a0-8f44-1ef521ed7afb
+      homelab.rst.io/emergency-dataplane: compass-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: compass.default
+        octelium.com/svc-uid: 2850ad68-4dc3-49a0-8f44-1ef521ed7afb
+        homelab.rst.io/emergency-dataplane: compass-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 2850ad68-4dc3-49a0-8f44-1ef521ed7afb
+            - name: OCTELIUM_SVC_NAME
+              value: compass.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-cordium-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: cordium
+    octelium.com/svc: default.cordium
+    octelium.com/svc-uid: 60da9d87-9def-4352-9708-7a0fd3190164
+    homelab.rst.io/emergency-dataplane: cordium-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: cordium
+      octelium.com/svc: default.cordium
+      octelium.com/svc-uid: 60da9d87-9def-4352-9708-7a0fd3190164
+      homelab.rst.io/emergency-dataplane: cordium-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: cordium
+        octelium.com/svc: default.cordium
+        octelium.com/svc-uid: 60da9d87-9def-4352-9708-7a0fd3190164
+        homelab.rst.io/emergency-dataplane: cordium-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 60da9d87-9def-4352-9708-7a0fd3190164
+            - name: OCTELIUM_SVC_NAME
+              value: default.cordium
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+        - name: managed
+          image: ghcr.io/octelium/cordium-portal:0.12.7@sha256:f3fe77690cd66b1f0285b55070ef855f9b649764824c1db7f22bf303f2b29f36
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 60da9d87-9def-4352-9708-7a0fd3190164
+            - name: OCTELIUM_SVC_NAME
+              value: default.cordium
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+          readinessProbe:
+            grpc:
+              port: 49095
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49095
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: managed-tmp
+              mountPath: /tmp
+      volumes:
+        - name: managed-tmp
+          emptyDir:
+            sizeLimit: 64Mi
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-console-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: octelium
+    octelium.com/svc: console.octelium
+    octelium.com/svc-uid: d023f510-6c9e-44c9-9197-85aacd554952
+    homelab.rst.io/emergency-dataplane: console-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: octelium
+      octelium.com/svc: console.octelium
+      octelium.com/svc-uid: d023f510-6c9e-44c9-9197-85aacd554952
+      homelab.rst.io/emergency-dataplane: console-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: octelium
+        octelium.com/svc: console.octelium
+        octelium.com/svc-uid: d023f510-6c9e-44c9-9197-85aacd554952
+        homelab.rst.io/emergency-dataplane: console-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: d023f510-6c9e-44c9-9197-85aacd554952
+            - name: OCTELIUM_SVC_NAME
+              value: console.octelium
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+        - name: managed
+          image: ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: d023f510-6c9e-44c9-9197-85aacd554952
+            - name: OCTELIUM_SVC_NAME
+              value: console.octelium
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+          readinessProbe:
+            grpc:
+              port: 49095
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49095
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-deluge-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: deluge.default
+    octelium.com/svc-uid: e5f524b6-be81-4eed-8b93-47847f859f1b
+    homelab.rst.io/emergency-dataplane: deluge-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: deluge.default
+      octelium.com/svc-uid: e5f524b6-be81-4eed-8b93-47847f859f1b
+      homelab.rst.io/emergency-dataplane: deluge-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: deluge.default
+        octelium.com/svc-uid: e5f524b6-be81-4eed-8b93-47847f859f1b
+        homelab.rst.io/emergency-dataplane: deluge-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: e5f524b6-be81-4eed-8b93-47847f859f1b
+            - name: OCTELIUM_SVC_NAME
+              value: deluge.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-dispatcharr-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: dispatcharr.default
+    octelium.com/svc-uid: 0d0857c5-ad3a-44ed-8660-3cdffb07f5f0
+    homelab.rst.io/emergency-dataplane: dispatcharr-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: dispatcharr.default
+      octelium.com/svc-uid: 0d0857c5-ad3a-44ed-8660-3cdffb07f5f0
+      homelab.rst.io/emergency-dataplane: dispatcharr-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: dispatcharr.default
+        octelium.com/svc-uid: 0d0857c5-ad3a-44ed-8660-3cdffb07f5f0
+        homelab.rst.io/emergency-dataplane: dispatcharr-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 0d0857c5-ad3a-44ed-8660-3cdffb07f5f0
+            - name: OCTELIUM_SVC_NAME
+              value: dispatcharr.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-grafana-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: grafana.default
+    octelium.com/svc-uid: ef8e4a8d-19be-4f1b-837b-bd82a340d8f3
+    homelab.rst.io/emergency-dataplane: grafana-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: grafana.default
+      octelium.com/svc-uid: ef8e4a8d-19be-4f1b-837b-bd82a340d8f3
+      homelab.rst.io/emergency-dataplane: grafana-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: grafana.default
+        octelium.com/svc-uid: ef8e4a8d-19be-4f1b-837b-bd82a340d8f3
+        homelab.rst.io/emergency-dataplane: grafana-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: ef8e4a8d-19be-4f1b-837b-bd82a340d8f3
+            - name: OCTELIUM_SVC_NAME
+              value: grafana.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-kiali-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: kiali.default
+    octelium.com/svc-uid: b6ea17bd-4443-4d99-a8c6-38921fb21226
+    homelab.rst.io/emergency-dataplane: kiali-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: kiali.default
+      octelium.com/svc-uid: b6ea17bd-4443-4d99-a8c6-38921fb21226
+      homelab.rst.io/emergency-dataplane: kiali-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: kiali.default
+        octelium.com/svc-uid: b6ea17bd-4443-4d99-a8c6-38921fb21226
+        homelab.rst.io/emergency-dataplane: kiali-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: b6ea17bd-4443-4d99-a8c6-38921fb21226
+            - name: OCTELIUM_SVC_NAME
+              value: kiali.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-litellm-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: litellm.default
+    octelium.com/svc-uid: 9f69f9e5-ddcf-46ed-885f-551d3628561f
+    homelab.rst.io/emergency-dataplane: litellm-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: litellm.default
+      octelium.com/svc-uid: 9f69f9e5-ddcf-46ed-885f-551d3628561f
+      homelab.rst.io/emergency-dataplane: litellm-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: litellm.default
+        octelium.com/svc-uid: 9f69f9e5-ddcf-46ed-885f-551d3628561f
+        homelab.rst.io/emergency-dataplane: litellm-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 9f69f9e5-ddcf-46ed-885f-551d3628561f
+            - name: OCTELIUM_SVC_NAME
+              value: litellm.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-multica-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: multica.default
+    octelium.com/svc-uid: 14ef3900-0d91-4bad-b311-42990b61b1fd
+    homelab.rst.io/emergency-dataplane: multica-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: multica.default
+      octelium.com/svc-uid: 14ef3900-0d91-4bad-b311-42990b61b1fd
+      homelab.rst.io/emergency-dataplane: multica-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: multica.default
+        octelium.com/svc-uid: 14ef3900-0d91-4bad-b311-42990b61b1fd
+        homelab.rst.io/emergency-dataplane: multica-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 14ef3900-0d91-4bad-b311-42990b61b1fd
+            - name: OCTELIUM_SVC_NAME
+              value: multica.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-n8n-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: n8n.default
+    octelium.com/svc-uid: 61b2eb55-b4da-43ad-8a66-6d3c45d70337
+    homelab.rst.io/emergency-dataplane: n8n-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: n8n.default
+      octelium.com/svc-uid: 61b2eb55-b4da-43ad-8a66-6d3c45d70337
+      homelab.rst.io/emergency-dataplane: n8n-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: n8n.default
+        octelium.com/svc-uid: 61b2eb55-b4da-43ad-8a66-6d3c45d70337
+        homelab.rst.io/emergency-dataplane: n8n-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 61b2eb55-b4da-43ad-8a66-6d3c45d70337
+            - name: OCTELIUM_SVC_NAME
+              value: n8n.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-nofx-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: nofx.default
+    octelium.com/svc-uid: a0067fd9-4bdf-4f26-a6bc-7d3338357826
+    homelab.rst.io/emergency-dataplane: nofx-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: nofx.default
+      octelium.com/svc-uid: a0067fd9-4bdf-4f26-a6bc-7d3338357826
+      homelab.rst.io/emergency-dataplane: nofx-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: nofx.default
+        octelium.com/svc-uid: a0067fd9-4bdf-4f26-a6bc-7d3338357826
+        homelab.rst.io/emergency-dataplane: nofx-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: a0067fd9-4bdf-4f26-a6bc-7d3338357826
+            - name: OCTELIUM_SVC_NAME
+              value: nofx.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-openclaw-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: openclaw.default
+    octelium.com/svc-uid: 575c4f60-1f4d-4f2e-863c-ac90162f3b92
+    homelab.rst.io/emergency-dataplane: openclaw-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: openclaw.default
+      octelium.com/svc-uid: 575c4f60-1f4d-4f2e-863c-ac90162f3b92
+      homelab.rst.io/emergency-dataplane: openclaw-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: openclaw.default
+        octelium.com/svc-uid: 575c4f60-1f4d-4f2e-863c-ac90162f3b92
+        homelab.rst.io/emergency-dataplane: openclaw-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 575c4f60-1f4d-4f2e-863c-ac90162f3b92
+            - name: OCTELIUM_SVC_NAME
+              value: openclaw.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-policy-bot-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: policy-bot.default
+    octelium.com/svc-uid: fa3716f0-0f43-4ee7-aa54-32f2143deb44
+    homelab.rst.io/emergency-dataplane: policy-bot-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: policy-bot.default
+      octelium.com/svc-uid: fa3716f0-0f43-4ee7-aa54-32f2143deb44
+      homelab.rst.io/emergency-dataplane: policy-bot-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: policy-bot.default
+        octelium.com/svc-uid: fa3716f0-0f43-4ee7-aa54-32f2143deb44
+        homelab.rst.io/emergency-dataplane: policy-bot-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: fa3716f0-0f43-4ee7-aa54-32f2143deb44
+            - name: OCTELIUM_SVC_NAME
+              value: policy-bot.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-prowlarr-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: prowlarr.default
+    octelium.com/svc-uid: 0708d180-cdec-4081-b4d7-9c8b25fbcd27
+    homelab.rst.io/emergency-dataplane: prowlarr-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: prowlarr.default
+      octelium.com/svc-uid: 0708d180-cdec-4081-b4d7-9c8b25fbcd27
+      homelab.rst.io/emergency-dataplane: prowlarr-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: prowlarr.default
+        octelium.com/svc-uid: 0708d180-cdec-4081-b4d7-9c8b25fbcd27
+        homelab.rst.io/emergency-dataplane: prowlarr-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 0708d180-cdec-4081-b4d7-9c8b25fbcd27
+            - name: OCTELIUM_SVC_NAME
+              value: prowlarr.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-radarr-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: radarr.default
+    octelium.com/svc-uid: 242ef4e9-286f-4802-89ef-2322961e41b4
+    homelab.rst.io/emergency-dataplane: radarr-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: radarr.default
+      octelium.com/svc-uid: 242ef4e9-286f-4802-89ef-2322961e41b4
+      homelab.rst.io/emergency-dataplane: radarr-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: radarr.default
+        octelium.com/svc-uid: 242ef4e9-286f-4802-89ef-2322961e41b4
+        homelab.rst.io/emergency-dataplane: radarr-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 242ef4e9-286f-4802-89ef-2322961e41b4
+            - name: OCTELIUM_SVC_NAME
+              value: radarr.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emergency-octelium-sonarr-public
+  namespace: octelium
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The Vigil and managed service images declare non-root UID 3454; this temporary copy preserves the validated package identity.
+    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
+  labels:
+    app: octelium
+    octelium.com/component: svc
+    octelium.com/component-type: cluster
+    octelium.com/namespace: default
+    octelium.com/svc: sonarr.default
+    octelium.com/svc-uid: 33baae7d-80c2-4ec6-bf78-6542aabce6e9
+    homelab.rst.io/emergency-dataplane: sonarr-public
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: octelium
+      octelium.com/component: svc
+      octelium.com/component-type: cluster
+      octelium.com/namespace: default
+      octelium.com/svc: sonarr.default
+      octelium.com/svc-uid: 33baae7d-80c2-4ec6-bf78-6542aabce6e9
+      homelab.rst.io/emergency-dataplane: sonarr-public
+  template:
+    metadata:
+      labels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/component-type: cluster
+        octelium.com/namespace: default
+        octelium.com/svc: sonarr.default
+        octelium.com/svc-uid: 33baae7d-80c2-4ec6-bf78-6542aabce6e9
+        homelab.rst.io/emergency-dataplane: sonarr-public
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3454
+        seccompProfile:
+          type: RuntimeDefault
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "1"
+      containers:
+        - name: vigil
+          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: OCTELIUM_SVC_UID
+              value: 33baae7d-80c2-4ec6-bf78-6542aabce6e9
+            - name: OCTELIUM_SVC_NAME
+              value: sonarr.default
+            - name: OCTELIUM_REGION_NAME
+              value: default
+            - name: OCTELIUM_REGION_UID
+              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
+            - name: OCTELIUM_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: OCTELIUM_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          readinessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 4
+            failureThreshold: 6
+          livenessProbe:
+            grpc:
+              port: 49094
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 4
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: emergency-octelium-kubernetes-api-ci
   namespace: octelium
   annotations:

@@ -69,33 +69,42 @@ label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 ### Temporary August 2026 recovery
 
 While both labeled dataplane nodes are NotReady,
-`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs only
-the Octelium ingress, shared Octovigil authorization service, OctoBot and CI
-service proxies, and the Portal, login, Auth API, and admin API on `acer`. Their
-existing Service selector labels restore those paths without a new Service,
-ingress, port, node label, or controller-owned Deployment patch. Temporary
-containers are capped at 256 MiB except the measured Auth API and admin API
-managed containers, which request 384 MiB and are capped at 512 MiB.
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 26
+uniquely named temporary Deployments on `acer`: the Octelium ingress, shared
+Octovigil authorization service, Portal, login, Auth API, admin API, OctoBot,
+CI Kubernetes API, and 18 additional public WEB Service proxies. Including the
+existing OctoBot fallback, 19 public WEB proxies run during recovery. The
+additional public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
+console, Deluge, Dispatcharr, Grafana, Kiali, LiteLLM, Multica, n8n, NOFX,
+OpenClaw, Policy Bot, Prowlarr, Radarr, and Sonarr. Existing Service selector
+labels restore these paths without a new Service, ingress, port, node label, or
+controller-owned Deployment patch. Cordium and the Enterprise console retain
+their required digest-pinned managed sidecars; Cordium gets a bounded writable
+`/tmp` for its bbolt cache. Temporary containers are capped at 256 MiB except
+the measured Auth API and admin API managed containers, which request 384 MiB
+and are capped at 512 MiB.
 
-The six temporary service-proxy Pods intentionally use only the primary
+The 24 temporary service-proxy Pods intentionally use only the primary
 Kubernetes network. The ingress Envoy resolves their existing Kubernetes
 Services, and Vigil listens on all Pod interfaces. Attaching Octelium's
 secondary Multus network would require the privileged gateway agent that is
-deliberately absent from the control-plane node.
+deliberately absent from the control-plane node. Each fallback embeds its
+generated `octelium.com/svc-uid`; refresh that value if Octelium recreates the
+corresponding Service.
 
 Do not remove the file merely because one dataplane node reports Ready;
 `zimaboard-2` alone does not have enough capacity. First validate the replacement
 node against measured use plus startup and rolling-update headroom. Keep the
 full native fleet on it for 24 hours with a stable Ready condition and restart
 counts. The package-managed `octelium-ingress-dataplane`,
-`octelium-octovigil`, `svc-octobot-default`,
-`svc-kubernetes-api-ci-default`, `svc-portal-default`, `svc-default-default`,
-`svc-auth-octelium-api`, and `svc-default-octelium-api` Deployments must each
-have a Ready replica. Before pruning, probe the native Pod IPs directly—not the
-selector-balanced Services—for Portal, login, Auth API, admin API, OctoBot, and
-the CI Kubernetes API. Then remove the file from the Enterprise Kustomization;
-the `octelium-enterprise` Application prunes the eight uniquely named temporary
-Deployments. Reverify native-only endpoints and the public paths afterward.
+`octelium-octovigil`, all six original control and CI Service Deployments, and
+all 18 additional public WEB Service Deployments must each have a Ready replica. Before
+pruning, probe the native Pod IPs directly—not the selector-balanced
+Services—for every recovered path, then run `scripts/octelium-e2e-check.sh`.
+Remove the file from the Enterprise Kustomization only after both checks pass;
+the `octelium-enterprise` Application then prunes the 26 uniquely named
+temporary Deployments. Reverify native-only endpoints and the public paths
+afterward.
 
 Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
 capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)

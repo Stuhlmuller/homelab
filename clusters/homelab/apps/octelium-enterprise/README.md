@@ -16,6 +16,8 @@ Kubernetes resources that are safe for this public repository:
 - PVC declarations for `octelium-rscstore`, `octelium-logstore`, and
   `octelium-metricstore`, each protected from Argo CD deletion with
   `argocd.argoproj.io/sync-options: Delete=false`.
+- A bounded emergency dataplane on `acer` for the control paths, CI API, and
+  current public WEB Services while both normal dataplane nodes are NotReady.
 
 Do not commit generated Secrets such as `sys-init-kek`, Octelium database
 credentials, license material, or kubeconfigs here. Those remain runtime state
@@ -53,6 +55,22 @@ live Deployments back to tag-only image references. The Argo CD Application
 therefore ignores only the `vigil` and `managed` container image fields on
 those four Deployments and uses `RespectIgnoreDifferences=true` so self-heal
 does not fight the controller-owned values.
+
+`emergency-dataplane.yaml` reuses each existing Octelium Service selector and
+runs a uniquely named, digest-pinned fallback Deployment on the primary
+Kubernetes network. The 18 newly added public WEB fallbacks extend the existing
+OctoBot fallback, giving 19 public WEB proxies in this recovery manifest.
+`default.cordium` and `console.octelium` include their required managed
+sidecars; Cordium also gets a bounded writable `/tmp` for its bbolt cache. Do
+not add the Multus annotation or a dataplane node label to these temporary
+Pods. If Octelium recreates a Service, refresh its generated
+`octelium.com/svc-uid` here before relying on the fallback.
+
+Keep this recovery file until a correctly sized native dataplane worker has
+run the full package-managed fleet for 24 hours. Follow the direct native Pod
+probe and public end-to-end removal gate in
+`docs/knowledge-base/architecture/cluster-topology.md`; Service-level probes
+alone can be satisfied by these emergency replicas.
 
 ## Updating
 

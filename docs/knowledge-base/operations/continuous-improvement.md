@@ -508,6 +508,10 @@ organization-policy blocker is tracked below.
   worker nodes still lost 60-80% of packets. The Mac's `en0` counters showed
   no errors or collisions during the same interval, further isolating the
   fault to the gateway-to-wired-segment path rather than the operator host.
+  The August 2026 recovery manifest now declares bounded, primary-network
+  fallbacks on `acer` for the Octelium control paths, CI API, and 18 additional
+  public WEB Services—19 including OctoBot; it does not grant `acer` the native
+  dataplane label.
 - **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
   homelab appears to hang even when the NAS and wired switch fabric are healthy.
   Operator SMB access can still be slow, and the same failure can block both
@@ -517,9 +521,9 @@ organization-policy blocker is tracked below.
   error/drop counters, spanning-tree state, patch cable, and switch ports.
   Restore reliable UDP/7844 so long-lived Octelium gRPC streams remain on QUIC;
   HTTP/2 fallback preserves basic public access but is not the preferred steady
-  state. Design and validate a least-privilege, repository-owned recovery path
-  that does not depend on policy-bot, the in-cluster runner, or the public
-  Octelium control path being healthy.
+  state. Validate the declared emergency replicas through direct Pod probes and
+  the public end-to-end gate. The durable path remains a correctly sized third
+  dataplane worker; the `acer` fallback is incident-only.
 
 - **Status:** open
 - **Area:** agent runtime / storage
