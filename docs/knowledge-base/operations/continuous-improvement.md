@@ -120,16 +120,17 @@ organization-policy blocker is tracked below.
   configuration that enables dependency graph and Dependabot alerts for
   `Stuhlmuller/homelab` while leaving Dependabot security updates disabled.
 
-- **Status:** runtime fixed; GitOps convergence pending
-- **Area:** Dispatcharr / NFS ownership and StatefulSet normalization
+- **Status:** internal workloads and GitOps fixed; public access pending
+- **Area:** Dispatcharr / NFS ownership and access
 - **Evidence:** The UID/GID correction produced a healthy three-container web
-  Pod and ready PostgreSQL StatefulSet on 2026-08-27. Argo CD remains
-  `OutOfSync` only because the API adds `apiVersion` and `kind` to the live
-  PostgreSQL `volumeClaimTemplates` entry while desired state omits them.
-- **Risk:** Runtime is healthy, but the persistent false drift hides real
-  Dispatcharr changes and triggers redundant reconciliation.
-- **Next step:** declare the normalized PVC template type, then verify the
-  Application is `Synced` and `Healthy` after rollout.
+  Pod and ready PostgreSQL StatefulSet on 2026-08-27. Declaring the API-normalized
+  PVC template type returned Argo CD to `Synced/Healthy`. An in-Pod HTTP check
+  returns `200` and the Service endpoint is ready, while the Octelium-protected
+  hostname still returns HTTP `503`.
+- **Risk:** The public UI remains unavailable despite healthy internal
+  workloads and converged GitOps state.
+- **Next step:** diagnose the repo-owned Octelium and Istio route, then verify
+  the protected hostname no longer returns `503`.
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity
@@ -178,7 +179,8 @@ organization-policy blocker is tracked below.
   renewed probe failures as the storage incident rather than an Octelium
   routing failure.
 
-- **Status:** resolved; public Octelium client connection verified
+- **Status:** obsolete; superseded by the current router and worker recovery
+  finding
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
   still hung through `octelium-api.stinkyboi.com` while the same client and
@@ -224,11 +226,11 @@ organization-policy blocker is tracked below.
   `isConnected: true`; the test session then shut down cleanly.
 - **Risk:** Public client availability still depends on the leased UPnP mapping,
   the two exact-host Cloudflare rules, and normal certificate renewal.
-- **Next step:** Keep the protected reconciliation workflow rerunnable and
-  treat a missing standard-port `grpc-status: 16` response as edge-path drift
-  before investigating Octelium authentication or storage.
+- **Next step:** Follow the current router and worker recovery finding above.
+  Keep the protected reconciliation workflow as the edge-path diagnostic; this
+  historical success no longer proves current public availability.
 
-- **Status:** open; alert semantics fixed, scrape failure unresolved
+- **Status:** fixed; direct availability alert retained
 - **Area:** observability / kube-state-metrics
 - **Evidence:** Read-only checks on 2026-07-19 showed all four expected nodes
   `Ready`, and the kube-state-metrics endpoint exported `kube_node_info` for
@@ -236,16 +238,15 @@ organization-policy blocker is tracked below.
   10.000 seconds on each scrape, and ingested zero samples. Both the minimum
   and maximum target state were zero across the full 15-day retention window.
   The previous Grafana inventory query used `or vector(0)`, converting this
-  telemetry outage into a false report that all four machines were missing.
-- **Risk:** kube-state-metrics-backed inventory, readiness, and pressure rules
-  cannot observe Kubernetes node state while the scrape is unavailable. A
-  telemetry failure can conceal a real node problem if it is not alerted
-  separately.
-- **Next step:** The Grafana rules now alert directly on kube-state-metrics
-  availability and only evaluate expected hardware inventory while that scrape
-  is healthy. Separately measure the Prometheus-to-exporter path and determine
-  whether the 10-second deadline, exporter payload, or ambient-mesh transport
-  prevents the scrape from completing before changing the scrape configuration.
+  telemetry outage into a false report that all four machines were missing. A
+  read-only Prometheus query on 2026-08-27 returned
+  `up{job="kube-state-metrics"} == 1` for `10.244.1.114:8080`; the only down
+  targets were kubelets for the NotReady nodes `10.1.0.200` and `10.1.0.202`.
+- **Risk:** A scrape-path recurrence could again hide real node or workload
+  state, but the direct availability alert now reports that failure separately.
+- **Next step:** Keep the availability alert and inventory health guard. If the
+  target drops again, diagnose the Prometheus-to-exporter path before changing
+  scrape configuration.
 
 - **Status:** fixed
 - **Area:** networking / DNS
@@ -264,9 +265,8 @@ organization-policy blocker is tracked below.
   to an opaque sinkhole response.
 
 - **Status:** `affine-postgres` and `n8n-postgres` restored;
-  `media-postgres` and Prowlarr cutovers validated; Radarr
-  local-config cutover prepared and live validation pending; open for other NFS
-  workloads
+  `media-postgres`, Prowlarr, Radarr, and Sonarr cutovers validated; open for
+  other NFS workloads
 - **Area:** storage / database recovery
 - **Evidence:** Read-only inspection on 2026-07-19 found simultaneous probe
   failures across NFS-backed workloads on multiple healthy Kubernetes nodes.
@@ -381,28 +381,27 @@ organization-policy blocker is tracked below.
   four valid built-in backup archives; the newest, dated 2026-07-27, contains a
   complete config with one API key plus the expected PostgreSQL and auth tags.
   The 81 MiB config tree is small relative to the 13.89 GB available on
-  `zimaboard-0`. Desired state now declares a guarded recovery into retained
-  local storage, preserves the invalid file and NFS claim, and schedules
-  verified 14-day archives back to NFS. Live recovery remains unverified.
-- **Risk:** probe hardening limits crash-recovery loops but cannot make the
-  shared storage path responsive. Sonarr and Prowlarr can remain Kubernetes
-  `Running` while database calls fail, while Deluge and Radarr turn sustained
-  I/O stalls into restart loops. The same failure domain affects unrelated
-  NFS-backed workloads across the cluster. The nominal local-disk RPO is 24
+  `zimaboard-0`. Desired state now declares guarded Radarr and Sonarr recovery
+  into retained local storage, preserves both NFS claims, and schedules verified
+  14-day archives back to NFS. Read-only inspection on 2026-08-27 found both
+  Applications `Synced`, both local claims `Bound`, and successful backup Jobs
+  through 2026-08-25. Their current degraded health follows the separately
+  tracked `zimaboard-0` outage, not a reopened config cutover.
+- **Risk:** probe hardening and local config cutovers cannot make the remaining
+  shared media and backup paths responsive. The same NFS failure domain affects
+  unrelated workloads across the cluster. The nominal local-disk RPO is 24
   hours, but the actual RPO is the age of the newest verified set and can be
-  older. A failed nightly NFS backup has no freshness alert while the
-  kube-state-metrics scrape path is unhealthy. n8n can recur until the shared
+  older. Backup freshness still lacks a dedicated alert even though the
+  kube-state-metrics scrape path is healthy. n8n can recur until the shared
   storage failure is corrected.
-- **Next step:** sync and observe the Radarr recovery revision, verify the
-  migration marker,
-  API identity, integrations, and first scheduled archive, then remove the
-  migration-only NFS mount in a follow-up revision. Inspect QNAP pool, disk,
-  NFS-service, and network history because the same failure domain still
-  affects other NFS-backed workloads. Check scheduled backups manually after
-  storage incidents, and restore backup freshness alerting when a reliable
-  metric source is available.
+- **Next step:** remove the validated migration-only NFS mounts and init
+  containers from Radarr and Sonarr in a follow-up revision. Inspect QNAP pool,
+  disk, NFS-service, and network history because the same failure domain still
+  affects other NFS-backed workloads. Add backup freshness alerting from the
+  restored kube-state-metrics series; check scheduled backups manually until it
+  is active.
 
-- **Status:** PostgreSQL alert path mitigated; kube-state-metrics scrape open
+- **Status:** fixed; kubelet fallback retained
 - **Area:** monitoring / PostgreSQL availability
 - **Evidence:** Read-only validation on 2026-07-20 found Prometheus reporting
   `up{job="kube-state-metrics"} == 0` with a scrape `context deadline exceeded`,
@@ -414,17 +413,15 @@ organization-policy blocker is tracked below.
   `prober_probe_total` readiness counters, which live Prometheus queries
   confirmed for `affine-postgres-0`, `media-postgres-0`, `n8n-postgres-0`, and
   `octelium-postgres-0`. The healthy expression returned no series, while a
-  simulated missing pod returned a labeled alert instance. The writable
-  cutover revision changes the media target to `media-postgres-local-0`; that
-  series still requires live rollout validation.
-- **Risk:** Existing Grafana node, pod, Deployment, and PVC rules that depend on
-  kube-state-metrics can remain in `NoData/OK` until that scrape path is
-  restored. The generic Prometheus-target-down rule reports the failed target,
-  but it does not replace the missing workload telemetry.
-- **Next step:** diagnose and fix the cross-node ambient HBONE path through a
-  repository-owned Istio or workload rollout change, then verify
-  `up{job="kube-state-metrics"} == 1` and that the kube-state-metrics-backed
-  Grafana rules return live series.
+  simulated missing pod returned a labeled alert instance. The later
+  `media-postgres-local-0` rollout was validated. On 2026-08-27, Prometheus
+  reported `up{job="kube-state-metrics"} == 1`, confirming that the primary
+  workload-metrics path is restored.
+- **Risk:** A future scrape regression could suppress kube-state-metrics-backed
+  rules, while the kubelet readiness fallback continues protecting PostgreSQL.
+- **Next step:** Keep both the direct scrape alert and PostgreSQL kubelet
+  fallback. Treat a future `up == 0` as transport regression before changing
+  workload alert expressions.
 
 - **Status:** mitigated; 30-minute rollout validation passed
 - **Area:** AFFiNE / storage I/O
@@ -500,8 +497,6 @@ organization-policy blocker is tracked below.
   state. Design and validate a least-privilege, repository-owned recovery path
   that does not depend on policy-bot, the in-cluster runner, or the public
   Octelium control path being healthy.
-  Restore OpenClaw separately so its known read storm cannot overlap the AFFiNE
-  test.
 
 - **Status:** open
 - **Area:** agent runtime / storage
@@ -533,7 +528,7 @@ organization-policy blocker is tracked below.
   restart with the gateway log, NFS counters, and the active memory job before
   changing storage behavior.
 
-- **Status:** fixed in desired state; rollout pending
+- **Status:** fixed
 - **Area:** agent runtime / Codex diagnostics
 - **Evidence:** On 2026-08-13, a minimal Codex turn reproduced the gateway
   stall after the sandbox error was fixed. The per-agent `codex-home` was 8.7
@@ -552,9 +547,9 @@ organization-policy blocker is tracked below.
   pod replacement. OpenClaw retains its own session history and OAuth profile.
 - **Validation:** PR #672 rolled out at commit `d858083b`. The pod-local Codex
   home was 109 MiB, a minimal turn returned `OPENCLAW_OK` in 7.3 seconds, and
-  the ready pod retained zero restarts. After the storage-envelope change
-  rolls out, verify the replacement pod requests `5Gi`, limits `6Gi`, and
-  remains ready without another `Evicted` replacement.
+  the ready pod retained zero restarts. Read-only inspection on 2026-08-27
+  confirmed the live Deployment requests `5Gi`, limits `6Gi`, and its last
+  ready Pod had zero restarts before the separately tracked worker outage.
 
 - **Status:** fixed
 - **Area:** agent runtime / startup
@@ -597,38 +592,38 @@ organization-policy blocker is tracked below.
   existing role, reviews the operator plan, applies it, and confirms both
   repositories can still assume the role through only the four exact subjects.
 
-- **Status:** open
+- **Status:** fixed
 - **Area:** agent runtime
-- **Evidence:** OpenClaw pod currently runs on an NFS-backed PVC where files can
-  appear as `nobody:nogroup`; PR #296 configures workspace scratch paths and
-  Git safe-directory state in pod bootstrap.
+- **Evidence:** OpenClaw runs on an NFS-backed PVC where files can appear as
+  `nobody:nogroup`; PR #296 configured workspace scratch paths and Git
+  safe-directory state in pod bootstrap. Read-only inspection on 2026-08-27
+  found the live bootstrap init completed successfully and the last Pod reached
+  `2/2` Ready with zero restarts.
 - **Risk:** future agent work can hit Git ownership checks or brittle cleanup
   paths if runtime setup drifts from the PVC ownership model.
-- **Next step:** after PR #296 syncs, verify the rolled pod has
-  `GIT_CONFIG_GLOBAL=/data/openclaw/gitconfig`, can run `git status` in
-  `/data/openclaw/workspace`, and has
-  `/data/openclaw/workspace/.openclaw/trash`.
+- **Next step:** keep `GIT_CONFIG_GLOBAL=/data/openclaw/gitconfig`, the
+  safe-directory entries, and `/data/openclaw/workspace/.openclaw/trash` in the
+  bootstrap contract.
 - **Status:** fixed
 - **Area:** agent runtime
 - **Evidence:** Rodman requires Claw to sign all commits. The current OpenClaw
   image lacks `gpg` and `ssh-keygen`; PR #297 configured pod bootstrap to
-  provide a persistent SSH signing helper and key.
+  provide a persistent SSH signing helper and key. The same 2026-08-27
+  inspection confirmed that bootstrap completed successfully.
 - **Risk:** unsigned commits weaken auditability for agent-authored
   infrastructure changes.
-- **Next step:** after PR #297 syncs, verify the rolled pod has
-  `commit.gpgsign=true` and that future Claw branch commits show a good SSH
-  signature before push.
-- **Status:** open
+- **Next step:** keep `commit.gpgsign=true` and verify future Claw branch
+  commits show a good SSH signature before push.
+- **Status:** fixed
 - **Area:** CI/CD
-- **Evidence:** the repository currently accepts squash merges only. GitHub
-  creates the final squash commit on `main`, while Claw's branch commits are
-  locally SSH-signed before push.
-- **Risk:** GitHub's squash commit may not carry Claw's local SSH signature,
-  which can blur the "all Claw commits are signed" rule unless the repository
-  policy or merge workflow explicitly accounts for it.
-- **Next step:** decide whether to keep squash-only merges with GitHub-signed
-  mainline commits, allow rebase/merge methods that preserve Claw-signed branch
-  commits, or add a bot-supported path for signed squash commits.
+- **Evidence:** Active ruleset `14700233` allows only squash merges and requires
+  signatures on `main`. GitHub signs the generated squash commit; read-only API
+  inspection on 2026-08-27 verified the active `main` tip had a valid GitHub
+  PGP signature.
+- **Risk:** weakening either the squash-only or required-signature rules would
+  reopen the mainline audit gap.
+- **Next step:** keep both rules enforced and verify their live ruleset state
+  during future GitHub policy changes.
 
 - **Status:** fixed
 - **Area:** CI/CD
@@ -716,7 +711,7 @@ organization-policy blocker is tracked below.
   tighter profile or accidentally expand the exception blast radius.
 - **Next step:** continue splitting the Deluge VPN privilege exception into a
   dedicated namespace once the media workloads can stay restricted.
-- **Status:** open
+- **Status:** fixed
 - **Area:** workload reliability / Deluge
 - **Evidence:** On 2026-06-15 UTC, Deluge was Kubernetes-ready and Argo CD
   `Synced/Healthy`, but `deluged` was repeatedly crashing with
@@ -745,12 +740,9 @@ organization-policy blocker is tracked below.
   The recovered snapshot marked only three entries complete; 11 pointed at
   `/downloads/incomplete`, including nine shown as queued, even though all 11
   had complete-root files matching every expected file count and byte size.
-- **Risk:** Deluge can be unavailable while Kubernetes readiness, Gluetun, and
-  Argo CD still look healthy, and the same persisted-state corruption may
-  recur after future pod or daemon restarts. Repeated bad-shutdown archives now
-  preserve the empty catalog and can age out the last known-good recovery
-  copies even though the individual torrent metadata files remain.
-- **Next step:** guarded startup recovery now treats an empty
+- **Risk:** Abrupt node or daemon loss can still interrupt libtorrent writes,
+  and the retained local config remains tied to the `zimaboard-0` system disk.
+- **Resolution:** guarded startup recovery now treats an empty
   `torrents.state` as invalid when `.torrent` files exist. It requires matching
   fast-resume records from the live file or a retained archive plus
   `/downloads`-scoped save paths before atomically restoring fast-resume data
@@ -808,3 +800,5 @@ organization-policy blocker is tracked below.
   loaded with zero errors. Its only PVCs are `deluge-config-local` and
   `media-downloads`; the old NFS config claim and generated VPN-profile volume
   are absent.
+- **Next step:** keep the guarded startup, native AirVPN provider, and verified
+  nightly archives; use the documented restore path if corruption recurs.

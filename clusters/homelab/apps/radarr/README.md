@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Radarr
 
 Radarr uses the shared `media-postgres` PostgreSQL 14 instance for its
@@ -69,7 +71,7 @@ and one `AuthenticationRequired=DisabledForLocalAddresses` line. Do not print
 
 ## Config Recovery And Local Storage
 
-Active config is moving to the retained `radarr-config-local` volume backed by
+Active config lives on the retained `radarr-config-local` volume backed by
 `/var/lib/radarr` on `zimaboard-0`. The old `radarr-config` NFS claim stays
 declared and is mounted read-only only by the migration init container. Radarr
 uses a `Recreate` rollout so the old singleton stops before that cold copy.

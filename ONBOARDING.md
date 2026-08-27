@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Homelab Onboarding
 
 This document captures the completed Talos control-plane and worker onboarding
@@ -5,20 +7,23 @@ process for the homelab Kubernetes cluster.
 
 ## Completed Talos Control Plane
 
-| Node | Static IP | Role | Kubernetes Status | Notes |
+| Node | Static IP | Role | Onboarding | Notes |
 | --- | --- | --- | --- | --- |
-| `acer` | `10.1.0.199` | control-plane | Ready | Canonical Talos and Kubernetes API endpoint |
+| `acer` | `10.1.0.199` | control-plane | Complete | Canonical Talos and Kubernetes API endpoint |
 
 `acer` is the active seed control-plane node. Keep `10.1.0.199` as the canonical
 cluster endpoint unless intentionally migrating the control plane again.
 
 ## Completed Talos Workers
 
-| Node | Static IP | Temporary USB IP | Active NIC | System Disk | Status |
+| Node | Static IP | Temporary USB IP | Active NIC | System Disk | Onboarding |
 | --- | --- | --- | --- | --- | --- |
-| `zimaboard-0` | `10.1.0.200` | `10.1.0.184` | `enp2s0` | `mmcblk0` | Ready |
-| `zimaboard-1` | `10.1.0.201` | `10.1.0.139` | `enp2s0` | `mmcblk0` | Ready |
-| `zimaboard-2` | `10.1.0.202` | `10.1.0.150` | `enp2s0` | `mmcblk0` | Ready |
+| `zimaboard-0` | `10.1.0.200` | `10.1.0.184` | `enp2s0` | `mmcblk0` | Complete |
+| `zimaboard-1` | `10.1.0.201` | `10.1.0.139` | `enp2s0` | `mmcblk0` | Complete |
+| `zimaboard-2` | `10.1.0.202` | `10.1.0.150` | `enp2s0` | `mmcblk0` | Complete |
+
+These tables record completed onboarding, not current node health. Use
+`kubectl get nodes` for live readiness.
 
 Use hyphenated hostnames such as `zimaboard-1`. Do not use underscore names such
 as `zimaboard_1`; underscores are not valid Kubernetes node hostnames.
@@ -373,9 +378,9 @@ reconciling or rolling back application desired state:
 - `docs/argocd-app-onboarding.md`: app inventory, owning paths, dependency
   readiness, and sync/health exception format.
 - `docs/storage-nfs.md`: default NFS StorageClass prerequisite, backup gate,
-  restore expectations, and current rollout blocker.
-- `docs/networking-tailnet-ingress.md`: Istio reverse proxy, Tailscale tailnet
-  reachability, no first-rollout Funnel paths, and DNS assumptions.
+  and restore expectations.
+- `docs/networking-tailnet-ingress.md`: Octelium primary access, secondary
+  Tailscale reachability, public ingress, and DNS assumptions.
 - `docs/secrets-aws-ssm.md`: AWS SSM Parameter Store references and External
   Secrets rules.
 - `docs/validation-runbook.md`: pre-mutation checks, Argo CD readiness checks,

@@ -43,6 +43,9 @@ and PVC. Do not switch it to upstream all-in-one mode on `nfs-default`: that
 image recursively changes ownership below `/data/db`, which conflicts with the
 QNAP export's squashed UID behavior. The web container uses upstream
 `PUID`/`PGID` `65534` so nginx and Django match the export's anonymous owner.
+The 2026-08-27 rollout then produced a ready three-container web Pod and ready
+PostgreSQL StatefulSet. Internal HTTP returns `200`, but the Octelium-protected
+hostname still returns `503`; public access validation remains open.
 Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
 Generated or adopted upstream resources must still have one declared owner.
@@ -91,5 +94,6 @@ to `sonarr-config-local` on `zimaboard-0`, normalize the local `config.xml` in
 init containers, remove legacy auth tags, pass matching `SONARR__AUTH__*`
 environment settings, and skip the linuxserver default config init script so
 the app does not reintroduce stale authentication state on restart. Keep the
-legacy NFS claim as the read-only migration source and nightly archive target
-until live cutover and first-backup validation are complete.
+legacy NFS claim as the nightly archive and rollback target. The local cutover
+and first backup are validated; remove its migration-only Pod mount and init
+container through a follow-up GitOps change.
