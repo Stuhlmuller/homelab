@@ -61,6 +61,25 @@ ready, but they must not be treated as production-ready until:
    recorded.
 4. Backup and restore expectations are documented in `docs/storage-nfs.md`.
 
+## Open Audit Findings
+
+- **Status:** open
+- **Area:** storage / backup and retained data
+- **Evidence:** Read-only inspection on 2026-08-27 found Prometheus and
+  Alertmanager on `nfs-default`; Prometheus warns that `NFS_SUPER_MAGIC` is
+  unsupported and can cause data corruption or loss. All 37 `nfs-default`
+  PVCs, three `media-qnap-static` claims, and the provisioner's NFS claim are
+  bound, but the repository proves neither an independent off-NAS backup nor a
+  tested restore. Eight `Released` PVs retain old data, and the QNAP still
+  advertises NFSv2 even though Kubernetes mounts NFSv3.
+- **Risk:** Monitoring data can corrupt, a NAS failure can remove every copy,
+  and blind retained-volume cleanup can destroy unrecovered data.
+- **Next step:** Choose an independent backup target and prove restores. Move
+  Prometheus and Alertmanager through a backed-up, fenced migration to
+  supported repo-owned block or local storage. Map each retained PV before
+  owner-approved cleanup. Add a declared QNAP management path before disabling
+  NFSv2, and first confirm no other client needs it.
+
 ## Stateful Apps
 
 The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral

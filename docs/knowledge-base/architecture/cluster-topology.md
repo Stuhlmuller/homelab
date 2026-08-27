@@ -16,6 +16,19 @@ control-plane node and three Zimaboard workers.
 | `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
+## Current Worker Recovery Blocker
+
+Read-only live inspection on 2026-08-27 found `zimaboard-0` and
+`zimaboard-2` NotReady with stopped kubelet heartbeats. Both LAN addresses and
+Talos TCP/50000 remain reachable. The available local Talos client certificate
+expired on 2026-05-17 and does not match the current cluster CA, so it cannot
+authenticate a safe reboot.
+
+Recover these configured nodes with a current authenticated
+`.talos/talosconfig` or physical console or power access. Do not use
+`--insecure`, and do not force-delete their single-writer workloads without
+first fencing the old node.
+
 ## Monitoring Contract
 
 Grafana alerting treats this four-node set as the expected hardware inventory
