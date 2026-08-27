@@ -41,8 +41,9 @@ Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
 while database state lives in the dedicated `dispatcharr-postgres` StatefulSet
 and PVC. Do not switch it to upstream all-in-one mode on `nfs-default`: that
 image recursively changes ownership below `/data/db`, which conflicts with the
-QNAP export's squashed UID behavior. Provider credentials, playlist URLs, and
-guide source secrets stay outside git.
+QNAP export's squashed UID behavior. The web container uses upstream
+`PUID`/`PGID` `65534` so nginx and Django match the export's anonymous owner.
+Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep

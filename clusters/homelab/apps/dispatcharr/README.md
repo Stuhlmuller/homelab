@@ -31,6 +31,12 @@ them with normal NFS backup coverage before relying on the service. The database
 has 30-minute startup and runtime liveness windows plus a 120-second termination
 grace so NFS-backed recovery can complete without a restart loop.
 
+The QNAP export maps writes from container root to UID/GID `65534`. The web
+container sets upstream `PUID`/`PGID` to that owner so nginx and Django can use
+the data directories without a forbidden `chown`. Its short wrapper gives the
+image's existing `nobody` account a login shell before upstream renames that
+account to `dispatcharr`; upstream later drops web processes to that UID.
+
 ## First Run
 
 After Argo CD reports the `dispatcharr` Application `Synced` and `Healthy`,
