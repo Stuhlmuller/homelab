@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Sonarr
 
 Sonarr uses the shared `media-postgres` PostgreSQL 14 instance for its
@@ -45,8 +47,10 @@ idempotent.
 
 The `sonarr-config-backup` CronJob runs nightly on `zimaboard-0`, validates the
 local `config.xml`, and writes 14-day tarball archives back to
-`sonarr-config/local-backups` on NFS. Keep the legacy claim until the migration
-marker and at least one scheduled backup have been verified.
+`sonarr-config/local-backups` on NFS. The cutover and scheduled backup have
+been verified. Keep the legacy claim as the archive and rollback target; remove
+the migration-only Pod mount and init container through a follow-up GitOps
+change.
 
 ## Authentication
 

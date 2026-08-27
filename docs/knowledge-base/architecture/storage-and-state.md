@@ -155,16 +155,15 @@ path.
 The first scheduled NFS archive, `20260731T103003Z.tar.gz`, completed and passed
 the CronJob's archive listing validation.
 
-Radarr's declared active 10 Gi config volume is a retained static `hostPath` PV
-at `/var/lib/radarr`, also pinned to `zimaboard-0`. The guarded cutover stops the
-singleton with `Recreate`, copies the retained NFS config tree, and replaces the
-known-empty `config.xml` with the newest validated built-in backup before the
-existing PostgreSQL/auth normalization runs. A migration marker makes the copy
-idempotent, while the invalid NFS file, built-in backups, and old
-`radarr-config` claim remain recoverable. A 04:00 Pacific CronJob writes verified
-archives back to that claim with 14-day retention. Live cutover and first-backup
-validation are still pending; until then, the migration-only NFS mount remains
-in the pod template.
+Radarr and Sonarr use retained static 10 Gi `hostPath` config volumes at
+`/var/lib/radarr` and `/var/lib/sonarr`, pinned to `zimaboard-0`. Their guarded
+`Recreate` cutovers copied the retained NFS config trees and recovered invalid
+configuration before PostgreSQL/auth normalization. Migration markers make the
+copies idempotent, while the old NFS claims remain archive and rollback targets.
+The 04:00 and 04:15 Pacific CronJobs write verified archives with 14-day
+retention. Read-only inspection on 2026-08-27 found both Applications `Synced`,
+both local claims `Bound`, and successful backup Jobs through 2026-08-25. The
+migration-only NFS mounts remain in the pod templates for follow-up cleanup.
 
 Deluge keeps 30-minute startup and runtime liveness windows so guarded
 libtorrent recovery is not interrupted. The metrics sidecar refreshes cached
