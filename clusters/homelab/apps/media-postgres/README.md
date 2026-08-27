@@ -193,13 +193,12 @@ internally consistent, but the six dumps do not share one cross-database
 snapshot. Checksums detect corruption, not malicious modification, so treat
 the NFS backup as trusted input.
 
-Accepted operational gap: the nominal RPO is 24 hours, but the actual RPO is
-the age of the newest verified recovery set and can exceed 24 hours. Backup
-freshness is not alerted while the kube-state-metrics scrape path is unhealthy,
-so a QNAP stall can leave the newest scheduled Job failed until an operator
-checks it. Inspect the latest Job after each storage incident and retain the
-verified cutover set until the first scheduled recovery set succeeds; the
-normal 14-day retention policy applies afterward.
+The nominal RPO is 24 hours, but the actual RPO is the age of the newest
+verified recovery set and can exceed 24 hours. Grafana warns after 30 hours
+without a recorded success and also catches an established backup CronJob that
+has never succeeded. Inspect the latest Job after each storage incident and
+retain the verified cutover set until the first scheduled recovery set
+succeeds; the normal 14-day retention policy applies afterward.
 
 ```sh
 kubectl -n media get cronjob media-postgres-backup

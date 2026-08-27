@@ -387,19 +387,22 @@ organization-policy blocker is tracked below.
   Applications `Synced`, both local claims `Bound`, and successful backup Jobs
   through 2026-08-25. Their current degraded health follows the separately
   tracked `zimaboard-0` outage, not a reopened config cutover.
+  Live Prometheus queries also confirmed kube-state-metrics healthy and exposed
+  last-success timestamps for all four media backup CronJobs. Deluge, Radarr,
+  and Sonarr were roughly 40 hours stale; `media-postgres-backup` remained
+  current at roughly 17 hours. Grafana desired state now alerts after 30 hours
+  and treats a missing last-success series from an established CronJob as stale.
 - **Risk:** probe hardening and local config cutovers cannot make the remaining
   shared media and backup paths responsive. The same NFS failure domain affects
   unrelated workloads across the cluster. The nominal local-disk RPO is 24
   hours, but the actual RPO is the age of the newest verified set and can be
-  older. Backup freshness still lacks a dedicated alert even though the
-  kube-state-metrics scrape path is healthy. n8n can recur until the shared
-  storage failure is corrected.
+  older. n8n can recur until the shared storage failure is corrected.
 - **Next step:** remove the validated migration-only NFS mounts and init
   containers from Radarr and Sonarr in a follow-up revision. Inspect QNAP pool,
   disk, NFS-service, and network history because the same failure domain still
-  affects other NFS-backed workloads. Add backup freshness alerting from the
-  restored kube-state-metrics series; check scheduled backups manually until it
-  is active.
+  affects other NFS-backed workloads. Roll out the Grafana rule, confirm the
+  three stale backups alert while the current PostgreSQL backup does not, and
+  verify recovery clears each alert after its next successful Job.
 
 - **Status:** fixed; kubelet fallback retained
 - **Area:** monitoring / PostgreSQL availability
