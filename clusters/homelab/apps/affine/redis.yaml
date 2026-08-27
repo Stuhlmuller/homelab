@@ -119,9 +119,6 @@ spec:
             - name: auth
               mountPath: /run/secrets/affine
               readOnly: true
-            - name: data
-              mountPath: /retained-data
-              readOnly: true
             - name: runtime-data
               mountPath: /data
       volumes:
@@ -134,8 +131,8 @@ spec:
           emptyDir:
             sizeLimit: 256Mi
   volumeClaimTemplates:
-    # Retain and mount the former AOF claim read-only for rollback. Keeping the
-    # template avoids an immutable StatefulSet replacement during this change.
+    # Retain the former AOF claim unmounted for rollback. Keeping the template
+    # avoids an immutable StatefulSet replacement and preserves its data.
     - metadata:
         name: data
         annotations:

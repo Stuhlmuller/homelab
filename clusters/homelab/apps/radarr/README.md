@@ -73,26 +73,20 @@ and one `AuthenticationRequired=DisabledForLocalAddresses` line. Do not print
 
 Active config lives on the retained `radarr-config-local` volume backed by
 `/var/lib/radarr` on `zimaboard-0`. The old `radarr-config` NFS claim stays
-declared and is mounted read-only only by the migration init container. Radarr
-uses a `Recreate` rollout so the old singleton stops before that cold copy.
+declared as the archive and rollback target, but the app Pod no longer mounts
+it. Radarr uses a `Recreate` rollout to protect its singleton local state.
 
-The migration validates the current `config.xml` before copying. If it is empty
-or invalid, the migration preserves it as `config.xml.nfs-corrupt-<UTC>` and
-restores the newest built-in Radarr backup containing one closing `Config` tag
-and one non-empty API key. A prior `config.xml.auth-recovery.*` is the fallback.
-The whole NFS config tree is copied so cover art, built-in backups, and other
-recoverable files are retained. The existing `configure-postgres` init then
-normalizes the PostgreSQL and authentication fields without rotating the
-recovered API key. If no valid source exists, migration fails closed and leaves
-the NFS claim unchanged.
+The completed one-time migration copied and validated the legacy config tree,
+recovered a valid backup when needed, and wrote
+`.nfs-migration-complete`. Its init container, script ConfigMap, and read-only
+NFS mount are removed from steady state; `configure-postgres` now follows
+`prepare-config` directly.
 
 `radarr-config-backup` writes a verified compressed archive of local config
 back to the retained NFS claim at 04:00 Pacific and keeps 14 days. This is a
-best-effort snapshot of a running app, so retain several generations. After the
-migration marker, UI health, integrations, and first scheduled archive are
-verified, remove the migration init container and its NFS mount in a follow-up
-revision. The steady-state Radarr pod must not need QNAP config availability to
-start.
+best-effort snapshot of a running app, so retain several generations. It is the
+only steady-state Radarr workload that mounts the old config claim. The app Pod
+does not need QNAP config availability to start.
 
 The local volume survives ordinary Talos reboots and upgrades because `/var` is
 on the Talos `EPHEMERAL` system volume. It remains tied to `zimaboard-0` and is
@@ -100,7 +94,7 @@ lost if that system disk is reset or fails. The 10 Gi PV capacity is descriptive
 for `hostPath`, not an enforced quota. Move it to a dedicated Talos UserVolume
 if that recovery model becomes unacceptable.
 
-Validate the migration without printing secret config values:
+Validate steady state without printing secret config values:
 
 ```sh
 kubectl get persistentvolume radarr-config-local
@@ -117,8 +111,8 @@ kubectl -n media get cronjob radarr-config-backup
 
 Require both claims to remain bound, the pod to be ready on `zimaboard-0`, the
 marker and non-empty API key guard to pass, and Radarr searches plus Prowlarr
-integration to work. After the first 04:00 run, verify the CronJob timestamp and
-archive validation log before removing the migration-only mount:
+integration to work. Verify the latest CronJob timestamp and archive validation
+log:
 
 ```sh
 kubectl -n media get cronjob radarr-config-backup \
@@ -128,12 +122,11 @@ kubectl -n media get job \
 kubectl -n media logs job/<latest-radarr-config-backup-job>
 ```
 
-If migration fails before Radarr writes local config, revert the application
-revision; the read-only NFS source is unchanged. After local writes begin, do
-not point Radarr back at the stale NFS root. Rollback then requires a reviewed
-revision that stops Radarr, restores one selected and validated archive into
-`radarr-config-local` with UID/GID `1000`, and removes the restore Job before
-starting Radarr. Preserve both claims throughout recovery.
+The one-time source copy is complete; do not point Radarr back at the stale NFS
+root. Rollback requires a reviewed revision that stops Radarr, restores one
+selected and validated archive into `radarr-config-local` with UID/GID `1000`,
+and removes the restore Job before starting Radarr. Preserve both claims
+throughout recovery.
 
 ## Media Storage
 

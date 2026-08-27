@@ -6,9 +6,3 @@ resources:
   - local-storage.yaml
   - media-storage.yaml
   - virtualservice.yaml
-configMapGenerator:
-  - name: radarr-config-migration
-    files:
-      - migrate-config.sh
-generatorOptions:
-  disableNameSuffixHash: true

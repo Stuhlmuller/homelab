@@ -28,25 +28,8 @@ controllers:
             add:
               - CHOWN
           readOnlyRootFilesystem: true
-      migrate-config:
-        dependsOn: prepare-config
-        image:
-          repository: lscr.io/linuxserver/sonarr
-          tag: 4.0.19@sha256:c19aa4ecdf03d73e1d5c901da33744cb7eb4d921f89bafed1ca264601d7fa224
-        command:
-          - /bin/sh
-          - /scripts/migrate-config.sh
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-              - ALL
-          readOnlyRootFilesystem: true
-          runAsGroup: 1000
-          runAsNonRoot: true
-          runAsUser: 1000
       configure-postgres:
-        dependsOn: migrate-config
+        dependsOn: prepare-config
         image:
           repository: lscr.io/linuxserver/sonarr
           tag: 4.0.19@sha256:c19aa4ecdf03d73e1d5c901da33744cb7eb4d921f89bafed1ca264601d7fa224
@@ -255,32 +238,10 @@ persistence:
       sonarr:
         prepare-config:
           - path: /config
-        migrate-config:
-          - path: /config
         app:
           - path: /config
         configure-postgres:
           - path: /config
-  legacy-config:
-    # Migration-only: remove this mount and migrate-config after the local
-    # rollout marker and first scheduled backup are verified.
-    enabled: true
-    type: persistentVolumeClaim
-    existingClaim: sonarr-config
-    advancedMounts:
-      sonarr:
-        migrate-config:
-          - path: /legacy-config
-            readOnly: true
-  migration-script:
-    enabled: true
-    type: configMap
-    name: sonarr-config-migration
-    advancedMounts:
-      sonarr:
-        migrate-config:
-          - path: /scripts
-            readOnly: true
   media:
     enabled: true
     type: persistentVolumeClaim
