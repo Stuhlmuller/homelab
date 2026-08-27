@@ -48,10 +48,11 @@ Enterprise console, and unauthenticated callback hostnames to the in-cluster
 Istio gateway, where explicit `VirtualService` objects keep backend routing
 narrow.
 
-Cloudflare edge TLS and the origin certificate must cover the apex plus
-first-level `*.stinkyboi.com` names. That free Cloudflare certificate shape is
-why `stinkyboi.com` is the Octelium cluster domain even though
-`octelium.stinkyboi.com` remains a public alias.
+The Istio origin certificate covers the apex plus first-level
+`*.stinkyboi.com` names. Cloudflare edge TLS must additionally cover Cordium's
+`*.cordium.stinkyboi.com` workspace hosts. Universal SSL does not cover that
+second level; provision an advanced edge certificate with the nested wildcard.
+Total TLS does not issue certificates for Cloudflare Tunnel hostnames.
 
 ## Route Inventory
 

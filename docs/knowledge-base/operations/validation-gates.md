@@ -166,7 +166,8 @@ GraphQL query, confirms AFFiNE rejects an unauthenticated workspace query, and
 ensures every other public app Service remains non-anonymous. App hostnames
 must not resolve to private
 Octelium service IPs or the old Tailscale wildcard. The same script probes the
-reviewed callback hostnames for public DNS and path-limited reachability; the
+Cordium nested workspace wildcard for valid edge TLS and probes the reviewed
+callback hostnames for public DNS and path-limited reachability; the
 n8n expected-negative webhook probe must see an n8n webhook response body, not
 only a generic HTTP 404 from Cloudflare or the Istio gateway, while the Policy
 Bot webhook probe must use the POST shape GitHub sends and require the app-level

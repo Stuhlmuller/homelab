@@ -280,6 +280,8 @@ The gate verifies:
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS without `octelium connect`; the Enterprise console check must not
   redirect to `console.octelium.stinkyboi.com`;
+- a synthetic `tls-audit.cordium.stinkyboi.com` workspace hostname completes
+  edge TLS and reaches Cordium's wildcard route;
 - AFFiNE's native `assets://.` origin can preflight and query `serverConfig` at
   `https://affine.stinkyboi.com/graphql`, while an anonymous workspace query is
   denied by AFFiNE;
@@ -480,8 +482,9 @@ Application ignores exactly those image fields with
 controller-owned values.
 
 The configured Octelium Cluster domain is `stinkyboi.com`, which makes the
-client use `octelium-api.stinkyboi.com`. The Istio and Cloudflare edge
-certificates only need apex plus first-level `*.stinkyboi.com` coverage.
+client use `octelium-api.stinkyboi.com`. The Istio origin certificate needs
+apex plus first-level `*.stinkyboi.com` coverage. Cloudflare edge TLS also
+needs an advanced `*.cordium.stinkyboi.com` wildcard for workspace hosts.
 
 Install the pinned package:
 

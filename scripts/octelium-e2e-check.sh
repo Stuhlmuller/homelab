@@ -101,6 +101,7 @@ affine.stinkyboi.com
 argocd.stinkyboi.com
 compass.stinkyboi.com
 cordium.stinkyboi.com
+tls-audit.cordium.stinkyboi.com
 console.stinkyboi.com
 deluge.stinkyboi.com
 grafana.stinkyboi.com

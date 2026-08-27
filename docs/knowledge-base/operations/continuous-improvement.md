@@ -62,6 +62,20 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** blocked by Cloudflare edge certificate subscription
+- **Area:** Cordium / public workspace TLS
+- **Evidence:** On 2026-08-27 wildcard DNS resolved
+  `tls-audit.cordium.stinkyboi.com`, but both Cloudflare edge addresses closed
+  the TLS handshake. The active edge certificate covers only `stinkyboi.com`
+  and `*.stinkyboi.com`; Cordium advertises workspace hosts under
+  `*.cordium.stinkyboi.com`.
+- **Risk:** Cordium's browser entrypoint can authenticate, but generated
+  workspace app URLs fail before HTTP routing.
+- **Next step:** purchase Cloudflare Advanced Certificate Manager and issue an
+  edge certificate containing `*.cordium.stinkyboi.com`, then rerun
+  `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
+  hostnames, so use an explicit advanced wildcard.
+
 - **Status:** blocked by router and worker recovery
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
