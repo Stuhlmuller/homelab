@@ -181,6 +181,20 @@ plan_and_apply_argocd_apps() {
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
 
+repair_argocd_app_state_unit="$(
+  cd IaC/live/argocd-apps
+  terragrunt_argocd_app_state_repair_unit
+)"
+if [[ -n "$repair_argocd_app_state_unit" ]]; then
+  echo "::group::Targeted Argo CD Application state repair"
+  (
+    cd "IaC/live/argocd-apps/${repair_argocd_app_state_unit}"
+    terragrunt init -no-color
+    terragrunt run -- untaint -no-color kubernetes_manifest.this
+  )
+  echo "::endgroup::"
+fi
+
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   echo "::group::Targeted Argo CD Application registration apply"
   plan_and_apply_argocd_apps

@@ -120,9 +120,14 @@ contract for Grafana.
   `Terragrunt Apply` run and use its `head_sha`; targeted manual dispatches do
   not advance that checkpoint. A targeted manual Argo dispatch instead plans
   and applies its exact named unit regardless of the affected range, then exits
-  before unrelated phases. When the push checkpoint is absent, unavailable, or
-  not an ancestor of the current `main`, the workflow fails closed because it
-  cannot safely infer which removed units need retirement.
+  before unrelated phases. When that exact unit is confirmed tainted, the same
+  protected dispatch may set `repair_argocd_app_state=true`; the workflow
+  requires `argocd_app`, untaints only `kubernetes_manifest.this`, then runs the
+  unchanged policy-checked plan and saved-plan apply. Any other repair value,
+  missing target, or non-dispatch use fails closed. When the push checkpoint is
+  absent, unavailable, or not an ancestor of the current `main`, the workflow
+  fails closed because it cannot safely infer which removed units need
+  retirement.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
   scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`
