@@ -152,8 +152,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`; the CI connector does not pass Octelium `--scope`
-  flags on v0.35. Its Session policy requires the exact WORKLOAD User,
+  `homelab-production`. Both environments require reviewer approval before
+  GitHub releases the token; approve a pull request plan only after reviewing
+  its exact code because that job also assumes the environment-bound AWS OIDC
+  identity. Repository Actions policy rejects mutable action tags, and the
+  `main` ruleset requires signed, squash-only pull requests with strict
+  always-on checks and no force pushes. The CI connector does not pass Octelium
+  `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
   CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every 21 days with

@@ -56,12 +56,13 @@ Claw-authored commits and PR titles should use Conventional Commit format, for
 example `docs: update homelab runbook` or `fix: tighten openclaw network
 policy`.
 
-GitHub vulnerability alerts must stay enabled; Renovate owns security-fix PRs,
-while Dependabot automated fixes stay disabled to avoid duplicate PRs.
+GitHub vulnerability alerts must be enabled; Renovate owns security-fix PRs,
+while Dependabot automated fixes stay disabled to avoid duplicate PRs. The
+organization-policy blocker is tracked below.
 
 ## Open Findings
 
-- **Status:** implemented; rollout verification pending
+- **Status:** blocked by router and worker recovery
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
   run for 20 days. A stale router control endpoint caused the earlier failures;
@@ -69,13 +70,41 @@ while Dependabot automated fixes stay disabled to avoid duplicate PRs.
   schedule because their only target, `zimaboard-0`, was NotReady. The
   86,400-second lease had expired. Direct TLS probes to NodePort `30443` on
   Ready `zimaboard-1` at `10.1.0.201` returned the expected unauthenticated
-  `grpc-status: 16`. Desired state now runs the host-networked lease job on
-  that worker and maps WAN TCP/8443 to `10.1.0.201:30443`.
+  `grpc-status: 16`. PR `#749` moved the host-networked lease job to that
+  worker, but live IGD discovery reports no usable UPnP gateway; `zimaboard-0`
+  and `zimaboard-2` remain NotReady.
 - **Risk:** Losing the selected worker longer than one day expires the public
   CLI, VPN, and admin path while browser and app tunnel traffic remains healthy.
-- **Next step:** After rollout, verify the CronJob succeeds, the router lease
-  targets `10.1.0.201:30443`, public
-  `grpc-status: 16`, and an authenticated CLI call.
+- **Next step:** Restore authenticated Talos access and the failed workers, then
+  enable UPnP or add a reviewed static Xfinity port forward for
+  `10.1.0.201:30443`; verify public `grpc-status: 16` and an authenticated CLI
+  call.
+
+- **Status:** fixed
+- **Area:** CI/CD / credential isolation
+- **Evidence:** On 2026-08-27 `homelab-plan` and `homelab-production` were
+  configured with required reviewers, production was limited to `main`,
+  repository Actions began enforcing full commit SHA references, and ruleset
+  `14700233` began requiring signed squash pull requests, strict always-on
+  checks, and non-fast-forward protection. Unused repository secrets
+  `KUBE_CONFIG_B64`, `TAILSCALE_AUTH_KEY`, and `TS_AUTH_KEY` were removed.
+- **Risk:** A reviewer can still approve their own deployment because the
+  organization has one member; the gate provides an explicit diff-review
+  checkpoint but not independent separation of duties.
+- **Next step:** Keep live credentials environment-scoped and require a second
+  reviewer after another trusted organization member exists.
+
+- **Status:** blocked by organization policy and authority
+- **Area:** dependency security
+- **Evidence:** Organization security configuration `249879` enforces disabled
+  dependency graph and Dependabot alerts for this repository. Repository-level
+  enablement returns HTTP 422, and the current operator token has `read:org`
+  but not `write:org`.
+- **Risk:** Renovate cannot consume GitHub vulnerability alerts, so known
+  vulnerable dependencies may not produce security-fix pull requests.
+- **Next step:** An organization owner should attach a scoped security
+  configuration that enables dependency graph and Dependabot alerts for
+  `Stuhlmuller/homelab` while leaving Dependabot security updates disabled.
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity
