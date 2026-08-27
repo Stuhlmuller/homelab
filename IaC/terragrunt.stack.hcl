@@ -902,10 +902,10 @@ unit "argocd_apps_grafana" {
 
         sources = [
           {
-            repoURL        = "https://grafana.github.io/helm-charts"
+            repoURL        = "https://grafana-community.github.io/helm-charts"
             chart          = "grafana"
             path           = "."
-            targetRevision = "10.5.15"
+            targetRevision = "12.11.2"
             helm = {
               releaseName = "grafana"
               valueFiles  = ["$values/clusters/homelab/apps/grafana/values.yaml"]

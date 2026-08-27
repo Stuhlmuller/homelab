@@ -36,9 +36,41 @@ grafana.ini:
 podAnnotations:
   homelab.rst.io/alerting-provisioning-version: "16"
 plugins:
-  - https://github.com/grafana/grafana-infinity-datasource/releases/download/v3.8.0/yesoreyeram-infinity-datasource-3.8.0.zip;yesoreyeram-infinity-datasource
+  - https://github.com/grafana/grafana-infinity-datasource/releases/download/v4.0.0/yesoreyeram-infinity-datasource-4.0.0.zip;yesoreyeram-infinity-datasource
+defaultCurlOptions: "-sSfL"
 initChownData:
   enabled: false
+extraInitContainers:
+  - name: backup-pre-v13-database
+    image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+    imagePullPolicy: IfNotPresent
+    command:
+      - /bin/sh
+      - -ec
+    args:
+      - |
+        database=/var/lib/grafana/grafana.db
+        backup=/var/lib/grafana/grafana.db.pre-v13
+        temporary=${backup}.tmp
+        if [ -s "$database" ] && [ ! -e "$backup" ]; then
+          rm -f "$temporary"
+          cp -p "$database" "$temporary"
+          cmp "$database" "$temporary"
+          mv "$temporary" "$backup"
+        fi
+        [ ! -e "$database" ] || [ -s "$backup" ]
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    volumeMounts:
+      - name: storage
+        mountPath: /var/lib/grafana
 serviceMonitor:
   enabled: true
   interval: 30s
@@ -133,40 +165,22 @@ dashboards:
     k8s-views-global:
       gnetId: 15757
       revision: 43
-      datasource:
-        - name: DS_PROMETHEUS
-          value: Prometheus
     k8s-views-namespaces:
       gnetId: 15758
       revision: 46
-      datasource:
-        - name: DS_PROMETHEUS
-          value: Prometheus
     k8s-views-pods:
       gnetId: 15760
       revision: 39
-      datasource:
-        - name: DS_PROMETHEUS
-          value: Prometheus
     k8s-system-api-server:
       gnetId: 15761
       revision: 21
-      datasource:
-        - name: DS_PROMETHEUS
-          value: Prometheus
     k8s-system-coredns:
       gnetId: 15762
       revision: 22
-      datasource:
-        - name: DS_PROMETHEUS
-          value: Prometheus
   monitoring:
     k8s-addons-prometheus:
       gnetId: 19105
       revision: 9
-      datasource:
-        - name: DS_PROMETHEUS
-          value: Prometheus
 dashboardsConfigMaps:
   homelab: grafana-dashboard-homelab-overview
 alerting:

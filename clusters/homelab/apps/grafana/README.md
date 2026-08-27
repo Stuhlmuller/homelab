@@ -40,6 +40,14 @@ present. Local admin login remains available through `grafana-admin`.
 - The Helm release uses a `Recreate` deployment strategy because Grafana stores
   SQLite state on a single PVC. Avoid overlapping old and new pods against the
   same database during rollouts.
+- The maintained Grafana Community chart is pinned at `12.11.2`, which runs
+  Grafana `13.2.0`. This replaces the deprecated chart repository and its
+  vulnerable `12.3.1` app default. Grafana 13 also removes the startup star
+  migration that raced the annotation migration against SQLite in 12.3.1.
+- Before the first Grafana 13 process starts, an idempotent init container
+  verifies and atomically preserves the cleanly stopped SQLite database as
+  `grafana.db.pre-v13` on the retained PVC. Existing external NFS backup
+  coverage remains required.
 - The Deployment carries the Argo CD `Replace=true` sync option so Argo replaces
   the Deployment instead of server-side applying stale `rollingUpdate` fields
   when reconciling the `Recreate` strategy.
@@ -55,7 +63,7 @@ present. Local admin login remains available through `grafana-admin`.
 - `values.yaml` imports pinned Grafana.com dashboard revisions for Kubernetes
   and Prometheus views that are maintained by the
   `dotdc/grafana-dashboards-kubernetes` project.
-- `values.yaml` installs the pinned Infinity datasource plugin so Grafana can
+- `values.yaml` installs the pinned Infinity datasource plugin `4.0.0` so Grafana can
   read public GitHub REST API endpoints from the server side for dashboards.
   GitHub Actions alert rules are not provisioned while those reads are
   unauthenticated; shared public API rate limits can turn alert evaluations
@@ -71,8 +79,10 @@ present. Local admin login remains available through `grafana-admin`.
 
 The imported dashboards are pinned by dashboard ID and revision so dashboard
 changes are reviewable. The Grafana chart downloads these JSON documents from
-Grafana.com during pod startup, so first rollout depends on outbound HTTPS from
-the cluster to Grafana.com.
+Grafana.com during pod startup with TLS verification. A failed transfer stops
+the init container instead of leaving a zero-byte dashboard; Kubernetes retries
+the whole download step with fresh output. First rollout still depends on
+outbound HTTPS from the cluster to Grafana.com.
 
 | Folder | Dashboard | ID | Revision |
 | --- | --- | --- | --- |
@@ -203,8 +213,8 @@ Render the pinned Helm chart with this values file:
 
 ```sh
 helm template grafana grafana \
-  --repo https://grafana.github.io/helm-charts \
-  --version 10.5.15 \
+  --repo https://grafana-community.github.io/helm-charts \
+  --version 12.11.2 \
   --namespace monitoring \
   --values clusters/homelab/apps/grafana/values.yaml
 ```
@@ -233,4 +243,6 @@ are present under Grafana Alerting.
 
 Revert the dashboard, alerting, or datasource changes in git and let Argo CD
 sync the Application. Preserve the Grafana PVC unless the operator explicitly
-accepts losing local UI preferences and historical Grafana state.
+accepts losing local UI preferences and historical Grafana state. A Grafana 13
+schema rollback also requires restoring `grafana.db.pre-v13` as `grafana.db`
+while Grafana is stopped before reverting the chart.
