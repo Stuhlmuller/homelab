@@ -190,7 +190,11 @@ git_history_log_opts() {
     fi
   fi
 
-  printf 'HEAD\n'
+  if git rev-parse --verify --quiet HEAD^ >/dev/null; then
+    printf 'HEAD^..HEAD\n'
+  else
+    printf 'HEAD\n'
+  fi
 }
 
 if command -v gitleaks >/dev/null 2>&1; then

@@ -624,13 +624,25 @@ organization-policy blocker is tracked below.
 - **Evidence:** `.github/workflows/terragrunt-apply.yml` now resolves the latest
   successful workflow `head_sha` and validates it as an ancestor before setting
   the Terragrunt affected-unit base. `scripts/ci/secret-scan.sh` scopes manual
-  dispatch history scanning to `HEAD^..HEAD`.
+  dispatch and clean-`main` local history scanning to `HEAD^..HEAD`.
 - **Risk:** using only the immediately preceding push could let a failed apply's
   units fall out of every later affected set; scanning all reachable history on
   manual dispatch also re-raised unrelated historical findings.
 - **Next step:** keep `actions: read` on the apply job and fail closed when no
   trustworthy successful base exists, so an unknown deleted-unit range is never
   checkpointed as successfully applied.
+- **Status:** fixed
+- **Area:** CI/CD / NOFX recovery
+- **Evidence:** The retired `Break Glass NOFX Recovery` workflow applied the
+  shared `aws-ssm-parameters` unit and used a concurrency lane separate from
+  production apply. The existing protected `Terragrunt Apply` dispatch already
+  accepts one validated `argocd_app` and uses the production concurrency lane,
+  so the duplicate workflow was removed.
+- **Risk:** a supposedly narrow recovery could otherwise rotate or update
+  unrelated workload parameters concurrently with another production apply.
+- **Next step:** reconcile NOFX with `argocd_app=nofx` on the protected
+  `Terragrunt Apply` workflow; manage shared parameters only through the normal
+  production apply.
 - **Status:** open
 - **Area:** secrets / CI/CD
 - **Evidence:** the August 2026 remediation changes the bootstrap module to an
