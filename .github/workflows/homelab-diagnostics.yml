@@ -1,5 +1,6 @@
 name: Homelab Diagnostics
 
+# checkov:skip=CKV_GHA_7: expected_sha binds diagnostics to reviewed main; it cannot alter commands or output.
 on:
   workflow_dispatch:
     inputs:
