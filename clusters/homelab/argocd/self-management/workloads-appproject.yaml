@@ -1,0 +1,21 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab-workloads
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Namespaced homelab workloads without cluster-scoped resource access.
+  sourceRepos:
+    - https://github.com/Stuhlmuller/homelab.git
+    - https://bjw-s-labs.github.io/helm-charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: ai
+    - server: https://kubernetes.default.svc
+      namespace: automation
+    - server: https://kubernetes.default.svc
+      namespace: media
+  clusterResourceWhitelist: []

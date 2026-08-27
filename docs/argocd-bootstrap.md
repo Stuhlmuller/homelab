@@ -92,9 +92,10 @@ Expected plan:
 - Configures Dex with an OIDC connector and Argo CD RBAC defaults.
 - Does not render `SecretStore` or `ExternalSecret` resources in the Terragrunt
   bootstrap Helm release.
-- Applies the `homelab` AppProject and `argocd-self-management` Application
-  with the Terragrunt `after_hook` only after `applications.argoproj.io` and
-  `appprojects.argoproj.io` are established.
+- Applies the `homelab` and `homelab-workloads` AppProjects and the
+  `argocd-self-management` Application with the Terragrunt `after_hook` only
+  after `applications.argoproj.io` and `appprojects.argoproj.io` are
+  established.
 - Uses the Terragrunt catalog `helm-release` module pinned to `0.3.0`.
 - Shows no raw secrets, kubeconfigs, tokens, keys, or certificate material.
 
@@ -111,8 +112,8 @@ This is the durable bootstrap path: stack generation materializes the unit,
 then one `terragrunt apply` installs Argo CD and its CRDs. The Terragrunt
 `after_hook` then waits for
 `applications.argoproj.io` and `appprojects.argoproj.io`, applies the
-repo-owned `homelab` AppProject, and applies the self-management Application
-manifest from this repository.
+repo-owned `homelab` and `homelab-workloads` AppProjects, and applies the
+self-management Application manifest from this repository.
 
 ## Verify Healthy State
 
@@ -131,8 +132,8 @@ Expected result within 10 minutes:
 - The Argo CD metrics services exist for the application controller, repo
   server, and API server.
 - `argocd-self-management` exists in the `argocd` namespace.
-- The `homelab` AppProject exists and no workload Application needs the live
-  `default` project.
+- The `homelab` and `homelab-workloads` AppProjects exist and no Application
+  needs the live `default` project.
 - The `default` AppProject has no source repositories or destinations.
 - The Application source points at
   `clusters/homelab/argocd/self-management` in this repository.

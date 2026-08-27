@@ -8,6 +8,20 @@ PostgreSQL instance for Sonarr, Radarr, and Prowlarr. `n8n-postgres` owns the
 dedicated PostgreSQL instance for n8n. These support apps are not counted as
 requested workloads.
 
+## Project Boundaries
+
+`homelab-workloads` allows only the repository, the pinned app-template chart
+repository, three workload namespaces, and no cluster-scoped resources.
+Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use it. Their committed overlays
+and pinned app-template renders are entirely namespaced.
+
+Platform controllers, storage workloads, and applications with additional
+cluster-resource requirements remain in `homelab`. `n8n-postgres` also remains
+there because its existing `CreateNamespace` and managed namespace metadata
+contract reconciles the cluster-scoped `automation` Namespace. New applications
+use the most restrictive existing project that covers their rendered sources,
+destination, and resources.
+
 ## Applications
 
 | App                   | Kind                      | Namespace               | GitOps path                                     | Terragrunt path                              | Auto-sync     | Dependencies                                                                       |

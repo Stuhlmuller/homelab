@@ -92,6 +92,15 @@ gate.
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | external-secrets, cert-manager, istio                                              |
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | cert-manager, istio, platform-storage                                              |
 
+## GitOps Project Boundary
+
+Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use the namespace-limited
+`homelab-workloads` AppProject. Their rendered sources need no cluster-scoped
+resources. Other applications remain in `homelab` because they own or manage a
+namespace, need other cluster-scoped resources, or belong to a later bounded
+migration. `n8n-postgres` stays there while its managed namespace metadata
+reconciles the cluster-scoped `automation` Namespace.
+
 ## Worker Resource Contracts
 
 - OpenClaw requests `1` CPU and `2Gi` memory for the app and caps it at
