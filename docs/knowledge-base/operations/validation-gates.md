@@ -247,7 +247,10 @@ each generated unit.
 Production Argo CD Application registration saves each affected plan, evaluates
 the Terraform policy JSON, rejects manifest replacement/deletion, then applies
 that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
-name to reconcile committed desired state without widening the run to its group.
+name to reconcile committed desired state without widening the run to its group
+or running any unrelated production apply phase. Manual production and
+diagnostic dispatches reject every ref except `refs/heads/main`; the production
+environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production

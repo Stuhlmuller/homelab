@@ -41,9 +41,12 @@ jobs:
       - name: Verify Dispatch Commit
         if: github.event_name == 'workflow_dispatch'
         env:
+          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
-        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+        run: |
+          test "${ACTUAL_REF}" = "refs/heads/main" || { echo "::error::Production dispatches must use main, got ${ACTUAL_REF}."; exit 1; }
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
 
       - name: Check Out Repository
         # actions/checkout@v5

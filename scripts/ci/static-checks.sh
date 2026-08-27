@@ -86,8 +86,10 @@ for workflow_job in \
     jq -e --arg job "$job" '
       .on.workflow_dispatch.inputs.expected_sha.required == true and
       .jobs[$job].steps[0].name == "Verify Dispatch Commit" and
+      .jobs[$job].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
       .jobs[$job].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
       .jobs[$job].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+      (.jobs[$job].steps[0].run | contains("refs/heads/main")) and
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done

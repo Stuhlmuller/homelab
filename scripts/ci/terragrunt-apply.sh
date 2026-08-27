@@ -181,6 +181,13 @@ plan_and_apply_argocd_apps() {
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
 
+if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+  echo "::group::Targeted Argo CD Application registration apply"
+  plan_and_apply_argocd_apps
+  echo "::endgroup::"
+  exit 0
+fi
+
 if ! azuread_credentials_available && azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
   echo "Set AZUREAD_CLIENT_ID, AZUREAD_CLIENT_SECRET, and AZUREAD_TENANT_ID on homelab-production." >&2

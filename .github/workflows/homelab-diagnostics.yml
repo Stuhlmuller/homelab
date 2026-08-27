@@ -24,9 +24,12 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
+          ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
-        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+        run: |
+          test "${ACTUAL_REF}" = "refs/heads/main" || { echo "::error::Diagnostics dispatches must use main, got ${ACTUAL_REF}."; exit 1; }
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
 
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
