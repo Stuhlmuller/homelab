@@ -314,7 +314,7 @@ Render a per-node config:
 
 ```sh
 talosctl machineconfig patch .talos/worker.yaml \
-  --patch @.talos/worker-zimaboard-2.patch.yaml \
+  --patch @.talos/patches/worker-zimaboard-2.yaml \
   --output /private/tmp/worker-zimaboard-2.yaml
 ```
 

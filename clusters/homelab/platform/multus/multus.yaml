@@ -177,6 +177,7 @@ spec:
           effect: NoSchedule
         - operator: Exists
           effect: NoExecute
+      priorityClassName: system-node-critical
       serviceAccountName: multus
       initContainers:
         - name: install-multus-binary
