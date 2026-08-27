@@ -196,9 +196,9 @@ clientless `kubernetes-api-ci` Service. Do not add kubeconfig material to the
 normal plan or apply jobs.
 
 GitHub-hosted runners have no independent route to the private Kubernetes API.
-`Break Glass NOFX Recovery` also installs its kubeconfig through Octelium, so it
-cannot repair an Octelium outage and does not consume a repository kubeconfig
-secret.
+The targeted `Terragrunt Apply` dispatch also installs its kubeconfig through
+Octelium, so it cannot repair an Octelium outage and does not consume a
+repository kubeconfig secret.
 
 When recovery requires the committed `kubernetes-node-labels` state while
 Octelium is unavailable, use a reviewed `main` checkout on a trusted LAN
@@ -230,8 +230,9 @@ EOF
 The AWS CLI `default` profile needs access to the shared S3/KMS state backend.
 The kubeconfig must remain only on the trusted LAN machine. After Octelium is
 healthy, rerun the normal protected `Terragrunt Apply` workflow to reconcile
-the complete affected range. Use `Break Glass NOFX Recovery` only for its
-narrower NOFX reconciliation after the Octelium Kubernetes route works again.
+the complete affected range. For an exact NOFX reconciliation, dispatch that
+same workflow with `expected_sha` set to the current `main` SHA and
+`argocd_app` set to `nofx`; this avoids applying unrelated shared SSM state.
 
 The Octelium service catalog at `docs/examples/octelium/homelab-services.yaml`
 defines:
