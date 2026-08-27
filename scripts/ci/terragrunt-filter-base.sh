@@ -68,7 +68,36 @@ terragrunt_stack_unit_paths_at_ref() {
 
 terragrunt_stack_changed() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
+  local generated_group="${1:-}"
+  local include_plan_inputs="${2:-false}"
   local head_ref="${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}"
+  local repo_root
+  local paths=(
+    IaC/terragrunt.stack.hcl
+    IaC/.catalog
+    IaC/modules
+    IaC/root.hcl
+    IaC/kubernetes-provider.hcl
+  )
+
+  if [[ "$include_plan_inputs" == "true" ]]; then
+    paths+=(
+      flake.nix
+      flake.lock
+      policy/terraform.rego
+      scripts/ci/terragrunt-filter-base.sh
+      scripts/ci/terragrunt-plan.sh
+      scripts/ci/terragrunt-apply.sh
+    )
+  fi
+
+  if [[ -n "$generated_group" ]]; then
+    paths+=("$generated_group")
+  fi
+
+  if ! repo_root="$(git rev-parse --show-toplevel)"; then
+    return 0
+  fi
 
   if [[ -z "$base_ref" ]] && ! base_ref="$(terragrunt_filter_base_ref)"; then
     return 0
@@ -86,17 +115,35 @@ terragrunt_stack_changed() {
     return 0
   fi
 
-  ! git diff --quiet "$base_ref" "$head_ref" -- IaC/terragrunt.stack.hcl IaC/.catalog IaC/modules
+  ! git -C "$repo_root" diff --quiet "$base_ref" "$head_ref" -- "${paths[@]}"
 }
 
 terragrunt_changed_filter() {
   local all_filter="$1"
+  local include_plan_inputs="${2:-false}"
+  local generated_group="${all_filter%/*}"
 
-  if terragrunt_stack_changed; then
-    printf '%s\n' "$all_filter"
+  if terragrunt_stack_changed "$generated_group" "$include_plan_inputs"; then
+    printf '*\n'
   else
     printf '%s | [main...HEAD]\n' "$all_filter"
   fi
+}
+
+terragrunt_argocd_app_filter() {
+  local unit="${TERRAGRUNT_ARGOCD_APP:-}"
+
+  if [[ -z "$unit" ]]; then
+    terragrunt_changed_filter 'IaC/live/argocd-apps/*'
+    return
+  fi
+
+  if [[ ! "$unit" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ || ! -f "${unit}/terragrunt.hcl" ]]; then
+    echo "Unknown Argo CD Application unit: ${unit}" >&2
+    return 1
+  fi
+
+  printf '%s\n' "$unit"
 }
 
 terragrunt_filter_base_ref() {

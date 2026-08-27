@@ -17,6 +17,22 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Terragrunt generated-unit filters"
+(
+  cd IaC/live/argocd-apps
+  terragrunt_stack_changed() { return 0; }
+  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "*" ]]
+  terragrunt_stack_changed() { [[ "${2:-false}" == "true" ]]; }
+  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" == "*" ]]
+  [[ "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*')" == "IaC/live/argocd-apps/* | [main...HEAD]" ]]
+  [[ "$(TERRAGRUNT_ARGOCD_APP=github-actions-runner terragrunt_argocd_app_filter)" == "github-actions-runner" ]]
+  if TERRAGRUNT_ARGOCD_APP=../bootstrap terragrunt_argocd_app_filter; then
+    echo "Unsafe Argo CD Application unit filter was accepted" >&2
+    exit 1
+  fi
+)
+echo "::endgroup::"
+
 echo "::group::Operator OpenTofu validation"
 (
   cd IaC/operator/github-actions-role-policy
@@ -70,8 +86,10 @@ for workflow_job in \
     jq -e --arg job "$job" '
       .on.workflow_dispatch.inputs.expected_sha.required == true and
       .jobs[$job].steps[0].name == "Verify Dispatch Commit" and
+      .jobs[$job].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
       .jobs[$job].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
       .jobs[$job].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+      (.jobs[$job].steps[0].run | contains("refs/heads/main")) and
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done
@@ -84,7 +102,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false,
       "queue": "max"
-    }
+    } and
+    (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run | contains("event=push"))
   ' >/dev/null
 echo "::endgroup::"
 

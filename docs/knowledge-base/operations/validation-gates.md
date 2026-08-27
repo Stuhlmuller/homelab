@@ -236,15 +236,32 @@ CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
 changes, the scripts plan or apply the matching generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files. Deleted-unit handling compares tracked units and explicit-stack paths at
+files. Stack, catalog, module, shared root/provider, and tracked generated-group
+changes such as provider locks use the local `*` because each command runs from
+its generated-unit root. Plan-only toolchain, Terraform-policy, and execution-
+script changes also refresh every plan without widening production apply scope.
+Affected-only runs combine the repository-relative group with the Git selector
+so Terragrunt cannot queue another unit group. Saved plans can live in generated
+module caches; the plan gate discovers them there and writes policy JSON beside
+each generated unit.
+Production Argo CD Application registration saves each affected plan, evaluates
+the Terraform policy JSON, rejects manifest replacement/deletion, then applies
+that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
+name to reconcile committed desired state without widening the run to its group
+or running any unrelated production apply phase. Manual production and
+diagnostic dispatches reject every ref except `refs/heads/main`; the production
+environment independently limits deployments to the `main` branch.
+Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
-Azure credential gate compares only AzureAD unit sources and AzureAD stack
-blocks; unrelated stack changes do not require Azure credentials.
+Azure credential gate compares AzureAD unit sources and stack blocks plus the
+shared root inputs they consume; unrelated stack changes do not require Azure
+credentials.
 
 Production applies resolve their affected-unit base from the latest successful
-`Terragrunt Apply` workflow `head_sha`, not the immediately preceding push. A
-missing, unreachable, or non-ancestor result fails closed so an apply cannot
+push-triggered `Terragrunt Apply` workflow `head_sha`, not the immediately
+preceding push. Targeted manual reconciliations never advance that checkpoint.
+A missing, unreachable, or non-ancestor result fails closed so an apply cannot
 become the new successful checkpoint while skipping an unknown deleted-unit
 range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the working-tree
 Gitleaks scan still covers the complete checkout.
