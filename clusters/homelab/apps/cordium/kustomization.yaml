@@ -3,16 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret.yaml
-  - genesis.yaml
-  - cluster-config-job.yaml
   - user-namespace-sysctl.yaml
   - networkpolicy.yaml
   - virtualservice.yaml
-configMapGenerator:
-  - name: cordium-cluster-config
-    namespace: octelium
-    files:
-      - cluster-config.yaml
-    options:
-      annotations:
-        homelab.rst.io/cordium-cluster-config-revision: "20260822"
+  - cordium-bootstrap-application.yaml
