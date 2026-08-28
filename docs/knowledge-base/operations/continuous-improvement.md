@@ -698,6 +698,8 @@ organization-policy blocker is tracked below.
   OpenTofu 1.11 ephemeral `aws_ssm_parameter` read and Kubernetes
   `data_wo`/`data_wo_revision` write. Provider schemas for AWS `6.56.0` and
   Kubernetes `3.2.1` support that path without persisting decrypted values.
+  Terraform policy now permits only this exact write-only Secret contract and
+  runs positive and unsafe-negative Rego tests in the normal Conftest gate.
 - **Risk:** decrypted External Secrets AWS provider credentials could otherwise
   be exposed to anyone or anything with access to OpenTofu state, plan caches, or
   CI artifacts.
