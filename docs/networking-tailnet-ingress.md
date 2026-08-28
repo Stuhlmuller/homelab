@@ -6,9 +6,9 @@ Kubernetes API reachability, and external callback paths. Existing
 `octelium-public` Cloudflare Tunnel connector; the Octelium CLI API uses the
 separate direct gRPC origin documented below. Octelium `WEB` Services normally
 enforce clientless browser login before proxying to the existing private Istio
-routes. AFFiNE and NOFX are anonymous at Octelium and use their own
-authentication. AFFiNE's stock native client can therefore connect. Tailscale
-Funnel is not an approved external-service backbone in steady state.
+routes. AFFiNE is anonymous at Octelium so its stock native client can use
+application authentication. NOFX requires Octelium login before its own login.
+Tailscale Funnel is not an approved external-service backbone in steady state.
 
 ## DNS Model
 
@@ -60,7 +60,7 @@ Total TLS does not issue certificates for Cloudflare Tunnel hostnames.
 | --- | --- | --- |
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
 | Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy on client TCP/443, Origin Rule to WAN TCP/8443, then UPnP to the API-only Istio gateway NodePort |
-| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE and NOFX |
+| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
 
@@ -143,9 +143,10 @@ the Octelium ingress dataplane and then the Istio route. AFFiNE authenticates
 users itself, registration is disabled after bootstrap, and the anonymous
 transport lets AFFiNE Desktop use its native-origin CORS flow.
 
-NOFX uses `https://nofx.stinkyboi.com` through the public, anonymous Octelium
-`nofx` WEB Service and owns its login boundary. Its Istio route remains private
-and does not expose a direct public or Tailscale Funnel path.
+NOFX uses `https://nofx.stinkyboi.com` through the public Octelium `nofx` WEB
+Service, which requires `homelab-human-web-access` before NOFX's own login. Its
+Istio route remains private and does not expose a direct public or Tailscale
+Funnel path.
 
 Use `https://octobot.stinkyboi.com` through Octelium for private setup, paper
 trading, and operator-reviewed live trading; exchange credentials and strategy

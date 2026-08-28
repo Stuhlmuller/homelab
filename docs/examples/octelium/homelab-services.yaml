@@ -478,9 +478,11 @@ metadata:
 spec:
   displayName: NOFX
   isPublic: true
-  isAnonymous: true
   mode: WEB
   port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
   config:
     upstream:
       url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
@@ -488,6 +490,7 @@ spec:
       insecureSkipVerify: true
     http:
       header:
+        authorizationMode: PASS
         forwardedMode: TRANSPARENT
         host:
           value: nofx.stinkyboi.com

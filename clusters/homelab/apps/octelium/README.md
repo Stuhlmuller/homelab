@@ -5,7 +5,7 @@ Octelium is the replacement path for human app access. App hostnames keep their
 existing `*.stinkyboi.com` names. Exact Cloudflare DNS records point those
 names at the public Cloudflare Tunnel, and Octelium `WEB` Services proxy to the
 existing Istio app routes. All app Services enforce browser login except
-AFFiNE and NOFX, which delegate login to the applications.
+AFFiNE, which delegates login to the application for native-client support.
 
 The deployed Kubernetes pieces are:
 
@@ -49,10 +49,11 @@ The Octelium resource catalog for the external Octelium Cluster is
   `grafana`, `kiali`, `litellm`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the
   existing app hostnames such as `https://grafana.stinkyboi.com`.
-- `affine` and `nofx` are anonymous Octelium app Services. AFFiNE signup is
-  closed after bootstrap, and AFFiNE's own sessions protect workspace data
-  while the public transport supports the native client's `assets://.` origin.
-  NOFX similarly owns its login and session boundary.
+- `affine` is an anonymous Octelium app Service. AFFiNE signup is closed after
+  bootstrap, and AFFiNE's own sessions protect workspace data while the public
+  transport supports the native client's `assets://.` origin.
+- `nofx` requires `homelab-human-web-access`; NOFX's own login remains a second
+  authentication boundary.
 - Cordium genesis owns the package-managed `default.cordium` public `WEB`
   Service with primary hostname `cordium`; the catalog attaches its narrow
   access policy to the dedicated `homelab-cordium-user` instead of declaring a
@@ -78,8 +79,8 @@ service catalog, and workload credential are verified. The `nodeSelector` keeps
 the connector on Octelium dataplane nodes for smoke tests and future private
 upstreams. Public app traffic does not depend on this connector; it enters
 through `octelium-public`, reaches the Octelium ingress dataplane, and is
-authorized as clientless `WEB` traffic except for AFFiNE's and NOFX's reviewed
-anonymous transport.
+authorized as clientless `WEB` traffic except for AFFiNE's reviewed anonymous
+transport.
 
 ## Activation And Cutover
 

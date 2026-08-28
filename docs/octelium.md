@@ -6,9 +6,9 @@ This repository uses Octelium for human access to homelab applications. App
 hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
 records point those names at the public Cloudflare Tunnel, the tunnel forwards
 them to the Octelium public ingress, and Octelium `WEB` Services proxy to the
-existing Istio app routes. Most enforce Octelium login. AFFiNE and NOFX are
-reviewed exceptions: Octelium permits anonymous transport and delegates login
-to each application.
+existing Istio app routes. All app Services except AFFiNE enforce Octelium
+login. AFFiNE permits anonymous transport so its native client can delegate
+login to the application.
 
 CI cluster reachability now uses the Octelium `kubernetes-api-ci` Service.
 Keep only separately reviewed non-app exceptions, such as public webhook
@@ -44,9 +44,9 @@ and `MKNOD` so it can create `/dev/net/tun` for the demo and any future
 connector-served upstream. The production app access path does not require a
 local user VPN session or the in-cluster connector: public app requests enter
 through Cloudflare Tunnel, land on the Octelium public ingress, and are
-forwarded to the in-cluster Istio gateway. Octelium authorizes normal app UIs
-as clientless browser sessions; the anonymous AFFiNE and NOFX Services delegate
-user authentication to their applications.
+forwarded to the in-cluster Istio gateway. Octelium authorizes app UIs as
+clientless browser sessions; only the anonymous AFFiNE Service delegates user
+authentication entirely to the application.
 
 ## Octelium Service Catalog
 
@@ -87,11 +87,12 @@ They create:
   `grafana`, `kiali`, `litellm`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
-- The `affine` and `nofx` Services set `isAnonymous: true`. AFFiNE Desktop uses a
-  native `assets://.` origin and must directly reach its server-discovery,
-  login, GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled
-  after account bootstrap, so existing AFFiNE credentials remain the boundary.
-  NOFX similarly owns its login and session boundary.
+- The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
+  `assets://.` origin and must directly reach its server-discovery, login,
+  GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled after
+  account bootstrap, so existing AFFiNE credentials remain the boundary.
+- The `nofx` Service requires `homelab-human-web-access` before forwarding to
+  NOFX, whose own login remains a second authentication boundary.
 - Package-managed public `WEB` Service `default.cordium`, created by Cordium
   genesis with primary hostname `cordium`. Do not also declare a `cordium`
   Service in Octelium's default Namespace; both derive
@@ -247,11 +248,13 @@ scripts/octelium-e2e-check.sh
 The gate uses ordinary public HTTPS requests to the existing
 `https://*.stinkyboi.com` app hostnames. It fails if any app hostname still
 resolves to Octelium private service IPs, if an app Service is not `WEB` with
-`isPublic: true`, or if the public hostname returns a routing 404. It also
-requires AFFiNE's and NOFX's Services to be anonymous and verifies the AFFiNE
-native-client CORS preflight plus the public `serverConfig` GraphQL query. A
-negative workspace query must still return AFFiNE's `AUTHENTICATION_REQUIRED`
-error, and all other app Services must remain non-anonymous.
+`isPublic: true`, or if the public hostname returns a routing 404. It requires
+AFFiNE's Service to remain anonymous, requires NOFX to use
+`homelab-human-web-access`, and verifies that unauthenticated NOFX requests are
+denied. It also checks the AFFiNE native-client CORS preflight and public
+`serverConfig` GraphQL query. A negative workspace query must still return
+AFFiNE's `AUTHENTICATION_REQUIRED` error, and all other app Services must remain
+non-anonymous.
 
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and

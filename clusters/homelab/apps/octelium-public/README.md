@@ -52,8 +52,8 @@ App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
 original Host headers. Octelium uses that public FQDN to select the matching
 `WEB` Service and then proxy to the existing Istio app route. The Services
-enforce login except for AFFiNE's and NOFX's reviewed anonymous transport; each
-application owns authentication, and AFFiNE's native client can connect.
+enforce login except for AFFiNE's reviewed anonymous transport, which lets its
+native client connect. NOFX requires Octelium login before its application login.
 `cloudflared` reads this routing table only when the pod starts. Whenever
 `configmap.yaml` changes, update the
 `homelab.rst.io/cloudflared-config-revision` pod-template annotation in
