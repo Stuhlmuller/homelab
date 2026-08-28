@@ -15,8 +15,10 @@ The deployed Kubernetes pieces are:
   `/homelab/octelium/client-auth-token` and currently rendering the versioned
   target Secret `octelium-client-auth-v5`.
 - The repo-owned `octelium-client` connector Deployment, configured for TUN
-  mode with `NET_ADMIN` and `MKNOD`, and pinned to nodes labeled
-  `octelium.com/node-mode-dataplane=` for future served workload upstreams.
+  mode with `NET_ADMIN` and `MKNOD`, explicitly enrolled in Istio ambient, and
+  pinned to nodes labeled `octelium.com/node-mode-dataplane=` for future served
+  workload upstreams. Istio CNI and ztunnel disable IPv6 to match the cluster's
+  IPv4-only Pod/Service CIDRs and the connector's `--ip-mode=v4` setting.
   The pod resolves `octelium-api.stinkyboi.com` to the internal Istio gateway
   so the in-cluster connector does not depend on Cloudflare gRPC proxying.
 - `octelium-demo`, a tiny in-cluster HTTP service that remains available as a
@@ -160,8 +162,10 @@ scripts/octelium-e2e-check.sh
 
 The gate uses ordinary public HTTPS requests to the existing app hostnames and
 fails if any hostname still resolves to private Octelium service IPs or if any
-app returns a public routing 404. It also probes the reviewed callback hosts
-`n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`.
+app returns a public routing 404. It also requires every active connector pod
+to report `ambient.istio.io/redirection=enabled` and probes the reviewed
+callback hosts `n8n-webhook.stinkyboi.com` and
+`policy-bot-hook.stinkyboi.com`.
 
 Use separate contexts when the Octelium control plane is not the homelab
 cluster:

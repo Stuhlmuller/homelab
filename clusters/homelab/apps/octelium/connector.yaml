@@ -45,6 +45,7 @@ spec:
         app.kubernetes.io/name: octelium
         app.kubernetes.io/instance: octelium-client
         app.kubernetes.io/part-of: octelium
+        istio.io/dataplane-mode: ambient
     spec:
       serviceAccountName: octelium-client
       automountServiceAccountToken: false

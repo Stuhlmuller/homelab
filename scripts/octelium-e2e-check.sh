@@ -306,6 +306,24 @@ else
   fail "octelium-client Deployment is missing"
 fi
 
+CONNECTOR_PODS_JSON="$(
+  kubectl_homelab -n "${CLIENT_NAMESPACE}" get pods \
+    -l app.kubernetes.io/instance=octelium-client -o json 2>/dev/null || true
+)"
+if jq -e \
+  '
+    [.items[] | select(
+      .metadata.deletionTimestamp == null and
+      (.status.phase != "Succeeded" and .status.phase != "Failed")
+    )] as $pods |
+    ($pods | length) > 0 and
+    all($pods[]; .metadata.annotations["ambient.istio.io/redirection"] == "enabled")
+  ' >/dev/null 2>&1 <<<"${CONNECTOR_PODS_JSON}"; then
+  pass "active octelium-client pods have Istio ambient redirection enabled"
+else
+  fail "active octelium-client pods do not have Istio ambient redirection enabled"
+fi
+
 note "Checking API-only ingress boundary"
 API_GATEWAY_JSON="$(kubectl_homelab -n istio-system get gateway octelium-api-gateway -o json 2>/dev/null || true)"
 if jq -e \

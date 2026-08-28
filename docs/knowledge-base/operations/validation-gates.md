@@ -30,7 +30,8 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_role.github_actions' Github-TF-State
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan \
+  -out=plan.out -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
 ```
@@ -64,7 +65,9 @@ checks are acceptable when the infrastructure graph is untouched:
 
 ```sh
 git diff --check -- AGENTS.md ONBOARDING.md docs/knowledge-base .agents/skills
-rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" docs/knowledge-base .agents/skills
+rg -n \
+  "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" \
+  docs/knowledge-base .agents/skills
 ```
 
 ## Kubernetes Source Checks
@@ -107,7 +110,11 @@ kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-cloudflare-origin-port.sh scripts/octelium-entra-oidc.sh
+bash -n \
+  scripts/octelium-gateway-dns.sh \
+  scripts/octelium-public-dns.sh \
+  scripts/octelium-cloudflare-origin-port.sh \
+  scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -165,8 +172,10 @@ deployment-protection rule with a durable lease. Until then, dispatch only when
 a reviewer is ready to approve.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
-workload credential, ready connector replica, Cluster/API/portal TLS responses,
-the complete homelab WEB Service catalog, public DNS for each existing
+workload credential, ready connector replica, and
+`ambient.istio.io/redirection=enabled` on every active connector pod. It also
+checks Cluster/API/portal TLS responses, the complete homelab WEB Service
+catalog, public DNS for each existing
 `*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
 Octelium public WEB access. It requires AFFiNE's anonymous Service mode, NOFX's
 `homelab-human-web-access` policy, and unauthenticated NOFX `/` and `/api/health`
