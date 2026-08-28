@@ -75,10 +75,13 @@ Octelium domain, API, portal, alias, and app backend routes. The
 remains available only as a local fallback and is not referenced by the ingress
 wildcard certificate.
 
-The rendered Conftest policy rejects Tailscale Funnel and requires every public
-Istio `VirtualService`, public `Gateway`, or non-discovery `Ingress` to declare
-`homelab.rst.io/access-plane: octelium` unless a future PR intentionally changes
-the policy. Unauthenticated callback routes must also carry
+The rendered Conftest policy rejects Tailscale Funnel and treats every Istio
+`VirtualService` attached to a gateway other than `mesh`, every `Gateway`, and
+every `Ingress` except the explicit `compass-discovery` class as externally
+reachable by default. Those resources must declare
+`homelab.rst.io/access-plane: octelium`; only gatewayless or mesh-only
+`VirtualService` resources and Compass discovery entries are exempt.
+Unauthenticated callback routes must also carry
 `homelab.rst.io/public-callback: "true"`,
 `homelab.rst.io/public-callback-reviewed: "true"`, and a non-empty
 `homelab.rst.io/public-callback-purpose`.

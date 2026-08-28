@@ -141,57 +141,17 @@ octelium_access_plane if {
 
 public_external_route if {
 	input.kind == "VirtualService"
-	host := object.get(object.get(input, "spec", {}), "hosts", [])[_]
-	public_hostname(host)
+	gateway := object.get(object.get(input, "spec", {}), "gateways", [])[_]
+	gateway != "mesh"
 }
 
 public_external_route if {
 	input.kind == "Gateway"
-	server := object.get(object.get(input, "spec", {}), "servers", [])[_]
-	host := object.get(server, "hosts", [])[_]
-	public_hostname(host)
-}
-
-public_external_route if {
-	input.kind == "Ingress"
-	object.get(object.get(input, "spec", {}), "ingressClassName", "") == "tailscale"
 }
 
 public_external_route if {
 	input.kind == "Ingress"
 	object.get(object.get(input, "spec", {}), "ingressClassName", "") != "compass-discovery"
-	host := ingress_hosts(input)[_]
-	public_hostname(host)
-}
-
-public_hostname(host) if {
-	clean := trim(lower(sprintf("%v", [host])), "*.")
-	clean == "stinkyboi.com"
-}
-
-public_hostname(host) if {
-	clean := trim(lower(sprintf("%v", [host])), "*.")
-	endswith(clean, ".stinkyboi.com")
-}
-
-public_hostname(host) if {
-	clean := trim(lower(sprintf("%v", [host])), "*.")
-	endswith(clean, ".ts.net")
-}
-
-ingress_hosts(ingress) := hosts if {
-	spec := object.get(ingress, "spec", {})
-	rule_hosts := [host |
-		rule := object.get(spec, "rules", [])[_]
-		host := object.get(rule, "host", "")
-		host != ""
-	]
-	tls_hosts := [host |
-		tls := object.get(spec, "tls", [])[_]
-		host := object.get(tls, "hosts", [])[_]
-		host != ""
-	]
-	hosts := array.concat(rule_hosts, tls_hosts)
 }
 
 external_secret_allowed_prefixes := {

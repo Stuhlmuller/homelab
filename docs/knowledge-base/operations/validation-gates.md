@@ -216,9 +216,12 @@ Bot webhook probe must use the POST shape GitHub sends and require the app-level
 HTTP 400 webhook validation response, not just any non-404 response.
 
 Rendered Kubernetes policy also enforces the access contract:
-`policy/kubernetes.rego` rejects Tailscale Funnel, requires public
-`VirtualService`, `Gateway`, and non-discovery `Ingress` resources to declare
-`homelab.rst.io/access-plane: octelium`, and requires reviewed
+`policy/kubernetes.rego` rejects Tailscale Funnel and classifies every
+gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
+the explicit `compass-discovery` class as externally reachable by default.
+Those resources must declare `homelab.rst.io/access-plane: octelium`; only
+gatewayless or mesh-only `VirtualService` resources and Compass discovery
+entries are exempt. The policy also requires reviewed
 `homelab.rst.io/public-callback-*` annotations for unauthenticated callback
 hosts such as `n8n-webhook.stinkyboi.com` and
 `policy-bot-hook.stinkyboi.com`. Run `scripts/ci/conftest-policies.sh` after
