@@ -60,7 +60,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/n8n-io/n8n
-          tag: "stable@sha256:efe735b31f5d4ed35a057a56d9a803e42f933a2b028b69b8462d9c4a7c90fe5c"
+          tag: "stable@sha256:cfe2704ff858395503d42548206c2c99ea351a205e941063a9d9b77b0f404478"
         env:
           TZ: America/Los_Angeles
           GENERIC_TIMEZONE: America/Los_Angeles
