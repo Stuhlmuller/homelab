@@ -1,0 +1,52 @@
+name: Terragrunt Apply Request
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: terragrunt-apply-request
+  cancel-in-progress: true
+
+jobs:
+  request:
+    name: Request Latest Main Apply
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+    steps:
+      - name: Show Exact Apply Command
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          REQUEST_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          dispatch_command="gh workflow run terragrunt-apply.yml --repo ${GH_REPO} --ref main -f expected_sha=${REQUEST_SHA}"
+          active_urls="$(
+            gh api \
+              "repos/${GH_REPO}/actions/workflows/terragrunt-apply.yml/runs?per_page=100" \
+              --jq '.workflow_runs[] | select(.status != "completed") | .html_url'
+          )" || { echo "::error::Unable to inspect active Terragrunt Apply runs."; exit 1; }
+
+          echo "::notice::Dispatch reviewed main with: ${dispatch_command}"
+          {
+            echo "## Terragrunt Apply Request"
+            echo
+            echo '```sh'
+            echo "${dispatch_command}"
+            echo '```'
+            echo
+            if [[ -n "${active_urls}" ]]; then
+              echo "Active applies:"
+              while IFS= read -r active_url; do
+                echo "- ${active_url}"
+              done <<<"${active_urls}"
+            else
+              echo "No active Terragrunt Apply run."
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"

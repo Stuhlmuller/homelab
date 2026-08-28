@@ -17,8 +17,9 @@ through `IaC/live/argocd-apps/<name>` and deliver runtime changes through Argo
 CD rather than direct cluster mutation.
 
 Human application access normally uses Octelium clientless `WEB` Services.
-AFFiNE and NOFX are reviewed exceptions: their Octelium Services are anonymous
-and delegate login to the applications. AFFiNE public signup remains disabled.
+AFFiNE is the reviewed exception: its Octelium Service is anonymous and
+delegates login to the application. AFFiNE public signup remains disabled.
+NOFX requires Octelium human browser authentication before its own login.
 Reviewed callback hosts use the public Octelium tunnel with explicit path
 restrictions.
 Tailscale is secondary LAN and egress infrastructure, not the primary app
@@ -78,9 +79,11 @@ Desired state now bounds every long-running container. Deluge verifies typed
 `core.conf` values, backs failed startup reconciliation off to 60 seconds,
 rechecks every five minutes, and refreshes cached health metrics once per
 minute. OpenClaw caps init and app CPU bursts and cannot schedule on an Octelium
-dataplane node; its `6Gi` memory limit remains because observed use exceeded
-`4Gi`. The three Servarr apps have explicit requests and limits. Re-measure
-after 48 hours of healthy runtime before raising a limit or relaxing affinity.
+dataplane node. Its `4Gi` app limit deliberately trades an app OOM for worker
+health after a 2026-08-28 rise to `5.36Gi` immediately preceded loss of the
+8 GiB worker. The three Servarr apps have explicit requests and limits.
+Re-measure after 48 hours of healthy runtime before raising a limit or relaxing
+affinity.
 
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.

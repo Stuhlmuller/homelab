@@ -18,12 +18,18 @@ control-plane node and three Zimaboard workers.
 
 ## Current Worker Recovery Blocker
 
-Read-only live inspection on 2026-08-27 found `zimaboard-0` and
-`zimaboard-2` NotReady with stopped kubelet heartbeats. Both LAN addresses and
-Talos TCP/50000 remain reachable. The available local Talos client certificate
-expired on 2026-05-17 and does not match the current cluster CA, so it cannot
-authenticate a safe reboot.
+Read-only live inspection on 2026-08-28 found `zimaboard-1` and
+`zimaboard-2` NotReady with stopped kubelet heartbeats; `acer` and
+`zimaboard-0` remained Ready. Both failed workers still answered on the LAN and
+Talos TCP/50000. Immediately before `zimaboard-1` stopped reporting, OpenClaw
+grew from `530Mi` to `5.36Gi` and all user containers reached `6.51Gi` on its
+`7.58Gi` physical memory. This strongly correlates the outage with memory
+starvation, but authenticated Talos logs are required to distinguish kernel OOM
+from severe thrashing. The available local Talos client certificate expired on
+2026-05-17 and does not match the current cluster CA, so it cannot authenticate
+a safe reboot.
 
+Sync the OpenClaw `4Gi` containment limit before recovering `zimaboard-1`.
 Recover these configured nodes with a current authenticated
 `.talos/talosconfig` or physical console or power access. Do not use
 `--insecure`, and do not force-delete their single-writer workloads without

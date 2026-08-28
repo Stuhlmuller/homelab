@@ -1122,6 +1122,10 @@ unit "argocd_apps_istio" {
                 {
                   name  = "resources.requests.memory"
                   value = "256Mi"
+                },
+                {
+                  name  = "env.IPV6_ENABLED"
+                  value = "false"
                 }
               ]
             }

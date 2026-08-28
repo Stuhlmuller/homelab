@@ -34,7 +34,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "16"
+  homelab.rst.io/alerting-provisioning-version: "17"
 plugins:
   - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
@@ -318,6 +318,91 @@ alerting:
             labels:
               severity: warning
               managed_by: grafana-provisioning
+          - uid: homelab-octelium-api-upnp-stale
+            title: Octelium API UPnP lease renewal stale
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  expr: |
+                    time()
+                    - max(
+                        kube_cronjob_status_last_successful_time{
+                          namespace="istio-system",
+                          cronjob="octelium-api-upnp"
+                        }
+                      )
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: Octelium API lease age
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 900
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: The Octelium API router lease has not renewed recently.
+              description: >-
+                The UPnP lease expires after 24 hours. Check the CronJob, target
+                worker, Xfinity UPnP, and Advanced Security before the public
+                CLI edge closes.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/networking-tailnet-ingress.md
+            labels:
+              severity: warning
+              managed_by: grafana-provisioning
+              app: octelium-api
           - uid: homelab-grafana-scrape-missing
             title: Grafana metrics scrape missing
             condition: C

@@ -6,9 +6,9 @@ Kubernetes API reachability, and external callback paths. Existing
 `octelium-public` Cloudflare Tunnel connector; the Octelium CLI API uses the
 separate direct gRPC origin documented below. Octelium `WEB` Services normally
 enforce clientless browser login before proxying to the existing private Istio
-routes. AFFiNE and NOFX are anonymous at Octelium and use their own
-authentication. AFFiNE's stock native client can therefore connect. Tailscale
-Funnel is not an approved external-service backbone in steady state.
+routes. AFFiNE is anonymous at Octelium so its stock native client can use
+application authentication. NOFX requires Octelium login before its own login.
+Tailscale Funnel is not an approved external-service backbone in steady state.
 
 ## DNS Model
 
@@ -26,7 +26,7 @@ hostnames do not support the long-running gRPC stream used by
 address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
 that address through UPnP, verifies the leased mapping maintained by the
 `octelium-api-upnp` CronJob to the dedicated `octelium-api-ingressgateway`
-NodePort at `10.1.0.201:30443`, verifies the origin gRPC response, and
+NodePort at `10.1.0.200:30443`, verifies the origin gRPC response, and
 reconciles the record. The dedicated gateway accepts Cloudflare origin TLS
 without SNI, but a separate `VirtualService` routes only
 `octelium-api.stinkyboi.com`; browser, app, and callback hostnames remain
@@ -60,7 +60,7 @@ Total TLS does not issue certificates for Cloudflare Tunnel hostnames.
 | --- | --- | --- |
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
 | Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy on client TCP/443, Origin Rule to WAN TCP/8443, then UPnP to the API-only Istio gateway NodePort |
-| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE and NOFX |
+| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
 
@@ -92,17 +92,23 @@ an internal Istio TLS-routing resource. A separate gateway-chart release and
 workload selector and API-only `VirtualService` are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
 The router mapping exposes only public TCP/8443 and targets worker
-`zimaboard-1` at `10.1.0.201`; no public HTTP or status NodePort is declared.
+`zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
 The host-networked CronJob must run on that worker because the Xfinity UPnP
 implementation rejects mappings submitted by a different LAN client. It
 refreshes the Xfinity gateway's minimum 86,400-second lease every five minutes,
 so reverting or suspending the CronJob closes the WAN listener within 24 hours.
 Requests still terminate at the Octelium API and require Octelium
 authentication.
+The CronJob can renew a mapping but cannot enable router UPnP. Xfinity account
+authority must enable UPnP or provide a reviewed static forward before this
+edge can recover; do not report recovery until the CronJob has a recent success
+and the public gRPC probe returns status `16`.
 If the mapping exists but WAN connections time out, use Xfinity Advanced
-Security's device-specific **Allow Access** flow for `zimaboard-1`; Xfinity
+Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
 [documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
 that Advanced Security can block all inbound traffic to a forwarded device.
+Grafana warns when the CronJob's last successful renewal is stale or missing,
+well before the 24-hour lease expires.
 Cloudflare rules must match
 `http.host eq "octelium-api.stinkyboi.com"` and override the destination port
 to `8443` while setting SSL to Full (strict); the client URL remains standard
@@ -143,9 +149,10 @@ the Octelium ingress dataplane and then the Istio route. AFFiNE authenticates
 users itself, registration is disabled after bootstrap, and the anonymous
 transport lets AFFiNE Desktop use its native-origin CORS flow.
 
-NOFX uses `https://nofx.stinkyboi.com` through the public, anonymous Octelium
-`nofx` WEB Service and owns its login boundary. Its Istio route remains private
-and does not expose a direct public or Tailscale Funnel path.
+NOFX uses `https://nofx.stinkyboi.com` through the public Octelium `nofx` WEB
+Service, which requires `homelab-human-web-access` before NOFX's own login. Its
+Istio route remains private and does not expose a direct public or Tailscale
+Funnel path.
 
 Use `https://octobot.stinkyboi.com` through Octelium for private setup, paper
 trading, and operator-reviewed live trading; exchange credentials and strategy

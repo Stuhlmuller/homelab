@@ -37,6 +37,7 @@ inputs = {
   name       = "aws-ssm-auth"
   namespace  = "external-secrets"
 
+  # Bump only after rotating an SSM value; this reaches the provider through data_wo_revision.
   data_revision = 1
 
   labels = {

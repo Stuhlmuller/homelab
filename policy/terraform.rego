@@ -20,6 +20,7 @@ deny contains msg if {
 	some change in terraform_resource_changes
 	change.type in {"kubernetes_secret", "kubernetes_secret_v1"}
 	not action_deletes(change.change.actions)
+	not write_only_external_secrets_auth(change)
 	msg := sprintf("Terraform resource %q must not manage raw Kubernetes Secret data; use ExternalSecret or CI-injected material", [change.address])
 }
 
@@ -90,6 +91,50 @@ terraform_resource_changes contains change if {
 planned_after(change) := after if {
 	after := object.get(object.get(change, "change", {}), "after", null)
 	after != null
+}
+
+write_only_external_secrets_auth(change) if {
+	change.address == "kubernetes_secret_v1.this"
+	after := planned_after(change)
+	metadata := object.get(after, "metadata", [])
+	count(metadata) == 1
+	metadata[0].name == "aws-ssm-auth"
+	metadata[0].namespace == "external-secrets"
+	metadata[0].labels["app.kubernetes.io/managed-by"] == "terragrunt"
+	metadata[0].annotations["homelab.rst.io/secret-source"] == "aws-ssm-parameter-store"
+	object.get(after, "type", "") == "Opaque"
+	empty_or_absent_map(after, "data")
+	empty_or_absent_map(after, "binary_data")
+	object.get(after, "data_wo_revision", 0) >= 1
+	some resource in terraform_configuration_resources
+	resource.address == change.address
+	resource.mode == "managed"
+	resource.type == change.type
+	expressions := object.get(resource, "expressions", {})
+	object_has_key(expressions, "data_wo")
+	object_has_key(expressions, "data_wo_revision")
+	not object_has_key(expressions, "data")
+	not object_has_key(expressions, "binary_data")
+	not object_has_key(expressions, "binary_data_wo")
+	not object_has_key(expressions, "binary_data_wo_revision")
+}
+
+terraform_configuration_resources contains resource if {
+	root_module := object.get(object.get(input, "configuration", {}), "root_module", {})
+	some index
+	resource := object.get(root_module, "resources", [])[index]
+}
+
+object_has_key(value, key) if {
+	_ := value[key]
+}
+
+empty_or_absent_map(value, key) if {
+	object.get(value, key, null) == null
+}
+
+empty_or_absent_map(value, key) if {
+	object.get(value, key, {}) == {}
 }
 
 action_deletes(actions) if {

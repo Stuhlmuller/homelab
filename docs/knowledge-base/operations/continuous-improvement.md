@@ -62,6 +62,33 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** mitigation pending rollout and observation
+- **Area:** Istio ambient / ztunnel readiness
+- **Evidence:** Read-only inspection on 2026-08-28 found the `zimaboard-0`
+  ztunnel returning 13,872 readiness HTTP 500 responses over 36 hours. Its
+  workload manager had one pending workload: the live `octelium-client` pod,
+  annotated `ambient.istio.io/redirection=pending`. During node recovery, Istio
+  CNI first attached before ztunnel was available. Ztunnel later logged
+  `[::1]:15053` bind failures, and CNI logged `::/0` route failures. The cluster
+  Pod and Service CIDRs are IPv4-only. Desired state now disables ambient IPv6
+  in both CNI and ztunnel, forces the CNI DaemonSet to roll, and explicitly
+  enrolls the connector pod so its replacement receives a fresh network
+  namespace.
+- **Risk:** The connector remains reachable without ambient redirection, but
+  its Istio workload identity and policy telemetry are absent. Ztunnel
+  readiness on `zimaboard-1` and `zimaboard-2` cannot recover while those nodes
+  remain NotReady.
+- **Next step:** Merge and apply the committed state, then recover both NotReady
+  nodes under issue `#775`. The live CNI DaemonSet already has two unavailable
+  nodes against `maxUnavailable=1`, so its Ready-node rollout can complete only
+  after node recovery. Close `#778` only after all four ztunnel pods run the new
+  template and are Ready, Argo CD reports Istio
+  `Synced/Healthy`, every active connector reports redirection `enabled`, and
+  ztunnel records no readiness HTTP 500 or IPv6 bind/route errors for 24 hours.
+  Roll back by reverting these desired-state settings and letting Argo CD
+  reconcile; do not opt the connector out of ambient because protected
+  workloads depend on its service-account principal.
+
 - **Status:** fixed
 - **Area:** observability / Grafana startup and security
 - **Evidence:** Read-only inspection on 2026-08-27 found Grafana running the
@@ -98,25 +125,24 @@ organization-policy blocker is tracked below.
   `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
   hostnames, so use an explicit advanced wildcard.
 
-- **Status:** open
+- **Status:** mitigated in desired state; blocked by router authority and rollout
 - **Area:** Octelium / public gRPC transport
-- **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
-  run for 20 days. A stale router control endpoint caused the earlier failures;
-  after PR `#734` replaced it with IGD discovery, the repaired jobs could not
-  schedule because their only target, `zimaboard-0`, was NotReady. The
-  86,400-second lease had expired. Direct TLS probes to NodePort `30443` on
-  Ready `zimaboard-1` at `10.1.0.201` returned the expected unauthenticated
-  `grpc-status: 16`. PR `#749` moved the host-networked lease job to that
-  worker, but live IGD discovery reports no usable UPnP gateway; `zimaboard-0`
-  and `zimaboard-2` remain NotReady. The public API hostname still times out.
+- **Evidence:** On 2026-08-28 the public API completed Cloudflare TLS and HTTP/2
+  but returned no gRPC response, while direct NodePort `10.1.0.200:30443`
+  returned unauthenticated `grpc-status: 16`. The lease CronJob had not
+  succeeded since 2026-08-06, and its `zimaboard-1` target became NotReady.
+  Desired state moves the existing miniupnpc reconciler to Ready `zimaboard-0`,
+  pins the end-to-end gRPC request to a public `1.1.1.1` answer, and alerts when
+  the last successful renewal is stale or absent. Live IGD discovery still
+  reports no usable UPnP gateway.
 - **Risk:** Without a persistent WAN TCP/8443 mapping, the public CLI, VPN, and
   admin path remains unavailable while browser and app tunnel traffic stays
   healthy.
-- **Next step:** Add or request a repository-owned router configuration path.
-  Through that path, enable UPnP or configure TCP/8443 to
-  `10.1.0.201:30443`; verify public `grpc-status: 16` and an authenticated CLI
-  call. Track worker recovery separately in
-  [[architecture/cluster-topology]].
+- **Next step:** Xfinity account authority must enable UPnP or provide a
+  reviewed static TCP/8443 forward to `10.1.0.200:30443`. Then sync the Istio
+  app, require a recent CronJob success, reconcile public DNS, and verify public
+  `grpc-status: 16` plus an authenticated CLI call. Track worker recovery
+  separately in [[architecture/cluster-topology]].
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation
@@ -557,7 +583,7 @@ organization-policy blocker is tracked below.
   restart with the gateway log, NFS counters, and the active memory job before
   changing storage behavior.
 
-- **Status:** fixed
+- **Status:** open
 - **Area:** agent runtime / Codex diagnostics
 - **Evidence:** On 2026-08-13, a minimal Codex turn reproduced the gateway
   stall after the sandbox error was fixed. The per-agent `codex-home` was 8.7
@@ -578,7 +604,15 @@ organization-policy blocker is tracked below.
   home was 109 MiB, a minimal turn returned `OPENCLAW_OK` in 7.3 seconds, and
   the ready pod retained zero restarts. Read-only inspection on 2026-08-27
   confirmed the live Deployment requests `5Gi`, limits `6Gi`, and its last
-  ready Pod had zero restarts before the separately tracked worker outage.
+  ready Pod had zero restarts before the separately tracked worker outage. On
+  2026-08-28, the replacement restarted 16 times and last exited `137`; memory
+  then rose from `530Mi` to `5.36Gi` in seven minutes while all user containers
+  reached `6.51Gi` on the `7.58Gi` worker, immediately before kubelet telemetry
+  stopped. Desired state now sets the app memory limit to `4Gi`, deliberately
+  preferring an app OOM over starving node services.
+- **Next step:** recover `zimaboard-1` with current authenticated Talos access,
+  inspect kernel and kubelet logs, identify the memory-growth path, and retain
+  the `4Gi` cap until 48 hours of healthy measurements prove safe headroom.
 
 - **Status:** fixed
 - **Area:** agent runtime / startup
@@ -680,6 +714,21 @@ organization-policy blocker is tracked below.
 - **Next step:** keep `actions: read` on the apply job and fail closed when no
   trustworthy successful base exists, so an unknown deleted-unit range is never
   checkpointed as successfully applied.
+
+- **Status:** mitigated; automatic approval expiry pending
+- **Area:** CI/CD
+- **Evidence:** GitHub issue #781 records that push-triggered production jobs
+  accumulated behind `homelab-production` review. The push path now runs only
+  `.github/workflows/terragrunt-apply-request.yml`, which cancels stale request
+  checks and prints an exact-SHA dispatch command. The protected apply is
+  dispatch-only and rechecks current `main` before credentials or live work.
+- **Risk:** GitHub's native environment and concurrency queue cannot expire an
+  approval-waiting job against a strict SLA or safely distinguish it from an
+  active apply.
+- **Next step:** if automatic expiry is required, host a GitHub App deployment
+  protection rule outside the homelab with a durable lease; until then,
+  dispatch only when a reviewer is ready to approve.
+
 - **Status:** fixed
 - **Area:** CI/CD / NOFX recovery
 - **Evidence:** The retired `Break Glass NOFX Recovery` workflow applied the
@@ -698,6 +747,8 @@ organization-policy blocker is tracked below.
   OpenTofu 1.11 ephemeral `aws_ssm_parameter` read and Kubernetes
   `data_wo`/`data_wo_revision` write. Provider schemas for AWS `6.56.0` and
   Kubernetes `3.2.1` support that path without persisting decrypted values.
+  Terraform policy now permits only this exact write-only Secret contract and
+  runs positive and unsafe-negative Rego tests in the normal Conftest gate.
 - **Risk:** decrypted External Secrets AWS provider credentials could otherwise
   be exposed to anyone or anything with access to OpenTofu state, plan caches, or
   CI artifacts.

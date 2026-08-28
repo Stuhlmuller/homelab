@@ -21,8 +21,8 @@ Validate that Octelium is the homelab backbone for app access, CI reachability,
 VPN entry points, and reviewed public callbacks.
 The check requires a running Octelium Cluster, an applied homelab service
 catalog, an active octelium-client connector, and public WEB access for the
-existing app FQDNs. AFFiNE and NOFX are anonymous at Octelium and use their
-own authentication; the other app Services remain clientless.
+existing app FQDNs. AFFiNE delegates login to the application; the other app
+Services, including NOFX, require Octelium authentication.
 
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
@@ -91,6 +91,7 @@ done
 API_HOST="octelium-api.${DOMAIN}"
 PORTAL_HOST="portal.${DOMAIN}"
 AFFINE_HOST="affine.stinkyboi.com"
+NOFX_HOST="nofx.stinkyboi.com"
 CONTROL_HOSTS=("${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}")
 if [ "${DOMAIN}" = "stinkyboi.com" ]; then
   CONTROL_HOSTS+=("octelium.stinkyboi.com")
@@ -305,6 +306,24 @@ else
   fail "octelium-client Deployment is missing"
 fi
 
+CONNECTOR_PODS_JSON="$(
+  kubectl_homelab -n "${CLIENT_NAMESPACE}" get pods \
+    -l app.kubernetes.io/instance=octelium-client -o json 2>/dev/null || true
+)"
+if jq -e \
+  '
+    [.items[] | select(
+      .metadata.deletionTimestamp == null and
+      (.status.phase != "Succeeded" and .status.phase != "Failed")
+    )] as $pods |
+    ($pods | length) > 0 and
+    all($pods[]; .metadata.annotations["ambient.istio.io/redirection"] == "enabled")
+  ' >/dev/null 2>&1 <<<"${CONNECTOR_PODS_JSON}"; then
+  pass "active octelium-client pods have Istio ambient redirection enabled"
+else
+  fail "active octelium-client pods do not have Istio ambient redirection enabled"
+fi
+
 note "Checking API-only ingress boundary"
 API_GATEWAY_JSON="$(kubectl_homelab -n istio-system get gateway octelium-api-gateway -o json 2>/dev/null || true)"
 if jq -e \
@@ -374,43 +393,50 @@ for HOST in "${CONTROL_HOSTS[@]}"; do
   esac
 done
 
-GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
-GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
-GRPC_HTTP_CODE="$(
-  curl -sS \
-    --http2 \
-    -H "content-type: application/grpc" \
-    -H "${GRPC_TRAILERS_HEADER}" \
-    --data-binary '' \
-    --max-time 15 \
-    -o /dev/null \
-    -D "${GRPC_HEADER_FILE}" \
-    -w '%{http_code}' \
-    "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
+API_PUBLIC_IPV4="$(
+  dig +short @1.1.1.1 "${API_HOST}" A 2>/dev/null |
+    awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}' || true
 )"
-GRPC_SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
-rm -f "${GRPC_HEADER_FILE}"
-case "${GRPC_HTTP_CODE}" in
-  200|204|400|401|404|405|415|501)
-    pass "https://${API_HOST} accepted a POST gRPC-shaped request path with HTTP ${GRPC_HTTP_CODE}"
-    ;;
-  403)
-    if [ "${GRPC_SERVER}" = "cloudflare" ]; then
-      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; reconcile the direct API origin with scripts/octelium-public-dns.sh"
-    else
-      fail "https://${API_HOST} returned HTTP 403 to a gRPC request"
-    fi
+if [ -z "${API_PUBLIC_IPV4}" ]; then
+  fail "${API_HOST} has no public IPv4 answer"
+  GRPC_READY=0
+else
+  GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
+  GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
+  GRPC_RESULT="$(
+    curl -sS \
+      --http2 \
+      --resolve "${API_HOST}:443:${API_PUBLIC_IPV4}" \
+      -H "content-type: application/grpc" \
+      -H "${GRPC_TRAILERS_HEADER}" \
+      --data-binary '' \
+      --max-time 15 \
+      -o /dev/null \
+      -D "${GRPC_HEADER_FILE}" \
+      -w '%{http_code} %{http_version}' \
+      "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
+  )"
+  GRPC_HTTP_CODE="${GRPC_RESULT%% *}"
+  GRPC_HTTP_VERSION="${GRPC_RESULT#* }"
+  GRPC_SERVER="$(awk 'tolower($1) == "server:" {print tolower($2)}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
+  GRPC_STATUS="$(
+    awk 'tolower($0) ~ /^grpc-status:[[:space:]]*/ {
+      sub(/^[^:]*:[[:space:]]*/, "")
+      sub(/\r$/, "")
+      print
+    }' "${GRPC_HEADER_FILE}" | tail -1
+  )"
+  rm -f "${GRPC_HEADER_FILE}"
+  if [ "${GRPC_HTTP_CODE}" = "200" ] &&
+    [ "${GRPC_HTTP_VERSION}" = "2" ] &&
+    [ "${GRPC_STATUS}" = "16" ] &&
+    [ "${GRPC_SERVER}" = "cloudflare" ]; then
+    pass "https://${API_HOST} returned the expected Cloudflare HTTP/2 unauthenticated gRPC response (HTTP 200, grpc-status 16)"
+  else
+    fail "https://${API_HOST} public gRPC probe via ${API_PUBLIC_IPV4} returned HTTP ${GRPC_HTTP_CODE:-missing} over ${GRPC_HTTP_VERSION:-missing}, grpc-status ${GRPC_STATUS:-missing}, server ${GRPC_SERVER:-missing}; expected Cloudflare HTTP/2, HTTP 200, and grpc-status 16"
     GRPC_READY=0
-    ;;
-  000|"")
-    fail "https://${API_HOST} did not respond to a gRPC-shaped request"
-    GRPC_READY=0
-    ;;
-  *)
-    fail "https://${API_HOST} returned unexpected HTTP ${GRPC_HTTP_CODE} to a gRPC request"
-    GRPC_READY=0
-    ;;
-esac
+  fi
+fi
 
 note "Checking Octelium service catalog"
 if [ ! -f "${CATALOG}" ]; then
@@ -468,20 +494,23 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
     done
-    for SERVICE in affine nofx; do
-      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-        pass "Octelium Service ${SERVICE} delegates login to the application"
-      else
-        fail "Octelium Service ${SERVICE} is not anonymous"
-      fi
-    done
-    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm multica n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service affine delegates login to the application"
+    else
+      fail "Octelium Service affine is not anonymous"
+    fi
+    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} still requires authentication"
       else
         fail "Octelium Service ${SERVICE} unexpectedly permits anonymous access"
       fi
     done
+    if jq -e '.items[] | select((.metadata.name == "nofx" or .status.primaryHostname == "nofx") and .spec.authorization.policies == ["homelab-human-web-access"] and .spec.config.http.header.authorizationMode == "PASS")' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service nofx enforces homelab-human-web-access and passes its application authorization header"
+    else
+      fail "Octelium Service nofx does not enforce the expected Octelium and application authorization contract"
+    fi
     if jq -e '.items[] | select(.metadata.name == "default.cordium" and .metadata.isSystem == true and .status.primaryHostname == "cordium" and .status.namespaceRef.name == "cordium" and .status.managedService != null and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Cordium uses its package-managed default.cordium WEB Service"
     else
@@ -587,6 +616,27 @@ while read -r HOST; do
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
 done <<<"${APP_HOSTS}"
+
+note "Checking NOFX rejects unauthenticated access"
+for NOFX_PATH in / /api/health; do
+  NOFX_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/nofx-headers.XXXXXX")"
+  NOFX_CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/nofx-curl.XXXXXX")"
+  NOFX_HTTP_CODE="$(
+    curl -sS --max-time 20 -D "${NOFX_HEADER_FILE}" -o /dev/null -w '%{http_code}' \
+      "https://${NOFX_HOST}${NOFX_PATH}" 2>"${NOFX_CURL_ERR}" || true
+  )"
+  NOFX_UNAUTHORIZED="$(
+    awk 'tolower($1) == "x-octelium-unauthorized:" {print tolower($2)}' "${NOFX_HEADER_FILE}" |
+      tr -d '\r' |
+      tail -1
+  )"
+  if [ "${NOFX_HTTP_CODE}" = "401" ] && [ "${NOFX_UNAUTHORIZED}" = "true" ]; then
+    pass "https://${NOFX_HOST}${NOFX_PATH} requires Octelium authentication"
+  else
+    fail "https://${NOFX_HOST}${NOFX_PATH} returned HTTP ${NOFX_HTTP_CODE:-000} with x-octelium-unauthorized=${NOFX_UNAUTHORIZED:-missing}; curl: $(tr '\n' ' ' <"${NOFX_CURL_ERR}")"
+  fi
+  rm -f "${NOFX_HEADER_FILE}" "${NOFX_CURL_ERR}"
+done
 
 note "Checking AFFiNE native-client bootstrap"
 AFFINE_ORIGIN="assets://."

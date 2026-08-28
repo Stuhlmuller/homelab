@@ -4,25 +4,31 @@ This repository uses GitHub Actions for the review and rollout path:
 
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
   with advisory status reporting. It is the shared lightweight lint signal for
-  every PR; the repository-specific blocking checks remain in `Terragrunt Plan`
+  every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
   and `validate`.
-- `Terragrunt Plan` runs on pull requests. It always runs static checks and
-  Checkov first. Trusted same-repository pull requests then inspect the changed
-  paths. If the change touches `IaC/**`, flake inputs, OpenTofu/Terragrunt
-  policy inputs, or live-plan helper scripts, the job connects to Octelium, runs
-  a live Terragrunt plan, and updates the managed plan section in the PR
-  description. Manifest-only, workflow-only, and docs-only changes skip the
-  Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
-  policies and replace the managed PR plan section with an explicit skip note.
-  Forked pull requests run Conftest after the live plan skip notice.
-- `Terragrunt Apply` runs after changes land on `main` and can also be started
-  manually with `workflow_dispatch`. It repeats static checks and Conftest
-  before connecting to Octelium and applying the live Terragrunt phases in
-  order: Argo CD bootstrap, SSM parameter declarations, Entra application
-  registrations, Argo CD Application registrations, and Kubernetes secret
-  materialization. A run compares against the latest successful
-  `Terragrunt Apply` SHA so a failed run's unapplied changes remain in the next
-  affected-unit range.
+- `Terragrunt Plan` runs on every pull request. Its unprivileged static job
+  detects live-plan scope, runs static checks, Checkov, and rendered Conftest
+  policies. Only trusted same-repository changes to the plan workflow,
+  `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
+  scripts enter the protected `homelab-plan` environment, connect through
+  Octelium, and update the managed plan section in the PR description. Other
+  same-repository changes use a skip-note job without protected credentials;
+  forks run only the static job.
+  The always-present `Terragrunt Gate` succeeds only when static checks and
+  every applicable live plan or skip-note job succeed.
+- `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
+  older request check, and prints the exact current-SHA dispatch command plus
+  links to active applies. It has no production environment, stored secrets,
+  or OIDC permission.
+- `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
+  current `main` SHA. It repeats static checks and Conftest, waits for the
+  `homelab-production` approval, then verifies `main` again before referencing
+  environment credentials or running live commands. Full applies run the Argo
+  CD bootstrap, SSM parameter declarations, Entra application registrations,
+  Argo CD Application registrations, and Kubernetes secret materialization.
+  They compare against the latest successful historical push apply or full
+  dispatch so failed or deferred changes remain in the next affected range;
+  targeted Argo reconciliations never advance that checkpoint.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -69,17 +75,20 @@ contract for Grafana.
 - The `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
-  `Analyze (python)`, `analyze-actions`, and `release-dry-run`; path-conditional
-  Terragrunt checks remain visible without deadlocking unrelated pull requests.
+  `Analyze (python)`, `analyze-actions`, and `release-dry-run`. `Terragrunt Gate`
+  is the stable candidate for merge-blocking Terragrunt validation; do not add
+  it to ruleset `14700233` until a merged workflow revision has emitted the
+  context for both a no-live-plan pull request and a trusted live-plan pull
+  request.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions
   cache for the Nix store after Nix is installed and before the first
   `nix develop --command ...` step. The cache key is derived from the runner OS,
   `flake.nix`, and `flake.lock`, with an OS-scoped fallback so dependency
   updates can still reuse the nearest previous dev shell closure.
 - GitHub token permissions default to none. Jobs opt in to `contents: read`;
-  live Terragrunt jobs request `id-token: write`; and the trusted PR plan job
-  requests `pull-requests: write` only so it can refresh the managed plan
-  section in the PR description after a successful plan.
+  live Terragrunt jobs request `id-token: write`; and same-repository plan and
+  skip-note jobs request `pull-requests: write` only to refresh the managed plan
+  section in the PR description.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
@@ -91,7 +100,8 @@ contract for Grafana.
   The dedicated User gives both its clientless session and access token a
   30-day lifetime; rotate the credential every 21 days.
   Trusted pull requests only open this live access path when the diff includes
-  IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
+  the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
+  inputs.
 - The upstream kubeconfig is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
   `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
@@ -116,15 +126,16 @@ contract for Grafana.
 - Application-registration and secret-materialization stack phases use
   explicit `--filter` expressions so only units changed between the selected
   base and `HEAD` are queued. Pull request plans compare against the PR base
-  branch. Production applies query the latest successful push-triggered
-  `Terragrunt Apply` run and use its `head_sha`; targeted manual dispatches do
-  not advance that checkpoint. A targeted manual Argo dispatch instead plans
-  and applies its exact named unit regardless of the affected range, then exits
-  before unrelated phases. When that exact unit is confirmed tainted, the same
+  branch. Production applies use the latest successful historical push apply
+  or dispatch whose run name starts with `Full @` as the checkpoint; targeted
+  dispatches use `Targeted <app> @ <sha>` and never advance it. A targeted Argo
+  dispatch instead plans and applies its exact named unit regardless of the
+  affected range, then exits before unrelated phases. When that exact unit is
+  confirmed tainted, the same
   protected dispatch may set `repair_argocd_app_state=true`; the workflow
   requires `argocd_app`, untaints only `kubernetes_manifest.this`, then runs the
   unchanged policy-checked plan and saved-plan apply. Any other repair value,
-  missing target, or non-dispatch use fails closed. When the push checkpoint is
+  missing target, or non-dispatch use fails closed. When the apply checkpoint is
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
@@ -137,7 +148,7 @@ contract for Grafana.
   and save a destroy plan without rendering potentially sensitive values.
   Production apply lists the same state resources, applies the saved destroy
   plan, and then continues with the current checkout.
-- The protected post-merge apply runs the production phases explicitly:
+- The protected full apply runs the production phases explicitly:
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
   CD Application registrations serially, and finally materialize Kubernetes
@@ -145,6 +156,20 @@ contract for Grafana.
   `run --all --filter ... --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+
+## Terragrunt Gate Ruleset Rollout
+
+1. Merge the workflow change while `Terragrunt Gate` is not required.
+2. From the merged `main` workflow, observe a same-repository PR with no live
+   inputs: `Static Policy And Security Checks` and `Terragrunt Plan Skipped`
+   must pass, `Terragrunt Plan` must be skipped, and `Terragrunt Gate` must pass.
+3. Observe a trusted PR with live inputs: `Terragrunt Plan Skipped` must be
+   skipped and `Terragrunt Gate` must remain blocked until the protected
+   `Terragrunt Plan` succeeds. A fork must emit the gate without receiving the
+   protected environment or a write token.
+4. Add the exact `Terragrunt Gate` Actions context to ruleset `14700233` without
+   changing its existing checks, then refresh a no-live-plan PR and confirm the
+   strict ruleset does not deadlock.
 
 References:
 
@@ -529,8 +554,8 @@ application registration workflow. Trusted pull request plans render the
 AzureAD stack only when the credentials are configured in `homelab-plan`; the
 production apply script applies that stack when the credentials are configured
 in `homelab-production`. When they are not configured, production apply skips
-that phase only if the push did not change the AzureAD stack; AzureAD stack
-changes and manual dispatches require the credentials so identity drift is not
+that phase only if the unapplied range did not change the AzureAD stack; a
+range that changes the stack requires the credentials so identity drift is not
 silently ignored.
 
 ## Local Equivalents
@@ -572,7 +597,7 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
 
-Every production apply, including manual dispatch, compares against the latest
-successful `Terragrunt Apply` SHA. Rerunning after one or more failed applies
+Every full production apply compares against the latest successful historical
+push apply or full dispatch SHA. Rerunning after one or more failed applies
 therefore keeps the full unapplied range instead of considering only the newest
-commit.
+commit. Targeted Argo dispatches do not move that checkpoint.

@@ -2,8 +2,10 @@
 
 NOFX runs the `ghcr.io/nofxaios/nofx` backend and frontend images at the
 publicly resolvable `https://nofx.stinkyboi.com`. The Cloudflare public tunnel
-provides transport, while the anonymous Octelium WEB Service forwards to the
-private Istio route and delegates login to NOFX.
+provides transport, while the Octelium WEB Service requires
+`homelab-human-web-access` before forwarding to the private Istio route. NOFX's
+own login remains a second authentication boundary. Octelium passes the
+application `Authorization` header because NOFX sends its session JWT there.
 
 The backend stores its SQLite database and logs on the `nofx-data` NFS PVC at
 `/app/data`. Runtime secrets are sourced from AWS SSM through External Secrets:

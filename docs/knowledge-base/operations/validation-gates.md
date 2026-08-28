@@ -30,7 +30,8 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_role.github_actions' Github-TF-State
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan \
+  -out=plan.out -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
 ```
@@ -52,6 +53,20 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
 
+The pull-request `Terragrunt Gate` is an always-present aggregate. Its
+unprivileged static job runs for every PR and owns live-scope detection. Only a
+trusted same-repository PR whose diff contains a declared live input may enter
+the `homelab-plan` environment; forks and other changes must leave the live job
+skipped. The aggregate fails unless static checks succeed and the applicable
+live plan or same-repository skip-note job has the expected result. Keep the
+exact workflow contract asserted in `scripts/ci/static-checks.sh`.
+
+Do not require a new Actions context in ruleset `14700233` before the workflow
+that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
+trusted live-plan PR, and a fork; then add only that context while preserving
+the existing required checks and verify a fresh no-live-plan PR does not
+deadlock.
+
 The CodeQL workflow in `.github/workflows/codeql.yml` runs on pushes
 and pull requests targeting `main` and on its weekly schedule. It has one
 buildless `actions` analysis job because this repository has no compiled
@@ -64,7 +79,9 @@ checks are acceptable when the infrastructure graph is untouched:
 
 ```sh
 git diff --check -- AGENTS.md ONBOARDING.md docs/knowledge-base .agents/skills
-rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" docs/knowledge-base .agents/skills
+rg -n \
+  "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" \
+  docs/knowledge-base .agents/skills
 ```
 
 ## Kubernetes Source Checks
@@ -107,7 +124,11 @@ kubectl kustomize clusters/homelab/platform/multus
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh scripts/octelium-cloudflare-origin-port.sh scripts/octelium-entra-oidc.sh
+bash -n \
+  scripts/octelium-gateway-dns.sh \
+  scripts/octelium-public-dns.sh \
+  scripts/octelium-cloudflare-origin-port.sh \
+  scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -135,8 +156,17 @@ Before declaring Octelium-backed app UI access healthy, the replacement path
 must pass:
 
 ```sh
+kubectl -n istio-system get cronjob octelium-api-upnp \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
 scripts/octelium-e2e-check.sh
 ```
+
+The gRPC check resolves the API host through `1.1.1.1` and pins curl to that
+public address, so an Octelium split-DNS answer cannot hide a broken WAN edge.
+It accepts only the expected unauthenticated response: HTTP `200` with
+`grpc-status: 16`; generic HTTP responses fail the gate.
+Do not treat the repository-side target change as recovery until the CronJob
+has a recent success and the public probe passes.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
@@ -152,18 +182,30 @@ Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
 The static gate requires manual Homelab Diagnostics and Terragrunt Apply
 dispatches to carry an exact expected `main` SHA and fail before work when the
-resolved workflow commit differs. Terragrunt Apply acquires its production
-concurrency lock only in the live job downstream of that guard and retains the
-full pending queue.
+resolved workflow commit differs. Every push to `main` runs only the cancellable
+`Terragrunt Apply Request` check; it uses no protected environment, stored
+secret, or OIDC permission and prints the exact dispatch command plus active
+apply links without opening a production approval. The protected apply's first
+post-approval step requires the expected, workflow, and current `main` SHAs to
+match before credentials or live commands.
+The live job retains only the newest pending run and never cancels an
+in-progress apply. GitHub's native environment/concurrency queue cannot enforce
+an automatic approval SLA; strict expiry needs an externally hosted GitHub App
+deployment-protection rule with a durable lease. Until then, dispatch only when
+a reviewer is ready to approve.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
-workload credential, ready connector replica, Cluster/API/portal TLS responses,
-the complete homelab WEB Service catalog, public DNS for each existing
+workload credential, ready connector replica, and
+`ambient.istio.io/redirection=enabled` on every active connector pod. It also
+checks Cluster/API/portal TLS responses, the complete homelab WEB Service
+catalog, public DNS for each existing
 `*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
-Octelium public WEB access. It also requires AFFiNE and NOFX anonymous Service
-mode, validates AFFiNE's native-client CORS preflight plus public `serverConfig`
-GraphQL query, confirms AFFiNE rejects an unauthenticated workspace query, and
-ensures every other public app Service remains non-anonymous. App hostnames
+Octelium public WEB access. It requires AFFiNE's anonymous Service mode, NOFX's
+`homelab-human-web-access` policy, and unauthenticated NOFX `/` and `/api/health`
+responses to carry Octelium's `401` denial header. It also validates AFFiNE's
+native-client CORS preflight plus public `serverConfig` GraphQL query, confirms
+AFFiNE rejects an unauthenticated workspace query, and ensures every other
+public app Service remains non-anonymous. App hostnames
 must not resolve to private
 Octelium service IPs or the old Tailscale wildcard. The same script probes the
 Cordium nested workspace wildcard for valid edge TLS and probes the reviewed
@@ -259,13 +301,13 @@ Azure credential gate compares AzureAD unit sources and stack blocks plus the
 shared root inputs they consume; unrelated stack changes do not require Azure
 credentials.
 
-Production applies resolve their affected-unit base from the latest successful
-push-triggered `Terragrunt Apply` workflow `head_sha`, not the immediately
-preceding push. Targeted manual reconciliations never advance that checkpoint.
-A missing, unreachable, or non-ancestor result fails closed so an apply cannot
-become the new successful checkpoint while skipping an unknown deleted-unit
-range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the working-tree
-Gitleaks scan still covers the complete checkout.
+Production applies resolve their affected-unit base from the newest successful
+historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
+targeted runs are named `Targeted <app> @ <sha>` and never advance that
+checkpoint. A missing, unreachable, or non-ancestor result fails closed so an
+apply cannot become the new successful checkpoint while skipping an unknown
+deleted-unit range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the
+working-tree Gitleaks scan still covers the complete checkout.
 
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
 that route is the failed dependency, restore reviewed

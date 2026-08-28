@@ -2,6 +2,9 @@ profile: ambient
 cni:
   ambient:
     dnsCapture: false
+    ipv6: false
+  podAnnotations:
+    homelab.rst.io/ambient-ip-family: ipv4
 global:
   logging:
     level: default:info
