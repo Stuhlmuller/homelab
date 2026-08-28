@@ -62,6 +62,33 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** mitigation pending rollout and observation
+- **Area:** Istio ambient / ztunnel readiness
+- **Evidence:** Read-only inspection on 2026-08-28 found the `zimaboard-0`
+  ztunnel returning 13,872 readiness HTTP 500 responses over 36 hours. Its
+  workload manager had one pending workload: the live `octelium-client` pod,
+  annotated `ambient.istio.io/redirection=pending`. During node recovery, Istio
+  CNI first attached before ztunnel was available. Ztunnel later logged
+  `[::1]:15053` bind failures, and CNI logged `::/0` route failures. The cluster
+  Pod and Service CIDRs are IPv4-only. Desired state now disables ambient IPv6
+  in both CNI and ztunnel, forces the CNI DaemonSet to roll, and explicitly
+  enrolls the connector pod so its replacement receives a fresh network
+  namespace.
+- **Risk:** The connector remains reachable without ambient redirection, but
+  its Istio workload identity and policy telemetry are absent. Ztunnel
+  readiness on `zimaboard-1` and `zimaboard-2` cannot recover while those nodes
+  remain NotReady.
+- **Next step:** Merge and apply the committed state, then recover both NotReady
+  nodes under issue `#775`. The live CNI DaemonSet already has two unavailable
+  nodes against `maxUnavailable=1`, so its Ready-node rollout can complete only
+  after node recovery. Close `#778` only after all four ztunnel pods run the new
+  template and are Ready, Argo CD reports Istio
+  `Synced/Healthy`, every active connector reports redirection `enabled`, and
+  ztunnel records no readiness HTTP 500 or IPv6 bind/route errors for 24 hours.
+  Roll back by reverting these desired-state settings and letting Argo CD
+  reconcile; do not opt the connector out of ambient because protected
+  workloads depend on its service-account principal.
+
 - **Status:** fixed
 - **Area:** observability / Grafana startup and security
 - **Evidence:** Read-only inspection on 2026-08-27 found Grafana running the
