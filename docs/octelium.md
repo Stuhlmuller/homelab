@@ -147,8 +147,10 @@ if octeliumctl get service cordium-agent-api.homelab --domain stinkyboi.com >/de
 fi
 ```
 
-Cordium is bootstrapped by the `cordium` Argo CD Application after that catalog
-exists. The app runs upstream `cordium-genesis init` from a pinned
+Cordium is bootstrapped after that catalog exists. The `cordium` Argo CD
+Application first converges the network, secret, and host prerequisites, then
+creates the `cordium-bootstrap` child Application at Sync wave 1. The child
+runs upstream `cordium-genesis init` from a pinned
 `ghcr.io/octelium/cordium-genesis:0.12.7` image and routes the public
 `https://cordium.stinkyboi.com` browser path plus workspace app subdomains under
 `*.cordium.stinkyboi.com` through the package-managed Octelium
@@ -168,7 +170,19 @@ the Pod; the Talos worker patch remains the machine-config source of truth. The
 genesis hook pins the image's numeric non-root identity and carries
 bootstrap-only RBAC `bind` and `escalate` on Roles and ClusterRoles because
 upstream Cordium creates managed RBAC such as `cordium-nocturne` before the
-long-running controllers exist.
+long-running controllers exist. The parent waits for its normal wave to become
+healthy before creating the child, so a stalled prerequisite cannot create the
+identity. The child starts with a fresh 15-minute operation timeout, creates
+that identity at PostSync wave -1, and runs genesis at wave 0. Genesis fails
+after 12 minutes, leaving three minutes for its SyncFail cleanup. The same
+cleanup Job runs at PostSync wave 1 after success and as a SyncFail hook after
+failure, deleting only the named genesis ServiceAccount, ClusterRole, and
+ClusterRoleBinding. Its persistent cleanup RBAC has `delete` on
+`resourceNames: [cordium-genesis]` and cannot create, bind, or escalate
+arbitrary RBAC. An ordinary failed child sync runs cleanup and removes the
+identity. In-operation retries are disabled because they share the original
+timeout start; the next new full `cordium-bootstrap` sync gets a fresh budget
+and recreates the identity immediately before genesis.
 Developer shell access should use the Octelium-backed Cordium browser route and
 workspace subdomains, while agent automation uses the separate workload
 identity with access restricted to the package-managed Cordium
@@ -623,8 +637,10 @@ Cordium genesis `0.12.7` declares the non-root image user by name
 (`octelium`). Kubelet cannot verify that named user when `runAsNonRoot` is set,
 so the hook pins the image's numeric runtime identity (`runAsUser: 100`,
 `runAsGroup: 65533`). Bump
-`homelab.rst.io/cordium-genesis-revision` when the hook template needs to be
-recreated.
+`homelab.rst.io/cordium-genesis-revision` on the genesis Job and tracked cleanup
+ServiceAccount when the hook template needs to be recreated. The latter change
+starts a full `cordium-bootstrap` sync; selective sync does not run the PostSync
+or SyncFail hooks that bound the bootstrap privilege.
 
 ## Validation
 
@@ -648,8 +664,12 @@ scripts/octelium-e2e-check.sh --help
 After activation:
 
 ```sh
-kubectl -n octelium get job cordium-cluster-config
-kubectl -n octelium logs job/cordium-cluster-config
+kubectl -n argocd get application cordium cordium-bootstrap
+kubectl -n argocd get application cordium-bootstrap \
+  -o jsonpath='{.status.operationState.phase}{"\n"}'
+kubectl -n octelium get serviceaccount cordium-genesis
+kubectl get clusterrole/cordium-genesis clusterrolebinding/cordium-genesis
+kubectl auth can-i --as=system:serviceaccount:octelium:cordium-genesis create clusterrolebindings
 kubectl get storageclass cordium-local
 cordium man get clusterconfig -o yaml
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
@@ -661,6 +681,13 @@ scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
 ```
+
+Successful hook Jobs are deleted by `HookSucceeded`; inspect Jobs and logs only
+during an active or failed child operation. After a successful full child sync,
+or a failed sync whose SyncFail cleanup completed, the genesis identity lookups
+must return `NotFound` and the authorization check must print `no`. If
+control-plane or scheduler failure also prevented cleanup, recover it, inspect
+the resources, and start a full `cordium-bootstrap` sync; cleanup is idempotent.
 
 Check the in-cluster demo locally:
 
@@ -708,11 +735,17 @@ creates a fresh 30-day Session instead of reusing the prior expiry.
 ## Rollback
 
 Roll back the Cordium storage default through
-`clusters/homelab/apps/cordium/cluster-config.yaml`: remove the storage rule or
-point it at a reviewed replacement, merge, and let Argo CD rerun the PostSync
-hook. Existing Workspace PVCs do not migrate; recreate only disposable
-Workspaces that should use the replacement. Remove the `cordium-local`
-provisioner only after no PVC references it.
+`clusters/homelab/apps/cordium-bootstrap/cluster-config.yaml`: remove the
+storage rule or point it at a reviewed replacement, merge, and let Argo CD
+rerun the full child lifecycle and then its ClusterConfig PostSync hook.
+Existing Workspace PVCs do not migrate; recreate only disposable Workspaces
+that should use the replacement. Remove the `cordium-local` provisioner only
+after no PVC references it.
+
+For full Cordium retirement, remove `cordium-bootstrap-application.yaml` from
+the parent Kustomization and sync `cordium` before deleting the parent
+Application. The child Application's foreground resources finalizer cascades
+its tracked bootstrap resources, preventing an orphaned genesis identity.
 
 Set the connector Deployment replicas to `0` and sync the `octelium` Argo CD
 Application. That stops the connector without restoring Tailscale Funnel.

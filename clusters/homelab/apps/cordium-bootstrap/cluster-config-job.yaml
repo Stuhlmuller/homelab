@@ -12,7 +12,7 @@ metadata:
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     argocd.argoproj.io/sync-wave: "1"
     checkov.io/skip1: CKV_K8S_35=The Cordium CLI accepts its workload credential through OCTELIUM_AUTH_TOKEN.
-    checkov.io/skip2: CKV2_K8S_6=The job is covered by the cordium-cluster-config policy in networkpolicy.yaml.
+    checkov.io/skip2: CKV2_K8S_6=The parent Cordium app applies the cordium-cluster-config NetworkPolicy before creating this bootstrap app.
 spec:
   backoffLimit: 2
   ttlSecondsAfterFinished: 86400

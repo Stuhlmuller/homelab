@@ -3,9 +3,10 @@
 # Cordium
 
 Cordium is bootstrapped into the self-hosted Octelium Cluster with the upstream
-`cordium-genesis` component. The Argo CD app runs the genesis command as a
-version-pinned sync hook so the Cordium controllers and managed services are
-created from the same reviewed desired-state path as the rest of the homelab.
+`cordium-genesis` component. The `cordium` Argo CD Application first converges
+the network, secret, and host prerequisites, then creates the
+`cordium-bootstrap` child Application at Sync wave 1. The child runs the
+version-pinned genesis hook from the same reviewed desired-state path.
 
 The deployed runtime is split intentionally:
 
@@ -28,10 +29,25 @@ non-root user by name, so the hook pins `runAsUser: 100` and
 bootstrap service account also needs Kubernetes' `bind` and `escalate` RBAC
 verbs because upstream genesis creates privileged ClusterRoles such as
 `cordium-nocturne` with permissions the service account does not otherwise hold
-directly. Keep those verbs scoped to this hook instead of granting broad
-privileges to long-running workloads. The Argo CD app keeps the hook and RBAC
-visible in git; the generated Octelium/Cordium runtime resources remain owned
-by Octelium controllers.
+directly. The parent does not create `cordium-bootstrap` until its normal Sync
+wave is healthy, so a stalled prerequisite cannot create bootstrap privilege.
+Creation starts a separate Argo CD operation with a fresh 15-minute timeout.
+The child's immediate-health normal resources include only the generated
+ClusterConfig and the narrowly scoped cleanup identity. It then creates the
+privileged ServiceAccount, ClusterRole, and ClusterRoleBinding as PostSync wave
+-1 hooks immediately before genesis at wave 0. Genesis has a 12-minute Job
+deadline, leaving three minutes for cleanup within that child operation. The
+same cleanup Job runs at PostSync wave 1 after success and as a SyncFail hook
+after failure, deleting only those three `cordium-genesis` resources. Its
+persistent cleanup Role and ClusterRole can only `delete` resources named
+`cordium-genesis`; they cannot create, bind, or escalate RBAC. An ordinary
+failed child sync runs the cleanup and removes the identity. In-operation
+retries are disabled because Argo CD keeps their original timeout start; the
+next new full `cordium-bootstrap` sync gets a fresh 15-minute budget and
+recreates the identity at PostSync wave -1.
+Do not use selective sync because Argo CD does not run hooks during selective
+sync. Generated Octelium/Cordium runtime resources remain owned by Octelium
+controllers.
 
 Cordium-generated Workspace Pods run as privileged root containers with an
 unconfined AppArmor profile. The repo-owned `cordium` Namespace therefore
@@ -110,14 +126,19 @@ Do not use `octeliumctl apply --prune` with this catalog. Pruning would also
 remove unrelated non-system Octelium resources that are not declared in this
 single file.
 
-Argo CD then syncs the `cordium` Application and runs the genesis hook. If the
-hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change, bump
-`homelab.rst.io/cordium-genesis-revision` on the Job template.
+Argo CD then syncs `cordium`; after its prerequisites are healthy, the tracked
+child Application starts a separate `cordium-bootstrap` sync and runs genesis.
+If the hook needs to be rerun after a Cordium upgrade or bootstrap RBAC change,
+bump `homelab.rst.io/cordium-genesis-revision` on both the Job template and the
+tracked `cordium-genesis-cleanup` ServiceAccount. The tracked annotation starts
+a full child sync; that sync recreates the temporary bootstrap identity
+immediately before genesis and retires it after success or failure.
 
-To rerun only the ClusterConfig hook, bump
-`homelab.rst.io/cordium-cluster-config-revision` in `kustomization.yaml`. That
-changes the tracked ConfigMap metadata, starts one Argo CD sync, and leaves the
-ClusterConfig payload and genesis resources unchanged.
+When the ClusterConfig payload changes, bump
+`homelab.rst.io/cordium-cluster-config-revision` in
+`../cordium-bootstrap/kustomization.yaml`. That changes the tracked ConfigMap
+metadata and starts a full child sync. Argo CD reruns genesis before applying
+ClusterConfig because selective sync does not execute hooks.
 
 Create the policy-bound agent credential and store it in
 `/homelab/cordium/agent-auth-token` before applying the stack:
@@ -133,8 +154,8 @@ The production apply adopts that pre-populated parameter into OpenTofu state
 instead of replacing it with the declared placeholder.
 The ExternalSecret polls the current SSM token every five minutes, so replacing
 the initial placeholder does not require a manifest annotation bump. Argo CD
-runs genesis at sync wave 0, then applies
-`cluster-config.yaml` at wave 1; no manual `cordium man apply` step is needed.
+runs genesis at PostSync wave 0, then applies `cluster-config.yaml` and retires
+the genesis identity at wave 1; no manual `cordium man apply` step is needed.
 Do not reuse a human browser session token for agent automation.
 Developer shell access should enter through `https://cordium.stinkyboi.com`
 and workspace subdomains under `*.cordium.stinkyboi.com`; do not bypass the
@@ -144,10 +165,14 @@ Tailscale-only URL.
 ## Validation
 
 ```sh
-kubectl -n octelium get job cordium-genesis
-kubectl -n octelium logs job/cordium-genesis
-kubectl -n octelium get job cordium-cluster-config
-kubectl -n octelium logs job/cordium-cluster-config
+kubectl -n argocd get application cordium cordium-bootstrap
+kubectl -n argocd get application cordium-bootstrap \
+  -o jsonpath='{.status.operationState.phase}{"\n"}'
+kubectl -n octelium get serviceaccount cordium-genesis
+kubectl get clusterrole/cordium-genesis clusterrolebinding/cordium-genesis
+kubectl auth can-i \
+  --as=system:serviceaccount:octelium:cordium-genesis \
+  create clusterrolebindings
 kubectl -n octelium get deploy,svc -l octelium.com/app=cordium
 kubectl get namespace cordium --show-labels
 kubectl get node zimaboard-1 --show-labels
@@ -161,6 +186,24 @@ octeliumctl get svc default.cordium
 octeliumctl get svc default-cordium.octelium-api
 curl -I https://cordium.stinkyboi.com
 ```
+
+Successful hook Jobs are deleted by `HookSucceeded`; the child Application's
+operation state is the durable success record. During an active or failed run,
+inspect the remaining Jobs and logs:
+
+```sh
+kubectl -n octelium get job -l app.kubernetes.io/name=cordium
+kubectl -n octelium logs job/cordium-genesis
+kubectl -n octelium logs job/cordium-cluster-config
+kubectl -n octelium logs job/cordium-genesis-cleanup
+```
+
+After a successful full child sync, or a failed sync whose SyncFail cleanup
+completed, the two `get` commands for the bootstrap identity must return
+`NotFound`, and the authorization check must print `no`. If control-plane or
+scheduler failure also prevented cleanup, recover it, inspect these resources,
+and start a full `cordium-bootstrap` sync. The cleanup is idempotent, and the
+new sync recreates the identity only immediately before genesis.
 
 Verify the human developer path end to end with the public repository:
 
@@ -187,9 +230,12 @@ namespace, and an Octelium-protected browser route for
 
 ## Rollback
 
-Disable or delete the `cordium` Argo CD Application first so the hook does not
-recreate its package-managed Services. Then remove the Octelium catalog entries
-for `homelab-cordium-user` and
+Remove `cordium-bootstrap-application.yaml` from the parent Kustomization and
+sync `cordium` before deleting the parent Application. The child has Argo CD's
+foreground resources finalizer, so this declarative removal cascades all
+tracked bootstrap resources instead of orphaning the privileged identity.
+Verify the identity is `NotFound`, then remove the Octelium catalog entries for
+`homelab-cordium-user` and
 `homelab-cordium-agent` if the platform is being retired.
 
 Removing `cordium-local-path-provisioner` stops new local provisioning but does

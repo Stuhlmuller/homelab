@@ -74,6 +74,172 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Cordium genesis privilege lifecycle"
+yq -e '.data."controller.sync.timeout.seconds" == "900"' \
+  clusters/homelab/argocd/self-management/cmd-params-configmap.yaml >/dev/null
+yq ea -o=json -I=0 '[.]' clusters/homelab/argocd/self-management/appproject.yaml |
+  jq -e '
+    [.[] | select(.kind == "AppProject" and .metadata.name == "homelab")][0].spec as $project |
+    any($project.sourceRepos[]; . == "https://github.com/Stuhlmuller/homelab.git") and
+    any($project.destinations[]; . == {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "argocd"
+    }) and
+    any($project.destinations[]; . == {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "octelium"
+    }) and
+    any($project.clusterResourceWhitelist[]; . == {
+      "group": "rbac.authorization.k8s.io",
+      "kind": "ClusterRole"
+    }) and
+    any($project.clusterResourceWhitelist[]; . == {
+      "group": "rbac.authorization.k8s.io",
+      "kind": "ClusterRoleBinding"
+    })
+  ' >/dev/null
+kubectl kustomize clusters/homelab/apps/cordium |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "Application" and .metadata.name == "cordium-bootstrap")] as $bootstrap_apps |
+    [.[] | select(.kind == "NetworkPolicy" and (.metadata.name == "cordium-genesis" or .metadata.name == "cordium-cluster-config"))] as $bootstrap_policies |
+    [.[] | select(.kind == "ExternalSecret" and .metadata.name == "cordium-agent-auth")] as $bootstrap_secrets |
+    [.[] | select(.kind == "DaemonSet" and .metadata.name == "cordium-user-namespace-sysctl")] as $bootstrap_hosts |
+    [.[] | select(
+      (.kind == "Job" and (.metadata.name == "cordium-genesis" or .metadata.name == "cordium-genesis-cleanup" or .metadata.name == "cordium-cluster-config")) or
+      ((.kind == "ServiceAccount" or .kind == "ClusterRole" or .kind == "ClusterRoleBinding") and .metadata.name == "cordium-genesis")
+    )] as $misowned_bootstrap |
+    ($bootstrap_apps | length) == 1 and
+    $bootstrap_apps[0].metadata.namespace == "argocd" and
+    $bootstrap_apps[0].metadata.finalizers == ["resources-finalizer.argocd.argoproj.io"] and
+    $bootstrap_apps[0].metadata.annotations["argocd.argoproj.io/hook"] == null and
+    $bootstrap_apps[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $bootstrap_apps[0].spec.project == "homelab" and
+    $bootstrap_apps[0].spec.source == {
+      "repoURL": "https://github.com/Stuhlmuller/homelab.git",
+      "targetRevision": "main",
+      "path": "clusters/homelab/apps/cordium-bootstrap",
+      "kustomize": {}
+    } and
+    $bootstrap_apps[0].spec.destination == {
+      "server": "https://kubernetes.default.svc",
+      "namespace": "octelium"
+    } and
+    $bootstrap_apps[0].spec.syncPolicy == {
+      "automated": {
+        "allowEmpty": false,
+        "enabled": true,
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": ["CreateNamespace=false", "ServerSideApply=true"],
+      "retry": {
+        "limit": 0
+      }
+    } and
+    ($bootstrap_policies | length) == 2 and
+    all($bootstrap_policies[]; .metadata.annotations["argocd.argoproj.io/sync-wave"] == null) and
+    ($bootstrap_secrets | length) == 1 and
+    $bootstrap_secrets[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == null and
+    ($bootstrap_hosts | length) == 1 and
+    $bootstrap_hosts[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == null and
+    ($misowned_bootstrap | length) == 0
+  ' >/dev/null
+kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(
+      .metadata.name == "cordium-genesis" and
+      (.kind == "ServiceAccount" or .kind == "ClusterRole" or .kind == "ClusterRoleBinding")
+    )] as $bootstrap |
+    [.[] | select(.kind == "ServiceAccount" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_service_accounts |
+    [.[] | select(.kind == "Role" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_roles |
+    [.[] | select(.kind == "RoleBinding" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_role_bindings |
+    [.[] | select(.kind == "ClusterRole" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_cluster_roles |
+    [.[] | select(.kind == "ClusterRoleBinding" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_cluster_role_bindings |
+    [.[] | select(.kind == "Job" and .metadata.name == "cordium-genesis")] as $genesis_jobs |
+    [.[] | select(.kind == "Job" and .metadata.name == "cordium-genesis-cleanup")] as $cleanup_jobs |
+    [.[] | select(.kind == "Job" and .metadata.name == "cordium-cluster-config")] as $cluster_config_jobs |
+    [.[] | select(.kind == "ConfigMap" and (.metadata.name | startswith("cordium-cluster-config-")))] as $cluster_configs |
+    [.[] | select(.kind == "Application" or .kind == "NetworkPolicy" or .kind == "ExternalSecret" or .kind == "DaemonSet")] as $misowned_prerequisites |
+    ($bootstrap | length) == 3 and
+    all($bootstrap[];
+      .metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
+      .metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation" and
+      .metadata.annotations["argocd.argoproj.io/sync-wave"] == "-1"
+    ) and
+    ($cleanup_service_accounts | length) == 1 and
+    $cleanup_service_accounts[0].automountServiceAccountToken == false and
+    $cleanup_service_accounts[0].metadata.annotations["homelab.rst.io/cordium-genesis-revision"] ==
+      $genesis_jobs[0].metadata.annotations["homelab.rst.io/cordium-genesis-revision"] and
+    $genesis_jobs[0].spec.template.metadata.annotations["homelab.rst.io/cordium-genesis-revision"] ==
+      $genesis_jobs[0].metadata.annotations["homelab.rst.io/cordium-genesis-revision"] and
+    ($cleanup_roles | length) == 1 and
+    $cleanup_roles[0].rules == [{
+      "apiGroups": [""],
+      "resources": ["serviceaccounts"],
+      "resourceNames": ["cordium-genesis"],
+      "verbs": ["delete"]
+    }] and
+    ($cleanup_role_bindings | length) == 1 and
+    $cleanup_role_bindings[0].roleRef == {
+      "apiGroup": "rbac.authorization.k8s.io",
+      "kind": "Role",
+      "name": "cordium-genesis-cleanup"
+    } and
+    $cleanup_role_bindings[0].subjects == [{
+      "kind": "ServiceAccount",
+      "name": "cordium-genesis-cleanup",
+      "namespace": "octelium"
+    }] and
+    ($cleanup_cluster_roles | length) == 1 and
+    $cleanup_cluster_roles[0].rules == [{
+      "apiGroups": ["rbac.authorization.k8s.io"],
+      "resources": ["clusterroles", "clusterrolebindings"],
+      "resourceNames": ["cordium-genesis"],
+      "verbs": ["delete"]
+    }] and
+    ($cleanup_cluster_role_bindings | length) == 1 and
+    $cleanup_cluster_role_bindings[0].roleRef == {
+      "apiGroup": "rbac.authorization.k8s.io",
+      "kind": "ClusterRole",
+      "name": "cordium-genesis-cleanup"
+    } and
+    $cleanup_cluster_role_bindings[0].subjects == [{
+      "kind": "ServiceAccount",
+      "name": "cordium-genesis-cleanup",
+      "namespace": "octelium"
+    }] and
+    ($genesis_jobs | length) == 1 and
+    $genesis_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
+    $genesis_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "0" and
+    $genesis_jobs[0].spec.activeDeadlineSeconds == 720 and
+    ($cleanup_jobs | length) == 1 and
+    $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
+    $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation,HookSucceeded" and
+    $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $cleanup_jobs[0].spec.template.spec.serviceAccountName == "cordium-genesis-cleanup" and
+    $cleanup_jobs[0].spec.template.spec.automountServiceAccountToken == true and
+    ($cluster_config_jobs | length) == 1 and
+    $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
+    $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    ($cluster_configs | length) == 1 and
+    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260822" and
+    ($misowned_prerequisites | length) == 0 and
+    $cleanup_jobs[0].spec.template.spec.containers[0].args == [
+      "delete",
+      "clusterrolebinding.rbac.authorization.k8s.io/cordium-genesis",
+      "clusterrole.rbac.authorization.k8s.io/cordium-genesis",
+      "serviceaccount/cordium-genesis",
+      "--namespace=octelium",
+      "--ignore-not-found=true",
+      "--wait=false",
+      "--request-timeout=30s",
+      "--cache-dir=/tmp/kubectl-cache"
+    ]
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Prowlarr config normalization"
 bash scripts/ci/prowlarr-config-check.sh
 echo "::endgroup::"

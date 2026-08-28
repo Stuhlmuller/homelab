@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - genesis.yaml
+  - cluster-config-job.yaml
+configMapGenerator:
+  - name: cordium-cluster-config
+    namespace: octelium
+    files:
+      - cluster-config.yaml
+    options:
+      annotations:
+        homelab.rst.io/cordium-cluster-config-revision: "20260822"

@@ -200,7 +200,7 @@ failures so stale catalog state cannot trigger a silent redownload.
 
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
-- `clusters/homelab/apps/cordium/cluster-config.yaml`
+- `clusters/homelab/apps/cordium-bootstrap/cluster-config.yaml`
 - `clusters/homelab/apps/multica`
 - `.talos/patches/worker-zimaboard-1.yaml`
 - `.talos/patches/worker-cordium-user-namespaces.yaml`

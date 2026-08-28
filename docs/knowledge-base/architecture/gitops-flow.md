@@ -38,11 +38,27 @@ Renovate owns repo-declared workload image updates through reviewed pull
 requests. Static policy requires every committed image to keep a digest pin;
 live-only Argo CD parameter overrides are not steady state.
 
-Cordium's CLI-native `ClusterConfig` is packaged into a generated ConfigMap and
-applied by an Argo CD PostSync hook after the upstream genesis hook completes.
-This keeps the non-Kubernetes API resource on the same reviewed GitOps path.
-Its ConfigMap generator annotation is the narrow rerun trigger when only that
-hook needs reconciliation.
+Cordium's parent Application owns normal network, secret, and host
+prerequisites. At Sync wave 1 it creates the `cordium-bootstrap` child
+Application only after those resources are healthy. The child source is
+isolated under `clusters/homelab/apps/cordium-bootstrap`, so creation starts a
+fresh 15-minute Argo CD operation instead of spending the parent's timeout
+budget. Its foreground resources finalizer cascades all tracked bootstrap
+resources when the parent declaratively removes the child.
+Cordium's privileged genesis ServiceAccount, ClusterRole, and binding are
+PostSync wave -1 hooks in that child, not steady-state identities. Genesis runs
+at wave 0 with a 12-minute deadline, leaving three minutes for the
+resourceName-scoped PostSync/SyncFail cleanup. An ordinary failed child sync
+runs cleanup and removes the identity. In-operation retries are disabled
+because they retain the original operation timeout; a new full child sync gets
+a fresh budget and recreates the identity at wave -1. Selective sync is
+unsupported for this lifecycle. The
+tracked cleanup ServiceAccount carries the genesis revision annotation so a
+hook-only upgrade makes the child Application OutOfSync and starts the full
+lifecycle. The CLI-native
+`ClusterConfig` is packaged into the child as a generated ConfigMap and applied
+at PostSync wave 1 after genesis; its generator annotation starts a full child
+sync when that native-API configuration changes.
 The Cordium Application is allowed to deploy control resources to `octelium`
 and workspace support resources to the dedicated `cordium` namespace.
 The Cordium Application prunes removed repository-owned Kubernetes manifests;
