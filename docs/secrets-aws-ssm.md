@@ -172,8 +172,11 @@ auth out of plaintext config and prevents startup from depending on generated
 token files under the container user's home directory.
 
 OpenClaw reads `/homelab/openclaw/discord-bot-token` as
-`DISCORD_BOT_TOKEN`. The pod bootstrap installs and enables the Discord channel
-plugin, then writes a SecretRef to that environment-backed token instead of
+`DISCORD_BOT_TOKEN`. The pod bootstrap verifies and enables only the Discord
+channel plugin already bundled in the digest-pinned OpenClaw image. It fails
+startup if the plugin origin, package version, runtime status, or resolved path
+does not match; it never invokes a mutable package source.
+Bootstrap then writes a SecretRef to the environment-backed token instead of
 copying the token into OpenClaw config. Replace the placeholder directly in SSM
 before relying on Discord, then bump
 `homelab.rst.io/openclaw-discord-bot-token-ssm-version` in
@@ -192,8 +195,8 @@ version so GitOps rolls OpenClaw and reloads the environment variables.
 OpenClaw also reads GitHub App credentials from
 `/homelab/openclaw/github-app/id`,
 `/homelab/openclaw/github-app/installation-id`, and
-`/homelab/openclaw/github-app/private-key`. The app and bootstrap containers
-receive the ID values as `GITHUB_APP_ID` and `GITHUB_APP_INSTALLATION_ID`.
+`/homelab/openclaw/github-app/private-key`. Only the app container receives the
+ID values as `GITHUB_APP_ID` and `GITHUB_APP_INSTALLATION_ID`.
 The PEM is mounted from `openclaw-github-app-private-key` at
 `/var/run/secrets/openclaw/github-app/private-key.pem`, and
 `GITHUB_APP_PRIVATE_KEY_PATH` points at that file. After replacing SSM

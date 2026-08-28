@@ -129,16 +129,14 @@ The `openclaw-secrets` ExternalSecret reads the Discord bot token from
 `DISCORD_BOT_TOKEN`.
 
 On pod startup, the `bootstrap-config` init container keeps the Control UI
-origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, it first tries
-to install the official `@openclaw/discord` channel plugin pinned to the running
-OpenClaw image version in pod-local plugin storage. If ClawHub has not published
-that exact plugin version yet, bootstrap falls back to the current official
-Discord plugin so the pod can finish starting instead of crash-looping on a
-missing registry version. Bootstrap then enables the plugin and stores a
-SecretRef to the environment-backed token.
-The npm cache and extension directory are intentionally not on the NFS-backed
-state PVC because OpenClaw rejects code plugins owned by the QNAP NFS `nobody`
-mapping.
+origin allow-list current. When `DISCORD_BOT_TOKEN` is populated, it inspects
+the official `@openclaw/discord` plugin and requires bundled origin plus a
+`package.json` version equal to the running OpenClaw version. It then uses
+[OpenClaw's config-only enable path](https://github.com/openclaw/openclaw/blob/2d2ddc43d0dcf71f31283d780f9fe9ff4cc04fe4/src/cli/plugins-cli.runtime.ts#L188-L227)
+and verifies that the loaded runtime resolves to the same bundle directory and
+version. A missing, replaced, or incompatible plugin fails startup. Bootstrap
+never invokes the plugin installer, so neither ClawHub nor npm can supply code.
+It then stores a SecretRef to the environment-backed token.
 
 Keep the OpenClaw image new enough for the current official Discord plugin API.
 The 2026-06-24 recovery moved the app, proxy, and bootstrap images to
@@ -183,7 +181,7 @@ channel and sending messages.
 OpenClaw exposes an authenticated agent hook for callers that send its native
 `message` payload. The hook token is generated at
 `/homelab/grafana/openclaw-alert-hook-token` and exposed to OpenClaw as
-`GRAFANA_ALERT_HOOK_TOKEN`.
+`GRAFANA_ALERT_HOOK_TOKEN` only in the bootstrap container.
 
 Startup bootstrap enables OpenClaw hooks at `/hooks` when the token is
 populated. Alertmanager does not call this endpoint: its standard webhook body
@@ -241,15 +239,19 @@ The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
 after the synced pod restarts if those views still show an enable-plugin prompt.
 
-Startup bootstrap pins `agents.defaults.sandbox.mode` to `off`. OpenClaw's
-default sandbox backend is Docker, but the application image does not ship
-Docker and this pod does not run Docker-in-Docker. Enabling `non-main` without a
-working backend makes Discord, group, and spawned agent runs fail before reply.
+Startup bootstrap pins `agents.defaults.sandbox.mode` to `off`. OpenClaw
+[2026.7.1 supports Docker, SSH, and OpenShell sandbox backends](https://github.com/openclaw/openclaw/blob/v2026.7.1/docs/gateway/sandboxing.md).
+This Talos pod has no Docker daemon, while the repository declares neither a
+dedicated SSH target and trust material nor an OpenShell account/runtime.
+Enabling `non-main` without a working backend makes Discord, group, and spawned
+agent runs fail before reply.
 The containment boundary is the Kubernetes workload: the service account token
-is disabled and committed NetworkPolicy and ambient mesh policies restrict
-ingress. Egress is not restricted, and all sessions share the pod's persistent
-workspace, operator toolbox, and mounted application credentials. If a sandbox
-backend is added later, document and validate it before changing this setting.
+is disabled and ambient mesh policy restricts ingress. The NetworkPolicy records
+intent but flannel does not enforce it. Egress is not restricted, and all
+sessions share the pod's persistent workspace, operator toolbox, and mounted
+application credentials. If a sandbox backend is added later, document and
+validate it before changing this setting.
+Do not mount a host container-runtime socket into this workload.
 
 During startup, the bootstrap validates the persisted config before applying
 desired state. It does not run automatic doctor repairs: doctor scans session

@@ -442,6 +442,28 @@ if [[ -n "$tag_only_images" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::OpenClaw plugin supply chain"
+openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
+rg -Fq 'openclaw plugins inspect discord --json' "$openclaw_values"
+rg -Fq 'plugin.get("origin") == "bundled"' "$openclaw_values"
+rg -Fq 'package.get("version") == expected' "$openclaw_values"
+rg -Fq 'openclaw plugins inspect discord --runtime --json' "$openclaw_values"
+if rg -q 'plugins install|falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|npm:@openclaw/discord' "$openclaw_values"; then
+  echo "OpenClaw Discord bootstrap must use only the exact image-bundled plugin" >&2
+  exit 1
+fi
+yq -e '
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_ID == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_INSTALLATION_ID == null and
+  .controllers.openclaw.containers.app.env.GRAFANA_ALERT_HOOK_TOKEN == null and
+  .persistence.config.advancedMounts.openclaw.proxy == null and
+  .persistence."github-app-private-key".advancedMounts.openclaw."bootstrap-config" == null
+' "$openclaw_values" >/dev/null
+echo "::endgroup::"
+
 echo "::group::Secret scan"
 bash scripts/ci/secret-scan.sh
 echo "::endgroup::"

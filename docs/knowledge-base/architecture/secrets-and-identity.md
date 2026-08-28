@@ -216,14 +216,18 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   SecretRef to that environment value instead of a generated file under the
   container user's home directory. OpenClaw uses
   `/homelab/openclaw/discord-bot-token` as `DISCORD_BOT_TOKEN`; bootstrap
+  verifies and enables only the Discord plugin already in the pinned image,
+  without invoking a package registry, and
   configures Discord with an OpenClaw SecretRef to that environment value
-  instead of storing the token in config. ChatGPT Pro or Codex OAuth
+  instead of storing the token in config. The bootstrap and proxy containers
+  do not receive the app-only LiteLLM, Grafana-login, or GitHub App credentials,
+  and the proxy does not mount persistent OpenClaw state. ChatGPT Pro or Codex OAuth
   credentials are interactive user credentials stored on the OpenClaw PVC, not
   SSM parameters. OpenClaw GitHub App credentials use
   `/homelab/openclaw/github-app/id`,
   `/homelab/openclaw/github-app/installation-id`, and
   `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
-  the private key is mounted as a file referenced by
+  the private key is mounted into the app as a file referenced by
   `GITHUB_APP_PRIVATE_KEY_PATH`.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in

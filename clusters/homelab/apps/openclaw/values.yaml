@@ -114,42 +114,16 @@ controllers:
               secretKeyRef:
                 name: openclaw-secrets
                 key: APP_SECRET
-          GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
-          LITELLM_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: LITELLM_TOKEN
           DISCORD_BOT_TOKEN:
             valueFrom:
               secretKeyRef:
                 name: openclaw-secrets
                 key: DISCORD_BOT_TOKEN
-          GRAFANA_USERNAME:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_USERNAME
-          GRAFANA_PASSWORD:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_PASSWORD
           GRAFANA_ALERT_HOOK_TOKEN:
             valueFrom:
               secretKeyRef:
                 name: openclaw-secrets
                 key: GRAFANA_ALERT_HOOK_TOKEN
-          GITHUB_APP_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_ID
-          GITHUB_APP_INSTALLATION_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_INSTALLATION_ID
         command:
           - /bin/sh
           - -ec
@@ -288,16 +262,51 @@ controllers:
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
             else
-              echo "DISCORD_BOT_TOKEN is populated; installing the Discord channel plugin"
+              echo "DISCORD_BOT_TOKEN is populated; enabling the bundled Discord channel plugin"
               openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
-              : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
-              pinned_discord_plugin_spec="clawhub:@openclaw/discord@${openclaw_version}"
-              current_discord_plugin_spec="clawhub:@openclaw/discord"
-              if ! openclaw plugins install "$pinned_discord_plugin_spec" --force; then
-                echo "Pinned Discord plugin ${pinned_discord_plugin_spec} is unavailable; falling back to ${current_discord_plugin_spec}"
-                openclaw plugins install "$current_discord_plugin_spec" --force
-              fi
+              : "${openclaw_version:?failed to parse OpenClaw version}"
+              discord_root="$(
+                openclaw plugins inspect discord --json |
+                  python3 -c '
+            import json
+            import pathlib
+            import sys
+
+            expected = sys.argv[1]
+            plugin = json.load(sys.stdin)["plugin"]
+            root = pathlib.Path(plugin["rootDir"])
+            package = json.loads((root / "package.json").read_text())
+            valid = (
+                plugin.get("id") == "discord"
+                and plugin.get("origin") == "bundled"
+                and package.get("name") == "@openclaw/discord"
+                and package.get("version") == expected
+            )
+            valid or sys.exit("Discord image bundle missing or version-mismatched")
+            print(root)
+            ' "$openclaw_version"
+              )"
               openclaw plugins enable discord
+              openclaw plugins inspect discord --runtime --json |
+                python3 -c '
+            import json
+            import pathlib
+            import sys
+
+            expected, expected_root = sys.argv[1:]
+            plugin = json.load(sys.stdin)["plugin"]
+            root = pathlib.Path(plugin["rootDir"])
+            package = json.loads((root / "package.json").read_text())
+            valid = (
+                plugin.get("id") == "discord"
+                and plugin.get("origin") == "bundled"
+                and plugin.get("status") == "loaded"
+                and root.resolve() == pathlib.Path(expected_root).resolve()
+                and package.get("name") == "@openclaw/discord"
+                and package.get("version") == expected
+            )
+            valid or sys.exit("Discord bundled runtime verification failed")
+            ' "$openclaw_version" "$discord_root"
               openclaw config set --strict-json \
                 channels.discord.enabled \
                 'true'
@@ -347,11 +356,6 @@ controllers:
               secretKeyRef:
                 name: openclaw-secrets
                 key: GRAFANA_PASSWORD
-          GRAFANA_ALERT_HOOK_TOKEN:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GRAFANA_ALERT_HOOK_TOKEN
           GITHUB_APP_ID:
             valueFrom:
               secretKeyRef:
@@ -504,8 +508,6 @@ persistence:
           - path: /data
         bootstrap-config:
           - path: /data
-        proxy:
-          - path: /data
   plugin-cache:
     enabled: true
     type: emptyDir
@@ -566,8 +568,5 @@ persistence:
     advancedMounts:
       openclaw:
         app:
-          - path: /var/run/secrets/openclaw/github-app
-            readOnly: true
-        bootstrap-config:
           - path: /var/run/secrets/openclaw/github-app
             readOnly: true
