@@ -2,6 +2,8 @@
 set -euo pipefail
 
 echo "::group::Conftest policies"
+conftest verify --policy policy --output github
+
 workflow_files=()
 while IFS= read -r yaml_file; do
   workflow_files+=("$yaml_file")
