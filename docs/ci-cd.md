@@ -4,17 +4,18 @@ This repository uses GitHub Actions for the review and rollout path:
 
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
   with advisory status reporting. It is the shared lightweight lint signal for
-  every PR; the repository-specific blocking checks remain in `Terragrunt Plan`
+  every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
   and `validate`.
-- `Terragrunt Plan` runs on pull requests. It always runs static checks and
-  Checkov first. Trusted same-repository pull requests then inspect the changed
-  paths. If the change touches `IaC/**`, flake inputs, OpenTofu/Terragrunt
-  policy inputs, or live-plan helper scripts, the job connects to Octelium, runs
-  a live Terragrunt plan, and updates the managed plan section in the PR
-  description. Manifest-only, workflow-only, and docs-only changes skip the
-  Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
-  policies and replace the managed PR plan section with an explicit skip note.
-  Forked pull requests run Conftest after the live plan skip notice.
+- `Terragrunt Plan` runs on every pull request. Its unprivileged static job
+  detects live-plan scope, runs static checks, Checkov, and rendered Conftest
+  policies. Only trusted same-repository changes to the plan workflow,
+  `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
+  scripts enter the protected `homelab-plan` environment, connect through
+  Octelium, and update the managed plan section in the PR description. Other
+  same-repository changes use a skip-note job without protected credentials;
+  forks run only the static job.
+  The always-present `Terragrunt Gate` succeeds only when static checks and
+  every applicable live plan or skip-note job succeed.
 - `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
   older request check, and prints the exact current-SHA dispatch command plus
   links to active applies. It has no production environment, stored secrets,
@@ -74,17 +75,20 @@ contract for Grafana.
 - The `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
-  `Analyze (python)`, `analyze-actions`, and `release-dry-run`; path-conditional
-  Terragrunt checks remain visible without deadlocking unrelated pull requests.
+  `Analyze (python)`, `analyze-actions`, and `release-dry-run`. `Terragrunt Gate`
+  is the stable candidate for merge-blocking Terragrunt validation; do not add
+  it to ruleset `14700233` until a merged workflow revision has emitted the
+  context for both a no-live-plan pull request and a trusted live-plan pull
+  request.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions
   cache for the Nix store after Nix is installed and before the first
   `nix develop --command ...` step. The cache key is derived from the runner OS,
   `flake.nix`, and `flake.lock`, with an OS-scoped fallback so dependency
   updates can still reuse the nearest previous dev shell closure.
 - GitHub token permissions default to none. Jobs opt in to `contents: read`;
-  live Terragrunt jobs request `id-token: write`; and the trusted PR plan job
-  requests `pull-requests: write` only so it can refresh the managed plan
-  section in the PR description after a successful plan.
+  live Terragrunt jobs request `id-token: write`; and same-repository plan and
+  skip-note jobs request `pull-requests: write` only to refresh the managed plan
+  section in the PR description.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
@@ -96,7 +100,8 @@ contract for Grafana.
   The dedicated User gives both its clientless session and access token a
   30-day lifetime; rotate the credential every 21 days.
   Trusted pull requests only open this live access path when the diff includes
-  IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper inputs.
+  the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
+  inputs.
 - The upstream kubeconfig is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
   `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
@@ -151,6 +156,20 @@ contract for Grafana.
   `run --all --filter ... --non-interactive -- apply ...` form so the run
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
+
+## Terragrunt Gate Ruleset Rollout
+
+1. Merge the workflow change while `Terragrunt Gate` is not required.
+2. From the merged `main` workflow, observe a same-repository PR with no live
+   inputs: `Static Policy And Security Checks` and `Terragrunt Plan Skipped`
+   must pass, `Terragrunt Plan` must be skipped, and `Terragrunt Gate` must pass.
+3. Observe a trusted PR with live inputs: `Terragrunt Plan Skipped` must be
+   skipped and `Terragrunt Gate` must remain blocked until the protected
+   `Terragrunt Plan` succeeds. A fork must emit the gate without receiving the
+   protected environment or a write token.
+4. Add the exact `Terragrunt Gate` Actions context to ruleset `14700233` without
+   changing its existing checks, then refresh a no-live-plan PR and confirm the
+   strict ruleset does not deadlock.
 
 References:
 

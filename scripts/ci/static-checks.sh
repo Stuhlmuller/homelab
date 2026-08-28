@@ -107,6 +107,60 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   ' >/dev/null
 echo "::endgroup::"
 
+echo "::group::Terragrunt pull request gate"
+yq -o=json '.' .github/workflows/terragrunt-plan.yml |
+  jq -e '
+    [.jobs["static-policy"].steps[] | select(.id == "live-plan-scope")] as $scope |
+    [.jobs["static-policy"].steps[] | select(.name == "Run Conftest Policies")] as $conftest |
+    (.on | keys) == ["pull_request"] and
+    .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review"] and
+    .on.pull_request.paths == null and
+    (.jobs | keys | sort) == ["static-policy", "terragrunt-gate", "terragrunt-plan", "terragrunt-plan-skipped"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs["static-policy"].steps[0].with["fetch-depth"] == 0 and
+    .jobs["static-policy"].outputs["requires-live-plan"] == "${{ steps.live-plan-scope.outputs.requires-live-plan }}" and
+    ($scope | length) == 1 and
+    $scope[0].env.BASE_REF == "${{ github.base_ref }}" and
+    ($scope[0].run |
+      contains("git diff --name-only \"origin/${BASE_REF}...HEAD\"") and
+      contains(".github/workflows/terragrunt-plan.yml") and
+      contains("IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego") and
+      contains("scripts/ci/terragrunt-*") and
+      contains("requires-live-plan=${requires_live_plan}")) and
+    ($conftest | length) == 1 and
+    .jobs["terragrunt-plan"].needs == ["static-policy"] and
+    (.jobs["terragrunt-plan"].if |
+      contains("github.event.pull_request.head.repo.full_name == github.repository") and
+      contains("needs.static-policy.outputs.requires-live-plan == '\''true'\''")) and
+    .jobs["terragrunt-plan"].environment == {"name": "homelab-plan"} and
+    .jobs["terragrunt-plan"].permissions == {
+      "contents": "read",
+      "id-token": "write",
+      "pull-requests": "write"
+    } and
+    .jobs["terragrunt-plan-skipped"].needs == ["static-policy"] and
+    (.jobs["terragrunt-plan-skipped"].if |
+      contains("github.event.pull_request.head.repo.full_name == github.repository") and
+      contains("needs.static-policy.outputs.requires-live-plan != '\''true'\''")) and
+    .jobs["terragrunt-plan-skipped"].environment == null and
+    .jobs["terragrunt-plan-skipped"].permissions == {
+      "contents": "read",
+      "pull-requests": "write"
+    } and
+    ([.jobs | to_entries[] | select(.value.environment != null) | .key]) == ["terragrunt-plan"] and
+    .jobs["terragrunt-gate"].if == "${{ always() }}" and
+    .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan", "terragrunt-plan-skipped"] and
+    .jobs["terragrunt-gate"].permissions == {} and
+    .jobs["terragrunt-gate"].environment == null and
+    (.jobs["terragrunt-gate"] | tostring | contains("secrets") | not) and
+    (.jobs["terragrunt-gate"].steps | length) == 1 and
+    (.jobs["terragrunt-gate"].steps[0].run |
+      contains("test \"${STATIC_RESULT}\" = \"success\"") and
+      contains("test \"${LIVE_PLAN_RESULT}\" = \"success\"") and
+      contains("test \"${LIVE_PLAN_RESULT}\" = \"skipped\""))
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/homelab-diagnostics.yml:grafana' \

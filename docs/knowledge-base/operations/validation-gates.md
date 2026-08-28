@@ -53,6 +53,20 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
 
+The pull-request `Terragrunt Gate` is an always-present aggregate. Its
+unprivileged static job runs for every PR and owns live-scope detection. Only a
+trusted same-repository PR whose diff contains a declared live input may enter
+the `homelab-plan` environment; forks and other changes must leave the live job
+skipped. The aggregate fails unless static checks succeed and the applicable
+live plan or same-repository skip-note job has the expected result. Keep the
+exact workflow contract asserted in `scripts/ci/static-checks.sh`.
+
+Do not require a new Actions context in ruleset `14700233` before the workflow
+that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
+trusted live-plan PR, and a fork; then add only that context while preserving
+the existing required checks and verify a fresh no-live-plan PR does not
+deadlock.
+
 The CodeQL workflow in `.github/workflows/codeql.yml` runs on pushes
 and pull requests targeting `main` and on its weekly schedule. It has one
 buildless `actions` analysis job because this repository has no compiled
