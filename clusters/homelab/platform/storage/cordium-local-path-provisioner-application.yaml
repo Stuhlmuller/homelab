@@ -16,7 +16,7 @@ spec:
   source:
     repoURL: https://github.com/rancher/local-path-provisioner.git
     path: deploy/chart/local-path-provisioner
-    targetRevision: v0.0.36
+    targetRevision: 5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0
     helm:
       releaseName: cordium-local-path-provisioner
       values: |
