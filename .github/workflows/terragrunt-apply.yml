@@ -1,19 +1,6 @@
 name: Terragrunt Apply
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/**"
-      - ".checkov.yaml"
-      - "IaC/**"
-      - "clusters/**"
-      - "docs/**"
-      - "flake.lock"
-      - "flake.nix"
-      - "policy/**"
-      - "scripts/**"
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -30,6 +17,8 @@ on:
         default: false
         type: boolean
 
+run-name: ${{ inputs.argocd_app == '' && format('Full @ {0}', github.sha) || format('Targeted {0} @ {1}', inputs.argocd_app, github.sha) }}
+
 permissions: {}
 
 env:
@@ -44,7 +33,6 @@ jobs:
       contents: read
     steps:
       - name: Verify Dispatch Commit
-        if: github.event_name == 'workflow_dispatch'
         env:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
@@ -87,7 +75,7 @@ jobs:
     concurrency:
       group: terragrunt-apply-production
       cancel-in-progress: false
-      queue: max
+      queue: single
     runs-on: ubuntu-24.04
     environment:
       name: homelab-production
@@ -97,14 +85,31 @@ jobs:
       id-token: write
     timeout-minutes: 90
     env:
-      AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
-      ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
-      ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
       APPLY_HEAD_SHA: ${{ github.sha }}
       TERRAGRUNT_ARGOCD_APP: ${{ inputs.argocd_app }}
       TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
     steps:
+      - name: Verify Current Main Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          test "${ACTUAL_REF}" = "refs/heads/main" || { echo "::error::Production dispatches must use main, got ${ACTUAL_REF}."; exit 1; }
+          test "${EXPECTED_SHA}" = "${ACTUAL_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+          current_main_sha="$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" || {
+            echo "::error::Unable to resolve the current main SHA."
+            exit 1
+          }
+          test "${ACTUAL_SHA}" = "${current_main_sha}" || {
+            echo "::error::Dispatch ${ACTUAL_SHA} is stale; current main is ${current_main_sha}."
+            exit 1
+          }
+
       - name: Check Out Repository
         # actions/checkout@v5
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -120,9 +125,9 @@ jobs:
           set -euo pipefail
 
           if ! base_sha="$(
-            gh api \
-              "repos/${GH_REPO}/actions/workflows/terragrunt-apply.yml/runs?branch=main&event=push&status=success&per_page=1" \
-              --jq '.workflow_runs[0].head_sha // empty'
+            gh api --paginate --slurp \
+              "repos/${GH_REPO}/actions/workflows/terragrunt-apply.yml/runs?branch=main&status=success&per_page=100" |
+              jq -r '[.[].workflow_runs[] | select(.event == "push" or (.event == "workflow_dispatch" and (.display_title | startswith("Full @ "))))] | max_by(.run_number) | .head_sha // empty'
           )"; then
             echo "::error::Unable to resolve the latest successful Terragrunt Apply SHA."
             exit 1
@@ -157,6 +162,7 @@ jobs:
 
       - name: Verify Production Apply Inputs
         env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
           test -n "${AWS_APPLY_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-production environment variable or secret."; exit 1; }
@@ -169,11 +175,14 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
           role-session-name: homelab-terragrunt-apply-${{ github.run_id }}
-          role-to-assume: ${{ env.AWS_APPLY_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
       - name: Run Live Terragrunt Apply
         env:
+          ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
