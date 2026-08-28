@@ -27,7 +27,7 @@ spec:
           automountServiceAccountToken: false
           hostNetwork: true
           nodeSelector:
-            kubernetes.io/hostname: zimaboard-1
+            kubernetes.io/hostname: zimaboard-0
           restartPolicy: Never
           securityContext:
             runAsGroup: 65534
@@ -40,7 +40,7 @@ spec:
               image: docker.io/queeup/upnpc-container:v2.3.3-r2@sha256:5bf14ccbe1cac2994e34c01bc6a677010e68e28705c6176a9ef7b3ebfbf5bec6
               args:
                 - -a
-                - 10.1.0.201
+                - 10.1.0.200
                 - "30443"
                 - "8443"
                 - TCP

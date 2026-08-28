@@ -142,8 +142,17 @@ Before declaring Octelium-backed app UI access healthy, the replacement path
 must pass:
 
 ```sh
+kubectl -n istio-system get cronjob octelium-api-upnp \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
 scripts/octelium-e2e-check.sh
 ```
+
+The gRPC check resolves the API host through `1.1.1.1` and pins curl to that
+public address, so an Octelium split-DNS answer cannot hide a broken WAN edge.
+It accepts only the expected unauthenticated response: HTTP `200` with
+`grpc-status: 16`; generic HTTP responses fail the gate.
+Do not treat the repository-side target change as recovery until the CronJob
+has a recent success and the public probe passes.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
