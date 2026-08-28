@@ -557,7 +557,7 @@ organization-policy blocker is tracked below.
   restart with the gateway log, NFS counters, and the active memory job before
   changing storage behavior.
 
-- **Status:** fixed
+- **Status:** open
 - **Area:** agent runtime / Codex diagnostics
 - **Evidence:** On 2026-08-13, a minimal Codex turn reproduced the gateway
   stall after the sandbox error was fixed. The per-agent `codex-home` was 8.7
@@ -578,7 +578,15 @@ organization-policy blocker is tracked below.
   home was 109 MiB, a minimal turn returned `OPENCLAW_OK` in 7.3 seconds, and
   the ready pod retained zero restarts. Read-only inspection on 2026-08-27
   confirmed the live Deployment requests `5Gi`, limits `6Gi`, and its last
-  ready Pod had zero restarts before the separately tracked worker outage.
+  ready Pod had zero restarts before the separately tracked worker outage. On
+  2026-08-28, the replacement restarted 16 times and last exited `137`; memory
+  then rose from `530Mi` to `5.36Gi` in seven minutes while all user containers
+  reached `6.51Gi` on the `7.58Gi` worker, immediately before kubelet telemetry
+  stopped. Desired state now sets the app memory limit to `4Gi`, deliberately
+  preferring an app OOM over starving node services.
+- **Next step:** recover `zimaboard-1` with current authenticated Talos access,
+  inspect kernel and kubelet logs, identify the memory-growth path, and retain
+  the `4Gi` cap until 48 hours of healthy measurements prove safe headroom.
 
 - **Status:** fixed
 - **Area:** agent runtime / startup

@@ -104,7 +104,7 @@ reconciles the cluster-scoped `automation` Namespace.
 ## Worker Resource Contracts
 
 - OpenClaw requests `1` CPU and `2Gi` memory for the app and caps it at
-  `1500m` and `6Gi`; its init containers have matching CPU limits, and required
+  `1500m` and `4Gi`; its init containers have matching CPU limits, and required
   affinity keeps the workload off Octelium dataplane nodes.
 - Deluge, its Gluetun and helper sidecars, Prowlarr, Radarr, and Sonarr all have
   explicit CPU and memory requests and limits derived from the 2026-08-26
