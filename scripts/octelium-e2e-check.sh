@@ -21,8 +21,8 @@ Validate that Octelium is the homelab backbone for app access, CI reachability,
 VPN entry points, and reviewed public callbacks.
 The check requires a running Octelium Cluster, an applied homelab service
 catalog, an active octelium-client connector, and public WEB access for the
-existing app FQDNs. AFFiNE and NOFX are anonymous at Octelium and use their
-own authentication; the other app Services remain clientless.
+existing app FQDNs. AFFiNE delegates login to the application; the other app
+Services, including NOFX, require Octelium authentication.
 
 Options:
   --domain DOMAIN             Octelium Cluster domain. Default: stinkyboi.com
@@ -91,6 +91,7 @@ done
 API_HOST="octelium-api.${DOMAIN}"
 PORTAL_HOST="portal.${DOMAIN}"
 AFFINE_HOST="affine.stinkyboi.com"
+NOFX_HOST="nofx.stinkyboi.com"
 CONTROL_HOSTS=("${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}")
 if [ "${DOMAIN}" = "stinkyboi.com" ]; then
   CONTROL_HOSTS+=("octelium.stinkyboi.com")
@@ -468,20 +469,23 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
     done
-    for SERVICE in affine nofx; do
-      if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-        pass "Octelium Service ${SERVICE} delegates login to the application"
-      else
-        fail "Octelium Service ${SERVICE} is not anonymous"
-      fi
-    done
-    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm multica n8n octobot openclaw policy-bot prowlarr radarr sonarr; do
+    if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service affine delegates login to the application"
+    else
+      fail "Octelium Service affine is not anonymous"
+    fi
+    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} still requires authentication"
       else
         fail "Octelium Service ${SERVICE} unexpectedly permits anonymous access"
       fi
     done
+    if jq -e '.items[] | select((.metadata.name == "nofx" or .status.primaryHostname == "nofx") and .spec.authorization.policies == ["homelab-human-web-access"] and .spec.config.http.header.authorizationMode == "PASS")' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service nofx enforces homelab-human-web-access and passes its application authorization header"
+    else
+      fail "Octelium Service nofx does not enforce the expected Octelium and application authorization contract"
+    fi
     if jq -e '.items[] | select(.metadata.name == "default.cordium" and .metadata.isSystem == true and .status.primaryHostname == "cordium" and .status.namespaceRef.name == "cordium" and .status.managedService != null and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Cordium uses its package-managed default.cordium WEB Service"
     else
@@ -587,6 +591,27 @@ while read -r HOST; do
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
 done <<<"${APP_HOSTS}"
+
+note "Checking NOFX rejects unauthenticated access"
+for NOFX_PATH in / /api/health; do
+  NOFX_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/nofx-headers.XXXXXX")"
+  NOFX_CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/nofx-curl.XXXXXX")"
+  NOFX_HTTP_CODE="$(
+    curl -sS --max-time 20 -D "${NOFX_HEADER_FILE}" -o /dev/null -w '%{http_code}' \
+      "https://${NOFX_HOST}${NOFX_PATH}" 2>"${NOFX_CURL_ERR}" || true
+  )"
+  NOFX_UNAUTHORIZED="$(
+    awk 'tolower($1) == "x-octelium-unauthorized:" {print tolower($2)}' "${NOFX_HEADER_FILE}" |
+      tr -d '\r' |
+      tail -1
+  )"
+  if [ "${NOFX_HTTP_CODE}" = "401" ] && [ "${NOFX_UNAUTHORIZED}" = "true" ]; then
+    pass "https://${NOFX_HOST}${NOFX_PATH} requires Octelium authentication"
+  else
+    fail "https://${NOFX_HOST}${NOFX_PATH} returned HTTP ${NOFX_HTTP_CODE:-000} with x-octelium-unauthorized=${NOFX_UNAUTHORIZED:-missing}; curl: $(tr '\n' ' ' <"${NOFX_CURL_ERR}")"
+  fi
+  rm -f "${NOFX_HEADER_FILE}" "${NOFX_CURL_ERR}"
+done
 
 note "Checking AFFiNE native-client bootstrap"
 AFFINE_ORIGIN="assets://."

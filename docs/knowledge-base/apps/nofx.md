@@ -2,14 +2,15 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-08-25
+updated: 2026-08-28
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
-`https://nofx.stinkyboi.com`. Its Octelium Service permits anonymous transport
-and delegates login to NOFX. The GitOps source is
-`clusters/homelab/apps/nofx`, and the Argo CD Application is generated from
-`IaC/terragrunt.stack.hcl`.
+`https://nofx.stinkyboi.com`. Its Octelium Service requires
+`homelab-human-web-access` before forwarding to NOFX's own login. The GitOps
+source is `clusters/homelab/apps/nofx`. Octelium passes NOFX's application
+`Authorization` header because NOFX sends its session JWT there. The
+Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 
 The app uses the upstream GHCR backend and frontend images from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on

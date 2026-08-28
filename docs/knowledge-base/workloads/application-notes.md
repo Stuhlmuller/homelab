@@ -17,8 +17,9 @@ through `IaC/live/argocd-apps/<name>` and deliver runtime changes through Argo
 CD rather than direct cluster mutation.
 
 Human application access normally uses Octelium clientless `WEB` Services.
-AFFiNE and NOFX are reviewed exceptions: their Octelium Services are anonymous
-and delegate login to the applications. AFFiNE public signup remains disabled.
+AFFiNE is the reviewed exception: its Octelium Service is anonymous and
+delegates login to the application. AFFiNE public signup remains disabled.
+NOFX requires Octelium human browser authentication before its own login.
 Reviewed callback hosts use the public Octelium tunnel with explicit path
 restrictions.
 Tailscale is secondary LAN and egress infrastructure, not the primary app

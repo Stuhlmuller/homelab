@@ -30,9 +30,9 @@ stay annotated with `homelab.rst.io/access-plane: octelium` and
 Octelium browser login must use reviewed first-level callback hostnames through
 the `octelium-public` tunnel and carry `homelab.rst.io/public-callback`
 annotations. Do not add Tailscale Funnel routes for app UI or callback traffic.
-AFFiNE and NOFX are reviewed app exceptions: their Octelium Services are
-anonymous and delegate login to the applications. AFFiNE public signup remains
-disabled.
+AFFiNE is the reviewed app exception: its Octelium Service is anonymous and
+delegates login to the application. AFFiNE public signup remains disabled.
+NOFX requires Octelium human browser authentication before its own login.
 
 Do not add a route just because an upstream chart exposes a web UI. Prefer the
 least direct reviewed access path. For example, Grafana is the operator-facing

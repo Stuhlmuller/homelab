@@ -78,15 +78,20 @@ echo "::group::Prowlarr config normalization"
 bash scripts/ci/prowlarr-config-check.sh
 echo "::endgroup::"
 
-echo "::group::Octelium CI credential lifetime and scope"
+echo "::group::Octelium catalog security contracts"
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
     ($users | length) == 1 and
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($nofx | length) == 1 and
+    ($nofx[0].spec.isAnonymous // false) == false and
+    $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
     ($policies | length) == 1 and
     $policies[0].spec.rules == [{
       "name": "kubernetes-api-service",
