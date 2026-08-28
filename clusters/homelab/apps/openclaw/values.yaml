@@ -369,7 +369,7 @@ controllers:
             ephemeral-storage: 5Gi
           limits:
             cpu: 1500m
-            memory: 6Gi
+            memory: 4Gi
             ephemeral-storage: 6Gi
         probes:
           startup:

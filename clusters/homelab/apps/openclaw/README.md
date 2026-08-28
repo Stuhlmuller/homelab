@@ -7,12 +7,15 @@ under `/data/openclaw`.
 
 ## Resource Profile
 
-The app container requests `1` CPU and `2Gi` memory, with `1500m` CPU and `6Gi`
+The app container requests `1` CPU and `2Gi` memory, with `1500m` CPU and `4Gi`
 memory limits. Seven days of five-minute samples measured about `1` CPU and
 `1.8Gi` memory at p95. Multiple pod series exceeded `4Gi`, maxima approached
-`6Gi`, and three terminated as OOMKilled. The CPU limit throttles rare bursts
-before they can starve a four-core worker; the existing memory limit avoids a
-known regression while the pod is kept off Octelium dataplane nodes. It requests
+`6Gi`, and three terminated as OOMKilled. On 2026-08-28, app memory climbed to
+`5.36Gi` immediately before its 8 GiB worker stopped reporting. The `4Gi`
+containment limit deliberately prefers an app OOM over starving Talos, kubelet,
+and containerd; raise it only after the memory growth is fixed and 48 hours of
+healthy measurements show node headroom. The CPU limit throttles rare bursts
+before they can starve a four-core worker. It requests
 `5Gi` and limits `6Gi` of ephemeral storage: the shared
 Nix store uses about `2.7Gi`, while the separately capped Codex runtime can use
 up to `2Gi`. The `5Gi` request reserves that expected footprint; the `6Gi`
