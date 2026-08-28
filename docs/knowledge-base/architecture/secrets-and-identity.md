@@ -177,11 +177,12 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - The GitHub Actions AWS OIDC apply role is an operator-owned bootstrap
   identity. `IaC/operator/github-actions-role-policy` owns the existing
   `Github-TF-State` role's trust policy and additive SSM reader-policy lifecycle
-  grant. Trust is limited to the homelab `homelab-plan` and
-  `homelab-production` environments plus pull requests and `main` in
-  `Stuhlmuller/github-iac`. Apply it only with a reviewed administrator session;
-  the first rollout must import the existing role before planning. CI must not
-  traverse `IaC/operator` or gain permission to replace its own attachment. The
+  grant. Trust is limited to `homelab-plan`, `homelab-production`,
+  `github-iac-plan`, and `github-iac-production`. Apply trust changes only with
+  a reviewed administrator session and the single-role saved-plan gate in
+  `IaC/operator/README.md`; the first rollout must import the existing role
+  before planning. CI must not traverse `IaC/operator` or gain permission to
+  replace its own attachment. The
   grant is bounded to policy slots `00` through `09` and the exact
   `homelab-ssm-parameter-readers` group. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it

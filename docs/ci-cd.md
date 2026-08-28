@@ -443,8 +443,8 @@ identity is needed.
 
 The workflows use `AWS_ROLE_TO_ASSUME_HOMELAB` for both trusted PR plans and
 protected post-merge applies. The operator unit owns the role trust and permits
-only the two homelab environments plus the active `github-iac` pull-request and
-`main` workflows:
+only the protected plan and production environments in `homelab` and
+`github-iac`:
 
 ```json
 {
@@ -460,8 +460,8 @@ only the two homelab environments plus the active `github-iac` pull-request and
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
           "token.actions.githubusercontent.com:sub": [
-            "repo:Stuhlmuller/github-iac:pull_request",
-            "repo:Stuhlmuller/github-iac:ref:refs/heads/main",
+            "repo:Stuhlmuller/github-iac:environment:github-iac-plan",
+            "repo:Stuhlmuller/github-iac:environment:github-iac-production",
             "repo:Stuhlmuller/homelab:environment:homelab-plan",
             "repo:Stuhlmuller/homelab:environment:homelab-production"
           ]
@@ -479,11 +479,20 @@ state encryption access to `alias/homelab-opentofu` in the state region
 `kms:DescribeKey`, `kms:Encrypt`, `kms:GenerateDataKey`, and
 `kms:ReEncrypt*`.
 
-The additive IAM grant required to manage the chunked SSM reader policies is
-declared in `IaC/operator/github-actions-role-policy`. It is deliberately
-outside the GitHub workflow traversal: an automation role must not be able to
-widen or replace the policy attached to itself. After review, an AWS
-administrator applies that unit through Terragrunt:
+The role trust and additive IAM grant required to manage the chunked SSM reader
+policies are declared in `IaC/operator/github-actions-role-policy`. The unit is
+deliberately outside the GitHub workflow traversal: an automation role must not
+be able to widen its own trust or replace the policy attached to itself.
+
+For a trust-only change, use the targeted operator runbook in
+`IaC/operator/README.md`. It conditionally imports only the existing role,
+saves a plan for `aws_iam_role.github_actions`, rejects non-trust role drift and
+any subject outside the four environments, applies those exact reviewed plan
+bytes, and verifies live IAM. Do not run an un-targeted operator apply to roll
+out only this trust change.
+
+Full-unit policy, boundary, attachment, or user changes still use an
+administrator-authenticated un-targeted plan after backend-free validation:
 
 ```sh
 aws sso login --profile <administrator-profile>
@@ -494,9 +503,9 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 ```
 
-Before the first plan, import the existing GitHub Actions role and External
-Secrets user when their state addresses are absent. Do not repeat an import
-after its address is present:
+Before the first full-unit plan, import the existing GitHub Actions role and
+External Secrets user when their state addresses are absent. Do not repeat an
+import after its address is present:
 
 ```sh
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \

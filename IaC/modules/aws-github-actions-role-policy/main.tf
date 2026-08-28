@@ -108,8 +108,8 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:Stuhlmuller/github-iac:pull_request",
-        "repo:Stuhlmuller/github-iac:ref:refs/heads/main",
+        "repo:Stuhlmuller/github-iac:environment:github-iac-plan",
+        "repo:Stuhlmuller/github-iac:environment:github-iac-production",
         "repo:Stuhlmuller/homelab:environment:homelab-plan",
         "repo:Stuhlmuller/homelab:environment:homelab-production",
       ]
