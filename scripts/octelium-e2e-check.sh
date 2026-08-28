@@ -393,43 +393,50 @@ for HOST in "${CONTROL_HOSTS[@]}"; do
   esac
 done
 
-GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
-GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
-GRPC_HTTP_CODE="$(
-  curl -sS \
-    --http2 \
-    -H "content-type: application/grpc" \
-    -H "${GRPC_TRAILERS_HEADER}" \
-    --data-binary '' \
-    --max-time 15 \
-    -o /dev/null \
-    -D "${GRPC_HEADER_FILE}" \
-    -w '%{http_code}' \
-    "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
+API_PUBLIC_IPV4="$(
+  dig +short @1.1.1.1 "${API_HOST}" A 2>/dev/null |
+    awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}' || true
 )"
-GRPC_SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
-rm -f "${GRPC_HEADER_FILE}"
-case "${GRPC_HTTP_CODE}" in
-  200|204|400|401|404|405|415|501)
-    pass "https://${API_HOST} accepted a POST gRPC-shaped request path with HTTP ${GRPC_HTTP_CODE}"
-    ;;
-  403)
-    if [ "${GRPC_SERVER}" = "cloudflare" ]; then
-      fail "https://${API_HOST} returned Cloudflare HTTP 403 to a gRPC request; reconcile the direct API origin with scripts/octelium-public-dns.sh"
-    else
-      fail "https://${API_HOST} returned HTTP 403 to a gRPC request"
-    fi
+if [ -z "${API_PUBLIC_IPV4}" ]; then
+  fail "${API_HOST} has no public IPv4 answer"
+  GRPC_READY=0
+else
+  GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
+  GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
+  GRPC_RESULT="$(
+    curl -sS \
+      --http2 \
+      --resolve "${API_HOST}:443:${API_PUBLIC_IPV4}" \
+      -H "content-type: application/grpc" \
+      -H "${GRPC_TRAILERS_HEADER}" \
+      --data-binary '' \
+      --max-time 15 \
+      -o /dev/null \
+      -D "${GRPC_HEADER_FILE}" \
+      -w '%{http_code} %{http_version}' \
+      "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
+  )"
+  GRPC_HTTP_CODE="${GRPC_RESULT%% *}"
+  GRPC_HTTP_VERSION="${GRPC_RESULT#* }"
+  GRPC_SERVER="$(awk 'tolower($1) == "server:" {print tolower($2)}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
+  GRPC_STATUS="$(
+    awk 'tolower($0) ~ /^grpc-status:[[:space:]]*/ {
+      sub(/^[^:]*:[[:space:]]*/, "")
+      sub(/\r$/, "")
+      print
+    }' "${GRPC_HEADER_FILE}" | tail -1
+  )"
+  rm -f "${GRPC_HEADER_FILE}"
+  if [ "${GRPC_HTTP_CODE}" = "200" ] &&
+    [ "${GRPC_HTTP_VERSION}" = "2" ] &&
+    [ "${GRPC_STATUS}" = "16" ] &&
+    [ "${GRPC_SERVER}" = "cloudflare" ]; then
+    pass "https://${API_HOST} returned the expected Cloudflare HTTP/2 unauthenticated gRPC response (HTTP 200, grpc-status 16)"
+  else
+    fail "https://${API_HOST} public gRPC probe via ${API_PUBLIC_IPV4} returned HTTP ${GRPC_HTTP_CODE:-missing} over ${GRPC_HTTP_VERSION:-missing}, grpc-status ${GRPC_STATUS:-missing}, server ${GRPC_SERVER:-missing}; expected Cloudflare HTTP/2, HTTP 200, and grpc-status 16"
     GRPC_READY=0
-    ;;
-  000|"")
-    fail "https://${API_HOST} did not respond to a gRPC-shaped request"
-    GRPC_READY=0
-    ;;
-  *)
-    fail "https://${API_HOST} returned unexpected HTTP ${GRPC_HTTP_CODE} to a gRPC request"
-    GRPC_READY=0
-    ;;
-esac
+  fi
+fi
 
 note "Checking Octelium service catalog"
 if [ ! -f "${CATALOG}" ]; then

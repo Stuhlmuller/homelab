@@ -375,7 +375,7 @@ Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
 API hostname therefore uses a separate direct origin: clients reach
 Cloudflare on TCP/443, a hostname-specific Origin Rule changes the destination
 port to `8443`, and the Xfinity gateway maps that port to
-`10.1.0.201:30443`. The dedicated `octelium-api-ingressgateway` accepts
+`10.1.0.200:30443`. The dedicated `octelium-api-ingressgateway` accepts
 Cloudflare origin TLS without SNI, while a separate `VirtualService` routes
 only the API Host. Run
 `scripts/octelium-public-dns.sh` from the homelab LAN after the
@@ -383,6 +383,13 @@ only the API Host. Run
 verifies both that mapping and an unauthenticated `grpc-status: 16` response
 from the NodePort before changing DNS. All browser, app, and callback hostnames
 remain on `octelium-public`.
+
+The repository-owned CronJob renews the lease but cannot enable UPnP on the
+Xfinity gateway. Router account authority must enable UPnP or provide a
+reviewed static TCP/8443 forward before rollout validation can pass. Grafana
+alerts when the last successful renewal is stale or absent. The end-to-end
+check resolves the API hostname through `1.1.1.1` and pins its gRPC request to
+that public address so Octelium split DNS cannot mask a broken WAN edge.
 
 Reconcile the Cloudflare origin-port and TLS Configuration Rules through their
 protected workflow so the token remains masked inside the `homelab-production`

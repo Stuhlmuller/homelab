@@ -125,25 +125,24 @@ organization-policy blocker is tracked below.
   `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
   hostnames, so use an explicit advanced wildcard.
 
-- **Status:** open
+- **Status:** mitigated in desired state; blocked by router authority and rollout
 - **Area:** Octelium / public gRPC transport
-- **Evidence:** On 2026-08-26 the `octelium-api-upnp` CronJob had no successful
-  run for 20 days. A stale router control endpoint caused the earlier failures;
-  after PR `#734` replaced it with IGD discovery, the repaired jobs could not
-  schedule because their only target, `zimaboard-0`, was NotReady. The
-  86,400-second lease had expired. Direct TLS probes to NodePort `30443` on
-  Ready `zimaboard-1` at `10.1.0.201` returned the expected unauthenticated
-  `grpc-status: 16`. PR `#749` moved the host-networked lease job to that
-  worker, but live IGD discovery reports no usable UPnP gateway; `zimaboard-0`
-  and `zimaboard-2` remain NotReady. The public API hostname still times out.
+- **Evidence:** On 2026-08-28 the public API completed Cloudflare TLS and HTTP/2
+  but returned no gRPC response, while direct NodePort `10.1.0.200:30443`
+  returned unauthenticated `grpc-status: 16`. The lease CronJob had not
+  succeeded since 2026-08-06, and its `zimaboard-1` target became NotReady.
+  Desired state moves the existing miniupnpc reconciler to Ready `zimaboard-0`,
+  pins the end-to-end gRPC request to a public `1.1.1.1` answer, and alerts when
+  the last successful renewal is stale or absent. Live IGD discovery still
+  reports no usable UPnP gateway.
 - **Risk:** Without a persistent WAN TCP/8443 mapping, the public CLI, VPN, and
   admin path remains unavailable while browser and app tunnel traffic stays
   healthy.
-- **Next step:** Add or request a repository-owned router configuration path.
-  Through that path, enable UPnP or configure TCP/8443 to
-  `10.1.0.201:30443`; verify public `grpc-status: 16` and an authenticated CLI
-  call. Track worker recovery separately in
-  [[architecture/cluster-topology]].
+- **Next step:** Xfinity account authority must enable UPnP or provide a
+  reviewed static TCP/8443 forward to `10.1.0.200:30443`. Then sync the Istio
+  app, require a recent CronJob success, reconcile public DNS, and verify public
+  `grpc-status: 16` plus an authenticated CLI call. Track worker recovery
+  separately in [[architecture/cluster-topology]].
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation

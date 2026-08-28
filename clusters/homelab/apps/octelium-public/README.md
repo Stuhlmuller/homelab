@@ -40,7 +40,7 @@ tunnel because Cloudflare does not support gRPC streams on that route type.
 It uses Cloudflare's normal proxied gRPC path on client TCP/443. A
 hostname-specific Origin Rule sends that traffic to WAN TCP/8443, which the
 `octelium-api-upnp` CronJob maps with UPnP to the dedicated
-`octelium-api-ingressgateway` at `10.1.0.201:30443`.
+`octelium-api-ingressgateway` at `10.1.0.200:30443`.
 `scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. The
 gateway accepts Cloudflare origin TLS without SNI, but its separate
 `octelium-api` `VirtualService` routes only the API Host, so app hostnames
@@ -73,6 +73,9 @@ to the WAN address. After Argo CD syncs the `octelium-api-upnp` CronJob,
 reconcile DNS with `scripts/octelium-public-dns.sh` from the homelab LAN.
 Public resolvers should return Cloudflare anycast addresses, not private
 Octelium or old tailnet addresses.
+The CronJob cannot enable Xfinity UPnP; router account authority remains a
+rollout gate. `scripts/octelium-e2e-check.sh` pins its gRPC request to a public
+`1.1.1.1` answer so local split DNS cannot produce a false success.
 
 Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
 `*.stinkyboi.com` certificate shape. The cluster domain is `stinkyboi.com` so

@@ -132,6 +132,9 @@ The provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
+- Octelium API UPnP renewal older than 15 minutes for another 5 minutes, or a
+  missing last-success metric. This warns before the 24-hour router lease
+  expires.
 - Kube-state-metrics unavailable for 5 minutes. This alert owns telemetry
   failures that would otherwise make the Kubernetes node rules return no data.
 - Expected homelab hardware node inventory missing for 5 minutes. The current
@@ -236,7 +239,7 @@ In Grafana, check that the `Prometheus` datasource is default, the
 `https://api.github.com`, the `Homelab Overview`, `Argo CD Overview`, and
 `GitHub PR Status` dashboards appear under the `Homelab` folder, the imported
 dashboards appear under the `Kubernetes` and `Monitoring` folders, the
-`Entra ID` login path works, and the eighteen provisioned `homelab-*` alert rules
+`Entra ID` login path works, and the nineteen provisioned `homelab-*` alert rules
 are present under Grafana Alerting.
 
 ## Rollback

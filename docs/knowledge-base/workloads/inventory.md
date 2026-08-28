@@ -59,6 +59,10 @@ AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
 
+Istio's public Octelium API lease reconciler runs on `zimaboard-0` and targets
+NodePort `10.1.0.200:30443`. Grafana alerts when its last successful renewal is
+stale or missing; Xfinity UPnP enablement remains an external authority gate.
+
 ## Requested Applications
 
 | App                    | Namespace          | GitOps path                                     | Terragrunt path                             | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Depends on                                                                         |

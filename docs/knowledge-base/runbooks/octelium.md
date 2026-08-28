@@ -10,6 +10,12 @@ and the end-to-end gate on their repository-owned scripts and manifests. The
 catalog also owns the core human session ceiling; apply its `ClusterConfig`
 include separately before the normal catalog apply.
 
+The public CLI edge uses the host-networked `octelium-api-upnp` CronJob on
+`zimaboard-0` to renew WAN TCP/8443 to `10.1.0.200:30443`. The job cannot enable
+Xfinity UPnP, so router authority remains a rollout gate. Grafana alerts before
+the 24-hour lease expires, and the end-to-end check pins its gRPC request to a
+public DNS answer instead of trusting local split DNS.
+
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 additional public WEB Service fallbacks on `acer` without Multus, 19
 including the existing OctoBot fallback. Its generated Service UIDs must be
