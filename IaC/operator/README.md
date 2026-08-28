@@ -13,8 +13,9 @@ bootstrap policy reproducible and reviewable.
 ## GitHub Actions apply-role policy
 
 `github-actions-role-policy` owns the existing `Github-TF-State` role trust and
-attaches one managed policy. Trust is limited to the two homelab environments
-plus pull requests and `main` in the active `Stuhlmuller/github-iac` consumer.
+attaches one managed policy. Trust is limited to the protected plan and
+production environments in `Stuhlmuller/homelab` and
+`Stuhlmuller/github-iac`.
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group. The role cannot manage this bootstrap
@@ -27,39 +28,182 @@ permissions boundary. The boundary caps the user's effective permissions at
 to the regional runtime-secret KMS key. Group policy changes therefore cannot
 turn the reader credential into unrelated AWS access.
 
-Use an AWS administrator profile only as the credential selector:
+Use an AWS administrator profile only as the credential selector. Before
+changing trust, create and protect `github-iac-plan` and
+`github-iac-production`, store the required secrets in those environments,
+remove their repository-scoped copies, and merge the workflow jobs that name
+the environments. Replacing the old pull-request and branch subjects before
+that bootstrap temporarily disables the current `github-iac` plan and apply
+jobs.
+
+### Trust-only rollout
+
+Validate without the remote backend, then initialize the operator state with
+administrator credentials:
 
 ```sh
-aws sso login --profile <administrator-profile>
+set -euo pipefail
+operator_profile="<administrator-profile>"
+aws sso login --profile "$operator_profile"
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
 terragrunt --log-disable validate -no-color
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
+AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
 ```
 
-On the first rollout, or if the encrypted operator state must be reconstructed,
-list the state and import the existing IAM role or user when either address is
-absent. Import before the first plan so OpenTofu adopts both objects instead of
-attempting to create duplicates:
+Run the remaining trust-only blocks in this same shell so the profile and
+private temporary paths remain available.
+
+The encrypted state key is
+`IaC/homelab/operator/github-actions-role-policy/terraform.tfstate`. Import the
+existing role only when its exact address is absent. Import changes state, not
+the live IAM role; repeating it after the address exists is an error.
 
 ```sh
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
-  'aws_iam_role.github_actions' Github-TF-State
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
-  'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
+operator_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-role-trust.XXXXXX")"
+chmod 0700 "$operator_plan_dir"
+operator_plan="$operator_plan_dir/github-actions-role-trust.tfplan"
+operator_plan_json="$operator_plan_dir/github-actions-role-trust.json"
+operator_state_list="$operator_plan_dir/operator-state-list.txt"
+
+cleanup_operator_plan() {
+  test ! -d "$operator_plan_dir" || rm -rf -- "$operator_plan_dir"
+}
+trap cleanup_operator_plan EXIT
+
+AWS_PROFILE="$operator_profile" terragrunt --log-disable state list \
+  >"$operator_state_list"
+if ! grep -Fxq 'aws_iam_role.github_actions' "$operator_state_list"; then
+  AWS_PROFILE="$operator_profile" terragrunt --log-disable import \
+    -lock-timeout=5m 'aws_iam_role.github_actions' Github-TF-State
+fi
+
+AWS_PROFILE="$operator_profile" terragrunt --log-disable state show -no-color \
+  'aws_iam_role.github_actions' >"$operator_plan_dir/role-state-before.txt"
+grep -Eq '^[[:space:]]*id[[:space:]]*=[[:space:]]*"?Github-TF-State"?$' \
+  "$operator_plan_dir/role-state-before.txt"
 ```
 
-Do not repeat an import when `state list` already contains its address. Save,
-review, and apply the same plan:
+Save a plan for only the role. The JSON gate rejects creation, deletion,
+replacement, imports, another managed resource, changes to non-trust role
+attributes, a wildcard, or any subject outside the four protected
+environments. Review the human-readable plan before approving the prompt and
+applying those exact bytes.
 
 ```sh
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
+AWS_PROFILE="$operator_profile" terragrunt --log-disable plan \
+  -input=false -lock-timeout=5m \
+  -target='aws_iam_role.github_actions' \
+  -out="$operator_plan" -no-color
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -json \
+  "$operator_plan" >"$operator_plan_json"
+
+jq -e '
+  def as_array: if type == "array" then . else [.] end;
+  [.resource_changes[] | select(.mode == "managed")] as $changes
+  | ($changes | length) == 1
+  and $changes[0].address == "aws_iam_role.github_actions"
+  and ($changes[0].change.actions == ["no-op"] or
+       $changes[0].change.actions == ["update"])
+  and $changes[0].change.before.id == "Github-TF-State"
+  and $changes[0].change.after.id == "Github-TF-State"
+  and (($changes[0].change.importing // null) == null)
+  and (($changes[0].previous_address // null) == null)
+  and (($changes[0].change.before | del(.assume_role_policy)) ==
+       ($changes[0].change.after | del(.assume_role_policy)))
+  and (($changes[0].change.after.assume_role_policy | fromjson) as $policy
+    | ($policy.Statement | as_array) as $statements
+    | ($statements | length) == 1
+    and $statements[0].Effect == "Allow"
+    and ($statements[0].Action | as_array) == ["sts:AssumeRoleWithWebIdentity"]
+    and ($statements[0].Principal | keys) == ["Federated"]
+    and ($statements[0].Principal.Federated | as_array) == [
+      ($changes[0].change.after.arn |
+        sub(":role/.*$"; ":oidc-provider/token.actions.githubusercontent.com"))
+    ]
+    and ($statements[0].Condition | keys) == ["StringEquals"]
+    and ($statements[0].Condition.StringEquals | keys | sort) == [
+      "token.actions.githubusercontent.com:aud",
+      "token.actions.githubusercontent.com:sub"
+    ]
+    and ($statements[0].Condition.StringEquals[
+      "token.actions.githubusercontent.com:aud"] | as_array) ==
+      ["sts.amazonaws.com"]
+    and ($statements[0].Condition.StringEquals[
+      "token.actions.githubusercontent.com:sub"] | as_array | sort) == ([
+        "repo:Stuhlmuller/github-iac:environment:github-iac-plan",
+        "repo:Stuhlmuller/github-iac:environment:github-iac-production",
+        "repo:Stuhlmuller/homelab:environment:homelab-plan",
+        "repo:Stuhlmuller/homelab:environment:homelab-production"
+      ] | sort))
+' "$operator_plan_json"
+
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -no-color \
+  "$operator_plan"
+printf 'Apply this exact trust-only plan? Type apply: '
+read -r operator_confirmation
+test "$operator_confirmation" = apply
+AWS_PROFILE="$operator_profile" terragrunt --log-disable apply -no-color \
+  "$operator_plan"
 ```
 
-After the operator apply succeeds, rerun the protected `Terragrunt Apply`
+Verify that live IAM has one allow statement, the required audience, and only
+the four environment subjects:
+
+```sh
+aws --profile "$operator_profile" iam get-role \
+  --role-name Github-TF-State \
+  --output json >"$operator_plan_dir/live-role-trust.json"
+jq -e '
+  def as_array: if type == "array" then . else [.] end;
+  .Role as $role
+  | ($role.AssumeRolePolicyDocument.Statement | as_array) as $statements
+  | ($statements | length) == 1
+  and $statements[0].Effect == "Allow"
+  and ($statements[0].Action | as_array) == ["sts:AssumeRoleWithWebIdentity"]
+  and ($statements[0].Principal | keys) == ["Federated"]
+  and ($statements[0].Principal.Federated | as_array) == [
+    ($role.Arn |
+      sub(":role/.*$"; ":oidc-provider/token.actions.githubusercontent.com"))
+  ]
+  and ($statements[0].Condition | keys) == ["StringEquals"]
+  and ($statements[0].Condition.StringEquals | keys | sort) == [
+    "token.actions.githubusercontent.com:aud",
+    "token.actions.githubusercontent.com:sub"
+  ]
+  and ($statements[0].Condition.StringEquals[
+    "token.actions.githubusercontent.com:aud"] | as_array) ==
+    ["sts.amazonaws.com"]
+  and ($statements[0].Condition.StringEquals[
+    "token.actions.githubusercontent.com:sub"] | as_array | sort) == ([
+      "repo:Stuhlmuller/github-iac:environment:github-iac-plan",
+      "repo:Stuhlmuller/github-iac:environment:github-iac-production",
+      "repo:Stuhlmuller/homelab:environment:homelab-plan",
+      "repo:Stuhlmuller/homelab:environment:homelab-production"
+    ] | sort)
+' "$operator_plan_dir/live-role-trust.json"
+```
+
+Then verify approved plan and production jobs in both repositories can assume
+the role. A job without one of these environments must receive
+`AccessDenied`. Keep issue `#786` open until those live checks pass.
+
+Rollback through code: create a reviewed forward commit restoring the prior
+exact subjects, rerun this same targeted saved-plan path, and verify live IAM.
+Do not update the trust policy with the AWS CLI, remove the imported state
+address, or run a destroy. The prior `github-iac` pull-request and `main`
+subjects are broader than the environment subjects, so use that rollback only
+while repairing the protected workflows.
+
+### Full-unit reconciliation
+
+Changes to the managed policy, attachment, External Secrets boundary, or IAM
+user require an un-targeted operator plan. Import
+`aws_iam_user.external_secrets` as `external-secrets_aws-ssm-auth` first only
+when that address is absent, then review and apply the same full saved plan.
+Do not use the trust-only target for those changes.
+
+After the full operator apply succeeds, rerun the protected `Terragrunt Apply`
 workflow. Its short-lived OIDC role can then create, version, tag, attach, and
 delete only the declared SSM reader policy family.
 

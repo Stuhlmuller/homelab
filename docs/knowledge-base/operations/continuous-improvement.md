@@ -670,13 +670,17 @@ organization-policy blocker is tracked below.
 - **Status:** open
 - **Area:** CI/CD identity
 - **Evidence:** the August 2026 remediation inventories the active consumers
-  and declares four exact subjects in the operator unit: the two homelab
-  environments plus pull requests and `main` in `Stuhlmuller/github-iac`.
+  and declares four exact environment subjects in the operator unit:
+  `homelab-plan`, `homelab-production`, `github-iac-plan`, and
+  `github-iac-production`.
 - **Risk:** the live GitHub OIDC trust boundary is broader than this
   repository's declared consumers while wildcard subjects remain applied.
-- **Next step:** keep this finding open until an administrator imports the
-  existing role, reviews the operator plan, applies it, and confirms both
-  repositories can still assume the role through only the four exact subjects.
+- **Next step:** after the two `github-iac` environments and workflows are
+  protected, keep this finding open until an administrator conditionally
+  imports the existing role, applies the single-role saved plan, verifies live
+  IAM contains only these subjects, and confirms approved plan/production jobs
+  in both repositories can assume the role while a non-environment branch job
+  cannot.
 
 - **Status:** fixed
 - **Area:** agent runtime
