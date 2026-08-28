@@ -9,6 +9,8 @@ child Applications install upstream Helm charts into dedicated namespaces:
   StorageClass for durable shared storage.
 - `cordium-local-path-provisioner` creates the non-default `cordium-local`
   StorageClass in the narrowly scoped privileged `cordium-storage` namespace.
+  Its upstream chart source is pinned to the exact commit resolved by release
+  tag `v0.0.36`; its provisioner and helper images are digest-pinned.
   Rancher's helper Pods require `hostPath` access while creating and removing
   volumes. The provisioner operates only on `zimaboard-1` under
   `/var/lib/cordium-workspaces`, where Cordium's rootless Podman runtime can

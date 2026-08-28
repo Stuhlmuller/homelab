@@ -62,6 +62,18 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** partially fixed
+- **Area:** software supply chain / immutable artifacts
+- **Evidence:** The privileged Cordium local-path provisioner now resolves
+  Rancher release `v0.0.36` to exact upstream commit
+  `5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0`; both runtime images were already
+  digest-pinned. Issue `#791` tracks the remaining chart/native image pins and
+  continuous SBOM, vulnerability, and signature checks.
+- **Risk:** Other tag-only generated images can still drift, and CI does not
+  yet identify actionable HIGH or CRITICAL image vulnerabilities.
+- **Next step:** Complete the remaining image inventory and add the smallest
+  continuous scan and exception-expiry gate under issue `#791`.
+
 - **Status:** mitigation pending rollout and observation
 - **Area:** Istio ambient / ztunnel readiness
 - **Evidence:** Read-only inspection on 2026-08-28 found the `zimaboard-0`
