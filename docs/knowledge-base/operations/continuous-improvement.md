@@ -638,7 +638,7 @@ organization-policy blocker is tracked below.
   ready. Run doctor or a specific migration only as reviewed maintenance when
   an upgrade requires it.
 
-- **Status:** fixed
+- **Status:** open
 - **Area:** agent runtime / sandboxing
 - **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
   `agents.defaults.sandbox.mode=non-main` requires Docker, but the workload has
@@ -647,14 +647,25 @@ organization-policy blocker is tracked below.
   agent request failed with the same error while the gateway, OAuth profile,
   secrets, pod, and public route were healthy. Repository desired state now
   sets the sandbox mode to `off` because the workload has no supported backend.
+  The 2026-08-29 audit confirmed from the
+  [v2026.7.1 sandbox source](https://github.com/openclaw/openclaw/blob/v2026.7.1/docs/gateway/sandboxing.md)
+  that OpenClaw supports Docker, SSH, and OpenShell. Talos provides no Docker
+  daemon to this pod, and the repository declares neither a dedicated SSH target
+  and trust material nor an OpenShell account/runtime. The same audit removed
+  the mutable Discord-plugin fallback:
+  bootstrap now verifies and enables only the exact plugin bundled in the
+  digest-pinned image, without an installer or registry access, and fails startup
+  if it is unavailable. Unused app credentials and persistent state were also
+  removed from the bootstrap and proxy containers.
 - **Risk:** agent execution is contained by the Kubernetes workload, not an
   OpenClaw sandbox. Non-main and scheduled work can access resources available
   inside the pod, including the persistent workspace, operator toolbox, and
   mounted application credentials. The service account token is disabled and
   ingress is restricted, but workload egress is not restricted.
-- **Validation:** live config reported sandbox mode `off`, and a direct agent
-  request completed. Add and validate a supported backend before enabling
-  OpenClaw sandboxing again.
+- **Next step:** provide and validate dedicated SSH or OpenShell sandbox
+  capacity, or another upstream-supported backend, before enabling `non-main`.
+  Do not expose a Talos/container-runtime socket to OpenClaw. Egress enforcement
+  also remains blocked by the flannel limitation tracked in GitHub issue #784.
 
 - **Status:** open
 - **Area:** CI/CD identity
