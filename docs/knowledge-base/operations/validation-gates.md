@@ -152,9 +152,17 @@ Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
 The static gate requires manual Homelab Diagnostics and Terragrunt Apply
 dispatches to carry an exact expected `main` SHA and fail before work when the
-resolved workflow commit differs. Terragrunt Apply acquires its production
-concurrency lock only in the live job downstream of that guard and retains the
-full pending queue.
+resolved workflow commit differs. Every push to `main` runs only the cancellable
+`Terragrunt Apply Request` check; it uses no protected environment, stored
+secret, or OIDC permission and prints the exact dispatch command plus active
+apply links without opening a production approval. The protected apply's first
+post-approval step requires the expected, workflow, and current `main` SHAs to
+match before credentials or live commands.
+The live job retains only the newest pending run and never cancels an
+in-progress apply. GitHub's native environment/concurrency queue cannot enforce
+an automatic approval SLA; strict expiry needs an externally hosted GitHub App
+deployment-protection rule with a durable lease. Until then, dispatch only when
+a reviewer is ready to approve.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, synced
 workload credential, ready connector replica, Cluster/API/portal TLS responses,
@@ -261,13 +269,13 @@ Azure credential gate compares AzureAD unit sources and stack blocks plus the
 shared root inputs they consume; unrelated stack changes do not require Azure
 credentials.
 
-Production applies resolve their affected-unit base from the latest successful
-push-triggered `Terragrunt Apply` workflow `head_sha`, not the immediately
-preceding push. Targeted manual reconciliations never advance that checkpoint.
-A missing, unreachable, or non-ancestor result fails closed so an apply cannot
-become the new successful checkpoint while skipping an unknown deleted-unit
-range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the working-tree
-Gitleaks scan still covers the complete checkout.
+Production applies resolve their affected-unit base from the newest successful
+historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
+targeted runs are named `Targeted <app> @ <sha>` and never advance that
+checkpoint. A missing, unreachable, or non-ancestor result fails closed so an
+apply cannot become the new successful checkpoint while skipping an unknown
+deleted-unit range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the
+working-tree Gitleaks scan still covers the complete checkout.
 
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
 that route is the failed dependency, restore reviewed

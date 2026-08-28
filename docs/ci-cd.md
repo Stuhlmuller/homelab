@@ -15,14 +15,19 @@ This repository uses GitHub Actions for the review and rollout path:
   Octelium/Kubernetes/OpenTofu live-plan steps but still run rendered Conftest
   policies and replace the managed PR plan section with an explicit skip note.
   Forked pull requests run Conftest after the live plan skip notice.
-- `Terragrunt Apply` runs after changes land on `main` and can also be started
-  manually with `workflow_dispatch`. It repeats static checks and Conftest
-  before connecting to Octelium and applying the live Terragrunt phases in
-  order: Argo CD bootstrap, SSM parameter declarations, Entra application
-  registrations, Argo CD Application registrations, and Kubernetes secret
-  materialization. A run compares against the latest successful
-  `Terragrunt Apply` SHA so a failed run's unapplied changes remain in the next
-  affected-unit range.
+- `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
+  older request check, and prints the exact current-SHA dispatch command plus
+  links to active applies. It has no production environment, stored secrets,
+  or OIDC permission.
+- `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
+  current `main` SHA. It repeats static checks and Conftest, waits for the
+  `homelab-production` approval, then verifies `main` again before referencing
+  environment credentials or running live commands. Full applies run the Argo
+  CD bootstrap, SSM parameter declarations, Entra application registrations,
+  Argo CD Application registrations, and Kubernetes secret materialization.
+  They compare against the latest successful historical push apply or full
+  dispatch so failed or deferred changes remain in the next affected range;
+  targeted Argo reconciliations never advance that checkpoint.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -116,15 +121,16 @@ contract for Grafana.
 - Application-registration and secret-materialization stack phases use
   explicit `--filter` expressions so only units changed between the selected
   base and `HEAD` are queued. Pull request plans compare against the PR base
-  branch. Production applies query the latest successful push-triggered
-  `Terragrunt Apply` run and use its `head_sha`; targeted manual dispatches do
-  not advance that checkpoint. A targeted manual Argo dispatch instead plans
-  and applies its exact named unit regardless of the affected range, then exits
-  before unrelated phases. When that exact unit is confirmed tainted, the same
+  branch. Production applies use the latest successful historical push apply
+  or dispatch whose run name starts with `Full @` as the checkpoint; targeted
+  dispatches use `Targeted <app> @ <sha>` and never advance it. A targeted Argo
+  dispatch instead plans and applies its exact named unit regardless of the
+  affected range, then exits before unrelated phases. When that exact unit is
+  confirmed tainted, the same
   protected dispatch may set `repair_argocd_app_state=true`; the workflow
   requires `argocd_app`, untaints only `kubernetes_manifest.this`, then runs the
   unchanged policy-checked plan and saved-plan apply. Any other repair value,
-  missing target, or non-dispatch use fails closed. When the push checkpoint is
+  missing target, or non-dispatch use fails closed. When the apply checkpoint is
   absent, unavailable, or not an ancestor of the current `main`, the workflow
   fails closed because it cannot safely infer which removed units need
   retirement.
@@ -137,7 +143,7 @@ contract for Grafana.
   and save a destroy plan without rendering potentially sensitive values.
   Production apply lists the same state resources, applies the saved destroy
   plan, and then continues with the current checkout.
-- The protected post-merge apply runs the production phases explicitly:
+- The protected full apply runs the production phases explicitly:
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
   CD Application registrations serially, and finally materialize Kubernetes
@@ -529,8 +535,8 @@ application registration workflow. Trusted pull request plans render the
 AzureAD stack only when the credentials are configured in `homelab-plan`; the
 production apply script applies that stack when the credentials are configured
 in `homelab-production`. When they are not configured, production apply skips
-that phase only if the push did not change the AzureAD stack; AzureAD stack
-changes and manual dispatches require the credentials so identity drift is not
+that phase only if the unapplied range did not change the AzureAD stack; a
+range that changes the stack requires the credentials so identity drift is not
 silently ignored.
 
 ## Local Equivalents
@@ -572,7 +578,7 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 nix develop --command bash scripts/ci/terragrunt-apply.sh
 ```
 
-Every production apply, including manual dispatch, compares against the latest
-successful `Terragrunt Apply` SHA. Rerunning after one or more failed applies
+Every full production apply compares against the latest successful historical
+push apply or full dispatch SHA. Rerunning after one or more failed applies
 therefore keeps the full unapplied range instead of considering only the newest
-commit.
+commit. Targeted Argo dispatches do not move that checkpoint.

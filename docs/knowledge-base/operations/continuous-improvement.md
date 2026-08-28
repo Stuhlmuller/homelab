@@ -688,6 +688,21 @@ organization-policy blocker is tracked below.
 - **Next step:** keep `actions: read` on the apply job and fail closed when no
   trustworthy successful base exists, so an unknown deleted-unit range is never
   checkpointed as successfully applied.
+
+- **Status:** mitigated; automatic approval expiry pending
+- **Area:** CI/CD
+- **Evidence:** GitHub issue #781 records that push-triggered production jobs
+  accumulated behind `homelab-production` review. The push path now runs only
+  `.github/workflows/terragrunt-apply-request.yml`, which cancels stale request
+  checks and prints an exact-SHA dispatch command. The protected apply is
+  dispatch-only and rechecks current `main` before credentials or live work.
+- **Risk:** GitHub's native environment and concurrency queue cannot expire an
+  approval-waiting job against a strict SLA or safely distinguish it from an
+  active apply.
+- **Next step:** if automatic expiry is required, host a GitHub App deployment
+  protection rule outside the homelab with a durable lease; until then,
+  dispatch only when a reviewer is ready to approve.
+
 - **Status:** fixed
 - **Area:** CI/CD / NOFX recovery
 - **Evidence:** The retired `Break Glass NOFX Recovery` workflow applied the

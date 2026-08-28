@@ -124,25 +124,78 @@ for workflow_job in \
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done
+yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
+  jq -e '
+    (.on | keys) == ["push"] and
+    .on.push == {"branches": ["main"]} and
+    .permissions == {} and
+    .env == null and
+    (.jobs | keys) == ["request"] and
+    .concurrency == {
+      "group": "terragrunt-apply-request",
+      "cancel-in-progress": true
+    } and
+    .jobs.request.environment == null and
+    .jobs.request.env == null and
+    .jobs.request.permissions == {"actions": "read"} and
+    (.jobs.request | tostring | contains("secrets") | not) and
+    (.jobs.request.permissions["id-token"] == null) and
+    (.jobs.request.steps | length) == 1 and
+    .jobs.request.steps[0].name == "Show Exact Apply Command" and
+    .jobs.request.steps[0].env.REQUEST_SHA == "${{ github.sha }}" and
+    (.jobs.request.steps[0].run |
+      contains("gh workflow run terragrunt-apply.yml --repo ${GH_REPO} --ref main -f expected_sha=${REQUEST_SHA}") and
+      contains("terragrunt-apply.yml/runs?per_page=100") and
+      contains("select(.status != \"completed\")") and
+      contains("${GITHUB_STEP_SUMMARY}"))
+  ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
   jq -e '
     (.concurrency == null) and
+    (.on | keys) == ["workflow_dispatch"] and
+    (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}")) and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
       "default": false,
       "type": "boolean"
     } and
-    .jobs["static-policy"].steps[0].if == "github.event_name == '\''workflow_dispatch'\''" and
+    .jobs["static-policy"].steps[0].if == null and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
+    .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
+    (.jobs["terragrunt-apply"].env | keys | sort) == [
+      "APPLY_HEAD_SHA",
+      "TERRAGRUNT_ARGOCD_APP",
+      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
+    ] and
+    (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false,
-      "queue": "max"
+      "queue": "single"
     } and
-    (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run | contains("event=push"))
+    .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
+    .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
+    .jobs["terragrunt-apply"].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
+    .jobs["terragrunt-apply"].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+    .jobs["terragrunt-apply"].steps[0].env.GH_TOKEN == "${{ github.token }}" and
+    (.jobs["terragrunt-apply"].steps[0] | tostring | contains("secrets") | not) and
+    (.jobs["terragrunt-apply"].steps[0].run |
+      contains("repos/${GH_REPO}/git/ref/heads/main") and
+      contains("test \"${EXPECTED_SHA}\" = \"${ACTUAL_SHA}\"") and
+      contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
+    ([.jobs["terragrunt-apply"].steps | to_entries[] |
+      select(.value | tostring | contains("secrets.")) | .key] | min) > 0 and
+    (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run |
+      contains("--paginate --slurp") and
+      contains("branch=main&status=success&per_page=100") and
+      contains(".event == \"push\"") and
+      contains(".event == \"workflow_dispatch\"") and
+      contains("startswith(\"Full @ \")") and
+      contains("max_by(.run_number)"))
   ' >/dev/null
 bash -n scripts/ci/terragrunt-apply.sh
 rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci/terragrunt-apply.sh
