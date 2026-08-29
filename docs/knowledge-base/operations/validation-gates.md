@@ -46,6 +46,10 @@ the working directory detached from shared state, so the authenticated
 `init -reconfigure` must precede every import, production plan, or apply from
 that directory.
 
+The static gate keeps backend-free operator validation in a private temporary
+Terragrunt download directory and deletes it on exit. This prevents generated
+provider state from entering the checkout or the strict repository secret scan.
+
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
 

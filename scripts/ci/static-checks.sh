@@ -84,9 +84,11 @@ for parameter in \
   rg -Fq 'reader_access = false' <<<"$parameter_block"
 done
 (
+  operator_download_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator-validation.XXXXXX")"
+  trap '[[ ! -e "$operator_download_dir" ]] || rm -rf -- "$operator_download_dir"' EXIT
   cd IaC/operator/github-actions-role-policy
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-  terragrunt --log-disable validate -no-color
+  TG_DOWNLOAD_DIR="$operator_download_dir" terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  TG_DOWNLOAD_DIR="$operator_download_dir" terragrunt --log-disable validate -no-color
 )
 echo "::endgroup::"
 
