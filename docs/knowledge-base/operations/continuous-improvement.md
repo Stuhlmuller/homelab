@@ -62,6 +62,25 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** planned
+- **Area:** Argo CD / CI/CD / secrets
+- **Evidence:** The retired `github-actions-runner` and
+  `grafana-alert-cleanup` Applications have empty sources after their cleanup
+  resources were pruned. Desired state now removes only those two Application
+  units, their empty sources, the runner namespace destination and policy
+  prefix, and the runner token tombstone's External Secrets reader IAM grant.
+  Issue `#836` also restores the deleted-unit helper's enforced AWS KMS/AES-GCM
+  state and plan encryption contract.
+- **Risk:** Removing an Application before its resource tree is empty could
+  orphan cleanup objects. The retained runner SSM parameter still requires a
+  separate owner-reviewed value and state retirement.
+- **Next step:** Before merge, verify both live Applications are Synced/Healthy
+  with empty resource trees and their marker ConfigMaps are absent. Require a
+  protected plan containing exactly the two Application destroys and an SSM
+  plan that removes only the runner parameter ARN from reader IAM. Apply only
+  through the production workflow, then verify both Applications are absent.
+  Retire Image Updater separately after its own live gate.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves

@@ -92,9 +92,10 @@ roles need identity-based KMS permissions for both keys.
   production apply adopts a pre-populated Cordium parameter before planning.
 - The retired GitHub Actions runner no longer consumes an SSM registration
   token. `/homelab/github-actions-runner/registration-token` remains declared
-  and adoptable only as an OpenTofu state tombstone because the production
-  policy rejects SSM parameter deletion. Remove it only with a reviewed
-  repository-owned state and secret-retirement workflow.
+  and adoptable only as an OpenTofu state tombstone, excluded from the External
+  Secrets reader IAM policy, because the production policy rejects SSM
+  parameter deletion. Remove it only with a reviewed repository-owned state
+  and secret-retirement workflow.
 - Dispatcharr's dedicated PostgreSQL password is generated at
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs

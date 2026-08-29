@@ -271,6 +271,7 @@ terragrunt_create_deleted_unit_destroy_stack() {
   local destination="$1"
   local unit_dir="$2"
   local head_ref="${3:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-}}"
+  local encrypted_state=false
   local fake_unit_dir
 
   if [[ -z "$head_ref" ]]; then
@@ -288,14 +289,24 @@ terragrunt_create_deleted_unit_destroy_stack() {
   fake_unit_dir="${destination}/${unit_dir}"
   mkdir -p "$fake_unit_dir"
 
+  # ponytail: extend this list only when another module enforces native state encryption.
+  case "$unit_dir" in
+    IaC/live/argocd-apps/* | IaC/live/kubernetes-node-labels)
+      encrypted_state=true
+      ;;
+  esac
+
   cat >"${fake_unit_dir}/terragrunt.hcl" <<'EOF'
 include "root" {
   path = find_in_parent_folders("root.hcl")
 }
 
 locals {
-  root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  aws_region  = local.root_config.locals.aws_region
+  root_config  = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region   = local.root_config.locals.aws_region
+  kms_key_id   = local.root_config.locals.kms_key_id
+  kms_region   = local.root_config.locals.kms_region
+  kms_key_spec = local.root_config.locals.kms_key_spec
 }
 
 generate "deleted_unit_destroy_config" {
@@ -320,6 +331,35 @@ terraform {
       source = "hashicorp/random"
     }
   }
+EOF
+
+  if [[ "$encrypted_state" == true ]]; then
+    cat >>"${fake_unit_dir}/terragrunt.hcl" <<'EOF'
+  encryption {
+    key_provider "aws_kms" "main" {
+      kms_key_id = "${local.kms_key_id}"
+      key_spec   = "${local.kms_key_spec}"
+      region     = "${local.kms_region}"
+    }
+
+    method "aes_gcm" "main" {
+      keys = key_provider.aws_kms.main
+    }
+
+    state {
+      method   = method.aes_gcm.main
+      enforced = true
+    }
+
+    plan {
+      method   = method.aes_gcm.main
+      enforced = true
+    }
+  }
+EOF
+  fi
+
+  cat >>"${fake_unit_dir}/terragrunt.hcl" <<'EOF'
 }
 
 provider "aws" {

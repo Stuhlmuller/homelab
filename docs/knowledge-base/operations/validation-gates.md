@@ -299,10 +299,12 @@ diagnostic dispatches reject every ref except `refs/heads/main`; the production
 environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
-destroy while removing a stack block still retires its state. The production
-Azure credential gate compares AzureAD unit sources and stack blocks plus the
-shared root inputs they consume; unrelated stack changes do not require Azure
-credentials.
+destroy while removing a stack block still retires its state. Its temporary
+empty units reproduce the root AWS KMS and AES-GCM state/plan encryption
+contract only for module families that enforce it, preserving the plaintext
+contract for other state. The production Azure credential gate compares
+AzureAD unit sources and stack blocks plus the shared root inputs they consume;
+unrelated stack changes do not require Azure credentials.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
