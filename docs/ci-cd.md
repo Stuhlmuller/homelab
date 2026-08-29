@@ -76,14 +76,17 @@ contract for Grafana.
   disqualified.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
-- The `main` ruleset requires pull requests, squash-only linear history,
+- The active `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
-  `Analyze (python)`, `analyze-actions`, and `release-dry-run`. `Terragrunt Gate`
-  is the stable candidate for merge-blocking Terragrunt validation; do not add
-  it to ruleset `14700233` until a merged workflow revision has emitted the
-  context for both a no-live-plan pull request and a trusted live-plan pull
-  request.
+  `Analyze (python)`, `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`.
+  Read-only inspection on 2026-08-29 verified ruleset `14700233` matches the
+  repository-management declaration, is active with no bypass actor, and
+  reports current unapproved pull requests as blocked. Ruleset history
+  attributes that restoration to repository administrator user `57728706`, not
+  the protected `github-iac` GitHub App path. Issue #813 retains the earlier
+  regression record until protected reconciliation is verified as a no-op and
+  trusted-live, no-live-plan, and forked pull request enforcement are proven.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions
   cache for the Nix store after Nix is installed and before the first
   `nix develop --command ...` step. The cache key is derived from the runner OS,
@@ -178,19 +181,19 @@ contract for Grafana.
   queue is accepted in Actions and OpenTofu flags such as `-auto-approve` are
   forwarded to OpenTofu instead of being parsed as Terragrunt CLI flags.
 
-## Terragrunt Gate Ruleset Rollout
+## Terragrunt Gate Ruleset Verification
 
-1. Merge the workflow change while `Terragrunt Gate` is not required.
-2. From the merged `main` workflow, observe a same-repository PR with no live
-   inputs: `Static Policy And Security Checks` and `Terragrunt Plan Skipped`
-   must pass, `Terragrunt Plan` must be skipped, and `Terragrunt Gate` must pass.
-3. Observe a trusted PR with live inputs: `Terragrunt Plan Skipped` must be
+1. Preserve the active strict ruleset and its seven required checks.
+2. Run the protected `github-iac` reconciliation and prove its plan and apply
+   are no-ops against the normalized live ruleset.
+3. Observe a same-repository PR with no live inputs:
+   `Static Policy And Security Checks` and `Terragrunt Plan Skipped` must pass,
+   `Terragrunt Plan` must be skipped, and `Terragrunt Gate` must pass.
+4. Observe a trusted PR with live inputs: `Terragrunt Plan Skipped` must be
    skipped and `Terragrunt Gate` must remain blocked until the protected
-   `Terragrunt Plan` succeeds. A fork must emit the gate without receiving the
-   protected environment or a write token.
-4. Add the exact `Terragrunt Gate` Actions context to ruleset `14700233` without
-   changing its existing checks, then refresh a no-live-plan PR and confirm the
-   strict ruleset does not deadlock.
+   `Terragrunt Plan` succeeds.
+5. Observe a forked PR: it must emit `Terragrunt Gate` without receiving a
+   protected environment, OIDC token, or repository secret.
 
 References:
 

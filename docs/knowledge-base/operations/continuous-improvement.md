@@ -159,19 +159,22 @@ organization-policy blocker is tracked below.
   `grpc-status: 16` plus an authenticated CLI call. Track worker recovery
   separately in [[architecture/cluster-topology]].
 
-- **Status:** fixed
+- **Status:** restored after regression; enforcement matrix pending
 - **Area:** CI/CD / credential isolation
 - **Evidence:** On 2026-08-27 `homelab-plan` and `homelab-production` were
   configured with required reviewers, production was limited to `main`,
-  repository Actions began enforcing full commit SHA references, and ruleset
-  `14700233` began requiring signed squash pull requests, strict always-on
-  checks, and non-fast-forward protection. Unused repository secrets
-  `KUBE_CONFIG_B64`, `TAILSCALE_AUTH_KEY`, and `TS_AUTH_KEY` were removed.
-- **Risk:** A reviewer can still approve their own deployment because the
-  organization has one member; the gate provides an explicit diff-review
-  checkpoint but not independent separation of duties.
-- **Next step:** Keep live credentials environment-scoped and require a second
-  reviewer after another trusted organization member exists.
+  repository Actions began enforcing full commit SHA references, and unused
+  repository secrets `KUBE_CONFIG_B64`, `TAILSCALE_AUTH_KEY`, and `TS_AUTH_KEY`
+  were removed. The ruleset later regressed. A fresh read-only inspection on
+  2026-08-29 found ruleset `14700233` restored to the exact declared rule and
+  check set, active, strict, and without bypass actors; current unapproved pull
+  requests report `BLOCKED`.
+- **Risk:** One organization member can still approve their own deployment.
+  Configuration equality does not replace trusted-live, no-live-plan, and fork
+  enforcement evidence.
+- **Next step:** Keep live credentials environment-scoped, complete the #813
+  enforcement matrix, and require a second reviewer after another trusted
+  organization member exists.
 
 - **Status:** blocked by organization policy and authority
 - **Area:** dependency security
@@ -707,16 +710,23 @@ organization-policy blocker is tracked below.
   infrastructure changes.
 - **Next step:** keep `commit.gpgsign=true` and verify future Claw branch
   commits show a good SSH signature before push.
-- **Status:** fixed
+- **Status:** restored after regression; enforcement matrix pending
 - **Area:** CI/CD
-- **Evidence:** Active ruleset `14700233` allows only squash merges and requires
-  signatures on `main`. GitHub signs the generated squash commit; read-only API
-  inspection on 2026-08-27 verified the active `main` tip had a valid GitHub
-  PGP signature.
-- **Risk:** weakening either the squash-only or required-signature rules would
-  reopen the mainline audit gap.
-- **Next step:** keep both rules enforced and verify their live ruleset state
-  during future GitHub policy changes.
+- **Evidence:** Live ruleset `14700233` regressed on 2026-08-29 to two
+  non-strict checks, an Integration bypass, and no pull-request or signature
+  rule. A later read-only inspection found its `updated_at` changed to
+  `2026-08-29T19:00:38.628+02:00` and its complete normalized state now exactly
+  matches the merged `github-iac` policy: seven strict required checks,
+  signed squash pull requests, linear history, deletion and force-push blocks,
+  active enforcement, and no bypass actor. Current unapproved pull requests
+  report `BLOCKED`. Ruleset history attributes version `48053705` to repository
+  administrator user `57728706`; the prior degraded version was bot-authored.
+- **Risk:** The healthy state was restored outside the protected `github-iac`
+  GitHub App path. Protected reconciliation and all trusted-live,
+  no-live-plan, and fork enforcement paths are not yet independently proven.
+- **Next step:** verify protected `github-iac` reconciliation is a no-op,
+  complete the #813 enforcement matrix, and keep #815 open until production
+  applies consume the exact reviewed plan artifact.
 
 - **Status:** fixed
 - **Area:** CI/CD
