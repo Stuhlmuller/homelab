@@ -515,7 +515,7 @@ done <<'EOF'
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
-.github/workflows/octelium-private-kubernetes-apply.yml c99105448b72b755059e23cd008d12df566b1a264b13c1d4203447658e201e17
+.github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
 .github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
@@ -645,8 +645,7 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     .jobs.reconcile["timeout-minutes"] == 15 and
     .jobs.reconcile.concurrency == {
       "group": "octelium-private-kubernetes-production",
-      "cancel-in-progress": false,
-      "queue": "single"
+      "cancel-in-progress": false
     } and
     .jobs.reconcile.steps[0].name == "Verify Current Main Commit" and
     .jobs.reconcile.steps[0].env.ACTUAL_REF == "${{ github.ref }}" and

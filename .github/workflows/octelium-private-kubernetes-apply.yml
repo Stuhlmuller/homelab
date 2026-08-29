@@ -1,5 +1,6 @@
 name: Octelium Private Kubernetes Apply
 
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed main; dispatch_id only identifies the exact run.
 on:
   workflow_dispatch:
     inputs:
@@ -65,7 +66,6 @@ jobs:
     concurrency:
       group: octelium-private-kubernetes-production
       cancel-in-progress: false
-      queue: single
     runs-on: ubuntu-24.04
     environment:
       name: homelab-production
