@@ -102,6 +102,28 @@ real URL and SNI preserved. The gate also probes the reviewed public callback
 hosts. If any probe fails, the gate should print one or more `FAIL:` lines and
 exit nonzero; a quiet early exit is a validation harness bug.
 
+After the monitoring Application syncs, verify the runtime checks that do not
+belong to Argo's generated-child health model:
+
+```sh
+kubectl -n monitoring get prometheusrule octelium-runtime-health
+kubectl -n monitoring get cronjob \
+  octelium-public-grpc-probe octelium-unauthorized-route-probe
+kubectl -n monitoring get cronjob octelium-public-grpc-probe \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n monitoring get cronjob octelium-unauthorized-route-probe \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n octelium get deploy,pod -l octelium.com/component=svc -o wide
+```
+
+Expected result: both probe timestamps are newer than 15 minutes, all
+generated service-proxy Deployments have an available replica, no matching Pod
+has remained terminating for 20 minutes, and Grafana's Homelab Overview shows
+one Ready control-plane node plus both Ready dataplane nodes. The generic
+Deployment alert owns unavailable proxy replicas; the Octelium rule owns stale
+termination, missing role capacity, public gRPC, and unauthorized-route
+contracts.
+
 For image automation, confirm the retired controller and credential consumer
 are absent and Renovate configuration remains valid:
 
@@ -353,5 +375,6 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 | Tailscale unavailable | Do not mark secondary LAN/egress as ready, but app, callback, CI, and VPN readiness should be evaluated through Octelium. |
 | Policy Bot webhook unreachable | Inspect the `policy-bot-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and Policy Bot webhook HMAC handling; do not expose additional Funnel routes. |
 | n8n webhook unreachable | Inspect the `n8n-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and n8n webhook path config; keep editor/API routes off the callback host. |
+| Octelium runtime alert | Open the Homelab Overview Octelium panels. Inspect committed role-node readiness, generated `octelium.com/component=svc` workloads, and the failed public probe Job logs; do not trust a Healthy Argo parent or force-delete terminating proxies. |
 | Image update PR is incompatible | Add a narrow Renovate `allowedVersions` rule or close the PR, then document the workload-specific migration gate; never bypass digest pin checks. |
 | Argo CD app unhealthy | Record status, operator action, and rollback decision in `docs/argocd-app-onboarding.md`. |

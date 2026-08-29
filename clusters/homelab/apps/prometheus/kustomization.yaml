@@ -6,4 +6,6 @@ resources:
   - deluge-servicemonitor.yaml
   - externalsecret.yaml
   - namespace.yaml
+  - octelium-prometheusrules.yaml
+  - octelium-public-probes.yaml
   - authorizationpolicy.yaml

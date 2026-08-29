@@ -23,5 +23,16 @@ refreshed after any Service recreation. Keep it until the native fleet passes
 the capacity, 24-hour stability, direct Pod, and public end-to-end removal
 gates in [[../architecture/cluster-topology]].
 
+Prometheus owns runtime alerts that Argo cannot derive from captured resources:
+committed role-node capacity, stale terminating Pods labeled
+`octelium.com/component=svc`, public HTTP/2 gRPC, and the unauthenticated NOFX
+denial contract. Homelab Overview lists active unready and stale terminating
+proxy Pods plus unavailable Octelium Deployments, while the generic Deployment
+alert remains the replica-availability owner. Start with the read-only checks
+in the canonical runbook; recovery requires full role capacity, fresh success
+for both monitoring CronJobs, no degraded proxy row, and the complete e2e gate.
+The deliberate live failure/recovery exercise remains blocked until an approved
+maintenance window can interrupt the primary access plane safely.
+
 See [[../architecture/secrets-and-identity]], [[tailnet-ingress]], and
 [[../workloads/inventory]].

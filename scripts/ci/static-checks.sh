@@ -318,6 +318,91 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   ' >/dev/null
 echo "::endgroup::"
 
+echo "::group::Octelium runtime monitoring contracts"
+prometheus_resources="$(
+  kubectl kustomize clusters/homelab/apps/prometheus |
+    yq ea -o=json -I=0 '[.]' -
+)"
+printf '%s\n' "$prometheus_resources" |
+  jq -e '
+    [.[] | select(.kind == "CronJob" and (.metadata.name | startswith("octelium-")))] as $probes |
+    [.[] | select(.kind == "PrometheusRule" and .metadata.name == "octelium-runtime-health")][0] as $rule |
+    ($probes | map(.metadata.name) | sort) == [
+      "octelium-public-grpc-probe", "octelium-unauthorized-route-probe"
+    ] and
+    all($probes[];
+      .metadata.namespace == "monitoring" and
+      .spec.schedule == "*/5 * * * *" and
+      .spec.jobTemplate.spec.template.spec.automountServiceAccountToken == false and
+      (.spec.jobTemplate.spec.template.spec.containers[0].image | contains("@sha256:"))
+    ) and
+    ($rule.spec.groups[0].rules | map(.alert) | sort) == [
+      "OcteliumControlPlaneRoleCapacityMissing",
+      "OcteliumDataplaneRoleCapacityMissing",
+      "OcteliumPublicGrpcProbeStale",
+      "OcteliumServiceProxyStaleTerminating",
+      "OcteliumUnauthorizedRouteProbeStale"
+    ] and
+    ([ $probes[] | select(.metadata.name == "octelium-public-grpc-probe") ][0]
+      .spec.jobTemplate.spec.template.spec.containers[0].command[2] |
+      contains("--http2") and contains("grpc-status") and contains("200 2")) and
+    ([ $probes[] | select(.metadata.name == "octelium-unauthorized-route-probe") ][0]
+      .spec.jobTemplate.spec.template.spec.containers[0].command[2] |
+      contains("https://nofx.stinkyboi.com") and contains("/api/health") and
+      contains("x-octelium-unauthorized") and contains("401"))
+  ' >/dev/null
+printf '%s\n' "$prometheus_resources" |
+  jq -r '.[] | select(.kind == "CronJob" and (.metadata.name | startswith("octelium-"))) | .spec.jobTemplate.spec.template.spec.containers[0].command[2] | @base64' |
+  while IFS= read -r probe; do
+    printf '%s' "$probe" | base64 -d | sh -n
+  done
+yq -o=json '.' clusters/homelab/apps/prometheus/values.yaml |
+  jq -e '
+    ."kube-state-metrics".metricLabelsAllowlist == [
+      "pods=[octelium.com/component,octelium.com/svc]"
+    ]
+  ' >/dev/null
+kubectl kustomize clusters/homelab/apps/octelium-enterprise |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(
+      .kind == "Deployment" and
+      .spec.template.metadata.labels["octelium.com/component"] == "svc"
+    )] as $proxies |
+    ($proxies | length) > 0 and
+    all($proxies[];
+      (.spec.template.metadata.labels["octelium.com/svc"] | type) == "string" and
+      (.spec.template.metadata.labels["octelium.com/svc"] | length) > 0
+    )
+  ' >/dev/null
+jq -e '
+  . as $dashboard |
+  ([$dashboard.panels[] | select(
+    .title == "Octelium Control-plane Capacity" and
+    any(.targets[]; .expr | contains("max by (node)"))
+  )] | length) == 1 and
+  ([$dashboard.panels[] | select(
+    .title == "Octelium Dataplane Capacity" and
+    any(.targets[]; .expr | contains("max by (node)"))
+  )] | length) == 1 and
+  ([$dashboard.panels[] | select(.title == "Octelium Public Contract Age")] | length) == 1 and
+  (
+    [$dashboard.panels[] | select(.title == "Octelium Runtime Degradation")] as $proxy_panels |
+    ($proxy_panels | length) == 1 and
+    any($proxy_panels[0].targets[];
+      (.expr | contains("kube_pod_labels")) and
+      (.expr | contains("label_octelium_com_component=\"svc\"")) and
+      (.expr | contains("1 - kube_pod_status_ready"))
+    ) and
+    any($proxy_panels[0].targets[]; .expr | contains("kube_pod_deletion_timestamp")) and
+    any($proxy_panels[0].targets[]; .expr | contains("kube_deployment_status_replicas_available"))
+  )
+' clusters/homelab/apps/grafana/dashboards/homelab-overview.json >/dev/null
+rg -Fq 'require_label zimaboard-0 octelium.com/node-mode-dataplane' scripts/octelium-cluster-bootstrap.sh
+rg -Fq 'require_label zimaboard-1 octelium.com/node-mode-controlplane' scripts/octelium-cluster-bootstrap.sh
+rg -Fq 'require_label zimaboard-2 octelium.com/node-mode-dataplane' scripts/octelium-cluster-bootstrap.sh
+echo "::endgroup::"
+
 echo "::group::Terragrunt pull request gate"
 yq -o=json '.' .github/workflows/terragrunt-plan.yml |
   jq -e '

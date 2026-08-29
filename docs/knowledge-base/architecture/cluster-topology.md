@@ -53,6 +53,12 @@ pressure rules have no current data.
 Update the Grafana alert regex and expected count in the same change that adds,
 removes, or renames a node.
 
+Prometheus separately derives Octelium role capacity from this committed
+mapping: `zimaboard-1` is the one control-plane node, while `zimaboard-0` and
+`zimaboard-2` are both required dataplane nodes. These service-level alerts add
+the access-plane consequence to the generic node alert. Update the Octelium
+rule expressions with this table whenever the role mapping changes.
+
 ## Workload Scheduling
 
 Terragrunt manages `octelium.com/node-mode-cordium=` on `zimaboard-1` because

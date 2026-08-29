@@ -62,6 +62,27 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** repository mitigation implemented; rollout and live exercise pending
+- **Area:** Octelium / generated runtime observability
+- **Evidence:** Issue `#795` records that Argo CD remained Healthy while
+  controller-generated service proxies were Pending or stale terminating.
+  Desired state now uses the existing `octelium.com/component=svc` and
+  `octelium.com/svc` labels for kube-state-metrics joins, alerts on committed
+  control-plane/dataplane role capacity and stale termination, runs separate
+  public gRPC and unauthorized-route CronJob probes, and exposes the same state
+  in Homelab Overview. The generic Deployment alert remains the sole replica
+  availability alert; the focused table lists unready and stale terminating
+  proxy Pods.
+- **Risk:** These checks do not protect the access plane until Prometheus and
+  Grafana reconcile them. A failure of kube-state-metrics blinds the runtime
+  expressions, but its existing availability alert reports that telemetry loss
+  separately.
+- **Next step:** Roll out through the normal GitOps path, require fresh success
+  from both public probes and the complete Octelium e2e gate, then exercise
+  failure and recovery during an approved maintenance window. Deliberately
+  breaking auth, public transport, role capacity, or generated proxies is not
+  authorized outside that window.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
