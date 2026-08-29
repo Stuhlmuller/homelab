@@ -40,10 +40,10 @@ The Octelium resource catalog for the external Octelium Cluster is
   `homelab-octelium-client` workload User if a future Service needs a connector
   served upstream.
 - Policy `homelab-private-kubernetes-access`, allowing the `homelab-owner`
-  client full operator access and limiting `homelab-cordium-user` to
-  Kubernetes `get`, `list`, and `watch` requests while denying Secrets,
-  ConfigMaps, service accounts, authorization reviews, and sensitive
-  subresources.
+  client full operator access. `homelab-cordium-user` has a fail-closed
+  namespace-scoped allowlist for core Events, Pods, and Services; apps/v1
+  workload controllers; batch/v1 Jobs and CronJobs; and five exact discovery
+  paths. Unlisted and cluster-scoped resources and every subresource are denied.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the `homelab-ci`
   workload User to publish the Kubernetes API Service for CI.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
@@ -300,8 +300,10 @@ octelium config kubernetes-api.homelab --domain stinkyboi.com
 
 Run the `KUBECONFIG` export printed by `octelium config`, set the generated file
 to mode `0600`, then run `kubectl --request-timeout=15s get nodes`. A Cordium
-Workspace already has a client session, so run the same `octelium config`,
-`chmod`, and `kubectl` commands inside the Workspace. The server-side upstream
+Workspace already has a client session, but its identity cannot read Nodes;
+after the same `octelium config` and `chmod`, use an explicit namespace such as
+`kubectl --request-timeout=15s -n cordium get pods,services,events`. The
+server-side upstream
 <!-- checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data. -->
 kubeconfig stays in Octelium Secret `homelab-ci-kubeconfig`; neither Kubernetes
 path needs Tailscale. Talos still uses the retained fallback transport.

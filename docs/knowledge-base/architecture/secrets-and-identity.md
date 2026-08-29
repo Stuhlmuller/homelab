@@ -183,6 +183,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   mandatory revoke step. Octelium v0.35 cannot scope these methods by object
   name; the fixed helper, reviewed hashes, exact `main` SHA, and production
   approval provide that boundary. See `docs/ci-cd.md`.
+- The Cordium HUMAN identity is fail closed at Octelium v0.35's
+  application layer: only namespace-scoped reads of exact core/v1, apps/v1, and
+  batch/v1 diagnostic resources plus five exact discovery paths match an
+  `ALLOW` rule. Cluster-scoped data, all-namespaces reads, subresources,
+  unlisted or future APIs, and other non-resource paths receive the evaluator's
+  default `DENY`. The shared upstream credential remains a defense-in-depth
+  risk until issue `#847` replaces or safely constrains it.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

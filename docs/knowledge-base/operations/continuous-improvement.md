@@ -62,6 +62,20 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** mitigated in desired state; rollout and live proof pending
+- **Area:** Octelium / Cordium Kubernetes authorization
+- **Evidence:** Issue `#846` found that the merged Cordium policy allowed every
+  unlisted and future `get`, `list`, and `watch` request after a short denylist.
+  Desired state now allows only namespaced reads of exact core/v1, apps/v1, and
+  batch/v1 diagnostic resources plus five exact discovery paths. The policy
+  structure and negative boundary matrix run in
+  `scripts/ci/octelium-kubernetes-policy-check.sh`.
+- **Risk:** The live cluster retains the broad policy until the reviewed catalog
+  is applied. Both Services also still share a powerful upstream kubeconfig.
+- **Next step:** Apply the catalog only after the Octelium gRPC path is healthy,
+  then complete issue `#848`'s Cordium identity matrix and issue `#847`'s
+  upstream credential isolation. Never restore a resource denylist.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves

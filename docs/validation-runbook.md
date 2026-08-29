@@ -64,11 +64,15 @@ cordium run --rm --domain stinkyboi.com \
 
 Inside the Workspace, run `octelium config kubernetes-api.homelab --domain
 stinkyboi.com`, run its printed export, set the generated file to mode `0600`,
-and require a 15-second `kubectl get nodes` check to succeed. After local
-validation, require `! kubectl get secrets --all-namespaces` and `! kubectl
-create namespace octelium-policy-deny-check --dry-run=server -o name` to
-confirm Cordium sensitive reads and mutation are denied. Then run `octelium
-disconnect --domain stinkyboi.com` on the operator workstation.
+and require 15-second namespaced reads of `pods,services,events`, apps/v1
+workload controllers, and batch/v1 Jobs and CronJobs to succeed. Cordium must
+not read across all namespaces. Require denials for Secrets, ConfigMaps,
+service accounts, Nodes, persistent volumes, RBAC, CRDs and custom resources,
+authorization reviews, every subresource, mutation verbs, `/metrics`,
+`/debug`, and non-allowlisted discovery paths. The executable repository
+boundary check is `scripts/ci/octelium-kubernetes-policy-check.sh`; issue #848
+owns live identity enforcement evidence. Then run `octelium disconnect
+--domain stinkyboi.com` on the operator workstation.
 
 Secret scan:
 
