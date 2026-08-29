@@ -86,6 +86,12 @@ They create:
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,
   with matching 30-day clientless-session and access-token lifetimes. Rotate
   its credential every 21 days with `scripts/octelium-ci-credential.sh`.
+- Dormant workload User `homelab-catalog-ci` for the protected private
+  Kubernetes catalog workflow. Its helper-only Credential template lives in
+  `homelab-private-kubernetes-ci-credential.yaml` outside this general catalog.
+  The helper replaces the template's already-expired timestamp with a 30-minute
+  expiry; the Credential auto-deletes when used, and its highest-priority inline
+  policy denies everything except List/Create/Update for Policy and Service.
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - Private `KUBERNETES` Service `kubernetes-api.homelab`, forwarding to
   `https://10.1.0.199:6443` for operator and restricted read-only Cordium
@@ -143,7 +149,16 @@ octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services
 second command to apply the catalog's other resource kinds.
 
 Never add `--prune` to that command: this catalog is not an exhaustive list of
-every non-system resource in the Octelium Cluster. When upgrading a Cluster
+every non-system resource in the Octelium Cluster. Routine changes to the
+private Kubernetes Policy or Service use the protected
+`octelium-private-kubernetes-apply.yml` workflow documented in
+`docs/ci-cd.md`. It extracts only those two objects, uses a one-authentication
+Credential, and requires a second no-change apply. IdentityProvider, User,
+Namespace, ClusterConfig, and other Credential changes still use the
+authenticated operator path above. Never apply the helper-only Credential
+template directly; its committed timestamp is deliberately expired.
+
+When upgrading a Cluster
 that previously applied the repo-defined Cordium Services, first apply the
 updated catalog and then remove only the obsolete duplicates:
 

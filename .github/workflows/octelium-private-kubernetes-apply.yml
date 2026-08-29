@@ -1,0 +1,131 @@
+name: Octelium Private Kubernetes Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact main commit to apply
+        required: true
+        type: string
+      dispatch_id:
+        description: Unique identifier used to bind the caller to this run
+        required: true
+        type: string
+
+run-name: Private Kubernetes @ ${{ github.sha }} / ${{ inputs.dispatch_id }}
+
+permissions: {}
+
+jobs:
+  static-policy:
+    name: Static Policy And Security Checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "${ACTUAL_REF}" = "refs/heads/main" || { echo "::error::Production dispatches must use main, got ${ACTUAL_REF}."; exit 1; }
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+
+      - name: Check Out Repository
+        # actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+
+      - name: Restore Nix Store Cache
+        # nix-community/cache-nix-action@v7
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Run Static Checks
+        run: nix develop --command bash scripts/ci/static-checks.sh
+
+      - name: Run Conftest Policies
+        run: nix develop --command bash scripts/ci/conftest-policies.sh
+
+  reconcile:
+    name: Reconcile Private Kubernetes Access
+    needs:
+      - static-policy
+    concurrency:
+      group: octelium-private-kubernetes-production
+      cancel-in-progress: false
+      queue: single
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - name: Verify Current Main Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          test "${ACTUAL_REF}" = "refs/heads/main" || { echo "::error::Production dispatches must use main, got ${ACTUAL_REF}."; exit 1; }
+          test "${EXPECTED_SHA}" = "${ACTUAL_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
+          current_main_sha="$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)" || {
+            echo "::error::Unable to resolve the current main SHA."
+            exit 1
+          }
+          test "${ACTUAL_SHA}" = "${current_main_sha}" || {
+            echo "::error::Dispatch ${ACTUAL_SHA} is stale; current main is ${current_main_sha}."
+            exit 1
+          }
+
+      - name: Check Out Repository
+        # actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+
+      - name: Restore Nix Store Cache
+        # nix-community/cache-nix-action@v7
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Reconcile Private Kubernetes Catalog
+        env:
+          OCTELIUM_CATALOG_AUTH_TOKEN: ${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/octelium-private-kubernetes-apply.sh
+          EOF
+          then
+            echo "::error::Octelium private Kubernetes apply failed; detailed output was withheld because this is a public repository."
+            exit 1
+          fi
+          echo "Octelium private Kubernetes apply completed; details withheld."

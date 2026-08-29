@@ -29,6 +29,10 @@ This repository uses GitHub Actions for the review and rollout path:
   They compare against the latest successful historical push apply or full
   dispatch so failed or deferred changes remain in the next affected range;
   targeted Argo reconciliations never advance that checkpoint.
+- `Octelium Private Kubernetes Apply` is a separate manual lane for only
+  `Policy/homelab-private-kubernetes-access` and
+  `Service/kubernetes-api.homelab`. It repeats the exact-`main` and production
+  approval gates, never prunes, and proves a second apply has no live diff.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -101,6 +105,15 @@ contract for Grafana.
   Trusted pull requests only open this live access path when the diff includes
   the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
   inputs.
+- The private Kubernetes catalog lane uses a different, one-authentication
+  `AUTH_TOKEN` Credential. Octelium auto-deletes it when the job logs in; the
+  unused Credential expires after 30 minutes, the resulting client Session
+  lasts at most 15 minutes, and the job logs it out. Its highest-priority inline
+  policy explicitly denies everything except List/Create/Update for Policy and
+  Service.
+  Octelium v0.35 cannot restrict those methods by object name, so the fixed
+  extraction script, reviewed workflow hash, exact `main` SHA, and production
+  approval are the object-level boundary.
 - The upstream kubeconfig for both `kubernetes-api-ci` and the private
   `kubernetes-api.homelab` Service is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
@@ -208,6 +221,7 @@ duplicate repository-scoped copies:
 | Secret | Environment | Purpose |
 | --- | --- | --- |
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
+| `OCTELIUM_CATALOG_AUTH_TOKEN` | `homelab-production`, temporary | One-authentication token created immediately before the private Kubernetes catalog dispatch and removed immediately afterward. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
@@ -448,6 +462,36 @@ wait_for_success "$diagnostics_run_id" "$apply_run_id"
 Both exact-head runs must exit successfully. If either fails because the token
 is unusable, rerun the same recovery block; no second short-lived recovery
 identity is needed.
+
+## Private Kubernetes Catalog Rollout
+
+Use the focused workflow for changes to
+`homelab-private-kubernetes-access` or `kubernetes-api.homelab`. From a clean
+checkout at the current `main` commit and an authenticated Octelium
+administrator session:
+
+```sh
+nix develop --command bash scripts/octelium-private-kubernetes-credential.sh rollout
+```
+
+The helper installs its cleanup trap before provisioning. It applies only the
+dedicated WORKLOAD User plus the helper-only Credential template after replacing
+its deliberately expired timestamp with a 30-minute expiry. It verifies the
+complete live Credential spec, clears older Sessions, and rotates the token
+directly into the `homelab-production` secret without printing it. It binds the
+watch to the uniquely identified run it dispatched. The workflow extracts only
+the reviewed Policy and Service, applies without `--prune`, then requires the
+second identical apply to report no changes. On success, failure, or interrupt,
+cleanup removes any unused Credential, clears and verifies Sessions, and deletes
+and verifies the GitHub secret. For an emergency cleanup retry, run:
+
+```sh
+nix develop --command bash scripts/octelium-private-kubernetes-credential.sh revoke
+```
+
+This lane does not run Terragrunt or advance its successful full-apply
+checkpoint. Roll back through a PR that restores the prior Policy or Service,
+then provision and dispatch this workflow again.
 
 ## AWS Setup
 

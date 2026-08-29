@@ -220,6 +220,16 @@ an automatic approval SLA; strict expiry needs an externally hosted GitHub App
 deployment-protection rule with a durable lease. Until then, dispatch only when
 a reviewer is ready to approve.
 
+The focused Octelium private Kubernetes workflow has the same exact-`main`,
+current-head, production-approval, serialized-run, private-log, static, and
+Conftest gates. Its fixed helper extracts exactly
+`Policy/homelab-private-kubernetes-access` and
+`Service/kubernetes-api.homelab`, never prunes, and requires a second apply to
+report no changes. The lifecycle helper installs cleanup before creating its
+30-minute, one-authentication Credential, binds its watch to the unique run it
+dispatches, and verifies Credential, Session, and GitHub-secret revocation on
+exit. See `docs/ci-cd.md`.
+
 The gate checks the Octelium control plane, IdentityProvider `entra`, private
 `kubernetes-api.homelab` Service, synced
 workload credential, ready connector replica, and

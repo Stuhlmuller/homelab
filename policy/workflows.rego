@@ -151,6 +151,18 @@ deny contains msg if {
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
+deny contains msg if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	steps := object.get(job, "steps", [])
+	some index
+	run := lower(sprintf("%v", [object.get(steps[index], "run", "")]))
+	contains(run, "scripts/ci/octelium-private-kubernetes-apply.sh")
+	env := object.get(steps[index], "env", {})
+	object.get(env, "OCTELIUM_CATALOG_AUTH_TOKEN", null) == null
+	msg := sprintf("Octelium catalog workflow job %q step %d must use its one-use catalog credential", [job_name, index])
+}
+
 workflow_events := object.get(input, "on", object.get(input, true, {}))
 
 has_event(events, event) if {
@@ -230,9 +242,9 @@ job_sensitive_command(job) if {
 	sensitive_command_run(object.get(steps[index], "run", ""))
 }
 
-shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?(bash|sh|zsh)[\t ]+(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply)\.sh([\t ;]|$)`
+shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?(bash|sh|zsh)[\t ]+(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply)\.sh([\t ;]|$)`
 
-direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply)\.sh([\t ;]|$)`
+direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply)\.sh([\t ;]|$)`
 
 kubectl_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?kubectl["']?[\t ]+`
 
@@ -250,6 +262,8 @@ helm_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?helm["']?[\t ]+`
 
 helm_local_render_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?helm["']?[\t ]+template([\t ;]|$)`
 
+octeliumctl_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?octeliumctl["']?[\t ]+`
+
 dynamic_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?["']?(\$[A-Za-z_{(]|\x60)`
 
 private_wrapper_start := "if ! nix develop --command bash >\"$private_log\" 2>&1 <<'EOF'\n"
@@ -262,7 +276,7 @@ iac_command_count(run) := count(regex.find_all_string_submatch_n(iac_command_pat
 
 helm_command_count(run) := count(regex.find_all_string_submatch_n(helm_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(helm_local_render_pattern, run, -1))
 
-sensitive_command_count(run) := live_script_command_count(run) + live_cluster_command_count(run) + count(regex.find_all_string_submatch_n(aws_command_pattern, run, -1)) + iac_command_count(run) + helm_command_count(run) + count(regex.find_all_string_submatch_n(dynamic_command_pattern, run, -1))
+sensitive_command_count(run) := live_script_command_count(run) + live_cluster_command_count(run) + count(regex.find_all_string_submatch_n(aws_command_pattern, run, -1)) + iac_command_count(run) + helm_command_count(run) + count(regex.find_all_string_submatch_n(octeliumctl_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(dynamic_command_pattern, run, -1))
 
 sensitive_command_run(run) if {
 	sensitive_command_count(run) > 0
