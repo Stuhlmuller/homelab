@@ -30,10 +30,13 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_role.github_actions' Github-TF-State
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
+umask 077
+plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator.XXXXXX")"
+trap 'rm -rf -- "$plan_dir"' EXIT
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan \
-  -out=plan.out -no-color
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
+  -out="$plan_dir/plan.out" -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color "$plan_dir/plan.out"
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color "$plan_dir/plan.out"
 ```
 
 Run each import only on the first rollout, or during state recovery, when
@@ -60,6 +63,18 @@ the `homelab-plan` environment; forks and other changes must leave the live job
 skipped. The aggregate fails unless static checks succeed and the applicable
 live plan or same-repository skip-note job has the expected result. Keep the
 exact workflow contract asserted in `scripts/ci/static-checks.sh`.
+That assertion pins the normalized live-scope and aggregate-gate bodies by
+SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
+code, or added post-authentication steps cannot satisfy the check. Its closed
+inventory rejects new environment-, secret-, token-, or write-permission jobs
+until their complete job definition is reviewed and hashed. Conftest also
+rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
+or non-rendering Helm output and any command after the private-log wrapper;
+credentials stay scoped to the one live step.
+
+The local secret hook rejects common plan/state filenames and inspects ZIP
+members or JSON structure for OpenTofu plan/state signatures, including staged
+blobs whose working-tree file was removed.
 
 Do not require a new Actions context in ruleset `14700233` before the workflow
 that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
@@ -282,13 +297,11 @@ cd IaC
 terragrunt stack run plan
 ```
 
-The pull request workflow renders saved Terragrunt `plan.out` files to local
-`plan.json` files and runs Terraform-plan Conftest policy during
-`scripts/ci/terragrunt-plan.sh`. It then runs `scripts/ci/conftest-policies.sh`
-for static YAML policy checks. Run the same order locally when reproducing PR
-gate behavior. The live plan, apply, and diagnostics jobs verify the Octelium
-Kubernetes access path with `kubectl --request-timeout=15s version` after
-`scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig.
+The pull request workflow renders temporary Terragrunt plans to policy JSON and
+runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
+then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
+details and live command output are withheld from the public PR and Actions
+logs. Run the same order locally when reproducing a failure.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
@@ -299,9 +312,11 @@ changes such as provider locks use the local `*` because each command runs from
 its generated-unit root. Plan-only toolchain, Terraform-policy, and execution-
 script changes also refresh every plan without widening production apply scope.
 Affected-only runs combine the repository-relative group with the Git selector
-so Terragrunt cannot queue another unit group. Saved plans can live in generated
-module caches; the plan gate discovers them there and writes policy JSON beside
-each generated unit.
+so Terragrunt cannot queue another unit group. Intentional operator plans use
+mode `0700` temporary directories. CI may save plans in generated unit caches
+for exact apply and policy checks; its scripts use `umask 077` and delete those
+files on exit. Normal local `terragrunt plan` commands do not write plan
+artifacts into generated caches.
 Production Argo CD Application registration saves each affected plan, evaluates
 the Terraform policy JSON, rejects manifest replacement/deletion, then applies
 that exact plan. A protected manual dispatch may set one exact `argocd_app` unit

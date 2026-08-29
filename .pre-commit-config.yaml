@@ -1,6 +1,20 @@
 repos:
+  - repo: local
+    hooks:
+      - id: gitleaks
+        name: gitleaks
+        entry: gitleaks protect --staged --redact
+        language: system
+        pass_filenames: false
+      - id: no-sensitive-iac-artifacts
+        name: no saved OpenTofu plans or state
+        entry: bash scripts/ci/secret-scan.sh --artifacts-only
+        language: system
+        pass_filenames: false
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    # v5.0.0
+    rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -10,19 +24,22 @@ repos:
           - --allow-multiple-documents
 
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.30
+    # v0.1.30
+    rev: 40f924cd642f5dc98d12bd97b07f3752223553da
     hooks:
       - id: tofu-fmt
       - id: terragrunt-hcl-fmt
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    # v2.4.1
+    rev: 63c8f8312b7559622c0d82815639671ae42132ac
     hooks:
       - id: codespell
         args: ["--ignore-words-list", "notin"]
 
   - repo: https://github.com/bridgecrewio/checkov.git
-    rev: "3.2.495"
+    # 3.2.495
+    rev: 9ea6d83d477afb3691795eda79d8f4dd56851d4b
     hooks:
       - id: checkov_diff
       - id: checkov_secrets
@@ -30,6 +47,7 @@ repos:
           - "-v"
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: v1.22.0
+    # v1.22.0
+    rev: b546b77c44c466a54a42af5499dcc0dcc1a3193f
     hooks:
       - id: zizmor

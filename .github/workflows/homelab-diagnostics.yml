@@ -62,28 +62,17 @@ jobs:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
-          nix develop --command bash <<'EOF'
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
+          umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
-          kubectl -n monitoring get deploy,rs,pod,svc,endpoints,endpointslice,pvc \
-            -l app.kubernetes.io/name=grafana -o wide
-          kubectl -n monitoring describe deployment grafana
-          kubectl -n monitoring describe service grafana
-          kubectl -n monitoring get events \
-            --field-selector involvedObject.namespace=monitoring \
-            --sort-by=.lastTimestamp | tail -80
-          for pod in $(kubectl -n monitoring get pod \
-            -l app.kubernetes.io/name=grafana \
-            -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'); do
-            echo "::group::describe ${pod}"
-            kubectl -n monitoring describe pod "${pod}"
-            echo "::endgroup::"
-            echo "::group::logs ${pod}"
-            kubectl -n monitoring logs "${pod}" --all-containers --tail=200 || true
-            echo "::endgroup::"
-            echo "::group::previous logs ${pod}"
-            kubectl -n monitoring logs "${pod}" --all-containers --previous --tail=200 || true
-            echo "::endgroup::"
-          done
+          kubectl --request-timeout=15s version >/dev/null
+          kubectl -n monitoring rollout status deployment/grafana --timeout=120s >/dev/null
           EOF
+          then
+            echo "::error::Grafana readiness check failed; live diagnostics were withheld because this is a public repository. Reproduce them locally."
+            exit 1
+          fi
+          echo "Grafana readiness check passed; live details withheld."

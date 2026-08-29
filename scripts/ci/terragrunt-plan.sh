@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
-plan_markdown="${TERRAGRUNT_PLAN_MARKDOWN:-${RUNNER_TEMP:-/tmp}/terragrunt-plan.md}"
-mkdir -p "$(dirname "$plan_markdown")"
 extra_plan_json_files=()
 cleanup_dirs=()
 
@@ -21,6 +20,8 @@ cleanup_temp_dirs() {
       rm -rf "$temp_dir"
     fi
   done
+
+  clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applications
 }
 
 trap cleanup_temp_dirs EXIT
@@ -36,31 +37,11 @@ plan_out_for_unit() {
   find "$unit_dir" -name plan.out -type f -print -quit
 }
 
-render_plan_out() {
-  local title="$1"
-  local unit_dir="$2"
-  local plan_file="$3"
-
-  {
-    printf '<details>\n'
-    printf '<summary>%s</summary>\n\n' "$title"
-    printf '~~~~text\n'
-    (
-      cd "$unit_dir"
-      terragrunt --log-disable show -no-color "$plan_file"
-    )
-    printf '~~~~\n\n'
-    printf '</details>\n\n'
-  } >>"$plan_markdown"
-}
-
-render_plan_out_if_present() {
-  local title="$1"
-  local unit_dir="$2"
+plan_out_present() {
+  local unit_dir="$1"
   local plan_file
 
   if plan_file="$(plan_out_for_unit "$unit_dir")" && [[ -n "$plan_file" ]]; then
-    render_plan_out "$title" "$unit_dir" "$plan_file"
     return 0
   fi
 
@@ -106,28 +87,6 @@ validate_terraform_plan_policies() {
   fi
 }
 
-append_plan_note() {
-  local message="$1"
-
-  {
-    printf '> %s\n\n' "$message"
-  } >>"$plan_markdown"
-}
-
-append_deleted_unit_note() {
-  local message="$1"
-  shift
-
-  {
-    printf '### Deleted Terragrunt Units\n\n'
-    printf '%s\n\n' "$message"
-    for unit_dir in "$@"; do
-      printf -- "- \`%s\`\n" "$unit_dir"
-    done
-    printf '\n'
-  } >>"$plan_markdown"
-}
-
 plan_deleted_terragrunt_units() {
   local unit_dirs=("$@")
   local snapshot_dir
@@ -138,8 +97,6 @@ plan_deleted_terragrunt_units() {
   if ((${#unit_dirs[@]} == 0)); then
     return 0
   fi
-
-  append_deleted_unit_note "The current checkout deleted these Terragrunt units. The plan script creates temporary empty Terragrunt units at the deleted paths, reuses \`root.hcl\` so each fake unit points at the original backend key, lists the state resources, and plans their removal without replaying deleted module code." "${unit_dirs[@]}"
 
   for unit_dir in "${unit_dirs[@]}"; do
     snapshot_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/terragrunt-deleted-plan.XXXXXX")"
@@ -171,20 +128,9 @@ plan_deleted_terragrunt_units() {
     echo "::endgroup::"
 
     if [[ -s "$state_list_file" ]]; then
-      {
-        printf '<details>\n'
-        printf '<summary>Deleted Terragrunt unit state: %s</summary>\n\n' "$unit_dir"
-        printf '~~~~text\n'
-        cat "$state_list_file"
-        printf '~~~~\n\n'
-        printf '</details>\n\n'
-      } >>"$plan_markdown"
-
       if render_plan_json_if_present "$snapshot_unit_dir"; then
         extra_plan_json_files+=("${snapshot_unit_dir}/plan.json")
       fi
-    else
-      append_plan_note "Deleted Terragrunt unit \`${unit_dir}\` had no resources in remote state."
     fi
   done
 }
@@ -193,24 +139,12 @@ prepare_terragrunt_filter_base
 terragrunt_generate_stack
 clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applications
 
-{
-  printf '## Terragrunt Plan Output\n\n'
-  printf "Rendered from saved \`plan.out\` files with \`terragrunt show -no-color plan.out\`.\n\n"
-  if [[ -n "${GITHUB_SHA:-}" ]]; then
-    printf "Source commit: \`%s\`.\n\n" "$GITHUB_SHA"
-  fi
-  printf "> \`IaC/live/aws-ssm-parameters\` and \`IaC/live/kubernetes-secrets\` are intentionally excluded from PR plans because they require protected apply credentials or decrypted SSM reads.\n\n"
-} >"$plan_markdown"
-
 echo "::group::Argo CD bootstrap plan"
 (
   cd IaC/bootstrap/argocd
-  terragrunt plan -lock=false -no-color
+  terragrunt plan -lock=false -out plan.out -no-color
 )
 echo "::endgroup::"
-if ! render_plan_out_if_present "Argo CD bootstrap" "IaC/bootstrap/argocd"; then
-  append_plan_note "No affected Argo CD bootstrap units were planned."
-fi
 render_plan_json_if_present "IaC/bootstrap/argocd" || true
 
 echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans because it manages KMS, IAM, and secret declarations that require the protected production apply role."
@@ -218,23 +152,16 @@ echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans becaus
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
-  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" --parallelism 1 --source-update -- plan -lock=false -no-color
+  terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/argocd-apps/*' true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
 )
 echo "::endgroup::"
 
-planned_app_count=0
 while IFS= read -r unit_file; do
   unit_dir="$(dirname "$unit_file")"
-  unit_name="$(basename "$unit_dir")"
-  if render_plan_out_if_present "Argo CD Application: ${unit_name}" "$unit_dir"; then
-    planned_app_count=$((planned_app_count + 1))
+  if plan_out_present "$unit_dir"; then
     render_plan_json_if_present "$unit_dir" >/dev/null
   fi
 done < <(find IaC/live/argocd-apps -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
-
-if [[ "$planned_app_count" -eq 0 ]]; then
-  append_plan_note "No affected Argo CD Application registration units were planned."
-fi
 
 deleted_plan_units=()
 while IFS= read -r deleted_unit_dir; do
@@ -247,25 +174,17 @@ echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*' true)" --parallelism 1 --source-update -- plan -lock=false -no-color
+    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*' true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
   )
 
-  planned_azuread_count=0
   while IFS= read -r unit_file; do
     unit_dir="$(dirname "$unit_file")"
-    unit_name="$(basename "$unit_dir")"
-    if render_plan_out_if_present "AzureAD application: ${unit_name}" "$unit_dir"; then
-      planned_azuread_count=$((planned_azuread_count + 1))
+    if plan_out_present "$unit_dir"; then
       render_plan_json_if_present "$unit_dir" >/dev/null
     fi
   done < <(find IaC/live/azuread-applications -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
-
-  if [[ "$planned_azuread_count" -eq 0 ]]; then
-    append_plan_note "No AzureAD application registration plans were rendered."
-  fi
 else
   echo "::warning::Skipping AzureAD application registration plan because ARM_CLIENT_ID, ARM_CLIENT_SECRET, and ARM_TENANT_ID are not configured for this plan run."
-  append_plan_note "AzureAD application registration plans were skipped because the plan environment did not provide \`ARM_CLIENT_ID\`, \`ARM_CLIENT_SECRET\`, and \`ARM_TENANT_ID\`. Production apply still fails fast when \`IaC/live/azuread-applications\` changes and those credentials are absent."
 fi
 echo "::endgroup::"
 

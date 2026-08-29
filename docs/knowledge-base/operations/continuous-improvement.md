@@ -776,7 +776,10 @@ organization-policy blocker is tracked below.
 - **Evidence:** the August 2026 remediation changes the bootstrap module to an
   OpenTofu 1.11 ephemeral `aws_ssm_parameter` read and Kubernetes
   `data_wo`/`data_wo_revision` write. Provider schemas for AWS `6.56.0` and
-  Kubernetes `3.2.1` support that path without persisting decrypted values.
+  Kubernetes `3.2.1` support that path without persisting decrypted values. It
+  also removes the root-level implicit `-out plan.out`, forbids saved plans in
+  the working tree, cleans intentional CI plans on exit, and withholds live
+  plan/apply/diagnostic details from public GitHub surfaces.
   Terraform policy now permits only this exact write-only Secret contract and
   runs positive and unsafe-negative Rego tests in the normal Conftest gate.
 - **Risk:** decrypted External Secrets AWS provider credentials could otherwise

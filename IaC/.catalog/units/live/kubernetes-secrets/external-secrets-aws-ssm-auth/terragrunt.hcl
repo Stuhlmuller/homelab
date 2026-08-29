@@ -38,7 +38,7 @@ inputs = {
   namespace  = "external-secrets"
 
   # Bump only after rotating an SSM value; this reaches the provider through data_wo_revision.
-  data_revision = 1
+  data_revision = 2
 
   labels = {
     "app.kubernetes.io/managed-by" = "terragrunt"

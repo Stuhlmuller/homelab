@@ -11,11 +11,11 @@ This repository uses GitHub Actions for the review and rollout path:
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
-  Octelium, and update the managed plan section in the PR description. Other
-  same-repository changes use a skip-note job without protected credentials;
+  Octelium, and run the live plan with details withheld. Other same-repository
+  changes use a no-permission skip-check job;
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
-  every applicable live plan or skip-note job succeed.
+  every applicable live plan or skip-check job succeed.
 - `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
   older request check, and prints the exact current-SHA dispatch command plus
   links to active applies. It has no production environment, stored secrets,
@@ -85,10 +85,9 @@ contract for Grafana.
   `nix develop --command ...` step. The cache key is derived from the runner OS,
   `flake.nix`, and `flake.lock`, with an OS-scoped fallback so dependency
   updates can still reuse the nearest previous dev shell closure.
-- GitHub token permissions default to none. Jobs opt in to `contents: read`;
-  live Terragrunt jobs request `id-token: write`; and same-repository plan and
-  skip-note jobs request `pull-requests: write` only to refresh the managed plan
-  section in the PR description.
+- GitHub token permissions default to none. Jobs opt in to `contents: read`,
+  and live Terragrunt jobs request `id-token: write`. No credentialed plan job
+  can write to pull requests or another public GitHub surface.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
@@ -110,13 +109,19 @@ contract for Grafana.
   the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
   briefly affects CI, operator, and Cordium access, so validate both Services
   after rotation.
-- Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
-  include sensitive state context. Trusted same-repository PR plans render the
-  saved `plan.out` files with `terragrunt show -no-color plan.out` and replace
-  the managed `<!-- terragrunt-plan:start -->` section in the PR description
-  after every successful plan. Trusted PRs that do not require a live plan
-  replace that same managed section with a skip note so stale plan output is not
-  left behind after a force-push or scope reduction.
+- Plans are not uploaded, printed, or copied into pull requests because
+  Terraform/OpenTofu plans can include sensitive state context. Trusted
+  same-repository jobs evaluate private plans with Conftest and delete them on
+  exit. The required check is the only public plan result. Live plan, apply,
+  diagnostic, and Cloudflare reconciliation output is also withheld from public
+  Actions logs; reproduce failures from an approved local operator session.
+  Workflow policy
+  rejects direct live CLI output or reading the private log after the wrapper,
+  and live credentials exist only on the exact step that consumes them. Static
+  checks reject any new environment-, secret-, token-, or write-permission job
+  until its complete normalized definition is reviewed and hashed. The
+  pre-commit scan rejects plan/state filenames plus binary plans or JSON
+  plan/state exports hidden behind arbitrary names.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`
@@ -251,12 +256,14 @@ kubectl --request-timeout=15s version
 
 (cd IaC && terragrunt stack generate)
 cd IaC/live/kubernetes-node-labels
-rm -f plan.out plan.json
+umask 077
+plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-node-labels.XXXXXX")"
+trap 'rm -rf -- "$plan_dir"' EXIT
 terragrunt --log-disable init -reconfigure -no-color
-terragrunt plan -out=plan.out -no-color
-terragrunt --log-disable show -json plan.out >plan.json
-conftest test --policy ../../../policy --output github plan.json
-terragrunt apply -no-color plan.out
+terragrunt plan -out="$plan_dir/plan.out" -no-color
+terragrunt --log-disable show -json "$plan_dir/plan.out" >"$plan_dir/plan.json"
+conftest test --policy ../../../policy --output github "$plan_dir/plan.json"
+terragrunt apply -no-color "$plan_dir/plan.out"
 EOF
 ```
 
@@ -517,12 +524,15 @@ AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
   'aws_iam_user.external_secrets' external-secrets_aws-ssm-auth
 ```
 
-Then save, review, and apply the same plan:
+Then save, review, and apply the same plan from a private temporary directory:
 
 ```sh
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out=plan.out -no-color
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color plan.out
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color plan.out
+umask 077
+plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator.XXXXXX")"
+trap 'rm -rf -- "$plan_dir"' EXIT
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out="$plan_dir/plan.out" -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color "$plan_dir/plan.out"
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color "$plan_dir/plan.out"
 ```
 
 The resulting managed policy is limited to lifecycle operations on the ten
@@ -534,8 +544,11 @@ The unit also adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and attaches an operator-owned
 permissions boundary. That boundary caps effective access at
 `ssm:GetParameter`/`ssm:GetParameters` under `/homelab/*` plus decrypt/describe
-access on the regional runtime-secret KMS key. This keeps the existing group
-management path from becoming an indirect route to unrelated AWS permissions.
+access on the regional runtime-secret KMS key and denies every request made
+with temporary STS credentials. The generated reader policies exclude the two
+parameters that store this user's own access key. This keeps the existing group
+management path from becoming an indirect route to unrelated AWS permissions
+or a way for a compromised key to copy its replacement.
 
 A production failure that reports
 `AccessDenied` for `iam:CreatePolicy` means this operator prerequisite has not
@@ -575,6 +588,7 @@ silently ignored.
 Run the same checks locally through the Nix shell:
 
 ```sh
+nix develop --command pre-commit install
 nix develop --command pre-commit run --all-files
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
@@ -596,9 +610,8 @@ to match the GitHub pull request or push diff. Deleted-unit detection uses the
 same comparison base; set `TERRAGRUNT_FILTER_BASE_SHA` and
 `TERRAGRUNT_FILTER_HEAD_SHA` when reproducing an exact GitHub run locally.
 
-Set `TERRAGRUNT_PLAN_MARKDOWN=/path/to/terragrunt-plan.md` when running the PR
-plan script locally if you want the same rendered `plan.out` markdown that the
-workflow writes into pull request descriptions.
+The PR plan script emits only generic progress messages. Inspect detailed plans
+only in the trusted local session; do not paste them into GitHub.
 
 Only run apply after the same validation has passed and the change has been
 reviewed:

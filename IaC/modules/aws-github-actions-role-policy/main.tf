@@ -119,6 +119,19 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
 data "aws_iam_policy_document" "external_secrets_boundary" {
   statement {
+    sid       = "DenyTemporarySessionCredentials"
+    effect    = "Deny"
+    actions   = ["*"]
+    resources = ["*"]
+
+    condition {
+      test     = "Null"
+      variable = "aws:TokenIssueTime"
+      values   = ["false"]
+    }
+  }
+
+  statement {
     sid    = "ReadHomelabParameters"
     effect = "Allow"
 

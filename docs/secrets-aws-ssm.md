@@ -80,7 +80,8 @@ Bootstrap order:
    that can read the exact repository-listed `/homelab/...` Parameter Store
    values in `us-west-2` and decrypt the configured KMS key. The
    repository-managed `homelab-ssm-parameter-reader` IAM policy set grants
-   those permissions through the `homelab-ssm-parameter-readers` IAM group.
+   those permissions through the `homelab-ssm-parameter-readers` IAM group. It
+   excludes the two parameters that store this user's own key.
 3. Apply `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`.
 
 The Kubernetes Secret stack refuses to apply while either SSM value is empty or
@@ -95,6 +96,43 @@ and decrypted SSM data source from the current state. That apply does not erase
 older S3 object versions. Before closing a credential-exposure finding, remove
 the exact older versions of this stack's state object and rotate the IAM access
 key; never print or copy an old state body while checking it.
+
+After a reviewed `data_revision` bump reaches a clean `main`, rotate the key
+with the repository helper:
+
+```sh
+scripts/rotate-external-secrets-aws-key.sh <administrator-profile> <data_revision>
+```
+
+First apply `IaC/operator/github-actions-role-policy` and
+`IaC/live/aws-ssm-parameters` so temporary-session use is denied and the reader
+can no longer read its own credential parameters. The helper refuses to create
+a key until both controls are live. It mints the minimum 15-minute STS test
+session and proves that session is denied before continuing. It then creates the
+replacement without printing it, proves the new key can decrypt an allowed
+canary while remaining denied its own credential parameters, reads back the
+complete new pair with the operator profile, applies the exact write-only
+Kubernetes Secret plan, verifies both live credential fields and state
+exclusion, then deactivates the old key.
+It deletes the old key only after a fresh periodic ExternalSecret reconcile
+succeeds while the old key is rejected. Rollback deletes the new key only after
+the complete old SSM pair is restored and read back; later failures retain every
+remaining key for safe recovery.
+
+Run it with ambient AWS credential and profile variables unset; the profile
+argument must be the only credential source. Before creating a key, the helper
+binds that profile, the exact IAM user, decrypted SSM pair, working old key, and
+live Kubernetes Secret to one AWS account. If key creation returns an uncertain
+result, it repeatedly inventories the user and deletes or inactivates the one
+newly observed key before exiting. A fail-closed SSM lock serializes rotation,
+and configured AWS endpoint overrides are ignored so credentials only reach AWS.
+
+Run it with `KUBECONFIG` unset. Before creating a key, the helper requires
+`~/.kube/config` to use `https://10.1.0.199:6443`, match the committed homelab
+cluster-CA SHA-256 identity, keep insecure TLS verification disabled, and answer
+an authenticated API version request.
+Update the expected fingerprint in the reviewed script only when the Talos
+cluster CA is intentionally rotated.
 
 | App | ExternalSecret | Target Secret | SSM parameters |
 | --- | --- | --- | --- |

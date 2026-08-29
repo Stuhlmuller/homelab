@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
@@ -14,6 +15,9 @@ cleanup_temp_dirs() {
       rm -rf "$temp_dir"
     fi
   done
+
+  find IaC/live/aws-ssm-parameters IaC/live/kubernetes-node-labels \
+    \( -name plan.out -o -name plan.json \) -type f -delete 2>/dev/null || true
 }
 
 trap cleanup_temp_dirs EXIT

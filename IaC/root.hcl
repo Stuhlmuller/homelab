@@ -15,13 +15,6 @@ locals {
   }
 }
 
-terraform {
-  extra_arguments "plan" {
-    commands  = ["plan"]
-    arguments = ["-out", "plan.out"]
-  }
-}
-
 remote_state {
   backend = "s3"
   generate = {

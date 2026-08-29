@@ -192,8 +192,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `homelab-ssm-parameter-readers` group. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
   with an operator-owned boundary that allows only homelab SSM reads and
-  runtime-secret KMS decrypt/describe access. The pending administrator rollout
-  remains tracked in [[../operations/continuous-improvement]].
+  runtime-secret KMS decrypt/describe access. The boundary denies temporary STS
+  credentials, and the reader policy excludes the two parameters that hold
+  this user's own key so a compromised key cannot copy its replacement. The
+  pending administrator rollout remains tracked in
+  [[../operations/continuous-improvement]].
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,
