@@ -146,9 +146,49 @@ kubectl kustomize clusters/homelab/apps/octelium-storage |
   ' >/dev/null
 echo "::endgroup::"
 
+echo "::group::Argo CD command-parameter ownership transfer"
+argocd_bootstrap="$(
+  terragrunt --log-disable --working-dir IaC/bootstrap/argocd \
+    render --json --write=false --no-color
+)"
+argocd_bootstrap_values="$(jq -er '.inputs.values[0]' <<<"$argocd_bootstrap")"
+yq -e '
+  .configs.params."controller.sync.timeout.seconds" == "900" and
+  .configs.params."server.insecure" == "true" and
+  .configs.params.annotations."argocd.argoproj.io/sync-options" == "Prune=false" and
+  .configs.params.annotations."argocd.argoproj.io/compare-options" == "IgnoreExtraneous" and
+  .controller.podAnnotations."homelab.stuhlmuller.dev/sync-timeout-revision" == "v2"
+' <<<"$argocd_bootstrap_values" >/dev/null
+printf '%s\n' "$argocd_bootstrap_values" |
+  helm template \
+    "$(jq -er '.inputs.name' <<<"$argocd_bootstrap")" \
+    "$(jq -er '.inputs.chart' <<<"$argocd_bootstrap")" \
+    --repo "$(jq -er '.inputs.repository' <<<"$argocd_bootstrap")" \
+    --version "$(jq -er '.inputs.chart_version' <<<"$argocd_bootstrap")" \
+    --namespace "$(jq -er '.inputs.namespace' <<<"$argocd_bootstrap")" \
+    --values - |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "ConfigMap" and .metadata.name == "argocd-cmd-params-cm")] as $maps |
+    ($maps | length) == 1 and
+    $maps[0].data."controller.sync.timeout.seconds" == "900" and
+    $maps[0].data."server.insecure" == "true" and
+    $maps[0].metadata.annotations."argocd.argoproj.io/sync-options" == "Prune=false" and
+    $maps[0].metadata.annotations."argocd.argoproj.io/compare-options" == "IgnoreExtraneous"
+  ' >/dev/null
+kubectl kustomize clusters/homelab/argocd/self-management |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "ConfigMap" and .metadata.name == "argocd-cmd-params-cm")] as $maps |
+    ($maps | length) == 1 and
+    $maps[0].data."controller.sync.timeout.seconds" == "900" and
+    $maps[0].data."server.insecure" == "true" and
+    $maps[0].metadata.annotations."argocd.argoproj.io/sync-options" == "Prune=false" and
+    $maps[0].metadata.annotations."argocd.argoproj.io/compare-options" == "IgnoreExtraneous"
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Cordium genesis privilege lifecycle"
-yq -e '.data."controller.sync.timeout.seconds" == "900"' \
-  clusters/homelab/argocd/self-management/cmd-params-configmap.yaml >/dev/null
 yq ea -o=json -I=0 '[.]' clusters/homelab/argocd/self-management/appproject.yaml |
   jq -e '
     [.[] | select(.kind == "AppProject" and .metadata.name == "homelab")][0].spec as $project |
