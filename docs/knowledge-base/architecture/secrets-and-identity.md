@@ -49,9 +49,9 @@ roles need identity-based KMS permissions for both keys.
   behavior, not a requested OAuth scope: keep Dex scopes to `openid`,
   `profile`, and `email`, configure Entra to emit the `groups` claim for Argo
   CD RBAC, and keep `insecureSkipEmailVerified: true` because Entra may omit
-  the `email_verified` claim. The bootstrap RBAC policy also binds
-  `rodman@stuhlmuller.net` directly to `role:admin` through the configured
-  `email` scope so operator access does not depend on group-claim setup.
+  the `email_verified` claim. The bootstrap RBAC policy grants admin only to
+  the `argocd-admins` group; operator identities stay in Entra, not this public
+  repository.
 - Argo CD Image Updater's GitHub App credential contract is retired. The
   ExternalSecret and generated Secret have no runtime consumer; Renovate owns
   image update pull requests. Its three SSM paths remain declared only as

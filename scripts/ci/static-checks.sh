@@ -69,6 +69,13 @@ echo "::group::Terragrunt generated-unit filters"
 echo "::endgroup::"
 
 echo "::group::Operator OpenTofu validation"
+argocd_bootstrap="IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
+rg -Fq '"policy.csv"     = "g, ${local.oidc_sso_admin_group}, role:admin\n"' "$argocd_bootstrap"
+rg -Fq 'scopes           = "[groups]"' "$argocd_bootstrap"
+if rg -q 'role:admin[^\n]*@' "$argocd_bootstrap"; then
+  echo "Argo CD admin access must use an Entra group, not a public operator identity." >&2
+  exit 1
+fi
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:TokenIssueTime"' IaC/modules/aws-github-actions-role-policy/main.tf
 for parameter in \
