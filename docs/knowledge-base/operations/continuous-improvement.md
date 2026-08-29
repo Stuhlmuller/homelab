@@ -126,19 +126,28 @@ organization-policy blocker is tracked below.
 - **Next step:** Keep the community chart current and retain `Recreate` while
   Grafana uses the single SQLite PVC.
 
-- **Status:** blocked by Cloudflare edge certificate subscription
+- **Status:** repository reconciliation implemented; blocked by Cloudflare
+  subscription, credential, alert destination, and rollout
 - **Area:** Cordium / public workspace TLS
-- **Evidence:** On 2026-08-27 wildcard DNS resolved
-  `tls-audit.cordium.stinkyboi.com`, but both Cloudflare edge addresses closed
-  the TLS handshake. The active edge certificate covers only `stinkyboi.com`
-  and `*.stinkyboi.com`; Cordium advertises workspace hosts under
-  `*.cordium.stinkyboi.com`.
+- **Evidence:** On 2026-08-29 three consecutive public requests to
+  `tls-audit.cordium.stinkyboi.com` resolved to Cloudflare but failed the TLS
+  handshake before HTTP. The first-level control `cordium.stinkyboi.com`
+  completed TLS 1.3 with a valid `*.stinkyboi.com` certificate and returned
+  Octelium's expected HTTP `401`, isolating the fault to missing nested edge
+  coverage. The protected workspace-certificate workflow now declares an exact
+  Advanced Certificate Manager pack containing `stinkyboi.com`,
+  `*.stinkyboi.com`, and `*.cordium.stinkyboi.com`; it never handles private
+  key material.
 - **Risk:** Cordium's browser entrypoint can authenticate, but generated
   workspace app URLs fail before HTTP routing.
-- **Next step:** purchase Cloudflare Advanced Certificate Manager and issue an
-  edge certificate containing `*.cordium.stinkyboi.com`, then rerun
-  `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
-  hostnames, so use an explicit advanced wildcard.
+- **Next step:** Purchase Cloudflare Advanced Certificate Manager, create the
+  zone-scoped read and write certificate-token environment secrets, run the
+  protected order workflow, and wait for the separate check workflow plus
+  `scripts/octelium-e2e-check.sh` to pass. Total TLS cannot cover Cloudflare
+  Tunnel hostnames. Configure and test Cloudflare's Advanced Certificate Alert
+  after a reviewed notification destination is declared; keep the issue open
+  until issuance, renewal/failure alerting, and real workspace access are all
+  verified.
 
 - **Status:** mitigated in desired state; blocked by router authority and rollout
 - **Area:** Octelium / public gRPC transport

@@ -16,6 +16,13 @@ Xfinity UPnP, so router authority remains a rollout gate. Grafana alerts before
 the 24-hour lease expires, and the end-to-end check pins its gRPC request to a
 public DNS answer instead of trusting local split DNS.
 
+Cordium workspaces use `*.cordium.stinkyboi.com`, which needs a paid Cloudflare
+Advanced Certificate Manager pack because Universal SSL is only one level and
+Total TLS excludes Tunnel hostnames. The protected workspace-certificate
+workflow owns the exact pack after billing and a zone-scoped environment token
+exist; the e2e gate owns the public handshake. Cloudflare renewal/failure
+alerting and a real workspace check remain rollout gates.
+
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 additional public WEB Service fallbacks on `acer` without Multus, 19
 including the existing OctoBot fallback. Its generated Service UIDs must be

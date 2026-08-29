@@ -1,0 +1,30 @@
+name: Check Cordium Workspace Certificate
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: octelium-cloudflare-workspace-certificate
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Check Cordium Workspace Certificate
+        env:
+          CLOUDFLARE_SSL_CERTIFICATES_TOKEN: ${{ secrets.CLOUDFLARE_SSL_CERTIFICATES_READ_TOKEN }}
+        run: scripts/octelium-cloudflare-workspace-certificate.sh check

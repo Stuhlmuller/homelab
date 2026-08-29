@@ -318,6 +318,126 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   ' >/dev/null
 echo "::endgroup::"
 
+echo "::group::Cordium workspace TLS contract"
+workspace_certificate_script="scripts/octelium-cloudflare-workspace-certificate.sh"
+bash -n "$workspace_certificate_script"
+"$workspace_certificate_script" --help >/dev/null
+rg -F 'zone_name="stinkyboi.com"' "$workspace_certificate_script" >/dev/null
+rg -F 'workspace_wildcard="*.cordium.stinkyboi.com"' "$workspace_certificate_script" >/dev/null
+rg -F '"*.${zone_name}"' "$workspace_certificate_script" >/dev/null
+rg -F '/ssl/certificate_packs/order' "$workspace_certificate_script" >/dev/null
+rg -F 'validity_days: 90' "$workspace_certificate_script" >/dev/null
+rg -F 'pack_status" == "validation_timed_out"' "$workspace_certificate_script" >/dev/null
+rg -F -- '--connect-timeout 10' "$workspace_certificate_script" >/dev/null
+rg -F -- '--max-time 45' "$workspace_certificate_script" >/dev/null
+rg -F 'tls-audit.cordium.stinkyboi.com' scripts/octelium-e2e-check.sh >/dev/null
+rg -F '"*.cordium.${domain}"' scripts/octelium-public-dns.sh >/dev/null
+rg -F 'hostname: "*.cordium.stinkyboi.com"' \
+  clusters/homelab/apps/octelium-public/configmap.yaml >/dev/null
+if rg -n 'cf_api DELETE' "$workspace_certificate_script"; then
+  echo "Cordium workspace certificate reconciler must not delete certificate packs" >&2
+  exit 1
+fi
+for workflow_contract in \
+  '.github/workflows/octelium-cloudflare-workspace-certificate.yml:check:check' \
+  '.github/workflows/octelium-cloudflare-workspace-certificate-apply.yml:apply:apply'; do
+  workflow="${workflow_contract%%:*}"
+  job_and_action="${workflow_contract#*:}"
+  job="${job_and_action%%:*}"
+  action="${job_and_action##*:}"
+  yq -o=json '.' "$workflow" |
+    jq -e --arg job "$job" --arg action "$action" '
+      (.on | keys) == ["workflow_dispatch"] and
+      (if $action == "check" then
+        .on.workflow_dispatch == null
+      else
+        .on.workflow_dispatch.inputs.expected_sha.required == true and
+        .on.workflow_dispatch.inputs.expected_sha.type == "string"
+      end) and
+      .permissions == {} and
+      .concurrency == {
+        "group": "octelium-cloudflare-workspace-certificate",
+        "cancel-in-progress": false
+      } and
+      (.jobs | keys) == [$job] and
+      .jobs[$job].if == "github.ref == '\''refs/heads/main'\''" and
+      .jobs[$job].environment == {"name": "homelab-production"} and
+      .jobs[$job].permissions == {"contents": "read"} and
+      .jobs[$job]["timeout-minutes"] == 5 and
+      .jobs[$job].steps[-1].env.CLOUDFLARE_SSL_CERTIFICATES_TOKEN ==
+        (if $action == "check" then
+          "${{ secrets.CLOUDFLARE_SSL_CERTIFICATES_READ_TOKEN }}"
+        else
+          "${{ secrets.CLOUDFLARE_SSL_CERTIFICATES_WRITE_TOKEN }}"
+        end) and
+      .jobs[$job].steps[-1].run ==
+        ("scripts/octelium-cloudflare-workspace-certificate.sh " + $action)
+    ' >/dev/null
+done
+yq -o=json '.' .github/workflows/octelium-cloudflare-workspace-certificate-apply.yml |
+  jq -e '
+    .jobs.apply.steps[0].name == "Verify Current Main Commit" and
+    .jobs.apply.steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
+    .jobs.apply.steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
+    .jobs.apply.steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+    .jobs.apply.steps[0].env.GH_TOKEN == "${{ github.token }}" and
+    (.jobs.apply.steps[0] | tostring | contains("secrets") | not) and
+    (.jobs.apply.steps[0].run |
+      contains("repos/${GH_REPO}/git/ref/heads/main") and
+      contains("test \"${EXPECTED_SHA}\" = \"${ACTUAL_SHA}\"") and
+      contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\""))
+  ' >/dev/null
+(
+  # shellcheck disable=SC2329 # Exported into the certificate helper process.
+  curl() {
+    local args="$*"
+    if [[ "$args" == *'/zones?name=stinkyboi.com'* ]]; then
+      printf '%s\n' '{"success":true,"result":[{"id":"zone-test"}]}'
+    elif [[ "$args" == *'/ssl/certificate_packs?status=all'* ]]; then
+      case "$MOCK_MODE" in
+        active)
+          printf '%s\n' '{"success":true,"result":[{"id":"pack-active","type":"advanced","hosts":["*.cordium.stinkyboi.com","stinkyboi.com","*.stinkyboi.com"],"certificate_authority":"lets_encrypt","validation_method":"txt","validity_days":90,"cloudflare_branding":false,"status":"active"}]}'
+          ;;
+        timeout)
+          printf '%s\n' '{"success":true,"result":[{"id":"pack-timeout","type":"advanced","hosts":["stinkyboi.com","*.stinkyboi.com","*.cordium.stinkyboi.com"],"certificate_authority":"lets_encrypt","validation_method":"txt","validity_days":90,"cloudflare_branding":false,"status":"validation_timed_out"}]}'
+          ;;
+        drift)
+          printf '%s\n' '{"success":true,"result":[{"id":"pack-drift","type":"advanced","hosts":["stinkyboi.com","*.stinkyboi.com","*.cordium.stinkyboi.com"],"certificate_authority":"ssl_com","validation_method":"http","validity_days":365,"cloudflare_branding":true,"status":"active"}]}'
+          ;;
+        missing)
+          printf '%s\n' '{"success":true,"result":[]}'
+          ;;
+      esac
+    elif [[ "$args" == *'/ssl/certificate_packs/order'* ]]; then
+      printf '%s\n' '{"success":true,"result":{"id":"pack-new","status":"pending_validation"}}'
+    elif [[ "$args" == *'/ssl/certificate_packs/pack-timeout'* ]]; then
+      printf '%s\n' '{"success":true,"result":{"id":"pack-timeout","status":"pending_validation"}}'
+    elif [[ "$args" == *'tls-audit.cordium.stinkyboi.com'* ]]; then
+      return 0
+    else
+      return 1
+    fi
+  }
+  export -f curl
+  export CLOUDFLARE_SSL_CERTIFICATES_TOKEN=test
+  MOCK_MODE=active "$workspace_certificate_script" check | grep -F 'Verified active' >/dev/null
+  MOCK_MODE=missing "$workspace_certificate_script" apply | grep -F 'Ordered Cloudflare Advanced' >/dev/null
+  if MOCK_MODE=missing "$workspace_certificate_script" check >/dev/null 2>&1; then
+    echo "Missing Cordium workspace certificate pack unexpectedly passed" >&2
+    exit 1
+  fi
+  if MOCK_MODE=drift "$workspace_certificate_script" check >/dev/null 2>&1; then
+    echo "Drifted Cordium workspace certificate pack unexpectedly passed" >&2
+    exit 1
+  fi
+  if MOCK_MODE=drift "$workspace_certificate_script" apply >/dev/null 2>&1; then
+    echo "Drifted Cordium workspace certificate pack unexpectedly triggered an order" >&2
+    exit 1
+  fi
+  MOCK_MODE=timeout "$workspace_certificate_script" apply | grep -F 'Restarted validation' >/dev/null
+)
+echo "::endgroup::"
+
 echo "::group::Terragrunt pull request gate"
 yq -o=json '.' .github/workflows/terragrunt-plan.yml |
   jq -e '
