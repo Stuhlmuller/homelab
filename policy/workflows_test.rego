@@ -65,6 +65,12 @@ test_rejects_direct_aws_output if {
 	contains(msg, "withhold sensitive command output")
 }
 
+test_rejects_direct_octeliumctl_output if {
+	violations := deny with input as workflow_with_live_run("octeliumctl get services -o json")
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
 test_rejects_direct_terragrunt_state_output if {
 	violations := deny with input as workflow_with_live_run("terragrunt output -json")
 	some msg in violations
@@ -335,11 +341,42 @@ test_allows_withheld_live_command_output if {
 	count(violations) == 0
 }
 
+test_rejects_octelium_catalog_without_one_use_credential if {
+	violations := deny with input as workflow_with_catalog_run({})
+	some msg in violations
+	contains(msg, "must use its one-use catalog credential")
+}
+
+test_allows_one_use_octelium_catalog_with_private_output if {
+	violations := deny with input as workflow_with_catalog_run({
+		"OCTELIUM_CATALOG_AUTH_TOKEN": "test",
+	})
+	count(violations) == 0
+}
+
+test_rejects_octelium_catalog_credential_on_different_step if {
+	violations := deny with input as workflow_with_catalog_credential_on_different_step
+	some msg in violations
+	contains(msg, "must use its one-use catalog credential")
+}
+
 withheld_live_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 umask 077
 bash scripts/ci/install-kubeconfig.sh
+EOF
+then
+  echo "failure details withheld"
+  exit 1
+fi
+echo "success details withheld"`
+
+withheld_catalog_run := `private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+umask 077
+bash scripts/ci/octelium-private-kubernetes-apply.sh
 EOF
 then
   echo "failure details withheld"
@@ -365,5 +402,30 @@ workflow_with_live_run(run) := {
 	"jobs": {"test": {
 		"runs-on": "ubuntu-latest",
 		"steps": [{"run": run, "env": {"OCTELIUM_AUTH_TOKEN": "test"}}],
+	}},
+}
+
+workflow_with_catalog_run(env) := {
+	"name":        "Octelium catalog test",
+	"on":          "workflow_dispatch",
+	"permissions": {},
+	"jobs": {"test": {
+		"runs-on":     "ubuntu-latest",
+		"permissions": {"contents": "read"},
+		"steps":       [{"run": withheld_catalog_run, "env": env}],
+	}},
+}
+
+workflow_with_catalog_credential_on_different_step := {
+	"name":        "Octelium catalog test",
+	"on":          "workflow_dispatch",
+	"permissions": {},
+	"jobs": {"test": {
+		"runs-on":     "ubuntu-latest",
+		"permissions": {"contents": "read"},
+		"steps": [
+			{"run": withheld_catalog_run},
+			{"run": "true", "env": {"OCTELIUM_CATALOG_AUTH_TOKEN": "test"}},
+		],
 	}},
 }

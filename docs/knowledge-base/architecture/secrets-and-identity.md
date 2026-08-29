@@ -170,6 +170,19 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
   affects CI, operator, and Cordium Kubernetes access, so validate both Services
   after rotation.
+- Focused reconciliation of `homelab-private-kubernetes-access` and
+  `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
+  and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
+  limited to one authentication, expires after 30 minutes, auto-deletes on
+  login, and copies a highest-priority, fail-closed six-method Policy/Service
+  API policy into a 15-minute client Session. Its helper-only template is kept
+  outside the general Octelium catalog with an already-expired timestamp; only
+  the lifecycle helper replaces that timestamp and applies it. The
+  protected `homelab-production` secret
+  `OCTELIUM_CATALOG_AUTH_TOKEN` exists only between provisioning and the
+  mandatory revoke step. Octelium v0.35 cannot scope these methods by object
+  name; the fixed helper, reviewed hashes, exact `main` SHA, and production
+  approval provide that boundary. See `docs/ci-cd.md`.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

@@ -484,6 +484,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/lint.yml:build' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
+    '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
+    '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -513,6 +515,7 @@ done <<'EOF'
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
+.github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
 .github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
@@ -523,6 +526,7 @@ echo "::endgroup::"
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
+  '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
   job="${workflow_job##*:}"
@@ -613,6 +617,73 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       contains("startswith(\"Full @ \")") and
       contains("max_by(.run_number)"))
   ' >/dev/null
+yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
+  jq -e '
+    [.jobs.reconcile.steps[] |
+      select(.name == "Reconcile Private Kubernetes Catalog")] as $catalog_steps |
+    (.on | keys) == ["workflow_dispatch"] and
+    .on.workflow_dispatch.inputs == {
+      "expected_sha": {
+        "description": "Exact main commit to apply",
+        "required": true,
+        "type": "string"
+      },
+      "dispatch_id": {
+        "description": "Unique identifier used to bind the caller to this run",
+        "required": true,
+        "type": "string"
+      }
+    } and
+    .["run-name"] == "Private Kubernetes @ ${{ github.sha }} / ${{ inputs.dispatch_id }}" and
+    .permissions == {} and
+    (.jobs | keys | sort) == ["reconcile", "static-policy"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs["static-policy"].steps[0].name == "Verify Dispatch Commit" and
+    .jobs.reconcile.needs == ["static-policy"] and
+    .jobs.reconcile.environment == {"name": "homelab-production"} and
+    .jobs.reconcile.permissions == {"contents": "read"} and
+    .jobs.reconcile["timeout-minutes"] == 15 and
+    .jobs.reconcile.concurrency == {
+      "group": "octelium-private-kubernetes-production",
+      "cancel-in-progress": false
+    } and
+    .jobs.reconcile.steps[0].name == "Verify Current Main Commit" and
+    .jobs.reconcile.steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
+    .jobs.reconcile.steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
+    .jobs.reconcile.steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+    .jobs.reconcile.steps[0].env.GH_TOKEN == "${{ github.token }}" and
+    (.jobs.reconcile.steps[0].run |
+      contains("repos/${GH_REPO}/git/ref/heads/main") and
+      contains("test \"${EXPECTED_SHA}\" = \"${ACTUAL_SHA}\"") and
+      contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
+    ($catalog_steps | length) == 1 and
+    $catalog_steps[0].env == {
+      "OCTELIUM_CATALOG_AUTH_TOKEN": "${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}"
+    } and
+    ($catalog_steps[0].run |
+      contains("bash scripts/ci/octelium-private-kubernetes-apply.sh") and
+      contains("details withheld")) and
+    ([.jobs.reconcile.steps[] |
+      select(.name != "Reconcile Private Kubernetes Catalog") |
+      .env.OCTELIUM_CATALOG_AUTH_TOKEN // empty] | length) == 0 and
+    (.jobs.reconcile | tostring | contains("id-token") | not) and
+    (.jobs.reconcile | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
+    (.jobs.reconcile | tostring | contains("kubectl") | not) and
+    (.jobs.reconcile | tostring | contains("terragrunt") | not)
+  ' >/dev/null
+bash -n \
+  scripts/ci/octelium-private-kubernetes-apply.sh \
+  scripts/octelium-private-kubernetes-credential.sh
+[[ "$(shasum -a 256 scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
+  "53ae8623de77869e4269fec263bc6ba4ed56f5d2c706661909d9d465ea7fd3d9" ]] || {
+  echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
+  exit 1
+}
+[[ "$(shasum -a 256 scripts/octelium-private-kubernetes-credential.sh | cut -d' ' -f1)" == \
+  "f3252fb26d58b7eb4ae57ac8eab64b5d8e76028406a0b60cbc1cc2332ff97ace" ]] || {
+  echo "Octelium private Kubernetes credential helper changed; review its exact security hash." >&2
+  exit 1
+}
 bash -n scripts/ci/terragrunt-apply.sh
 rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci/terragrunt-apply.sh
 echo "::endgroup::"
@@ -626,6 +697,8 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
     [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
+    [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
     $policies[0].spec.rules == [
       {
@@ -675,7 +748,54 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $services[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
     # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
     $services[0].spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and
-    ($services[0].spec.config.tls.insecureSkipVerify // false) == false
+    ($services[0].spec.config.tls.insecureSkipVerify // false) == false and
+    ($catalog_users | length) == 1 and
+    $catalog_users[0].spec == {
+      "type": "WORKLOAD",
+      "session": {
+        "clientDuration": {"minutes": 15},
+        "maxPerUser": 2
+      }
+    } and
+    ($catalog_credentials | length) == 0
+  ' >/dev/null
+yq -o=json '.' docs/examples/octelium/homelab-private-kubernetes-ci-credential.yaml |
+  jq -e '
+    .kind == "Credential" and
+    .metadata.name == "homelab-private-kubernetes-ci" and
+    .spec == {
+      "type": "AUTH_TOKEN",
+      "user": "homelab-catalog-ci",
+      "expiresAt": "1970-01-01T00:00:00Z",
+      "sessionType": "CLIENT",
+      "maxAuthentications": 1,
+      "autoDelete": true,
+      "authorization": {
+        "inlinePolicies": [{
+          "name": "private-kubernetes-catalog-apply",
+          "spec": {
+            "rules": [
+              {
+                "name": "deny-other-core-methods",
+                "priority": -4,
+                "effect": "DENY",
+                "condition": {
+                  "not": "ctx.user.metadata.name == \"homelab-catalog-ci\" && ctx.user.spec.type == \"WORKLOAD\" && ctx.session.status.type == \"CLIENT\" && ctx.namespace.metadata.name == \"octelium-api\" && ctx.service.metadata.name == \"default.octelium-api\" && ctx.service.spec.mode == \"GRPC\" && ctx.request.grpc.serviceFullName == \"octelium.api.main.core.v1.MainService\" && ctx.request.grpc.method in [\"ListPolicy\", \"CreatePolicy\", \"UpdatePolicy\", \"ListService\", \"CreateService\", \"UpdateService\"]"
+                }
+              },
+              {
+                "name": "required-core-methods",
+                "priority": -4,
+                "effect": "ALLOW",
+                "condition": {
+                  "match": "ctx.user.metadata.name == \"homelab-catalog-ci\" && ctx.user.spec.type == \"WORKLOAD\" && ctx.session.status.type == \"CLIENT\" && ctx.namespace.metadata.name == \"octelium-api\" && ctx.service.metadata.name == \"default.octelium-api\" && ctx.service.spec.mode == \"GRPC\" && ctx.request.grpc.serviceFullName == \"octelium.api.main.core.v1.MainService\" && ctx.request.grpc.method in [\"ListPolicy\", \"CreatePolicy\", \"UpdatePolicy\", \"ListService\", \"CreateService\", \"UpdateService\"]"
+                }
+              }
+            ]
+          }
+        }]
+      }
+    }
   ' >/dev/null
 yq -o=json '.' clusters/homelab/apps/istio/values.yaml |
   jq -e '
