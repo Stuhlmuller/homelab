@@ -17,6 +17,20 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Argo CD bootstrap security floor"
+argocd_rendered="$(
+  terragrunt --log-disable --working-dir IaC/bootstrap/argocd \
+    render --json --write=false --no-color
+)"
+jq -e '.inputs.chart_version == "10.0.0"' <<<"$argocd_rendered" >/dev/null
+jq -er '.inputs.values[0]' <<<"$argocd_rendered" |
+  yq -o=json '.' |
+  jq -e '
+    .global.image.tag == "v3.4.8@sha256:527df4ae3f60662a06334d4f3ada018bea056f29f53639fc618a4bf5bfb6c585" and
+    .global.networkPolicy.create == true
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/live/argocd-apps

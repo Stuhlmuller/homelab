@@ -177,6 +177,24 @@ Secrets Operator CRDs and AWS SSM access. Automated sync may retry those
 resources until External Secrets Operator is installed by the app onboarding
 stack.
 
+## Version And Security Upgrade Contract
+
+The bootstrap pins argo-helm `10.0.0` and Argo CD `v3.4.8` by OCI index digest.
+Chart 10 enables component NetworkPolicies that close
+`GHSA-47m3-95c7-g2g8`; do not disable them or roll the chart back below 10.
+Before an upgrade, require Ready nodes, no active Argo CD operations, a captured
+Helm revision and values, and a protected saved Terragrunt plan showing one
+in-place `helm_release` update with no creates or destroys.
+
+After rollout, verify every Argo CD workload is Ready and uses the reviewed
+image digest, all five NetworkPolicies exist, Applications and AppProjects are
+healthy, repository generation and sync work, Entra login and admin/readonly
+RBAC work through Octelium, and Prometheus still scrapes Argo CD. Observe
+reconcile errors, auth failures, restarts, CPU, memory, and latency for 24 hours.
+If the application image regresses, first revert only to chart 10's default
+Argo CD `v3.4.4` while retaining its NetworkPolicies. A full chart rollback
+below 10 reopens the advisory and is last-resort recovery only.
+
 ## Drift And Reconciliation
 
 Do not hand-edit the live Application as a permanent change. If Argo CD-owned

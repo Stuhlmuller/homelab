@@ -48,10 +48,20 @@ inputs = {
   create_namespace = true
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
-  chart_version    = "9.5.15"
+  chart_version    = "10.0.0"
 
   values = [
     yamlencode({
+      global = {
+        image = {
+          tag = "v3.4.8@sha256:527df4ae3f60662a06334d4f3ada018bea056f29f53639fc618a4bf5bfb6c585"
+        }
+
+        networkPolicy = {
+          create = true
+        }
+      }
+
       configs = {
         cm = {
           url          = "https://argocd.stinkyboi.com"
