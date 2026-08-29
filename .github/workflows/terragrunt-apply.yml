@@ -23,7 +23,6 @@ permissions: {}
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
 
 jobs:
   static-policy:
@@ -184,7 +183,7 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
           ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
@@ -192,7 +191,7 @@ jobs:
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version >/dev/null
+          kubectl --request-timeout=15s version >/dev/null 2>&1
           bash scripts/ci/terragrunt-apply.sh
           EOF
           then

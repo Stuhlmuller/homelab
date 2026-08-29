@@ -22,7 +22,7 @@ usage() {
 Usage: scripts/octelium-ci-credential.sh [options]
 
 Apply the Octelium CI service catalog and rotate the policy-bound GitHub
-Actions Octelium credential used by Terragrunt plan/apply and diagnostics.
+Actions Octelium credential used by Terragrunt plan/apply.
 
 The script requires an authenticated Octelium admin session for octeliumctl.
 It captures the generated credential token in a 0600 temporary file, pipes it

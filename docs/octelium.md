@@ -83,7 +83,7 @@ They create:
   the Kubernetes API Service.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
-- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,
+- Workload User `homelab-ci` for GitHub Actions plan/apply,
   with matching 30-day clientless-session and access-token lifetimes. Rotate
   its credential every 21 days with `scripts/octelium-ci-credential.sh`.
 - Dormant workload User `homelab-catalog-ci` for the protected private
