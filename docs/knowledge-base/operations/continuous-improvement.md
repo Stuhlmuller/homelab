@@ -62,6 +62,20 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** phase 1 desired state prepared; merge blocked
+- **Area:** Octelium storage security / stateful upgrades
+- **Evidence:** Issue `#789` and
+  [[operations/security-patch-upgrades-789]] select immutable Octelium Redis
+  7.4.11 and PostgreSQL 14.24 images from primary release and registry
+  evidence, with PostgreSQL and Redis at Argo CD sync waves 0 and 2.
+- **Risk:** The old images have published security exposure. A merge before the
+  preflight passes would restart both control-plane stores without a proven
+  PostgreSQL restore or repository-owned Redis AOF recovery path.
+- **Next step:** Keep phase 1 unmerged until its backup, restore, catalog, and
+  Redis recovery gates pass. Then require Octelium smoke tests and 24 hours of
+  stable restarts, latency, CPU, memory, database, and persistence evidence.
+  Implement every other researched workload as a later independent phase.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves

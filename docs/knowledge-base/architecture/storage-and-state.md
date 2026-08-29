@@ -150,6 +150,15 @@ retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup; restore validation remains open.
 
+Issue #789 phase 1 updates only Octelium PostgreSQL 14.24 and Redis 7.4.11
+without changing their storage layouts. It remains blocked until the logical
+backup is fresh, issue #790 proves PostgreSQL restore, and a repository-owned
+Redis AOF recovery path exists or rebuildability is proven. Argo CD waves apply
+PostgreSQL before Redis; the exact preflight, rollback, and 24-hour observation
+gate lives in [[operations/security-patch-upgrades-789]]. All other researched
+workloads remain unimplemented later phases. PostgreSQL 14 reaches end of life
+on 2026-11-12, so its major migration stays separate from this patch.
+
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
 set: restore the database and upload PVCs from the same backup point before

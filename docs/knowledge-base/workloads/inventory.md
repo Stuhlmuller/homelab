@@ -65,6 +65,12 @@ AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
 
+Issue #789 phase 1 prepares only Octelium PostgreSQL 14.24 and Redis 7.4.11,
+ordered by Argo CD sync waves. Merge remains blocked on PostgreSQL restore,
+catalog, and backup evidence plus a repository-owned Redis AOF recovery path.
+Media, n8n, Dispatcharr, AFFiNE, and LiteLLM upgrades remain unimplemented
+later phases; see [[operations/security-patch-upgrades-789]].
+
 Istio's public Octelium API lease reconciler runs on `zimaboard-0` and targets
 NodePort `10.1.0.200:30443`. Grafana alerts when its last successful renewal is
 stale or missing; Xfinity UPnP enablement remains an external authority gate.
