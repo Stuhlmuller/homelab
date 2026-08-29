@@ -1,17 +1,22 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: media
 resources:
   - backup-cronjob.yaml
   - namespace.yaml
+  - staging-namespace.yaml
+  - rollback-cutover.yaml
+  - isolated/cutover-cleanup.yaml
+  - isolated/cutover-networkpolicy.yaml
   - externalsecret.yaml
-  - local-storage.yaml
-  - media-storage.yaml
+  - isolated/externalsecret.yaml
+  - isolated/local-storage.yaml
+  - isolated/media-storage.yaml
   - virtualservice.yaml
 configMapGenerator:
   - name: deluge-catalog-recovery
+    namespace: media
     files:
-      - recover-torrent-catalog.py
-      - reconcile-completed.py
+      - recover-torrent-catalog.py=isolated/recover-torrent-catalog.py
+      - reconcile-completed.py=isolated/reconcile-completed.py
 generatorOptions:
   disableNameSuffixHash: true

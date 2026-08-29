@@ -118,18 +118,24 @@ exceptions are:
 
 - `media-postgres-local`, a retained static `hostPath` PV pinned to `acer` and
   backed by `/var/lib/media-postgres` on the Talos `EPHEMERAL` filesystem.
-- `deluge-config-local`, `radarr-config-local`, and `sonarr-config-local`,
-  retained static `hostPath` PVs pinned to `zimaboard-0`. Their former NFS
-  config claims remain backup and recovery targets rather than active app
-  storage.
+- `deluge-config-local-isolated`, `radarr-config-local`, and
+  `sonarr-config-local`, retained static `hostPath` PVs pinned to
+  `zimaboard-0`. The original `media/deluge-config-local` PV/PVC pair remains
+  retained for rollback. Former NFS config claims remain backup and recovery
+  targets rather than active app storage.
 - Deluge, Radarr, and Sonarr media-library static PV/PVC pairs that mount the
   QNAP `/media` export directly.
 
-| Claim | Owned by | Mounted in apps | Media subdirectory |
+| Namespace/claim | Owned by | Mounted in apps | Media subdirectory |
 | --- | --- | --- | --- |
-| `media-downloads` | `clusters/homelab/apps/deluge/media-storage.yaml` | Deluge, Radarr, Sonarr | `/media/downloads` |
-| `media-movies` | `clusters/homelab/apps/radarr/media-storage.yaml` | Radarr | `/media/movies` |
-| `media-tv` | `clusters/homelab/apps/sonarr/media-storage.yaml` | Sonarr | `/media/tv` |
+| `deluge/media-downloads` | `clusters/homelab/apps/deluge/isolated/media-storage.yaml` | Deluge | `/media/downloads` |
+| `media/media-downloads` | `clusters/homelab/apps/deluge/isolated/media-storage.yaml` | Radarr, Sonarr | `/media/downloads` |
+| `media/media-movies` | `clusters/homelab/apps/radarr/media-storage.yaml` | Radarr | `/media/movies` |
+| `media/media-tv` | `clusters/homelab/apps/sonarr/media-storage.yaml` | Sonarr | `/media/tv` |
+
+The two downloads claims bind distinct retained PV objects to the same QNAP
+export. This is the explicit cross-namespace sharing contract; Kubernetes does
+not allow Deluge to mount the media namespace's PVC directly.
 
 Each media app also owns a migration Job that runs as UID/GID `65534`, mounts
 the old dynamically provisioned PVC read-only, copies its files into the
@@ -199,7 +205,7 @@ app has acceptable backup and restore coverage.
 | prometheus | metrics | `nfs-default` | NFS backup or metrics retention acceptance | Restore PVC or accept documented metrics loss | Preserve PVC unless explicitly deleting metrics |
 | grafana | dashboards, config | `nfs-default` | NFS backup plus repo-owned dashboard and alerting config in `clusters/homelab/apps/grafana` | Restore PVC and re-sync Grafana desired state | Preserve PVC |
 | affine | PostgreSQL/pgvector database, uploaded blobs, instance config; ephemeral Redis cache/jobs | `nfs-default` for durable state; node-local `emptyDir` for Redis; former Redis AOF claim retained but unmounted | Coordinated NFS backup plus `pg_dump` before upgrades; Redis is excluded | Restore PostgreSQL and blob/config claims from one recovery point; Redis rebuilds empty and queued work may be lost | Preserve durable claims and the ECDSA signing key; preserve the inactive former Redis AOF claim during the tuning rollback window |
-| deluge | active config on `deluge-config-local`, retained NFS config/archive claim, shared downloads on `media-downloads` backed by `/media` | static local config PV plus retained `nfs-default` and static `/media` PV | Nightly verified config archive to NFS with 14-day retention plus `/media/downloads` backup | Stop Deluge, restore one validated config archive into the local claim through a reviewed Job, then verify `/media/downloads` before app sync | Preserve the local PV, retained NFS claim, and `/media/downloads` |
+| deluge | active config on `deluge/deluge-config-local`, retained old and new NFS config/archive claims, shared downloads on `deluge/media-downloads` backed by `/media` | static local config PV plus retained `nfs-default` and static `/media` PV | Nightly verified config archive to the new namespace-local NFS claim with 14-day retention plus `/media/downloads` backup; verify the first post-cutover archive because the old history stays in `media/deluge-config` | Stop Deluge, restore one validated config archive into the local claim through a reviewed Job, then verify `/media/downloads` before app sync | Preserve both local PV objects, both NFS archive claims, and both `/media` PV/PVC pairs; the cutover hook must prevent concurrent config writers |
 | dispatcharr | file-backed runtime data plus dedicated `dispatcharr-postgres` database | `nfs-default` | NFS backup for data PVC and `dispatcharr-postgres` PVC plus PostgreSQL logical dump | Restore data PVC and `dispatcharr-postgres` PVC or logical dump before app sync | Preserve PVCs and database unless intentionally resetting IPTV state |
 | media-postgres | Sonarr, Radarr, and Prowlarr PostgreSQL databases | static `media-postgres-local` on `acer`; retained `nfs-default` backup claim | Nightly role globals without password hashes, six custom-format dumps, and checksums on retained NFS; 14-day retention; nominal 24-hour RPO, but actual RPO is the newest verified set; Grafana warns after 30 hours without a verified success | Fence the writer with the repository recovery overlay, restore globals plus all six matching dumps, then restart the media apps | Preserve both claims; the NFS physical copy is stale after local writes begin |
 | multica | pgvector PostgreSQL database and backend uploads | `nfs-default` | NFS backup plus PostgreSQL logical dump before upgrades | Restore database and uploads PVCs from the same recovery point before app sync | Preserve PVCs unless intentionally rebuilding the Multica instance |

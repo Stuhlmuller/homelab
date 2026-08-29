@@ -98,9 +98,10 @@ policy is added and validated.
 
 Ambient is intentionally not enabled for:
 
-- `media`, because Deluge Gluetun/WireGuard and the current media app traffic
-  model still need a repo-owned waypoint or equivalent policy design before
-  re-enrollment;
+- `deluge`, because Gluetun/WireGuard owns the pod network namespace and cannot
+  use sidecar injection;
+- `media`, because the current Servarr and PostgreSQL traffic model still needs
+  a repo-owned waypoint or equivalent policy design before re-enrollment;
 - `finance`, because OctoBot needs a separate identity-policy design before any
   service-to-service or trading API control path is mesh-enrolled;
 - `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
@@ -116,7 +117,7 @@ workload that needs it.
 
 | Namespace | Reason | Desired-state owner |
 |-----------|--------|---------------------|
-| `media` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` for WireGuard. | `clusters/homelab/apps/deluge/namespace.yaml` |
+| `deluge` | Deluge Gluetun needs `NET_ADMIN` and `/dev/net/tun` for WireGuard. | `clusters/homelab/apps/deluge/isolated/namespace.yaml` |
 | `istio-system` | Istio gateway and dataplane components need elevated networking permissions. | `clusters/homelab/apps/istio/namespace.yaml` |
 | `octelium` | Octelium data-plane gateway pods need host networking, hostPath CNI access, and `NET_ADMIN`/`NET_RAW`. | `scripts/octelium-cluster-bootstrap.sh` |
 | `octelium-client` | Octelium connector pods need `NET_ADMIN` and `MKNOD` to create `/dev/net/tun` and serve app Services over a real TUN interface. | `clusters/homelab/apps/octelium/namespace.yaml` |
@@ -136,6 +137,7 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 | `argocd` | `clusters/homelab/argocd/self-management/namespace.yaml` |
 | `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
 | `finance` | `clusters/homelab/apps/octobot/namespace.yaml` |
+| `media` | `clusters/homelab/apps/deluge/isolated/namespace.yaml` |
 | `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
 | `storage` | `clusters/homelab/platform/storage/namespace.yaml` |
 
@@ -143,12 +145,12 @@ Do not broaden privileged admission for convenience. If another workload needs
 privileged mode, add the reason, owner, rollback note, and safer alternatives in
 the same PR as the manifest change.
 
-Security audit note from 2026-05-25: `media` is broader than ideal because
-Sonarr, Radarr, Prowlarr, and media PostgreSQL share the namespace with the
-Deluge VPN Pod that needs `/dev/net/tun`. Do not add more privileged workloads
-to `media`. The long-term hardening path is to move Deluge and its shared
-downloads contract into a dedicated privileged namespace or replace the VPN
-pattern with one that does not require privileged namespace admission.
+The 2026-08-29 isolation closes the earlier broad `media` exception. Deluge,
+its VPN secret, namespace-local storage claims, and Gluetun capability now live
+in `deluge`; `media` enforces `baseline`, which still supports the current
+PostgreSQL root init container. Pod Security admission blocks privileged media
+Pods, and repository policy tests reject an explicitly privileged container in
+that namespace before merge.
 
 ## Network Policy Placeholder
 

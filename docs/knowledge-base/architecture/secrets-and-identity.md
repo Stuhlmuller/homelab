@@ -197,7 +197,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   and materialized by `affine-secrets`; it must remain stable because AFFiNE
   uses it for token signing and application-data encryption.
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
-  material. It reads the full profile from
+  material in the dedicated `deluge` namespace. The `aws-ssm`
+  ClusterSecretStore allows that namespace, and Conftest reserves the
+  `/homelab/deluge/` prefix for it. One exact annotated media ExternalSecret is
+  allowed only so the legacy source remains usable before cutover and during
+  rollback. Deluge reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
   refreshes on ExternalSecret changes; after replacing the SSM profile value,
   bump `homelab.rst.io/wireguard-profile-ssm-version` on both the

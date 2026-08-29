@@ -18,10 +18,10 @@ SSM Parameter Store and publishes it as `wg0.conf`:
 The `deluge-vpn` ExternalSecret uses `refreshPolicy: OnChange`. After replacing
 the AirVPN profile values in SSM, bump the non-secret
 `homelab.rst.io/wireguard-profile-ssm-version` annotation in both
-`externalsecret.yaml` and `values.yaml`. The ExternalSecret metadata change
-causes External Secrets to render a fresh Kubernetes Secret, and the pod
-template annotation rolls Deluge so Gluetun reads the new WireGuard profile at
-startup.
+`isolated/externalsecret.yaml` and `values.yaml`. The ExternalSecret
+metadata change causes External Secrets to render a fresh Kubernetes Secret,
+and the pod template annotation rolls Deluge so Gluetun reads the new WireGuard
+profile at startup.
 
 Gluetun uses its native AirVPN WireGuard provider. Its startup wrapper reads
 the private key, preshared key, and first IPv4 interface address from the
@@ -39,9 +39,9 @@ metrics without Gluetun trying to persist unused data under `/tmp`.
 
 The AirVPN forwarded port is not secret desired state. This deployment uses
 AirVPN forwarded port `5983`; set Deluge's incoming BitTorrent port to that same
-value. Configure it in `values.yaml` through `FIREWALL_VPN_INPUT_PORTS` and the
-shared `DELUGE_INCOMING_PORT` value. A `port-config` sidecar shares the Deluge
-config volume and applies:
+value. Configure it in `values.yaml` through
+`FIREWALL_VPN_INPUT_PORTS` and the shared `DELUGE_INCOMING_PORT` value. A
+`port-config` sidecar shares the Deluge config volume and applies:
 
 ```sh
 deluge-console -c /config "config --set random_port false; config --set listen_ports (${DELUGE_INCOMING_PORT}, ${DELUGE_INCOMING_PORT}); config --set random_outgoing_ports true"
@@ -76,18 +76,19 @@ healthy but `deluged` cannot restore state or accept console connections.
 
 ## Download Paths
 
-Deluge owns the shared `media-downloads` PVC backed by the QNAP `/media` NFS
-export. Radarr and Sonarr mount that same claim at `/downloads`, so their
-download-client checks can see the files Deluge creates without remote path
-mappings.
+Deluge and the remaining media apps use namespace-local `media-downloads` PVCs
+backed by separate retained PV objects that both mount the QNAP `/media` NFS
+export. Deluge mounts the claim in `deluge`; Radarr and Sonarr keep the claim in
+`media`. Both see `/media/downloads`, so the download-client contract needs no
+remote path mapping even though Kubernetes PVCs cannot cross namespaces.
 
 The `media-downloads-migration` Job copies any files from the older
 `deluge-downloads` PVC into `/media/downloads` before Deluge switches to the new
 claim. The job also creates the expected Servarr subdirectories, sets
 write-friendly NFS permissions, and verifies that the target path accepts a
-write from inside the cluster. The older `deluge-downloads` claim remains in
-desired state as the migration source and rollback reference until the copy is
-verified.
+write from inside the cluster. The older `media/deluge-downloads` claim remains
+the migration and rollback reference; `media/media-downloads` stays active for
+Radarr and Sonarr and remains the namespace rollback target for Deluge.
 
 Use these Deluge paths:
 
@@ -103,24 +104,29 @@ Sonarr, and manual directories present before Deluge starts.
 
 ## Config Storage
 
-Active Deluge config uses the retained `deluge-config-local` volume backed by
-`/var/lib/deluge` on `zimaboard-0`. This removes the daemon catalog, fast-resume
-files, authentication, and probe reads from the QNAP NFS latency path that
-repeatedly stalled Deluge while the VPN remained healthy.
+Active Deluge config uses the retained `deluge/deluge-config-local` claim bound
+to `deluge-config-local-isolated`, backed by `/var/lib/deluge` on
+`zimaboard-0`. This removes the daemon catalog, fast-resume files,
+authentication, and probe reads from the QNAP NFS latency path that repeatedly
+stalled Deluge while the VPN remained healthy.
 
 The initial cutover stopped the singleton and cold-copied its existing
 `deluge-config` NFS claim into the empty local volume before starting Deluge.
 The guarded copy took 4 minutes 6 seconds for roughly 5.2 MB, directly
 demonstrating the QNAP stall on the old startup path. The steady-state pod
-mounts only the local config and shared downloads claims; the retained NFS
-config claim is mounted only by the backup CronJob.
+mounts only the local config and shared downloads claims. The namespace move
+creates a new `deluge/deluge-config` NFS archive claim for the backup CronJob;
+the old `media/deluge-config` claim and its historical archives remain retained
+for rollback.
 
 `deluge-config-backup` writes a verified compressed archive of the local config
 back to `deluge-config` at 03:30 Pacific each day and retains 14 days. The
 archive is a best-effort filesystem snapshot of a running daemon. Keep several
 generations because related state files can change while an archive is being
-read. The first scheduled run completed and validated
-`20260731T103003Z.tar.gz`.
+read. The historical media claim's first scheduled run completed and validated
+`20260731T103003Z.tar.gz`. The namespace-local archive claim starts empty;
+trigger and verify its first backup immediately after cutover before treating
+the new path as recoverable.
 
 Steady-state startup assigns only the local `/config` mount root to UID/GID
 `1000`, then removes LinuxServer's broad ownership hook before `/init`. This
@@ -137,9 +143,11 @@ UserVolume if that recovery model becomes unacceptable.
 ## Pod Security
 
 Gluetun needs `NET_ADMIN` and `/dev/net/tun` to create the WireGuard tunnel.
-The `media` namespace is labeled for privileged Pod Security admission by this
-app path so Kubernetes can admit the Deluge VPN Pod. Keep privileged workloads
-in this namespace limited to repo-reviewed media automation.
+Only the dedicated `deluge` namespace uses privileged Pod Security admission.
+The unrelated `media` namespace enforces `baseline`, the narrowest profile that
+supports its current PostgreSQL root init container. Repository policy rejects
+an explicitly privileged media container, and every namespace continues to
+audit and warn at `restricted`.
 
 Deluge uses a `Recreate` rollout strategy because the app and helper sidecars
 share a single node-local `ReadWriteOnce` config PVC. Kubernetes must stop the
@@ -154,41 +162,89 @@ recovery remain the final safety net.
 
 ## Mesh Policy
 
-The `media` namespace is intentionally not enrolled in Istio ambient mode while
-the operator web UIs are exposed through the shared Istio ingress path published
-by Octelium. The Istio gateway must be able to proxy to Deluge, Radarr, Sonarr,
-and Prowlarr services without ambient HBONE resets, and the Deluge Pod cannot
-use sidecar injection because Gluetun owns the VPN network setup.
+The `deluge` and `media` namespaces are intentionally not enrolled in Istio
+ambient mode while the operator web UIs are exposed through the shared Istio
+ingress path published by Octelium. The Istio gateway must be able to proxy to
+Deluge, Radarr, Sonarr, and Prowlarr services without ambient HBONE resets, and
+the Deluge Pod cannot use sidecar injection because Gluetun owns the VPN network
+setup.
 
 Keep media UI access on the Octelium service catalog path that forwards TCP/443
 to the Istio reverse proxy. Reintroduce ambient mesh only with a repo-owned
 waypoint or equivalent gateway policy that preserves HTTPS access to the
 `*.stinkyboi.com` operator addresses.
 
+## Namespace Cutover And Rollback
+
+The legacy root source stays compatible with the existing `media` Application
+until the protected Terragrunt apply switches the Application destination,
+Helm values file, and Kustomize path together to `deluge` and `isolated/`.
+Before that apply, wait for `argocd-self-management` and `external-secrets` to
+sync, for the legacy Deluge source to stage the new namespace and storage, and
+for all of these read-only checks to pass:
+
+```sh
+kubectl get clustersecretstore aws-ssm
+kubectl -n deluge get externalsecret deluge-vpn
+kubectl -n deluge get pvc deluge-config-local deluge-config media-downloads
+kubectl get pv deluge-config-local-isolated deluge-media-downloads
+```
+
+The store and ExternalSecret must be Ready, all claims must be Bound, and both
+static PVs must be bound to the `deluge` claims. If any prerequisite is pending,
+do not start the cutover.
+Before the new singleton starts, a scoped PreSync hook deletes only
+`media/Deployment/deluge`. The isolated source then changes
+`media/Service/deluge` to an `ExternalName` alias for
+`deluge.deluge.svc.cluster.local`, preserving the URL already stored by Radarr
+and Sonarr. The hook keeps in-cluster token and CA authentication while explicit
+service-host variables restrict it to the documented Kubernetes API endpoint
+`10.1.0.199:6443`. A PostSync/SyncFail cleanup removes its temporary
+ServiceAccount, Role, and RoleBinding; the persistent cleanup identity can only
+delete those exact named resources.
+
+The old and new namespace-scoped claims use distinct PV objects but point at
+the same local config directory and QNAP export. The cutover hook is therefore a
+data-integrity fence, not optional cleanup. Rollback to the root source stages
+the `deluge` namespace first, stops the isolated Deployment, then lets Helm
+restore the original media Service type and Deployment. Expect a brief Deluge
+UI and download-client interruption in either direction.
+
+Run a full Deluge Application sync for cutover and rollback. Selective sync is
+unsupported because Argo CD skips hooks and would bypass the writer fence.
+
 ## Verification
 
 After SSM values are replaced and Argo CD syncs Deluge:
 
 ```sh
-kubectl -n media get externalsecret deluge-vpn
-kubectl -n media get secret deluge-vpn
-kubectl -n media get pod -l app.kubernetes.io/name=deluge
-kubectl get persistentvolume deluge-config-local
-kubectl -n media get pvc deluge-config-local deluge-config
-kubectl -n media logs deploy/deluge -c gluetun
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge get externalsecret deluge-vpn
+kubectl -n deluge get secret deluge-vpn
+kubectl -n deluge get pod -l app.kubernetes.io/name=deluge
+kubectl get persistentvolume deluge-config-local-isolated deluge-media-downloads
+kubectl -n deluge get pvc deluge-config-local deluge-config media-downloads
+kubectl -n media get pvc media-downloads
+kubectl -n media get service deluge \
+  -o jsonpath='{.spec.type}{" "}{.spec.externalName}{"\n"}'
+kubectl -n deluge logs deploy/deluge -c gluetun
+kubectl -n deluge exec deploy/deluge -c app -- \
   test -f /config/.nfs-migration-complete
-kubectl -n media get cronjob deluge-config-backup
+kubectl -n deluge get cronjob deluge-config-backup
+kubectl -n media get serviceaccount,role,rolebinding \
+  deluge-namespace-cutover --ignore-not-found
+kubectl -n deluge get role,rolebinding \
+  deluge-namespace-cutover --ignore-not-found
 ```
 
 The ExternalSecret should be ready, the `deluge-vpn` Secret should exist, the
 local and retained NFS claims should be bound, the migration marker should
 exist, the Pod should be ready on `zimaboard-0`, and Gluetun logs should show a
 healthy WireGuard session.
+Both cutover-identity checks must return no resources after a successful sync.
 This command should return success only while the VPN is healthy:
 
 ```sh
-kubectl -n media exec deploy/deluge -c gluetun -- /gluetun-entrypoint healthcheck
+kubectl -n deluge exec deploy/deluge -c gluetun -- /gluetun-entrypoint healthcheck
 ```
 
 If Gluetun is unhealthy, Deluge should lose readiness and torrent traffic should
@@ -205,9 +261,9 @@ If the Pod is `Ready` and Gluetun is healthy but Deluge is not usable, check
 the daemon before restarting Kubernetes resources:
 
 ```sh
-kubectl -n media logs deploy/deluge -c app --tail=120
-kubectl -n media logs deploy/deluge -c port-config --tail=120
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge logs deploy/deluge -c app --tail=120
+kubectl -n deluge logs deploy/deluge -c port-config --tail=120
+kubectl -n deluge exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config info
 ```
 
@@ -251,7 +307,7 @@ data; do not delete the `.torrent` files under `/config/state` or the
 inspect the archived files before using the manual session-state fallback:
 
 ```sh
-kubectl -n media exec deploy/deluge -c app -- /bin/sh -c '
+kubectl -n deluge exec deploy/deluge -c app -- /bin/sh -c '
 set -eu
 s6-svc -d /var/run/s6/services/deluged || true
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
@@ -265,15 +321,15 @@ ls -l /config/session.state /config/session.state.bak /config/session.state.brok
 Verify the daemon, port settings, directories, and VPN gate after recovery:
 
 ```sh
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config config listen_ports
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config config random_outgoing_ports
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge exec deploy/deluge -c app -- \
   timeout 10s deluge-console -c /config info
-kubectl -n media exec deploy/deluge -c daemon-metrics -- \
+kubectl -n deluge exec deploy/deluge -c daemon-metrics -- \
   python3 -c 'import urllib.request; print(urllib.request.urlopen("http://127.0.0.1:9797/metrics", timeout=25).read().decode(), end="")'
-kubectl -n media exec deploy/deluge -c gluetun -- \
+kubectl -n deluge exec deploy/deluge -c gluetun -- \
   /gluetun-entrypoint healthcheck
 ```
 
@@ -286,11 +342,11 @@ rollback reference if the backup state is worse.
 Verify scheduled backups after the first 03:30 run and after any QNAP incident:
 
 ```sh
-kubectl -n media get cronjob deluge-config-backup \
+kubectl -n deluge get cronjob deluge-config-backup \
   -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
-kubectl -n media get job \
+kubectl -n deluge get job \
   -l app.kubernetes.io/name=deluge-config-backup
-kubectl -n media logs job/<latest-deluge-config-backup-job>
+kubectl -n deluge logs job/<latest-deluge-config-backup-job>
 ```
 
 Restore requires a reviewed repository revision that stops Deluge, mounts one
@@ -304,14 +360,14 @@ incomplete catalog entries whose complete-root files all exist at their exact
 expected sizes. Dry-run first:
 
 ```sh
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge exec deploy/deluge -c app -- \
   python3 /scripts/reconcile-completed.py
 ```
 
 After reviewing the count and byte total, apply the native libtorrent recovery:
 
 ```sh
-kubectl -n media exec deploy/deluge -c app -- \
+kubectl -n deluge exec deploy/deluge -c app -- \
   python3 /scripts/reconcile-completed.py --apply
 ```
 
@@ -330,9 +386,10 @@ container repeatedly fails startup health checks with DNS lookup timeouts, treat
 that as an unhealthy WireGuard tunnel rather than a missing Kubernetes secret.
 The usual repair is to generate a fresh AirVPN WireGuard profile, replace
 `/homelab/deluge/vpn/wireguard-config` in SSM, then bump
-`homelab.rst.io/wireguard-profile-ssm-version` in both `externalsecret.yaml`
-and `values.yaml` so External Secrets renders the new Secret and Argo CD rolls
-the Pod. Do not patch or restart the live Pod as the durable fix.
+`homelab.rst.io/wireguard-profile-ssm-version` in both
+`isolated/externalsecret.yaml` and `values.yaml` so External Secrets
+renders the new Secret and Argo CD rolls the Pod. Do not patch or restart the
+live Pod as the durable fix.
 
 If Gluetun loops on `adding IPv6 rule ... file exists`, verify the rendered
 profile is still IPv4-only. AirVPN profiles can include IPv6 interface and

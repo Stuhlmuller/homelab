@@ -145,6 +145,14 @@ verify `showmount -e 10.1.0.2` lists `/media` for `10.1.0.199` through
 `10.1.0.202`, then confirm the `media-downloads-migration`,
 `media-movies-migration`, and `media-tv-migration` Jobs complete successfully.
 
+Deluge now mounts a namespace-local `deluge/media-downloads` claim while Radarr
+and Sonarr keep `media/media-downloads`; their retained PVs point at the same
+export. The namespace cutover is not complete until `media` enforces Pod
+Security `baseline`, `deluge` enforces the documented privileged exception,
+only `deluge/Deployment/deluge` exists, `media/Service/deluge` is an
+`ExternalName` alias for `deluge.deluge.svc.cluster.local`, and the first
+`deluge/deluge-config-backup` Job succeeds on the new archive claim.
+
 Sonarr, Radarr, and Prowlarr must also wait for `media-postgres` to sync and
 become healthy. Verify the ExternalSecrets, StatefulSet, PVC, and logical
 databases documented in `clusters/homelab/apps/media-postgres/README.md`

@@ -479,7 +479,7 @@ unit "argocd_apps_deluge" {
         destination = {
           name      = ""
           server    = "https://kubernetes.default.svc"
-          namespace = "media"
+          namespace = "deluge"
         }
 
         sources = [
@@ -505,7 +505,7 @@ unit "argocd_apps_deluge" {
           {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/deluge"
+            path           = "clusters/homelab/apps/deluge/isolated"
             kustomize      = {}
           }
         ]
@@ -534,7 +534,7 @@ unit "argocd_apps_deluge" {
         info = [
           {
             name  = "rollout"
-            value = "automated; verify NFS backup coverage before relying on downloads"
+            value = "automated isolated-namespace cutover; verify the first deluge backup and media service alias"
           }
         ]
       }

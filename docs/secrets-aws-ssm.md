@@ -61,7 +61,7 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`media`, `monitoring`, `octelium-client`, `octelium-public`,
+`deluge`, `media`, `monitoring`, `octelium-client`, `octelium-public`,
 `octelium-storage`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
@@ -312,16 +312,15 @@ application passwords, API keys, indexers, and app integrations still live on
 the persistent `/config` volumes and are managed through each app after first
 login. The `deluge-vpn` ExternalSecret reads the full AirVPN WireGuard profile
 from `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`.
-Gluetun runs this profile through the `custom` WireGuard provider so it uses
-the exact selected AirVPN peer instead of rotating through provider metadata.
-The custom endpoint must be an IP address at startup, but AirVPN profiles can
-contain a DNS name; the Deluge `config-wireguard` init container resolves that
-endpoint to an IPv4 address before Gluetun starts. The ExternalSecret uses
-`refreshPolicy: OnChange`; after replacing the profile in SSM, bump
+It runs in the dedicated `deluge` namespace; the original media ExternalSecret
+is retained only in the legacy source needed for atomic rollback. Gluetun's
+native AirVPN provider consumes the profile's keys and first IPv4 address, then
+selects a current server from bundled provider metadata. The ExternalSecret
+uses `refreshPolicy: OnChange`; after replacing the profile in SSM, bump
 `homelab.rst.io/wireguard-profile-ssm-version` in both
-`clusters/homelab/apps/deluge/externalsecret.yaml` and
-`clusters/homelab/apps/deluge/values.yaml` so External Secrets refreshes the
-Kubernetes Secret and GitOps rolls the Deluge pod.
+`clusters/homelab/apps/deluge/isolated/externalsecret.yaml` and
+`clusters/homelab/apps/deluge/values.yaml` so External Secrets
+refreshes the Kubernetes Secret and GitOps rolls the Deluge pod.
 
 n8n stores its Terragrunt-generated first-boot encryption key in SSM. The pod
 receives that value as `N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports it as
