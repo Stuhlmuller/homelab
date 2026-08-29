@@ -4,6 +4,16 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
+static_tmp_dir="$(mktemp -d /tmp/homelab-static-checks.XXXXXX)"
+trap '[[ ! -e "$static_tmp_dir" ]] || rm -rf -- "$static_tmp_dir"' EXIT
+static_tmp_dir="$(cd "$static_tmp_dir" && pwd -P)"
+repository_root="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
+if [[ "$static_tmp_dir/" == "$repository_root/"* ]]; then
+  echo "Static validation cache resolved inside the repository" >&2
+  exit 1
+fi
+export TMPDIR="$static_tmp_dir"
+
 terragrunt_generate_stack
 
 echo "::group::Terragrunt HCL"
@@ -84,11 +94,9 @@ for parameter in \
   rg -Fq 'reader_access = false' <<<"$parameter_block"
 done
 (
-  operator_download_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator-validation.XXXXXX")"
-  trap '[[ ! -e "$operator_download_dir" ]] || rm -rf -- "$operator_download_dir"' EXIT
   cd IaC/operator/github-actions-role-policy
-  TG_DOWNLOAD_DIR="$operator_download_dir" terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-  TG_DOWNLOAD_DIR="$operator_download_dir" terragrunt --log-disable validate -no-color
+  TG_DOWNLOAD_DIR="$static_tmp_dir/operator-terragrunt" terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  TG_DOWNLOAD_DIR="$static_tmp_dir/operator-terragrunt" terragrunt --log-disable validate -no-color
 )
 echo "::endgroup::"
 
