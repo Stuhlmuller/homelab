@@ -11,11 +11,12 @@ terragrunt apply
 ```
 
 The stack installs Argo CD `v3.4.8` by immutable image digest with `argo-cd`
-chart `10.0.0`, enables the chart's component NetworkPolicies, and keeps the
-service internal with `ClusterIP`. After Helm succeeds, a Terragrunt
-`after_hook` waits for the Argo CD Application and AppProject CRDs, applies the
-repo-owned `homelab` and `homelab-workloads` AppProjects, and then applies the
-`argocd-self-management` Application manifest.
+chart `10.0.0`, renders the chart's five component NetworkPolicies, and keeps
+the service internal with `ClusterIP`. The policies remain intent-only under
+the current kube-flannel data plane; issue #784 tracks effective enforcement.
+After Helm succeeds, a Terragrunt `after_hook` waits for the Argo CD Application
+and AppProject CRDs, applies the repo-owned `homelab` and `homelab-workloads`
+AppProjects, and then applies the `argocd-self-management` Application manifest.
 
 The Helm values also configure Argo CD SSO through the bundled Dex server with
 an OpenID Connect connector. The browser-facing Argo CD URL and Microsoft Entra

@@ -21,10 +21,13 @@ resource cannot hold an Application operation forever and block later reviewed
 revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
-The bootstrap security floor is argo-helm `10.0.0` with Argo CD `v3.4.8`
-digest-pinned and the chart's component NetworkPolicies enabled. Retain those
-policies during application-image rollback; a chart rollback below 10 reopens
-`GHSA-47m3-95c7-g2g8`.
+The bootstrap package floor is argo-helm `10.0.0` with Argo CD `v3.4.8`
+digest-pinned and five component NetworkPolicies rendered. The current
+kube-flannel data plane does not enforce those policies, so issue #784 and a
+negative untrusted-Pod connectivity test against repo-server and Redis gate
+rollout and closure of `GHSA-47m3-95c7-g2g8`. The immutable chart fallback is
+`9.5.15` with the same exact Argo CD image and explicit NetworkPolicies; image
+downgrade is CVE-documented break glass only.
 
 `IaC/operator` is the deliberate exception to workflow-driven apply. It owns
 bootstrap permissions that the GitHub OIDC role must never change for itself;

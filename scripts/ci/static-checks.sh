@@ -22,12 +22,27 @@ argocd_rendered="$(
   terragrunt --log-disable --working-dir IaC/bootstrap/argocd \
     render --json --write=false --no-color
 )"
+argocd_image_tag="v3.4.8@sha256:527df4ae3f60662a06334d4f3ada018bea056f29f53639fc618a4bf5bfb6c585"
 jq -e '.inputs.chart_version == "10.0.0"' <<<"$argocd_rendered" >/dev/null
 jq -er '.inputs.values[0]' <<<"$argocd_rendered" |
   yq -o=json '.' |
-  jq -e '
-    .global.image.tag == "v3.4.8@sha256:527df4ae3f60662a06334d4f3ada018bea056f29f53639fc618a4bf5bfb6c585" and
+  jq -e --arg image_tag "$argocd_image_tag" '
+    .global.image.tag == $image_tag and
     .global.networkPolicy.create == true
+  ' >/dev/null
+jq -er '.inputs.values[0]' <<<"$argocd_rendered" |
+  helm template argocd \
+    'oci://ghcr.io/argoproj/argo-helm/argo-cd@sha256:611b2bd19aa38c042fcc550b7c89a53c5088b487b55b92a9c231f4becd443cfe' \
+    --namespace argocd \
+    --values - |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e --arg image "quay.io/argoproj/argocd:${argocd_image_tag}" '
+    [.[] | select(.kind == "NetworkPolicy")] as $policies |
+    ($policies | length) == 5 and
+    all($policies[]; .metadata.labels["helm.sh/chart"] == "argo-cd-9.5.15") and
+    ([.. | objects | .image? | select(
+      type == "string" and startswith("quay.io/argoproj/argocd:")
+    )] | unique) == [$image]
   ' >/dev/null
 echo "::endgroup::"
 
