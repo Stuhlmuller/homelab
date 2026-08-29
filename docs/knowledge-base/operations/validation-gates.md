@@ -196,16 +196,19 @@ server, placeholder user, and context before requests. First require the full
 Octelium e2e gate at the same clean commit to confirm the live private Policy
 equals the repository catalog. The boundary script rejects dirty checkouts,
 alternate credentials, kubeconfig proxies, and TLS bypass; scrubs inherited
-upper/lower HTTP(S)/ALL proxy variables from proof children; bounds identity
-status in child-only container mode; permits allowlisted reads in any one
-explicit namespace; and denies all-namespaces reads. Only kubectl's exact v0.35
+upper/lower HTTP(S)/ALL proxy variables and Octelium credential overrides from
+proof children; pins Cordium to its package-owned auth proxy socket and removes
+that socket for owner; bounds identity status in child-only container mode;
+permits allowlisted reads in any one explicit namespace; and denies
+all-namespaces reads. Only kubectl's exact v0.35
 `Error from server (Forbidden): Octelium: Unauthorized request` rendering
 passes denial attribution. Denied probes use randomized nonexistent targets
 and retain only sanitized marker status; raw identity and response bodies are
 never written. Private metadata records the exact commit and script/catalog
 SHA-256 digests. A retained named Workspace must export evidence with Cordium
-0.12.7 `cordium cp -r` to encrypted operator storage, verify the export, then
-be deleted; `--rm` is unsafe for this evidence flow.
+0.12.7 `cordium cp -r` to encrypted operator storage, verify exact commit and
+zero-failure completion, then be deleted through the canonical idempotent
+procedure in `docs/octelium.md`; `--rm` is unsafe for this evidence flow.
 `scripts/ci/octelium-kubernetes-boundary-e2e-check.sh` covers that behavior
 with fake commands. `scripts/ci/octelium-kubernetes-policy-check.sh` and
 catalog JSON equality remain static drift checks, not enforcement proof. Issue

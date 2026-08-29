@@ -294,10 +294,12 @@ single `kubernetes` cluster, `kubernetes-admin` placeholder-token user, and
 credentials, proxy configuration, TLS bypass, and extra contexts fail before
 the first Kubernetes request. Every `octelium` and `kubectl` proof child drops
 inherited upper- and lower-case HTTP, HTTPS, and ALL proxy variables. The
-15-second `octelium status` preflight runs only with child-local
-`OCTELIUM_CONTAINER_MODE=true`: an existing database session may transparently
-refresh its access token, but a missing or expired session cannot launch a
-browser login and fails the run.
+15-second `octelium status` preflight also clears inherited authentication
+tokens and assertions, pins Cordium to its package-owned
+`/var/run/octelium-proxy.sock`, and removes that socket override for owner. It
+runs only with child-local `OCTELIUM_CONTAINER_MODE=true`: an existing database
+session may transparently refresh its access token, but a missing or expired
+session cannot start another authentication flow and fails the run.
 
 Start only from a clean checkout at the reviewed commit. Before either boundary
 run, complete `scripts/octelium-e2e-check.sh` at that same commit and require
@@ -342,9 +344,43 @@ policy regression exposes a Secret or Pod log.
 
 Exit the Workspace without deleting it. From the operator workstation, use
 Cordium 0.12.7's native recursive copy, verify the exported evidence, and only
-then delete the Workspace:
+then delete the Workspace. Keep these helpers in the same operator shell for
+the owner run below. Cleanup lists Workspaces first, so an already-absent target
+is success while list, parse, duplicate-name, and deletion failures remain
+visible:
 
-```sh
+```bash
+verify_boundary_evidence() {
+  local evidence_dir="$1"
+  test -s "$evidence_dir/metadata.tsv" &&
+    test -s "$evidence_dir/summary.tsv" &&
+    test -s "$evidence_dir/identity.json" &&
+    test -s "$evidence_dir/kubeconfig.json" &&
+    grep -Fxq $'repository_commit\t'"$reviewed_commit" "$evidence_dir/metadata.tsv" &&
+    grep -Eq '^script_sha256\t[0-9a-f]{64}$' "$evidence_dir/metadata.tsv" &&
+    grep -Eq '^catalog_sha256\t[0-9a-f]{64}$' "$evidence_dir/metadata.tsv" &&
+    grep -Fxq $'failures\t0' "$evidence_dir/metadata.tsv" &&
+    ! grep -q $'\tFAIL\t' "$evidence_dir/summary.tsv"
+}
+
+delete_boundary_workspace() {
+  local workspaces workspace_count
+  workspaces="$(cordium get workspaces --domain stinkyboi.com -o json)" || return
+  workspace_count="$(
+    jq -er --arg name "$boundary_workspace" \
+      '[.items[]? | select(.metadata.name == $name)] | length' \
+      <<<"$workspaces"
+  )" || return
+  case "$workspace_count" in
+    0) return 0 ;;
+    1) cordium delete workspace "$boundary_workspace" --domain stinkyboi.com ;;
+    *)
+      printf 'ERROR: expected at most one Workspace named %s\n' "$boundary_workspace" >&2
+      return 1
+      ;;
+  esac
+}
+
 workspace_tmp="$(cordium exec "$boundary_workspace" --domain stinkyboi.com -- \
   sh -c 'printf %s "${TMPDIR:-/tmp}"')"
 encrypted_evidence="/ABSOLUTE/PATH/ON/ENCRYPTED-STORAGE/$boundary_workspace"
@@ -352,15 +388,7 @@ mkdir -m 0700 "$encrypted_evidence"
 cordium cp -r --domain stinkyboi.com \
   "$boundary_workspace:$workspace_tmp/octelium-cordium-boundary-evidence/" \
   "$encrypted_evidence/"
-test -s "$encrypted_evidence/metadata.tsv" &&
-  test -s "$encrypted_evidence/summary.tsv" &&
-  test -s "$encrypted_evidence/identity.json" &&
-  test -s "$encrypted_evidence/kubeconfig.json" &&
-  grep -Fxq $'repository_commit\t'"$reviewed_commit" "$encrypted_evidence/metadata.tsv" &&
-  grep -Eq '^script_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
-  grep -Eq '^catalog_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
-  ! grep -q $'\tFAIL\t' "$encrypted_evidence/summary.tsv" &&
-  cordium delete workspace "$boundary_workspace" --domain stinkyboi.com
+verify_boundary_evidence "$encrypted_evidence" && delete_boundary_workspace
 ```
 
 Separately, log in as `homelab-owner` on the operator workstation, establish
@@ -372,12 +400,14 @@ octelium connect --domain stinkyboi.com --ip-mode=v4 -d
 octelium config kubernetes-api.homelab --domain stinkyboi.com
 # Export the KUBECONFIG path printed above, then:
 chmod 0600 "$KUBECONFIG"
-owner_evidence="$(mktemp -d "${TMPDIR:-/tmp}/octelium-owner-boundary.XXXXXX")"
+owner_evidence_root="/ABSOLUTE/PATH/ON/ENCRYPTED-STORAGE"
+owner_evidence="$(mktemp -d "$owner_evidence_root/octelium-owner-boundary.XXXXXX")"
 scripts/octelium-kubernetes-boundary-e2e.sh \
   --role owner \
   --kubeconfig "$KUBECONFIG" \
   --evidence-dir "$owner_evidence"
-octelium disconnect --domain stinkyboi.com
+verify_boundary_evidence "$owner_evidence" &&
+  octelium disconnect --domain stinkyboi.com
 ```
 
 Both evidence directories must be empty, absolute paths outside the checkout.

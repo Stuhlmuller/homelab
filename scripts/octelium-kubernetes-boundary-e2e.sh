@@ -15,6 +15,7 @@ EXPECTED_KUBE_CONTEXT="kubernetes-admin@kubernetes"
 # checkov:skip=CKV_SECRET_6:Public Octelium v0.35 placeholder prefix, not secret material.
 EXPECTED_KUBE_TOKEN_PREFIX="dummy-token-authenticated-by"
 EXPECTED_KUBE_TOKEN="${EXPECTED_KUBE_TOKEN_PREFIX}-octelium-session"
+EXPECTED_CORDIUM_AUTH_PROXY_SOCKET="/var/run/octelium-proxy.sock"
 
 usage() {
   cat <<'USAGE'
@@ -192,25 +193,31 @@ kubectl_boundary() (
 
 octelium_status() {
   unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+  unset OCTELIUM_AUTH_TOKEN OCTELIUM_AUTH_ASSERTION OCTELIUM_ACCESS_TOKEN
+  if [ "${ROLE}" = "cordium" ]; then
+    export OCTELIUM_AUTH_PROXY_SOCKET="${EXPECTED_CORDIUM_AUTH_PROXY_SOCKET}"
+  else
+    unset OCTELIUM_AUTH_PROXY_SOCKET
+  fi
   export OCTELIUM_CONTAINER_MODE=true
   exec octelium status --domain "${DOMAIN}" -o json
 }
 
 run_with_timeout() {
-  local timeout_seconds="$1" command_pid remaining_ticks exit_code
+  local timeout_seconds="$1" command_pid remaining_seconds exit_code
   shift
 
   "$@" &
   command_pid="$!"
-  remaining_ticks=$((timeout_seconds * 10))
+  remaining_seconds="${timeout_seconds}"
   while kill -0 "${command_pid}" 2>/dev/null; do
-    if [ "${remaining_ticks}" -eq 0 ]; then
+    if [ "${remaining_seconds}" -eq 0 ]; then
       kill -KILL "${command_pid}" 2>/dev/null || true
       wait "${command_pid}" 2>/dev/null || true
       return 124
     fi
-    sleep 0.1
-    remaining_ticks=$((remaining_ticks - 1))
+    sleep 1
+    remaining_seconds=$((remaining_seconds - 1))
   done
   if wait "${command_pid}"; then
     exit_code=0

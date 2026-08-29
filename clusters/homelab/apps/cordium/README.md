@@ -211,39 +211,20 @@ and context. It
 rejects a dirty checkout, alternate credentials, kubeconfig proxies, and TLS
 bypass before Kubernetes requests. Every Octelium/kubectl proof child removes
 inherited upper- and lower-case HTTP, HTTPS, and ALL proxies. Its bounded status
-preflight uses child-only container mode so a missing or expired session cannot
-launch browser login; an existing database session may refresh its token. The
-policy permits allowlisted reads in any one explicit namespace and denies
-all-namespaces reads. The script accepts only kubectl's exact v0.35 rendering
-`Error from server (Forbidden): Octelium: Unauthorized request`; denied response
-bodies are discarded. Private metadata records exact script and catalog
-SHA-256 digests.
+preflight clears authentication overrides, uses only Cordium's package-owned
+auth proxy socket, and uses child-only container mode, so a missing or expired
+session cannot start another authentication flow; an existing database session
+may refresh its token. The policy permits allowlisted reads in any one explicit
+namespace and denies all-namespaces reads. The script accepts only kubectl's
+exact v0.35 rendering `Error from server (Forbidden): Octelium: Unauthorized
+request`; denied response bodies are discarded. Private metadata records exact
+reviewed commit, script SHA-256 digest, and catalog SHA-256 digest.
 
-Exit without deleting the Workspace. Use Cordium 0.12.7's native copy path to
-export and verify the evidence before deletion:
-
-```sh
-workspace_tmp="$(cordium exec "$boundary_workspace" --domain stinkyboi.com -- \
-  sh -c 'printf %s "${TMPDIR:-/tmp}"')"
-encrypted_evidence="/ABSOLUTE/PATH/ON/ENCRYPTED-STORAGE/$boundary_workspace"
-mkdir -m 0700 "$encrypted_evidence"
-cordium cp -r --domain stinkyboi.com \
-  "$boundary_workspace:$workspace_tmp/octelium-cordium-boundary-evidence/" \
-  "$encrypted_evidence/"
-test -s "$encrypted_evidence/metadata.tsv" &&
-  test -s "$encrypted_evidence/summary.tsv" &&
-  test -s "$encrypted_evidence/identity.json" &&
-  test -s "$encrypted_evidence/kubeconfig.json" &&
-  grep -Eq '^script_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
-  grep -Eq '^catalog_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
-  ! grep -q $'\tFAIL\t' "$encrypted_evidence/summary.tsv" &&
-  cordium delete workspace "$boundary_workspace" --domain stinkyboi.com
-```
-
-Run the separate `owner` role from the operator workstation at the same catalog
-revision. Keep both evidence directories outside the checkout on private
-encrypted storage; never upload them to GitHub or Actions. The full operator
-procedure and rollback are in `docs/octelium.md`. Catalog equality and the
+Exit without deleting the Workspace, then follow the canonical
+[private Kubernetes evidence procedure](../../../../docs/octelium.md#private-kubernetes-access).
+It exports with `cordium cp -r`, verifies the exact reviewed commit, digests,
+and zero-failure completion, retains both role results on encrypted operator
+storage, and deletes the Workspace idempotently. Catalog equality and the
 jq/CEL fixture are prerequisites and drift checks, not enforcement proof.
 
 ## Validation

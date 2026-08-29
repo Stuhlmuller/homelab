@@ -17,9 +17,31 @@ assert_proxy_env_clean() {
   fi
 }
 
+assert_octelium_auth_env() {
+  if env | grep -Eq '^(OCTELIUM_AUTH_TOKEN|OCTELIUM_AUTH_ASSERTION|OCTELIUM_ACCESS_TOKEN)='; then
+    printf 'identity command inherited an Octelium credential override\n' >&2
+    exit 65
+  fi
+  case "${BOUNDARY_FIXTURE_ROLE}" in
+    cordium)
+      [ "${OCTELIUM_AUTH_PROXY_SOCKET:-}" = "/var/run/octelium-proxy.sock" ] || {
+        printf 'Cordium identity command did not use its exact auth proxy socket\n' >&2
+        exit 65
+      }
+      ;;
+    owner)
+      [ -z "${OCTELIUM_AUTH_PROXY_SOCKET:-}" ] || {
+        printf 'owner identity command inherited an auth proxy socket\n' >&2
+        exit 65
+      }
+      ;;
+  esac
+}
+
 fake_octelium() {
   local user="homelab-${BOUNDARY_FIXTURE_ROLE}-user" user_type="HUMAN" session_type="CLIENT" connected="true"
   assert_proxy_env_clean
+  assert_octelium_auth_env
   [ "${OCTELIUM_CONTAINER_MODE:-}" = "true" ] || {
     printf 'BROWSER_LOGIN_SENTINEL\n' >&2
     exit 65
@@ -31,7 +53,7 @@ fake_octelium() {
     workload) user_type="WORKLOAD" ;;
     clientless) session_type="CLIENTLESS" ;;
     disconnected) connected="false" ;;
-    missing)
+    missing|expired)
       printf 'authentication required in workload mode\n' >&2
       return 1
       ;;
@@ -186,6 +208,10 @@ run_case() {
     http_proxy="http://lower-http.invalid:1" \
     https_proxy="http://lower-https.invalid:1" \
     all_proxy="http://lower-all.invalid:1" \
+    OCTELIUM_AUTH_TOKEN="fixture" \
+    OCTELIUM_AUTH_ASSERTION="fixture" \
+    OCTELIUM_ACCESS_TOKEN="fixture" \
+    OCTELIUM_AUTH_PROXY_SOCKET="/tmp/fixture.sock" \
     PATH="${FAKE_BIN}:${PATH}" \
     "${BOUNDARY_SCRIPT}" --role "${role}" --kubeconfig "${KUBECONFIG_FIXTURE}" \
       --evidence-dir "${evidence}" >"${output}" 2>&1; then
@@ -227,6 +253,9 @@ script_digest="$(fixture_sha256 "${BOUNDARY_SCRIPT}")"
 catalog_digest="$(fixture_sha256 "${BOUNDARY_CATALOG}")"
 grep -Fxq $'script_sha256\t'"${script_digest}" "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 grep -Fxq $'catalog_sha256\t'"${catalog_digest}" "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
+grep -Fxq $'repository_commit\t'"$("${BOUNDARY_REAL_GIT}" -C "${REPO_ROOT}" rev-parse HEAD)" \
+  "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
+grep -Fxq $'failures\t0' "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 if rg -q 'SENSITIVE_(IDENTITY_RAW|DENIED_BODY)_SENTINEL' \
   "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/cordium-pass.out"; then
   echo "sanitized passing evidence retained a fixture sentinel" >&2
@@ -242,12 +271,14 @@ for mode in wrong-user workload clientless disconnected; do
   fi
 done
 
-run_case identity-missing cordium missing valid octelium fail
-if rg -q 'BROWSER_LOGIN_SENTINEL' \
-  "${TEST_ROOT}/identity-missing-evidence" "${TEST_ROOT}/identity-missing.out"; then
-  echo "missing identity attempted browser login" >&2
-  exit 1
-fi
+for mode in missing expired; do
+  run_case "identity-${mode}" cordium "${mode}" valid octelium fail
+  if rg -q 'BROWSER_LOGIN_SENTINEL' \
+    "${TEST_ROOT}/identity-${mode}-evidence" "${TEST_ROOT}/identity-${mode}.out"; then
+    echo "${mode} identity attempted browser login" >&2
+    exit 1
+  fi
+done
 
 SECONDS=0
 run_case identity-timeout cordium hang valid octelium fail
