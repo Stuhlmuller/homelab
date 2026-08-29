@@ -220,10 +220,10 @@ unit "argocd_apps_cert_manager" {
             repoURL        = "https://charts.jetstack.io"
             chart          = "cert-manager"
             path           = "."
-            targetRevision = "v1.19.2"
+            targetRevision = "v1.20.3"
             helm = {
               releaseName = "cert-manager"
-              valueFiles  = ["$values/clusters/homelab/apps/cert-manager/values.yaml"]
+              valueFiles  = ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]
             }
           },
           {

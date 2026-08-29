@@ -471,6 +471,26 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Image digest pins"
+cert_manager_values="clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"
+terragrunt --log-disable --working-dir IaC/live/argocd-apps/cert-manager \
+  render --json --write=false --no-color \
+  | jq -e '
+      any(.inputs.manifest.spec.sources[];
+        .repoURL == "https://charts.jetstack.io" and
+        .chart == "cert-manager" and
+        .targetRevision == "v1.20.3" and
+        .helm.valueFiles == ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]
+      )
+    ' >/dev/null
+yq -o=json '.' "$cert_manager_values" \
+  | jq -e '[
+      .image.digest,
+      .webhook.image.digest,
+      .cainjector.image.digest,
+      .acmesolver.image.digest,
+      .startupapicheck.image.digest
+    ] | all(.[]; type == "string" and test("^sha256:[0-9a-f]{64}$"))' \
+    >/dev/null
 tag_only_images="$(
   {
     rg -n '^\s*tag:\s*["'\'']?[^"'\''#[:space:]][^#]*$' clusters/homelab || true
