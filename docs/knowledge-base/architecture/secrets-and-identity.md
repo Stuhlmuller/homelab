@@ -155,13 +155,18 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `homelab-production`. Both environments require reviewer approval before
   GitHub releases the token; approve a pull request plan only after reviewing
   its exact code because that job also assumes the environment-bound AWS OIDC
-  identity. Repository Actions policy rejects mutable action tags, and the
-  `main` ruleset requires signed, squash-only pull requests with strict
-  always-on checks and no force pushes. The CI connector does not pass Octelium
-  `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
-  CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
-  it must not grant the bearer access to other public Services. The User owns
-  matching 30-day clientless-session and access-token lifetimes. Rotate it every 21 days with
+  identity. Repository Actions policy rejects mutable action tags. Read-only
+  inspection on 2026-08-29 verified the active live ruleset matches the
+  repository-managed signed, squash-only, strict-check contract and has no
+  bypass actor. Ruleset history attributes the restoration to repository
+  administrator user `57728706`, not the protected `github-iac` GitHub App path.
+  Issue #813 retains the regression record until protected reconciliation and
+  every pull request path have enforcement evidence. The CI connector does not
+  pass Octelium `--scope` flags on v0.35. Its Session policy requires the exact
+  WORKLOAD User, CLIENTLESS Session, `kubernetes-api-ci.default` Service, and
+  KUBERNETES mode; it must not grant the bearer access to other public Services.
+  The User owns matching 30-day clientless-session and access-token lifetimes.
+  Rotate it every 21 days with
   `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
   Sessions first so Octelium cannot retain an older Session expiry, then retries
   GitHub environment writes until both store the replacement token.
