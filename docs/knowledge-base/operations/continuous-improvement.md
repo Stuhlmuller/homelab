@@ -918,3 +918,33 @@ organization-policy blocker is tracked below.
   are absent.
 - **Next step:** keep the guarded startup, native AirVPN provider, and verified
   nightly archives; use the documented restore path if corruption recurs.
+
+- **Status:** staged; live bootstrap and cutover pending
+- **Area:** CI/CD / least privilege
+- **Evidence:** Pull request plan code currently receives the production-capable
+  `Github-TF-State` AWS role and unrestricted `homelab-ci` Octelium Kubernetes
+  path after environment approval. Desired state now adds a separate
+  permissions-bound `Github-Homelab-Plan` role plus `homelab-plan` User,
+  read-only Policy, public Service, tunnel route, and DNS intent without
+  switching the working path. All active Argo Application units lock Kubernetes
+  provider 3.2.1; the retired `github-actions-runner` placeholder is the sole
+  unlocked unit and is already scheduled for removal by issue `#805` and draft
+  PR `#837`.
+- **Risk:** Until the separate cutover lands, approved PR code can still use
+  identities that can mutate AWS and Kubernetes. Both native Octelium dataplane
+  nodes are NotReady, so the new Service also lacks its generated-UID emergency
+  dataplane until the catalog is applied. Until the retired runner unit is
+  removed, a newly resolved compatible provider version will fail closed if it
+  needs another API method, but must not be accepted without a new live plan
+  proof.
+- **Next step:** apply and simulate the AWS role with an administrator, apply
+  the Octelium catalog, create the environment-scoped token, capture and declare
+  the generated Service UID fallback, then prove allowed named-Application and
+  CRD-schema reads plus denied Application list/watch, Pod/Secret reads,
+  mutations, and unapproved non-resource paths such as `/metrics` with
+  `scripts/ci/octelium-plan-access-check.sh`. Only then switch plan and
+  diagnostics for pull requests targeting `main`, narrow traversal to Argo CD
+  Application units, and omit Azure credentials/traversal unless a separate
+  read-only Azure identity exists. Require one valid focused protected plan
+  before removing `homelab-plan` trust/token access from the production
+  identities.

@@ -6,6 +6,11 @@ data "aws_kms_alias" "runtime_secret" {
   name = var.kms_key_id
 }
 
+data "aws_kms_alias" "state" {
+  provider = aws.state
+  name     = var.kms_key_id
+}
+
 data "aws_iam_openid_connect_provider" "github_actions" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -16,6 +21,8 @@ locals {
     for index in range(var.parameter_reader_policy_slot_count) :
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/${var.parameter_reader_policy_name_prefix}${format("%02d", index)}"
   ]
+  state_bucket_arn = "arn:${data.aws_partition.current.partition}:s3:::${var.state_bucket_name}"
+  state_object_arn = "${local.state_bucket_arn}/${var.state_key_prefix}/*"
 }
 
 data "aws_iam_policy_document" "parameter_reader_administration" {
@@ -117,6 +124,114 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "github_actions_plan_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      identifiers = [data.aws_iam_openid_connect_provider.github_actions.arn]
+      type        = "Federated"
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:Stuhlmuller/homelab:environment:homelab-plan"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "github_actions_plan" {
+  statement {
+    sid       = "ReadArgoCdApplicationStateObjects"
+    effect    = "Allow"
+    actions   = ["s3:GetObject"]
+    resources = [local.state_object_arn]
+  }
+
+  statement {
+    sid       = "ListArgoCdApplicationStatePrefix"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [local.state_bucket_arn]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["${var.state_key_prefix}/*"]
+    }
+  }
+
+  statement {
+    sid    = "UseStateAndPlanEncryptionKey"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey",
+    ]
+    resources = [data.aws_kms_alias.state.target_key_arn]
+  }
+
+  statement {
+    sid           = "DenyStateObjectReadsOutsidePrefix"
+    effect        = "Deny"
+    actions       = ["s3:GetObject"]
+    not_resources = [local.state_object_arn]
+  }
+
+  statement {
+    sid           = "DenyStateBucketListingOutsideBucket"
+    effect        = "Deny"
+    actions       = ["s3:ListBucket"]
+    not_resources = [local.state_bucket_arn]
+  }
+
+  statement {
+    sid       = "DenyStateBucketListingOutsidePrefix"
+    effect    = "Deny"
+    actions   = ["s3:ListBucket"]
+    resources = [local.state_bucket_arn]
+
+    condition {
+      test     = "StringNotLike"
+      variable = "s3:prefix"
+      values   = ["${var.state_key_prefix}/*"]
+    }
+  }
+
+  statement {
+    sid    = "DenyKeyUseOutsideStateKey"
+    effect = "Deny"
+    actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey",
+    ]
+    not_resources = [data.aws_kms_alias.state.target_key_arn]
+  }
+
+  statement {
+    sid    = "DenyActionsOutsideReadOnlyPlan"
+    effect = "Deny"
+    not_actions = [
+      "kms:Decrypt",
+      "kms:DescribeKey",
+      "kms:GenerateDataKey",
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+    resources = ["*"]
+  }
+}
+
 data "aws_iam_policy_document" "external_secrets_boundary" {
   statement {
     sid       = "DenyTemporarySessionCredentials"
@@ -178,6 +293,34 @@ resource "aws_iam_role" "github_actions" {
 resource "aws_iam_role_policy_attachment" "parameter_reader_administration" {
   role       = aws_iam_role.github_actions.name
   policy_arn = aws_iam_policy.parameter_reader_administration.arn
+}
+
+resource "aws_iam_policy" "github_actions_plan" {
+  name        = var.plan_policy_name
+  description = "Allow homelab pull-request plans to read only Argo CD Application state and use its encryption key."
+  policy      = data.aws_iam_policy_document.github_actions_plan.json
+  tags        = var.tags
+}
+
+resource "aws_iam_role" "github_actions_plan" {
+  name                 = var.plan_role_name
+  assume_role_policy   = data.aws_iam_policy_document.github_actions_plan_assume_role.json
+  permissions_boundary = aws_iam_policy.github_actions_plan.arn
+  tags                 = var.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_role_policy_attachments_exclusive" "github_actions_plan" {
+  role_name   = aws_iam_role.github_actions_plan.name
+  policy_arns = [aws_iam_policy.github_actions_plan.arn]
+}
+
+resource "aws_iam_role_policies_exclusive" "github_actions_plan" {
+  role_name    = aws_iam_role.github_actions_plan.name
+  policy_names = []
 }
 
 resource "aws_iam_policy" "external_secrets_boundary" {

@@ -10,7 +10,7 @@ format, validation, and plan checks pass. This separation prevents a compromised
 workflow from widening the permissions of its own AWS role while keeping the
 bootstrap policy reproducible and reviewable.
 
-## GitHub Actions apply-role policy
+## GitHub Actions roles and policies
 
 `github-actions-role-policy` owns the existing `Github-TF-State` role trust and
 attaches one managed policy. Trust is limited to the protected plan and
@@ -20,6 +20,24 @@ The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
 `homelab-ssm-parameter-readers` group. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
+
+The unit also owns a separate `Github-Homelab-Plan` role. Its OIDC trust accepts
+only `repo:Stuhlmuller/homelab:environment:homelab-plan`. Its sole managed
+policy permits `s3:GetObject` below
+`s3://rstuhlmuller-aws-s3-use1-datalake/IaC/homelab/live/argocd-apps/`, permits
+`s3:ListBucket` only for that prefix, and permits `kms:Decrypt`,
+`kms:DescribeKey`, and `kms:GenerateDataKey` on the state key resolved from
+`alias/homelab-opentofu` in `us-east-1`. Explicit denies reject every other AWS
+action and block the otherwise-allowed action names outside that exact bucket,
+prefix, and key, so a resource policy cannot widen the session. The same policy
+is the role's permissions boundary; exclusive attachment resources enforce that
+it is the only managed policy and that the role has no inline policies.
+
+This is a staged migration. The existing `Github-TF-State` role temporarily
+retains the `homelab-plan` trust subject so the current workflow keeps working
+while the new role is bootstrapped. A later reviewed workflow cutover must use
+`Github-Homelab-Plan`; only then may another operator change remove
+`homelab-plan` from the apply role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and applies an operator-owned
@@ -37,6 +55,101 @@ remove their repository-scoped copies, and merge the workflow jobs that name
 the environments. Replacing the old pull-request and branch subjects before
 that bootstrap temporarily disables the current `github-iac` plan and apply
 jobs.
+
+### Plan-role bootstrap
+
+The new role and policy require a reviewed, un-targeted operator plan with an
+administrator session. The trust-only target below preserves the existing apply
+role but does not create the plan role. Before the first full apply, check that
+`Github-Homelab-Plan` does not already exist:
+
+```sh
+aws --profile "<administrator-profile>" iam get-role \
+  --role-name Github-Homelab-Plan
+```
+
+`NoSuchEntity` is the expected bootstrap result. If the role exists, stop and
+reconcile its ownership before planning; do not import an unexpected role.
+After backendless validation and authenticated initialization described below,
+save an un-targeted plan. It should add only the plan managed policy, plan role,
+exclusive managed-policy attachment, and empty inline-policy set, alongside any
+already-reviewed imports or drift. Apply only the reviewed saved plan bytes.
+
+After apply, verify that the role has exactly the one environment subject, its
+permissions boundary and sole attachment both name
+`homelab-github-terragrunt-plan-read-only`, and `list-role-policies` returns no
+inline policies. Then use the IAM policy simulator to prove the effective
+boundary before exposing the role to a workflow:
+
+```sh
+set -euo pipefail
+operator_profile="<administrator-profile>"
+plan_role_arn="$(aws --profile "$operator_profile" iam get-role \
+  --role-name Github-Homelab-Plan --query 'Role.Arn' --output text)"
+account_id="$(aws --profile "$operator_profile" sts get-caller-identity \
+  --query Account --output text)"
+state_key_arn="$(aws --profile "$operator_profile" --region us-east-1 \
+  kms describe-key --key-id alias/homelab-opentofu \
+  --query 'KeyMetadata.Arn' --output text)"
+runtime_key_arn="$(aws --profile "$operator_profile" --region us-west-2 \
+  kms describe-key --key-id alias/homelab-opentofu \
+  --query 'KeyMetadata.Arn' --output text)"
+state_bucket_arn='arn:aws:s3:::rstuhlmuller-aws-s3-use1-datalake'
+state_object_arn="${state_bucket_arn}/IaC/homelab/live/argocd-apps/terraform.tfstate"
+
+expect_plan_decision() {
+  expected="$1"
+  action="$2"
+  resource="$3"
+  shift 3
+  actual="$(aws --profile "$operator_profile" iam simulate-principal-policy \
+    --policy-source-arn "$plan_role_arn" \
+    --action-names "$action" \
+    --resource-arns "$resource" "$@" \
+    --query 'EvaluationResults[0].EvalDecision' --output text)"
+  test "$actual" = "$expected" || {
+    printf 'error: %s on %s: expected %s, got %s\n' \
+      "$action" "$resource" "$expected" "$actual" >&2
+    return 1
+  }
+}
+
+expect_plan_decision allowed s3:GetObject "$state_object_arn"
+expect_plan_decision allowed s3:ListBucket "$state_bucket_arn" \
+  --context-entries 'ContextKeyName=s3:prefix,ContextKeyType=string,ContextKeyValues=IaC/homelab/live/argocd-apps/terraform.tfstate'
+expect_plan_decision allowed kms:Decrypt "$state_key_arn"
+expect_plan_decision allowed kms:DescribeKey "$state_key_arn"
+expect_plan_decision allowed kms:GenerateDataKey "$state_key_arn"
+expect_plan_decision explicitDeny s3:GetObject \
+  "${state_bucket_arn}/IaC/homelab/operator/github-actions-role-policy/terraform.tfstate"
+expect_plan_decision explicitDeny s3:ListBucket "$state_bucket_arn" \
+  --context-entries 'ContextKeyName=s3:prefix,ContextKeyType=string,ContextKeyValues=IaC/homelab/operator/github-actions-role-policy/terraform.tfstate'
+expect_plan_decision explicitDeny s3:PutObject "$state_object_arn"
+expect_plan_decision explicitDeny iam:CreateRole \
+  "arn:aws:iam::${account_id}:role/homelab-plan-simulation-denied"
+expect_plan_decision explicitDeny ssm:PutParameter \
+  "arn:aws:ssm:us-west-2:${account_id}:parameter/homelab/simulation-denied"
+expect_plan_decision explicitDeny kms:Decrypt "$runtime_key_arn"
+```
+
+Every check must exit zero. A missing context value, `implicitDeny`, or another
+decision is a failed bootstrap. Do not change the workflow or remove the
+transitional apply-role trust in this bootstrap step.
+
+Rollback the bootstrap only through a reviewed forward commit that removes the
+four new managed addresses below. Its un-targeted saved plan must delete only
+these addresses and leave every existing address unchanged:
+
+- `aws_iam_role_policies_exclusive.github_actions_plan`
+- `aws_iam_role_policy_attachments_exclusive.github_actions_plan`
+- `aws_iam_role.github_actions_plan`
+- `aws_iam_policy.github_actions_plan`
+
+Apply only those reviewed saved bytes, then require `iam get-role` for
+`Github-Homelab-Plan` to return `NoSuchEntity`. If a workflow cutover has
+already landed, first restore and verify the prior workflow path in another
+reviewed commit, then retire its plan token before removing the role. Never
+delete these IAM resources directly with the AWS CLI.
 
 ### Trust-only rollout
 
@@ -199,8 +312,9 @@ while repairing the protected workflows.
 
 ### Full-unit reconciliation
 
-Changes to the managed policy, attachment, External Secrets boundary, or IAM
-user require an un-targeted operator plan. Import
+Creating or changing the plan role and policy, the apply-role managed policy or
+attachment, the External Secrets boundary, or the IAM user requires an
+un-targeted operator plan. Import
 `aws_iam_user.external_secrets` as `external-secrets_aws-ssm-auth` first only
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.

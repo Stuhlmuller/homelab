@@ -34,12 +34,12 @@ variable "external_secrets_user_name" {
 }
 
 variable "kms_key_id" {
-  description = "Alias of the regional KMS key used to encrypt homelab SSM parameters."
+  description = "Alias shared by the regional KMS keys used for OpenTofu state and homelab SSM parameters."
   type        = string
 
   validation {
     condition     = startswith(var.kms_key_id, "alias/")
-    error_message = "kms_key_id must be a KMS alias so the boundary follows the operator-managed runtime-secret key."
+    error_message = "kms_key_id must be a KMS alias resolved independently in the state and runtime-secret regions."
   }
 }
 
@@ -74,6 +74,26 @@ variable "parameter_reader_policy_slot_count" {
   }
 }
 
+variable "plan_policy_name" {
+  description = "Name of the managed policy and permissions boundary for the GitHub Actions plan role."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,128}$", var.plan_policy_name))
+    error_message = "plan_policy_name must be a valid IAM policy name."
+  }
+}
+
+variable "plan_role_name" {
+  description = "GitHub Actions role used only by homelab pull-request plans."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,64}$", var.plan_role_name))
+    error_message = "plan_role_name must be a valid IAM role name."
+  }
+}
+
 variable "policy_name" {
   description = "Name of the operator-managed policy attached to the GitHub Actions apply role."
   type        = string
@@ -81,6 +101,31 @@ variable "policy_name" {
   validation {
     condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,128}$", var.policy_name))
     error_message = "policy_name must be a valid IAM policy name."
+  }
+}
+
+variable "state_bucket_name" {
+  description = "S3 bucket containing the OpenTofu state readable by the plan role."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", var.state_bucket_name))
+    error_message = "state_bucket_name must be a valid S3 bucket name."
+  }
+}
+
+variable "state_key_prefix" {
+  description = "Exact S3 object prefix containing Argo CD Application OpenTofu state."
+  type        = string
+
+  validation {
+    condition = (
+      length(var.state_key_prefix) > 0 &&
+      var.state_key_prefix == trimspace(var.state_key_prefix) &&
+      var.state_key_prefix == trim(var.state_key_prefix, "/") &&
+      !strcontains(var.state_key_prefix, "*")
+    )
+    error_message = "state_key_prefix must be a non-empty prefix without surrounding slashes, whitespace, or wildcards."
   }
 }
 

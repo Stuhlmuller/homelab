@@ -14,6 +14,8 @@ tailnet:
   reviewed external callbacks that cannot complete an Octelium browser login
 - `kubernetes-api-ci.stinkyboi.com` for the policy-bound clientless CI
   Kubernetes Service
+- `kubernetes-api-plan.stinkyboi.com` for the staged read-only pull request
+  Kubernetes Service
 
 `octelium-api.stinkyboi.com` uses the separate direct gRPC origin documented
 below.
@@ -101,4 +103,6 @@ dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://octelium.stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://portal.stinkyboi.com/
+OCTELIUM_AUTH_TOKEN=<homelab-plan-token> \
+  scripts/ci/octelium-plan-access-check.sh
 ```

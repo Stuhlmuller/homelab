@@ -96,6 +96,64 @@ spec:
 ---
 kind: Policy
 metadata:
+  name: homelab-plan-kubernetes-api-access
+spec:
+  rules:
+    - name: sensitive-read-deny
+      effect: DENY
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-plan"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENTLESS"
+            - match: ctx.service.metadata.name == "kubernetes-api-plan.default"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+            - any:
+                of:
+                  - match: ctx.request.kubernetes.resource in ["secrets", "configmaps", "serviceaccounts", "tokenreviews", "subjectaccessreviews", "selfsubjectaccessreviews", "localsubjectaccessreviews", "selfsubjectrulesreviews"]
+                  - match: ctx.request.kubernetes.subresource in ["proxy", "log", "exec", "attach", "portforward", "ephemeralcontainers", "token"]
+    - name: provider-required-reads
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-plan"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENTLESS"
+            - match: ctx.service.metadata.name == "kubernetes-api-plan.default"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+            - any:
+                of:
+                  - all:
+                      of:
+                        - match: ctx.request.kubernetes.apiGroup == "argoproj.io"
+                        - match: ctx.request.kubernetes.apiVersion == "v1alpha1"
+                        - match: ctx.request.kubernetes.namespace == "argocd"
+                        - match: ctx.request.kubernetes.resource == "applications"
+                        - match: ctx.request.kubernetes.subresource == ""
+                        - match: ctx.request.kubernetes.verb == "get"
+                        - match: ctx.request.kubernetes.http.uri == ctx.request.kubernetes.http.path
+                  - all:
+                      of:
+                        - match: ctx.request.kubernetes.apiGroup == "apiextensions.k8s.io"
+                        - match: ctx.request.kubernetes.apiVersion == "v1"
+                        - match: ctx.request.kubernetes.namespace == ""
+                        - match: ctx.request.kubernetes.resource == "customresourcedefinitions"
+                        - match: ctx.request.kubernetes.subresource == ""
+                        - match: ctx.request.kubernetes.verb == "list"
+                  - all:
+                      of:
+                        - match: ctx.request.kubernetes.resource == ""
+                        - match: ctx.request.kubernetes.verb == "get"
+                        - any:
+                            of:
+                              - match: ctx.request.kubernetes.http.path in ["/api", "/apis", "/openapi/v2"]
+                              - match: ctx.request.kubernetes.http.path.startsWith("/api/")
+                              - match: ctx.request.kubernetes.http.path.startsWith("/apis/")
+---
+kind: Policy
+metadata:
   name: homelab-cordium-user-access
 spec:
   rules:
@@ -151,6 +209,17 @@ spec:
 kind: User
 metadata:
   name: homelab-ci
+spec:
+  type: WORKLOAD
+  session:
+    clientlessDuration:
+      days: 30
+    accessTokenDuration:
+      days: 30
+---
+kind: User
+metadata:
+  name: homelab-plan
 spec:
   type: WORKLOAD
   session:
@@ -435,6 +504,24 @@ spec:
         fromSecret: homelab-ci-kubeconfig
     tls:
       insecureSkipVerify: true
+---
+kind: Service
+metadata:
+  name: kubernetes-api-plan
+spec:
+  isPublic: true
+  mode: KUBERNETES
+  port: 6443
+  authorization:
+    policies:
+      - homelab-plan-kubernetes-api-access
+  config:
+    upstream:
+      url: https://10.1.0.199:6443
+    kubernetes:
+      kubeconfig:
+        # checkov:skip=CKV_SECRET_6:Reference to an externally materialized Octelium Secret, not secret data.
+        fromSecret: homelab-ci-kubeconfig
 ---
 kind: Service
 metadata:

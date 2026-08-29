@@ -232,6 +232,7 @@ hostnames=(
   "grafana.${domain}"
   "kiali.${domain}"
   "kubernetes-api-ci.${domain}"
+  "kubernetes-api-plan.${domain}"
   "litellm.${domain}"
   "multica.${domain}"
   "n8n.${domain}"

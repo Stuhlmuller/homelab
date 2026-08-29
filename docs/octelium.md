@@ -12,9 +12,11 @@ login to the application.
 
 Human and Cordium Workspace Kubernetes access uses the private Octelium
 `kubernetes-api.homelab` Service. CI uses the separate public, workload-only
-`kubernetes-api-ci` Service. Tailscale remains deployed as a temporary
-LAN/egress fallback, but it is not required for normal app or Kubernetes API
-access.
+`kubernetes-api-ci` Service. A second public Service, `kubernetes-api-plan`, is
+staged for read-only pull request planning but is not used until its isolated
+AWS and Octelium identities pass live negative tests. Tailscale remains deployed
+as a temporary LAN/egress fallback, but it is not required for normal app or
+Kubernetes API access.
 
 ## Current Model
 
@@ -81,11 +83,17 @@ They create:
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the
   `homelab-ci` workload User to create an Octelium client session and access
   the Kubernetes API Service.
+- Policy `homelab-plan-kubernetes-api-access`, denying sensitive Kubernetes
+  resources and subresources and allowing only named Argo CD Application GET,
+  CRD schema LIST, and required discovery/OpenAPI GET requests for the staged
+  `homelab-plan` workload User and `kubernetes-api-plan` Service.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,
   with matching 30-day clientless-session and access-token lifetimes. Rotate
   its credential every 21 days with `scripts/octelium-ci-credential.sh`.
+- Workload User `homelab-plan` with the same bounded lifetimes, reserved for the
+  read-only pull request plan path.
 - Dormant workload User `homelab-catalog-ci` for the protected private
   Kubernetes catalog workflow. Its helper-only Credential template lives in
   `homelab-private-kubernetes-ci-credential.yaml` outside this general catalog.
@@ -98,6 +106,10 @@ They create:
   access.
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
+- Clientless `KUBERNETES` Service `kubernetes-api-plan`, forwarding to the same
+  API with kubeconfig CA verification and the read-only plan Policy. Validate
+  its effective boundary with `scripts/ci/octelium-plan-access-check.sh` before
+  workflow cutover.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
   `grafana`, `kiali`, `litellm`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
@@ -394,10 +406,11 @@ The gate verifies:
   callback routes.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
-Octelium `WEB` Services. CI Kubernetes access now uses the `kubernetes-api-ci`
-Octelium Service, and reviewed external callbacks use the `octelium-public`
-tunnel with path-limited Istio routes. If the gate fails, treat the failure
-output as the repair work queue.
+Octelium `WEB` Services. Production CI Kubernetes access uses the
+`kubernetes-api-ci` Octelium Service; the staged read-only plan path uses
+`kubernetes-api-plan` only after its cutover gates pass. Reviewed external
+callbacks use the `octelium-public` tunnel with path-limited Istio routes. If
+the gate fails, treat the failure output as the repair work queue.
 
 ## Bootstrap UI Access
 
@@ -535,10 +548,12 @@ scripts/octelium-public-dns.sh --tunnel-only
 
 The gateway reconciler prevents `_gw-*` names from falling through to stale
 wildcard records. The public reconciler verifies the CronJob-owned API mapping,
-creates its proxied A record, then creates exact proxied CNAME records to the named Cloudflare
-Tunnel target for `stinkyboi.com`, portal and browser aliases,
-`console.stinkyboi.com`, app hostnames such as `grafana.stinkyboi.com`, and
-callback hostnames such as `n8n-webhook.stinkyboi.com` and
+creates its proxied A record, then creates exact proxied CNAME records to the
+named Cloudflare Tunnel target for `stinkyboi.com`, portal and browser aliases,
+`console.stinkyboi.com`, Kubernetes endpoints such as
+`kubernetes-api-plan.stinkyboi.com`, app hostnames such as
+`grafana.stinkyboi.com`, and callback hostnames such as
+`n8n-webhook.stinkyboi.com` and
 `policy-bot-hook.stinkyboi.com`.
 `--tunnel-only` skips the API hostname entirely; a later full run from the
 homelab LAN remains responsible for verifying and reconciling that record.

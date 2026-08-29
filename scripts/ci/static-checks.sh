@@ -85,8 +85,11 @@ for parameter in \
 done
 (
   cd IaC/operator/github-actions-role-policy
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-  terragrunt --log-disable validate -no-color
+  operator_test_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator-test.XXXXXX")"
+  trap 'rm -rf -- "$operator_test_dir"' EXIT
+  terragrunt --log-disable init --download-dir "$operator_test_dir" -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable validate --download-dir "$operator_test_dir" -no-color
+  terragrunt --log-disable run --download-dir "$operator_test_dir" --no-auto-init -- test -no-color
 )
 echo "::endgroup::"
 
@@ -321,6 +324,9 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-plan")] as $plan_users |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-plan-kubernetes-api-access")] as $plan_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api-plan")] as $plan_services |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
     ($users | length) == 1 and
     $users[0].spec.type == "WORKLOAD" and
@@ -341,8 +347,116 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
         {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
         {"match": "ctx.service.spec.mode == \"KUBERNETES\""}
       ]}}
-    }]
+    }] and
+    ($plan_users | length) == 1 and
+    $plan_users[0].spec == {
+      "type": "WORKLOAD",
+      "session": {
+        "clientlessDuration": {"days": 30},
+        "accessTokenDuration": {"days": 30}
+      }
+    } and
+    ($plan_policies | length) == 1 and
+    $plan_policies[0].spec.rules == [
+      {
+        "name": "sensitive-read-deny",
+        "effect": "DENY",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-plan\""},
+          {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+          {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-plan.default\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.resource in [\"secrets\", \"configmaps\", \"serviceaccounts\", \"tokenreviews\", \"subjectaccessreviews\", \"selfsubjectaccessreviews\", \"localsubjectaccessreviews\", \"selfsubjectrulesreviews\"]"},
+            {"match": "ctx.request.kubernetes.subresource in [\"proxy\", \"log\", \"exec\", \"attach\", \"portforward\", \"ephemeralcontainers\", \"token\"]"}
+          ]}}
+        ]}}
+      },
+      {
+        "name": "provider-required-reads",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-plan\""},
+          {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+          {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-plan.default\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"any": {"of": [
+            {"all": {"of": [
+              {"match": "ctx.request.kubernetes.apiGroup == \"argoproj.io\""},
+              {"match": "ctx.request.kubernetes.apiVersion == \"v1alpha1\""},
+              {"match": "ctx.request.kubernetes.namespace == \"argocd\""},
+              {"match": "ctx.request.kubernetes.resource == \"applications\""},
+              {"match": "ctx.request.kubernetes.subresource == \"\""},
+              {"match": "ctx.request.kubernetes.verb == \"get\""},
+              {"match": "ctx.request.kubernetes.http.uri == ctx.request.kubernetes.http.path"}
+            ]}},
+            {"all": {"of": [
+              {"match": "ctx.request.kubernetes.apiGroup == \"apiextensions.k8s.io\""},
+              {"match": "ctx.request.kubernetes.apiVersion == \"v1\""},
+              {"match": "ctx.request.kubernetes.namespace == \"\""},
+              {"match": "ctx.request.kubernetes.resource == \"customresourcedefinitions\""},
+              {"match": "ctx.request.kubernetes.subresource == \"\""},
+              {"match": "ctx.request.kubernetes.verb == \"list\""}
+            ]}},
+            {"all": {"of": [
+              {"match": "ctx.request.kubernetes.resource == \"\""},
+              {"match": "ctx.request.kubernetes.verb == \"get\""},
+              {"any": {"of": [
+                {"match": "ctx.request.kubernetes.http.path in [\"/api\", \"/apis\", \"/openapi/v2\"]"},
+                {"match": "ctx.request.kubernetes.http.path.startsWith(\"/api/\")"},
+                {"match": "ctx.request.kubernetes.http.path.startsWith(\"/apis/\")"}
+              ]}}
+            ]}}
+          ]}}
+        ]}}
+      }
+    ] and
+    ($plan_services | length) == 1 and
+    $plan_services[0].spec == {
+      "isPublic": true,
+      "mode": "KUBERNETES",
+      "port": 6443,
+      "authorization": {
+        "policies": ["homelab-plan-kubernetes-api-access"]
+      },
+      "config": {
+        "upstream": {"url": "https://10.1.0.199:6443"},
+        "kubernetes": {
+          "kubeconfig": {
+            # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
+            "fromSecret": "homelab-ci-kubeconfig"
+          }
+        }
+      }
+    }
   ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/octelium-public/configmap.yaml |
+  jq -e '
+    .data["config.yaml"] |
+    contains("hostname: kubernetes-api-plan.stinkyboi.com") and
+    contains("httpHostHeader: kubernetes-api-plan.stinkyboi.com")
+  ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/octelium-public/deployment.yaml |
+  jq -e '
+    .spec.template.metadata.annotations["homelab.rst.io/cloudflared-config-revision"] ==
+      "plan-api-route-2026-08-29"
+  ' >/dev/null
+grep -Fq '"kubernetes-api-plan.${domain}"' scripts/octelium-public-dns.sh
+test -x scripts/ci/octelium-plan-access-check.sh
+bash -n scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get applications.argoproj.io grafana --namespace argocd' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get customresourcedefinitions.apiextensions.k8s.io' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get --raw=/apis' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get secrets --all-namespaces' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get pods --all-namespaces' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'Application list' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'Application watch' scripts/ci/octelium-plan-access-check.sh
+rg -Fq -- '--dry-run=server' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'Octelium: Unauthorized request' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get --raw=/openapi/v2' scripts/ci/octelium-plan-access-check.sh
+rg -Fq 'get --raw=/metrics' scripts/ci/octelium-plan-access-check.sh
 echo "::endgroup::"
 
 echo "::group::Terragrunt pull request gate"

@@ -3,9 +3,10 @@ include "root" {
 }
 
 locals {
-  root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  aws_region  = local.root_config.locals.aws_region
-  kms_key_id  = local.root_config.locals.kms_key_id
+  root_config  = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  aws_region   = local.root_config.locals.aws_region
+  kms_key_id   = local.root_config.locals.kms_key_id
+  state_region = local.root_config.locals.state_region
 }
 
 terraform {
@@ -18,6 +19,11 @@ generate "aws_provider" {
   contents  = <<EOF
 provider "aws" {
   region = "${local.aws_region}"
+}
+
+provider "aws" {
+  alias  = "state"
+  region = "${local.state_region}"
 }
 EOF
 }
@@ -32,5 +38,10 @@ inputs = {
   parameter_reader_group_name           = "homelab-ssm-parameter-readers"
   parameter_reader_policy_name_prefix   = "homelab-ssm-parameter-reader-"
   parameter_reader_policy_slot_count    = 10
+  plan_policy_name                      = "homelab-github-terragrunt-plan-read-only"
+  plan_role_name                        = "Github-Homelab-Plan"
   policy_name                           = "homelab-github-terragrunt-ssm-reader-policy-admin"
+  # Deliberately fixed here: this IAM boundary must not follow a broad backend move implicitly.
+  state_bucket_name = "rstuhlmuller-aws-s3-use1-datalake"
+  state_key_prefix  = "IaC/homelab/live/argocd-apps"
 }
