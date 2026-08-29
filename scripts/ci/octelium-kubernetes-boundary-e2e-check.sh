@@ -246,53 +246,55 @@ fixture_sha256() {
 run_case cordium-pass cordium valid valid octelium pass
 run_case owner-pass owner valid valid octelium pass
 reviewed_commit="$("${BOUNDARY_REAL_GIT}" -C "${REPO_ROOT}" rev-parse HEAD)"
-CI=true GITHUB_ACTIONS=true BOUNDARY_FIXTURE_GIT_STATUS=clean \
-  BOUNDARY_REAL_GIT="${BOUNDARY_REAL_GIT}" BOUNDARY_FIXTURE_LOG="${TEST_ROOT}/verify.log" \
-  PATH="${FAKE_BIN}:${PATH}" \
-  "${BOUNDARY_SCRIPT}" --verify --role cordium \
-  --evidence-dir "${TEST_ROOT}/cordium-pass-evidence" --evidence-id cordium-pass \
-  --reviewed-commit "${reviewed_commit}" >/dev/null
+script_digest="$(fixture_sha256 "${BOUNDARY_SCRIPT}")"
+catalog_digest="$(fixture_sha256 "${BOUNDARY_CATALOG}")"
 
-expect_verify_failure() {
-  local role="$1" evidence_id="$2" evidence_dir="$3"
-  if CI=true GITHUB_ACTIONS=true BOUNDARY_FIXTURE_GIT_STATUS=clean \
-    BOUNDARY_REAL_GIT="${BOUNDARY_REAL_GIT}" BOUNDARY_FIXTURE_LOG="${TEST_ROOT}/verify.log" \
-    PATH="${FAKE_BIN}:${PATH}" \
-    "${BOUNDARY_SCRIPT}" --verify --role "${role}" \
-    --evidence-dir "${evidence_dir}" --evidence-id "${evidence_id}" \
-    --reviewed-commit "${reviewed_commit}" >/dev/null 2>&1; then
-    echo "invalid ${role} evidence unexpectedly verified: ${evidence_id}" >&2
+fabricated_evidence="${TEST_ROOT}/fabricated-evidence"
+mkdir "${fabricated_evidence}"
+printf 'id\trole\texpectation\tresult\texit_code\tcheck\n001\tcordium\tallowed\tPASS\t0\tfabricated\n' \
+  >"${fabricated_evidence}/summary.tsv"
+printf 'started_at\t2026-08-29T12:00:00Z\nrole\tcordium\nexpected_user\thomelab-cordium-user\ndomain\tstinkyboi.com\nnamespace\tcordium\nevidence_id\tfabricated\nrepository_commit\t%s\nscript_sha256\t%s\ncatalog_sha256\t%s\ncompleted_at\t2026-08-29T12:00:01Z\nchecks\t1\nfailures\t0\n' \
+  "${reviewed_commit}" "${script_digest}" "${catalog_digest}" \
+  >"${fabricated_evidence}/metadata.tsv"
+jq -n '{domain: "stinkyboi.com", user: "homelab-cordium-user", userType: "HUMAN", sessionType: "CLIENT", isConnected: true}' \
+  >"${fabricated_evidence}/identity.json"
+jq -n '{server: "https://kubernetes-api.homelab.local.stinkyboi.com:6443", context: "kubernetes-admin@kubernetes", usesOcteliumSessionPlaceholder: true}' \
+  >"${fabricated_evidence}/kubeconfig.json"
+cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/replayed-evidence"
+
+expect_verify_refusal() {
+  local evidence_id="$1" evidence_dir="$2" output="${TEST_ROOT}/verify-${1}.out" exit_code
+  if "${BOUNDARY_SCRIPT}" --verify --role cordium \
+    --evidence-dir "${evidence_dir}" --evidence-id "${evidence_id}" >"${output}" 2>&1; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  [ "${exit_code}" -eq 2 ] || {
+    echo "unsafe evidence verifier did not fail closed: ${evidence_id}" >&2
+    exit 1
+  }
+  rg -Fq -- '--verify cannot attest evidence created by a privileged Workspace' "${output}"
+  if rg -Fq 'evidence verified' "${output}"; then
+    echo "unsafe evidence success claim remained: ${evidence_id}" >&2
     exit 1
   fi
 }
 
-expect_verify_failure owner cordium-pass "${TEST_ROOT}/cordium-pass-evidence"
-expect_verify_failure cordium stale-run "${TEST_ROOT}/cordium-pass-evidence"
+expect_verify_refusal cordium-pass "${TEST_ROOT}/cordium-pass-evidence"
+expect_verify_refusal replayed "${TEST_ROOT}/replayed-evidence"
+expect_verify_refusal fabricated "${fabricated_evidence}"
 
-cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/tampered-identity-evidence"
-jq '.user = "homelab-owner"' "${TEST_ROOT}/tampered-identity-evidence/identity.json" \
-  >"${TEST_ROOT}/identity.tmp"
-mv "${TEST_ROOT}/identity.tmp" "${TEST_ROOT}/tampered-identity-evidence/identity.json"
-expect_verify_failure cordium cordium-pass "${TEST_ROOT}/tampered-identity-evidence"
-
-cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/tampered-kubeconfig-evidence"
-jq '.server = "https://10.1.0.199:6443"' "${TEST_ROOT}/tampered-kubeconfig-evidence/kubeconfig.json" \
-  >"${TEST_ROOT}/kubeconfig.tmp"
-mv "${TEST_ROOT}/kubeconfig.tmp" "${TEST_ROOT}/tampered-kubeconfig-evidence/kubeconfig.json"
-expect_verify_failure cordium cordium-pass "${TEST_ROOT}/tampered-kubeconfig-evidence"
-
-cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/tampered-digest-evidence"
-awk -F '\t' 'BEGIN { OFS = "\t" } $1 == "script_sha256" { $2 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } { print }' \
-  "${TEST_ROOT}/tampered-digest-evidence/metadata.tsv" >"${TEST_ROOT}/metadata.tmp"
-mv "${TEST_ROOT}/metadata.tmp" "${TEST_ROOT}/tampered-digest-evidence/metadata.tsv"
-expect_verify_failure cordium cordium-pass "${TEST_ROOT}/tampered-digest-evidence"
+"${BOUNDARY_SCRIPT}" --help >"${TEST_ROOT}/help.out"
+if rg -Fq -- '--verify' "${TEST_ROOT}/help.out"; then
+  echo "unsafe evidence verifier is still advertised" >&2
+  exit 1
+fi
 
 jq -e '.server == "https://kubernetes-api.homelab.local.stinkyboi.com:6443" and .context == "kubernetes-admin@kubernetes" and .usesOcteliumSessionPlaceholder == true' \
   "${TEST_ROOT}/cordium-pass-evidence/kubeconfig.json" >/dev/null
 jq -e '.user == "homelab-cordium-user" and .userType == "HUMAN" and .sessionType == "CLIENT" and .isConnected == true' \
   "${TEST_ROOT}/cordium-pass-evidence/identity.json" >/dev/null
-script_digest="$(fixture_sha256 "${BOUNDARY_SCRIPT}")"
-catalog_digest="$(fixture_sha256 "${BOUNDARY_CATALOG}")"
 grep -Fxq $'script_sha256\t'"${script_digest}" "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 grep -Fxq $'catalog_sha256\t'"${catalog_digest}" "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 grep -Fxq $'evidence_id\tcordium-pass' "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
@@ -396,5 +398,12 @@ if CI=true GITHUB_ACTIONS=false PATH="${FAKE_BIN}:${PATH}" \
   exit 1
 fi
 rg -Fq 'live HUMAN identity evidence must not run in CI' "${CI_OUTPUT}"
+
+if rg -n 'octelium-kubernetes-boundary-e2e\.sh[[:space:]]+--verify|delete_boundary_workspace' \
+  docs/octelium.md clusters/homelab/apps/cordium/README.md \
+  docs/validation-runbook.md docs/knowledge-base; then
+  echo "unsafe copied-evidence deletion gate remains documented" >&2
+  exit 1
+fi
 
 echo "Octelium Kubernetes boundary behavioral fixtures passed."

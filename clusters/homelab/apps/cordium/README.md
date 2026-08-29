@@ -168,7 +168,8 @@ Tailscale-only URL.
 ## Private Kubernetes Access
 
 Start a named developer Workspace from the clean reviewed commit. Evidence runs
-must omit `--rm` so results can be exported before Workspace deletion:
+must omit `--rm`; the Workspace remains retained until trusted server-side
+attestation exists:
 
 ```sh
 reviewed_commit="$(git rev-parse HEAD)"
@@ -225,11 +226,13 @@ and catalog SHA-256 digest.
 
 Exit without deleting the Workspace, then follow the canonical
 [private Kubernetes evidence procedure](../../../../docs/octelium.md#private-kubernetes-access).
-It exports with `cordium cp -r`, verifies the expected role, user, Workspace
-evidence ID, exact identity and kubeconfig JSON, reviewed commit, recomputed
-digests, and zero-failure summary, retains both role results on encrypted
-operator storage, and deletes the Workspace idempotently. Catalog equality and
-the jq/CEL fixture are prerequisites and drift checks, not enforcement proof.
+It exports diagnostic output with `cordium cp -r` and retains both role results
+on encrypted operator storage. A privileged Workspace can forge every copied
+artifact, digest, timestamp, commit, or nonce; none authorize its deletion.
+Retain the Workspace until an owner-authenticated operator can verify the exact
+challenge-bound request matrix in Octelium's server-side AccessLogs. Catalog
+equality and the jq/CEL fixture are prerequisites and drift checks, not
+enforcement proof. Issue `#879` owns the trusted attestation gate.
 
 ## Validation
 
@@ -293,8 +296,8 @@ kubectl --request-timeout=15s -n cordium get pods
 exit
 ```
 
-The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. Export and
-verify private evidence before deleting the named Workspace; use the earlier
+The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. Export the
+private diagnostic output and retain the named Workspace; use the earlier
 cluster-side PVC check to validate `cordium-local`.
 
 The expected steady state includes ready Cordium controller pods in the

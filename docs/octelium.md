@@ -345,31 +345,10 @@ through an exact-marker sanitizer and never written to evidence, even when a
 policy regression exposes a Secret or Pod log.
 
 Exit the Workspace without deleting it. From the operator workstation, use
-Cordium 0.12.7's native recursive copy, verify the exported evidence, and only
-then delete the Workspace. Keep these helpers in the same operator shell for
-the owner run below. Cleanup lists Workspaces first, so an already-absent target
-is success while list, parse, duplicate-name, and deletion failures remain
-visible:
+Cordium 0.12.7's native recursive copy to retain the diagnostic output on
+encrypted storage:
 
 ```bash
-delete_boundary_workspace() {
-  local workspaces workspace_count
-  workspaces="$(cordium get workspaces --domain stinkyboi.com -o json)" || return
-  workspace_count="$(
-    jq -er --arg name "$boundary_workspace" \
-      '[.items[]? | select(.metadata.name == $name)] | length' \
-      <<<"$workspaces"
-  )" || return
-  case "$workspace_count" in
-    0) return 0 ;;
-    1) cordium delete workspace "$boundary_workspace" --domain stinkyboi.com ;;
-    *)
-      printf 'ERROR: expected at most one Workspace named %s\n' "$boundary_workspace" >&2
-      return 1
-      ;;
-  esac
-}
-
 workspace_tmp="$(cordium exec "$boundary_workspace" --domain stinkyboi.com -- \
   sh -c 'printf %s "${TMPDIR:-/tmp}"')"
 encrypted_evidence="/ABSOLUTE/PATH/ON/ENCRYPTED-STORAGE/$boundary_workspace"
@@ -377,13 +356,14 @@ mkdir -m 0700 "$encrypted_evidence"
 cordium cp -r --domain stinkyboi.com \
   "$boundary_workspace:$workspace_tmp/octelium-cordium-boundary-evidence/" \
   "$encrypted_evidence/"
-scripts/octelium-kubernetes-boundary-e2e.sh --verify \
-  --role cordium \
-  --evidence-dir "$encrypted_evidence" \
-  --evidence-id "$boundary_workspace" \
-  --reviewed-commit "$reviewed_commit" &&
-  delete_boundary_workspace
 ```
+
+Retain the named Workspace. Its privileged root process can fabricate or replay
+every copied file, digest, timestamp, commit, and nonce, so those artifacts
+cannot authorize deletion. Deletion remains blocked until an owner-authenticated
+operator can query Octelium's server-side AccessLogs and match the exact
+challenge-bound request matrix independently of the Workspace. Issue `#879`
+owns that attestation gate.
 
 Separately, log in as `homelab-owner` on the operator workstation, establish
 the normal client connection, and generate a fresh kubeconfig:
@@ -402,12 +382,7 @@ scripts/octelium-kubernetes-boundary-e2e.sh \
   --kubeconfig "$KUBECONFIG" \
   --evidence-dir "$owner_evidence" \
   --evidence-id "$owner_evidence_id"
-scripts/octelium-kubernetes-boundary-e2e.sh --verify \
-  --role owner \
-  --evidence-dir "$owner_evidence" \
-  --evidence-id "$owner_evidence_id" \
-  --reviewed-commit "$reviewed_commit" &&
-  octelium disconnect --domain stinkyboi.com
+octelium disconnect --domain stinkyboi.com
 ```
 
 Both evidence directories must be empty, absolute paths outside the checkout.
@@ -416,10 +391,11 @@ Raw identity output is streamed through the validator and never written; only
 the expected identity fields are retained.
 Retain them only on encrypted operator-owned storage. Never attach them to a
 GitHub issue or pull request, upload them as an Actions artifact, or commit
-them. Record only the run timestamp, repository commit, and pass/fail result in
-the issue. The two sessions must pass at the same reviewed catalog revision;
-catalog JSON equality and the repository jq/CEL model are drift checks, not
-live enforcement proof.
+them. Treat both as diagnostic observations, not independently attested proof.
+Record only the run timestamp, repository commit, and pass/fail result in the
+issue. The two sessions must pass at the same reviewed catalog revision;
+catalog JSON equality, copied evidence, and the repository jq/CEL model are
+drift checks, not live enforcement proof.
 
 If this boundary blocks a required diagnostic after rollout, use a reviewed
 catalog change to remove both Cordium `ALLOW` rules while retaining

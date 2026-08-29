@@ -190,6 +190,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   unlisted or future APIs, and other non-resource paths receive the evaluator's
   default `DENY`. The shared upstream credential remains a defense-in-depth
   risk until issue `#847` replaces or safely constrains it.
+  Cordium boundary output copied from a privileged Workspace is not an
+  attestation: that Workspace can forge files, hashes, timestamps, commits, and
+  nonces. Retain it until an owner-authenticated operator can match a fresh
+  challenge and the exact request matrix in Octelium's server-side AccessLogs;
+  issue `#879` owns that attestation.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

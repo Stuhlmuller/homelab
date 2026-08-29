@@ -58,10 +58,13 @@ Before treating Tailscale as unnecessary for Kubernetes, follow the canonical
 [private Kubernetes access procedure](octelium.md#private-kubernetes-access).
 It owns the same-commit live catalog prerequisite, named non-`--rm` Cordium
 Workspace, exact Cordium and owner identity runs, credential/proxy isolation,
-complete allow/deny matrix, encrypted evidence, exact commit/digest/outcome
-verification, and idempotent Workspace deletion. Ordinary command failure is
-not denial evidence; only Octelium's exact v0.35 `Forbidden` marker passes.
-Never upload evidence to GitHub or Actions. The static catalog shape check
+complete allow/deny matrix, and encrypted diagnostic output. Retain the
+Workspace: its privileged process can forge copied evidence, so deletion is
+blocked until owner-authenticated server-side AccessLog attestation exists.
+Issue `#879` owns that gate.
+Ordinary command failure is not denial evidence; only Octelium's exact v0.35
+`Forbidden` marker passes. Never upload evidence to GitHub or Actions. The
+static catalog shape check
 remains `scripts/ci/octelium-kubernetes-policy-check.sh`, and behavioral fake
 coverage remains `scripts/ci/octelium-kubernetes-boundary-e2e-check.sh`; neither
 is live enforcement proof.
