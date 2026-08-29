@@ -58,6 +58,7 @@
             sops
             talosctl
             terragrunt
+            trivy
             unzip
             yamllint
             yq-go

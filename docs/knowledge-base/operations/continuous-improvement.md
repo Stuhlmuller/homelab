@@ -62,7 +62,7 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
-- **Status:** partially fixed
+- **Status:** partially fixed; continuous direct-image scanning staged
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
   Rancher release `v0.0.36` to exact upstream commit
@@ -70,12 +70,47 @@ organization-policy blocker is tracked below.
   digest-pinned. cert-manager `v1.20.3` and all five of its runtime image
   digests are staged in one versioned Application input so the protected apply
   changes the chart, CRDs, RBAC, and binaries atomically. Issue `#791` tracks
-  the remaining chart/native image pins and continuous SBOM, vulnerability,
-  and signature checks.
-- **Risk:** Other tag-only generated images can still drift, and CI does not
-  yet identify actionable HIGH or CRITICAL image vulnerabilities.
-- **Next step:** Complete the remaining image inventory and add the smallest
-  continuous scan and exception-expiry gate under issue `#791`.
+  the remaining chart/native image pins and continuous SBOM and signature
+  checks. The required `validate` job now scans each exact digest-pinned image
+  whose occurrence count increases through Kubernetes YAML, Helm values, or
+  operator scripts with Trivy; its weekly run scans the complete extracted
+  inventory. Fixable HIGH and CRITICAL findings fail the job. Exceptions
+  scoped to a package PURL require an issue link and future expiry, after which
+  they fail closed. Trivy `0.69.3` in the locked Nix input is affected by
+  CVE-2026-55092; the wrapper mitigates it
+  by running from an empty directory with repository configuration and OCI
+  database overrides disabled until issue `#888` updates the Nix toolchain.
+  The first `linux/amd64` baseline scanned 59 exact references: 54 had 75
+  CRITICAL and 2,053 HIGH unique vulnerability/package/fixed-version tuples.
+  Existing upgrade issues retain their scope; uncovered app groups are tracked
+  by issues `#895` through `#904`.
+- **Risk:** Remote Helm defaults that expose only a digest remain outside the
+  extractor until their repository and tag are explicit. SBOM and signature
+  verification are not yet enforced.
+- **Next step:** Complete the chart-default image inventory, remediate the
+  weekly baseline findings, then add the smallest SBOM and signature gates
+  under issue `#791`.
+
+- **Status:** open; tracked by issue `#887`
+- **Area:** software supply chain / Helm updates
+- **Evidence:** Twenty-six external chart revisions are literal
+  `targetRevision` values in `IaC/terragrunt.stack.hcl`, and the bootstrap Argo
+  CD chart is pinned in its catalog unit. Renovate's native Helm manager scans
+  `Chart.yaml`; its Terragrunt manager extracts Terraform module sources only.
+- **Risk:** Reproducible chart pins silently age past security, compatibility,
+  and support releases because Dependency Dashboard cannot see them.
+- **Next step:** Add one Helm-datasource custom manager for the exact
+  Terragrunt pin syntax and prove it extracts every current chart.
+
+- **Status:** open; tracked by issue `#888`
+- **Area:** software supply chain / Nix toolchain
+- **Evidence:** `flake.lock` pins a May 2026 nixpkgs revision. Renovate supports
+  Nix flakes but disables that manager by default, and `renovate.json` does not
+  enable it.
+- **Risk:** CI and operator tools miss routine security and bug-fix refreshes
+  while remaining reproducibly stale.
+- **Next step:** Enable Renovate's native Nix manager and keep lock refreshes as
+  reviewed, fully validated pull requests.
 
 - **Status:** mitigation pending rollout and observation
 - **Area:** Istio ambient / ztunnel readiness

@@ -6,6 +6,11 @@ This repository uses GitHub Actions for the review and rollout path:
   with advisory status reporting. It is the shared lightweight lint signal for
   every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
   and `validate`.
+- `validate` runs on pull requests, pushes to `main`, and weekly. It evaluates
+  the Nix flake, Terragrunt HCL, rendered Kustomize sources, whitespace, and
+  secrets. Pull requests and pushes also scan exact digest-pinned images whose
+  occurrence count increases for fixable HIGH or CRITICAL vulnerabilities;
+  the weekly run scans the complete extracted image inventory.
 - `Terragrunt Plan` runs on every pull request. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,
