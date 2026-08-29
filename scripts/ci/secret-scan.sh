@@ -146,6 +146,11 @@ sensitive_iac_artifacts() {
   } | sort -u
 }
 
+is_private_commit_email() {
+  [[ "$1" == "noreply@github.com" ||
+    "$1" =~ ^[^[:space:]@]+@users\.noreply\.github\.com$ ]]
+}
+
 if [[ "${1:-}" == "--artifacts-only" ]]; then
   iac_artifacts="$(sensitive_iac_artifacts)"
   if [[ -n "$iac_artifacts" ]]; then
@@ -229,6 +234,12 @@ PY
   artifact_output="$(cd "$canary_dir" && sensitive_iac_artifacts)"
   if [[ "$artifact_output" != $'./.terraform/terraform.tfstate\n./change.plan\n./export.json\n./innocent.bin\n./notes.json\n./plan.out\n./review.json\n./review.txt\n./snapshot.json\n./staged.tfplan.json\n./terraform.tfstate' || "$artifact_output" == *"$canary_value"* ]]; then
     echo "Saved OpenTofu artifact self-check failed." >&2
+    exit 1
+  fi
+  is_private_commit_email '57728706+rstuhlmuller@users.noreply.github.com'
+  is_private_commit_email 'noreply@github.com'
+  if is_private_commit_email 'operator@example.com'; then
+    echo "Commit email privacy self-check failed." >&2
     exit 1
   fi
 
@@ -415,6 +426,27 @@ git_history_log_opts() {
   fi
 }
 
+history_log_opts=""
+if [[ "$is_git_work_tree" == "true" ]]; then
+  ensure_ci_git_history
+  history_log_opts="$(git_history_log_opts)"
+
+  echo "::group::Commit email privacy"
+  exposed_commit_emails="$({
+    git log "$history_log_opts" --format='%ae%n%ce' |
+      sort -u |
+      while IFS= read -r email; do
+        is_private_commit_email "$email" || printf '%s\n' "$email"
+      done
+  })"
+  if [[ -n "$exposed_commit_emails" ]]; then
+    printf 'Commit author and committer emails must use GitHub noreply addresses:\n%s\n' \
+      "$exposed_commit_emails" >&2
+    exit 1
+  fi
+  echo "::endgroup::"
+fi
+
 if command -v gitleaks >/dev/null 2>&1; then
   echo "::group::Gitleaks working tree scan"
   gitleaks detect --no-git --redact --source . --verbose
@@ -422,9 +454,6 @@ if command -v gitleaks >/dev/null 2>&1; then
 
   if [[ "$is_git_work_tree" == "true" ]]; then
     echo "::group::Gitleaks git history scan"
-    ensure_ci_git_history
-
-    history_log_opts="$(git_history_log_opts)"
     if [[ -n "$history_log_opts" ]]; then
       echo "Scanning git history range: ${history_log_opts}"
       gitleaks detect --redact --source . --verbose --log-opts "$history_log_opts"

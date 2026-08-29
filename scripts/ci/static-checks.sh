@@ -90,6 +90,11 @@ done
 )
 echo "::endgroup::"
 
+echo "::group::SSM write-only provider capability"
+bash scripts/ci/check-ssm-write-only-schema.sh
+bash scripts/ssm-secret-maintenance-lock.sh --self-test
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -686,6 +691,8 @@ bash -n \
 }
 bash -n scripts/ci/terragrunt-apply.sh
 rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci/terragrunt-apply.sh
+rg -Fq '${GITHUB_RUN_ATTEMPT:-0}' scripts/ci/terragrunt-apply.sh
+rg -Fq '${RANDOM}${RANDOM}' scripts/ci/terragrunt-apply.sh
 echo "::endgroup::"
 
 echo "::group::Renovate config"
@@ -934,6 +941,8 @@ rg -Fq 'delete_access_key_safely' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'acquire_rotation_lock' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'release_rotation_lock' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'retain_maintenance_locks=true' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'ssm_pair_verified=true' scripts/rotate-external-secrets-aws-key.sh
 echo "::endgroup::"
 
 echo "::group::Whitespace"

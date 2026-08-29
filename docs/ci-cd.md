@@ -134,7 +134,8 @@ contract for Grafana.
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
   pre-commit scan rejects plan/state filenames plus binary plans or JSON
-  plan/state exports hidden behind arbitrary names.
+  plan/state exports hidden behind arbitrary names. Commit-range checks reject
+  author or committer email addresses that are not GitHub noreply addresses.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`
