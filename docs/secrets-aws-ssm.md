@@ -125,10 +125,10 @@ key; never print or copy an old state body while checking it.
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
-not an active secret contract and has no ExternalSecret consumer. It remains in
-the OpenTofu declaration as a state tombstone because policy rejects SSM
-parameter deletion; remove it only through a reviewed repository-owned state
-and secret-retirement workflow.
+not an active secret contract and has no ExternalSecret consumer or reader IAM
+grant. It remains in the OpenTofu declaration as a state tombstone because
+policy rejects SSM parameter deletion; remove it only through a reviewed
+repository-owned state and secret-retirement workflow.
 
 The retired `/homelab/argocd-image-updater/github-app/*` parameters likewise
 have no ExternalSecret, workload consumer, or reader IAM grant. They remain

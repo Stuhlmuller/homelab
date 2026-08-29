@@ -17,6 +17,23 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Retired application contracts"
+if rg -q 'unit "argocd_apps_(github_actions_runner|grafana_alert_cleanup)"' \
+  IaC/terragrunt.stack.hcl; then
+  echo "Retired Argo CD Application unit remains registered" >&2
+  exit 1
+fi
+[[ ! -e clusters/homelab/apps/github-actions-runner ]]
+[[ ! -e clusters/homelab/apps/grafana-alert-cleanup ]]
+sed -n '/"\/homelab\/github-actions-runner\/registration-token"/,/^    }/p' \
+  IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl |
+  rg -q '^      reader_access = false$'
+if rg -q '^\s*"github-actions-runner":' policy/kubernetes.rego; then
+  echo "Retired runner ExternalSecret policy remains enabled" >&2
+  exit 1
+fi
+echo "::endgroup::"
+
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/live/argocd-apps
@@ -52,6 +69,39 @@ echo "::group::Terragrunt generated-unit filters"
   fi
   [[ "$(TERRAGRUNT_REPAIR_ARGOCD_APP_STATE=true GITHUB_EVENT_NAME=workflow_dispatch \
     TERRAGRUNT_ARGOCD_APP=affine terragrunt_argocd_app_state_repair_unit)" == "affine" ]]
+
+  cd ../../..
+  deleted_unit_test_root="$(mktemp -d)"
+  trap 'rm -rf -- "${deleted_unit_test_root:?}"' EXIT
+  terragrunt_create_deleted_unit_destroy_stack \
+    "$deleted_unit_test_root" IaC/live/argocd-apps/deleted-unit-test
+  (
+    cd "${deleted_unit_test_root}/IaC/live/argocd-apps/deleted-unit-test"
+    terragrunt render --json
+  ) >"${deleted_unit_test_root}/encrypted.json"
+  jq -e '
+    .generate.deleted_unit_destroy_config.contents as $config |
+    ($config | contains("key_provider \"aws_kms\" \"main\"")) and
+    ($config | contains("kms_key_id = \"alias/homelab-opentofu\"")) and
+    ($config | contains("key_spec   = \"AES_256\"")) and
+    ($config | contains("region     = \"us-east-1\"")) and
+    ($config | contains("method \"aes_gcm\" \"main\"")) and
+    (["state", "plan"] | all(. as $kind | $config | contains("\($kind) {"))) and
+    (($config | split("enforced = true")) | length == 3)
+  ' "${deleted_unit_test_root}/encrypted.json" >/dev/null
+
+  terragrunt_create_deleted_unit_destroy_stack \
+    "$deleted_unit_test_root" IaC/live/deleted-unit-test
+  (
+    cd "${deleted_unit_test_root}/IaC/live/deleted-unit-test"
+    terragrunt render --json
+  ) >"${deleted_unit_test_root}/unencrypted.json"
+  jq -e '
+    .generate.deleted_unit_destroy_config.contents |
+    contains("key_provider \"aws_kms\" \"main\"") | not
+  ' "${deleted_unit_test_root}/unencrypted.json" >/dev/null
+  rm -rf -- "${deleted_unit_test_root:?}"
+  trap - EXIT
 )
 echo "::endgroup::"
 

@@ -107,6 +107,7 @@ inputs = {
     "/homelab/github-actions-runner/registration-token" = {
       description   = "Retired GitHub Actions runner token retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/tailscale/oauth-client-id" = {
       description   = "Tailscale Kubernetes operator OAuth client ID."

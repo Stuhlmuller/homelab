@@ -144,10 +144,13 @@ contract for Grafana.
   scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`
   files, create temporary empty Terragrunt units at those deleted paths, and
   reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
-  the original backend key. Pull request plans list the remote-state resources
-  and save a destroy plan without rendering potentially sensitive values.
-  Production apply lists the same state resources, applies the saved destroy
-  plan, and then continues with the current checkout.
+  the original backend key. For module families that enforce native OpenTofu
+  encryption, the fake unit also reproduces the root KMS key, region, key spec,
+  AES-GCM method, and enforced state/plan settings; other unit families retain
+  their unencrypted state contract. Pull request plans list the remote-state
+  resources and save a destroy plan without rendering potentially sensitive
+  values. Production apply lists the same state resources, applies the saved
+  destroy plan, and then continues with the current checkout.
 - The protected full apply runs the production phases explicitly:
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
@@ -203,10 +206,10 @@ duplicate repository-scoped copies:
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
-has no runtime consumer. Its declaration and preexisting-parameter adoption
-guard remain temporarily because the production policy rejects SSM parameter
-deletion; remove both only with a reviewed repository-owned state and
-secret-retirement workflow.
+has no runtime consumer or External Secrets reader IAM grant. Its declaration
+and preexisting-parameter adoption guard remain temporarily because the
+production policy rejects SSM parameter deletion; remove both only with a
+reviewed repository-owned state and secret-retirement workflow.
 
 Add these environment variables. The workflows read each non-sensitive value
 from a GitHub variable first and fall back to a secret with the same name, so
