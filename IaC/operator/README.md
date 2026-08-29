@@ -38,7 +38,7 @@ the environments. Replacing the old pull-request and branch subjects before
 that bootstrap temporarily disables the current `github-iac` plan and apply
 jobs.
 
-### Trust-only rollout
+### Role trust and session-duration rollout
 
 Validate without the remote backend, then initialize the operator state with
 administrator credentials:
@@ -87,10 +87,10 @@ grep -Eq '^[[:space:]]*id[[:space:]]*=[[:space:]]*"?Github-TF-State"?$' \
 ```
 
 Save a plan for only the role. The JSON gate rejects creation, deletion,
-replacement, imports, another managed resource, changes to non-trust role
-attributes, a wildcard, or any subject outside the four protected
-environments. Review the human-readable plan before approving the prompt and
-applying those exact bytes.
+replacement, imports, another managed resource, changes outside the trust
+policy and 5,400-second session maximum, a wildcard, or any subject outside the
+four protected environments. Review the human-readable plan before approving
+the prompt and applying those exact bytes.
 
 ```sh
 AWS_PROFILE="$operator_profile" terragrunt --log-disable plan \
@@ -111,8 +111,11 @@ jq -e '
   and $changes[0].change.after.id == "Github-TF-State"
   and (($changes[0].change.importing // null) == null)
   and (($changes[0].previous_address // null) == null)
-  and (($changes[0].change.before | del(.assume_role_policy)) ==
-       ($changes[0].change.after | del(.assume_role_policy)))
+  and $changes[0].change.after.max_session_duration == 5400
+  and (($changes[0].change.before |
+        del(.assume_role_policy, .max_session_duration)) ==
+       ($changes[0].change.after |
+        del(.assume_role_policy, .max_session_duration)))
   and (($changes[0].change.after.assume_role_policy | fromjson) as $policy
     | ($policy.Statement | as_array) as $statements
     | ($statements | length) == 1
@@ -142,15 +145,15 @@ jq -e '
 
 AWS_PROFILE="$operator_profile" terragrunt --log-disable show -no-color \
   "$operator_plan"
-printf 'Apply this exact trust-only plan? Type apply: '
+printf 'Apply this exact role-control plan? Type apply: '
 read -r operator_confirmation
 test "$operator_confirmation" = apply
 AWS_PROFILE="$operator_profile" terragrunt --log-disable apply -no-color \
   "$operator_plan"
 ```
 
-Verify that live IAM has one allow statement, the required audience, and only
-the four environment subjects:
+Verify that live IAM has a 5,400-second maximum, one allow statement, the
+required audience, and only the four environment subjects:
 
 ```sh
 aws --profile "$operator_profile" iam get-role \
@@ -159,7 +162,8 @@ aws --profile "$operator_profile" iam get-role \
 jq -e '
   def as_array: if type == "array" then . else [.] end;
   .Role as $role
-  | ($role.AssumeRolePolicyDocument.Statement | as_array) as $statements
+  | $role.MaxSessionDuration == 5400
+  and (($role.AssumeRolePolicyDocument.Statement | as_array) as $statements
   | ($statements | length) == 1
   and $statements[0].Effect == "Allow"
   and ($statements[0].Action | as_array) == ["sts:AssumeRoleWithWebIdentity"]
@@ -182,7 +186,7 @@ jq -e '
       "repo:Stuhlmuller/github-iac:environment:github-iac-production",
       "repo:Stuhlmuller/homelab:environment:homelab-plan",
       "repo:Stuhlmuller/homelab:environment:homelab-production"
-    ] | sort)
+    ] | sort))
 ' "$operator_plan_dir/live-role-trust.json"
 ```
 
@@ -192,6 +196,9 @@ the role. A job without one of these environments must receive
 
 Rollback through code: create a reviewed forward commit restoring the prior
 exact subjects, rerun this same targeted saved-plan path, and verify live IAM.
+Do not reduce the live session maximum below 5,400 seconds while the production
+workflow can run for 90 minutes; first land a workflow change whose requested
+duration and job timeout fit the lower maximum.
 Do not update the trust policy with the AWS CLI, remove the imported state
 address, or run a destroy. The prior `github-iac` pull-request and `main`
 subjects are broader than the environment subjects, so use that rollback only

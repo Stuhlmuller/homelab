@@ -496,9 +496,11 @@ then provision and dispatch this workflow again.
 ## AWS Setup
 
 The workflows use `AWS_ROLE_TO_ASSUME_HOMELAB` for both trusted PR plans and
-protected post-merge applies. The operator unit owns the role trust and permits
-only the protected plan and production environments in `homelab` and
-`github-iac`:
+protected post-merge applies. The operator unit owns the role trust and its
+5,400-second maximum session. Apply that operator-owned maximum before
+dispatching the 90-minute production workflow, which requests the same duration
+and makes a quiet final STS identity call after Terragrunt. The role permits only
+the protected plan and production environments in `homelab` and `github-iac`:
 
 ```json
 {
@@ -538,12 +540,12 @@ policies are declared in `IaC/operator/github-actions-role-policy`. The unit is
 deliberately outside the GitHub workflow traversal: an automation role must not
 be able to widen its own trust or replace the policy attached to itself.
 
-For a trust-only change, use the targeted operator runbook in
+For a role trust or maximum-session change, use the targeted operator runbook in
 `IaC/operator/README.md`. It conditionally imports only the existing role,
-saves a plan for `aws_iam_role.github_actions`, rejects non-trust role drift and
+saves a plan for `aws_iam_role.github_actions`, rejects unrelated role drift and
 any subject outside the four environments, applies those exact reviewed plan
 bytes, and verifies live IAM. Do not run an un-targeted operator apply to roll
-out only this trust change.
+out only these role controls.
 
 Full-unit policy, boundary, attachment, or user changes still use an
 administrator-authenticated un-targeted plan after backend-free validation:
@@ -670,3 +672,10 @@ Every full production apply compares against the latest successful historical
 push apply or full dispatch SHA. Rerunning after one or more failed applies
 therefore keeps the full unapplied range instead of considering only the newest
 commit. Targeted Argo dispatches do not move that checkpoint.
+
+If an apply fails after changing earlier units, do not repair or roll back live
+state manually. Fix the cause in a reviewed forward commit, or restore the prior
+desired state in one, then dispatch the exact current `main` SHA again. The last
+successful checkpoint keeps the entire failed range eligible, and an expired
+AWS session fails the final identity check instead of recording a successful
+partial rollout.

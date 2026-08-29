@@ -71,6 +71,14 @@ echo "::endgroup::"
 echo "::group::Operator OpenTofu validation"
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:TokenIssueTime"' IaC/modules/aws-github-actions-role-policy/main.tf
+github_actions_role_block="$(
+  awk '
+    /^resource "aws_iam_role" "github_actions"/ { found = 1 }
+    found { print }
+    found && /^}$/ { exit }
+  ' IaC/modules/aws-github-actions-role-policy/main.tf
+)"
+rg -Fxq '  max_session_duration = 5400' <<<"$github_actions_role_block"
 for parameter in \
   '/homelab/external-secrets/aws-ssm/access-key-id' \
   '/homelab/external-secrets/aws-ssm/secret-access-key'; do
@@ -518,7 +526,7 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
 .github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
+.github/workflows/terragrunt-apply.yml f1281417dfe04b33c2405af54fc90ecbb4bc3dbcf6990baee60384b7cca4dfe7
 .github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
 EOF
 echo "::endgroup::"
@@ -568,6 +576,8 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
   jq -e '
+    [.jobs["terragrunt-apply"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
+    [.jobs["terragrunt-apply"].steps[] | select(.name == "Run Live Terragrunt Apply")] as $live_apply |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
@@ -581,6 +591,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["static-policy"].steps[0].if == null and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
+    .jobs["terragrunt-apply"]["timeout-minutes"] == 90 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
@@ -593,6 +604,13 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "cancel-in-progress": false,
       "queue": "single"
     } and
+    ($aws_credentials | length) == 1 and
+    $aws_credentials[0].with["role-duration-seconds"] == 5400 and
+    (.jobs["terragrunt-apply"]["timeout-minutes"] * 60) <=
+      $aws_credentials[0].with["role-duration-seconds"] and
+    ($live_apply | length) == 1 and
+    ($live_apply[0].run |
+      contains("aws sts get-caller-identity --no-cli-pager >/dev/null")) and
     .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
     .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
     .jobs["terragrunt-apply"].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
