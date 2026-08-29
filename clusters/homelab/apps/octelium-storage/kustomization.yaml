@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret.yaml
+  - backup-pvc.yaml
   - postgres.yaml
   - redis.yaml
   - networkpolicy.yaml
+  - backup-cronjob.yaml
