@@ -728,8 +728,10 @@ if [[ -n "$tag_only_images" ]]; then
 fi
 echo "::endgroup::"
 
-echo "::group::OpenClaw Discord plugin"
-openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
+echo "::group::OpenClaw supply chain and credential containment"
+openclaw_dir="clusters/homelab/apps/openclaw"
+openclaw_values="$openclaw_dir/values.yaml"
+openclaw_external_secret="$openclaw_dir/externalsecret.yaml"
 rg -Fq 'openclaw plugins install "npm:@openclaw/discord@${openclaw_version}" --pin --force' "$openclaw_values"
 rg -Fq 'openclaw plugins inspect discord --runtime --json |' "$openclaw_values"
 rg -Fq 'plugin.get("origin") == "global"' "$openclaw_values"
@@ -748,16 +750,181 @@ if ! awk '
   echo "OpenClaw must install Discord before persisted-config validation" >&2
   exit 1
 fi
-yq -e '
-  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
-  .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
-  .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
-  .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_ID == null and
-  .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_INSTALLATION_ID == null and
-  .controllers.openclaw.containers.app.env.GRAFANA_ALERT_HOOK_TOKEN == null and
-  .persistence.config.advancedMounts.openclaw.proxy == null and
-  .persistence."github-app-private-key".advancedMounts.openclaw."bootstrap-config" == null
-' "$openclaw_values" >/dev/null
+terragrunt --log-disable --working-dir IaC/live/argocd-apps/openclaw \
+  render --json --write=false --no-color |
+  jq -e '
+    .inputs.manifest.spec.sources == [
+      {
+        "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+        "chart": "app-template",
+        "path": ".",
+        "targetRevision": "4.4.0",
+        "helm": {
+          "releaseName": "openclaw",
+          "valueFiles": ["$values/clusters/homelab/apps/openclaw/values.yaml"]
+        }
+      },
+      {
+        "repoURL": "https://github.com/Stuhlmuller/homelab.git",
+        "targetRevision": "main",
+        "ref": "values",
+        "path": ".",
+        "directory": {"include": ".argocd-values-ref-placeholder.yaml"}
+      },
+      {
+        "repoURL": "https://github.com/Stuhlmuller/homelab.git",
+        "targetRevision": "main",
+        "path": "clusters/homelab/apps/openclaw",
+        "kustomize": {}
+      }
+    ]
+  ' >/dev/null
+yq -o=json '.' "$openclaw_dir/kustomization.yaml" |
+  jq -e '
+    (keys | sort) == ["apiVersion", "kind", "resources"] and
+    .apiVersion == "kustomize.config.k8s.io/v1beta1" and
+    .kind == "Kustomization" and
+    (.resources | sort) == ["externalsecret.yaml", "networkpolicy.yaml", "virtualservice.yaml"]
+  ' >/dev/null
+while IFS='|' read -r resource kind name; do
+  yq ea -o=json -I=0 '[.]' "$openclaw_dir/$resource" |
+    jq -e --arg kind "$kind" --arg name "$name" '
+      length == 1 and .[0].kind == $kind and .[0].metadata.name == $name
+    ' >/dev/null
+done <<'OPENCLAW_RESOURCES'
+externalsecret.yaml|ExternalSecret|openclaw-secrets
+networkpolicy.yaml|NetworkPolicy|openclaw
+virtualservice.yaml|VirtualService|openclaw-octelium
+OPENCLAW_RESOURCES
+yq ea -o=json -I=0 '[.]' "$openclaw_external_secret" |
+  jq -e '
+    (length == 1) and
+    (.[0] as $secret |
+      ($secret | keys | sort) == ["apiVersion", "kind", "metadata", "spec"] and
+      $secret.apiVersion == "external-secrets.io/v1" and
+      $secret.kind == "ExternalSecret" and
+      $secret.metadata.name == "openclaw-secrets" and
+      $secret.metadata.namespace == "ai" and
+      ($secret.spec | keys | sort) == ["data", "refreshPolicy", "secretStoreRef", "target"] and
+      $secret.spec.refreshPolicy == "OnChange" and
+      $secret.spec.secretStoreRef == {"kind": "ClusterSecretStore", "name": "aws-ssm"} and
+      $secret.spec.target == {
+        "name": "openclaw-secrets",
+        "creationPolicy": "Owner",
+        "deletionPolicy": "Retain"
+      } and
+      ($secret.spec.data | length) == 6 and
+      all($secret.spec.data[];
+        (keys | sort) == ["remoteRef", "secretKey"] and
+        (.remoteRef | keys | sort) == ["conversionStrategy", "decodingStrategy", "key", "metadataPolicy"]
+      ) and
+      ([$secret.spec.data[] | {secretKey, remoteKey: .remoteRef.key}] | sort_by(.secretKey)) ==
+        ([
+          # checkov:skip=CKV_SECRET_6:Kubernetes Secret key and public SSM path, not secret data.
+          {"secretKey": "APP_SECRET", "remoteKey": "/homelab/openclaw/app-secret"},
+          # checkov:skip=CKV_SECRET_6:Kubernetes Secret key and public SSM path, not secret data.
+          {"secretKey": "DISCORD_BOT_TOKEN", "remoteKey": "/homelab/openclaw/discord-bot-token"},
+          # checkov:skip=CKV_SECRET_6:Kubernetes Secret key and public SSM path, not secret data.
+          {"secretKey": "GRAFANA_ALERT_HOOK_TOKEN", "remoteKey": "/homelab/grafana/openclaw-alert-hook-token"},
+          # checkov:skip=CKV_SECRET_6:Kubernetes Secret key and public SSM path, not secret data.
+          {"secretKey": "GRAFANA_PASSWORD", "remoteKey": "/homelab/openclaw/grafana/password"},
+          # checkov:skip=CKV_SECRET_6:Kubernetes Secret key and public SSM path, not secret data.
+          {"secretKey": "GRAFANA_USERNAME", "remoteKey": "/homelab/openclaw/grafana/username"},
+          # checkov:skip=CKV_SECRET_6:Kubernetes Secret key and public SSM path, not secret data.
+          {"secretKey": "LITELLM_TOKEN", "remoteKey": "/homelab/openclaw/litellm-token"}
+        ] | sort_by(.secretKey))
+    )
+  ' >/dev/null
+terragrunt --log-disable --working-dir IaC/live/aws-ssm-parameters \
+  render --json --write=false --no-color |
+  jq -e '
+    .inputs as $inputs |
+    [
+      "/homelab/openclaw/github-app/id",
+      "/homelab/openclaw/github-app/installation-id",
+      "/homelab/openclaw/github-app/private-key"
+    ] as $retired |
+    all($retired[]; $inputs.parameters[.].reader_access == false) and
+    ($inputs.additional_parameter_reader_names | sort) == [
+      "/homelab/grafana/azuread/allowed-organizations",
+      "/homelab/grafana/azuread/auth-url",
+      "/homelab/grafana/azuread/client-id",
+      "/homelab/grafana/azuread/client-secret",
+      "/homelab/grafana/azuread/token-url"
+    ]
+  ' >/dev/null
+yq -o=json '.' "$openclaw_values" |
+  jq -e '
+    .controllers.openclaw as $controller |
+    $controller.initContainers."operator-toolbox" as $operator |
+    $controller.initContainers."bootstrap-config" as $bootstrap |
+    $controller.containers.app as $app |
+    (keys | sort) == ["controllers", "persistence", "service", "serviceAccount"] and
+    (.controllers | keys) == ["openclaw"] and
+    ($controller.initContainers | keys | sort) == ["bootstrap-config", "operator-toolbox"] and
+    ($controller.containers | keys | sort) == ["app", "proxy"] and
+    $controller.pod.volumes == null and
+    ([$controller.initContainers[], $controller.containers[]] |
+      all(.[]; .envFrom == null and .volumeMounts == null)) and
+    ($operator.env | keys | sort) == ["NIXPKGS_REF"] and
+    ($operator.env.NIXPKGS_REF | type) == "string" and
+    ($bootstrap.env | keys | sort) == [
+      "DISCORD_BOT_TOKEN",
+      "GIT_CONFIG_GLOBAL",
+      "GRAFANA_ALERT_HOOK_TOKEN",
+      "NIX_CONFIG",
+      "OPENCLAW_CONFIG_PATH",
+      "OPENCLAW_GATEWAY_TOKEN",
+      "OPENCLAW_HOME",
+      "OPENCLAW_STATE_DIR",
+      "OPENCLAW_WORKSPACE_DIR",
+      "PATH"
+    ] and
+    $bootstrap.env.OPENCLAW_GATEWAY_TOKEN == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "APP_SECRET"}}} and
+    $bootstrap.env.DISCORD_BOT_TOKEN == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "DISCORD_BOT_TOKEN"}}} and
+    $bootstrap.env.GRAFANA_ALERT_HOOK_TOKEN == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "GRAFANA_ALERT_HOOK_TOKEN"}}} and
+    ([$bootstrap.env.GIT_CONFIG_GLOBAL, $bootstrap.env.NIX_CONFIG, $bootstrap.env.OPENCLAW_CONFIG_PATH,
+      $bootstrap.env.OPENCLAW_HOME, $bootstrap.env.OPENCLAW_STATE_DIR,
+      $bootstrap.env.OPENCLAW_WORKSPACE_DIR, $bootstrap.env.PATH] | all(.[]; type == "string")) and
+    ($app.env | keys | sort) == [
+      "DISCORD_BOT_TOKEN",
+      "GIT_CONFIG_GLOBAL",
+      "GRAFANA_PASSWORD",
+      "GRAFANA_USERNAME",
+      "LITELLM_BASE_URL",
+      "LITELLM_TOKEN",
+      "NIX_CONFIG",
+      "OPENCLAW_CONFIG_PATH",
+      "OPENCLAW_GATEWAY_TOKEN",
+      "OPENCLAW_HOME",
+      "OPENCLAW_STATE_DIR",
+      "OPENCLAW_WORKSPACE_DIR",
+      "PATH"
+    ] and
+    $app.env.OPENCLAW_GATEWAY_TOKEN == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "APP_SECRET"}}} and
+    $app.env.LITELLM_TOKEN == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "LITELLM_TOKEN"}}} and
+    $app.env.DISCORD_BOT_TOKEN == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "DISCORD_BOT_TOKEN"}}} and
+    $app.env.GRAFANA_USERNAME == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "GRAFANA_USERNAME"}}} and
+    $app.env.GRAFANA_PASSWORD == {"valueFrom": {"secretKeyRef": {"name": "openclaw-secrets", "key": "GRAFANA_PASSWORD"}}} and
+    ([$app.env.GIT_CONFIG_GLOBAL, $app.env.LITELLM_BASE_URL, $app.env.NIX_CONFIG,
+      $app.env.OPENCLAW_CONFIG_PATH, $app.env.OPENCLAW_HOME, $app.env.OPENCLAW_STATE_DIR,
+      $app.env.OPENCLAW_WORKSPACE_DIR, $app.env.PATH] | all(.[]; type == "string")) and
+    $controller.containers.proxy.env == null and
+    (.persistence | keys | sort) == [
+      "codex-runtime",
+      "config",
+      "operator-nix-store",
+      "operator-toolbox",
+      "plugin-cache",
+      "plugin-extensions"
+    ] and
+    all(.persistence[]; (.type // "") != "secret") and
+    .persistence.config.advancedMounts.openclaw.proxy == null
+  ' >/dev/null
+if rg -q 'GITHUB_APP_|github-app/(id|installation-id|private-key)|openclaw-github-app-private-key' "$openclaw_dir" --glob '*.{yaml,yml}'; then
+  echo "OpenClaw must not materialize GitHub App credentials while its sandbox is disabled" >&2
+  exit 1
+fi
 echo "::endgroup::"
 
 echo "::group::Secret scan"

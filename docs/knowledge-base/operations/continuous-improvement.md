@@ -660,15 +660,23 @@ organization-policy blocker is tracked below.
   from npm into pod-local storage, without ClawHub or a floating fallback, and
   fails startup if it is unavailable or incompatible. Unused app credentials
   and persistent state were also removed from the bootstrap and proxy containers.
+  The 2026-08-29 organization
+  permission audit then found the app container's GitHub App identity retained
+  all-repository, near-administrator authority. Desired state now removes its
+  IDs, private-key ExternalSecret, and mount from the unsandboxed Pod while
+  retaining the SSM source parameters for controlled recovery.
 - **Risk:** agent execution is contained by the Kubernetes workload, not an
   OpenClaw sandbox. Non-main and scheduled work can access resources available
   inside the pod, including the persistent workspace, operator toolbox, and
-  mounted application credentials. The service account token is disabled and
-  ingress is restricted, but workload egress is not restricted.
+  remaining application credentials. The service account token is disabled and
+  ingress is restricted, but workload egress is not restricted. The prior
+  GitHub App key must be treated as exposed to the workload until rotated.
 - **Next step:** provide and validate dedicated SSH or OpenShell sandbox
   capacity, or another upstream-supported backend, before enabling `non-main`.
   Do not expose a Talos/container-runtime socket to OpenClaw. Egress enforcement
   also remains blocked by the flannel limitation tracked in GitHub issue #784.
+  Keep GitHub credentials absent until issue #859 reduces App permissions and
+  repository selection, rotates the key, and proves denied control surfaces.
 
 - **Status:** open
 - **Area:** CI/CD identity
