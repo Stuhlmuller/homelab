@@ -95,6 +95,11 @@ helm template <release> <chart> -f clusters/homelab/apps/<app>/values.yaml
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
+Before moving an Application to `homelab-workloads`, render every pinned source
+and confirm it contains no cluster-scoped kind. Conftest keeps the project
+fail-closed by requiring an explicitly empty `clusterResourceWhitelist`; the
+static gate also keeps every audited member in that project.
+
 For image automation changes, render the retirement source, validate Renovate,
 and confirm no image bypasses digest policy:
 

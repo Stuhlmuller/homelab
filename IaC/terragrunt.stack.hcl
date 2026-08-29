@@ -892,7 +892,7 @@ unit "argocd_apps_grafana" {
       }
 
       spec = {
-        project = "homelab"
+        project = "homelab-workloads"
 
         destination = {
           name      = ""
@@ -936,7 +936,7 @@ unit "argocd_apps_grafana" {
             selfHeal   = true
           }
           syncOptions = [
-            "CreateNamespace=true",
+            "CreateNamespace=false",
             "ServerSideApply=true"
           ]
           retry = {
@@ -1607,6 +1607,7 @@ unit "argocd_apps_multica" {
       "external-secrets",
       "cert-manager",
       "istio",
+      "litellm",
       "platform-storage"
     ]
     manifest = {
@@ -1623,7 +1624,7 @@ unit "argocd_apps_multica" {
       }
 
       spec = {
-        project = "homelab"
+        project = "homelab-workloads"
 
         destination = {
           name      = ""
@@ -1667,7 +1668,7 @@ unit "argocd_apps_multica" {
             selfHeal   = true
           }
           syncOptions = [
-            "CreateNamespace=true",
+            "CreateNamespace=false",
             "ServerSideApply=true"
           ]
           retry = {

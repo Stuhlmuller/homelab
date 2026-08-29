@@ -3,6 +3,13 @@ package main
 import rego.v1
 
 deny contains msg if {
+	input.kind == "AppProject"
+	object.get(object.get(input, "metadata", {}), "name", "") == "homelab-workloads"
+	object.get(object.get(input, "spec", {}), "clusterResourceWhitelist", null) != []
+	msg := "AppProject homelab-workloads must explicitly deny every cluster-scoped resource"
+}
+
+deny contains msg if {
 	input.kind == "Application"
 	some source in application_sources
 	repo_url := object.get(source, "repoURL", "")

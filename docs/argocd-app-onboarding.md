@@ -10,10 +10,12 @@ requested workloads.
 
 ## Project Boundaries
 
-`homelab-workloads` allows only the repository, the pinned app-template chart
-repository, three workload namespaces, and no cluster-scoped resources.
-Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use it. Their committed overlays
-and pinned app-template renders are entirely namespaced.
+`homelab-workloads` allows only the repositories and namespaces used by its
+verified workloads, and no cluster-scoped resources. Dispatcharr, Grafana,
+Multica, OpenClaw, Policy Bot, and Prowlarr use it. Their committed overlays and
+pinned chart renders are entirely namespaced; Grafana disables unused chart
+RBAC and service-account token mounting. Grafana and Multica depend on the
+privileged owners of their shared namespaces and disable namespace creation.
 
 Platform controllers, storage workloads, and applications with additional
 cluster-resource requirements remain in `homelab`. `n8n-postgres` also remains

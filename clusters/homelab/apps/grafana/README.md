@@ -44,6 +44,17 @@ present. Local admin login remains available through `grafana-admin`.
   Grafana `13.2.0`. This replaces the deprecated chart repository and its
   vulnerable `12.3.1` app default. Grafana 13 also removes the startup star
   migration that raced the annotation migration against SQLite in 12.3.1.
+- Chart RBAC and service-account token mounting are disabled because this
+  deployment has no Kubernetes API client. Grafana therefore uses the
+  zero-cluster-resource `homelab-workloads` AppProject.
+- Prometheus owns the shared `monitoring` Namespace. The Grafana Application
+  depends on Prometheus and does not ask Argo CD to create that cluster-scoped
+  object from the restricted project.
+- Stage the project migration: merge the RBAC values first, wait for Argo CD to
+  prune `grafana-clusterrole` and `grafana-clusterrolebinding` while Grafana
+  still uses `homelab`, then run the protected plan/apply that moves the
+  Application to `homelab-workloads`. Do not apply the project change while
+  either obsolete RBAC object remains.
 - Before the first Grafana 13 process starts, an idempotent init container
   verifies and atomically preserves the cleanly stopped SQLite database as
   `grafana.db.pre-v13` on the retained PVC. Existing external NFS backup
@@ -249,3 +260,7 @@ sync the Application. Preserve the Grafana PVC unless the operator explicitly
 accepts losing local UI preferences and historical Grafana state. A Grafana 13
 schema rollback also requires restoring `grafana.db.pre-v13` as `grafana.db`
 while Grafana is stopped before reverting the chart.
+
+To restore chart RBAC, first move the Grafana Application back to `homelab`
+through the protected plan/apply, then revert the RBAC values. Re-enabling RBAC
+while Grafana remains in `homelab-workloads` is intentionally denied.
