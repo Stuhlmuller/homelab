@@ -218,11 +218,16 @@ phase is skipped with a warning. Keep live credentials environment-scoped so
 GitHub withholds them until the required reviewer approves the job; do not keep
 duplicate repository-scoped copies:
 
+<!-- markdownlint-disable MD013 -->
+
 | Secret | Environment | Purpose |
 | --- | --- | --- |
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
+| `OCTELIUM_PLAN_AUTH_TOKEN` | `homelab-plan`, staged | Read-only Octelium token for User `homelab-plan`, scoped to `kubernetes-api-plan`; do not switch the workflow until the cutover checks pass. |
 | `OCTELIUM_CATALOG_AUTH_TOKEN` | `homelab-production`, temporary | One-authentication token created immediately before the private Kubernetes catalog dispatch and removed immediately afterward. |
 | `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
+
+<!-- markdownlint-enable MD013 -->
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
 has no runtime consumer. Its declaration and preexisting-parameter adoption
@@ -235,11 +240,16 @@ from a GitHub variable first and fall back to a secret with the same name, so
 storing them as environment secrets also works when that is how the repository
 has been configured:
 
+<!-- markdownlint-disable MD013 -->
+
 | Variable | Environment | Purpose |
 | --- | --- | --- |
 | `AWS_ROLE_TO_ASSUME_HOMELAB` | repository, `homelab-plan`, or `homelab-production` | AWS role used by trusted PR plans and protected post-merge applies. |
+| `AWS_PLAN_ROLE_TO_ASSUME_HOMELAB` | `homelab-plan`, staged | Bounded AWS role for Argo CD Application PR plans; set only after the operator unit creates the role. |
 | `AZUREAD_CLIENT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application client ID used by the AzureAD provider. |
 | `AZUREAD_TENANT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra tenant ID used by the AzureAD provider. |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Octelium CI Access Setup
 
@@ -264,8 +274,11 @@ nix develop --command aws sso login --profile default
 nix develop --command bash <<'EOF'
 set -euo pipefail
 
-test "$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')" = \
-  "https://10.1.0.199:6443"
+cluster_server="$(
+  kubectl config view --minify \
+    -o jsonpath='{.clusters[0].cluster.server}'
+)"
+test "$cluster_server" = "https://10.1.0.199:6443"
 kubectl --request-timeout=15s version
 
 (cd IaC && terragrunt stack generate)
@@ -295,7 +308,13 @@ defines:
   access-token lifetimes;
 - Policy `homelab-ci-kubernetes-api-access`, which allows only the public
   clientless Kubernetes Service;
-- public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
+- public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`;
+- staged workload User `homelab-plan`, Policy
+  `homelab-plan-kubernetes-api-access`, and public Service
+  `kubernetes-api-plan`, which deny sensitive resources and subresources and
+  allow only named Argo CD Application reads in `argocd`, CRD schema listing,
+  and the exact Kubernetes discovery paths needed by the currently resolved
+  Kubernetes provider 3.2.1.
 
 Apply that catalog after materializing the upstream kubeconfig Secret, then
 create or rotate the GitHub environment secret in both CI environments:
@@ -304,6 +323,72 @@ create or rotate the GitHub environment secret in both CI environments:
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
 scripts/octelium-ci-credential.sh
 ```
+
+Bootstrap the staged read-only plan credential only after the bounded AWS role,
+Octelium catalog, tunnel route, and DNS record exist:
+
+```sh
+scripts/octelium-ci-credential.sh \
+  --credential-name homelab-plan \
+  --user homelab-plan \
+  --policy homelab-plan-kubernetes-api-access \
+  --secret-name OCTELIUM_PLAN_AUTH_TOKEN \
+  --env homelab-plan
+```
+
+Both native Octelium dataplane nodes are currently NotReady. Prefer restoring
+them. If the emergency dataplane is still required after applying the catalog,
+capture the generated Service UID from an authenticated administrator session:
+
+```sh
+set -euo pipefail
+plan_service_uid="$(
+  octeliumctl get service kubernetes-api-plan \
+    --domain stinkyboi.com -o json |
+    jq -er '.metadata.uid | select(test("^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"))'
+)"
+printf '%s\n' "$plan_service_uid"
+```
+
+The command must print one UUID. A missing Service, empty value, non-UUID, or
+authentication failure stops the rollout. In a reviewed change to
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml`, duplicate
+only the existing `emergency-octelium-kubernetes-api-ci` Deployment and change:
+
+- its Deployment name and emergency label value to
+  `emergency-octelium-kubernetes-api-plan` and `kubernetes-api-plan`;
+- all three `octelium.com/svc` labels and `OCTELIUM_SVC_NAME` to
+  `kubernetes-api-plan.default`;
+- all four Service UID values to the captured UUID.
+
+Preserve the image digest, node selector, security context, resources, and
+probes. Run `kubectl kustomize
+clusters/homelab/apps/octelium-enterprise >/dev/null` and
+`nix develop --command bash scripts/ci/static-checks.sh`; both must exit zero.
+Then prove a named Application and provider-schema reads succeed while
+Application list/watch, Pod/Secret reads, server-side dry-run mutations, and
+`/metrics` return Octelium's exact authorization denial. Keep
+`OCTELIUM_CI_AUTH_TOKEN` and the existing apply-role trust in `homelab-plan`
+until those checks pass; remove them only in the separate cutover change.
+
+Run the exact boundary check with the staged token. A transport error or timeout
+fails rather than counting as a denial:
+
+```sh
+OCTELIUM_AUTH_TOKEN=<homelab-plan-token> \
+  scripts/ci/octelium-plan-access-check.sh
+```
+
+The separate cutover must meet all of these conditions in one reviewed change:
+
+- plan and diagnostic jobs run only for pull requests whose base is `main`;
+- those jobs use `Github-Homelab-Plan` and `OCTELIUM_PLAN_AUTH_TOKEN`;
+- plan traversal is limited to Argo CD Application units;
+- Azure credentials and AzureAD traversal are omitted unless a distinct
+  read-only Azure plan identity has been reviewed and bootstrapped;
+- the IAM simulator checks in `IaC/operator/README.md`, the Octelium boundary
+  check above, and one valid focused protected plan all pass before the old AWS
+  role trust and Octelium token are removed from `homelab-plan`.
 
 The helper requires an authenticated Octelium admin session for `octeliumctl`
 and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
@@ -363,7 +448,8 @@ only after Octelium confirms logout:
       --domain "$domain" \
       --logout \
       get clusterconfig >/dev/null; then
-      echo "error: server revocation failed; retained ${octelium_homedir} for retry" >&2
+      printf 'error: server revocation failed; retained %s for retry\n' \
+        "$octelium_homedir" >&2
       exit 1
     fi
     rm -rf -- "$octelium_homedir"
@@ -399,6 +485,9 @@ find_new_run_id() {
   local workflow="$1"
   local before_id="$2"
   local run_id
+  local run_filter
+  run_filter="[.[] | select(.databaseId > ${before_id})]"
+  run_filter+=' | max_by(.databaseId).databaseId // empty'
   for _ in {1..30}; do
     run_id="$(
       gh run list \
@@ -407,7 +496,7 @@ find_new_run_id() {
         --event workflow_dispatch \
         --limit 20 \
         --json databaseId \
-        --jq "[.[] | select(.databaseId > ${before_id})] | max_by(.databaseId).databaseId // empty"
+        --jq "$run_filter"
     )"
     if test -n "$run_id"; then
       printf '%s\n' "$run_id"
@@ -434,7 +523,10 @@ wait_for_success() {
       )"
       case "$state" in
         "completed success") ;;
-        "completed "*) echo "error: run ${run_id} ended ${state}" >&2; return 1 ;;
+        "completed "*)
+          echo "error: run ${run_id} ended ${state}" >&2
+          return 1
+          ;;
         *) all_complete=false ;;
       esac
     done
@@ -454,8 +546,14 @@ gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
 
 diagnostics_run_id="$(find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id")"
 apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
-test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
-test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+test "$(
+  gh run view "$diagnostics_run_id" --repo "$github_repo" \
+    --json headSha --jq .headSha
+)" = "$main_sha"
+test "$(
+  gh run view "$apply_run_id" --repo "$github_repo" \
+    --json headSha --jq .headSha
+)" = "$main_sha"
 wait_for_success "$diagnostics_run_id" "$apply_run_id"
 ```
 
@@ -574,9 +672,12 @@ Then save, review, and apply the same plan from a private temporary directory:
 umask 077
 plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator.XXXXXX")"
 trap 'rm -rf -- "$plan_dir"' EXIT
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out="$plan_dir/plan.out" -no-color
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color "$plan_dir/plan.out"
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color "$plan_dir/plan.out"
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan \
+  -out="$plan_dir/plan.out" -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable show \
+  -no-color "$plan_dir/plan.out"
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply \
+  -no-color "$plan_dir/plan.out"
 ```
 
 The resulting managed policy is limited to lifecycle operations on the ten

@@ -24,6 +24,7 @@ and an administrator-authenticated plan before apply:
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
 terragrunt --log-disable validate -no-color
+terragrunt --log-disable run --no-auto-init -- test -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
@@ -45,6 +46,9 @@ Run each import only on the first rollout, or during state recovery, when
 the working directory detached from shared state, so the authenticated
 `init -reconfigure` must precede every import, production plan, or apply from
 that directory.
+
+The static gate runs the operator module's mocked policy tests in a temporary
+Terragrunt download directory so test state never lands in the repository.
 
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.

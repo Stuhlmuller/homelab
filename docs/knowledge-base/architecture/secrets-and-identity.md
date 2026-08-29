@@ -161,15 +161,25 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
   CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
   it must not grant the bearer access to other public Services. The User owns
-  matching 30-day clientless-session and access-token lifetimes. Rotate it every 21 days with
-  `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
-  Sessions first so Octelium cannot retain an older Session expiry, then retries
-  GitHub environment writes until both store the replacement token.
+  matching 30-day clientless-session and access-token lifetimes. Rotate it
+  every 21 days with `scripts/octelium-ci-credential.sh`; the helper deletes
+  the dedicated User's Sessions first so Octelium cannot retain an older
+  Session expiry, then retries GitHub environment writes until both store the
+  replacement token.
+  The staged pull request path uses a separate `homelab-plan` workload User,
+  `homelab-plan-kubernetes-api-access` Policy, public `kubernetes-api-plan`
+  Service, and `OCTELIUM_PLAN_AUTH_TOKEN` stored only in `homelab-plan`. Its
+  Policy denies sensitive resources and subresources before allowing only named
+  Argo CD Application GET, CRD schema LIST, and the provider's required
+  discovery/OpenAPI GET requests. Do not switch workflows until live tests
+  prove those reads succeed and Application list/watch, Pod/Secret reads, and
+  server-side dry-run writes are denied. The existing `homelab-ci` identity
+  remains production-only after cutover.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
-  by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
-  receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
-  affects CI, operator, and Cordium Kubernetes access, so validate both Services
-  after rotation.
+  by `kubernetes-api-ci`, `kubernetes-api-plan`, and private Service
+  `kubernetes-api.homelab`; clients receive only Octelium-generated kubeconfigs.
+  Recreating the Secret briefly affects CI, operator, and Cordium Kubernetes
+  access, so validate all three Services after rotation.
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
@@ -210,6 +220,14 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [[../operations/continuous-improvement]].
+- The staged `Github-Homelab-Plan` role trusts only
+  `repo:Stuhlmuller/homelab:environment:homelab-plan`. Its sole managed policy
+  is also its permissions boundary: exact Argo CD Application state-prefix
+  S3 reads plus decrypt, describe, and data-key generation on the state KMS
+  key. It has no S3 writes, SSM, IAM, Azure, or Kubernetes authority. The
+  existing apply role temporarily retains `homelab-plan` trust until the new
+  AWS and Octelium paths pass live allow/deny tests; remove that legacy trust
+  only in the follow-up cutover.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,

@@ -128,6 +128,7 @@ policy-bot-hook.stinkyboi.com /api/github/hook expect-policy-bot-400 POST
 
 REQUIRED_SERVICES="
 kubernetes-api-ci
+kubernetes-api-plan
 kubernetes-api.homelab
 affine
 argocd
@@ -154,6 +155,7 @@ FAILURES=0
 GRPC_READY=1
 SERVICES_JSON=""
 EXPECTED_KUBERNETES_POLICY=""
+EXPECTED_PLAN_KUBERNETES_POLICY=""
 
 note() {
   printf '==> %s\n' "$*"
@@ -450,8 +452,14 @@ else
   EXPECTED_KUBERNETES_POLICY="$(
     yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' "${CATALOG}"
   )"
+  EXPECTED_PLAN_KUBERNETES_POLICY="$(
+    yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-plan-kubernetes-api-access")' "${CATALOG}"
+  )"
   if [ -z "${EXPECTED_KUBERNETES_POLICY}" ]; then
     fail "catalog is missing Policy homelab-private-kubernetes-access"
+  fi
+  if [ -z "${EXPECTED_PLAN_KUBERNETES_POLICY}" ]; then
+    fail "catalog is missing Policy homelab-plan-kubernetes-api-access"
   fi
 fi
 
@@ -509,6 +517,12 @@ if [ "${GRPC_READY}" -eq 1 ]; then
       pass "Octelium Service kubernetes-api.homelab is private and policy-bound"
     else
       fail "Octelium Service kubernetes-api.homelab is not private policy-bound KUBERNETES access"
+    fi
+    # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
+    if jq -e '.items[] | select(.metadata.name == "kubernetes-api-plan.default" and .spec.mode == "KUBERNETES" and .spec.isPublic == true and .spec.port == 6443 and .spec.authorization.policies == ["homelab-plan-kubernetes-api-access"] and .spec.config.upstream.url == "https://10.1.0.199:6443" and .spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and (.spec.config.tls.insecureSkipVerify // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service kubernetes-api-plan matches the staged policy-bound catalog"
+    else
+      fail "Octelium Service kubernetes-api-plan does not match the staged KUBERNETES access path"
     fi
     if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Octelium Service affine delegates login to the application"
@@ -572,6 +586,52 @@ else
   note "Skipping Octelium private Kubernetes Policy check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-kubernetes-policy.$$ /tmp/octelium-kubernetes-policy.err.$$
+
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get policy homelab-plan-kubernetes-api-access -o json >/tmp/octelium-plan-policy.$$ 2>/tmp/octelium-plan-policy.err.$$; then
+    if [ -n "${EXPECTED_PLAN_KUBERNETES_POLICY}" ] &&
+      jq -e --argjson expected "${EXPECTED_PLAN_KUBERNETES_POLICY}" \
+        '.metadata.name == "homelab-plan-kubernetes-api-access" and .spec == $expected.spec' \
+        >/dev/null 2>&1 </tmp/octelium-plan-policy.$$; then
+      pass "Octelium plan Kubernetes Policy matches the repository catalog"
+    else
+      fail "Octelium plan Kubernetes Policy is missing or broader than declared"
+    fi
+  else
+    if [ -s /tmp/octelium-plan-policy.err.$$ ]; then
+      fail "Octelium plan Kubernetes Policy is unavailable: $(tr '\n' ' ' </tmp/octelium-plan-policy.err.$$)"
+    else
+      fail "Octelium plan Kubernetes Policy could not be read within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
+  fi
+else
+  note "Skipping Octelium plan Kubernetes Policy check because public Octelium gRPC is not available"
+fi
+rm -f /tmp/octelium-plan-policy.$$ /tmp/octelium-plan-policy.err.$$
+
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get user homelab-plan -o json >/tmp/octelium-plan-user.$$ 2>/tmp/octelium-plan-user.err.$$; then
+    if jq -e '
+      .metadata.name == "homelab-plan" and
+      .spec.type == "WORKLOAD" and
+      .spec.session.clientlessDuration == {"days": 30} and
+      .spec.session.accessTokenDuration == {"days": 30}
+    ' >/dev/null 2>&1 </tmp/octelium-plan-user.$$; then
+      pass "Octelium plan User has the declared workload session limits"
+    else
+      fail "Octelium plan User is broader than the repository catalog"
+    fi
+  else
+    if [ -s /tmp/octelium-plan-user.err.$$ ]; then
+      fail "Octelium plan User is unavailable: $(tr '\n' ' ' </tmp/octelium-plan-user.err.$$)"
+    else
+      fail "Octelium plan User could not be read within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
+  fi
+else
+  note "Skipping Octelium plan User check because public Octelium gRPC is not available"
+fi
+rm -f /tmp/octelium-plan-user.$$ /tmp/octelium-plan-user.err.$$
 
 if [ "${GRPC_READY}" -eq 1 ]; then
   if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get user homelab-cordium-user -o json >/tmp/octelium-user.$$ 2>/tmp/octelium-user.err.$$; then
