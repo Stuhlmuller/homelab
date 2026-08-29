@@ -104,6 +104,16 @@ npx --yes --package renovate renovate-config-validator renovate.json
 nix develop --command bash scripts/ci/static-checks.sh
 ```
 
+The static image gate also checks chart-default images that do not appear as
+literal workload `image:` fields in this repository. It validates the
+cert-manager, Grafana, Kiali, Prometheus, Tailscale, NFS, Argo CD, Istio,
+metrics-server, and Crossplane pin contracts. After changing one of those
+charts, render its exact repository version and verify every normal container,
+operator-generated image setting, and init container still resolves to the
+reviewed digest. Kiali's generated server uses the operator's supported
+`RELATED_IMAGE_kiali_default` setting; the gate must also keep ad-hoc Kiali
+images disabled.
+
 For `platform-dns` changes, render the overlay and compare upstream answers
 before rollout. After Argo CD syncs, verify CoreDNS contains the intended
 resolvers and a workload pod receives a public answer rather than a sinkhole:

@@ -67,12 +67,17 @@ organization-policy blocker is tracked below.
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
   Rancher release `v0.0.36` to exact upstream commit
   `5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0`; both runtime images were already
-  digest-pinned. Issue `#791` tracks the remaining chart/native image pins and
-  continuous SBOM, vulnerability, and signature checks.
-- **Risk:** Other tag-only generated images can still drift, and CI does not
-  yet identify actionable HIGH or CRITICAL image vulnerabilities.
-- **Next step:** Complete the remaining image inventory and add the smallest
-  continuous scan and exception-expiry gate under issue `#791`.
+  digest-pinned. Repository-owned values now pin every safely expressible
+  chart and operator image by digest, including the Prometheus operator's
+  generated config-reloader and Thanos defaults. Kiali's chart-native digest
+  fields pin the operator, while its supported `RELATED_IMAGE_kiali_default`
+  setting pins the generated Kiali server with all ad-hoc image controls still
+  disabled.
+- **Risk:** Octelium controller-generated tag-only images can still drift, and
+  CI does not yet identify actionable HIGH or CRITICAL image vulnerabilities.
+- **Next step:** Resolve the Octelium generated-image exceptions, then add the
+  continuous SBOM, scan, signature, and exception-expiry gate under issues
+  `#791` and `#804`.
 
 - **Status:** mitigation pending rollout and observation
 - **Area:** Istio ambient / ztunnel readiness

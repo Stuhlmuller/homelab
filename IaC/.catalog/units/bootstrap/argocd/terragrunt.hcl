@@ -52,6 +52,12 @@ inputs = {
 
   values = [
     yamlencode({
+      global = {
+        image = {
+          tag = "v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
+        }
+      }
+
       configs = {
         cm = {
           url          = "https://argocd.stinkyboi.com"
@@ -86,6 +92,15 @@ inputs = {
 
       dex = {
         enabled = true
+        image = {
+          tag = "v2.45.1@sha256:8499afd690c437f52301efd2b05b2455da5bd2dfc20332cd697dc9937f808462"
+        }
+      }
+
+      redis = {
+        image = {
+          tag = "8.2.3-alpine@sha256:08ad0b1d280850169a790dba1393ff7a90aef951fc19632cf4d3ce4f78e679ba"
+        }
       }
 
       controller = {

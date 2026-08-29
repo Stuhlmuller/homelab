@@ -11,6 +11,13 @@ allowAdHocOSSMConsoleImage: false
 allowAdHocContainers: false
 allowSecurityContextOverride: false
 
+image:
+  digest: sha256
+  tag: ca2e4c356e946849883f42e9c9fe41080145cb442f93200cfca4e55a89a62039
+env:
+  - name: RELATED_IMAGE_kiali_default
+    value: quay.io/kiali/kiali:v2.26.0@sha256:59cce98a9811ce53ff3da771225d1df00f0ca4ae0819311291ae7316349a13e9
+
 cr:
   create: true
   namespace: monitoring
