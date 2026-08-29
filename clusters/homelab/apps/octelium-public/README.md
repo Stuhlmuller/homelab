@@ -77,10 +77,14 @@ The CronJob cannot enable Xfinity UPnP; router account authority remains a
 rollout gate. `scripts/octelium-e2e-check.sh` pins its gRPC request to a public
 `1.1.1.1` answer so local split DNS cannot produce a false success.
 
-Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
-`*.stinkyboi.com` certificate shape. The cluster domain is `stinkyboi.com` so
-the Octelium client calls `octelium-api.stinkyboi.com`; the
-`octelium.stinkyboi.com` hostname is only an alias.
+Istio origin TLS uses the apex plus first-level `*.stinkyboi.com` certificate
+shape. Cloudflare edge TLS additionally needs the Advanced Certificate Manager
+wildcard `*.cordium.stinkyboi.com` because Cloudflare Tunnel serves Cordium
+workspace hosts at that depth and Total TLS excludes Tunnel hostnames. The
+protected workspace-certificate check and apply workflows own the exact
+managed edge certificate pack after the paid add-on is active. The
+cluster domain remains `stinkyboi.com`, so the Octelium client calls
+`octelium-api.stinkyboi.com`; `octelium.stinkyboi.com` is only an alias.
 
 ## Validation
 
@@ -90,6 +94,7 @@ kubectl kustomize clusters/homelab/apps/istio
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
 scripts/octelium-public-dns.sh --dry-run
+scripts/octelium-cloudflare-workspace-certificate.sh check
 curl -sS --http2 \
   -H 'content-type: application/grpc' \
   -H 'te: trailers' \

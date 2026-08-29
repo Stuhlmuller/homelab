@@ -456,6 +456,53 @@ callback hostnames such as `n8n-webhook.stinkyboi.com` and
 `--tunnel-only` skips the API hostname entirely; a later full run from the
 homelab LAN remains responsible for verifying and reconciling that record.
 
+Cordium workspace URLs use a second-level wildcard under
+`*.cordium.stinkyboi.com`. Cloudflare Universal SSL covers only the apex and
+first-level wildcard on this full-DNS zone. Total TLS also excludes hostnames
+served by Cloudflare Tunnel, so the edge needs one explicit Advanced
+[Certificate Manager](https://developers.cloudflare.com/ssl/edge-certificates/advanced-certificate-manager/)
+pack; [Total TLS cannot issue for Tunnel hostnames](https://developers.cloudflare.com/ssl/edge-certificates/additional-options/total-tls/).
+The pack contains exactly:
+
+```text
+stinkyboi.com
+*.stinkyboi.com
+*.cordium.stinkyboi.com
+```
+
+Purchasing the Advanced Certificate Manager add-on is a billing-authority gate
+outside this repository. After purchase, create two zone-scoped Cloudflare API
+tokens: `CLOUDFLARE_SSL_CERTIFICATES_READ_TOKEN` with `Zone Read` plus
+`SSL and Certificates Read`, and
+`CLOUDFLARE_SSL_CERTIFICATES_WRITE_TOKEN` with `Zone Read` plus
+`SSL and Certificates Write`. Store both only in `homelab-production`, then
+order the managed 90-day certificate for the exact reviewed main commit:
+
+```sh
+gh workflow run octelium-cloudflare-workspace-certificate-apply.yml \
+  --ref main \
+  -f expected_sha="$(git rev-parse origin/main)"
+```
+
+The reconciler never calls Cloudflare's certificate-pack delete endpoint. It
+orders the exact pack only when absent and can restart an exact pack whose
+validation timed out. Cloudflare automatically replaces Universal SSL with the
+active Advanced pack; the declared SAN superset preserves apex and first-level
+wildcard coverage during that implicit cutover. Cloudflare owns renewal and
+private-key custody; no certificate or key material enters git or workflow
+output. After Cloudflare reports the pack active, run
+`octelium-cloudflare-workspace-certificate.yml`, then run
+`scripts/octelium-e2e-check.sh`. The check workflow requires both active pack
+metadata and a real public TLS handshake for
+`tls-audit.cordium.stinkyboi.com`.
+
+Before closing the workspace TLS finding, configure Cloudflare's Advanced
+Certificate Alert for validation, issuance, renewal, and expiration and verify
+its reviewed notification destination. That notification policy is not yet
+repo-managed because no destination identifier or account-level API contract
+has been declared. Do not delete the existing certificate pack during rollback;
+first restore a different active edge certificate covering all three names.
+
 ## Octelium Enterprise Package
 
 Octelium Enterprise comes from
@@ -655,7 +702,9 @@ kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-public-dns.sh
 bash -n scripts/octelium-cloudflare-origin-port.sh
+bash -n scripts/octelium-cloudflare-workspace-certificate.sh
 bash -n scripts/octelium-entra-oidc.sh
+scripts/octelium-cloudflare-workspace-certificate.sh --help
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help

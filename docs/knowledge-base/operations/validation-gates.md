@@ -128,7 +128,9 @@ bash -n \
   scripts/octelium-gateway-dns.sh \
   scripts/octelium-public-dns.sh \
   scripts/octelium-cloudflare-origin-port.sh \
+  scripts/octelium-cloudflare-workspace-certificate.sh \
   scripts/octelium-entra-oidc.sh
+scripts/octelium-cloudflare-workspace-certificate.sh --help
 scripts/octelium-cluster-bootstrap.sh --help
 ```
 
@@ -214,6 +216,17 @@ n8n expected-negative webhook probe must see an n8n webhook response body, not
 only a generic HTTP 404 from Cloudflare or the Istio gateway, while the Policy
 Bot webhook probe must use the POST shape GitHub sends and require the app-level
 HTTP 400 webhook validation response, not just any non-404 response.
+
+The Cordium workspace TLS check and order workflows are manual, main-only, and
+protected by `homelab-production`. The check workflow requires an active
+Advanced Certificate Manager pack with the exact apex, first-level wildcard,
+and Cordium nested wildcard plus a successful public handshake. The separate,
+explicit order workflow may order that exact pack or restart validation only
+after the paid add-on and separate zone-scoped read and write tokens exist.
+Neither workflow deletes or replaces an existing Advanced pack. Ordering the
+active Advanced SAN superset implicitly replaces Universal SSL while preserving
+existing coverage. Cloudflare's Advanced Certificate Alert and a real workspace
+browser check remain rollout gates outside static validation.
 
 Rendered Kubernetes policy also enforces the access contract:
 `policy/kubernetes.rego` rejects Tailscale Funnel and classifies every

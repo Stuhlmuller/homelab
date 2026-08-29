@@ -246,9 +246,13 @@ The public Octelium control plane uses a Cloudflare Tunnel connector in
 hostnames
 through proxied CNAME records to the tunnel target
 `<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
-API token outside git. Cloudflare edge TLS uses the apex plus first-level
-`*.stinkyboi.com` shape; making `octelium.stinkyboi.com` the cluster domain
-would force the client onto the unsupported nested
+API token outside git. Cloudflare Universal SSL covers the apex plus
+first-level `*.stinkyboi.com` shape. The protected
+`octelium-cloudflare-workspace-certificate-apply.yml` workflow separately
+orders the Advanced Certificate Manager pack that adds
+`*.cordium.stinkyboi.com` for Cordium workspaces. Making
+`octelium.stinkyboi.com` the cluster domain would still force the client onto
+the unsupported nested
 `octelium-api.octelium.stinkyboi.com` hostname.
 
 Octelium CLI and VPN sessions use gRPC against `octelium-api.stinkyboi.com`.
@@ -265,6 +269,15 @@ Origin Rules edit, and Config Settings write for `stinkyboi.com`. Zone Settings
 read authorizes the workflow's SSL mode and HTTP/2-to-origin checks. The old
 `/homelab/octelium/cloudflare-zone-settings-token` declaration is retained
 temporarily so removing a secret value is a separate reviewed operation.
+
+The Cordium workspace certificate workflows use two separate
+`homelab-production` environment secrets scoped to `stinkyboi.com`:
+`CLOUDFLARE_SSL_CERTIFICATES_READ_TOKEN` has only `Zone Read` plus
+`SSL and Certificates Read`; `CLOUDFLARE_SSL_CERTIFICATES_WRITE_TOKEN` has only
+`Zone Read` plus `SSL and Certificates Write`. The check workflow receives only
+the read token. The explicit order workflow receives the write token after
+approval. Cloudflare retains every private key. Do not store either token in
+SSM or expose it to Kubernetes workloads.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

@@ -142,6 +142,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   workflow output. The former
   `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
   consumer and remains only until secret retirement is reviewed separately.
+  The protected Cordium workspace certificate workflows use separate
+  `homelab-production` read and write tokens scoped to `stinkyboi.com`:
+  `CLOUDFLARE_SSL_CERTIFICATES_READ_TOKEN` has `Zone Read` plus
+  `SSL and Certificates Read`, while
+  `CLOUDFLARE_SSL_CERTIFICATES_WRITE_TOKEN` has `Zone Read` plus
+  `SSL and Certificates Write`. Cloudflare retains the private key and no
+  certificate material enters git, SSM, or Kubernetes.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
