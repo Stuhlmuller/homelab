@@ -785,17 +785,21 @@ organization-policy blocker is tracked below.
 - **Next step:** keep this finding open until the migration applies, older S3
   versions of this stack's exact state object are removed, and the External
   Secrets IAM access key is rotated with a matching committed revision bump.
-- **Status:** open; first AppProject tranche and Kiali tailnet bypass fixed
+- **Status:** open; two AppProject tranches and Kiali tailnet bypass fixed
 - **Area:** platform service / GitOps
-- **Evidence:** the `homelab-workloads` AppProject limits the first four
-  verified ordinary workloads to three namespaces, two source repositories,
-  and no cluster-scoped resources. Platform controllers, namespace-owning
-  apps, cluster-scoped storage apps, and later-tranche workloads remain in the
-  cluster-capable `homelab` project. `n8n-postgres` also remains there because
-  its `CreateNamespace` and managed metadata contract reconciles the
-  cluster-scoped `automation` Namespace. n8n is the first app-template workload
-  hardened with its upstream UID/GID `1000`, `RuntimeDefault` seccomp, no
-  privilege escalation, and no Linux capabilities. Kiali's anonymous UI is
+- **Evidence:** the `homelab-workloads` AppProject limits six verified ordinary
+  workloads to four namespaces, four source repositories, and no
+  cluster-scoped resources. Grafana now renders no RBAC and mounts no service
+  account token; Multica's pinned chart and repository overlay render only
+  namespaced resources. Both disable namespace creation and depend on the
+  privileged owners of their shared namespaces. A Conftest rule rejects any
+  cluster-resource grant to this project. Platform controllers,
+  namespace-owning apps, cluster-scoped storage apps, and later tranches remain
+  in the cluster-capable `homelab` project. `n8n-postgres` also remains there
+  because its `CreateNamespace` and managed metadata contract reconciles the
+  cluster-scoped `automation` Namespace. n8n is the first app-template
+  workload hardened with its upstream UID/GID `1000`, `RuntimeDefault` seccomp,
+  no privilege escalation, and no Linux capabilities. Kiali's anonymous UI is
   now reachable by humans only after Octelium authentication; its direct
   Tailscale path was removed.
 - **Risk:** these are reviewability, reconnaissance, and lateral-movement risks

@@ -109,12 +109,14 @@ Confirmed tainted Application state is repaired through the protected
 plan and saved-plan apply; it does not expose a generic state mutation input.
 
 Ordinary workloads use the `homelab-workloads` AppProject when their rendered
-resources need no cluster scope. Its first tranche is Dispatcharr, OpenClaw,
-Policy Bot, and Prowlarr. Platform controllers, namespace-owning applications,
-and applications with audited cluster-resource requirements remain in the
-`homelab` project. `n8n-postgres` remains there because its existing managed
-namespace metadata requires access to the cluster-scoped `automation`
-Namespace.
+resources need no cluster scope. Dispatcharr, Grafana, Multica, OpenClaw,
+Policy Bot, and Prowlarr are verified there. Grafana disables its unused chart
+RBAC and service-account token. Grafana and Multica disable namespace creation
+and depend on the privileged Applications that own `monitoring` and `ai`.
+Platform controllers, namespace-owning applications, and applications with
+audited cluster-resource requirements remain in the `homelab` project.
+`n8n-postgres` remains there because its existing managed namespace metadata
+requires access to the cluster-scoped `automation` Namespace.
 
 `platform-crossplane` currently installs only Crossplane core through the
 upstream Helm chart. Before Argo CD owns Crossplane Provider, Composition, or

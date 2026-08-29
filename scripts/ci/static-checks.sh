@@ -17,6 +17,19 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Argo CD workload project isolation"
+for application in dispatcharr grafana multica openclaw policy-bot prowlarr; do
+  if ! (
+    cd "IaC/live/argocd-apps/${application}"
+    terragrunt --log-disable render --json --write=false --no-color |
+      jq -e '.inputs.manifest.spec.project == "homelab-workloads"' >/dev/null
+  ); then
+    echo "Application ${application} must use homelab-workloads" >&2
+    exit 1
+  fi
+done
+echo "::endgroup::"
+
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/live/argocd-apps

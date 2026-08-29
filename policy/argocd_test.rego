@@ -2,6 +2,17 @@ package main
 
 import rego.v1
 
+test_rejects_cluster_capable_workload_project if {
+	violations := deny with input as workload_project([{"group": "", "kind": "Namespace"}])
+	some msg in violations
+	contains(msg, "must explicitly deny every cluster-scoped resource")
+}
+
+test_allows_zero_cluster_resource_workload_project if {
+	violations := deny with input as workload_project([])
+	count(violations) == 0
+}
+
 test_rejects_mutable_external_git_revision if {
 	violations := deny with input as external_git_application("v0.0.36")
 	some msg in violations
@@ -50,4 +61,11 @@ external_git_application(revision) := {
 		"path": "deploy/chart",
 		"targetRevision": revision,
 	}},
+}
+
+workload_project(cluster_resources) := {
+	"apiVersion": "argoproj.io/v1alpha1",
+	"kind": "AppProject",
+	"metadata": {"name": "homelab-workloads"},
+	"spec": {"clusterResourceWhitelist": cluster_resources},
 }

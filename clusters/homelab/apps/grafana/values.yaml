@@ -2,6 +2,9 @@ admin:
   existingSecret: grafana-admin
   userKey: username
   passwordKey: password
+rbac:
+  create: false
+automountServiceAccountToken: false
 deploymentStrategy:
   type: Recreate
 annotations:

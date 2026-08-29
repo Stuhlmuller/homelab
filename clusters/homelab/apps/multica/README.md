@@ -3,6 +3,9 @@
 Multica runs in the shared `ai` namespace as the upstream OCI Helm chart
 `ghcr.io/multica-ai/charts/multica`. The release includes the Multica frontend,
 backend API/WebSocket server, and a dedicated pgvector PostgreSQL instance.
+LiteLLM owns the shared `ai` Namespace. The Multica Application depends on
+LiteLLM and does not ask Argo CD to create that cluster-scoped object from the
+restricted `homelab-workloads` project.
 
 Human access is through Octelium at `https://multica.stinkyboi.com`, routed to
 the frontend service. The frontend proxies API, auth, upload, and WebSocket
