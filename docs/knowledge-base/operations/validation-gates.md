@@ -48,6 +48,12 @@ that directory.
 
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
+The operator-owned role and production apply workflow both use a 5,400-second
+AWS session ceiling, matching the job's 90-minute timeout. Apply and verify the
+role maximum before dispatching that workflow. Its final quiet STS call keeps an
+expired credential from turning a partial rollout into the successful
+checkpoint; recover through a reviewed forward change and an exact-current-main
+rerun.
 
 ## GitHub Workflow Checks
 

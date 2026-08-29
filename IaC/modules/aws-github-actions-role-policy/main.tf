@@ -166,9 +166,10 @@ resource "aws_iam_policy" "parameter_reader_administration" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name               = var.apply_role_name
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
-  tags               = var.tags
+  name                 = var.apply_role_name
+  assume_role_policy   = data.aws_iam_policy_document.github_actions_assume_role.json
+  max_session_duration = 5400
+  tags                 = var.tags
 
   lifecycle {
     prevent_destroy = true

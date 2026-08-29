@@ -174,6 +174,7 @@ jobs:
         with:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
+          role-duration-seconds: 5400
           role-session-name: homelab-terragrunt-apply-${{ github.run_id }}
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
@@ -194,6 +195,7 @@ jobs:
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
           bash scripts/ci/terragrunt-apply.sh
+          aws sts get-caller-identity --no-cli-pager >/dev/null
           EOF
           then
             echo "::error::Production apply failed; detailed output was withheld because this is a public repository. Reproduce it from an approved local operator session."
