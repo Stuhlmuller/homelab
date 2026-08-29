@@ -188,9 +188,14 @@ human paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
 and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
-config, mode, and `kubectl` check inside a Cordium Workspace, whose client
-session is created automatically. Also require Secret reads and a server-side
-dry-run create to be denied there; Cordium has restricted read-only access.
+config and mode inside a Cordium Workspace, whose client session is created
+automatically. There, require explicit-namespace core workload, apps/v1, and
+batch/v1 diagnostics to succeed. Run
+`scripts/ci/octelium-kubernetes-policy-check.sh`, then prove live denials for
+all-namespaces reads, sensitive and cluster-scoped resources, RBAC, CRDs and
+custom resources, authorization reviews, subresources, mutations, metrics,
+debug, and non-allowlisted discovery paths. Issue `#848` owns the full live
+identity matrix.
 Keep the Tailscale fallback until both pass; Talos transport is a separate
 retirement gate.
 

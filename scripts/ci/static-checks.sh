@@ -693,6 +693,7 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
+bash scripts/ci/octelium-kubernetes-policy-check.sh
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
@@ -700,7 +701,14 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
-    $policies[0].spec.rules == [
+    $policies[0].spec == {
+      "attrs": {
+        "cordiumDiscoveryPaths": ["/api", "/api/v1", "/apis", "/apis/apps/v1", "/apis/batch/v1"],
+        "cordiumCoreResources": ["events", "pods", "services"],
+        "cordiumAppsResources": ["daemonsets", "deployments", "replicasets", "statefulsets"],
+        "cordiumBatchResources": ["cronjobs", "jobs"]
+      },
+      "rules": [
       {
         "name": "cordium-sensitive-read-deny",
         "effect": "DENY",
@@ -728,7 +736,7 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
         ]}}
       },
       {
-        "name": "cordium-read-only-client",
+        "name": "cordium-read-only-resources",
         "effect": "ALLOW",
         "condition": {"all": {"of": [
           {"match": "ctx.user.spec.type == \"HUMAN\""},
@@ -736,10 +744,50 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
           {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
           {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
           {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
-          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"}
+          {"match": "ctx.request.kubernetes.http.method == \"GET\""},
+          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"},
+          {"match": "has(ctx.request.kubernetes.namespace)"},
+          {"match": "!has(ctx.request.kubernetes.subresource)"},
+          {"any": {"of": [
+            {"all": {"of": [
+              {"match": "ctx.request.kubernetes.apiPrefix == \"api\""},
+              {"match": "!has(ctx.request.kubernetes.apiGroup)"},
+              {"match": "ctx.request.kubernetes.apiVersion == \"v1\""},
+              {"match": "ctx.request.kubernetes.resource in attrs.cordiumCoreResources"}
+            ]}},
+            {"all": {"of": [
+              {"match": "ctx.request.kubernetes.apiPrefix == \"apis\""},
+              {"match": "ctx.request.kubernetes.apiGroup == \"apps\""},
+              {"match": "ctx.request.kubernetes.apiVersion == \"v1\""},
+              {"match": "ctx.request.kubernetes.resource in attrs.cordiumAppsResources"}
+            ]}},
+            {"all": {"of": [
+              {"match": "ctx.request.kubernetes.apiPrefix == \"apis\""},
+              {"match": "ctx.request.kubernetes.apiGroup == \"batch\""},
+              {"match": "ctx.request.kubernetes.apiVersion == \"v1\""},
+              {"match": "ctx.request.kubernetes.resource in attrs.cordiumBatchResources"}
+            ]}}
+          ]}}
+        ]}}
+      },
+      {
+        "name": "cordium-read-only-discovery",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
+          {"match": "ctx.request.kubernetes.http.method == \"GET\""},
+          {"match": "ctx.request.kubernetes.verb == \"get\""},
+          {"match": "!has(ctx.request.kubernetes.resource)"},
+          {"match": "!has(ctx.request.kubernetes.subresource)"},
+          {"match": "ctx.request.kubernetes.http.path in attrs.cordiumDiscoveryPaths"}
         ]}}
       }
-    ] and
+      ]
+    } and
     ($services | length) == 1 and
     ($services[0].spec.isPublic // false) == false and
     $services[0].spec.mode == "KUBERNETES" and

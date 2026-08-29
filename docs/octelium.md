@@ -75,9 +75,11 @@ They create:
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
 - Policy `homelab-private-kubernetes-access`, allowing the `homelab-owner`
-  client full operator access and limiting `homelab-cordium-user` to
-  Kubernetes `get`, `list`, and `watch` requests while denying sensitive
-  resources and subresources.
+  client full operator access. `homelab-cordium-user` can only make
+  namespace-scoped `get`, `list`, and `watch` requests for core Events, Pods,
+  and Services; `apps/v1` workload controllers; and `batch/v1` Jobs and
+  CronJobs. Five exact discovery paths are allowed. Everything else falls
+  through Octelium's default deny.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the
   `homelab-ci` workload User to create an Octelium client session and access
   the Kubernetes API Service.
@@ -259,13 +261,47 @@ cordium run --rm --domain stinkyboi.com \
 Each running Workspace already has its own Octelium client session. Inside the
 Workspace, run `octelium config kubernetes-api.homelab --domain
 stinkyboi.com`, run the printed `KUBECONFIG` export, set it to mode `0600`, and
-run the same `kubectl` check. Cordium is limited to nonsensitive `get`, `list`,
-and `watch`; verify Secret reads and a server-side dry-run create are denied:
+use an explicit namespace. The exact Cordium resource surface is core/v1
+`events`, `pods`, and `services`; apps/v1 `daemonsets`, `deployments`,
+`replicasets`, and `statefulsets`; and batch/v1 `cronjobs` and `jobs`. Only
+`/api`, `/api/v1`, `/apis`, `/apis/apps/v1`, and `/apis/batch/v1` non-resource
+discovery requests are allowed. All subresources and all-namespaces reads are
+denied.
+
+Octelium v0.35 derives the policy fields from its
+[Kubernetes request parser](https://github.com/octelium/octelium/blob/v0.35.0/cluster/vigil/vigil/modes/httpg/httputils/k8s.go)
+and maps them into `ctx.request.kubernetes` in
+[Vigil pre-authorization](https://github.com/octelium/octelium/blob/v0.35.0/cluster/vigil/vigil/modes/httpg/middlewares/preauth/preauth.go).
+Its [policy evaluator](https://github.com/octelium/octelium/blob/v0.35.0/cluster/octovigil/octovigil/policy.go)
+returns `DENY` when no rule matches. Keep the catalog fields aligned with that
+version until the Octelium upgrade is complete.
+
+Verify representative allowed diagnostics and fail-closed boundaries:
 
 ```sh
-! kubectl get secrets --all-namespaces
+kubectl --request-timeout=15s -n cordium get pods,services,events
+kubectl --request-timeout=15s -n cordium \
+  get daemonsets,deployments,replicasets,statefulsets
+kubectl --request-timeout=15s -n cordium get cronjobs,jobs
+
+! kubectl get pods --all-namespaces
+! kubectl -n cordium get secrets
+! kubectl get nodes
+! kubectl get persistentvolumes
+! kubectl -n cordium get roles.rbac.authorization.k8s.io
+! kubectl get customresourcedefinitions.apiextensions.k8s.io
+! kubectl -n argocd get applications.argoproj.io
+! kubectl get --raw=/api/v1/namespaces/cordium/pods/__policy_check__/log
+! kubectl get --raw=/metrics
+! kubectl get --raw=/debug/pprof/
 ! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
 ```
+
+If this boundary blocks a required diagnostic after rollout, use a reviewed
+catalog change to remove both Cordium `ALLOW` rules while retaining
+`operator-client`, then reapply the catalog. That safely disables Workspace
+Kubernetes access. Do not roll back to a resource denylist; add a specific
+group, version, and resource only after review.
 
 Neither path needs the Tailscale subnet route.
 

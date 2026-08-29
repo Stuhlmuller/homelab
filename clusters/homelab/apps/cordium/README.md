@@ -183,16 +183,32 @@ octelium config kubernetes-api.homelab --domain stinkyboi.com
 ```
 
 Run the `KUBECONFIG` export printed by that command, set the generated file to
-mode `0600`, then run `kubectl --request-timeout=15s get nodes`. The upstream
-kubeconfig remains in the Octelium gateway Secret; the Workspace receives no
-long-lived Kubernetes credential and does not need a Tailscale route. The
-Octelium policy permits only nonsensitive `get`, `list`, and `watch`; verify
-Secret reads and a server-side dry-run create are denied:
+mode `0600`, then request only an explicit namespace. The upstream kubeconfig
+remains in the Octelium gateway Secret; the Workspace receives no long-lived
+Kubernetes credential and does not need a Tailscale route. The policy permits
+namespace-scoped `get`, `list`, and `watch` for core Events, Pods, and Services;
+apps/v1 DaemonSets, Deployments, ReplicaSets, and StatefulSets; and batch/v1
+CronJobs and Jobs. It permits only the matching five discovery endpoints.
 
 ```sh
-! kubectl get secrets --all-namespaces
+kubectl --request-timeout=15s -n cordium get pods,services,events
+kubectl --request-timeout=15s -n cordium \
+  get daemonsets,deployments,replicasets,statefulsets
+kubectl --request-timeout=15s -n cordium get cronjobs,jobs
+
+! kubectl get pods --all-namespaces
+! kubectl -n cordium get secrets
+! kubectl get nodes
+! kubectl get persistentvolumes
+! kubectl get customresourcedefinitions.apiextensions.k8s.io
+! kubectl get --raw=/api/v1/namespaces/cordium/pods/__policy_check__/log
+! kubectl get --raw=/metrics
+! kubectl get --raw=/debug/pprof/
 ! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
 ```
+
+All unlisted API groups, versions, resources, subresources, and non-resource
+paths fall through Octelium's default deny.
 
 ## Validation
 
@@ -267,6 +283,11 @@ namespace, and an Octelium-protected browser route for
 `*.cordium.stinkyboi.com`.
 
 ## Rollback
+
+If the Kubernetes read boundary rejects a required diagnostic, remove the two
+Cordium `ALLOW` rules from the repository catalog while retaining
+`operator-client`, then apply that reviewed catalog. This disables Workspace
+Kubernetes access without weakening owner access. Never restore a denylist.
 
 Remove `cordium-bootstrap-application.yaml` from the parent Kustomization and
 sync `cordium` before deleting the parent Application. The child has Argo CD's
