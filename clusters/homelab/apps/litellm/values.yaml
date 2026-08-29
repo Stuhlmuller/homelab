@@ -1,6 +1,18 @@
 image:
   repository: ghcr.io/berriai/litellm-database
   tag: v1.96.2@sha256:80e5e92bdcca246cd4153d451e5f75b65e19c7e39c46cc88a38bed4b65cc5836
+serviceAccount:
+  create: true
+  automount: false
+  name: litellm
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
 environmentSecrets:
   - litellm-provider-keys
 service:

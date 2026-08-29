@@ -18,6 +18,18 @@ that suffix on newer pins. The current deployment has no database connection or
 standalone database configured, and its migration Job is disabled, so this
 image-only upgrade has no schema migration.
 
+## Runtime hardening
+
+The chart creates the dedicated `litellm` ServiceAccount with API-token
+automount disabled. The Pod uses `RuntimeDefault` seccomp, prohibits privilege
+escalation, and drops every Linux capability.
+
+Phase 1 intentionally retains the image's default root user and writable root
+filesystem. Add UID/GID `65534`, `runAsNonRoot`, and a read-only root filesystem
+only after this phase remains healthy for 24 hours. Enabling a database or the
+migration Job requires renewed writable-path testing before applying those
+Phase 2 controls to the migration path.
+
 ## Rollout checks
 
 Before merge, render the exact chart and overlay:
@@ -29,9 +41,10 @@ kubectl kustomize clusters/homelab/apps/litellm
 ```
 
 After Argo CD reports `litellm` `Synced/Healthy`, confirm the Deployment and
-running Pod image IDs use the committed digest, `/health/readiness` succeeds,
-and one OpenClaw model request completes. Observe restarts and latency for 24
-hours before closing `#789`.
+running Pod image IDs use the committed digest, the Pod has no service-account
+token mount, `/health/readiness` succeeds, and one OpenClaw model request
+completes. Observe restarts and latency for 24 hours before starting Phase 2 or
+closing `#789`.
 
 Do not roll back below `v1.96.2`. If this release fails, roll forward through
 GitOps to a later signed, digest-pinned LiteLLM release.
