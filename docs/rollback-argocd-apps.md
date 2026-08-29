@@ -29,6 +29,23 @@ handling is clear.
 20. external-secrets
 21. platform-dns
 
+## cert-manager v1.20.3
+
+The `v1.19.2` to `v1.20.3` update is one supported minor-version step. In the
+aggregate `cert-manager-edit` role, it removes `create` access to Challenges
+and Orders plus `patch` and `update` access to Orders. External tooling that
+uses those operations needs its own reviewed RBAC before rollout.
+
+The v1.20.3 values are staged in `values-v1.20.3.yaml`; the live v1.19.2
+Application continues using `values.yaml` until the reviewed Terragrunt apply
+changes its chart revision and values path together. Back up cert-manager API
+resources before that apply. To roll back, restore both the v1.19.2 chart
+revision and `values.yaml` path through the same Application apply. Do not
+delete cert-manager CRDs, Certificate, CertificateRequest, Issuer,
+ClusterIssuer, Order, Challenge, or generated TLS Secret resources. Verify all
+Issuers report Ready and existing Certificates remain Ready after either
+direction.
+
 ## Persistent Data
 
 Never delete PVCs as part of rollback unless the operator explicitly chooses

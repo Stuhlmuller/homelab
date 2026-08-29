@@ -67,8 +67,11 @@ organization-policy blocker is tracked below.
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
   Rancher release `v0.0.36` to exact upstream commit
   `5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0`; both runtime images were already
-  digest-pinned. Issue `#791` tracks the remaining chart/native image pins and
-  continuous SBOM, vulnerability, and signature checks.
+  digest-pinned. cert-manager `v1.20.3` and all five of its runtime image
+  digests are staged in one versioned Application input so the protected apply
+  changes the chart, CRDs, RBAC, and binaries atomically. Issue `#791` tracks
+  the remaining chart/native image pins and continuous SBOM, vulnerability,
+  and signature checks.
 - **Risk:** Other tag-only generated images can still drift, and CI does not
   yet identify actionable HIGH or CRITICAL image vulnerabilities.
 - **Next step:** Complete the remaining image inventory and add the smallest
