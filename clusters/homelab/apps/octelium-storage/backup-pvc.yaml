@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: octelium-postgres-backup
+  namespace: octelium-storage
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    app.kubernetes.io/name: octelium-postgres-backup
+    app.kubernetes.io/component: backup
+    app.kubernetes.io/part-of: octelium
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 20Gi

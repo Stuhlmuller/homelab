@@ -74,6 +74,51 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Octelium PostgreSQL backup contract"
+kubectl kustomize clusters/homelab/apps/octelium-storage |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "CronJob" and .metadata.name == "octelium-postgres-backup")] as $backups |
+    [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.name == "octelium-postgres-backup")] as $claims |
+    [.[] | select(.kind == "NetworkPolicy" and .metadata.name == "octelium-postgres-backup")] as $policies |
+    $backups[0] as $backup |
+    $backup.spec.jobTemplate.spec.template.spec as $pod |
+    $pod.containers[0].command[2] as $script |
+    ($backups | length) == 1 and
+    ($claims | length) == 1 and
+    ($policies | length) == 1 and
+    $backup.spec.schedule == "30 2 * * *" and
+    $backup.spec.timeZone == "Etc/UTC" and
+    $backup.spec.concurrencyPolicy == "Forbid" and
+    $backup.spec.jobTemplate.spec.activeDeadlineSeconds == 3600 and
+    $backup.spec.jobTemplate.spec.backoffLimit == 1 and
+    $pod.automountServiceAccountToken == false and
+    ($script | contains("pg_dumpall")) and
+    ($script | contains("--no-role-passwords")) and
+    ($script | test("(?m)^pg_dump[[:space:]]+\\\\$")) and
+    ($script | contains("--file=\"${partial}/octelium.dump\"")) and
+    ($script | test("(?m)^[[:space:]]+octelium$")) and
+    ($script | contains("pg_restore --list")) and
+    ($script | contains("sha256sum --check")) and
+    ($script | contains("mv \"$partial\" \"$complete\"")) and
+    ($script | contains("-mtime +13")) and
+    any($pod.volumes[];
+      .name == "backup" and
+      .persistentVolumeClaim.claimName == "octelium-postgres-backup"
+    ) and
+    $claims[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $claims[0].spec.storageClassName == "nfs-default" and
+    $claims[0].spec.resources.requests.storage == "20Gi" and
+    $policies[0].spec.podSelector.matchLabels["app.kubernetes.io/name"] == "octelium-postgres" and
+    any($policies[0].spec.ingress[];
+      any(.from[];
+        .podSelector.matchLabels["app.kubernetes.io/name"] == "octelium-postgres-backup"
+      ) and
+      any(.ports[]; .protocol == "TCP" and .port == 5432)
+    )
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Cordium genesis privilege lifecycle"
 yq -e '.data."controller.sync.timeout.seconds" == "900"' \
   clusters/homelab/argocd/self-management/cmd-params-configmap.yaml >/dev/null

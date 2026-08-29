@@ -28,13 +28,33 @@ so a query-stalled server is removed from service and restarted promptly. The
 pod is pinned to `zimaboard-1`; this avoids the worst observed NFS client but
 does not make QNAP NFS reliable database storage.
 
+## PostgreSQL Backup
+
+`octelium-postgres-backup` runs daily at 02:30 UTC. It writes
+one recovery set under `logical-backups/<UTC timestamp>/` on the retained
+`octelium-postgres-backup` NFS claim. Each set contains PostgreSQL globals
+without role password hashes, one custom-format `octelium` database dump, and
+SHA-256 checksums. The Job validates the dump with `pg_restore --list`, checks
+the files before and after an atomic directory rename, and retains 14 days of
+completed sets.
+
+The nominal RPO is 24 hours; the actual RPO is the age of the newest successful
+Job. The source and backup claims use the same QNAP export, so this protects
+against logical database failure and supports a later storage migration, but it
+does not protect against NAS loss or malicious modification. A restore path and
+restore drill remain required before this backup can be treated as proven
+disaster recovery.
+
 ## Validation
 
 ```sh
 kubectl -n octelium-storage get externalsecret,secret octelium-storage-auth
-kubectl -n octelium-storage get statefulset,pod,pvc,svc
+kubectl -n octelium-storage get statefulset,cronjob,pod,pvc,svc
 kubectl -n octelium-storage exec statefulset/octelium-postgres -- psql -U octelium -d octelium -Atqc 'SELECT 1'
 kubectl -n octelium-storage exec statefulset/octelium-redis -- redis-cli ping
+kubectl -n octelium-storage get cronjob octelium-postgres-backup -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n octelium-storage get job -l app.kubernetes.io/name=octelium-postgres-backup
+kubectl -n octelium-storage logs job/<latest-octelium-postgres-backup-job>
 ```
 
 Redis requires authentication for real clients; the unauthenticated `PING` can

@@ -144,7 +144,11 @@ preventing a server that accepts connections but cannot execute queries from
 remaining falsely healthy. It is pinned to `zimaboard-1` to avoid the worst
 observed NFS client path, but QNAP NFS remains a database availability risk.
 Its availability is required for Octelium service publication, including the
-CI Kubernetes API tunnel.
+CI Kubernetes API tunnel. A daily CronJob writes PostgreSQL globals without
+password hashes, a custom-format database dump, and checksums to the separate
+retained `octelium-postgres-backup` NFS claim. It verifies the dump before
+atomic publication and retains 14 days. This is a logical recovery and
+migration checkpoint, not an off-NAS backup; restore validation remains open.
 
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
@@ -211,6 +215,7 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/sonarr/local-storage.yaml`
 - `clusters/homelab/apps/media-postgres`
 - `clusters/homelab/apps/media-postgres-recovery`
+- `clusters/homelab/apps/octelium-storage`
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`
