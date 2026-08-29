@@ -73,7 +73,10 @@ sysctl file and reports the current value through an unprivileged readiness
 check. The init container reapplies the value whenever GitOps or a node reboot
 recreates the Pod, while the Talos patch remains the machine-config source of
 truth.
-Render the complete worker config, validate it, and apply that reviewed config:
+These direct-IP Talos operations require a homelab LAN route or the retained
+Tailscale fallback. A Cordium Workspace's Octelium session does not expose the
+Talos API or arbitrary LAN addresses. Render the complete worker config,
+validate it, and apply that reviewed config:
 
 ```sh
 talosctl machineconfig patch .talos/worker.yaml \
@@ -162,6 +165,35 @@ and workspace subdomains under `*.cordium.stinkyboi.com`; do not bypass the
 Octelium-backed Cordium route with a direct Service, port-forward, or
 Tailscale-only URL.
 
+## Private Kubernetes Access
+
+Start the developer shell from any machine that can authenticate to Octelium:
+
+```sh
+cordium run --rm --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git
+```
+
+Cordium starts a dedicated Octelium client session for the Workspace owner.
+Inside the Workspace, generate a read-only client kubeconfig for the private
+Service:
+
+```sh
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+```
+
+Run the `KUBECONFIG` export printed by that command, set the generated file to
+mode `0600`, then run `kubectl --request-timeout=15s get nodes`. The upstream
+kubeconfig remains in the Octelium gateway Secret; the Workspace receives no
+long-lived Kubernetes credential and does not need a Tailscale route. The
+Octelium policy permits only nonsensitive `get`, `list`, and `watch`; verify
+Secret reads and a server-side dry-run create are denied:
+
+```sh
+! kubectl get secrets --all-namespaces
+! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
+```
+
 ## Validation
 
 ```sh
@@ -184,6 +216,7 @@ kubectl -n cordium exec deploy/ws-WORKSPACE -- \
 cordium man get clusterconfig -o yaml
 octeliumctl get svc default.cordium
 octeliumctl get svc default-cordium.octelium-api
+octeliumctl get svc kubernetes-api.homelab
 curl -I https://cordium.stinkyboi.com
 ```
 
@@ -208,19 +241,24 @@ new sync recreates the identity only immediately before genesis.
 Verify the human developer path end to end with the public repository:
 
 ```sh
-cordium run --repository https://github.com/Stuhlmuller/homelab.git
+cordium run --rm --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git
 ```
 
 In the resulting Workspace terminal, confirm the clone and then exit:
 
 ```sh
 git -C /workspace/repo remote get-url origin
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+# Export the KUBECONFIG path printed above.
+chmod 0600 "$KUBECONFIG"
+kubectl --request-timeout=15s get nodes
 exit
 ```
 
-The remote URL must be
-`https://github.com/Stuhlmuller/homelab.git`, and the new Workspace PVC must
-report `cordium-local` in `kubectl -n cordium get pvc`.
+The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. The
+`--rm` flag deletes the disposable Workspace and its PVC after the terminal
+exits; use the earlier cluster-side PVC check to validate `cordium-local`.
 
 The expected steady state includes ready Cordium controller pods in the
 `octelium` namespace, running Workspace Pods in the privileged `cordium`

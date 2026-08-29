@@ -37,12 +37,38 @@ for overlay in clusters/homelab/platform/* clusters/homelab/apps/*; do
 done
 ```
 
-When cluster access is available:
+For remote Kubernetes access, connect through Octelium and use its generated
+kubeconfig:
 
 ```sh
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+```
+
+Run the `KUBECONFIG` export printed by `octelium config`, then restrict the
+generated file and run live diffs:
+
+```sh
+chmod 0600 "$KUBECONFIG"
 kubectl diff --server-side -k clusters/homelab/platform/<service>
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
+
+Before treating Tailscale as unnecessary for Kubernetes, repeat the access
+check inside a disposable Cordium Workspace:
+
+```sh
+cordium run --rm --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git
+```
+
+Inside the Workspace, run `octelium config kubernetes-api.homelab --domain
+stinkyboi.com`, run its printed export, set the generated file to mode `0600`,
+and require a 15-second `kubectl get nodes` check to succeed. After local
+validation, require `! kubectl get secrets --all-namespaces` and `! kubectl
+create namespace octelium-policy-deny-check --dry-run=server -o name` to
+confirm Cordium sensitive reads and mutation are denied. Then run `octelium
+disconnect --domain stinkyboi.com` on the operator workstation.
 
 Secret scan:
 
@@ -62,12 +88,14 @@ and healthy:
 argocd app get external-secrets
 argocd app get cert-manager
 argocd app get istio
-argocd app get tailscale
 argocd app get argocd-image-updater
 argocd app get kiali
 argocd app get platform-dns
 argocd app get platform-storage
 ```
+
+`argocd app get tailscale` checks only the temporary Talos/LAN fallback and
+must not gate Octelium app or Kubernetes readiness.
 
 For Kiali, verify the operator-created custom resource and Octelium-backed UI:
 
@@ -95,7 +123,8 @@ clusters.
 Expected result: the Octelium control plane exists, `octelium-client` has a
 ready replica, the Cluster/API/portal hostnames are serving Octelium instead of
 generic Istio 404 responses, every homelab app Service is present in the
-Octelium catalog, each existing `*.stinkyboi.com` app hostname resolves
+Octelium catalog, `kubernetes-api.homelab` is private and uses `KUBERNETES`
+mode, each existing `*.stinkyboi.com` app hostname resolves
 publicly through Cloudflare into the `octelium-public` tunnel, and each app
 responds over HTTPS through its matching Octelium published service with the
 real URL and SNI preserved. The gate also probes the reviewed public callback
@@ -350,7 +379,7 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
-| Tailscale unavailable | Do not mark secondary LAN/egress as ready, but app, callback, CI, and VPN readiness should be evaluated through Octelium. |
+| Tailscale unavailable | App, human/CI Kubernetes, callback, and Octelium client readiness should be evaluated through Octelium; only the temporary remote Talos/LAN/egress fallback is unavailable. |
 | Policy Bot webhook unreachable | Inspect the `policy-bot-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and Policy Bot webhook HMAC handling; do not expose additional Funnel routes. |
 | n8n webhook unreachable | Inspect the `n8n-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and n8n webhook path config; keep editor/API routes off the callback host. |
 | Image update PR is incompatible | Add a narrow Renovate `allowedVersions` rule or close the PR, then document the workload-specific migration gate; never bypass digest pin checks. |

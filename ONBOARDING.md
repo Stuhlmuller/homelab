@@ -57,6 +57,35 @@ configuration drift, not as a new endpoint. Use
 `.talos/patches/controlplane-service-account-issuer.yaml` to align the issuer
 with `https://10.1.0.199:6443` through the desired Talos config path.
 
+## Remote Kubernetes Access
+
+Use Octelium, not the Tailscale subnet route, for steady-state remote
+`kubectl` access:
+
+```sh
+octelium login --domain stinkyboi.com
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+```
+
+Run the `KUBECONFIG` export printed by `octelium config`, restrict the generated
+file, then verify:
+
+```sh
+chmod 0600 "$KUBECONFIG"
+kubectl --request-timeout=15s get nodes
+# Run after finishing Octelium-backed work.
+octelium disconnect --domain stinkyboi.com
+```
+
+The same private Service is available inside Cordium Workspaces; see
+`docs/octelium.md`.
+
+The direct `10.1.0.199` commands below are bootstrap and LAN recovery paths.
+Talos still requires `.talos/talosconfig` plus a validated private transport;
+keep Tailscale deployed as the temporary remote Talos/LAN fallback until that
+separate path is replaced.
+
 ## Repository Source of Truth
 
 Permanent homelab changes are made through code in this repository. External
@@ -562,7 +591,20 @@ SystemDisk   system-disk   mmcblk0
 
 ## Kubeconfig Refresh
 
-If `kubectl` points at the old API address, refresh the kubeconfig from Acer:
+For remote access, regenerate the Octelium client kubeconfig and export the path
+it prints:
+
+```sh
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+# Run the KUBECONFIG export printed above.
+chmod 0600 "$KUBECONFIG"
+kubectl --request-timeout=15s get nodes
+octelium disconnect --domain stinkyboi.com
+```
+
+If the upstream kubeconfig stored in Octelium is stale, refresh it from Acer on
+the homelab LAN before updating the server-side Octelium Secret:
 
 ```sh
 talosctl --talosconfig .talos/talosconfig \
@@ -572,6 +614,7 @@ talosctl --talosconfig .talos/talosconfig \
 
 kubectl config set-cluster homelab --server=https://10.1.0.199:6443
 kubectl get nodes
+scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
 ```
 
 The active Kubernetes server should be:

@@ -53,7 +53,8 @@ Start with these documents:
   the bootstrap story.
 - `docs/argocd-bootstrap.md` for the initial Argo CD Terragrunt stack.
 - `docs/argocd-app-onboarding.md` for adding GitOps-managed applications.
-- `docs/ci-cd.md` for GitHub Actions, Tailscale, AWS OIDC, and rollout gates.
+- `docs/octelium.md` for private operator and restricted Cordium Kubernetes access.
+- `docs/ci-cd.md` for GitHub Actions, Octelium, AWS OIDC, and rollout gates.
 - `docs/secrets-aws-ssm.md` for the External Secrets and AWS SSM contract.
 - `docs/storage-nfs.md` for QNAP-backed Kubernetes persistent storage.
 - `docs/knowledge-base/00-home.md` for the Obsidian knowledge-base index.

@@ -17,8 +17,9 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-e2e-check.sh [options]
 
-Validate that Octelium is the homelab backbone for app access, CI reachability,
-VPN entry points, and reviewed public callbacks.
+Validate that Octelium is the homelab backbone for app access, CI Kubernetes
+reachability, private Kubernetes catalog state, client sessions, and reviewed
+public callbacks.
 The check requires a running Octelium Cluster, an applied homelab service
 catalog, an active octelium-client connector, and public WEB access for the
 existing app FQDNs. AFFiNE delegates login to the application; the other app
@@ -127,6 +128,7 @@ policy-bot-hook.stinkyboi.com /api/github/hook expect-policy-bot-400 POST
 
 REQUIRED_SERVICES="
 kubernetes-api-ci
+kubernetes-api.homelab
 affine
 argocd
 compass
@@ -151,6 +153,7 @@ sonarr
 FAILURES=0
 GRPC_READY=1
 SERVICES_JSON=""
+EXPECTED_KUBERNETES_POLICY=""
 
 note() {
   printf '==> %s\n' "$*"
@@ -245,6 +248,7 @@ require_command curl
 require_command dig
 require_command octeliumctl
 require_command jq
+require_command yq
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Cannot continue without required local tools." >&2
@@ -443,6 +447,12 @@ if [ ! -f "${CATALOG}" ]; then
   fail "catalog file is missing: ${CATALOG}"
 else
   pass "catalog file exists: ${CATALOG}"
+  EXPECTED_KUBERNETES_POLICY="$(
+    yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' "${CATALOG}"
+  )"
+  if [ -z "${EXPECTED_KUBERNETES_POLICY}" ]; then
+    fail "catalog is missing Policy homelab-private-kubernetes-access"
+  fi
 fi
 
 if [ "${GRPC_READY}" -eq 1 ]; then
@@ -494,6 +504,12 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
     done
+    # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
+    if jq -e '.items[] | select(.metadata.name == "kubernetes-api.homelab" and .spec.mode == "KUBERNETES" and (.spec.isPublic // false) == false and .spec.port == 6443 and .spec.authorization.policies == ["homelab-private-kubernetes-access"] and .spec.config.upstream.url == "https://10.1.0.199:6443" and .spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and (.spec.config.tls.insecureSkipVerify // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service kubernetes-api.homelab is private and policy-bound"
+    else
+      fail "Octelium Service kubernetes-api.homelab is not private policy-bound KUBERNETES access"
+    fi
     if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Octelium Service affine delegates login to the application"
     else
@@ -534,6 +550,28 @@ else
   note "Skipping octeliumctl Service catalog check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-services.$$ /tmp/octelium-services.err.$$
+
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get policy homelab-private-kubernetes-access -o json >/tmp/octelium-kubernetes-policy.$$ 2>/tmp/octelium-kubernetes-policy.err.$$; then
+    if [ -n "${EXPECTED_KUBERNETES_POLICY}" ] &&
+      jq -e --argjson expected "${EXPECTED_KUBERNETES_POLICY}" \
+        '.metadata.name == "homelab-private-kubernetes-access" and .spec == $expected.spec' \
+        >/dev/null 2>&1 </tmp/octelium-kubernetes-policy.$$; then
+      pass "Octelium private Kubernetes Policy matches the repository catalog"
+    else
+      fail "Octelium private Kubernetes Policy is missing or broader than declared"
+    fi
+  else
+    if [ -s /tmp/octelium-kubernetes-policy.err.$$ ]; then
+      fail "Octelium private Kubernetes Policy is unavailable: $(tr '\n' ' ' </tmp/octelium-kubernetes-policy.err.$$)"
+    else
+      fail "Octelium private Kubernetes Policy could not be read within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
+  fi
+else
+  note "Skipping Octelium private Kubernetes Policy check because public Octelium gRPC is not available"
+fi
+rm -f /tmp/octelium-kubernetes-policy.$$ /tmp/octelium-kubernetes-policy.err.$$
 
 if [ "${GRPC_READY}" -eq 1 ]; then
   if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get user homelab-cordium-user -o json >/tmp/octelium-user.$$ 2>/tmp/octelium-user.err.$$; then

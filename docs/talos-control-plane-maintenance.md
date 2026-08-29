@@ -93,6 +93,9 @@ are:
 
 Do not run these commands until the rendered config has passed validation and
 the operator has explicitly approved the live Talos apply sequence.
+The direct `10.1.0.199` Talos endpoint requires the homelab LAN or retained
+Tailscale fallback; `octelium connect` and Cordium currently expose only the
+declared Kubernetes Service, not the Talos API or LAN subnet.
 
 1. Confirm API and Talos access are healthy with read-only commands:
 

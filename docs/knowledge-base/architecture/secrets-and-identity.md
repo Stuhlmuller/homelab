@@ -165,6 +165,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
   Sessions first so Octelium cannot retain an older Session expiry, then retries
   GitHub environment writes until both store the replacement token.
+  Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
+  by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
+  receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
+  affects CI, operator, and Cordium Kubernetes access, so validate both Services
+  after rotation.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

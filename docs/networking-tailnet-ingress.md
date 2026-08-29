@@ -1,7 +1,8 @@
-# Tailnet Ingress
+# Octelium Access And Tailnet Fallback
 
-Octelium is the primary access plane for homelab apps, VPN sessions, CI
-Kubernetes API reachability, and external callback paths. Existing
+Octelium is the primary access plane for homelab apps, human and CI Kubernetes
+API reachability, private Service sessions, Cordium Workspaces, and external
+callback paths. Existing
 `*.stinkyboi.com` app hostnames resolve through the repo-owned
 `octelium-public` Cloudflare Tunnel connector; the Octelium CLI API uses the
 separate direct gRPC origin documented below. Octelium `WEB` Services normally
@@ -60,6 +61,7 @@ Total TLS does not issue certificates for Cloudflare Tunnel hostnames.
 | --- | --- | --- |
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
 | Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy on client TCP/443, Origin Rule to WAN TCP/8443, then UPnP to the API-only Istio gateway NodePort |
+| Kubernetes API for humans and Cordium | private Service `kubernetes-api.homelab` | `octelium connect`, then `octelium config kubernetes-api.homelab`; Cordium Workspaces already have a restricted read-only client session |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
 | Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
@@ -178,9 +180,11 @@ Deployment remains the operational health signal.
 
 ## Secondary Tailnet Exit Node And LAN Route
 
-Octelium is the primary VPN and access system for users and CI. Tailscale
-remains a secondary LAN/egress utility rather than the app, callback, or GitHub
-Actions backbone. The `tailscale` Argo CD Application installs the upstream
+Octelium is the primary private Service and access system for users, Cordium,
+and CI.
+Tailscale remains deployed as a temporary Talos/LAN/egress fallback rather
+than the app, Kubernetes, callback, or GitHub Actions backbone. The `tailscale`
+Argo CD Application installs the upstream
 Tailscale Kubernetes Operator and applies the repo-owned `homelab-exit-node`
 `Connector` from `clusters/homelab/apps/tailscale/exit-node-connector.yaml`.
 
@@ -193,6 +197,24 @@ clients can reach local network services through the same operator-managed
 device when Octelium is unavailable or when a local-LAN workflow has not yet
 moved. GitHub Actions uses Octelium Service `kubernetes-api-ci` instead of this
 tailnet route.
+
+Do not remove the Tailscale Application while the operator is remote. Retire it
+only after direct `octelium connect` plus `kubernetes-api.homelab`, the same
+Service from a Cordium Workspace, and a replacement Talos transport have all
+been validated from outside the homelab.
+
+After the desired state syncs, verify Istio no longer owns a Tailscale device
+while the fallback Connector remains:
+
+```sh
+kubectl -n istio-system get service istio-ingressgateway -o yaml
+kubectl -n tailscale get statefulset,pod \
+  -l tailscale.com/parent-resource=istio-ingressgateway
+kubectl -n tailscale get connector homelab-exit-node
+```
+
+Expect a `ClusterIP` Istio Service with no Tailscale class or annotations, no
+matching ingress proxy objects, and a ready `homelab-exit-node` Connector.
 
 This repository cannot approve tailnet routes by itself. The tailnet policy must
 allow `tag:k8s-operator` to own `tag:k8s`, and either auto-approve exit-node
@@ -209,11 +231,11 @@ kubectl -n tailscale get deployment,statefulset,pod
 kubectl -n istio-system get service istio-ingressgateway
 ```
 
-Expected result: the operator and both managed proxy Pods use the chart's
-`v1.102.3` image, each StatefulSet has matching current and update revisions,
-the connector reports exit-node status and the `10.1.0.0/24` route, and the
-Istio Service retains its Tailscale address. The singleton proxies roll
-separately during upgrades, so brief interruptions are expected. Then select
+Expected result: the operator and exit-node proxy use the chart's `v1.102.3`
+image, the proxy StatefulSet has matching current and update revisions, the
+connector reports exit-node status and the `10.1.0.0/24` route, and the Istio
+Service remains `ClusterIP` with no Tailscale address. The singleton proxy can
+briefly interrupt fallback access during upgrades. Then select
 `homelab-exit-node` on a client and verify DNS, HTTPS egress, and LAN access.
 Keep local-network access enabled on clients that still need their nearby LAN
 while using the exit node.
