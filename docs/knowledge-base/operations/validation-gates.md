@@ -55,8 +55,9 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 `policy/workflows.rego`. External `uses:` references must be pinned to a full
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
-Event detection handles string and array forms and uses object-key membership,
-so null, false, and configured event values cannot bypass a denied event.
+Event detection accepts both the source `on` key and the string `true` key
+produced by Conftest's YAML parser, then uses object-key membership so null,
+false, and configured event values cannot bypass a denied event.
 
 The pull-request `Terragrunt Gate` is an always-present aggregate. Its
 unprivileged static job runs for every PR and owns live-scope detection. Only a
