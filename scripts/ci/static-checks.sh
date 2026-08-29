@@ -30,6 +30,83 @@ if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")
 fi
 echo "::endgroup::"
 
+echo "::group::Locked release toolchain"
+jq -e '
+  .private == true and
+  .engines.node == "24.20.0" and
+  .packageManager == "npm@11.19.0" and
+  (.devDependencies | keys) == [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "semantic-release"
+  ] and
+  ([.devDependencies[] | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")] | all)
+' package.json >/dev/null
+jq -e --slurpfile manifest package.json '
+  $manifest[0].devDependencies as $dependencies |
+  .lockfileVersion == 3 and
+  .packages[""].devDependencies == $dependencies and
+  .packages["node_modules/semantic-release"].version == $dependencies["semantic-release"] and
+  .packages["node_modules/@semantic-release/commit-analyzer"].version ==
+    $dependencies["@semantic-release/commit-analyzer"] and
+  .packages["node_modules/@semantic-release/release-notes-generator"].version ==
+    $dependencies["@semantic-release/release-notes-generator"] and
+  ([
+    .packages | to_entries[] |
+    select(.key != "" and (.value.inBundle // false) == false) |
+    select(
+      ((.value.resolved // "") | startswith("https://registry.npmjs.org/") | not) or
+      ((.value.integrity // "") | startswith("sha512-") | not)
+    )
+  ] | length) == 0
+' package-lock.json >/dev/null
+yq -o=json '.' .releaserc.yaml | jq -e '.branches == ["main"]' >/dev/null
+yq -o=json '.' .github/workflows/release.yml |
+  jq -e '
+    ([
+        .jobs["release-dry-run"],
+        .jobs.release
+      ] | all(
+        .steps[1].uses == "actions/setup-node@820762786026740c76f36085b0efc47a31fe5020" and
+        .steps[1].with["node-version"] == "24.20.0" and
+        .steps[1].with["package-manager-cache"] == false and
+        .steps[1].with.token == "" and
+        (.steps[2].run | contains("test \"$(node --version)\" = \"v24.20.0\"")) and
+        (.steps[2].run | contains("test \"$(npm --version)\" = \"11.19.0\"")) and
+        (.steps[2].run | contains("npm ci --ignore-scripts --no-audit --no-fund")) and
+        (.steps[2].env == null)
+      )) and
+    (.jobs["release-dry-run"].steps[3].run | contains(
+      "git switch --force-create semantic-release-dry-run"
+    )) and
+    (.jobs["release-dry-run"].steps[3].run | contains(
+      "git clone --bare . \"${RUNNER_TEMP}/semantic-release-dry-run.git\""
+    )) and
+    (.jobs["release-dry-run"].steps[3].run | contains(
+      "unset CI GITHUB_ACTIONS GITHUB_EVENT_NAME"
+    )) and
+    (.jobs["release-dry-run"].steps[3].run | contains(
+      "./node_modules/.bin/semantic-release"
+    )) and
+    (.jobs["release-dry-run"].steps[3].run | contains("--dry-run")) and
+    (.jobs["release-dry-run"].steps[3].run | contains("--no-ci")) and
+    (.jobs["release-dry-run"].steps[3].run | contains(
+      "--branches semantic-release-dry-run"
+    )) and
+    (.jobs["release-dry-run"].steps[3].run | contains(
+      "--repository-url \"file://${RUNNER_TEMP}/semantic-release-dry-run.git\""
+    )) and
+    (.jobs["release-dry-run"].steps[3].env == null) and
+    .jobs.release.steps[3].run == "./node_modules/.bin/semantic-release" and
+    .jobs.release.steps[3].env.GITHUB_TOKEN == "${{ secrets.GITHUB_TOKEN }}" and
+    ([.jobs[].steps[] | select(.env.GITHUB_TOKEN? != null)] | length) == 1 and
+    ([
+      .jobs[].steps[] |
+      select((.uses? // "") | contains("cycjimmy/semantic-release-action"))
+    ] | length) == 0
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/live/argocd-apps
@@ -516,7 +593,7 @@ done <<'EOF'
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
-.github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
+.github/workflows/release.yml 791f84abce40ca133e4fd22330e7bedd187f922565a4bedf6fb0b7ac1247ed3b
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
 .github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
@@ -689,7 +766,7 @@ rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci
 echo "::endgroup::"
 
 echo "::group::Renovate config"
-jq empty renovate.json
+jq -e '.lockFileMaintenance.enabled == true' renovate.json >/dev/null
 echo "::endgroup::"
 
 echo "::group::Private cluster access"

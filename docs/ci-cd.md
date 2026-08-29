@@ -76,6 +76,13 @@ contract for Grafana.
   disqualified.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
+- Release jobs pin the setup action, Node.js, npm, semantic-release, and its
+  complete transitive package graph. `npm ci` verifies the committed lockfile
+  integrity with lifecycle scripts disabled. Dependency setup receives no token
+  input or token environment variable; the release-capable token is exported
+  only to the `main` publisher. Pull requests run commit analysis and release
+  note generation against an ephemeral local bare repository with no token;
+  nothing is pushed to GitHub.
 - The `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,

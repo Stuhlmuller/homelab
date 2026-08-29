@@ -24,13 +24,29 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Semantic Release Dry Run
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          dry_run: true
-          ci: false
+          node-version: "24.20.0"
+          package-manager-cache: false
+          token: ""
+
+      - name: Install locked release toolchain
+        run: |
+          test "$(node --version)" = "v24.20.0"
+          test "$(npm --version)" = "11.19.0"
+          npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Semantic Release Dry Run
+        run: |
+          git switch --force-create semantic-release-dry-run
+          git clone --bare . "${RUNNER_TEMP}/semantic-release-dry-run.git"
+          unset CI GITHUB_ACTIONS GITHUB_EVENT_NAME
+          ./node_modules/.bin/semantic-release \
+            --dry-run \
+            --no-ci \
+            --branches semantic-release-dry-run \
+            --repository-url "file://${RUNNER_TEMP}/semantic-release-dry-run.git"
 
   release:
     if: github.event_name == 'push'
@@ -44,10 +60,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24.20.0"
+          package-manager-cache: false
+          token: ""
+
+      - name: Install locked release toolchain
+        run: |
+          test "$(node --version)" = "v24.20.0"
+          test "$(npm --version)" = "11.19.0"
+          npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          dry_run: false
-          ci: true
+        run: ./node_modules/.bin/semantic-release
