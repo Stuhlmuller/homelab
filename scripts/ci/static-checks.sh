@@ -505,6 +505,30 @@ if [[ -n "$tag_only_images" ]]; then
   printf '%s\n' "$tag_only_images" >&2
   exit 1
 fi
+
+while IFS='|' read -r expected_count expected_image manifest; do
+  actual_count="$(rg -F -c "$expected_image" "$manifest" || true)"
+  if [[ "$actual_count" != "$expected_count" ]]; then
+    echo "Security image contract mismatch in $manifest: expected $expected_count occurrence(s) of $expected_image, found ${actual_count:-0}" >&2
+    exit 1
+  fi
+done <<'SECURITY_IMAGE_CONTRACT'
+2|redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf|clusters/homelab/apps/octelium-storage/redis.yaml
+2|postgres:14.24-bookworm@sha256:185c7c7a36448bcb7e0d3d6aef97ac973ddfae0cc4fa29581ce4e789988a74b1|clusters/homelab/apps/octelium-storage/postgres.yaml
+1|postgres:14.24-bookworm@sha256:185c7c7a36448bcb7e0d3d6aef97ac973ddfae0cc4fa29581ce4e789988a74b1|clusters/homelab/apps/octelium-storage/backup-cronjob.yaml
+SECURITY_IMAGE_CONTRACT
+
+if rg -Fq 'redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952' \
+  clusters/homelab/apps/octelium-storage \
+  || rg -Fq 'postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa' \
+    clusters/homelab/apps/octelium-storage; then
+  echo "Superseded Octelium storage security image pin remains" >&2
+  exit 1
+fi
+
+rg -Fq 'argocd.argoproj.io/sync-wave: "0"' clusters/homelab/apps/octelium-storage/postgres.yaml
+rg -Fq 'argocd.argoproj.io/sync-wave: "1"' clusters/homelab/apps/octelium-storage/backup-cronjob.yaml
+rg -Fq 'argocd.argoproj.io/sync-wave: "2"' clusters/homelab/apps/octelium-storage/redis.yaml
 echo "::endgroup::"
 
 echo "::group::OpenClaw plugin supply chain"
