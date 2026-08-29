@@ -214,7 +214,7 @@ run_case() {
     OCTELIUM_AUTH_PROXY_SOCKET="/tmp/fixture.sock" \
     PATH="${FAKE_BIN}:${PATH}" \
     "${BOUNDARY_SCRIPT}" --role "${role}" --kubeconfig "${KUBECONFIG_FIXTURE}" \
-      --evidence-dir "${evidence}" >"${output}" 2>&1; then
+      --evidence-dir "${evidence}" --evidence-id "${name}" >"${output}" 2>&1; then
     exit_code=0
   else
     exit_code=$?
@@ -245,6 +245,48 @@ fixture_sha256() {
 
 run_case cordium-pass cordium valid valid octelium pass
 run_case owner-pass owner valid valid octelium pass
+reviewed_commit="$("${BOUNDARY_REAL_GIT}" -C "${REPO_ROOT}" rev-parse HEAD)"
+CI=true GITHUB_ACTIONS=true BOUNDARY_FIXTURE_GIT_STATUS=clean \
+  BOUNDARY_REAL_GIT="${BOUNDARY_REAL_GIT}" BOUNDARY_FIXTURE_LOG="${TEST_ROOT}/verify.log" \
+  PATH="${FAKE_BIN}:${PATH}" \
+  "${BOUNDARY_SCRIPT}" --verify --role cordium \
+  --evidence-dir "${TEST_ROOT}/cordium-pass-evidence" --evidence-id cordium-pass \
+  --reviewed-commit "${reviewed_commit}" >/dev/null
+
+expect_verify_failure() {
+  local role="$1" evidence_id="$2" evidence_dir="$3"
+  if CI=true GITHUB_ACTIONS=true BOUNDARY_FIXTURE_GIT_STATUS=clean \
+    BOUNDARY_REAL_GIT="${BOUNDARY_REAL_GIT}" BOUNDARY_FIXTURE_LOG="${TEST_ROOT}/verify.log" \
+    PATH="${FAKE_BIN}:${PATH}" \
+    "${BOUNDARY_SCRIPT}" --verify --role "${role}" \
+    --evidence-dir "${evidence_dir}" --evidence-id "${evidence_id}" \
+    --reviewed-commit "${reviewed_commit}" >/dev/null 2>&1; then
+    echo "invalid ${role} evidence unexpectedly verified: ${evidence_id}" >&2
+    exit 1
+  fi
+}
+
+expect_verify_failure owner cordium-pass "${TEST_ROOT}/cordium-pass-evidence"
+expect_verify_failure cordium stale-run "${TEST_ROOT}/cordium-pass-evidence"
+
+cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/tampered-identity-evidence"
+jq '.user = "homelab-owner"' "${TEST_ROOT}/tampered-identity-evidence/identity.json" \
+  >"${TEST_ROOT}/identity.tmp"
+mv "${TEST_ROOT}/identity.tmp" "${TEST_ROOT}/tampered-identity-evidence/identity.json"
+expect_verify_failure cordium cordium-pass "${TEST_ROOT}/tampered-identity-evidence"
+
+cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/tampered-kubeconfig-evidence"
+jq '.server = "https://10.1.0.199:6443"' "${TEST_ROOT}/tampered-kubeconfig-evidence/kubeconfig.json" \
+  >"${TEST_ROOT}/kubeconfig.tmp"
+mv "${TEST_ROOT}/kubeconfig.tmp" "${TEST_ROOT}/tampered-kubeconfig-evidence/kubeconfig.json"
+expect_verify_failure cordium cordium-pass "${TEST_ROOT}/tampered-kubeconfig-evidence"
+
+cp -R "${TEST_ROOT}/cordium-pass-evidence" "${TEST_ROOT}/tampered-digest-evidence"
+awk -F '\t' 'BEGIN { OFS = "\t" } $1 == "script_sha256" { $2 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } { print }' \
+  "${TEST_ROOT}/tampered-digest-evidence/metadata.tsv" >"${TEST_ROOT}/metadata.tmp"
+mv "${TEST_ROOT}/metadata.tmp" "${TEST_ROOT}/tampered-digest-evidence/metadata.tsv"
+expect_verify_failure cordium cordium-pass "${TEST_ROOT}/tampered-digest-evidence"
+
 jq -e '.server == "https://kubernetes-api.homelab.local.stinkyboi.com:6443" and .context == "kubernetes-admin@kubernetes" and .usesOcteliumSessionPlaceholder == true' \
   "${TEST_ROOT}/cordium-pass-evidence/kubeconfig.json" >/dev/null
 jq -e '.user == "homelab-cordium-user" and .userType == "HUMAN" and .sessionType == "CLIENT" and .isConnected == true' \
@@ -253,7 +295,8 @@ script_digest="$(fixture_sha256 "${BOUNDARY_SCRIPT}")"
 catalog_digest="$(fixture_sha256 "${BOUNDARY_CATALOG}")"
 grep -Fxq $'script_sha256\t'"${script_digest}" "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 grep -Fxq $'catalog_sha256\t'"${catalog_digest}" "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
-grep -Fxq $'repository_commit\t'"$("${BOUNDARY_REAL_GIT}" -C "${REPO_ROOT}" rev-parse HEAD)" \
+grep -Fxq $'evidence_id\tcordium-pass' "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
+grep -Fxq $'repository_commit\t'"${reviewed_commit}" \
   "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 grep -Fxq $'failures\t0' "${TEST_ROOT}/cordium-pass-evidence/metadata.tsv"
 if rg -q 'SENSITIVE_(IDENTITY_RAW|DENIED_BODY)_SENTINEL' \
@@ -348,7 +391,7 @@ rg -Fq 'could not inspect repository checkout state' "${TEST_ROOT}/git-status-er
 CI_OUTPUT="${TEST_ROOT}/ci.out"
 if CI=true GITHUB_ACTIONS=false PATH="${FAKE_BIN}:${PATH}" \
   "${BOUNDARY_SCRIPT}" --role cordium --kubeconfig "${KUBECONFIG_FIXTURE}" \
-    --evidence-dir "${TEST_ROOT}/ci-evidence" >"${CI_OUTPUT}" 2>&1; then
+    --evidence-dir "${TEST_ROOT}/ci-evidence" --evidence-id ci-evidence >"${CI_OUTPUT}" 2>&1; then
   echo "live boundary fixture unexpectedly ran in CI" >&2
   exit 1
 fi

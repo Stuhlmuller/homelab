@@ -6,6 +6,9 @@ ROLE=""
 KUBECONFIG_PATH=""
 KUBE_CONTEXT=""
 EVIDENCE_DIR=""
+EVIDENCE_ID=""
+REVIEWED_COMMIT=""
+VERIFY_ONLY="false"
 NAMESPACE="cordium"
 REQUEST_TIMEOUT="15s"
 STATUS_TIMEOUT_SECONDS=15
@@ -20,7 +23,12 @@ EXPECTED_CORDIUM_AUTH_PROXY_SOCKET="/var/run/octelium-proxy.sock"
 usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-kubernetes-boundary-e2e.sh \
-  --role cordium|owner --kubeconfig PATH --evidence-dir ABSOLUTE_PATH [options]
+  --role cordium|owner --kubeconfig PATH --evidence-dir ABSOLUTE_PATH \
+  --evidence-id ID [options]
+
+       scripts/octelium-kubernetes-boundary-e2e.sh --verify \
+  --role cordium|owner --evidence-dir ABSOLUTE_PATH --evidence-id ID \
+  --reviewed-commit SHA
 
 Run the live Octelium Kubernetes authorization matrix through an already-active
 HUMAN/CLIENT session. Run the cordium role inside a homelab-cordium-user
@@ -32,6 +40,10 @@ Options:
   --kubeconfig PATH       Required Octelium-generated kubeconfig.
   --context NAME          Optional; must be kubernetes-admin@kubernetes.
   --evidence-dir PATH     Required empty private directory outside this repo.
+  --evidence-id ID        Required unique run identifier using letters, digits,
+                          dots, underscores, or hyphens.
+  --reviewed-commit SHA   Required exact commit in verification mode.
+  --verify                Verify existing evidence without live requests.
   --domain DOMAIN         Octelium Cluster domain. Default: stinkyboi.com.
   --namespace NAME        Cordium namespace. Default: cordium.
   -h, --help              Show this help.
@@ -64,6 +76,20 @@ while [ "$#" -gt 0 ]; do
       [ "$#" -ge 2 ] || die "--evidence-dir requires a value"
       EVIDENCE_DIR="$2"
       shift 2
+      ;;
+    --evidence-id)
+      [ "$#" -ge 2 ] || die "--evidence-id requires a value"
+      EVIDENCE_ID="$2"
+      shift 2
+      ;;
+    --reviewed-commit)
+      [ "$#" -ge 2 ] || die "--reviewed-commit requires a value"
+      REVIEWED_COMMIT="$2"
+      shift 2
+      ;;
+    --verify)
+      VERIFY_ONLY="true"
+      shift
       ;;
     --domain)
       [ "$#" -ge 2 ] || die "--domain requires a value"
@@ -107,18 +133,30 @@ if [ "${#NAMESPACE}" -gt 63 ] ||
   ! [[ "${NAMESPACE}" =~ ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$ ]]; then
   die "--namespace must be a Kubernetes DNS label"
 fi
+if [ -z "${EVIDENCE_ID}" ] || [ "${#EVIDENCE_ID}" -gt 128 ] ||
+  ! [[ "${EVIDENCE_ID}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+  die "--evidence-id must be 1-128 letters, digits, dots, underscores, or hyphens"
+fi
 
-[ -f "${KUBECONFIG_PATH}" ] || die "kubeconfig is missing: ${KUBECONFIG_PATH:-<unset>}"
 case "${EVIDENCE_DIR}" in
   /*) ;;
   *) die "--evidence-dir must be an absolute path" ;;
 esac
+if [ "${VERIFY_ONLY}" != "true" ]; then
+  [ -f "${KUBECONFIG_PATH}" ] || die "kubeconfig is missing: ${KUBECONFIG_PATH:-<unset>}"
+fi
 
-for required_command in git jq kubectl octelium; do
+required_commands=(git jq)
+if [ "${VERIFY_ONLY}" != "true" ]; then
+  required_commands+=(kubectl octelium)
+fi
+for required_command in "${required_commands[@]}"; do
   command -v "${required_command}" >/dev/null 2>&1 || die "missing required command: ${required_command}"
 done
-if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
-  die "live HUMAN identity evidence must not run in CI"
+if [ "${VERIFY_ONLY}" != "true" ]; then
+  if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+    die "live HUMAN identity evidence must not run in CI"
+  fi
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -135,6 +173,105 @@ CATALOG_PATH="${REPO_ROOT}/docs/examples/octelium/homelab-services.yaml"
 if ! command -v sha256sum >/dev/null 2>&1 && ! command -v shasum >/dev/null 2>&1; then
   die "missing required command: sha256sum or shasum"
 fi
+
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum -- "$1" | awk '{print $1}'
+  else
+    shasum -a 256 -- "$1" | awk '{print $1}'
+  fi
+}
+
+verify_boundary_evidence() {
+  local metadata="${EVIDENCE_DIR}/metadata.tsv" summary="${EVIDENCE_DIR}/summary.tsv"
+  local identity="${EVIDENCE_DIR}/identity.json" kubeconfig="${EVIDENCE_DIR}/kubeconfig.json"
+  local script_sha256 catalog_sha256 metadata_checks summary_checks expected_server
+
+  [ -d "${EVIDENCE_DIR}" ] || die "evidence directory is missing: ${EVIDENCE_DIR}"
+  for evidence_file in "${metadata}" "${summary}" "${identity}" "${kubeconfig}"; do
+    [ -s "${evidence_file}" ] || die "required evidence is empty or missing: ${evidence_file}"
+  done
+  [[ "${REVIEWED_COMMIT}" =~ ^[0-9a-f]{40}$ ]] || die "--reviewed-commit must be a full lowercase SHA"
+  [ "$(git -C "${REPO_ROOT}" rev-parse HEAD)" = "${REVIEWED_COMMIT}" ] ||
+    die "the verifier checkout is not the reviewed commit"
+
+  script_sha256="$(sha256_file "${BOUNDARY_SCRIPT_PATH}")"
+  catalog_sha256="$(sha256_file "${CATALOG_PATH}")"
+  [[ "${script_sha256}" =~ ^[0-9a-f]{64}$ ]] || die "could not digest the reviewed boundary script"
+  [[ "${catalog_sha256}" =~ ^[0-9a-f]{64}$ ]] || die "could not digest the reviewed catalog"
+
+  metadata_checks="$(
+    awk -F '\t' \
+      -v role="${ROLE}" \
+      -v user="${EXPECTED_USER}" \
+      -v domain="${DOMAIN}" \
+      -v expected_namespace="${NAMESPACE}" \
+      -v evidence_id="${EVIDENCE_ID}" \
+      -v commit="${REVIEWED_COMMIT}" \
+      -v script_sha256="${script_sha256}" \
+      -v catalog_sha256="${catalog_sha256}" '
+        NF != 2 || ($1 in seen) { invalid = 1 }
+        !($1 in seen) { key_count++ }
+        { seen[$1] = 1; value[$1] = $2 }
+        END {
+          timestamp = "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+          if (invalid || NR != 12 ||
+              value["role"] != role || value["expected_user"] != user ||
+              value["domain"] != domain || value["namespace"] != expected_namespace ||
+              value["evidence_id"] != evidence_id ||
+              value["repository_commit"] != commit ||
+              value["script_sha256"] != script_sha256 ||
+              value["catalog_sha256"] != catalog_sha256 ||
+              value["started_at"] !~ timestamp || value["completed_at"] !~ timestamp ||
+              value["checks"] !~ /^[1-9][0-9]*$/ || value["failures"] != "0" ||
+              key_count != 12) exit 1
+          print value["checks"]
+        }
+      ' "${metadata}"
+  )" || die "metadata does not match this reviewed run"
+
+  summary_checks="$(
+    awk -F '\t' -v role="${ROLE}" '
+      NR == 1 {
+        if ($0 != "id\trole\texpectation\tresult\texit_code\tcheck") invalid = 1
+        next
+      }
+      {
+        count++
+        if (NF != 6 || $1 != sprintf("%03d", count) || $2 != role ||
+            $3 !~ /^(allowed|allowed-yes|octelium-denied)$/ ||
+            $4 != "PASS" || $5 !~ /^[0-9]+$/ || $6 == "") invalid = 1
+      }
+      END {
+        if (invalid || count == 0) exit 1
+        print count
+      }
+    ' "${summary}"
+  )" || die "summary does not contain the expected passing ${ROLE} run"
+  [ "${summary_checks}" = "${metadata_checks}" ] || die "summary and metadata check counts differ"
+
+  jq -e --arg domain "${DOMAIN}" --arg user "${EXPECTED_USER}" '
+    type == "object" and
+    (keys | sort) == (["domain", "user", "userType", "sessionType", "isConnected"] | sort) and
+    .domain == $domain and .user == $user and .userType == "HUMAN" and
+    .sessionType == "CLIENT" and .isConnected == true
+  ' "${identity}" >/dev/null || die "identity evidence does not match the expected ${ROLE} user"
+
+  expected_server="https://kubernetes-api.homelab.local.${DOMAIN}:6443"
+  jq -e --arg server "${expected_server}" '
+    type == "object" and
+    (keys | sort) == (["server", "context", "usesOcteliumSessionPlaceholder"] | sort) and
+    .server == $server and .context == "kubernetes-admin@kubernetes" and
+    .usesOcteliumSessionPlaceholder == true
+  ' "${kubeconfig}" >/dev/null || die "kubeconfig evidence does not match the private Octelium Service"
+}
+
+if [ "${VERIFY_ONLY}" = "true" ]; then
+  verify_boundary_evidence
+  printf 'Octelium Kubernetes boundary evidence verified for %s (%s).\n' "${ROLE}" "${EVIDENCE_ID}"
+  exit 0
+fi
+
 umask 077
 mkdir -p -- "${EVIDENCE_DIR}"
 EVIDENCE_DIR="$(cd "${EVIDENCE_DIR}" && pwd -P)"
@@ -153,14 +290,6 @@ CHECKS=0
 FAILURES=0
 LAST_STDOUT=""
 
-sha256_file() {
-  if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum -- "$1" | awk '{print $1}'
-  else
-    shasum -a 256 -- "$1" | awk '{print $1}'
-  fi
-}
-
 if ! SCRIPT_SHA256="$(sha256_file "${BOUNDARY_SCRIPT_PATH}")" ||
   ! CATALOG_SHA256="$(sha256_file "${CATALOG_PATH}")"; then
   die "could not digest the boundary script and catalog"
@@ -171,8 +300,8 @@ if ! [[ "${SCRIPT_SHA256}" =~ ^[0-9a-f]{64}$ ]] ||
 fi
 
 printf 'id\trole\texpectation\tresult\texit_code\tcheck\n' >"${SUMMARY_FILE}"
-printf 'started_at\t%s\nrole\t%s\nexpected_user\t%s\ndomain\t%s\nnamespace\t%s\nrepository_commit\t%s\nscript_sha256\t%s\ncatalog_sha256\t%s\n' \
-  "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "${ROLE}" "${EXPECTED_USER}" "${DOMAIN}" "${NAMESPACE}" \
+printf 'started_at\t%s\nrole\t%s\nexpected_user\t%s\ndomain\t%s\nnamespace\t%s\nevidence_id\t%s\nrepository_commit\t%s\nscript_sha256\t%s\ncatalog_sha256\t%s\n' \
+  "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "${ROLE}" "${EXPECTED_USER}" "${DOMAIN}" "${NAMESPACE}" "${EVIDENCE_ID}" \
   "$(git -C "${REPO_ROOT}" rev-parse HEAD)" "${SCRIPT_SHA256}" "${CATALOG_SHA256}" \
   >"${EVIDENCE_DIR}/metadata.tsv"
 

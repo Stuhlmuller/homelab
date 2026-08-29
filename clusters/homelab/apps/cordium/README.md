@@ -197,10 +197,12 @@ CronJobs and Jobs. It permits only the matching five discovery endpoints.
 ```sh
 chmod 0600 "$KUBECONFIG"
 cordium_evidence="${TMPDIR:-/tmp}/octelium-cordium-boundary-evidence"
+boundary_evidence_id="PASTE_THE_EXACT_boundary_workspace_VALUE"
 scripts/octelium-kubernetes-boundary-e2e.sh \
   --role cordium \
   --kubeconfig "$KUBECONFIG" \
-  --evidence-dir "$cordium_evidence"
+  --evidence-dir "$cordium_evidence" \
+  --evidence-id "$boundary_evidence_id"
 ```
 
 First require `scripts/octelium-e2e-check.sh` at this exact commit to report
@@ -217,15 +219,17 @@ session cannot start another authentication flow; an existing database session
 may refresh its token. The policy permits allowlisted reads in any one explicit
 namespace and denies all-namespaces reads. The script accepts only kubectl's
 exact v0.35 rendering `Error from server (Forbidden): Octelium: Unauthorized
-request`; denied response bodies are discarded. Private metadata records exact
-reviewed commit, script SHA-256 digest, and catalog SHA-256 digest.
+request`; denied response bodies are discarded. Private metadata records the
+unique Workspace evidence ID, exact reviewed commit, script SHA-256 digest,
+and catalog SHA-256 digest.
 
 Exit without deleting the Workspace, then follow the canonical
 [private Kubernetes evidence procedure](../../../../docs/octelium.md#private-kubernetes-access).
-It exports with `cordium cp -r`, verifies the exact reviewed commit, digests,
-and zero-failure completion, retains both role results on encrypted operator
-storage, and deletes the Workspace idempotently. Catalog equality and the
-jq/CEL fixture are prerequisites and drift checks, not enforcement proof.
+It exports with `cordium cp -r`, verifies the expected role, user, Workspace
+evidence ID, exact identity and kubeconfig JSON, reviewed commit, recomputed
+digests, and zero-failure summary, retains both role results on encrypted
+operator storage, and deletes the Workspace idempotently. Catalog equality and
+the jq/CEL fixture are prerequisites and drift checks, not enforcement proof.
 
 ## Validation
 
