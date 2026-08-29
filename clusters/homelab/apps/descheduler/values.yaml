@@ -15,4 +15,4 @@ deschedulerPolicy:
         deschedule:
           enabled:
             - RemovePodsViolatingInterPodAntiAffinity
-schedule: "*/30 * * * *"
+deschedulingInterval: 30m
