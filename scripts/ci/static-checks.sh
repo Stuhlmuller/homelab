@@ -753,7 +753,26 @@ fi
 terragrunt --log-disable --working-dir IaC/live/argocd-apps/openclaw \
   render --json --write=false --no-color |
   jq -e '
-    .inputs.manifest.spec.sources == [
+    .inputs.manifest as $application |
+    ($application | keys | sort) == ["apiVersion", "kind", "metadata", "spec"] and
+    $application.apiVersion == "argoproj.io/v1alpha1" and
+    $application.kind == "Application" and
+    $application.metadata == {
+      "name": "openclaw",
+      "namespace": "argocd",
+      "labels": {
+        "app.kubernetes.io/managed-by": "terragrunt",
+        "app.kubernetes.io/part-of": "homelab"
+      }
+    } and
+    ($application.spec | keys | sort) == ["destination", "info", "project", "sources", "syncPolicy"] and
+    $application.spec.project == "homelab-workloads" and
+    $application.spec.destination == {
+      "name": "",
+      "server": "https://kubernetes.default.svc",
+      "namespace": "ai"
+    } and
+    $application.spec.sources == [
       {
         "repoURL": "https://bjw-s-labs.github.io/helm-charts",
         "chart": "app-template",
@@ -777,8 +796,23 @@ terragrunt --log-disable --working-dir IaC/live/argocd-apps/openclaw \
         "path": "clusters/homelab/apps/openclaw",
         "kustomize": {}
       }
-    ]
+    ] and
+    $application.spec.syncPolicy == {
+      "automated": {
+        "allowEmpty": false,
+        "enabled": true,
+        "prune": true,
+        "selfHeal": true
+      },
+      "syncOptions": ["CreateNamespace=true", "ServerSideApply=true"],
+      "retry": {
+        "limit": "5",
+        "backoff": {"duration": "30s", "factor": "2", "maxDuration": "2m"}
+      }
+    }
   ' >/dev/null
+yq ea -o=json -I=0 '[select(. != null)]' .argocd-values-ref-placeholder.yaml |
+  jq -e 'length == 0' >/dev/null
 yq -o=json '.' "$openclaw_dir/kustomization.yaml" |
   jq -e '
     (keys | sort) == ["apiVersion", "kind", "resources"] and
@@ -860,9 +894,12 @@ yq -o=json '.' "$openclaw_values" |
     $controller.initContainers."bootstrap-config" as $bootstrap |
     $controller.containers.app as $app |
     (keys | sort) == ["controllers", "persistence", "service", "serviceAccount"] and
+    .serviceAccount == {"openclaw": {}} and
     (.controllers | keys) == ["openclaw"] and
+    $controller.serviceAccount == {"identifier": "openclaw"} and
     ($controller.initContainers | keys | sort) == ["bootstrap-config", "operator-toolbox"] and
     ($controller.containers | keys | sort) == ["app", "proxy"] and
+    $controller.pod.automountServiceAccountToken == false and
     $controller.pod.volumes == null and
     ([$controller.initContainers[], $controller.containers[]] |
       all(.[]; .envFrom == null and .volumeMounts == null)) and
@@ -910,16 +947,60 @@ yq -o=json '.' "$openclaw_values" |
       $app.env.OPENCLAW_CONFIG_PATH, $app.env.OPENCLAW_HOME, $app.env.OPENCLAW_STATE_DIR,
       $app.env.OPENCLAW_WORKSPACE_DIR, $app.env.PATH] | all(.[]; type == "string")) and
     $controller.containers.proxy.env == null and
-    (.persistence | keys | sort) == [
-      "codex-runtime",
-      "config",
-      "operator-nix-store",
-      "operator-toolbox",
-      "plugin-cache",
-      "plugin-extensions"
-    ] and
-    all(.persistence[]; (.type // "") != "secret") and
-    .persistence.config.advancedMounts.openclaw.proxy == null
+    .persistence == {
+      "config": {
+        "enabled": true,
+        "storageClass": "nfs-default",
+        "size": "10Gi",
+        "accessMode": "ReadWriteOnce",
+        "advancedMounts": {"openclaw": {
+          "app": [{"path": "/data"}],
+          "bootstrap-config": [{"path": "/data"}]
+        }}
+      },
+      "plugin-cache": {
+        "enabled": true,
+        "type": "emptyDir",
+        "advancedMounts": {"openclaw": {
+          "app": [{"path": "/data/openclaw/npm"}],
+          "bootstrap-config": [{"path": "/data/openclaw/npm"}]
+        }}
+      },
+      "plugin-extensions": {
+        "enabled": true,
+        "type": "emptyDir",
+        "advancedMounts": {"openclaw": {
+          "app": [{"path": "/data/openclaw/extensions"}],
+          "bootstrap-config": [{"path": "/data/openclaw/extensions"}]
+        }}
+      },
+      "codex-runtime": {
+        "enabled": true,
+        "type": "emptyDir",
+        "sizeLimit": "2Gi",
+        "advancedMounts": {"openclaw": {
+          "app": [{"path": "/data/openclaw/agents/main/agent/codex-home"}]
+        }}
+      },
+      "operator-toolbox": {
+        "enabled": true,
+        "type": "emptyDir",
+        "advancedMounts": {"openclaw": {
+          "operator-toolbox": [{"path": "/toolbox"}],
+          "app": [{"path": "/toolbox", "readOnly": true}],
+          "bootstrap-config": [{"path": "/toolbox", "readOnly": true}]
+        }}
+      },
+      "operator-nix-store": {
+        "enabled": true,
+        "type": "emptyDir",
+        "advancedMounts": {"openclaw": {
+          "operator-toolbox": [{"path": "/nix-shared"}],
+          "app": [{"path": "/nix"}],
+          "bootstrap-config": [{"path": "/nix"}]
+        }}
+      }
+    }
   ' >/dev/null
 if rg -q 'GITHUB_APP_|github-app/(id|installation-id|private-key)|openclaw-github-app-private-key' "$openclaw_dir" --glob '*.{yaml,yml}'; then
   echo "OpenClaw must not materialize GitHub App credentials while its sandbox is disabled" >&2
