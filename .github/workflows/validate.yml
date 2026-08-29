@@ -6,6 +6,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "43 3 * * 5"
 
 permissions:
   contents: read
@@ -13,6 +15,7 @@ permissions:
 jobs:
   repo:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -48,3 +51,6 @@ jobs:
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh
+
+      - name: Scan deployable images
+        run: nix develop --command bash scripts/ci/image-vulnerability-scan.sh

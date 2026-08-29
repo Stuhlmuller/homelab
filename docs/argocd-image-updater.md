@@ -9,6 +9,46 @@ OctoBot remains limited to `2.1.1` in `renovate.json` because `2.1.13` rejects
 the retained PVC-backed `config.trading.paused` value. Other compatibility and
 stateful migration decisions happen during normal pull-request review.
 
+## Vulnerability Scanning
+
+`scripts/ci/image-vulnerability-scan.sh` extracts exact digest-pinned images
+from repository-owned Kubernetes YAML, Helm values, and operator scripts. The
+required `validate` job scans each exact image whose occurrence count increases
+in a change for fixable HIGH and CRITICAL vulnerabilities. Reusing a vulnerable
+baseline digest in another workload is therefore blocked. The weekly run scans
+the complete extracted inventory so newly published advisories are detected
+without a repository change. Existing vulnerable images remain visible in the
+weekly baseline without blocking unrelated pull requests.
+
+Run the same checks locally:
+
+```sh
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --list
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh
+```
+
+Temporary exceptions belong in `.trivyignore.yaml`. Each exception must name
+the exact package PURL, link the GitHub issue accepting the risk, and expire.
+Trivy stops suppressing an expired finding, and the wrapper also rejects
+expired or unscoped entries. A PURL exception applies to that package across
+images, so keep its issue scope and lifetime narrow.
+
+The locked Nix input currently supplies Trivy `0.69.3`, which predates the fix
+for [CVE-2026-55092](https://github.com/aquasecurity/trivy/security/advisories/GHSA-mcj4-mphf-j9ff).
+Until the Nix toolchain update tracked by #888 supplies `0.71.1` or newer, the
+wrapper scans from an empty directory, ignores repository configuration,
+removes registry override variables, and uses the trusted default database
+source. It also forces the cluster's `linux/amd64` platform.
+
+The extractor does not invent image names for remote Helm chart defaults that
+declare only a digest. Make those chart image repositories and tags explicit
+before treating #791 as complete. SBOM and signature verification remain
+separate follow-up work under that issue.
+
+Rollback by reverting the scanner, workflow, ignore file, and Nix package
+change; the check writes only temporary CI/local cache and never changes live
+cluster state.
+
 ## Why Image Updater Was Retired
 
 Argo CD Image Updater had been unable to push since May 2026 because its GitHub
