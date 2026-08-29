@@ -268,7 +268,7 @@ git -C /workspace/repo remote get-url origin
 octelium config kubernetes-api.homelab --domain stinkyboi.com
 # Export the KUBECONFIG path printed above.
 chmod 0600 "$KUBECONFIG"
-kubectl --request-timeout=15s get nodes
+kubectl --request-timeout=15s -n cordium get pods
 exit
 ```
 
