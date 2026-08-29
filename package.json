@@ -1,0 +1,13 @@
+{
+  "name": "homelab-release-automation",
+  "private": true,
+  "engines": {
+    "node": "24.20.0"
+  },
+  "packageManager": "npm@11.19.0",
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/release-notes-generator": "14.1.1",
+    "semantic-release": "25.0.9"
+  }
+}
