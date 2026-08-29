@@ -686,6 +686,327 @@
       ],
       "title": "Grafana Scrape Health",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 28
+      },
+      "id": 9,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(max by (node) (kube_node_status_condition{node=\"zimaboard-1\",condition=\"Ready\",status=\"true\"} == 1)) or vector(0)",
+          "instant": true,
+          "legendFormat": "Ready control-plane nodes",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Octelium Control-plane Capacity",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 2
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 28
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "sum(max by (node) (kube_node_status_condition{node=~\"zimaboard-0|zimaboard-2\",condition=\"Ready\",status=\"true\"} == 1)) or vector(0)",
+          "instant": true,
+          "legendFormat": "Ready dataplane nodes",
+          "range": false,
+          "refId": "A"
+        }
+      ],
+      "title": "Octelium Dataplane Capacity",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 600
+              },
+              {
+                "color": "red",
+                "value": 900
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 28
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "time() - max(kube_cronjob_status_last_successful_time{namespace=\"monitoring\",cronjob=\"octelium-public-grpc-probe\"}) or vector(86400)",
+          "instant": true,
+          "legendFormat": "Public gRPC",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "time() - max(kube_cronjob_status_last_successful_time{namespace=\"monitoring\",cronjob=\"octelium-unauthorized-route-probe\"}) or vector(86400)",
+          "instant": true,
+          "legendFormat": "Unauthorized route",
+          "range": false,
+          "refId": "B"
+        }
+      ],
+      "title": "Octelium Public Contract Age",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "id": 12,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "((1 - kube_pod_status_ready{namespace=\"octelium\",condition=\"true\"}) > 0 unless on (namespace, pod) kube_pod_deletion_timestamp{namespace=\"octelium\"}) * on (namespace, pod) group_left(label_octelium_com_svc) kube_pod_labels{namespace=\"octelium\",label_octelium_com_component=\"svc\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Active proxy not Ready",
+          "range": false,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(time() - kube_pod_deletion_timestamp{namespace=\"octelium\"} > 900) * on (namespace, pod) group_left(label_octelium_com_svc) kube_pod_labels{namespace=\"octelium\",label_octelium_com_component=\"svc\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Stale terminating",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "(kube_deployment_spec_replicas{namespace=\"octelium\"} > 0 and on (namespace, deployment) kube_deployment_status_replicas_available{namespace=\"octelium\"} < 1) or (kube_deployment_spec_replicas{namespace=\"octelium\"} > 0 unless on (namespace, deployment) kube_deployment_status_replicas_available{namespace=\"octelium\"})",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "Deployment unavailable",
+          "range": false,
+          "refId": "C"
+        }
+      ],
+      "title": "Octelium Runtime Degradation",
+      "type": "table"
     }
   ],
   "preload": false,

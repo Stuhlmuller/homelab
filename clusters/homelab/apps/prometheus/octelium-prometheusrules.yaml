@@ -1,0 +1,146 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: octelium-runtime-health
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: octelium-runtime-health
+    app.kubernetes.io/part-of: octelium
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  groups:
+    - name: homelab.octelium
+      interval: 1m
+      rules:
+        - alert: OcteliumControlPlaneRoleCapacityMissing
+          expr: |
+            (
+              1 -
+              (
+                sum(
+                  max by (node) (
+                    kube_node_status_condition{
+                      node="zimaboard-1",
+                      condition="Ready",
+                      status="true"
+                    } == 1
+                  )
+                )
+                or vector(0)
+              )
+            ) > 0
+            and on()
+            (max(up{job="kube-state-metrics"}) == 1)
+          for: 5m
+          labels:
+            severity: critical
+            managed_by: prometheus-rule
+            app: octelium
+          annotations:
+            summary: Octelium has no Ready control-plane role capacity.
+            description: The committed Octelium control-plane node zimaboard-1 has not been Ready for at least five minutes.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/octelium.md#runtime-health
+        - alert: OcteliumDataplaneRoleCapacityMissing
+          expr: |
+            (
+              2 -
+              (
+                sum(
+                  max by (node) (
+                    kube_node_status_condition{
+                      node=~"zimaboard-0|zimaboard-2",
+                      condition="Ready",
+                      status="true"
+                    } == 1
+                  )
+                )
+                or vector(0)
+              )
+            ) > 0
+            and on()
+            (max(up{job="kube-state-metrics"}) == 1)
+          for: 5m
+          labels:
+            severity: critical
+            managed_by: prometheus-rule
+            app: octelium
+          annotations:
+            summary: Octelium is missing committed dataplane role capacity.
+            description: Fewer than both committed Octelium dataplane nodes, zimaboard-0 and zimaboard-2, have been Ready for at least five minutes.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/octelium.md#runtime-health
+        - alert: OcteliumServiceProxyStaleTerminating
+          expr: |
+            (
+              time() - kube_pod_deletion_timestamp{namespace="octelium"} > 900
+            )
+            * on (namespace, pod)
+            group_left(label_octelium_com_svc)
+            kube_pod_labels{
+              namespace="octelium",
+              label_octelium_com_component="svc"
+            }
+          for: 5m
+          labels:
+            severity: warning
+            managed_by: prometheus-rule
+            app: octelium
+          annotations:
+            summary: Octelium service proxy {{ $labels.pod }} is stale terminating.
+            description: Service proxy {{ $labels.label_octelium_com_svc }} has had a deletion timestamp for more than 20 minutes including the alert pending period.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/octelium.md#runtime-health
+        - alert: OcteliumPublicGrpcProbeStale
+          expr: |
+            (
+              (
+                time() - kube_cronjob_status_last_successful_time{
+                  namespace="monitoring",
+                  cronjob="octelium-public-grpc-probe"
+                } > 900
+              )
+              or
+              absent(
+                kube_cronjob_status_last_successful_time{
+                  namespace="monitoring",
+                  cronjob="octelium-public-grpc-probe"
+                }
+              )
+            )
+            and on()
+            (max(up{job="kube-state-metrics"}) == 1)
+          for: 5m
+          labels:
+            severity: critical
+            managed_by: prometheus-rule
+            app: octelium
+          annotations:
+            summary: The public Octelium gRPC contract has no recent successful probe.
+            description: No successful Cloudflare HTTP/2, HTTP 200, grpc-status 16 probe has completed in the last 15 minutes.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/octelium.md#runtime-health
+        - alert: OcteliumUnauthorizedRouteProbeStale
+          expr: |
+            (
+              (
+                time() - kube_cronjob_status_last_successful_time{
+                  namespace="monitoring",
+                  cronjob="octelium-unauthorized-route-probe"
+                } > 900
+              )
+              or
+              absent(
+                kube_cronjob_status_last_successful_time{
+                  namespace="monitoring",
+                  cronjob="octelium-unauthorized-route-probe"
+                }
+              )
+            )
+            and on()
+            (max(up{job="kube-state-metrics"}) == 1)
+          for: 5m
+          labels:
+            severity: critical
+            managed_by: prometheus-rule
+            app: octelium
+          annotations:
+            summary: The Octelium unauthorized-route contract has no recent successful probe.
+            description: Unauthenticated NOFX requests have not returned HTTP 401 with x-octelium-unauthorized=true in the last 15 minutes.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/octelium.md#runtime-health

@@ -3,6 +3,8 @@ grafana:
 nodeExporter:
   enabled: false
 kube-state-metrics:
+  metricLabelsAllowlist:
+    - pods=[octelium.com/component,octelium.com/svc]
   podAnnotations:
     homelab.rst.io/recovery-revision: "2026-08-21"
 prometheusOperator:

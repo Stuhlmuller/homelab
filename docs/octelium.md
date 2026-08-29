@@ -312,6 +312,66 @@ Octelium Service, and reviewed external callbacks use the `octelium-public`
 tunnel with path-limited Istio routes. If the gate fails, treat the failure
 output as the repair work queue.
 
+## Runtime Health
+
+Argo CD health covers only resources captured in git. Octelium creates other
+service-proxy Deployments and Pods dynamically, so a Healthy parent Application
+does not prove that the access plane works. The Homelab Overview dashboard and
+`octelium-runtime-health` PrometheusRule therefore use kube-state-metrics to
+cover the runtime boundary:
+
+- `zimaboard-1` must remain Ready for the committed control-plane role;
+- both `zimaboard-0` and `zimaboard-2` must remain Ready for the committed
+  dataplane role and its documented capacity;
+- Pods labeled `octelium.com/component=svc` alert after they have remained
+  terminating for 20 minutes, including the alert pending period;
+- the existing generic Kubernetes Deployment alert remains the sole alert for
+  unavailable Deployments. The dashboard lists unavailable Octelium
+  Deployments and uses the generated proxy Pod's `octelium.com/component` and
+  `octelium.com/svc` labels to add active unready and stale terminating proxies
+  without sending a duplicate alert;
+- `octelium-public-grpc-probe` requires Cloudflare HTTP/2, HTTP `200`, and
+  `grpc-status: 16` through public DNS; and
+- `octelium-unauthorized-route-probe` requires unauthenticated NOFX `/` and
+  `/api/health` requests to return HTTP `401` with
+  `x-octelium-unauthorized: true`.
+
+The two credential-free probes run every five minutes in `monitoring`, do not
+mount a service-account token, and resolve through Cloudflare DNS-over-HTTPS at
+`1.1.1.1`. Their last-success timestamps come from kube-state-metrics. Missing
+or older-than-15-minute timestamps alert after another five minutes. This
+tests the public transport and authorization result rather than treating DNS,
+the router lease, or an Argo status as a proxy for end-to-end health.
+
+Start runtime triage with read-only state:
+
+```sh
+kubectl get nodes -l octelium.com/node-mode-controlplane
+kubectl get nodes -l octelium.com/node-mode-dataplane
+kubectl -n octelium get deploy,pod -l octelium.com/component=svc -o wide
+kubectl -n monitoring get cronjob \
+  octelium-public-grpc-probe octelium-unauthorized-route-probe
+kubectl -n monitoring get jobs --sort-by=.metadata.creationTimestamp
+kubectl -n monitoring logs job/<failed-probe-job>
+scripts/octelium-e2e-check.sh
+```
+
+For a proxy stuck terminating, inspect its events, node state, finalizers, and
+owning ReplicaSet or Deployment. Fix the repository-owned scheduler, node, or
+controller cause; do not force-delete the Pod. For a public probe failure,
+use the Job log to distinguish HTTP/2/gRPC transport from an authorization
+regression, then use the existing router, Cloudflare, catalog, and generated
+proxy checks in this runbook.
+
+Recovery requires the committed role capacity, no stale terminating proxy
+rows, a fresh successful timestamp for both probes, cleared alerts, and a full
+`scripts/octelium-e2e-check.sh` pass. An intentional live failure exercise is
+blocked until an approved maintenance window can safely interrupt the primary
+homelab access plane. Do not create a synthetic auth bypass, remove the WAN
+mapping, drain a role node, or terminate generated proxies only to test these
+alerts; validate firing and recovery during an approved exercise or the next
+real incident.
+
 ## Bootstrap UI Access
 
 The Octelium Cluster domain for this homelab is `stinkyboi.com`. With that
@@ -651,6 +711,8 @@ kubectl kustomize clusters/homelab/apps/octelium
 kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/istio
+kubectl kustomize clusters/homelab/apps/prometheus
+kubectl kustomize clusters/homelab/apps/grafana
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-public-dns.sh

@@ -50,6 +50,33 @@ whether `deluge-console status` can reach `deluged`. This catches Deluge daemon
 state-restore failures that do not make the Kubernetes Pod or Argo CD
 Application unhealthy.
 
+## Octelium Runtime Health
+
+`octelium-prometheusrules.yaml` covers the Octelium runtime that Argo CD cannot
+fully evaluate. It alerts when committed control-plane or dataplane role
+capacity is missing, a generated service-proxy Pod remains terminating, or one
+of the public contract probes has no success in 15 minutes. The role and public
+probe rules only evaluate while kube-state-metrics is successfully scraped;
+its existing availability alert owns telemetry loss.
+
+`octelium-public-probes.yaml` runs separate credential-free checks for the
+public gRPC response and the NOFX unauthenticated-denial contract. The Jobs
+publish no custom metrics. Prometheus reads their standard
+`kube_cronjob_status_last_successful_time` series from kube-state-metrics.
+Kube-state-metrics exports only `octelium.com/component` and
+`octelium.com/svc` for Pods, which keeps the service-proxy join narrow instead
+of exporting every workload label.
+
+Unavailable generated Deployments intentionally remain covered by the existing
+generic Kubernetes Deployment alert. Grafana lists unavailable Octelium
+Deployments and uses the Pod labels to add active unready and stale terminating
+proxies; adding another Prometheus alert for the same replica condition would
+duplicate notifications.
+
+Rollback by reverting the monitoring change so Argo CD prunes both probe
+CronJobs and the rule while kube-state-metrics drops the two-label allowlist;
+verify the Homelab Overview no longer queries those series.
+
 - Backup: covered by the NFS backup gate in `docs/storage-nfs.md`.
 - Restore: restore Prometheus and Alertmanager PVCs before relying on retained
   metrics.
@@ -99,9 +126,17 @@ kubectl kustomize clusters/homelab/apps/prometheus
 After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 
 ```sh
-kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
-kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
+kubectl -n argocd get svc \
+  argocd-application-controller-metrics argocd-repo-server-metrics \
+  argocd-server-metrics
+kubectl -n monitoring get servicemonitor \
+  argocd-application-controller argocd-repo-server argocd-server
 kubectl -n monitoring get prometheusrule argocd-application-health
-kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
-kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl -n monitoring get prometheusrule octelium-runtime-health
+kubectl -n monitoring get cronjob \
+  octelium-public-grpc-probe octelium-unauthorized-route-probe
+kubectl -n monitoring get externalsecret \
+  alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl -n monitoring get secret \
+  alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 ```

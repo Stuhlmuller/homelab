@@ -55,6 +55,10 @@ present. Local admin login remains available through `grafana-admin`.
   entries before recreating them with stable UIDs. This handles first-rollout
   databases that already contain Grafana-generated datasource UIDs.
 - `dashboards/homelab-overview.json` is the default Homelab overview dashboard.
+  Its Octelium section shows committed control-plane and dataplane role
+  capacity, public gRPC and unauthorized-route probe age, and unready or
+  stale-terminating generated service proxies even when their Argo parent is
+  Healthy.
   `dashboards/argocd-overview.json` is the Argo CD GitOps operations
   dashboard. `dashboards/github-pr-status.json` tracks open pull request status
   filters and recent failed GitHub Actions runs. Kustomize packages these

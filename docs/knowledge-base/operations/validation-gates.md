@@ -158,6 +158,9 @@ must pass:
 ```sh
 kubectl -n istio-system get cronjob octelium-api-upnp \
   -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n monitoring get cronjob octelium-public-grpc-probe \
+  octelium-unauthorized-route-probe
+kubectl -n octelium get deploy,pod -l octelium.com/component=svc -o wide
 scripts/octelium-e2e-check.sh
 ```
 
@@ -167,6 +170,16 @@ It accepts only the expected unauthenticated response: HTTP `200` with
 `grpc-status: 16`; generic HTTP responses fail the gate.
 Do not treat the repository-side target change as recovery until the CronJob
 has a recent success and the public probe passes.
+
+Prometheus additionally requires both committed dataplane nodes and the one
+committed control-plane node Ready, alerts on a generated service-proxy Pod
+terminating for 20 minutes, and treats either monitoring CronJob's absent or
+older-than-15-minute last-success metric as a failed public contract. Homelab
+Overview shows those role counts, probe ages, and unready or stale
+terminating generated proxies even when Argo reports the parent Healthy. The
+existing generic Deployment alert remains the only replica-availability alert.
+An intentional live failure/recovery exercise remains blocked until an
+approved maintenance window can interrupt the primary access plane safely.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
