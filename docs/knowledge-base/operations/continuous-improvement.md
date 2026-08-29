@@ -655,11 +655,11 @@ organization-policy blocker is tracked below.
   that OpenClaw supports Docker, SSH, and OpenShell. Talos provides no Docker
   daemon to this pod, and the repository declares neither a dedicated SSH target
   and trust material nor an OpenShell account/runtime. The same audit removed
-  the mutable Discord-plugin fallback:
-  bootstrap now verifies and enables only the exact plugin bundled in the
-  digest-pinned image, without an installer or registry access, and fails startup
-  if it is unavailable. Unused app credentials and persistent state were also
-  removed from the bootstrap and proxy containers.
+  the floating Discord-plugin fallback:
+  bootstrap now installs only the exact image-version official external package
+  from npm into pod-local storage, without ClawHub or a floating fallback, and
+  fails startup if it is unavailable or incompatible. Unused app credentials
+  and persistent state were also removed from the bootstrap and proxy containers.
 - **Risk:** agent execution is contained by the Kubernetes workload, not an
   OpenClaw sandbox. Non-main and scheduled work can access resources available
   inside the pod, including the persistent workspace, operator toolbox, and
