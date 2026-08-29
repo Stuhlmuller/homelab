@@ -25,8 +25,10 @@ The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and applies an operator-owned
 permissions boundary. The boundary caps the user's effective permissions at
 `GetParameter`/`GetParameters` under `/homelab/*` and decrypt/describe access
-to the regional runtime-secret KMS key. Group policy changes therefore cannot
-turn the reader credential into unrelated AWS access.
+to the regional runtime-secret KMS key. An explicit deny blocks requests made
+with temporary STS credentials, preventing a copied long-term key from minting
+a session that survives rotation. Group policy changes therefore cannot turn
+the reader credential into unrelated AWS access.
 
 Use an AWS administrator profile only as the credential selector. Before
 changing trust, create and protect `github-iac-plan` and

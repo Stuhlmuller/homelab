@@ -51,6 +51,9 @@ IaC/operator/**/terragrunt.values.hcl
 __pycache__/
 *.pyc
 plan.out
+plan.json
+*.plan
+*tfplan*
 *.log
 .env
 .env.*
@@ -97,6 +100,10 @@ talos-secrets.yaml
 *.pem
 *.p12
 *.pfx
+*.agekey
+*.jks
+*.kubeconfig
+*.ovpn
 id_rsa
 id_ed25519
 *_rsa

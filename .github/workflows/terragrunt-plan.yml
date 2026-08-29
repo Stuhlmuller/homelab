@@ -45,7 +45,7 @@ jobs:
               .github/workflows/terragrunt-plan.yml|IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
-              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*|scripts/ci/update-pr-plan-description.sh)
+              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*)
                 requires_live_plan=true
                 ;;
             esac
@@ -91,13 +91,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      pull-requests: write
     timeout-minutes: 60
-    env:
-      AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
-      ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
-      ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
     steps:
       - name: Check Out Repository
         # actions/checkout@v5
@@ -122,6 +116,7 @@ jobs:
 
       - name: Verify Live Plan Inputs
         env:
+          AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
@@ -134,28 +129,31 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true
           role-session-name: homelab-terragrunt-plan-${{ github.run_id }}
-          role-to-assume: ${{ env.AWS_PLAN_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
       - name: Run Live Terragrunt Plan
         env:
+          ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
-          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
         run: |
-          nix develop --command bash <<'EOF'
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
+          umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
+          kubectl --request-timeout=15s version >/dev/null
           bash scripts/ci/terragrunt-plan.sh
           EOF
-
-      - name: Update PR Description With Plan
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
-        run: nix develop --command bash scripts/ci/update-pr-plan-description.sh
+          then
+            echo "::error::Live plan failed; detailed output was withheld because this is a public repository. Reproduce it locally."
+            exit 1
+          fi
+          echo "Live plan and policy checks passed; details withheld."
 
   terragrunt-plan-skipped:
     name: Terragrunt Plan Skipped
@@ -165,34 +163,10 @@ jobs:
     needs:
       - static-policy
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      pull-requests: write
+    permissions: {}
     steps:
-      - name: Check Out Repository
-        # actions/checkout@v5
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
-        with:
-          persist-credentials: false
-
-      - name: Write Live Plan Skip Note
-        env:
-          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
-        run: |
-          cat >"${TERRAGRUNT_PLAN_MARKDOWN}" <<'PLAN_NOTE'
-          ## Terragrunt Plan Output
-
-          > Live Terragrunt plan skipped because this pull request did not change the plan workflow, `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper scripts.
-
-          Static and rendered Conftest policies passed in the required gate.
-          PLAN_NOTE
-
-      - name: Update PR Description With Skip Note
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          TERRAGRUNT_PLAN_MARKDOWN: ${{ runner.temp }}/terragrunt-plan.md
-        run: bash scripts/ci/update-pr-plan-description.sh
+      - name: Record Live Plan Skip
+        run: echo "No live Terragrunt plan inputs changed."
 
   terragrunt-gate:
     name: Terragrunt Gate
@@ -228,7 +202,7 @@ jobs:
               exit 1
             }
             test "${SKIP_NOTE_RESULT}" = "skipped" || {
-              echo "::error::Live plan skip note ended ${SKIP_NOTE_RESULT}; expected skipped."
+              echo "::error::Live plan skip check ended ${SKIP_NOTE_RESULT}; expected skipped."
               exit 1
             }
           elif [[ "${TRUSTED_HEAD}" = "true" ]]; then
@@ -237,7 +211,7 @@ jobs:
               exit 1
             }
             test "${SKIP_NOTE_RESULT}" = "success" || {
-              echo "::error::Live plan skip note ended ${SKIP_NOTE_RESULT}."
+              echo "::error::Live plan skip check ended ${SKIP_NOTE_RESULT}."
               exit 1
             }
           else
@@ -246,7 +220,7 @@ jobs:
               exit 1
             }
             test "${SKIP_NOTE_RESULT}" = "skipped" || {
-              echo "::error::Forked pull requests must not update the plan note; got ${SKIP_NOTE_RESULT}."
+              echo "::error::Forked pull requests must skip the live plan check; got ${SKIP_NOTE_RESULT}."
               exit 1
             }
           fi

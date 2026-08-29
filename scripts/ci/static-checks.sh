@@ -15,6 +15,19 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
+if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
+  echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
+  exit 1
+fi
+if rg -q 'show[[:space:]]+-no-color[[:space:]]+.*plan\.out|cat[[:space:]]+"?\$state_list_file"?' scripts/ci/terragrunt-plan.sh; then
+  echo "The public PR plan job must not render live plan or state details." >&2
+  exit 1
+fi
+if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")] | all' \
+  .pre-commit-config.yaml >/dev/null; then
+  echo "Remote pre-commit hooks must be pinned to full commit SHAs." >&2
+  exit 1
+fi
 echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
@@ -56,6 +69,20 @@ echo "::group::Terragrunt generated-unit filters"
 echo "::endgroup::"
 
 echo "::group::Operator OpenTofu validation"
+rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/modules/aws-github-actions-role-policy/main.tf
+rg -Fq 'variable = "aws:TokenIssueTime"' IaC/modules/aws-github-actions-role-policy/main.tf
+for parameter in \
+  '/homelab/external-secrets/aws-ssm/access-key-id' \
+  '/homelab/external-secrets/aws-ssm/secret-access-key'; do
+  parameter_block="$(
+    awk -v target="\"${parameter}\" = {" '
+      index($0, target) { found = 1 }
+      found { print }
+      found && /^    }$/ { exit }
+    ' IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  )"
+  rg -Fq 'reader_access = false' <<<"$parameter_block"
+done
 (
   cd IaC/operator/github-actions-role-policy
   terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
@@ -323,6 +350,9 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
   jq -e '
     [.jobs["static-policy"].steps[] | select(.id == "live-plan-scope")] as $scope |
     [.jobs["static-policy"].steps[] | select(.name == "Run Conftest Policies")] as $conftest |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Verify Live Plan Inputs")] as $plan_inputs |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
+    [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
     (.on | keys) == ["pull_request"] and
     .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review"] and
     .on.pull_request.paths == null and
@@ -332,12 +362,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .jobs["static-policy"].outputs["requires-live-plan"] == "${{ steps.live-plan-scope.outputs.requires-live-plan }}" and
     ($scope | length) == 1 and
     $scope[0].env.BASE_REF == "${{ github.base_ref }}" and
-    ($scope[0].run |
-      contains("git diff --name-only \"origin/${BASE_REF}...HEAD\"") and
-      contains(".github/workflows/terragrunt-plan.yml") and
-      contains("IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego") and
-      contains("scripts/ci/terragrunt-*") and
-      contains("requires-live-plan=${requires_live_plan}")) and
+    ($scope[0].run | type) == "string" and
     ($conftest | length) == 1 and
     .jobs["terragrunt-plan"].needs == ["static-policy"] and
     (.jobs["terragrunt-plan"].if |
@@ -346,18 +371,36 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .jobs["terragrunt-plan"].environment == {"name": "homelab-plan"} and
     .jobs["terragrunt-plan"].permissions == {
       "contents": "read",
-      "id-token": "write",
-      "pull-requests": "write"
+      "id-token": "write"
     } and
+    .jobs["terragrunt-plan"].env == null and
+    ($plan_inputs | length) == 1 and
+    $plan_inputs[0].env == {
+      "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
+    ($aws_credentials | length) == 1 and
+    $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
+    ($live_plan | length) == 1 and
+    $live_plan[0].env == {
+      "ARM_CLIENT_ID": "${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_CLIENT_SECRET": "${{ secrets.AZUREAD_CLIENT_SECRET }}",
+      "ARM_TENANT_ID": "${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}",
+      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
+    ([.jobs["terragrunt-plan"].steps[] |
+      select(.name != "Run Live Terragrunt Plan") |
+      .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     .jobs["terragrunt-plan-skipped"].needs == ["static-policy"] and
     (.jobs["terragrunt-plan-skipped"].if |
       contains("github.event.pull_request.head.repo.full_name == github.repository") and
       contains("needs.static-policy.outputs.requires-live-plan != '\''true'\''")) and
     .jobs["terragrunt-plan-skipped"].environment == null and
-    .jobs["terragrunt-plan-skipped"].permissions == {
-      "contents": "read",
-      "pull-requests": "write"
-    } and
+    .jobs["terragrunt-plan-skipped"].permissions == {} and
+    (.jobs["terragrunt-plan-skipped"].steps | length) == 1 and
+    (. | tostring | contains("update-pr-plan-description") | not) and
+    (. | tostring | contains("pull-requests") | not) and
     ([.jobs | to_entries[] | select(.value.environment != null) | .key]) == ["terragrunt-plan"] and
     .jobs["terragrunt-gate"].if == "${{ always() }}" and
     .jobs["terragrunt-gate"].needs == ["static-policy", "terragrunt-plan", "terragrunt-plan-skipped"] and
@@ -365,11 +408,116 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .jobs["terragrunt-gate"].environment == null and
     (.jobs["terragrunt-gate"] | tostring | contains("secrets") | not) and
     (.jobs["terragrunt-gate"].steps | length) == 1 and
-    (.jobs["terragrunt-gate"].steps[0].run |
-      contains("test \"${STATIC_RESULT}\" = \"success\"") and
-      contains("test \"${LIVE_PLAN_RESULT}\" = \"success\"") and
-      contains("test \"${LIVE_PLAN_RESULT}\" = \"skipped\""))
+    (.jobs["terragrunt-gate"].steps[0].run | type) == "string"
   ' >/dev/null
+scope_body_sha256="$(
+  yq -r '.jobs."static-policy".steps[] | select(.id == "live-plan-scope") | .run' \
+    .github/workflows/terragrunt-plan.yml |
+    shasum -a 256 |
+    cut -d' ' -f1
+)"
+gate_body_sha256="$(
+  yq -r '.jobs."terragrunt-gate".steps[0].run' .github/workflows/terragrunt-plan.yml |
+    shasum -a 256 |
+    cut -d' ' -f1
+)"
+[[ "$scope_body_sha256" == "9479ae825c1cb4bc27377c47c14d0c5e4ff18d3ebb74ce5cf504bb500091fee4" ]] || {
+  echo "Live-plan scope body changed; review it and update its exact security hash." >&2
+  exit 1
+}
+[[ "$gate_body_sha256" == "72b4b48f8151b1c2c778f963c618380e57df259175ce4728d57f870a439fc471" ]] || {
+  echo "Terragrunt gate body changed; review it and update its exact security hash." >&2
+  exit 1
+}
+
+workflow_sha256() {
+  yq -o=json '.' "$1" |
+    jq -cS '.' |
+    shasum -a 256 |
+    cut -d' ' -f1
+}
+
+credentialed_job_inventory="$({
+  while IFS= read -r -d '' workflow; do
+    yq -o=json '.' "$workflow" |
+      jq -r --arg workflow "$workflow" '
+        def has_write($permissions):
+          if ($permissions | type) == "object" then
+            any($permissions[]; . == "write")
+          else
+            $permissions == "write-all"
+          end;
+        def credential_context($text):
+          $text | ascii_downcase |
+          test("(^|[^A-Za-z0-9_])(secrets|github)([^A-Za-z0-9_]|$)");
+
+        . as $document |
+        (.permissions // {}) as $workflow_permissions |
+        ((.env // {}) | tostring) as $workflow_env_text |
+        .jobs | to_entries[] |
+        . as $entry |
+        ($entry.value | tostring) as $job_text |
+        select(
+          ($entry.value.environment? != null) or
+          credential_context($job_text) or
+          credential_context($workflow_env_text) or
+          (($document.on | tostring) | contains("workflow_call")) or
+          has_write($entry.value.permissions // {}) or
+          has_write($workflow_permissions)
+        ) |
+        "\($workflow):\($entry.key)"
+      '
+  done < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+} | LC_ALL=C sort)"
+jq -en '
+  def credential_context($text):
+    $text | ascii_downcase |
+    test("(^|[^A-Za-z0-9_])(secrets|github)([^A-Za-z0-9_]|$)");
+  credential_context("${{ GITHUB [ \"token\" ] }}") and
+  credential_context("${{ SECRETS [ \"NAME\" ] }}") and
+  credential_context("${{ toJSON(GITHUB) }}")
+' >/dev/null
+expected_credentialed_job_inventory="$({
+  printf '%s\n' \
+    '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/homelab-diagnostics.yml:grafana' \
+    '.github/workflows/lint.yml:build' \
+    '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
+    '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
+    '.github/workflows/release.yml:release' \
+    '.github/workflows/release.yml:release-dry-run' \
+    '.github/workflows/terragrunt-apply-request.yml:request' \
+    '.github/workflows/terragrunt-apply.yml:static-policy' \
+    '.github/workflows/terragrunt-apply.yml:terragrunt-apply' \
+    '.github/workflows/terragrunt-plan.yml:static-policy' \
+    '.github/workflows/terragrunt-plan.yml:terragrunt-gate' \
+    '.github/workflows/terragrunt-plan.yml:terragrunt-plan-skipped' \
+    '.github/workflows/terragrunt-plan.yml:terragrunt-plan'
+} | LC_ALL=C sort)"
+[[ "$credentialed_job_inventory" == "$expected_credentialed_job_inventory" ]] || {
+  echo "Credentialed workflow-job inventory changed; review and hash every exact job." >&2
+  diff -u \
+    <(printf '%s\n' "$expected_credentialed_job_inventory") \
+    <(printf '%s\n' "$credentialed_job_inventory") >&2 || true
+  exit 1
+}
+
+while read -r workflow expected_hash; do
+  [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {
+    echo "Credential-bearing workflow changed; review it and update its exact security hash: $workflow" >&2
+    exit 1
+  }
+done <<'EOF'
+.github/workflows/codeql.yml 054c9f0d5c7305fe445b849942924088ee49ca660a3f5f2931ba650b7da471be
+.github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
+.github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
+.github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
+.github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
+.github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
+.github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
+.github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
+.github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
+EOF
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
@@ -430,7 +578,6 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
-      "APPLY_HEAD_SHA",
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
@@ -454,6 +601,10 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
     ([.jobs["terragrunt-apply"].steps | to_entries[] |
       select(.value | tostring | contains("secrets.")) | .key] | min) > 0 and
+    any(.jobs["terragrunt-apply"].steps[];
+      .name == "Resolve Last Successful Apply" and
+      .env.APPLY_HEAD_SHA == "${{ github.sha }}"
+    ) and
     (.jobs["terragrunt-apply"].steps[] | select(.name == "Resolve Last Successful Apply").run |
       contains("--paginate --slurp") and
       contains("branch=main&status=success&per_page=100") and
@@ -600,20 +751,59 @@ yq -e '
 echo "::endgroup::"
 
 echo "::group::Secret scan"
+bash scripts/ci/secret-scan.sh --self-check
 bash scripts/ci/secret-scan.sh
 echo "::endgroup::"
 
 echo "::group::Checkov"
 if command -v checkov >/dev/null 2>&1; then
-  checkov --config-file .checkov.yaml --framework terraform --directory IaC/modules
-  checkov --config-file .checkov.yaml --framework kubernetes --directory clusters
-  checkov --config-file .checkov.yaml --framework secrets --directory .
+  (
+    checkov_output="$(mktemp "${TMPDIR:-/tmp}/homelab-checkov.XXXXXX")"
+    trap 'rm -f "$checkov_output"' EXIT
+
+    run_checkov() {
+      local framework="$1"
+      local directory="$2"
+
+      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" >"$checkov_output" 2>&1; then
+        echo "Checkov ${framework} scan failed; detailed output was withheld to prevent publishing a detected secret." >&2
+        return 1
+      fi
+    }
+
+    run_checkov terraform IaC/modules
+    run_checkov kubernetes clusters
+    run_checkov secrets .
+  )
 elif [[ "${CI:-}" == "true" ]]; then
   echo "checkov is required in CI but was not found in PATH" >&2
   exit 1
 else
   echo "::warning::checkov is not available in this local shell; GitHub Actions still enforces Checkov on Linux."
 fi
+echo "::endgroup::"
+
+echo "::group::Credential rotation script"
+bash -n scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'set +x' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq -- '--cli-input-json "file://$1"' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'KUBECONFIG must be unset' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'f83fb4e86c60ea695e6d7d951d5bfef2ea52a33c87707e5f6e540050d9aa8bce' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'actual_kubernetes_insecure_skip_tls_verify' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'json_excludes_new_credentials' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'ambient_aws_variables' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'live-secret-before.json' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'probe_controller_key "$old_key_id" "$old_secret_access_key" old-key' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'probe_controller_key "$new_access_key_id" "$new_secret_access_key" new-key' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'DenyTemporarySessionCredentials' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'probe_temporary_session_denied' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'duration-seconds 900' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'new-parameters.json' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'cleanup_uncertain_created_key' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'delete_access_key_safely' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'AWS_IGNORE_CONFIGURED_ENDPOINT_URLS=true' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'acquire_rotation_lock' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq 'release_rotation_lock' scripts/rotate-external-secrets-aws-key.sh
 echo "::endgroup::"
 
 echo "::group::Whitespace"

@@ -99,10 +99,12 @@ inputs = {
     "/homelab/external-secrets/aws-ssm/access-key-id" = {
       description   = "AWS access key ID used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/external-secrets/aws-ssm/secret-access-key" = {
       description   = "AWS secret access key used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/github-actions-runner/registration-token" = {
       description   = "Retired GitHub Actions runner token retained as an IaC state tombstone; no workload consumes it."

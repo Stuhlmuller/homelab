@@ -26,4 +26,11 @@ jobs:
       - name: Remove Cloudflare Origin Port
         env:
           CLOUDFLARE_ZONE_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_ZONE_SETTINGS_TOKEN }}
-        run: scripts/octelium-cloudflare-origin-port.sh remove
+        run: |
+          private_log="$(mktemp "${RUNNER_TEMP}/cloudflare-origin-port.XXXXXX")"
+          chmod 600 "$private_log"
+          trap 'rm -f -- "$private_log"' EXIT
+          if ! scripts/octelium-cloudflare-origin-port.sh remove >"$private_log" 2>&1; then
+            echo "::error::Cloudflare origin-port removal failed; rerun it from an approved local operator session for details."
+            exit 1
+          fi

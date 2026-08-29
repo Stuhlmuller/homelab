@@ -85,7 +85,6 @@ jobs:
       id-token: write
     timeout-minutes: 90
     env:
-      APPLY_HEAD_SHA: ${{ github.sha }}
       TERRAGRUNT_ARGOCD_APP: ${{ inputs.argocd_app }}
       TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
     steps:
@@ -119,6 +118,7 @@ jobs:
 
       - name: Resolve Last Successful Apply
         env:
+          APPLY_HEAD_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
@@ -186,9 +186,17 @@ jobs:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
-          nix develop --command bash <<'EOF'
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
+          umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version
+          kubectl --request-timeout=15s version >/dev/null
           bash scripts/ci/terragrunt-apply.sh
           EOF
+          then
+            echo "::error::Production apply failed; detailed output was withheld because this is a public repository. Reproduce it from an approved local operator session."
+            exit 1
+          fi
+          echo "Production apply completed; details withheld."
