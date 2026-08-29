@@ -111,6 +111,20 @@ Upstream migration references:
 - Radarr: <https://wiki.servarr.com/radarr/postgres-setup>
 - Prowlarr: <https://wiki.servarr.com/prowlarr/postgres-setup>
 
+## Version And Upgrade Contract
+
+PostgreSQL is pinned to `14.24` across the active writer, backup job, and
+recovery overlay. Patch upgrades within major version 14 do not convert the
+data directory, but still require a current verified logical backup and a
+restore drill that covers all six Servarr databases. Confirm no backup or
+restore job is active before rollout. After Argo CD reconciles, verify
+`SHOW server_version`, repeated `SELECT 1` queries, Sonarr, Radarr, and Prowlarr
+searches, the next scheduled backup, and 24 hours of database errors, restarts,
+CPU, memory, and latency. Roll back declaratively to the prior digest only while
+the data directory remains compatible; otherwise restore the matched logical
+backup. PostgreSQL 14 reaches upstream end of life on 2026-11-12, so its major
+upgrade is tracked separately.
+
 ## Validation
 
 ### Read-only staging revision

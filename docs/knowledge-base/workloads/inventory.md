@@ -56,6 +56,8 @@ SQL query.
 The clean writable StatefulSet has no active NFS mount and uses a one-time
 old-writer fence. A nightly CronJob writes verified 14-day logical backups to
 the former NFS claim; the sibling recovery overlay fences both before restore.
+PostgreSQL `14.24` is digest-pinned across runtime, backup, and recovery images;
+rollout requires a current verified six-database backup and restore drill.
 
 `n8n-postgres` recovered one replica after a fenced, completion-marked hook
 removed its 2026-08-03 stale lock. The one-shot hook is removed; its explicit
