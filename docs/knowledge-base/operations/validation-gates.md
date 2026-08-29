@@ -46,6 +46,12 @@ the working directory detached from shared state, so the authenticated
 `init -reconfigure` must precede every import, production plan, or apply from
 that directory.
 
+The static gate gives every validator one private `/tmp` root, rejects any path
+that resolves inside the checkout, and deletes it on exit. It does not trust an
+ambient `TMPDIR`. Backend-free operator validation keeps its Terragrunt download
+directory below that root, preventing generated provider state or tool caches
+from entering the checkout or the strict repository secret scan.
+
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
 
