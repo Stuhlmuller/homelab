@@ -60,7 +60,9 @@ the former NFS claim; the sibling recovery overlay fences both before restore.
 `n8n-postgres` recovered one replica after a fenced, completion-marked hook
 removed its 2026-08-03 stale lock. The one-shot hook is removed; its explicit
 retained claim, 30-minute startup and liveness windows, and 120-second shutdown
-grace remain.
+grace remain. PostgreSQL `14.24` is digest-pinned; patch rollout requires a
+current logical dump and paired n8n PVC snapshot, with restore readiness proven
+before the PostgreSQL 14 major-upgrade deadline.
 AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
