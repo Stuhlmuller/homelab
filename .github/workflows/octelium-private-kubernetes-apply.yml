@@ -34,21 +34,18 @@ jobs:
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
 
       - name: Check Out Repository
-        # actions/checkout@v5
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 2
           persist-credentials: false
 
       - name: Install Nix
-        # cachix/install-nix-action@v31
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
         with:
           enable_kvm: false
 
       - name: Restore Nix Store Cache
-        # nix-community/cache-nix-action@v7
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
@@ -95,20 +92,17 @@ jobs:
           }
 
       - name: Check Out Repository
-        # actions/checkout@v5
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           persist-credentials: false
 
       - name: Install Nix
-        # cachix/install-nix-action@v31
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
         with:
           enable_kvm: false
 
       - name: Restore Nix Store Cache
-        # nix-community/cache-nix-action@v7
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7.0.2
         with:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-

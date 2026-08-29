@@ -53,8 +53,9 @@ the permissions that protect the workflow from self-administration.
 
 Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 `policy/workflows.rego`. External `uses:` references must be pinned to a full
-40-character commit SHA; keep an optional trailing version comment when it helps
-reviewers map the immutable pin back to the upstream release tag.
+40-character commit SHA plus a same-line release comment. The comment lets
+Renovate track the immutable pin; review the upstream changelog before accepting
+the replacement SHA.
 
 The pull-request `Terragrunt Gate` is an always-present aggregate. Its
 unprivileged static job runs for every PR and owns live-scope detection. Only a

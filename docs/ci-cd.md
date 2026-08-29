@@ -76,6 +76,9 @@ contract for Grafana.
   disqualified.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
+  Every pin also carries its exact upstream release on the same line so
+  Renovate can discover it. Review the upstream changelog before accepting a
+  Renovate SHA update; the version comment never replaces the immutable pin.
 - The `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
