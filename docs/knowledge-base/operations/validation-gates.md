@@ -187,15 +187,35 @@ Before treating Tailscale as unnecessary for Kubernetes access, validate both
 human paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
-and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
-config and mode inside a Cordium Workspace, whose client session is created
-automatically. There, require explicit-namespace core workload, apps/v1, and
-batch/v1 diagnostics to succeed. Run
-`scripts/ci/octelium-kubernetes-policy-check.sh`, then prove live denials for
-all-namespaces reads, sensitive and cluster-scoped resources, RBAC, CRDs and
-custom resources, authorization reviews, subresources, mutations, metrics,
-debug, and non-allowlisted discovery paths. Issue `#848` owns the full live
-identity matrix.
+and run `scripts/octelium-kubernetes-boundary-e2e.sh --role owner`. Run the
+script's `cordium` role separately inside a Workspace whose client session
+belongs to `homelab-cordium-user`. Each run requires a fresh private evidence
+directory outside the checkout; never commit or upload its contents. The
+script verifies exact HUMAN/CLIENT identity and v0.35's exact private Service
+server, placeholder user, and context before requests. First require the full
+Octelium e2e gate at the same clean commit to confirm the live private Policy
+equals the repository catalog. The boundary script rejects dirty checkouts,
+alternate credentials, kubeconfig proxies, and TLS bypass; scrubs inherited
+upper/lower HTTP(S)/ALL proxy variables and Octelium credential overrides from
+proof children; pins Cordium to its package-owned auth proxy socket and removes
+that socket for owner; bounds identity status in child-only container mode;
+permits allowlisted reads in any one explicit namespace; and denies
+all-namespaces reads. Only kubectl's exact v0.35
+`Error from server (Forbidden): Octelium: Unauthorized request` rendering
+passes denial attribution. Denied probes use randomized nonexistent targets
+and retain only sanitized marker status; raw identity and response bodies are
+never written. Private metadata records a unique run ID, the exact commit, and
+script/catalog SHA-256 digests. A retained named Workspace must export evidence
+with Cordium 0.12.7 `cordium cp -r` to encrypted operator storage. That output
+is diagnostic only: the privileged Workspace can fabricate or replay every
+file, digest, timestamp, commit, and nonce. Retain the Workspace until an
+owner-authenticated operator query matches the exact challenge-bound request
+matrix in Octelium's server-side AccessLogs; `--rm` and copied-evidence deletion
+gates are unsafe. Issue `#879` owns the trusted attestation.
+`scripts/ci/octelium-kubernetes-boundary-e2e-check.sh` covers that behavior
+with fake commands. `scripts/ci/octelium-kubernetes-policy-check.sh` and
+catalog JSON equality remain static drift checks, not enforcement proof. Issue
+`#848` owns the live identity evidence.
 Keep the Tailscale fallback until both pass; Talos transport is a separate
 retirement gate.
 

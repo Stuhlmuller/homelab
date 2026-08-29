@@ -167,11 +167,16 @@ Tailscale-only URL.
 
 ## Private Kubernetes Access
 
-Start the developer shell from any machine that can authenticate to Octelium:
+Start a named developer Workspace from the clean reviewed commit. Evidence runs
+must omit `--rm`; the Workspace remains retained until trusted server-side
+attestation exists:
 
 ```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
+reviewed_commit="$(git rev-parse HEAD)"
+boundary_workspace="octelium-boundary-$(date -u +%Y%m%d%H%M%S)"
+cordium run "$boundary_workspace" --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git \
+  --checkout "$reviewed_commit"
 ```
 
 Cordium starts a dedicated Octelium client session for the Workspace owner.
@@ -191,24 +196,43 @@ apps/v1 DaemonSets, Deployments, ReplicaSets, and StatefulSets; and batch/v1
 CronJobs and Jobs. It permits only the matching five discovery endpoints.
 
 ```sh
-kubectl --request-timeout=15s -n cordium get pods,services,events
-kubectl --request-timeout=15s -n cordium \
-  get daemonsets,deployments,replicasets,statefulsets
-kubectl --request-timeout=15s -n cordium get cronjobs,jobs
-
-! kubectl get pods --all-namespaces
-! kubectl -n cordium get secrets
-! kubectl get nodes
-! kubectl get persistentvolumes
-! kubectl get customresourcedefinitions.apiextensions.k8s.io
-! kubectl get --raw=/api/v1/namespaces/cordium/pods/__policy_check__/log
-! kubectl get --raw=/metrics
-! kubectl get --raw=/debug/pprof/
-! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
+chmod 0600 "$KUBECONFIG"
+cordium_evidence="${TMPDIR:-/tmp}/octelium-cordium-boundary-evidence"
+boundary_evidence_id="PASTE_THE_EXACT_boundary_workspace_VALUE"
+scripts/octelium-kubernetes-boundary-e2e.sh \
+  --role cordium \
+  --kubeconfig "$KUBECONFIG" \
+  --evidence-dir "$cordium_evidence" \
+  --evidence-id "$boundary_evidence_id"
 ```
 
-All unlisted API groups, versions, resources, subresources, and non-resource
-paths fall through Octelium's default deny.
+First require `scripts/octelium-e2e-check.sh` at this exact commit to report
+that the live private Kubernetes Policy matches the repository catalog. The
+live boundary script then requires the exact `homelab-cordium-user`
+HUMAN/CLIENT identity, the exact v0.35 private Service server, placeholder user,
+and context. It
+rejects a dirty checkout, alternate credentials, kubeconfig proxies, and TLS
+bypass before Kubernetes requests. Every Octelium/kubectl proof child removes
+inherited upper- and lower-case HTTP, HTTPS, and ALL proxies. Its bounded status
+preflight clears authentication overrides, uses only Cordium's package-owned
+auth proxy socket, and uses child-only container mode, so a missing or expired
+session cannot start another authentication flow; an existing database session
+may refresh its token. The policy permits allowlisted reads in any one explicit
+namespace and denies all-namespaces reads. The script accepts only kubectl's
+exact v0.35 rendering `Error from server (Forbidden): Octelium: Unauthorized
+request`; denied response bodies are discarded. Private metadata records the
+unique Workspace evidence ID, exact reviewed commit, script SHA-256 digest,
+and catalog SHA-256 digest.
+
+Exit without deleting the Workspace, then follow the canonical
+[private Kubernetes evidence procedure](../../../../docs/octelium.md#private-kubernetes-access).
+It exports diagnostic output with `cordium cp -r` and retains both role results
+on encrypted operator storage. A privileged Workspace can forge every copied
+artifact, digest, timestamp, commit, or nonce; none authorize its deletion.
+Retain the Workspace until an owner-authenticated operator can verify the exact
+challenge-bound request matrix in Octelium's server-side AccessLogs. Catalog
+equality and the jq/CEL fixture are prerequisites and drift checks, not
+enforcement proof. Issue `#879` owns the trusted attestation gate.
 
 ## Validation
 
@@ -254,11 +278,11 @@ scheduler failure also prevented cleanup, recover it, inspect these resources,
 and start a full `cordium-bootstrap` sync. The cleanup is idempotent, and the
 new sync recreates the identity only immediately before genesis.
 
-Verify the human developer path end to end with the public repository:
+Verify the human developer path end to end with the named Workspace retained
+above:
 
 ```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
+cordium run "$boundary_workspace" --domain stinkyboi.com
 ```
 
 In the resulting Workspace terminal, confirm the clone and then exit:
@@ -272,9 +296,9 @@ kubectl --request-timeout=15s -n cordium get pods
 exit
 ```
 
-The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. The
-`--rm` flag deletes the disposable Workspace and its PVC after the terminal
-exits; use the earlier cluster-side PVC check to validate `cordium-local`.
+The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. Export the
+private diagnostic output and retain the named Workspace; use the earlier
+cluster-side PVC check to validate `cordium-local`.
 
 The expected steady state includes ready Cordium controller pods in the
 `octelium` namespace, running Workspace Pods in the privileged `cordium`

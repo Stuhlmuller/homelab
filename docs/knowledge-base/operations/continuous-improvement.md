@@ -73,8 +73,9 @@ organization-policy blocker is tracked below.
 - **Risk:** The live cluster retains the broad policy until the reviewed catalog
   is applied. Both Services also still share a powerful upstream kubeconfig.
 - **Next step:** Apply the catalog only after the Octelium gRPC path is healthy,
-  then complete issue `#848`'s Cordium identity matrix and issue `#847`'s
-  upstream credential isolation. Never restore a resource denylist.
+  then complete issue `#848`'s Cordium identity matrix, issue `#879`'s trusted
+  AccessLog attestation, and issue `#847`'s upstream credential isolation.
+  Never restore a resource denylist.
 
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts

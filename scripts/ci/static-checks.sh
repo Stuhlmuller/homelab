@@ -693,7 +693,32 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
+bash -n scripts/octelium-e2e-check.sh scripts/octelium-kubernetes-boundary-e2e.sh
+scripts/octelium-kubernetes-boundary-e2e.sh --help >/dev/null
+bash scripts/ci/octelium-kubernetes-boundary-e2e-check.sh
 bash scripts/ci/octelium-kubernetes-policy-check.sh
+(
+  malformed_catalog="$(mktemp)"
+  catalog_check_output="$(mktemp)"
+  trap 'rm -f -- "$malformed_catalog" "$catalog_check_output"' EXIT
+
+  printf '%s\n' 'kind: [' >"$malformed_catalog"
+  if scripts/octelium-e2e-check.sh --catalog-check-only \
+    --catalog "$malformed_catalog" >"$catalog_check_output" 2>&1; then
+    echo "Malformed Octelium catalog unexpectedly passed" >&2
+    exit 1
+  fi
+  rg -Fq "FAIL: catalog could not be parsed: $malformed_catalog" "$catalog_check_output"
+  rg -Fq 'Octelium e2e check failed with 1 failure(s).' "$catalog_check_output"
+
+  if scripts/octelium-e2e-check.sh --catalog-check-only \
+    --catalog "${malformed_catalog}.missing" >"$catalog_check_output" 2>&1; then
+    echo "Missing Octelium catalog unexpectedly passed" >&2
+    exit 1
+  fi
+  rg -Fq "FAIL: catalog file is missing: ${malformed_catalog}.missing" "$catalog_check_output"
+  rg -Fq 'Octelium e2e check failed with 1 failure(s).' "$catalog_check_output"
+)
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |

@@ -54,25 +54,20 @@ kubectl diff --server-side -k clusters/homelab/platform/<service>
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
-Before treating Tailscale as unnecessary for Kubernetes, repeat the access
-check inside a disposable Cordium Workspace:
-
-```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
-```
-
-Inside the Workspace, run `octelium config kubernetes-api.homelab --domain
-stinkyboi.com`, run its printed export, set the generated file to mode `0600`,
-and require 15-second namespaced reads of `pods,services,events`, apps/v1
-workload controllers, and batch/v1 Jobs and CronJobs to succeed. Cordium must
-not read across all namespaces. Require denials for Secrets, ConfigMaps,
-service accounts, Nodes, persistent volumes, RBAC, CRDs and custom resources,
-authorization reviews, every subresource, mutation verbs, `/metrics`,
-`/debug`, and non-allowlisted discovery paths. The executable repository
-boundary check is `scripts/ci/octelium-kubernetes-policy-check.sh`; issue #848
-owns live identity enforcement evidence. Then run `octelium disconnect
---domain stinkyboi.com` on the operator workstation.
+Before treating Tailscale as unnecessary for Kubernetes, follow the canonical
+[private Kubernetes access procedure](octelium.md#private-kubernetes-access).
+It owns the same-commit live catalog prerequisite, named non-`--rm` Cordium
+Workspace, exact Cordium and owner identity runs, credential/proxy isolation,
+complete allow/deny matrix, and encrypted diagnostic output. Retain the
+Workspace: its privileged process can forge copied evidence, so deletion is
+blocked until owner-authenticated server-side AccessLog attestation exists.
+Issue `#879` owns that gate.
+Ordinary command failure is not denial evidence; only Octelium's exact v0.35
+`Forbidden` marker passes. Never upload evidence to GitHub or Actions. The
+static catalog shape check
+remains `scripts/ci/octelium-kubernetes-policy-check.sh`, and behavioral fake
+coverage remains `scripts/ci/octelium-kubernetes-boundary-e2e-check.sh`; neither
+is live enforcement proof.
 
 Secret scan:
 
