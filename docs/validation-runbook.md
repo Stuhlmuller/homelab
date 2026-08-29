@@ -54,25 +54,52 @@ kubectl diff --server-side -k clusters/homelab/platform/<service>
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
-Before treating Tailscale as unnecessary for Kubernetes, repeat the access
-check inside a disposable Cordium Workspace:
+Before treating Tailscale as unnecessary for Kubernetes, first run
+`scripts/octelium-e2e-check.sh` from the same clean reviewed commit and require
+its live private-policy catalog equality pass. Then repeat the access check in a
+named Cordium Workspace. Do not use `--rm`; evidence must leave the Workspace
+before it is deleted:
 
 ```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
+reviewed_commit="$(git rev-parse HEAD)"
+boundary_workspace="octelium-boundary-$(date -u +%Y%m%d%H%M%S)"
+cordium run "$boundary_workspace" --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git \
+  --checkout "$reviewed_commit"
 ```
 
 Inside the Workspace, run `octelium config kubernetes-api.homelab --domain
 stinkyboi.com`, run its printed export, set the generated file to mode `0600`,
-and require 15-second namespaced reads of `pods,services,events`, apps/v1
-workload controllers, and batch/v1 Jobs and CronJobs to succeed. Cordium must
-not read across all namespaces. Require denials for Secrets, ConfigMaps,
-service accounts, Nodes, persistent volumes, RBAC, CRDs and custom resources,
-authorization reviews, every subresource, mutation verbs, `/metrics`,
-`/debug`, and non-allowlisted discovery paths. The executable repository
-boundary check is `scripts/ci/octelium-kubernetes-policy-check.sh`; issue #848
-owns live identity enforcement evidence. Then run `octelium disconnect
---domain stinkyboi.com` on the operator workstation.
+and run `scripts/octelium-kubernetes-boundary-e2e.sh --role cordium` with that
+kubeconfig and a fresh absolute evidence directory outside the checkout. Run
+the script's `owner` role separately from the operator's active
+`homelab-owner` HUMAN/CLIENT session at the same catalog revision. The live
+matrix permits its allowlisted reads in any one explicit namespace and requires
+Octelium-signature denial for all-namespaces reads and every sensitive family,
+verb class, subresource, and non-resource path;
+ordinary command failure is not a denial. The generated config must contain
+only v0.35's exact private Service server, placeholder user, and context;
+alternate credentials, proxy settings, and TLS bypass fail before requests.
+Each Octelium/kubectl proof child removes inherited upper- and lower-case HTTP,
+HTTPS, and ALL proxy variables. Identity status is bounded and uses child-only
+container mode to prevent browser login; an existing database session may
+refresh its token, but a missing or expired session fails. Denied probes use
+randomized nonexistent targets and retain only the exact v0.35 canonical
+Forbidden marker, never response bodies. The script rejects a dirty checkout
+and records exact script/catalog SHA-256 digests in private metadata.
+
+Inside the Workspace, set its evidence directory with
+`${TMPDIR:-/tmp}/octelium-cordium-boundary-evidence`. After the run, exit but
+leave the Workspace running. Use Cordium 0.12.7 `cordium cp -r` to export that
+directory to encrypted operator storage, verify `metadata.tsv`, `summary.tsv`,
+`identity.json`, and `kubeconfig.json` are nonempty and contain no failed
+summary row, then run `cordium delete workspace`. Never upload the evidence to
+GitHub or Actions. The static catalog shape check remains
+`scripts/ci/octelium-kubernetes-policy-check.sh`, but it is not enforcement
+proof. Behavioral fake coverage runs through
+`scripts/ci/octelium-kubernetes-boundary-e2e-check.sh`. Then run
+`octelium disconnect --domain stinkyboi.com`
+on the operator workstation.
 
 Secret scan:
 

@@ -251,11 +251,15 @@ octelium disconnect --domain stinkyboi.com
 local Kubernetes and Helm providers read. Keep protected Terragrunt applies in
 CI unless the Octelium context is deliberately merged into that file.
 
-For an in-cluster developer shell, start a Cordium Workspace:
+For an in-cluster developer shell, start a named Cordium Workspace. Evidence
+runs must omit `--rm` so their private results can be exported before deletion:
 
 ```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
+reviewed_commit="$(git rev-parse HEAD)"
+boundary_workspace="octelium-boundary-$(date -u +%Y%m%d%H%M%S)"
+cordium run "$boundary_workspace" --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git \
+  --checkout "$reviewed_commit"
 ```
 
 Each running Workspace already has its own Octelium client session. Inside the
@@ -265,8 +269,8 @@ use an explicit namespace. The exact Cordium resource surface is core/v1
 `events`, `pods`, and `services`; apps/v1 `daemonsets`, `deployments`,
 `replicasets`, and `statefulsets`; and batch/v1 `cronjobs` and `jobs`. Only
 `/api`, `/api/v1`, `/apis`, `/apis/apps/v1`, and `/apis/batch/v1` non-resource
-discovery requests are allowed. All subresources and all-namespaces reads are
-denied.
+discovery requests are allowed. The policy accepts those reads in any one
+explicit namespace; all-namespaces reads and all subresources are denied.
 
 Octelium v0.35 derives the policy fields from its
 [Kubernetes request parser](https://github.com/octelium/octelium/blob/v0.35.0/cluster/vigil/vigil/modes/httpg/httputils/k8s.go)
@@ -274,28 +278,118 @@ and maps them into `ctx.request.kubernetes` in
 [Vigil pre-authorization](https://github.com/octelium/octelium/blob/v0.35.0/cluster/vigil/vigil/modes/httpg/middlewares/preauth/preauth.go).
 Its [policy evaluator](https://github.com/octelium/octelium/blob/v0.35.0/cluster/octovigil/octovigil/policy.go)
 returns `DENY` when no rule matches. Keep the catalog fields aligned with that
-version until the Octelium upgrade is complete.
+version until the Octelium upgrade is complete. The v0.35
+[Kubernetes denial handler](https://github.com/octelium/octelium/blob/v0.35.0/cluster/vigil/vigil/modes/httpg/middlewares/auth/denied.go)
+sets Status reason `Forbidden`, message `Octelium: Unauthorized request`, and
+HTTP code 403; kubectl renders those fields as the exact marker used below.
 
-Verify representative allowed diagnostics and fail-closed boundaries:
+Verify the boundary from two separate active sessions. Do not run this in
+GitHub Actions: a workflow would need a persistent HUMAN credential, cannot
+complete the Entra browser login, and would publish sensitive evidence. The
+script verifies the exact Octelium User is `HUMAN`, the Session is connected
+and `CLIENT`, and the supplied kubeconfig exactly matches Octelium v0.35's
+single `kubernetes` cluster, `kubernetes-admin` placeholder-token user, and
+`kubernetes-admin@kubernetes` context. Its only server may be
+`https://kubernetes-api.homelab.local.stinkyboi.com:6443`; alternate
+credentials, proxy configuration, TLS bypass, and extra contexts fail before
+the first Kubernetes request. Every `octelium` and `kubectl` proof child drops
+inherited upper- and lower-case HTTP, HTTPS, and ALL proxy variables. The
+15-second `octelium status` preflight runs only with child-local
+`OCTELIUM_CONTAINER_MODE=true`: an existing database session may transparently
+refresh its access token, but a missing or expired session cannot launch a
+browser login and fails the run.
+
+Start only from a clean checkout at the reviewed commit. Before either boundary
+run, complete `scripts/octelium-e2e-check.sh` at that same commit and require
+both `PASS: Octelium private Kubernetes Policy declaration matches the
+repository catalog` and the final pass result. This live catalog equality gate
+is a prerequisite, not evidence that the request boundary works. The boundary
+script then fails closed on tracked or untracked checkout changes and records
+the exact commit plus SHA-256 digests of itself and
+`docs/examples/octelium/homelab-services.yaml` in private `metadata.tsv`.
+
+First sign in to `https://cordium.stinkyboi.com` as the Entra identity mapped
+at runtime to `homelab-cordium-user`, enter the retained named Workspace, and run
+these commands inside it:
 
 ```sh
-kubectl --request-timeout=15s -n cordium get pods,services,events
-kubectl --request-timeout=15s -n cordium \
-  get daemonsets,deployments,replicasets,statefulsets
-kubectl --request-timeout=15s -n cordium get cronjobs,jobs
-
-! kubectl get pods --all-namespaces
-! kubectl -n cordium get secrets
-! kubectl get nodes
-! kubectl get persistentvolumes
-! kubectl -n cordium get roles.rbac.authorization.k8s.io
-! kubectl get customresourcedefinitions.apiextensions.k8s.io
-! kubectl -n argocd get applications.argoproj.io
-! kubectl get --raw=/api/v1/namespaces/cordium/pods/__policy_check__/log
-! kubectl get --raw=/metrics
-! kubectl get --raw=/debug/pprof/
-! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+# Export the KUBECONFIG path printed above, then:
+chmod 0600 "$KUBECONFIG"
+cordium_evidence="${TMPDIR:-/tmp}/octelium-cordium-boundary-evidence"
+scripts/octelium-kubernetes-boundary-e2e.sh \
+  --role cordium \
+  --kubeconfig "$KUBECONFIG" \
+  --evidence-dir "$cordium_evidence"
 ```
+
+The Cordium run executes every declared allowed resource and discovery family,
+an exact Pod `get`, a timed `watch`, and strict denials for all-namespaces
+reads; Namespaces, Endpoints, EndpointSlices, sensitive core, RBAC, storage,
+cluster, authorization-review, CRD, existing custom, and unknown resources;
+`get`, `list`, `watch`, `create`, `update`, `patch`, `delete`, and
+`deletecollection`; log, exec, attach, Pod and Service proxy, port-forward,
+token, status, and unknown subresources; future apps/v2; and metrics, debug,
+readyz, OpenAPI, version, and non-GET discovery paths. Mutation probes use
+Kubernetes server dry-run or an invalid body and cannot persist an object or
+mint a token. A failed request counts as an Octelium denial only when kubectl
+emits the exact v0.35 Status rendering `Error from server (Forbidden):
+Octelium: Unauthorized request`; validation errors, `NotFound`, and generic
+Kubernetes `Forbidden` responses do not pass. Denied reads use randomized
+nonexistent names or label selectors. Their response bodies are streamed
+through an exact-marker sanitizer and never written to evidence, even when a
+policy regression exposes a Secret or Pod log.
+
+Exit the Workspace without deleting it. From the operator workstation, use
+Cordium 0.12.7's native recursive copy, verify the exported evidence, and only
+then delete the Workspace:
+
+```sh
+workspace_tmp="$(cordium exec "$boundary_workspace" --domain stinkyboi.com -- \
+  sh -c 'printf %s "${TMPDIR:-/tmp}"')"
+encrypted_evidence="/ABSOLUTE/PATH/ON/ENCRYPTED-STORAGE/$boundary_workspace"
+mkdir -m 0700 "$encrypted_evidence"
+cordium cp -r --domain stinkyboi.com \
+  "$boundary_workspace:$workspace_tmp/octelium-cordium-boundary-evidence/" \
+  "$encrypted_evidence/"
+test -s "$encrypted_evidence/metadata.tsv" &&
+  test -s "$encrypted_evidence/summary.tsv" &&
+  test -s "$encrypted_evidence/identity.json" &&
+  test -s "$encrypted_evidence/kubeconfig.json" &&
+  grep -Fxq $'repository_commit\t'"$reviewed_commit" "$encrypted_evidence/metadata.tsv" &&
+  grep -Eq '^script_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
+  grep -Eq '^catalog_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
+  ! grep -q $'\tFAIL\t' "$encrypted_evidence/summary.tsv" &&
+  cordium delete workspace "$boundary_workspace" --domain stinkyboi.com
+```
+
+Separately, log in as `homelab-owner` on the operator workstation, establish
+the normal client connection, and generate a fresh kubeconfig:
+
+```sh
+octelium login --domain stinkyboi.com
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+# Export the KUBECONFIG path printed above, then:
+chmod 0600 "$KUBECONFIG"
+owner_evidence="$(mktemp -d "${TMPDIR:-/tmp}/octelium-owner-boundary.XXXXXX")"
+scripts/octelium-kubernetes-boundary-e2e.sh \
+  --role owner \
+  --kubeconfig "$KUBECONFIG" \
+  --evidence-dir "$owner_evidence"
+octelium disconnect --domain stinkyboi.com
+```
+
+Both evidence directories must be empty, absolute paths outside the checkout.
+They are created with mode `0700`; result files use the process's `0077` umask.
+Raw identity output is streamed through the validator and never written; only
+the expected identity fields are retained.
+Retain them only on encrypted operator-owned storage. Never attach them to a
+GitHub issue or pull request, upload them as an Actions artifact, or commit
+them. Record only the run timestamp, repository commit, and pass/fail result in
+the issue. The two sessions must pass at the same reviewed catalog revision;
+catalog JSON equality and the repository jq/CEL model are drift checks, not
+live enforcement proof.
 
 If this boundary blocks a required diagnostic after rollout, use a reviewed
 catalog change to remove both Cordium `ALLOW` rules while retaining
@@ -391,6 +485,14 @@ denied. It also checks the AFFiNE native-client CORS preflight and public
 `serverConfig` GraphQL query. A negative workspace query must still return
 AFFiNE's `AUTHENTICATION_REQUIRED` error, and all other app Services must remain
 non-anonymous.
+
+The gate also compares the live private Kubernetes Policy with the repository
+catalog. That comparison detects declaration drift only; it does not prove an
+authorization decision. Run `scripts/octelium-kubernetes-boundary-e2e.sh`
+separately for both HUMAN/CLIENT identities before closing the access boundary.
+Use `scripts/octelium-e2e-check.sh --catalog-check-only --catalog <path>` for a
+non-live parser check; missing, malformed, and duplicate policy documents emit
+an explicit `FAIL:` and the normal final summary.
 
 If the Octelium control plane is external to the homelab cluster, pass separate
 Kubernetes contexts so control-plane checks run against the Octelium Cluster and
@@ -782,6 +884,8 @@ bash -n scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
+scripts/octelium-kubernetes-boundary-e2e.sh --help
+bash scripts/ci/octelium-kubernetes-boundary-e2e-check.sh
 ```
 
 After activation:

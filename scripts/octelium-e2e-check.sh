@@ -12,6 +12,7 @@ HOMELAB_KUBECONFIG=""
 HOMELAB_CONTEXT=""
 OCTELIUM_KUBECONFIG=""
 OCTELIUM_CONTEXT=""
+CATALOG_CHECK_ONLY=0
 
 usage() {
   cat <<'USAGE'
@@ -35,6 +36,7 @@ Options:
   --homelab-context NAME      Kube context for homelab connector checks. Default: kubectl current context
   --octelium-kubeconfig PATH  Kubeconfig for the Octelium control-plane cluster. Default: kubectl default
   --octelium-context NAME     Kube context for Octelium control-plane checks. Default: kubectl current context
+  --catalog-check-only        Validate catalog parsing without live checks.
   -h, --help                  Show this help.
 USAGE
 }
@@ -76,6 +78,10 @@ while [ "$#" -gt 0 ]; do
     --octelium-context)
       OCTELIUM_CONTEXT="$2"
       shift 2
+      ;;
+    --catalog-check-only)
+      CATALOG_CHECK_ONLY=1
+      shift
       ;;
     -h|--help)
       usage
@@ -168,6 +174,51 @@ fail() {
   printf 'FAIL: %s\n' "$*" >&2
 }
 
+finish() {
+  if [ "${FAILURES}" -gt 0 ]; then
+    echo "Octelium e2e check failed with ${FAILURES} failure(s)." >&2
+    return 1
+  fi
+
+  echo "Octelium e2e check passed."
+}
+
+check_catalog() {
+  local policies_json policy_count
+
+  if [ ! -f "${CATALOG}" ]; then
+    fail "catalog file is missing: ${CATALOG}"
+    return
+  fi
+
+  pass "catalog file exists: ${CATALOG}"
+  if ! policies_json="$(
+    yq ea -o=json -I=0 \
+      '[select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")]' \
+      "${CATALOG}" 2>/dev/null
+  )"; then
+    fail "catalog could not be parsed: ${CATALOG}"
+    return
+  fi
+
+  if ! policy_count="$(jq -er 'if type == "array" then length else error("not an array") end' <<<"${policies_json}")"; then
+    fail "catalog policy selection is malformed: ${CATALOG}"
+    return
+  fi
+
+  case "${policy_count}" in
+    0)
+      fail "catalog is missing Policy homelab-private-kubernetes-access"
+      ;;
+    1)
+      EXPECTED_KUBERNETES_POLICY="$(jq -c '.[0]' <<<"${policies_json}")"
+      ;;
+    *)
+      fail "catalog contains duplicate Policy homelab-private-kubernetes-access"
+      ;;
+  esac
+}
+
 require_command() {
   if command -v "$1" >/dev/null 2>&1; then
     pass "found $1"
@@ -243,12 +294,25 @@ cleanup() {
 trap cleanup EXIT
 
 note "Checking local tools"
+require_command jq
+require_command yq
+
+if [ "${CATALOG_CHECK_ONLY}" -eq 1 ]; then
+  if [ "${FAILURES}" -eq 0 ]; then
+    note "Checking Octelium service catalog"
+    check_catalog
+  fi
+  if finish; then
+    exit 0
+  else
+    exit 1
+  fi
+fi
+
 require_command kubectl
 require_command curl
 require_command dig
 require_command octeliumctl
-require_command jq
-require_command yq
 
 if [ "${FAILURES}" -gt 0 ]; then
   echo "Cannot continue without required local tools." >&2
@@ -443,17 +507,7 @@ else
 fi
 
 note "Checking Octelium service catalog"
-if [ ! -f "${CATALOG}" ]; then
-  fail "catalog file is missing: ${CATALOG}"
-else
-  pass "catalog file exists: ${CATALOG}"
-  EXPECTED_KUBERNETES_POLICY="$(
-    yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' "${CATALOG}"
-  )"
-  if [ -z "${EXPECTED_KUBERNETES_POLICY}" ]; then
-    fail "catalog is missing Policy homelab-private-kubernetes-access"
-  fi
-fi
+check_catalog
 
 if [ "${GRPC_READY}" -eq 1 ]; then
   if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get identityprovider >/tmp/octelium-idp.$$ 2>/tmp/octelium-idp.err.$$; then
@@ -557,9 +611,9 @@ if [ "${GRPC_READY}" -eq 1 ]; then
       jq -e --argjson expected "${EXPECTED_KUBERNETES_POLICY}" \
         '.metadata.name == "homelab-private-kubernetes-access" and .spec == $expected.spec' \
         >/dev/null 2>&1 </tmp/octelium-kubernetes-policy.$$; then
-      pass "Octelium private Kubernetes Policy matches the repository catalog"
+      pass "Octelium private Kubernetes Policy declaration matches the repository catalog"
     else
-      fail "Octelium private Kubernetes Policy is missing or broader than declared"
+      fail "Octelium private Kubernetes Policy is missing or differs from the repository declaration"
     fi
   else
     if [ -s /tmp/octelium-kubernetes-policy.err.$$ ]; then
@@ -821,9 +875,4 @@ while read -r HOST CALLBACK_PATH MODE METHOD; do
     rm -f "${HEADER_FILE}" "${BODY_FILE}" "${CURL_ERR}"
 done <<<"${CALLBACK_PROBES}"
 
-if [ "${FAILURES}" -gt 0 ]; then
-  echo "Octelium e2e check failed with ${FAILURES} failure(s)." >&2
-  exit 1
-fi
-
-echo "Octelium e2e check passed."
+finish

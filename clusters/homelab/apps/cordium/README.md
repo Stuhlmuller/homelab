@@ -167,11 +167,15 @@ Tailscale-only URL.
 
 ## Private Kubernetes Access
 
-Start the developer shell from any machine that can authenticate to Octelium:
+Start a named developer Workspace from the clean reviewed commit. Evidence runs
+must omit `--rm` so results can be exported before Workspace deletion:
 
 ```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
+reviewed_commit="$(git rev-parse HEAD)"
+boundary_workspace="octelium-boundary-$(date -u +%Y%m%d%H%M%S)"
+cordium run "$boundary_workspace" --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git \
+  --checkout "$reviewed_commit"
 ```
 
 Cordium starts a dedicated Octelium client session for the Workspace owner.
@@ -191,24 +195,56 @@ apps/v1 DaemonSets, Deployments, ReplicaSets, and StatefulSets; and batch/v1
 CronJobs and Jobs. It permits only the matching five discovery endpoints.
 
 ```sh
-kubectl --request-timeout=15s -n cordium get pods,services,events
-kubectl --request-timeout=15s -n cordium \
-  get daemonsets,deployments,replicasets,statefulsets
-kubectl --request-timeout=15s -n cordium get cronjobs,jobs
-
-! kubectl get pods --all-namespaces
-! kubectl -n cordium get secrets
-! kubectl get nodes
-! kubectl get persistentvolumes
-! kubectl get customresourcedefinitions.apiextensions.k8s.io
-! kubectl get --raw=/api/v1/namespaces/cordium/pods/__policy_check__/log
-! kubectl get --raw=/metrics
-! kubectl get --raw=/debug/pprof/
-! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
+chmod 0600 "$KUBECONFIG"
+cordium_evidence="${TMPDIR:-/tmp}/octelium-cordium-boundary-evidence"
+scripts/octelium-kubernetes-boundary-e2e.sh \
+  --role cordium \
+  --kubeconfig "$KUBECONFIG" \
+  --evidence-dir "$cordium_evidence"
 ```
 
-All unlisted API groups, versions, resources, subresources, and non-resource
-paths fall through Octelium's default deny.
+First require `scripts/octelium-e2e-check.sh` at this exact commit to report
+that the live private Kubernetes Policy matches the repository catalog. The
+live boundary script then requires the exact `homelab-cordium-user`
+HUMAN/CLIENT identity, the exact v0.35 private Service server, placeholder user,
+and context. It
+rejects a dirty checkout, alternate credentials, kubeconfig proxies, and TLS
+bypass before Kubernetes requests. Every Octelium/kubectl proof child removes
+inherited upper- and lower-case HTTP, HTTPS, and ALL proxies. Its bounded status
+preflight uses child-only container mode so a missing or expired session cannot
+launch browser login; an existing database session may refresh its token. The
+policy permits allowlisted reads in any one explicit namespace and denies
+all-namespaces reads. The script accepts only kubectl's exact v0.35 rendering
+`Error from server (Forbidden): Octelium: Unauthorized request`; denied response
+bodies are discarded. Private metadata records exact script and catalog
+SHA-256 digests.
+
+Exit without deleting the Workspace. Use Cordium 0.12.7's native copy path to
+export and verify the evidence before deletion:
+
+```sh
+workspace_tmp="$(cordium exec "$boundary_workspace" --domain stinkyboi.com -- \
+  sh -c 'printf %s "${TMPDIR:-/tmp}"')"
+encrypted_evidence="/ABSOLUTE/PATH/ON/ENCRYPTED-STORAGE/$boundary_workspace"
+mkdir -m 0700 "$encrypted_evidence"
+cordium cp -r --domain stinkyboi.com \
+  "$boundary_workspace:$workspace_tmp/octelium-cordium-boundary-evidence/" \
+  "$encrypted_evidence/"
+test -s "$encrypted_evidence/metadata.tsv" &&
+  test -s "$encrypted_evidence/summary.tsv" &&
+  test -s "$encrypted_evidence/identity.json" &&
+  test -s "$encrypted_evidence/kubeconfig.json" &&
+  grep -Eq '^script_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
+  grep -Eq '^catalog_sha256\t[0-9a-f]{64}$' "$encrypted_evidence/metadata.tsv" &&
+  ! grep -q $'\tFAIL\t' "$encrypted_evidence/summary.tsv" &&
+  cordium delete workspace "$boundary_workspace" --domain stinkyboi.com
+```
+
+Run the separate `owner` role from the operator workstation at the same catalog
+revision. Keep both evidence directories outside the checkout on private
+encrypted storage; never upload them to GitHub or Actions. The full operator
+procedure and rollback are in `docs/octelium.md`. Catalog equality and the
+jq/CEL fixture are prerequisites and drift checks, not enforcement proof.
 
 ## Validation
 
@@ -254,11 +290,11 @@ scheduler failure also prevented cleanup, recover it, inspect these resources,
 and start a full `cordium-bootstrap` sync. The cleanup is idempotent, and the
 new sync recreates the identity only immediately before genesis.
 
-Verify the human developer path end to end with the public repository:
+Verify the human developer path end to end with the named Workspace retained
+above:
 
 ```sh
-cordium run --rm --domain stinkyboi.com \
-  --repository https://github.com/Stuhlmuller/homelab.git
+cordium run "$boundary_workspace" --domain stinkyboi.com
 ```
 
 In the resulting Workspace terminal, confirm the clone and then exit:
@@ -272,9 +308,9 @@ kubectl --request-timeout=15s -n cordium get pods
 exit
 ```
 
-The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. The
-`--rm` flag deletes the disposable Workspace and its PVC after the terminal
-exits; use the earlier cluster-side PVC check to validate `cordium-local`.
+The remote URL must be `https://github.com/Stuhlmuller/homelab.git`. Export and
+verify private evidence before deleting the named Workspace; use the earlier
+cluster-side PVC check to validate `cordium-local`.
 
 The expected steady state includes ready Cordium controller pods in the
 `octelium` namespace, running Workspace Pods in the privileged `cordium`
