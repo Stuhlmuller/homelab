@@ -89,6 +89,14 @@ application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
 
+The write-capable semantic-release job uses the non-canceling
+`semantic-release-main` lane. A surviving pending publisher checks out current
+`refs/heads/main` after acquiring the lane, so GitHub's unspecified pending-run
+ordering cannot leave the newest commit unreleased. Semantic-release then reads
+git to publish the complete unreleased history. Its 15-minute timeout bounds a
+stuck publisher. Keep concurrency job-scoped; the pull-request dry run must
+remain outside that lane.
+
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
 
