@@ -399,7 +399,7 @@ if CI=true GITHUB_ACTIONS=false PATH="${FAKE_BIN}:${PATH}" \
 fi
 rg -Fq 'live HUMAN identity evidence must not run in CI' "${CI_OUTPUT}"
 
-if rg -n 'octelium-kubernetes-boundary-e2e\.sh[[:space:]]+--verify|delete_boundary_workspace' \
+if rg -n 'octelium-kubernetes-boundary-e2e\.sh[[:space:]]+--verify|delete_boundary_workspace|exported before deletion' \
   docs/octelium.md clusters/homelab/apps/cordium/README.md \
   docs/validation-runbook.md docs/knowledge-base; then
   echo "unsafe copied-evidence deletion gate remains documented" >&2

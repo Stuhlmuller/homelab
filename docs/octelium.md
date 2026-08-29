@@ -252,7 +252,8 @@ local Kubernetes and Helm providers read. Keep protected Terragrunt applies in
 CI unless the Octelium context is deliberately merged into that file.
 
 For an in-cluster developer shell, start a named Cordium Workspace. Evidence
-runs must omit `--rm` so their private results can be exported before deletion:
+runs must omit `--rm`; retain the named Workspace until owner-authenticated
+server-side AccessLog attestation under issue `#879` passes:
 
 ```sh
 reviewed_commit="$(git rev-parse HEAD)"
