@@ -59,7 +59,7 @@ jobs:
       - name: Run Conftest Policies
         run: nix develop --command bash scripts/ci/conftest-policies.sh
 
-  reconcile:
+  octelium-catalog:
     name: Reconcile Private Kubernetes Access
     needs:
       - static-policy

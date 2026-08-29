@@ -614,8 +614,17 @@ talosctl --talosconfig .talos/talosconfig \
 
 kubectl config set-cluster homelab --server=https://10.1.0.199:6443
 kubectl get nodes
-scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
+secret_name="homelab-ci-kubeconfig-$(date -u +%Y%m%dt%H%M%Sz)"
+scripts/octelium-ci-kubeconfig-secret.sh \
+  --kubeconfig ~/.kube/config \
+  --secret-name "$secret_name"
 ```
+
+The helper requires exactly one current embedded CA certificate and validates
+the selected credential against the direct API before it creates a minified,
+uniquely named Secret. It never overwrites the active
+Secret. Complete the reviewed two-Service catalog cutover, verification, and
+rollback procedure in `docs/octelium.md`.
 
 The active Kubernetes server should be:
 

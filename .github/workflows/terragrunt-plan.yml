@@ -16,7 +16,6 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
 
 jobs:
   static-policy:
@@ -28,6 +27,7 @@ jobs:
       requires-live-plan: ${{ steps.live-plan-scope.outputs.requires-live-plan }}
     steps:
       - name: Check Out Repository
+        id: checkout
         # actions/checkout@v5
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
@@ -59,6 +59,7 @@ jobs:
           fi
 
       - name: Install Nix
+        id: install_nix
         # cachix/install-nix-action@v31
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
@@ -66,6 +67,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Nix Store Cache
+        id: restore_cache
         # nix-community/cache-nix-action@v7
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
         with:
@@ -94,6 +96,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check Out Repository
+        id: checkout
         # actions/checkout@v5
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
@@ -101,6 +104,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix
+        id: install_nix
         # cachix/install-nix-action@v31
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
@@ -108,6 +112,7 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Nix Store Cache
+        id: restore_cache
         # nix-community/cache-nix-action@v7
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
         with:
@@ -115,14 +120,13 @@ jobs:
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
       - name: Verify Live Plan Inputs
+        id: verify_inputs
         env:
           AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: |
-          test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
-          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
+        run: test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
 
       - name: Configure AWS Credentials
+        id: configure_aws
         # aws-actions/configure-aws-credentials@v6.1.1
         uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
         with:
@@ -132,13 +136,11 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
-      - name: Run Live Terragrunt Plan
+      - name: Install And Verify Octelium Kubeconfig
+        id: install_kubeconfig
         env:
-          ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
-          ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
@@ -146,7 +148,25 @@ jobs:
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version >/dev/null
+          EOF
+          then
+            echo "::error::Octelium kubeconfig verification failed; detailed output was withheld because this is a public repository."
+            exit 1
+          fi
+          echo "Octelium kubeconfig verified; output withheld."
+
+      - name: Run Live Terragrunt Plan
+        id: live
+        env:
+          ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
           bash scripts/ci/terragrunt-plan.sh
           EOF
           then

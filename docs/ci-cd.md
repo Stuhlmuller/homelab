@@ -118,10 +118,28 @@ contract for Grafana.
   `kubernetes-api.homelab` Service is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
   `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
-  into GitHub. CI writes a token-only kubeconfig with mode `0600`, then verifies
-  the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
-  briefly affects CI, operator, and Cordium access, so validate both Services
-  after rotation.
+  into GitHub. The install helper writes a token-only kubeconfig with mode
+  `0600`, then verifies Octelium upstream credential injection with
+  `kubectl auth whoami`. Each Kubernetes live job gives every step a stable
+  `id`. The whole-workflow fingerprint also locks display names so they cannot
+  evaluate and expose a secret expression. Workflow policy hashes every job
+  attached to `homelab-plan` or `homelab-production`, including plan, apply,
+  diagnostics, and Cloudflare maintenance, plus the workflow trigger,
+  permissions, concurrency, `env`, and run defaults. Any added action or
+  command, changed execution condition, shell, working directory, job setting,
+  or step payload fails closed. Environment names must be literal and are
+  classified case-insensitively, matching GitHub. For the three Kubernetes
+  jobs, `install_kubeconfig` alone receives the exact Octelium URL and
+  `${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}` expression. The `live` step must
+  inherit neither value, so workflow, job, and step override drift is rejected
+  using GitHub's step-over-job-over-workflow environment precedence. Both steps
+  withhold command output from public logs.
+
+  The rotation helper validates and minifies one direct context with exactly
+  one current embedded CA certificate before creating a new Secret. It never
+  overwrites an active name, and both Octelium Service definitions keep
+  upstream TLS verification enabled. Rotate through the staged catalog cutover
+  in `docs/octelium.md`, then validate CI, operator, and Cordium access.
 - Plans are not uploaded, printed, or copied into pull requests because
   Terraform/OpenTofu plans can include sensitive state context. Trusted
   same-repository jobs evaluate private plans with Conftest and delete them on
@@ -266,7 +284,7 @@ set -euo pipefail
 
 test "$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')" = \
   "https://10.1.0.199:6443"
-kubectl --request-timeout=15s version
+kubectl --request-timeout=15s auth whoami
 
 (cd IaC && terragrunt stack generate)
 cd IaC/live/kubernetes-node-labels
@@ -297,11 +315,18 @@ defines:
   clientless Kubernetes Service;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
 
-Apply that catalog after materializing the upstream kubeconfig Secret, then
-create or rotate the GitHub environment secret in both CI environments:
+On first installation, materialize the catalog's default upstream kubeconfig
+Secret before applying the catalog. For later kubeconfig changes, use the
+versioned staged-Secret cutover, guarded retirement, and rollback in
+`docs/octelium.md`; do not overwrite the active Secret. The upstream kubeconfig
+must be cluster-admin-equivalent because Octelium policy is the client
+authorization boundary. Create or rotate the separate GitHub environment
+credential after the Service catalog is healthy:
 
 ```sh
+# First installation only; later rotations require a new --secret-name.
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
+octeliumctl apply docs/examples/octelium/homelab-services.yaml
 scripts/octelium-ci-credential.sh
 ```
 
@@ -334,13 +359,13 @@ fix `gh auth status` or the target environment permissions, then rerun the
 helper so the token is captured and stored without being displayed.
 
 Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
-policy changes, and after runner image changes. Reconcile the
-Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
+policy changes, and after runner image changes. Stage a new versioned Octelium
+kubeconfig Secret and catalog cutover when the upstream Kubernetes credential
+changes. If
 CI receives Octelium `401` from authenticated `kubectl` against
 `kubernetes-api-ci`, reapply the catalog and rotate the credential with
 `scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
-failure before rotating. Reconcile the upstream kubeconfig Secret when its
-Kubernetes credential changes.
+failure before rotating.
 Recover the primary credential directly with the checked helper. Run this block
 from the repository root; it uses a private, unique admin home and removes it
 only after Octelium confirms logout:

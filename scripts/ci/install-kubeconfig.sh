@@ -10,3 +10,4 @@ kubectl config set-credentials homelab-ci --token="$OCTELIUM_AUTH_TOKEN" >/dev/n
 kubectl config set-context homelab-ci --cluster=homelab-ci --user=homelab-ci >/dev/null
 kubectl config use-context homelab-ci >/dev/null
 chmod 0600 "$HOME/.kube/config"
+kubectl --request-timeout=15s auth whoami >/dev/null

@@ -504,11 +504,31 @@ if [ "${GRPC_READY}" -eq 1 ]; then
         fail "Octelium Service ${SERVICE} is not WEB with isPublic=true"
       fi
     done
-    # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
-    if jq -e '.items[] | select(.metadata.name == "kubernetes-api.homelab" and .spec.mode == "KUBERNETES" and (.spec.isPublic // false) == false and .spec.port == 6443 and .spec.authorization.policies == ["homelab-private-kubernetes-access"] and .spec.config.upstream.url == "https://10.1.0.199:6443" and .spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and (.spec.config.tls.insecureSkipVerify // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
-      pass "Octelium Service kubernetes-api.homelab is private and policy-bound"
+    # checkov:skip=CKV_SECRET_6:Public names of Octelium Secrets, not secret data.
+    if jq -e '
+      [.items[] | select(.metadata.name == "kubernetes-api.homelab")] as $private |
+      [.items[] | select(.metadata.name == "kubernetes-api-ci")] as $ci |
+      $private[0].spec.config.kubernetes.kubeconfig.fromSecret as $secret_name |
+      ($private | length) == 1 and
+      ($ci | length) == 1 and
+      $private[0].spec.mode == "KUBERNETES" and
+      $ci[0].spec.mode == "KUBERNETES" and
+      ($private[0].spec.isPublic // false) == false and
+      $ci[0].spec.isPublic == true and
+      $private[0].spec.port == 6443 and
+      $ci[0].spec.port == 6443 and
+      $private[0].spec.authorization.policies == ["homelab-private-kubernetes-access"] and
+      $ci[0].spec.authorization.policies == ["homelab-ci-kubernetes-api-access"] and
+      $private[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
+      $ci[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
+      ($secret_name | test("^homelab-ci-kubeconfig(-[0-9]{8}t[0-9]{6}z)?$")) and
+      $ci[0].spec.config.kubernetes.kubeconfig.fromSecret == $secret_name and
+      ($private[0].spec.config.tls.insecureSkipVerify // false) == false and
+      ($ci[0].spec.config.tls.insecureSkipVerify // false) == false
+    ' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Kubernetes Services share a CA-verified upstream credential"
     else
-      fail "Octelium Service kubernetes-api.homelab is not private policy-bound KUBERNETES access"
+      fail "Octelium Kubernetes Services do not share the expected CA-verified upstream credential"
     fi
     if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Octelium Service affine delegates login to the application"

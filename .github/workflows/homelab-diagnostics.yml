@@ -11,9 +11,6 @@ on:
 
 permissions: {}
 
-env:
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
-
 jobs:
   grafana:
     runs-on: ubuntu-24.04
@@ -24,6 +21,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Verify Dispatch Commit
+        id: verify_main
         env:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
@@ -33,11 +31,13 @@ jobs:
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
 
       - name: Check Out Repository
+        id: checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
           persist-credentials: false
 
       - name: Install Nix
+        id: install_nix
         # cachix/install-nix-action@v31
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
         with:
@@ -45,22 +45,18 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Nix Store Cache
+        id: restore_cache
         # nix-community/cache-nix-action@v7
         uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
         with:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
-      - name: Verify Diagnostic Inputs
+      - name: Install And Verify Octelium Kubeconfig
+        id: install_kubeconfig
         env:
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-        run: |
-          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
-
-      - name: Run Grafana Diagnostics Through Octelium
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
@@ -68,7 +64,21 @@ jobs:
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version >/dev/null
+          EOF
+          then
+            echo "::error::Octelium kubeconfig verification failed; detailed output was withheld because this is a public repository."
+            exit 1
+          fi
+          echo "Octelium kubeconfig verified; output withheld."
+
+      - name: Run Grafana Diagnostics Through Octelium
+        id: live
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
           kubectl -n monitoring rollout status deployment/grafana --timeout=120s >/dev/null
           EOF
           then

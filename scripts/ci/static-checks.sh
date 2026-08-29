@@ -84,9 +84,12 @@ for parameter in \
   rg -Fq 'reader_access = false' <<<"$parameter_block"
 done
 (
+  umask 077
+  operator_validation_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator-validation.XXXXXX")"
+  trap 'rm -rf -- "$operator_validation_dir"' EXIT
   cd IaC/operator/github-actions-role-policy
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-  terragrunt --log-disable validate -no-color
+  terragrunt --log-disable run --download-dir "$operator_validation_dir" -- init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable run --download-dir "$operator_validation_dir" -- validate -no-color
 )
 echo "::endgroup::"
 
@@ -352,6 +355,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     [.jobs["static-policy"].steps[] | select(.name == "Run Conftest Policies")] as $conftest |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Verify Live Plan Inputs")] as $plan_inputs |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Configure AWS Credentials")] as $aws_credentials |
+    [.jobs["terragrunt-plan"].steps[] | select(.id == "install_kubeconfig")] as $kubeconfig |
     [.jobs["terragrunt-plan"].steps[] | select(.name == "Run Live Terragrunt Plan")] as $live_plan |
     (.on | keys) == ["pull_request"] and
     .on.pull_request.types == ["opened", "synchronize", "reopened", "ready_for_review"] and
@@ -376,18 +380,20 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .jobs["terragrunt-plan"].env == null and
     ($plan_inputs | length) == 1 and
     $plan_inputs[0].env == {
-      "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}"
     } and
     ($aws_credentials | length) == 1 and
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
+    ($kubeconfig | length) == 1 and
+    $kubeconfig[0].env == {
+      "KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
     ($live_plan | length) == 1 and
     $live_plan[0].env == {
       "ARM_CLIENT_ID": "${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}",
       "ARM_CLIENT_SECRET": "${{ secrets.AZUREAD_CLIENT_SECRET }}",
-      "ARM_TENANT_ID": "${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}",
-      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "ARM_TENANT_ID": "${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}"
     } and
     ([.jobs["terragrunt-plan"].steps[] |
       select(.name != "Run Live Terragrunt Plan") |
@@ -484,7 +490,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/lint.yml:build' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
-    '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
+    '.github/workflows/octelium-private-kubernetes-apply.yml:octelium-catalog' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
@@ -511,15 +517,15 @@ while read -r workflow expected_hash; do
   }
 done <<'EOF'
 .github/workflows/codeql.yml 054c9f0d5c7305fe445b849942924088ee49ca660a3f5f2931ba650b7da471be
-.github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
+.github/workflows/homelab-diagnostics.yml a63ea5cca092f95955d593a47f33c27b64d29f45bd2887023ddcc0200e6e12cd
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
-.github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
+.github/workflows/octelium-private-kubernetes-apply.yml 5ff7784d87a66b64ca978ad61219985c72ed0958e8f7aa0989c1f27f6f93c579
 .github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
-.github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
+.github/workflows/terragrunt-apply.yml d47b8a6f33fccacbc85111233ea5ea56a8b13ec2874620fd39c32a77e9aae990
+.github/workflows/terragrunt-plan.yml 4b9b176d03c25d326a3c5a407a1fd4403d3ae16d0fe2636874ed3fff1f90325a
 EOF
 echo "::endgroup::"
 
@@ -590,8 +596,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
-      "cancel-in-progress": false,
-      "queue": "single"
+      "cancel-in-progress": false
     } and
     .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
     .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
@@ -619,7 +624,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
   ' >/dev/null
 yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
   jq -e '
-    [.jobs.reconcile.steps[] |
+    [.jobs["octelium-catalog"].steps[] |
       select(.name == "Reconcile Private Kubernetes Catalog")] as $catalog_steps |
     (.on | keys) == ["workflow_dispatch"] and
     .on.workflow_dispatch.inputs == {
@@ -636,23 +641,23 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     } and
     .["run-name"] == "Private Kubernetes @ ${{ github.sha }} / ${{ inputs.dispatch_id }}" and
     .permissions == {} and
-    (.jobs | keys | sort) == ["reconcile", "static-policy"] and
+    (.jobs | keys | sort) == ["octelium-catalog", "static-policy"] and
     .jobs["static-policy"].permissions == {"contents": "read"} and
     .jobs["static-policy"].steps[0].name == "Verify Dispatch Commit" and
-    .jobs.reconcile.needs == ["static-policy"] and
-    .jobs.reconcile.environment == {"name": "homelab-production"} and
-    .jobs.reconcile.permissions == {"contents": "read"} and
-    .jobs.reconcile["timeout-minutes"] == 15 and
-    .jobs.reconcile.concurrency == {
+    .jobs["octelium-catalog"].needs == ["static-policy"] and
+    .jobs["octelium-catalog"].environment == {"name": "homelab-production"} and
+    .jobs["octelium-catalog"].permissions == {"contents": "read"} and
+    .jobs["octelium-catalog"]["timeout-minutes"] == 15 and
+    .jobs["octelium-catalog"].concurrency == {
       "group": "octelium-private-kubernetes-production",
       "cancel-in-progress": false
     } and
-    .jobs.reconcile.steps[0].name == "Verify Current Main Commit" and
-    .jobs.reconcile.steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
-    .jobs.reconcile.steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
-    .jobs.reconcile.steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
-    .jobs.reconcile.steps[0].env.GH_TOKEN == "${{ github.token }}" and
-    (.jobs.reconcile.steps[0].run |
+    .jobs["octelium-catalog"].steps[0].name == "Verify Current Main Commit" and
+    .jobs["octelium-catalog"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
+    .jobs["octelium-catalog"].steps[0].env.ACTUAL_SHA == "${{ github.sha }}" and
+    .jobs["octelium-catalog"].steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}" and
+    .jobs["octelium-catalog"].steps[0].env.GH_TOKEN == "${{ github.token }}" and
+    (.jobs["octelium-catalog"].steps[0].run |
       contains("repos/${GH_REPO}/git/ref/heads/main") and
       contains("test \"${EXPECTED_SHA}\" = \"${ACTUAL_SHA}\"") and
       contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
@@ -663,13 +668,13 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     ($catalog_steps[0].run |
       contains("bash scripts/ci/octelium-private-kubernetes-apply.sh") and
       contains("details withheld")) and
-    ([.jobs.reconcile.steps[] |
+    ([.jobs["octelium-catalog"].steps[] |
       select(.name != "Reconcile Private Kubernetes Catalog") |
       .env.OCTELIUM_CATALOG_AUTH_TOKEN // empty] | length) == 0 and
-    (.jobs.reconcile | tostring | contains("id-token") | not) and
-    (.jobs.reconcile | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
-    (.jobs.reconcile | tostring | contains("kubectl") | not) and
-    (.jobs.reconcile | tostring | contains("terragrunt") | not)
+    (.jobs["octelium-catalog"] | tostring | contains("id-token") | not) and
+    (.jobs["octelium-catalog"] | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
+    (.jobs["octelium-catalog"] | tostring | contains("kubectl") | not) and
+    (.jobs["octelium-catalog"] | tostring | contains("terragrunt") | not)
   ' >/dev/null
 bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
@@ -693,12 +698,17 @@ jq empty renovate.json
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
+bash -n scripts/ci/install-kubeconfig.sh
+[[ "$(tail -n 1 scripts/ci/install-kubeconfig.sh)" == \
+  'kubectl --request-timeout=15s auth whoami >/dev/null' ]]
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
     [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api-ci")] as $ci_services |
+    $services[0].spec.config.kubernetes.kubeconfig.fromSecret as $secret_name |
     ($policies | length) == 1 and
     $policies[0].spec.rules == [
       {
@@ -741,14 +751,23 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
       }
     ] and
     ($services | length) == 1 and
+    ($ci_services | length) == 1 and
     ($services[0].spec.isPublic // false) == false and
+    $ci_services[0].spec.isPublic == true and
     $services[0].spec.mode == "KUBERNETES" and
+    $ci_services[0].spec.mode == "KUBERNETES" and
     $services[0].spec.port == 6443 and
+    $ci_services[0].spec.port == 6443 and
     $services[0].spec.authorization.policies == ["homelab-private-kubernetes-access"] and
+    $ci_services[0].spec.authorization.policies == ["homelab-ci-kubernetes-api-access"] and
     $services[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
+    $ci_services[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
     # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
-    $services[0].spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and
+    ($secret_name | test("^homelab-ci-kubeconfig(-[0-9]{8}t[0-9]{6}z)?$")) and
+    $services[0].spec.config.kubernetes.kubeconfig.fromSecret == $secret_name and
+    $ci_services[0].spec.config.kubernetes.kubeconfig.fromSecret == $secret_name and
     ($services[0].spec.config.tls.insecureSkipVerify // false) == false and
+    ($ci_services[0].spec.config.tls.insecureSkipVerify // false) == false and
     ($catalog_users | length) == 1 and
     $catalog_users[0].spec == {
       "type": "WORKLOAD",
@@ -804,11 +823,7 @@ yq -o=json '.' clusters/homelab/apps/istio/values.yaml |
     (.service.annotations["tailscale.com/hostname"] // null) == null and
     (.service.annotations["homelab.rst.io/pod-security"] // "") != "tailscale-proxy-requires-privileged"
   ' >/dev/null
-rg -Fq 'octeliumctl update secret "$secret_name"' scripts/octelium-ci-kubeconfig-secret.sh
-if rg -Fq 'octeliumctl delete secret' scripts/octelium-ci-kubeconfig-secret.sh; then
-  echo "Shared Octelium kubeconfig rotation must not delete the active Secret." >&2
-  exit 1
-fi
+bash scripts/ci/octelium-ci-kubeconfig-secret-test.sh
 echo "::endgroup::"
 
 echo "::group::Image digest pins"
