@@ -3,6 +3,8 @@ set -euo pipefail
 
 domain="stinkyboi.com"
 secret_name="homelab-ci-kubeconfig"
+secret_name_set=0
+retire_secret=""
 kubeconfig=""
 context=""
 readonly expected_server="https://10.1.0.199:6443"
@@ -11,7 +13,9 @@ readonly octeliumctl_bin="${OCTELIUMCTL_BIN:-octeliumctl}"
 
 usage() {
 	cat <<'USAGE'
-Usage: scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig PATH [options]
+Usage:
+  scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig PATH [options]
+  scripts/octelium-ci-kubeconfig-secret.sh --retire-secret NAME [options]
 
 Validate, minify, and create an Octelium Secret for the CI and private
 human/Cordium Kubernetes Services. Existing Secrets are never overwritten;
@@ -22,6 +26,8 @@ Options:
   --context NAME      Context to select. Default: the file's current context.
   --domain DOMAIN     Octelium Cluster domain. Default: stinkyboi.com
   --secret-name NAME  New Octelium Secret name. Default: homelab-ci-kubeconfig
+  --retire-secret NAME
+                      Delete an unreferenced Octelium kubeconfig Secret.
   -h, --help          Show this help.
 USAGE
 }
@@ -31,6 +37,24 @@ need_value() {
 		echo "error: $1 requires a value" >&2
 		exit 2
 	}
+}
+
+octelium_secret_state() {
+	local name="$1"
+	local output
+	if output="$("$octeliumctl_bin" get secret "$name" --domain "$domain" -o json 2>&1)"; then
+		if jq -e --arg name "$name" '
+      type == "object" and .metadata.name == $name
+    ' >/dev/null <<<"$output"; then
+			printf 'exists\n'
+		else
+			printf 'unknown\n'
+		fi
+	elif [[ "$output" =~ ^gRPC[[:space:]]+error[[:space:]]+NotFound:[[:space:]]+ ]]; then
+		printf 'absent\n'
+	else
+		printf 'unknown\n'
+	fi
 }
 
 while [[ $# -gt 0 ]]; do
@@ -53,6 +77,12 @@ while [[ $# -gt 0 ]]; do
 	--secret-name)
 		need_value "$@"
 		secret_name="$2"
+		secret_name_set=1
+		shift 2
+		;;
+	--retire-secret)
+		need_value "$@"
+		retire_secret="$2"
 		shift 2
 		;;
 	-h | --help)
@@ -66,6 +96,87 @@ while [[ $# -gt 0 ]]; do
 		;;
 	esac
 done
+
+if [[ -n "$retire_secret" ]]; then
+	if [[ -n "$kubeconfig" || -n "$context" || "$secret_name_set" -eq 1 ]]; then
+		echo "error: --retire-secret cannot be combined with --kubeconfig, --context, or --secret-name" >&2
+		exit 2
+	fi
+	if [[ ! "$retire_secret" =~ ^homelab-ci-kubeconfig(-[0-9]{8}t[0-9]{6}z)?$ ]]; then
+		echo "error: --retire-secret must name a managed homelab CI kubeconfig Secret" >&2
+		exit 1
+	fi
+	for command_name in "$octeliumctl_bin" jq; do
+		command -v "$command_name" >/dev/null || {
+			echo "error: ${command_name} is required" >&2
+			exit 127
+		}
+	done
+
+	if ! services_json="$("$octeliumctl_bin" get services --domain "$domain" --items-per-page 1000 -o json)"; then
+		echo "error: could not verify Octelium Service references; Secret was not deleted" >&2
+		exit 1
+	fi
+	if ! service_reference_count="$(jq -er --arg name "$retire_secret" '
+    if
+      type == "object" and (.items | type == "array") and
+      all(.items[];
+        type == "object" and (.metadata | type == "object") and
+        (.metadata.name | type == "string" and length > 0) and
+        (.spec | type == "object")
+      )
+    then
+      [.items[] | select(.metadata.name == "kubernetes-api-ci")] as $ci |
+      [.items[] | select(.metadata.name == "kubernetes-api.homelab")] as $human |
+      if
+        ($ci | length) == 1 and ($human | length) == 1 and
+        ($ci[0].spec.config.kubernetes.kubeconfig.fromSecret | type == "string" and length > 0) and
+        ($human[0].spec.config.kubernetes.kubeconfig.fromSecret | type == "string" and length > 0)
+      then
+        [.items[] | select(
+          (try .spec.config.kubernetes.kubeconfig.fromSecret catch null) == $name
+        )] | length
+      else error("invalid managed Kubernetes Services")
+      end
+    else error("invalid Service list")
+    end
+  ' <<<"$services_json")"; then
+		echo "error: both managed Kubernetes Services must exist exactly once; Secret was not deleted" >&2
+		exit 1
+	fi
+	if [[ "$service_reference_count" -ne 0 ]]; then
+		echo "error: Octelium Service still references ${retire_secret}; Secret was not deleted" >&2
+		exit 1
+	fi
+
+	secret_state="$(octelium_secret_state "$retire_secret")"
+	if [[ "$secret_state" == "unknown" ]]; then
+		echo "error: could not verify Octelium Secrets; Secret was not deleted" >&2
+		exit 1
+	fi
+	if [[ "$secret_state" == "absent" ]]; then
+		echo "Octelium Secret ${retire_secret} is already absent."
+		exit 0
+	fi
+
+	delete_failed=0
+	"$octeliumctl_bin" delete secret "$retire_secret" --domain "$domain" >/dev/null || delete_failed=1
+	secret_state="$(octelium_secret_state "$retire_secret")"
+	if [[ "$secret_state" == "unknown" ]]; then
+		echo "error: Secret deletion outcome is unknown; inspect ${retire_secret} before retrying" >&2
+		exit 1
+	fi
+	if [[ "$secret_state" == "exists" ]]; then
+		echo "error: Secret deletion did not remove ${retire_secret}; do not retry until inspected" >&2
+		exit 1
+	fi
+	if [[ "$delete_failed" -eq 1 ]]; then
+		echo "Retired Octelium Secret ${retire_secret}; deletion returned an error but absence was verified."
+	else
+		echo "Retired Octelium Secret ${retire_secret}."
+	fi
+	exit 0
+fi
 
 [[ -n "$kubeconfig" && -f "$kubeconfig" && -r "$kubeconfig" ]] || {
 	echo "error: --kubeconfig must name a readable file" >&2
@@ -227,10 +338,48 @@ if ! env \
 	exit 1
 fi
 
+authorization_allowed() {
+	local attributes="$1"
+	local response
+	response="$(
+		jq -cn --argjson attributes "$attributes" '
+      {
+        apiVersion: "authorization.k8s.io/v1",
+        kind: "SelfSubjectAccessReview",
+        spec: $attributes
+      }
+    ' |
+			env \
+				-u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+				-u http_proxy -u https_proxy -u all_proxy \
+				"$kubectl_bin" --kubeconfig="$normalized_kubeconfig" \
+				--request-timeout=15s create \
+				--raw /apis/authorization.k8s.io/v1/selfsubjectaccessreviews -f -
+	)" || return 1
+	jq -e '.status.allowed == true' >/dev/null <<<"$response"
+}
+
+if ! authorization_allowed \
+	'{"resourceAttributes":{"group":"*","resource":"*","verb":"*","namespace":""}}' ||
+	! authorization_allowed \
+		'{"nonResourceAttributes":{"path":"/*","verb":"*"}}'; then
+	echo "error: upstream kubeconfig must have cluster-admin-equivalent resource and non-resource access; Octelium was not changed" >&2
+	exit 1
+fi
+
 if ! "$octeliumctl_bin" create secret "$secret_name" \
 	--domain "$domain" --file "$normalized_kubeconfig" >/dev/null; then
-	echo "error: Secret was not created; existing Secrets are never overwritten" >&2
-	echo "stage rotation with a new --secret-name and switch both Services through the reviewed catalog" >&2
+	secret_state="$(octelium_secret_state "$secret_name")"
+	if [[ "$secret_state" == "exists" ]]; then
+		echo "error: Secret creation returned an error but ${secret_name} exists; outcome is ambiguous" >&2
+		echo "do not retry or choose another name until the existing Secret is inspected" >&2
+	elif [[ "$secret_state" == "absent" ]]; then
+		echo "error: Secret creation failed and ${secret_name} is confirmed absent" >&2
+		echo "retry the same reviewed name after correcting the failure" >&2
+	else
+		echo "error: Secret creation outcome is unknown because Octelium could not be queried" >&2
+		echo "do not retry or choose another name until Octelium is inspected" >&2
+	fi
 	exit 1
 fi
 

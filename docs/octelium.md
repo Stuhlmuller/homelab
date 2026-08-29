@@ -225,9 +225,12 @@ cluster CA; do not add `insecureSkipVerify`.
 canonical `https://10.1.0.199:6443` server, exactly one embedded current CA
 certificate, embedded credentials, and verified TLS without file references,
 plugins, or proxies. It completes an
-authenticated, non-persistent `kubectl auth whoami` probe before calling
-Octelium and stores only the minified context. The helper creates a Secret and
-never overwrites an existing name.
+authenticated, non-persistent `kubectl auth whoami` probe and requires
+cluster-admin-equivalent resource and non-resource authorization before calling
+Octelium. Octelium policy remains the client authorization boundary while the
+upstream credential can serve every permitted request. The helper stores only
+the minified context, never overwrites an existing name, and reconciles the
+exact name after a failed create so a lost response cannot orphan a credential.
 
 For the first installation, create the catalog's default Secret. For every
 later rotation, use a new versioned name:
@@ -254,7 +257,17 @@ Rollback is a catalog-only cutback: restore both `fromSecret` values to the
 prior Secret name and reapply the reviewed catalog. The prior credential bytes
 never need to be exported or printed. Do not remove the prior Secret until CI,
 operator, and Cordium access have all passed after the cutover and the rollback
-window has closed.
+window has closed. Then retire only the old name:
+
+```sh
+prior_secret_name="homelab-ci-kubeconfig" # Initial name, or the prior versioned name.
+scripts/octelium-ci-kubeconfig-secret.sh \
+  --retire-secret "$prior_secret_name"
+```
+
+Retirement fails closed unless both managed Kubernetes Services exist exactly
+once and no Service references the old Secret. It verifies the Secret is absent
+after deletion; an already-absent Secret is success.
 
 From an operator workstation, install the current
 [Octelium CLI](https://octelium.com/docs/octelium/latest/install/cli/install)

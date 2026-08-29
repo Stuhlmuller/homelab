@@ -201,9 +201,11 @@ CI/CD Octelium changes should also pass shell syntax checks for
 `scripts/ci/install-kubeconfig.sh`, `scripts/octelium-ci-credential.sh`, and
 `scripts/octelium-ci-kubeconfig-secret.sh`. Validate that
 `scripts/ci/octelium-ci-kubeconfig-secret-test.sh` passes; it proves a wrong
-endpoint, multiple CA certificates, an uppercase Secret name, and a failed
-authenticated probe cannot reach Octelium, and that only the selected minified
-context reaches a successful create. Validate that
+endpoint, multiple CA certificates, an uppercase Secret name, a failed
+authenticated probe, and incomplete upstream privileges cannot reach Octelium.
+It also proves only the selected minified context reaches a successful create,
+a lost create response is reconciled by exact name, referenced Secrets cannot
+be retired, and unreferenced or already-absent retirement is safe. Validate that
 `docs/examples/octelium/homelab-services.yaml` parses and contains Service
 `kubernetes-api-ci` plus core `ClusterConfig` `default` with human
 `maxPerUser: 32`, and that User `homelab-ci` keeps matching 30-day clientless

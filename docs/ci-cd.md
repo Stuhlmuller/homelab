@@ -317,8 +317,10 @@ defines:
 
 On first installation, materialize the catalog's default upstream kubeconfig
 Secret before applying the catalog. For later kubeconfig changes, use the
-versioned staged-Secret cutover and rollback in `docs/octelium.md`; do not
-overwrite the active Secret. Create or rotate the separate GitHub environment
+versioned staged-Secret cutover, guarded retirement, and rollback in
+`docs/octelium.md`; do not overwrite the active Secret. The upstream kubeconfig
+must be cluster-admin-equivalent because Octelium policy is the client
+authorization boundary. Create or rotate the separate GitHub environment
 credential after the Service catalog is healthy:
 
 ```sh
