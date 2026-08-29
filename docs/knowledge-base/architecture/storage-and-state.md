@@ -46,9 +46,11 @@ control-plane node and its system disk.
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
 `zimaboard-0`, while using retained NFS claims as migration sources and nightly
-archive targets. Their media paths still use static PV/PVC pairs against the
-QNAP `/media` export for downloads, movies, and TV library data. Read-only
-`showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
+archive targets. Deluge now uses namespace-local config and downloads claims in
+`deluge`; the original claims in `media` remain retained, and both
+`media-downloads` PVs mount the same QNAP `/media` export so Radarr and Sonarr
+keep their existing paths. Read-only `showmount -e 10.1.0.2` verified `/media`
+and `/homelab` on 2026-05-26.
 
 ## Stateful Workload Gate
 
@@ -163,15 +165,19 @@ state at `/app/data`. The first rollout is registered as stateful but should
 stay in the stateful workload gate until PVC smoke testing and backup/restore
 expectations are recorded in `docs/storage-nfs.md`.
 
-Deluge's active 5 Gi config volume is a retained static `hostPath` PV at
-`/var/lib/deluge`, pinned to `zimaboard-0`. The initial guarded cold copy took
-4 minutes 6 seconds for roughly 5.2 MB, demonstrating the QNAP stall on the old
-startup path. The steady-state pod mounts only local config and shared
-downloads; the old `deluge-config` claim receives verified nightly archives
-with 14-day retention. This removes catalog, fast-resume, authentication, and
-health-command reads from the QNAP path after read-only inspection on
-2026-07-30 found the VPN healthy while the previous pod reported failed daemon
-RPC health for roughly 17 hours. Its clean replacement loaded all 17 torrents
+Deluge's active 5 Gi config volume is the retained
+`deluge-config-local-isolated` static `hostPath` PV at `/var/lib/deluge`, pinned
+to `zimaboard-0`. The original media PV/PVC pair points at the same directory
+and remains retained for rollback; the namespace cutover hook fences the two
+from concurrent writers. The initial guarded cold copy took 4 minutes 6 seconds
+for roughly 5.2 MB, demonstrating the QNAP stall on the old startup path. The
+steady-state pod mounts only local config and shared downloads. The new
+`deluge/deluge-config` claim receives verified nightly archives with 14-day
+retention; historical archives remain in `media/deluge-config`, so the first
+new backup must be verified after cutover. This removes catalog, fast-resume,
+authentication, and health-command reads from the QNAP path. Read-only
+inspection on 2026-07-30 found the VPN healthy while the previous pod reported
+failed daemon RPC health for roughly 17 hours. Its clean replacement loaded all 17 torrents
 with no error-state entries and zero container restarts. An ordinary
 `deluge-console status` still took 13 seconds on local config, so the existing
 bounded health timeout remains necessary even though NFS is no longer in that
@@ -209,8 +215,8 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `.talos/patches/worker-zimaboard-1.yaml`
 - `.talos/patches/worker-cordium-user-namespaces.yaml`
 - `.talos/patches/worker-cordium-user-namespaces-rollback.yaml`
-- `clusters/homelab/apps/deluge/media-storage.yaml`
-- `clusters/homelab/apps/deluge/local-storage.yaml`
+- `clusters/homelab/apps/deluge/isolated/media-storage.yaml`
+- `clusters/homelab/apps/deluge/isolated/local-storage.yaml`
 - `clusters/homelab/apps/radarr/local-storage.yaml`
 - `clusters/homelab/apps/sonarr/local-storage.yaml`
 - `clusters/homelab/apps/media-postgres`

@@ -2,6 +2,72 @@ package main
 
 import rego.v1
 
+test_rejects_privileged_media_workload if {
+	violations := deny with input as workload_with_privilege("Deployment", "media", true)
+	some msg in violations
+	contains(msg, "namespace media must not run privileged container")
+}
+
+test_allows_nonprivileged_media_workload if {
+	violations := deny with input as workload_with_privilege("Deployment", "media", false)
+	count(violations) == 0
+}
+
+test_allows_scoped_privilege_in_deluge_namespace if {
+	violations := deny with input as workload_with_privilege("Deployment", "deluge", true)
+	count(violations) == 0
+}
+
+test_allows_deluge_ssm_prefix_in_deluge_namespace if {
+	violations := deny with input as {
+		"apiVersion": "external-secrets.io/v1",
+		"kind": "ExternalSecret",
+		"metadata": {"name": "deluge-vpn", "namespace": "deluge"},
+		"spec": {"data": [{"remoteRef": {"key": "/homelab/deluge/wg0-conf"}}]},
+	}
+	count(violations) == 0
+}
+
+test_rejects_deluge_ssm_prefix_in_media_namespace if {
+	violations := deny with input as {
+		"apiVersion": "external-secrets.io/v1",
+		"kind": "ExternalSecret",
+		"metadata": {"name": "deluge-vpn", "namespace": "media"},
+		"spec": {"data": [{"remoteRef": {"key": "/homelab/deluge/wg0-conf"}}]},
+	}
+	some msg in violations
+	contains(msg, "outside its allowed application prefixes")
+}
+
+test_allows_exact_legacy_deluge_secret_during_cutover if {
+	violations := deny with input as {
+		"apiVersion": "external-secrets.io/v1",
+		"kind": "ExternalSecret",
+		"metadata": {
+			"name": "deluge-vpn",
+			"namespace": "media",
+			"annotations": {"homelab.rst.io/temporary-deluge-namespace-cutover": "legacy-source"},
+		},
+		"spec": {"data": [{"remoteRef": {"key": "/homelab/deluge/vpn/wireguard-config"}}]},
+	}
+	count(violations) == 0
+}
+
+test_rejects_other_deluge_key_from_legacy_media_source if {
+	violations := deny with input as {
+		"apiVersion": "external-secrets.io/v1",
+		"kind": "ExternalSecret",
+		"metadata": {
+			"name": "deluge-vpn",
+			"namespace": "media",
+			"annotations": {"homelab.rst.io/temporary-deluge-namespace-cutover": "legacy-source"},
+		},
+		"spec": {"data": [{"remoteRef": {"key": "/homelab/deluge/other"}}]},
+	}
+	some msg in violations
+	contains(msg, "outside its allowed application prefixes")
+}
+
 test_rejects_gateway_attached_non_octelium_external_route if {
 	violations := deny with input as {
 		"apiVersion": "networking.istio.io/v1",
@@ -278,4 +344,20 @@ cordium_genesis_job(spec) := {
 	"kind": "Job",
 	"metadata": {"name": "cordium-genesis"},
 	"spec": spec,
+}
+
+workload_with_privilege(kind, namespace, privileged) := {
+	"apiVersion": "apps/v1",
+	"kind": kind,
+	"metadata": {"name": "example", "namespace": namespace},
+	"spec": {
+		"template": {
+			"spec": {
+				"containers": [{
+					"name": "app",
+					"securityContext": {"privileged": privileged},
+				}],
+			},
+		},
+	},
 }

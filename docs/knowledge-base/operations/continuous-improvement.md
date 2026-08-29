@@ -812,18 +812,19 @@ organization-policy blocker is tracked below.
   code outside this repository's review path.
 - **Next step:** keep remote Terragrunt module sources pinned to immutable
   commits, or vendor the module before using a mutable release tag again.
-- **Status:** fixed
+- **Status:** open; desired-state isolation staged, live cutover unverified
 - **Area:** platform service / Pod Security
 - **Evidence:** June 2026 security audits found namespaces using weak
-  `audit`/`warn` Pod Security labels. The fixes keep required
-  `enforce: privileged` exceptions for Deluge VPN, Istio ingress, Octelium,
-  Octelium client, Tailscale, and the host-networked GitHub Actions runner,
-  keep baseline enforcement for `finance`, and require repo-owned namespaces to
-  set `audit` and `warn` to `restricted` through Conftest.
-- **Risk:** privileged audit/warn labels hide workloads that could run under a
-  tighter profile or accidentally expand the exception blast radius.
-- **Next step:** continue splitting the Deluge VPN privilege exception into a
-  dedicated namespace once the media workloads can stay restricted.
+  `audit`/`warn` Pod Security labels. The 2026-08-29 follow-up moves Deluge and
+  Gluetun into a dedicated privileged `deluge` namespace, returns `media` to
+  `baseline`, and keeps `audit` and `warn` at `restricted`. A scoped cutover
+  hook fences the two namespace-local claims that point at the same local/NFS
+  data, while Conftest rejects explicitly privileged media containers.
+- **Risk:** Gluetun still requires privileged namespace admission, and the
+  current media PostgreSQL root init container prevents `restricted`
+  enforcement in `media`.
+- **Next step:** verify the isolated rollout, cross-namespace Service alias, and
+  first backup on the new archive claim; do not widen the `deluge` exception.
 - **Status:** fixed
 - **Area:** workload reliability / Deluge
 - **Evidence:** On 2026-06-15 UTC, Deluge was Kubernetes-ready and Argo CD

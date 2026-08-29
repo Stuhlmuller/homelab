@@ -74,6 +74,235 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Deluge privileged-namespace isolation"
+(
+  cd IaC/live/argocd-apps/deluge
+  terragrunt render --format json --no-color |
+    jq -e '
+      .inputs.manifest.spec as $app |
+      $app.destination == {
+        "name": "",
+        "namespace": "deluge",
+        "server": "https://kubernetes.default.svc"
+      } and
+      any($app.sources[];
+        .chart == "app-template" and
+        .targetRevision == "4.4.0" and
+        .helm.valueFiles == ["$values/clusters/homelab/apps/deluge/values.yaml"]
+      ) and
+      any($app.sources[];
+        .path == "clusters/homelab/apps/deluge/isolated" and
+        .targetRevision == "main" and
+        .kustomize == {}
+      )
+    ' >/dev/null
+)
+kubectl kustomize clusters/homelab/apps/deluge/isolated |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "Namespace" and .metadata.name == "media")] as $media_namespaces |
+    [.[] | select(.kind == "Namespace" and .metadata.name == "deluge")] as $deluge_namespaces |
+    [.[] | select(.kind == "Service" and .metadata.namespace == "media" and .metadata.name == "deluge")] as $aliases |
+    [.[] | select(.kind == "PersistentVolume" and .metadata.name == "deluge-config-local-isolated")] as $config_volumes |
+    [.[] | select(.kind == "PersistentVolume" and .metadata.name == "deluge-media-downloads")] as $download_volumes |
+    [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.namespace == "deluge" and .metadata.name == "deluge-config-local")] as $config_claims |
+    [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.namespace == "deluge" and .metadata.name == "media-downloads")] as $download_claims |
+    [.[] | select(.kind == "ExternalSecret" and .metadata.namespace == "deluge" and .metadata.name == "deluge-vpn")] as $vpn_secrets |
+    [.[] | select(.kind == "Role" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover")] as $cutover_roles |
+    [.[] | select(.kind == "Job" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover")] as $cutover_jobs |
+    [.[] | select(.kind == "ServiceAccount" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover-cleanup")][0] as $cleanup_sa |
+    [.[] | select(.kind == "Role" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover-cleanup")][0] as $cleanup_media_role |
+    [.[] | select(.kind == "Role" and .metadata.namespace == "deluge" and .metadata.name == "deluge-namespace-cutover-cleanup")][0] as $cleanup_deluge_role |
+    [.[] | select(.kind == "RoleBinding" and .metadata.name == "deluge-namespace-cutover-cleanup")] as $cleanup_bindings |
+    [.[] | select(.kind == "Job" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover-cleanup")][0] as $cleanup |
+    [.[] | select(.kind == "NetworkPolicy" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover")] as $cutover_policies |
+    [.[] | select(.kind == "NetworkPolicy" and .metadata.namespace == "deluge" and .metadata.name == "deluge")] as $policies |
+    ($media_namespaces | length) == 1 and
+    $media_namespaces[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $media_namespaces[0].metadata.labels["pod-security.kubernetes.io/enforce"] == "baseline" and
+    ($deluge_namespaces | length) == 1 and
+    $deluge_namespaces[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $deluge_namespaces[0].metadata.labels["pod-security.kubernetes.io/enforce"] == "privileged" and
+    ($deluge_namespaces[0].metadata.annotations["homelab.rst.io/privileged-namespace-justification"] | length) > 0 and
+    ($aliases | length) == 1 and
+    $aliases[0].spec.type == "ExternalName" and
+    $aliases[0].spec.externalName == "deluge.deluge.svc.cluster.local" and
+    ($config_volumes | length) == 1 and
+    $config_volumes[0].spec.claimRef == {"name": "deluge-config-local", "namespace": "deluge"} and
+    $config_volumes[0].spec.hostPath.path == "/var/lib/deluge" and
+    $config_volumes[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    ($download_volumes | length) == 1 and
+    $download_volumes[0].spec.claimRef == {"name": "media-downloads", "namespace": "deluge"} and
+    $download_volumes[0].spec.nfs == {"path": "/media", "server": "10.1.0.2"} and
+    ($config_claims | length) == 1 and
+    $config_claims[0].spec.volumeName == "deluge-config-local-isolated" and
+    ($download_claims | length) == 1 and
+    $download_claims[0].spec.volumeName == "deluge-media-downloads" and
+    ($vpn_secrets | length) == 1 and
+    ($cutover_roles | length) == 1 and
+    $cutover_roles[0].rules == [
+      {"apiGroups": ["apps"], "resources": ["deployments"], "resourceNames": ["deluge"], "verbs": ["delete", "get", "list", "watch"]}
+    ] and
+    ($cutover_jobs | length) == 1 and
+    $cutover_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PreSync" and
+    $cutover_jobs[0].spec.template.spec.enableServiceLinks == false and
+    $cutover_jobs[0].spec.template.spec.containers[0].env == [
+      {"name": "KUBERNETES_SERVICE_HOST", "value": "10.1.0.199"},
+      {"name": "KUBERNETES_SERVICE_PORT", "value": "6443"}
+    ] and
+    $cutover_jobs[0].spec.template.spec.containers[0].args == [
+      "--namespace=media", "delete", "deployment", "deluge", "--ignore-not-found=true",
+      "--cascade=foreground", "--wait=true", "--timeout=300s", "--cache-dir=/tmp/kubectl-cache"
+    ] and
+    $cleanup_sa.automountServiceAccountToken == false and
+    $cleanup_sa.metadata.annotations["argocd.argoproj.io/sync-wave"] == "-4" and
+    ($cleanup_sa.metadata.annotations["argocd.argoproj.io/hook"] // "") == "" and
+    $cleanup_media_role.rules == [
+      {"apiGroups": [""], "resources": ["serviceaccounts"], "resourceNames": ["deluge-namespace-cutover"], "verbs": ["delete"]},
+      {"apiGroups": ["rbac.authorization.k8s.io"], "resources": ["rolebindings", "roles"], "resourceNames": ["deluge-namespace-cutover"], "verbs": ["delete"]},
+      {"apiGroups": ["batch"], "resources": ["jobs"], "resourceNames": ["deluge-namespace-cutover"], "verbs": ["delete"]}
+    ] and
+    $cleanup_deluge_role.rules == [
+      {"apiGroups": ["rbac.authorization.k8s.io"], "resources": ["rolebindings", "roles"], "resourceNames": ["deluge-namespace-cutover"], "verbs": ["delete"]}
+    ] and
+    ($cleanup_bindings | length) == 2 and
+    all($cleanup_bindings[];
+      .metadata.annotations["argocd.argoproj.io/sync-wave"] == "-4" and
+      .roleRef == {"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": "deluge-namespace-cutover-cleanup"} and
+      .subjects == [{"kind": "ServiceAccount", "name": "deluge-namespace-cutover-cleanup", "namespace": "media"}]
+    ) and
+    $cleanup.metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
+    $cleanup.spec.template.spec.serviceAccountName == "deluge-namespace-cutover-cleanup" and
+    $cleanup.spec.template.spec.initContainers[0].command == ["kubectl"] and
+    $cleanup.spec.template.spec.initContainers[0].env == [
+      {"name": "KUBERNETES_SERVICE_HOST", "value": "10.1.0.199"},
+      {"name": "KUBERNETES_SERVICE_PORT", "value": "6443"}
+    ] and
+    $cleanup.spec.template.spec.initContainers[0].args == [
+      "--namespace=deluge", "delete",
+      "rolebinding.rbac.authorization.k8s.io/deluge-namespace-cutover",
+      "role.rbac.authorization.k8s.io/deluge-namespace-cutover",
+      "--ignore-not-found=true", "--wait=false", "--cache-dir=/tmp/kubectl-cache"
+    ] and
+    $cleanup.spec.template.spec.containers[0].command == ["kubectl"] and
+    $cleanup.spec.template.spec.containers[0].env == [
+      {"name": "KUBERNETES_SERVICE_HOST", "value": "10.1.0.199"},
+      {"name": "KUBERNETES_SERVICE_PORT", "value": "6443"}
+    ] and
+    $cleanup.spec.template.spec.containers[0].args == [
+      "--namespace=media", "delete",
+      "job/deluge-namespace-cutover",
+      "rolebinding.rbac.authorization.k8s.io/deluge-namespace-cutover",
+      "role.rbac.authorization.k8s.io/deluge-namespace-cutover",
+      "serviceaccount/deluge-namespace-cutover", "--ignore-not-found=true",
+      "--wait=false", "--cache-dir=/tmp/kubectl-cache"
+    ] and
+    ($cutover_policies | length) == 1 and
+    $cutover_policies[0].spec.podSelector.matchLabels == {
+      "app.kubernetes.io/name": "deluge-namespace-cutover",
+      "app.kubernetes.io/part-of": "homelab-media"
+    } and
+    $cutover_policies[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "-4" and
+    $cutover_policies[0].spec.ingress == [] and
+    $cutover_policies[0].spec.egress == [{
+      "to": [{"ipBlock": {"cidr": "10.1.0.199/32"}}],
+      "ports": [{"protocol": "TCP", "port": 6443}]
+    }] and
+    ($policies | length) == 1 and
+    any($policies[0].spec.ingress[];
+      any(.from[]; .namespaceSelector.matchLabels["kubernetes.io/metadata.name"] == "media") and
+      any(.ports[]; .protocol == "TCP" and .port == 8112)
+    ) and
+    any($policies[0].spec.ingress[];
+      any(.from[]; .namespaceSelector.matchLabels["kubernetes.io/metadata.name"] == "monitoring") and
+      any(.ports[]; .protocol == "TCP" and .port == 9797)
+    ) and
+    ([.[] |
+      select(.metadata.namespace == "media") |
+      select(.kind == "Pod" or .kind == "DaemonSet" or .kind == "Deployment" or .kind == "Job" or .kind == "ReplicaSet" or .kind == "StatefulSet" or .kind == "CronJob") |
+      (if .kind == "Pod" then .spec
+       elif .kind == "CronJob" then .spec.jobTemplate.spec.template.spec
+       else .spec.template.spec end) |
+      ((.initContainers // []) + (.containers // []))[] |
+      select(.securityContext.privileged == true)
+    ] | length) == 0
+  ' >/dev/null
+kubectl kustomize clusters/homelab/apps/deluge |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "Namespace" and .metadata.name == "deluge")][0] as $staging_namespace |
+    [.[] | select(.kind == "Namespace" and .metadata.name == "media")][0] as $legacy_media_namespace |
+    [.[] | select(.kind == "Role" and .metadata.namespace == "deluge" and .metadata.name == "deluge-namespace-cutover")][0] as $rollback_role |
+    [.[] | select(.kind == "Job" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover")][0] as $rollback |
+    [.[] | select(.kind == "Role" and .metadata.name == "deluge-namespace-cutover-cleanup")] as $cleanup_roles |
+    [.[] | select(.kind == "Job" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover-cleanup")][0] as $cleanup |
+    [.[] | select(.kind == "NetworkPolicy" and .metadata.namespace == "media" and .metadata.name == "deluge-namespace-cutover")][0] as $cutover_policy |
+    [.[] | select(.kind == "ExternalSecret" and .metadata.namespace == "media" and .metadata.name == "deluge-vpn")][0] as $legacy_secret |
+    [.[] | select(.kind == "ExternalSecret" and .metadata.namespace == "deluge" and .metadata.name == "deluge-vpn")] as $staged_secrets |
+    [.[] | select(
+      (.kind == "PersistentVolume" and (.metadata.name == "deluge-config-local-isolated" or .metadata.name == "deluge-media-downloads")) or
+      (.kind == "PersistentVolumeClaim" and .metadata.namespace == "deluge" and (.metadata.name == "deluge-config" or .metadata.name == "deluge-config-local" or .metadata.name == "media-downloads"))
+    )] as $staged_storage |
+    [.[] | select(
+      (.kind == "PersistentVolume" and (.metadata.name == "deluge-config-local" or .metadata.name == "media-downloads")) or
+      (.kind == "PersistentVolumeClaim" and .metadata.namespace == "media" and (.metadata.name == "deluge-config" or .metadata.name == "deluge-config-local" or .metadata.name == "deluge-downloads" or .metadata.name == "media-downloads"))
+    )] as $legacy_storage |
+    $staging_namespace.metadata.labels["pod-security.kubernetes.io/enforce"] == "baseline" and
+    $staging_namespace.metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $legacy_media_namespace.metadata.annotations["homelab.rst.io/temporary-deluge-namespace-cutover"] == "legacy-source" and
+    $legacy_media_namespace.metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $rollback_role.rules == [
+      {"apiGroups": ["apps"], "resources": ["deployments"], "resourceNames": ["deluge"], "verbs": ["delete", "get", "list", "watch"]}
+    ] and
+    $rollback.metadata.annotations["argocd.argoproj.io/hook"] == "Sync" and
+    $rollback.spec.template.spec.enableServiceLinks == false and
+    $rollback.spec.template.spec.containers[0].env == [
+      {"name": "KUBERNETES_SERVICE_HOST", "value": "10.1.0.199"},
+      {"name": "KUBERNETES_SERVICE_PORT", "value": "6443"}
+    ] and
+    $rollback.spec.template.spec.containers[0].args == [
+      "--namespace=deluge", "delete", "deployment", "deluge", "--ignore-not-found=true",
+      "--cascade=foreground", "--wait=true", "--timeout=300s", "--cache-dir=/tmp/kubectl-cache"
+    ] and
+    ($cleanup_roles | length) == 2 and
+    $cleanup.metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
+    $cleanup.spec.template.spec.serviceAccountName == "deluge-namespace-cutover-cleanup" and
+    $cutover_policy.spec.podSelector.matchLabels == {
+      "app.kubernetes.io/name": "deluge-namespace-cutover",
+      "app.kubernetes.io/part-of": "homelab-media"
+    } and
+    $cutover_policy.spec.ingress == [] and
+    $cutover_policy.spec.egress == [{
+      "to": [{"ipBlock": {"cidr": "10.1.0.199/32"}}],
+      "ports": [{"protocol": "TCP", "port": 6443}]
+    }] and
+    $legacy_secret.metadata.annotations["homelab.rst.io/temporary-deluge-namespace-cutover"] == "legacy-source" and
+    ($staged_secrets | length) == 1 and
+    ($staged_storage | length) == 5 and
+    all($staged_storage[]; .metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false") and
+    ($legacy_storage | length) == 6 and
+    all($legacy_storage[]; .metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false")
+  ' >/dev/null
+rg -Fq 'unsupported because Argo CD skips hooks' clusters/homelab/apps/deluge/README.md
+yq -o=json '.' clusters/homelab/apps/deluge/values.yaml |
+  jq -e '
+    .controllers.deluge.initContainers.gluetun.securityContext.capabilities == {
+      "drop": ["ALL"],
+      "add": ["NET_ADMIN"]
+    } and
+    .persistence.tun.advancedMounts == {
+      "deluge": {"gluetun": [{"path": "/dev/net/tun"}]}
+    }
+  ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/external-secrets/cluster-secret-store.yaml |
+  jq -e 'any(.spec.conditions[].namespaces[]; . == "deluge")' >/dev/null
+yq ea -o=json -I=0 '[.]' clusters/homelab/argocd/self-management/appproject.yaml |
+  jq -e '
+    [.[] | select(.kind == "AppProject" and .metadata.name == "homelab")][0].spec.destinations |
+    any(.[]; . == {"server": "https://kubernetes.default.svc", "namespace": "deluge"})
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Octelium PostgreSQL backup contract"
 kubectl kustomize clusters/homelab/apps/octelium-storage |
   yq ea -o=json -I=0 '[.]' - |

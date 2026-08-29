@@ -1,0 +1,125 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: deluge-config-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: deluge-config-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: deluge
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 5Gi
+  claimRef:
+    name: deluge-config-local
+    namespace: media
+  hostPath:
+    # ponytail: one static volume avoids a cluster-wide provisioner; move this
+    # to a Talos UserVolume if node-local recovery or growth demands it.
+    path: /var/lib/deluge
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-0
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: deluge-config-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: deluge-config-local
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: deluge
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: deluge-config-local
+  volumeMode: Filesystem
+  volumeName: deluge-config-local
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: deluge-config-local-isolated
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: deluge
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 5Gi
+  claimRef:
+    name: deluge-config-local
+    namespace: deluge
+  hostPath:
+    # This second PV preserves the same on-node directory while moving the
+    # namespace-scoped claim. The cutover hook guarantees one writer.
+    path: /var/lib/deluge
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-0
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: deluge-config-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: deluge-config-local
+  namespace: deluge
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: deluge
+    app.kubernetes.io/part-of: homelab-media
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: deluge-config-local
+  volumeMode: Filesystem
+  volumeName: deluge-config-local-isolated

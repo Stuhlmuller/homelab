@@ -1,0 +1,91 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: deluge-config-backup
+  namespace: deluge
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    checkov.io/skip1: CKV_K8S_40=The backup must run as Deluge UID 1000 to read mode-600 config files without weakening their permissions.
+  labels:
+    app.kubernetes.io/name: deluge-config-backup
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  schedule: "30 3 * * *"
+  timeZone: America/Los_Angeles
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 900
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: deluge-config-backup
+            app.kubernetes.io/part-of: homelab-media
+        spec:
+          automountServiceAccountToken: false
+          nodeSelector:
+            kubernetes.io/hostname: zimaboard-0
+          restartPolicy: Never
+          securityContext:
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: backup
+              image: busybox:1.38.0@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  umask 0077
+                  timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+                  backup_root=/backup/local-backups
+                  partial="${backup_root}/.${timestamp}.tar.gz.partial"
+                  complete="${backup_root}/${timestamp}.tar.gz"
+                  mkdir -p "$backup_root"
+
+                  tar -czf "$partial" -C /config .
+                  tar -tzf "$partial" >/dev/null
+                  mv "$partial" "$complete"
+                  echo "completed backup ${timestamp}: ${complete}"
+
+                  find "$backup_root" \
+                    -maxdepth 1 -type f \
+                    -name '20[0-9][0-9][01][0-9][0-3][0-9]T[0-2][0-9][0-5][0-9][0-5][0-9]Z.tar.gz' \
+                    -mtime +13 -delete
+                  find "$backup_root" \
+                    -maxdepth 1 -type f \
+                    -name '.*.partial' -mtime +1 -delete
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+                limits:
+                  cpu: 250m
+                  memory: 128Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - name: local-config
+                  mountPath: /config
+                  readOnly: true
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: local-config
+              persistentVolumeClaim:
+                claimName: deluge-config-local
+                readOnly: true
+            - name: backup
+              persistentVolumeClaim:
+                claimName: deluge-config

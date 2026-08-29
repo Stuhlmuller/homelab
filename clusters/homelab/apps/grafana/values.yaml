@@ -671,7 +671,7 @@ alerting:
                     (
                       time()
                       - kube_cronjob_status_last_successful_time{
-                          namespace="media",
+                          namespace=~"media|deluge",
                           cronjob=~"(deluge|radarr|sonarr)-config-backup|media-postgres-backup"
                         }
                       > 30 * 60 * 60
@@ -681,14 +681,14 @@ alerting:
                       (
                         time()
                         - kube_cronjob_created{
-                            namespace="media",
+                            namespace=~"media|deluge",
                             cronjob=~"(deluge|radarr|sonarr)-config-backup|media-postgres-backup"
                           }
                         > 30 * 60 * 60
                       )
                       unless on (namespace, cronjob)
                       kube_cronjob_status_last_successful_time{
-                        namespace="media",
+                        namespace=~"media|deluge",
                         cronjob=~"(deluge|radarr|sonarr)-config-backup|media-postgres-backup"
                       }
                     )
@@ -858,14 +858,14 @@ alerting:
                     uid: prometheus
                   editorMode: code
                   expr: |
-                    absent(deluge_daemon_rpc_healthy{namespace="media",service="deluge"})
+                    absent(deluge_daemon_rpc_healthy{namespace=~"media|deluge",service="deluge"})
                     or
-                    absent(deluge_vpn_healthy{namespace="media",service="deluge"})
+                    absent(deluge_vpn_healthy{namespace=~"media|deluge",service="deluge"})
                     or
                     (
-                      (deluge_daemon_rpc_healthy{namespace="media",service="deluge"} == bool 0)
+                      (deluge_daemon_rpc_healthy{namespace=~"media|deluge",service="deluge"} == bool 0)
                       +
-                      (deluge_vpn_healthy{namespace="media",service="deluge"} == bool 0)
+                      (deluge_vpn_healthy{namespace=~"media|deluge",service="deluge"} == bool 0)
                     )
                   instant: true
                   intervalMs: 1000

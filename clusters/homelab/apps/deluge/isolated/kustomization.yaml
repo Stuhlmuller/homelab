@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - backup-cronjob.yaml
+  - cutover.yaml
+  - cutover-cleanup.yaml
+  - cutover-networkpolicy.yaml
+  - namespace.yaml
+  - externalsecret.yaml
+  - local-storage.yaml
+  - media-storage.yaml
+  - networkpolicy.yaml
+  - service-alias.yaml
+  - virtualservice.yaml
+configMapGenerator:
+  - name: deluge-catalog-recovery
+    namespace: deluge
+    files:
+      - recover-torrent-catalog.py
+      - reconcile-completed.py
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deluge-namespace-cutover
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: deluge-namespace-cutover
+      app.kubernetes.io/part-of: homelab-media
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.1.0.199/32
+      ports:
+        - protocol: TCP
+          port: 6443

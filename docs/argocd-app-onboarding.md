@@ -45,7 +45,7 @@ destination, and resources.
 | kiali                 | requested                 | `monitoring`            | `clusters/homelab/apps/kiali`                   | `IaC/live/argocd-apps/kiali`                 | Yes           | istio, prometheus, grafana                                                         |
 | compass               | requested                 | `monitoring`            | `clusters/homelab/apps/compass`                 | `IaC/live/argocd-apps/compass`               | Yes           | cert-manager, istio, prometheus                                                    |
 | descheduler           | requested                 | `kube-system`           | `clusters/homelab/apps/descheduler/values.yaml` | `IaC/live/argocd-apps/descheduler`           | Yes           | prometheus                                                                         |
-| deluge                | requested                 | `media`                 | `clusters/homelab/apps/deluge`                  | `IaC/live/argocd-apps/deluge`                | Yes           | cert-manager, istio, platform-storage                                              |
+| deluge                | requested                 | `deluge`                | `clusters/homelab/apps/deluge/isolated`         | `IaC/live/argocd-apps/deluge`                | Yes           | cert-manager, istio, platform-storage                                              |
 | dispatcharr           | requested                 | `media`                 | `clusters/homelab/apps/dispatcharr`             | `IaC/live/argocd-apps/dispatcharr`           | Yes           | external-secrets, cert-manager, istio, platform-storage                            |
 | prowlarr              | requested                 | `media`                 | `clusters/homelab/apps/prowlarr`                | `IaC/live/argocd-apps/prowlarr`              | Yes           | cert-manager, istio, media-postgres, platform-storage                              |
 | radarr                | requested                 | `media`                 | `clusters/homelab/apps/radarr`                  | `IaC/live/argocd-apps/radarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage            |
@@ -73,9 +73,11 @@ ready until `platform-storage` is synced, the `nfs-default` StorageClass is
 verified, and `docs/storage-nfs.md` records backup coverage.
 
 Sonarr, Deluge, and Radarr keep active config on retained local volumes pinned
-to `zimaboard-0` and archive it nightly to their retained NFS claims. All three
-apps use static claims against the QNAP `/media` export for media-library
-paths. Read-only
+to `zimaboard-0` and archive it nightly to their retained NFS claims. Deluge's
+claims are namespace-local to `deluge`; Radarr and Sonarr keep `media` claims,
+with separate static PV objects mounting the same QNAP `/media` export. The
+`media/deluge` ExternalName alias preserves their existing download-client URL.
+Read-only
 `showmount -e 10.1.0.2` verified `/media` for every Talos node on 2026-05-26;
 do not treat those apps as cut over until the three media migration Jobs have
 completed.

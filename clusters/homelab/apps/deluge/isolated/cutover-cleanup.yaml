@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deluge-namespace-cutover-cleanup
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/part-of: homelab-media
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deluge-namespace-cutover-cleanup
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/part-of: homelab-media
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    resourceNames:
+      - deluge-namespace-cutover
+    verbs:
+      - delete
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+      - roles
+    resourceNames:
+      - deluge-namespace-cutover
+    verbs:
+      - delete
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    resourceNames:
+      - deluge-namespace-cutover
+    verbs:
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deluge-namespace-cutover-cleanup
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/part-of: homelab-media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deluge-namespace-cutover-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: deluge-namespace-cutover-cleanup
+    namespace: media
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deluge-namespace-cutover-cleanup
+  namespace: deluge
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/part-of: homelab-media
+rules:
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+      - roles
+    resourceNames:
+      - deluge-namespace-cutover
+    verbs:
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deluge-namespace-cutover-cleanup
+  namespace: deluge
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/part-of: homelab-media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deluge-namespace-cutover-cleanup
+subjects:
+  - kind: ServiceAccount
+    name: deluge-namespace-cutover-cleanup
+    namespace: media
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deluge-namespace-cutover-cleanup
+  namespace: media
+  labels:
+    app.kubernetes.io/name: deluge-namespace-cutover
+    app.kubernetes.io/component: cleanup
+    app.kubernetes.io/part-of: homelab-media
+  annotations:
+    argocd.argoproj.io/hook: PostSync,SyncFail
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "2"
+    checkov.io/skip1: CKV_K8S_38=The cleanup hook needs its narrowly scoped Kubernetes service-account token.
+spec:
+  activeDeadlineSeconds: 120
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: deluge-namespace-cutover
+        app.kubernetes.io/component: cleanup
+        app.kubernetes.io/part-of: homelab-media
+    spec:
+      automountServiceAccountToken: true
+      enableServiceLinks: false
+      restartPolicy: Never
+      serviceAccountName: deluge-namespace-cutover-cleanup
+      securityContext:
+        runAsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: remove-deluge-cutover-rbac
+          image: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250
+          command:
+            - kubectl
+          env:
+            - name: KUBERNETES_SERVICE_HOST
+              value: "10.1.0.199"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "6443"
+          args:
+            - --namespace=deluge
+            - delete
+            - rolebinding.rbac.authorization.k8s.io/deluge-namespace-cutover
+            - role.rbac.authorization.k8s.io/deluge-namespace-cutover
+            - --ignore-not-found=true
+            - --wait=false
+            - --cache-dir=/tmp/kubectl-cache
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: remove-cutover-identity
+          image: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250
+          command:
+            - kubectl
+          env:
+            - name: KUBERNETES_SERVICE_HOST
+              value: "10.1.0.199"
+            - name: KUBERNETES_SERVICE_PORT
+              value: "6443"
+          args:
+            - --namespace=media
+            - delete
+            - job/deluge-namespace-cutover
+            - rolebinding.rbac.authorization.k8s.io/deluge-namespace-cutover
+            - role.rbac.authorization.k8s.io/deluge-namespace-cutover
+            - serviceaccount/deluge-namespace-cutover
+            - --ignore-not-found=true
+            - --wait=false
+            - --cache-dir=/tmp/kubectl-cache
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 16Mi

@@ -63,6 +63,20 @@ deny contains msg if {
 
 deny contains msg if {
 	metadata := object.get(input, "metadata", {})
+	object.get(metadata, "namespace", "default") == "media"
+	pod_spec := workload_pod_spec
+	container := array.concat(
+		object.get(pod_spec, "initContainers", []),
+		object.get(pod_spec, "containers", []),
+	)[_]
+	security_context := object.get(container, "securityContext", {})
+	object.get(security_context, "privileged", false) == true
+	name := object.get(metadata, "name", "<unknown>")
+	msg := sprintf("%s %q in namespace media must not run privileged container %q", [input.kind, name, object.get(container, "name", "<unknown>")])
+}
+
+deny contains msg if {
+	metadata := object.get(input, "metadata", {})
 	annotations := object.get(metadata, "annotations", {})
 	truthy(object.get(annotations, "homelab.rst.io/public-funnel", "false"))
 	kind := object.get(input, "kind", "<unknown>")
@@ -277,6 +291,34 @@ cordium_genesis_cleanup_rule_allowed("ClusterRole", rule) if {
 	}
 }
 
+workload_pod_spec := object.get(input, "spec", {}) if {
+	input.kind == "Pod"
+}
+
+workload_pod_spec := object.get(
+	object.get(object.get(input, "spec", {}), "template", {}),
+	"spec",
+	{},
+) if {
+	input.kind in {"DaemonSet", "Deployment", "Job", "ReplicaSet", "StatefulSet"}
+}
+
+workload_pod_spec := object.get(
+	object.get(
+		object.get(
+			object.get(object.get(input, "spec", {}), "jobTemplate", {}),
+			"spec",
+			{},
+		),
+		"template",
+		{},
+	),
+	"spec",
+	{},
+) if {
+	input.kind == "CronJob"
+}
+
 has_nonempty_annotation(annotations, key) if {
 	value := object.get(annotations, key, "")
 	count(trim(value, " ")) > 0
@@ -317,8 +359,9 @@ external_secret_allowed_prefixes := {
 	"argocd": {"/homelab/argocd/"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
 	"cert-manager": {"/homelab/cert-manager/"},
+	"deluge": {"/homelab/deluge/"},
 	"github-actions-runner": {"/homelab/github-actions-runner/"},
-	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
+	"media": {"/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
@@ -334,7 +377,7 @@ deny contains msg if {
 	namespace := object.get(metadata, "namespace", "default")
 	allowed := external_secret_allowed_prefixes[namespace]
 	key := external_secret_remote_keys(input)[_]
-	not remote_ref_key_allowed(key, allowed)
+	not external_secret_remote_key_allowed(input, namespace, key, allowed)
 	name := object.get(metadata, "name", "<unknown>")
 	msg := sprintf("ExternalSecret %q in namespace %q references SSM key %q outside its allowed application prefixes", [name, namespace, key])
 }
@@ -365,6 +408,17 @@ remote_ref_key_allowed(key, allowed) if {
 	some allowed_key in allowed
 	endswith(allowed_key, "/")
 	startswith(key, allowed_key)
+}
+
+external_secret_remote_key_allowed(secret, _, key, allowed) if {
+	remote_ref_key_allowed(key, allowed)
+}
+
+external_secret_remote_key_allowed(secret, "media", key, _) if {
+	object.get(object.get(secret, "metadata", {}), "name", "") == "deluge-vpn"
+	annotations := object.get(object.get(secret, "metadata", {}), "annotations", {})
+	object.get(annotations, "homelab.rst.io/temporary-deluge-namespace-cutover", "") == "legacy-source"
+	key == "/homelab/deluge/vpn/wireguard-config"
 }
 
 remote_ref_key_allowed(key, allowed) if {
