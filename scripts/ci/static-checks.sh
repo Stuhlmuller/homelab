@@ -728,14 +728,24 @@ if [[ -n "$tag_only_images" ]]; then
 fi
 echo "::endgroup::"
 
-echo "::group::OpenClaw plugin supply chain"
+echo "::group::OpenClaw Discord plugin"
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
-rg -Fq 'openclaw plugins inspect discord --json' "$openclaw_values"
-rg -Fq 'plugin.get("origin") == "bundled"' "$openclaw_values"
+rg -Fq 'openclaw plugins install "npm:@openclaw/discord@${openclaw_version}" --pin --force' "$openclaw_values"
+rg -Fq 'openclaw plugins inspect discord --runtime --json |' "$openclaw_values"
+rg -Fq 'plugin.get("origin") == "global"' "$openclaw_values"
+rg -Fq 'plugin.get("status") == "loaded"' "$openclaw_values"
 rg -Fq 'package.get("version") == expected' "$openclaw_values"
-rg -Fq 'openclaw plugins inspect discord --runtime --json' "$openclaw_values"
-if rg -q 'plugins install|falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|npm:@openclaw/discord' "$openclaw_values"; then
-  echo "OpenClaw Discord bootstrap must use only the exact image-bundled plugin" >&2
+if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
+  rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
+  echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2
+  exit 1
+fi
+if ! awk '
+  /openclaw plugins install "npm:@openclaw\/discord@\$\{openclaw_version\}" --pin --force/ && !install { install = NR }
+  /openclaw config validate/ && !validate { validate = NR }
+  END { exit !(install && validate && install < validate) }
+' "$openclaw_values"; then
+  echo "OpenClaw must install Discord before persisted-config validation" >&2
   exit 1
 fi
 yq -e '

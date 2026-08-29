@@ -225,9 +225,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   SecretRef to that environment value instead of a generated file under the
   container user's home directory. OpenClaw uses
   `/homelab/openclaw/discord-bot-token` as `DISCORD_BOT_TOKEN`; bootstrap
-  verifies and enables only the Discord plugin already in the pinned image,
-  without invoking a package registry, and
-  configures Discord with an OpenClaw SecretRef to that environment value
+  installs the exact image-version official external Discord package from npm
+  into pod-local storage before config validation without a floating fallback,
+  then configures Discord with an OpenClaw SecretRef to that environment value
   instead of storing the token in config. The bootstrap and proxy containers
   do not receive the app-only LiteLLM, Grafana-login, or GitHub App credentials,
   and the proxy does not mount persistent OpenClaw state. ChatGPT Pro or Codex OAuth

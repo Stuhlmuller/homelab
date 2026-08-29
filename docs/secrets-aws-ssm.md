@@ -210,10 +210,11 @@ auth out of plaintext config and prevents startup from depending on generated
 token files under the container user's home directory.
 
 OpenClaw reads `/homelab/openclaw/discord-bot-token` as
-`DISCORD_BOT_TOKEN`. The pod bootstrap verifies and enables only the Discord
-channel plugin already bundled in the digest-pinned OpenClaw image. It fails
-startup if the plugin origin, package version, runtime status, or resolved path
-does not match; it never invokes a mutable package source.
+`DISCORD_BOT_TOKEN`. The pod bootstrap installs the official external Discord
+package from npm at the exact running OpenClaw image version in pod-local
+storage before config validation, with no floating or ClawHub fallback. It
+fails startup if the exact package cannot install; when Discord channel config
+is active, a runtime load failure also blocks startup.
 Bootstrap then writes a SecretRef to the environment-backed token instead of
 copying the token into OpenClaw config. Replace the placeholder directly in SSM
 before relying on Discord, then bump

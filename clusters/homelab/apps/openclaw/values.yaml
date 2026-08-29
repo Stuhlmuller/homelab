@@ -177,6 +177,11 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
+            echo "Installing the Discord channel plugin"
+            openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
+            : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
+            openclaw plugins install "npm:@openclaw/discord@${openclaw_version}" --pin --force
+
             openclaw config validate
 
             openclaw config set --strict-json \
@@ -260,14 +265,12 @@ controllers:
               'true'
 
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
-              echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel bootstrap"
+              echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel config"
             else
-              echo "DISCORD_BOT_TOKEN is populated; enabling the bundled Discord channel plugin"
-              openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
-              : "${openclaw_version:?failed to parse OpenClaw version}"
-              discord_root="$(
-                openclaw plugins inspect discord --json |
-                  python3 -c '
+              echo "DISCORD_BOT_TOKEN is populated; configuring the Discord channel"
+              openclaw plugins enable discord
+              openclaw plugins inspect discord --runtime --json |
+                python3 -c '
             import json
             import pathlib
             import sys
@@ -278,35 +281,13 @@ controllers:
             package = json.loads((root / "package.json").read_text())
             valid = (
                 plugin.get("id") == "discord"
-                and plugin.get("origin") == "bundled"
-                and package.get("name") == "@openclaw/discord"
-                and package.get("version") == expected
-            )
-            valid or sys.exit("Discord image bundle missing or version-mismatched")
-            print(root)
-            ' "$openclaw_version"
-              )"
-              openclaw plugins enable discord
-              openclaw plugins inspect discord --runtime --json |
-                python3 -c '
-            import json
-            import pathlib
-            import sys
-
-            expected, expected_root = sys.argv[1:]
-            plugin = json.load(sys.stdin)["plugin"]
-            root = pathlib.Path(plugin["rootDir"])
-            package = json.loads((root / "package.json").read_text())
-            valid = (
-                plugin.get("id") == "discord"
-                and plugin.get("origin") == "bundled"
+                and plugin.get("origin") == "global"
                 and plugin.get("status") == "loaded"
-                and root.resolve() == pathlib.Path(expected_root).resolve()
                 and package.get("name") == "@openclaw/discord"
                 and package.get("version") == expected
             )
-            valid or sys.exit("Discord bundled runtime verification failed")
-            ' "$openclaw_version" "$discord_root"
+            valid or sys.exit("Discord external runtime verification failed")
+            ' "$openclaw_version"
               openclaw config set --strict-json \
                 channels.discord.enabled \
                 'true'
