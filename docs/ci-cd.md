@@ -115,8 +115,9 @@ contract for Grafana.
   extraction script, reviewed workflow hash, exact `main` SHA, and production
   approval are the object-level boundary.
 - The static gate confines the Octelium CI token and public endpoint to the
-  exact protected plan and apply steps, checks the literal repository scripts
-  those live steps invoke or reference, and rejects Actions artifact uploads.
+  exact protected plan and apply steps, closes and hash-pins every repository
+  script those steps invoke or reference, and rejects artifact uploads and
+  local Actions indirection.
 - The upstream kubeconfig for both `kubernetes-api-ci` and the private
   `kubernetes-api.homelab` Service is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with

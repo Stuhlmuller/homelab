@@ -260,7 +260,7 @@ test_allows_local_helm_render if {
 }
 
 test_allows_local_kustomize_output if {
-	violations := deny with input as workflow_with_live_run("kubectl kustomize clusters/homelab/apps/example >/dev/null")
+	violations := deny with input as workflow_with_live_run(`nix develop --command kubectl kustomize "$overlay" >/dev/null 2>&1`)
 	count(violations) == 0
 }
 
@@ -304,7 +304,7 @@ test_rejects_wrapped_live_command_and_write_all if {
 	some permission_msg in violations
 	contains(permission_msg, "write-all")
 	some artifact_msg in violations
-	contains(artifact_msg, "must not upload artifacts")
+	contains(artifact_msg, "must not upload public-repository artifacts")
 }
 
 test_rejects_live_job_public_write_permission if {
@@ -333,7 +333,7 @@ test_rejects_live_job_artifact_upload if {
 	})}})
 	violations := deny with input as workflow
 	some msg in violations
-	contains(msg, "must not upload artifacts")
+	contains(msg, "must not upload public-repository artifacts")
 }
 
 test_allows_withheld_live_command_output if {
@@ -438,6 +438,58 @@ test_rejects_public_artifact_upload if {
 	contains(msg, "must not upload public-repository artifacts")
 }
 
+test_rejects_pages_artifact_upload if {
+	violations := deny with input as workflow_with_step({"uses": "actions/upload-pages-artifact@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+	some msg in violations
+	contains(msg, "must not upload public-repository artifacts")
+}
+
+test_rejects_local_composite_action if {
+	violations := deny with input as workflow_with_step({"uses": "./.github/actions/public-artifact-wrapper"})
+	some msg in violations
+	contains(msg, "must not upload public-repository artifacts")
+}
+
+test_rejects_local_reusable_workflow if {
+	violations := deny with input as {
+		"name": "Local reusable workflow",
+		"jobs": {"fixture": {"uses": "./.github/workflows/public-artifact-wrapper.yml"}},
+	}
+	some msg in violations
+	contains(msg, "must not call a local workflow")
+}
+
+test_rejects_direct_grafana_diagnostics_with_actions_override if {
+	violations := deny with input as workflow_with_step({"run": "GITHUB_ACTIONS=false bash scripts/grafana-diagnostics.sh"})
+	some msg in violations
+	contains(msg, "must not invoke private Grafana diagnostics")
+}
+
+test_rejects_literal_indirect_grafana_diagnostics if {
+	violations := deny with input as workflow_with_step({"run": `diagnostics=scripts/grafana-diagnostics
+GITHUB_ACTIONS=false bash "${diagnostics}.sh"`})
+	some msg in violations
+	contains(msg, "must not invoke private Grafana diagnostics")
+}
+
+test_rejects_backslash_grafana_diagnostics if {
+	violations := deny with input as workflow_with_step({"run": `GITHUB_ACTIONS=false bash scripts/grafana\-diagnostics.sh`})
+	some msg in violations
+	contains(msg, "must not invoke private Grafana diagnostics")
+}
+
+test_rejects_parameter_concatenated_grafana_diagnostics if {
+	violations := deny with input as workflow_with_step({"run": "GITHUB_ACTIONS=false bash scripts/grafana${EMPTY}-diagnostics.sh"})
+	some msg in violations
+	contains(msg, "must not invoke private Grafana diagnostics")
+}
+
+test_rejects_unbraced_parameter_grafana_diagnostics if {
+	violations := deny with input as workflow_with_step({"run": "GITHUB_ACTIONS=false bash scripts/grafana$EMPTY-diagnostics.sh"})
+	some msg in violations
+	contains(msg, "must not invoke private Grafana diagnostics")
+}
+
 test_rejects_kubernetes_yaml_output if {
 	violations := deny with input as workflow_with_step({"run": "kubectl get pods -o yaml"})
 	some msg in violations
@@ -475,18 +527,91 @@ test_rejects_apply_object_output if {
 }
 
 test_allows_kubernetes_version_probe if {
-	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version"})
+	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version >/dev/null 2>&1"})
 	count(violations) == 0
 }
 
-test_allows_suppressed_kubernetes_existence_check if {
+test_allows_absolute_kubernetes_version_probe if {
+	violations := deny with input as workflow_with_step({"run": "/usr/bin/kubectl --request-timeout=15s version >/dev/null 2>&1"})
+	count(violations) == 0
+}
+
+test_rejects_absolute_kubernetes_output if {
+	violations := deny with input as workflow_with_step({"run": "/usr/bin/kubectl get secrets >/dev/null 2>&1"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_concatenated_kubernetes_executable if {
+	violations := deny with input as workflow_with_step({"run": "kube'ctl' get secrets >/dev/null 2>&1"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_empty_ansi_quote_kubernetes_executable if {
+	violations := deny with input as workflow_with_step({"run": "kube$''ctl get secrets >/dev/null 2>&1"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_backslash_kubernetes_executable if {
+	violations := deny with input as workflow_with_step({"run": `kube\ctl get secrets >/dev/null 2>&1`})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_backtick_kubernetes_substitution if {
+	violations := deny with input as workflow_with_step({"run": "echo `kubectl get secrets -o yaml`"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_parameter_concatenated_kubernetes_executable if {
+	violations := deny with input as workflow_with_step({"run": "kube${EMPTY}ctl get secrets >/dev/null 2>&1"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_unbraced_parameter_kubernetes_executable if {
+	violations := deny with input as workflow_with_step({"run": "kub\"$EMPTY\"ectl get secrets >/dev/null 2>&1"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_stdout_only_kubernetes_version_probe if {
+	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version >/dev/null"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_quoted_kubernetes_redirection_operator if {
+	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version >/dev/null '2>&1'"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_kubernetes_redirection_reroute if {
+	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version >/dev/null 2>&1 >>\"$GITHUB_STEP_SUMMARY\""})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_kubernetes_stderr_reroute if {
+	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version >/dev/null 1>&2"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_suppressed_kubernetes_existence_check if {
 	violations := deny with input as workflow_with_step({"run": "if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then true; fi"})
-	count(violations) == 0
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
 }
 
-test_allows_suppressed_kubernetes_apply if {
-	violations := deny with input as workflow_with_step({"run": "kubectl apply -f namespace.yaml >/dev/null"})
-	count(violations) == 0
+test_rejects_suppressed_kubernetes_apply if {
+	violations := deny with input as workflow_with_step({"run": "kubectl apply -f namespace.yaml >/dev/null 2>&1"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
 }
 
 workflow_with_step(step) := {

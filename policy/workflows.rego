@@ -46,6 +46,14 @@ deny contains msg if {
 deny contains msg if {
 	jobs := object.get(input, "jobs", {})
 	some job_name, job in jobs
+	uses := lower(sprintf("%v", [object.get(job, "uses", "")]))
+	startswith(uses, "./")
+	msg := sprintf("reusable workflow job %q must not call a local workflow", [job_name])
+}
+
+deny contains msg if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
 	steps := object.get(job, "steps", [])
 	some index
 	step := steps[index]
@@ -75,8 +83,14 @@ deny contains msg if {
 	some index
 	step := steps[index]
 	uses := lower(sprintf("%v", [object.get(step, "uses", "")]))
-	startswith(uses, "actions/upload-artifact@")
+	forbidden_public_action(uses)
 	msg := sprintf("workflow job %q step %d must not upload public-repository artifacts", [job_name, index])
+}
+
+deny contains msg if {
+	workflow_text := normalized_shell_text(json.marshal(input))
+	contains(workflow_text, "grafana-diagnostics")
+	msg := "workflows must not invoke private Grafana diagnostics"
 }
 
 deny contains msg if {
@@ -166,17 +180,6 @@ deny contains msg if {
 deny contains msg if {
 	jobs := object.get(input, "jobs", {})
 	some job_name, job in jobs
-	job_sensitive_command(job)
-	steps := object.get(job, "steps", [])
-	some index
-	uses := object.get(steps[index], "uses", "")
-	startswith(uses, "actions/upload-artifact@")
-	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
-}
-
-deny contains msg if {
-	jobs := object.get(input, "jobs", {})
-	some job_name, job in jobs
 	steps := object.get(job, "steps", [])
 	some index
 	run := lower(sprintf("%v", [object.get(steps[index], "run", "")]))
@@ -205,6 +208,18 @@ has_event(events, event) if {
 external_action_reference(uses) if {
 	not startswith(uses, "./")
 	not startswith(uses, "docker://")
+}
+
+forbidden_public_action(uses) if {
+	startswith(uses, "actions/upload-artifact@")
+}
+
+forbidden_public_action(uses) if {
+	startswith(uses, "actions/upload-pages-artifact@")
+}
+
+forbidden_public_action(uses) if {
+	startswith(uses, "./")
 }
 
 sha_pinned(uses) if {
@@ -240,18 +255,38 @@ job_container_image(job) := image if {
 }
 
 kubectl_command(segment) if {
-	regex.match(`(^|[[:space:]"'(])kubectl([[:space:]]|$)`, segment)
+	normalized := normalized_shell_text(segment)
+	regex.match(`(^|[[:space:]<(\x60])([^[:space:]]*/)?kubectl([[:space:]]|$)`, normalized)
+}
+
+kubectl_command(segment) if {
+	regex.match(`kube[^[:space:]]*ctl`, shell_run_text(segment))
 }
 
 approved_public_kubectl_command(segment) if {
-	regex.match(`^[[:space:]]*kubectl[[:space:]]+--request-timeout=15s[[:space:]]+version[[:space:]]*$`, segment)
+	normalized := trim_space(shell_run_text(segment))
+	regex.match(`^(/usr/bin/)?kubectl[[:space:]]+--request-timeout=15s[[:space:]]+version[[:space:]]+>[[:space:]]*/dev/null[[:space:]]+2>&1$`, normalized)
 }
 
 approved_public_kubectl_command(segment) if {
-	regex.match(`kubectl[^;&|]*[[:space:]](>|1>)[[:space:]]*/dev/null([[:space:]]|$)`, segment)
+	normalized := trim_space(shell_run_text(segment))
+	regex.match(`^nix[[:space:]]+develop[[:space:]]+--command[[:space:]]+(/usr/bin/)?kubectl[[:space:]]+kustomize[[:space:]]+"\$overlay"[[:space:]]+>[[:space:]]*/dev/null[[:space:]]+2>&1$`, normalized)
 }
 
-workflow_run_segments(run) := regex.split(`\r?\n|[;&|]+`, regex.replace(lower(sprintf("%v", [run])), `\\\r?\n`, " "))
+shell_run_text(value) := without_line_continuations if {
+	lowercase := lower(sprintf("%v", [value]))
+	without_line_continuations := regex.replace(lowercase, `\\\r?\n`, " ")
+}
+
+normalized_shell_text(value) := normalized if {
+	without_parameter_expansions := regex.replace(shell_run_text(value), `\$\{[^}]*\}`, "")
+	without_simple_parameter_expansions := regex.replace(without_parameter_expansions, `\$[A-Za-z_][A-Za-z0-9_]*`, "")
+	without_backslashes := regex.replace(without_simple_parameter_expansions, `\\`, "")
+	without_empty_ansi_quotes := regex.replace(without_backslashes, `\$''`, "")
+	normalized := regex.replace(without_empty_ansi_quotes, `["']`, "")
+}
+
+workflow_run_segments(run) := regex.split(`\r?\n|;|&&|\|+`, shell_run_text(run))
 
 live_homelab_workflow if {
 	workflow_run_contains("scripts/ci/install-kubeconfig.sh")
@@ -283,10 +318,6 @@ shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t
 
 direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply)\.sh([\t ;]|$)`
 
-kubectl_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?kubectl["']?[\t ]+`
-
-kubectl_local_render_pattern := `(?m)(^|[^A-Za-z0-9_.-])kubectl[\t ]+kustomize([\t ;]|$)`
-
 talos_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?talosctl["']?[\t ]+`
 
 aws_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?aws["']?[\t ]+`
@@ -307,7 +338,7 @@ private_wrapper_start := "if ! nix develop --command bash >\"$private_log\" 2>&1
 
 live_script_command_count(run) := count(regex.find_all_string_submatch_n(shell_live_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(direct_live_command_pattern, run, -1))
 
-live_cluster_command_count(run) := (count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1))) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
+live_cluster_command_count(run) := unapproved_kubectl_command_count(run) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
 
 unapproved_kubectl_command_count(run) := count([segment |
 	segment := workflow_run_segments(run)[_]

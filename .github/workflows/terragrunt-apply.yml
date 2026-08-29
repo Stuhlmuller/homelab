@@ -191,7 +191,7 @@ jobs:
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
-          kubectl --request-timeout=15s version >/dev/null
+          kubectl --request-timeout=15s version >/dev/null 2>&1
           bash scripts/ci/terragrunt-apply.sh
           EOF
           then

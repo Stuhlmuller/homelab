@@ -108,6 +108,15 @@ kubectl_cmd=(kubectl --kubeconfig "$kubeconfig" --request-timeout=15s)
   --field-selector involvedObject.namespace=monitoring \
   --sort-by=.lastTimestamp | tail -80
 
+if ! pods="$(
+  "${kubectl_cmd[@]}" -n monitoring get pod \
+    -l app.kubernetes.io/name=grafana \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+)"; then
+  echo "error: unable to enumerate Grafana pods" >&2
+  exit 1
+fi
+
 while IFS= read -r pod; do
   [[ -n "$pod" ]] || continue
   echo "== describe ${pod} =="
@@ -116,8 +125,4 @@ while IFS= read -r pod; do
   "${kubectl_cmd[@]}" -n monitoring logs "$pod" --all-containers --tail=200 || true
   echo "== previous logs ${pod} =="
   "${kubectl_cmd[@]}" -n monitoring logs "$pod" --all-containers --previous --tail=200 || true
-done < <(
-  "${kubectl_cmd[@]}" -n monitoring get pod \
-    -l app.kubernetes.io/name=grafana \
-    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
-)
+done <<<"$pods"

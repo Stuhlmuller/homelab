@@ -67,10 +67,12 @@ That assertion pins the normalized live-scope and aggregate-gate bodies by
 SHA-256 and pins each credentialed job as normalized JSON, so comments, dead
 code, or added post-authentication steps cannot satisfy the check. Its closed
 inventory rejects new environment-, secret-, token-, or write-permission jobs
-until their complete job definition is reviewed and hashed. Conftest also
-rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
-or non-rendering Helm output and any command after the private-log wrapper;
-credentials stay scoped to the one live step.
+until their complete job definition is reviewed and hashed. The protected plan
+and apply script closure is extension-independent and every approved file is
+hash-pinned. Conftest also rejects unapproved or incompletely suppressed
+`kubectl`, direct `talosctl`, AWS, Terragrunt, OpenTofu, Terraform, or
+non-rendering Helm output, local Actions indirection, and artifact upload
+actions; credentials stay scoped to the one live step.
 
 The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
@@ -316,7 +318,7 @@ then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
 details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure. The live plan and
 apply jobs verify the Octelium Kubernetes path with a suppressed
-`kubectl --request-timeout=15s version` probe after
+`kubectl --request-timeout=15s version >/dev/null 2>&1` probe after
 `scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig.
 
 Detailed `kubectl describe`, event, and workload-log diagnostics must run only
@@ -324,7 +326,9 @@ from a private operator terminal with `scripts/grafana-diagnostics.sh`. Public
 workflows and artifacts are not approved diagnostic sinks because arbitrary
 workload output is not covered by GitHub's registered-secret masking. The
 helper must disconnect before the persistent `--logout` post-run hook and keep
-its temporary state when server-side logout fails.
+its temporary state when server-side logout fails. Workflow policy forbids
+direct and literal-indirect references to the helper, even if a step overrides
+`GITHUB_ACTIONS`.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`

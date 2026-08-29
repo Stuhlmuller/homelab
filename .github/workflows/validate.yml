@@ -40,7 +40,7 @@ jobs:
           for overlay in clusters/homelab/platform/storage clusters/homelab/argocd/self-management clusters/homelab/apps/*; do
             test -f "$overlay/kustomization.yaml" || continue
             echo "rendering $overlay"
-            nix develop --command kubectl kustomize "$overlay" >/dev/null
+            nix develop --command kubectl kustomize "$overlay" >/dev/null 2>&1
           done
 
       - name: Check whitespace

@@ -516,8 +516,8 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
 .github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml c63b4a5368ecc454bf19c4ed7948abcba9cd65f14a98359e1f0afe3dc238eb70
-.github/workflows/terragrunt-plan.yml 6518c3cded158e41049b65c13f8bc78da0e5e3e105c472bfd3ac1399104549c5
+.github/workflows/terragrunt-apply.yml a4902329e174ac831b22fe5ebab43cfdb2cd5b7d080ae7176a38ae4ee58a70bd
+.github/workflows/terragrunt-plan.yml 4af079d3a65eca70c168045b6710664f864051e5f5847f1e1ca1c3ce8fa932de
 EOF
 echo "::endgroup::"
 
@@ -705,6 +705,9 @@ rg -Fq '"${octelium_cmd[@]}" --logout version' scripts/grafana-diagnostics.sh
     if [[ " $* " == *' config view --minify '* ]]; then
       printf '%s' "$MOCK_KUBECTL_SERVER"
     elif [[ "$*" == *'-o jsonpath='* ]]; then
+      if [[ "${MOCK_KUBECTL_POD_LIST_FAIL:-false}" == "true" ]]; then
+        return 42
+      fi
       printf 'grafana-test\n'
     fi
   }
@@ -735,6 +738,14 @@ rg -Fq '"${octelium_cmd[@]}" --logout version' scripts/grafana-diagnostics.sh
     echo "Plain Octelium logout did not reproduce its v0.35 masked RPC failure." >&2
     exit 1
   fi
+  : >"$mock_octelium_log"
+  if GITHUB_ACTIONS=false \
+    MOCK_KUBECTL_POD_LIST_FAIL=true \
+    scripts/grafana-diagnostics.sh >/dev/null 2>&1; then
+    echo "Grafana diagnostics ignored pod enumeration failure" >&2
+    exit 1
+  fi
+  : >"$mock_kubectl_log"
   : >"$mock_octelium_log"
   GITHUB_ACTIONS=false scripts/grafana-diagnostics.sh >/dev/null 2>&1
   rg -Fq 'describe pod grafana-test' "$mock_kubectl_log"
@@ -809,7 +820,7 @@ assert_live_access_scope \
   "Verify Production Apply Inputs" "Run Live Terragrunt Apply"
 
 literal_repo_scripts() {
-  { rg -o 'scripts/[[:alnum:]_.\/-]+\.sh' || true; } | sort -u
+  { rg -o 'scripts/[[:alnum:]_.\/-]+' || true; } | sort -u
 }
 
 resolve_repo_script_references() {
@@ -835,7 +846,7 @@ resolve_repo_script_references() {
           return 1
           ;;
       esac
-    done < <(rg -o '(\$\{script_dir\}/)?[[:alnum:]_.\/-]+\.sh' "$script" || true)
+    done < <(rg -o '(\$\{script_dir\}/[[:alnum:]_.\/-]+|scripts/[[:alnum:]_.\/-]+)' "$script" || true)
   done <<<"$scripts"
 }
 
@@ -884,68 +895,47 @@ live_script_dependencies="$(resolve_repo_script_references "$live_script_scope" 
   exit 1
 }
 
-(
-  workflow_fixture_dir="$(mktemp -d)"
-  fixture_index=0
-  trap 'rm -rf "$workflow_fixture_dir"' EXIT
+live_script_scope_is_approved() {
+  [[ "$1" == "$live_script_scope" ]]
+}
 
-  workflow_run_is_safe() {
-    local run="$1"
-    local fixture
-
-    run="${run//$'\nEOF\n'/$'\nEOF_NESTED\n'}"
-    # shellcheck disable=SC2016 # The fixture must preserve shell expansions literally.
-    run="$(printf '%s\n' \
-      'private_log="$(mktemp)"' \
-      'trap '\''rm -f "$private_log"'\'' EXIT' \
-      'if ! nix develop --command bash >"$private_log" 2>&1 <<'\''EOF'\''' \
-      'umask 077' \
-      "$run" \
-      'EOF' \
-      'then' \
-      '  echo "failure details withheld"' \
-      '  exit 1' \
-      'fi' \
-      'echo "success details withheld"')"
-    fixture_index=$((fixture_index + 1))
-    fixture="${workflow_fixture_dir}/${fixture_index}.json"
-    jq -n --arg run "$run" \
-      '{
-        name: "Public Output Fixture",
-        jobs: {fixture: {steps: [{
-          env: {
-            OCTELIUM_AUTH_TOKEN: "fixture",
-            KUBE_API_SERVER_URL: "https://kubernetes-api-ci.stinkyboi.com"
-          },
-          run: $run
-        }]}}
-      }' \
-      >"$fixture"
-    conftest test --policy policy --output stdout "$fixture" >/dev/null 2>&1
-  }
-
-  while IFS= read -r live_script; do
-    workflow_run_is_safe "$(<"$live_script")" || {
-      echo "Protected live workflow script ${live_script} can emit diagnostic output." >&2
+protected_live_script_inventory="$(
+  while read -r script expected_hash; do
+    [[ "$(shasum -a 256 "$script" | cut -d' ' -f1)" == "$expected_hash" ]] || {
+      echo "Protected live script changed; review it and update its exact security hash: ${script}" >&2
       exit 1
     }
-  done <<<"$live_script_scope"
+    printf '%s\n' "$script"
+  done <<'EOF'
+scripts/ci/install-kubeconfig.sh 85ae85780dabdfe610d8cb3b53c72f0ae08ef2c34e9543cda65f1c1068265ce8
+scripts/ci/terragrunt-apply.sh 7257032fdecf99c86d59d54bc428fa2ea769a0152486b5d5203e618b8af16b39
+scripts/ci/terragrunt-filter-base.sh d3b0657e14693866775042d757029875eb4be76d711bf506a2be8fb850477872
+scripts/ci/terragrunt-plan.sh d2bb6efc6954c1240a8bf0b43e826db153ee61c78980ef40b3e07ee83e25c1db
+EOF
+)"
+[[ "$protected_live_script_inventory" == "$live_script_scope" ]] || {
+  echo "Protected live script fingerprint inventory does not match the closed script scope." >&2
+  exit 1
+}
 
+(
+  workflow_fixture_dir="$(mktemp -d)"
+  trap 'rm -rf "$workflow_fixture_dir"' EXIT
   install -d "${workflow_fixture_dir}/scripts/ci"
   printf 'kubectl get pods -o yaml\n' \
-    >"${workflow_fixture_dir}/scripts/ci/fixture-diagnostics.sh"
+    >"${workflow_fixture_dir}/scripts/ci/fixture-diagnostics"
   # shellcheck disable=SC2016 # The fixture must preserve script_dir literally.
-  printf 'bash "${script_dir}/fixture-diagnostics.sh"\n' \
-    >"${workflow_fixture_dir}/scripts/ci/fixture-wrapper.sh"
-  indirect_run='bash scripts/ci/fixture-wrapper.sh'
-  indirect_script="$(printf '%s\n' "$indirect_run" | literal_repo_scripts)"
-  indirect_dependency="$(
+  printf 'bash "${script_dir}/fixture-diagnostics"\n' \
+    >"${workflow_fixture_dir}/scripts/ci/fixture-wrapper.bash"
+  fixture_run_scripts="$(printf '%s\n' 'bash scripts/ci/fixture-wrapper.bash' | literal_repo_scripts)"
+  fixture_dependencies="$(
     cd "$workflow_fixture_dir"
-    resolve_repo_script_references "$indirect_script"
+    resolve_repo_script_references "$fixture_run_scripts"
   )"
-  [[ "$indirect_dependency" == scripts/ci/fixture-diagnostics.sh ]]
-  if workflow_run_is_safe "$(<"${workflow_fixture_dir}/${indirect_dependency}")"; then
-    echo "Indirect Kubernetes diagnostics fixture was accepted." >&2
+  fixture_scope="$(printf '%s\n%s\n' "$fixture_run_scripts" "$fixture_dependencies" | sort -u)"
+  [[ "$fixture_scope" == $'scripts/ci/fixture-diagnostics\nscripts/ci/fixture-wrapper.bash' ]]
+  if live_script_scope_is_approved "$fixture_scope"; then
+    echo "Extension-independent protected-script closure fixture was accepted." >&2
     exit 1
   fi
 )
@@ -962,19 +952,47 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
-    [$policies[0].spec.rules[] | select(.name == "operator-client")] as $operator_rules |
     ($policies | length) == 1 and
-    $operator_rules == [{
-      "name": "operator-client",
-      "effect": "ALLOW",
-      "condition": {"all": {"of": [
-        {"match": "ctx.user.spec.type == \"HUMAN\""},
-        {"match": "ctx.session.status.type == \"CLIENT\""},
-        {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
-        {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
-        {"match": "ctx.user.metadata.name == \"homelab-owner\""}
-      ]}}
-    }] and
+    $policies[0].spec.rules == [
+      {
+        "name": "cordium-sensitive-read-deny",
+        "effect": "DENY",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.resource in [\"secrets\", \"configmaps\", \"serviceaccounts\", \"tokenreviews\", \"subjectaccessreviews\", \"selfsubjectaccessreviews\", \"localsubjectaccessreviews\", \"selfsubjectrulesreviews\"]"},
+            {"match": "ctx.request.kubernetes.subresource in [\"proxy\", \"log\", \"exec\", \"attach\", \"portforward\", \"ephemeralcontainers\", \"token\"]"}
+          ]}}
+        ]}}
+      },
+      {
+        "name": "operator-client",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
+        ]}}
+      },
+      {
+        "name": "cordium-read-only-client",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
+          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"}
+        ]}}
+      }
+    ] and
     ($services | length) == 1 and
     ($services[0].spec.isPublic // false) == false and
     $services[0].spec.mode == "KUBERNETES" and
