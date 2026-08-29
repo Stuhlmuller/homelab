@@ -96,7 +96,7 @@ contract for Grafana.
   AWS access keys to this repository.
 - Octelium access uses an access-token credential for workload User `homelab-ci`
   and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
-  Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
+  Terragrunt jobs run on GitHub-hosted Ubuntu and use the
   existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
   This avoids the IPv6-only Gateway QUIC path, while the
   `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
@@ -114,6 +114,9 @@ contract for Grafana.
   Octelium v0.35 cannot restrict those methods by object name, so the fixed
   extraction script, reviewed workflow hash, exact `main` SHA, and production
   approval are the object-level boundary.
+- The static gate confines the Octelium CI token and public endpoint to the
+  exact protected plan and apply steps, checks the literal repository scripts
+  those live steps invoke or reference, and rejects Actions artifact uploads.
 - The upstream kubeconfig for both `kubernetes-api-ci` and the private
   `kubernetes-api.homelab` Service is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
@@ -445,23 +448,54 @@ wait_for_success() {
   return 1
 }
 
-diagnostics_before_id="$(latest_run_id homelab-diagnostics.yml)"
 apply_before_id="$(latest_run_id terragrunt-apply.yml)"
-gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main \
-  -f expected_sha="$main_sha"
 gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
   -f expected_sha="$main_sha"
 
-diagnostics_run_id="$(find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id")"
 apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
-test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
 test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
-wait_for_success "$diagnostics_run_id" "$apply_run_id"
+wait_for_success "$apply_run_id"
 ```
 
-Both exact-head runs must exit successfully. If either fails because the token
-is unusable, rerun the same recovery block; no second short-lived recovery
-identity is needed.
+The exact-head apply must exit successfully. If it fails because the token is
+unusable, rerun the same recovery block; no second short-lived recovery
+identity is needed. Run detailed Grafana diagnostics only from a private
+operator terminal:
+
+```sh
+scripts/grafana-diagnostics.sh
+```
+
+The helper opens an isolated Entra login for runtime HUMAN User
+`homelab-owner`, starts a rootless Octelium CLIENT session, and publishes only
+private Service `kubernetes-api.homelab` on `http://127.0.0.1:16443`. It
+refuses another identity, Session type, or API server. Its exit trap
+disconnects first, then runs harmless `octelium --logout version` so Octelium
+v0.35 propagates a server-side logout failure before local state removal. A
+successful cleanup removes the temporary kubeconfig and client state. If
+revocation fails, it preserves the mode-`0700` state directory named in the
+error so the operator can retry. The GitHub-only `homelab-ci` bearer is neither
+retrieved nor reused.
+Never move these commands into a public workflow or upload their output as an
+Actions artifact.
+
+This path follows Octelium v0.35's
+[generated Kubernetes Service config](https://github.com/octelium/octelium/blob/v0.35.0/cluster/apiserver/apiserver/user/service_cfg.go#L39-L212)
+and [persistent post-run logout](https://github.com/octelium/octelium/blob/v0.35.0/client/common/cliutils/prerun.go#L63-L91)
+behavior.
+
+Before removing historical diagnostic logs, enumerate the exact run IDs, review
+each log archive in approved private storage, record its SHA-256 and evidence
+retention decision, then rotate any credential found in the output. After that
+review, delete only the approved log archives while preserving run metadata:
+
+```sh
+gh api --method DELETE \
+  repos/Stuhlmuller/homelab/actions/runs/<run-id>/logs
+```
+
+Do not use `gh run delete`; it also destroys the run metadata needed for the
+audit trail.
 
 ## Private Kubernetes Catalog Rollout
 

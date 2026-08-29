@@ -398,10 +398,12 @@ workflow_with_images(docker_action, job_container, service_image) := {
 workflow_with_live_run(run) := {
 	"name": "Live output test",
 	"on": "workflow_dispatch",
-	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"jobs": {"test": {
 		"runs-on": "ubuntu-latest",
-		"steps": [{"run": run, "env": {"OCTELIUM_AUTH_TOKEN": "test"}}],
+		"steps": [{"run": run, "env": {
+			"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com",
+			"OCTELIUM_AUTH_TOKEN": "test",
+		}}],
 	}},
 }
 
@@ -428,4 +430,69 @@ workflow_with_catalog_credential_on_different_step := {
 			{"run": "true", "env": {"OCTELIUM_CATALOG_AUTH_TOKEN": "test"}},
 		],
 	}},
+}
+
+test_rejects_public_artifact_upload if {
+	violations := deny with input as workflow_with_step({"uses": "actions/upload-artifact@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
+	some msg in violations
+	contains(msg, "must not upload public-repository artifacts")
+}
+
+test_rejects_kubernetes_yaml_output if {
+	violations := deny with input as workflow_with_step({"run": "kubectl get pods -o yaml"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_multiline_kubernetes_logs if {
+	violations := deny with input as workflow_with_step({"run": "kubectl -n monitoring \\\nlogs grafana"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_stderr_only_suppression if {
+	violations := deny with input as workflow_with_step({"run": "kubectl get pods -o yaml 2>/dev/null"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_later_unsuppressed_command if {
+	violations := deny with input as workflow_with_step({"run": "kubectl get pods >/dev/null; kubectl get secrets -o yaml"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_version_argument_bypass if {
+	violations := deny with input as workflow_with_step({"run": "kubectl get secret version -o yaml"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_rejects_apply_object_output if {
+	violations := deny with input as workflow_with_step({"run": "kubectl apply --dry-run=server -f secret.yaml -o yaml"})
+	some msg in violations
+	contains(msg, "must not emit unapproved Kubernetes command output")
+}
+
+test_allows_kubernetes_version_probe if {
+	violations := deny with input as workflow_with_step({"run": "kubectl --request-timeout=15s version"})
+	count(violations) == 0
+}
+
+test_allows_suppressed_kubernetes_existence_check if {
+	violations := deny with input as workflow_with_step({"run": "if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then true; fi"})
+	count(violations) == 0
+}
+
+test_allows_suppressed_kubernetes_apply if {
+	violations := deny with input as workflow_with_step({"run": "kubectl apply -f namespace.yaml >/dev/null"})
+	count(violations) == 0
+}
+
+workflow_with_step(step) := {
+	"name": "Public Output Fixture",
+	"jobs": {"fixture": {"steps": [object.union(step, {"env": {
+		"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com",
+		"OCTELIUM_AUTH_TOKEN": "test",
+	}})]}},
 }

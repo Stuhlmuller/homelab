@@ -183,6 +183,12 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   mandatory revoke step. Octelium v0.35 cannot scope these methods by object
   name; the fixed helper, reviewed hashes, exact `main` SHA, and production
   approval provide that boundary. See `docs/ci-cd.md`.
+  Private operator diagnostics do not reuse the CI bearer or public Service.
+  `scripts/grafana-diagnostics.sh` creates an isolated HUMAN CLIENT Session for
+  runtime-only Entra User `homelab-owner`, publishes private Service
+  `kubernetes-api.homelab` only to fixed localhost port `16443`, disconnects
+  first, and uses Octelium v0.35's persistent `--logout` hook so a failed
+  server-side Session revocation preserves its local state for retry.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by

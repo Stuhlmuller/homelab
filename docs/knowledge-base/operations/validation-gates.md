@@ -206,14 +206,17 @@ CI/CD Octelium changes should also pass shell syntax checks for
 Session and access-token lifetimes before applying it with `octeliumctl`.
 Apply the `ClusterConfig` with `--include ClusterConfig` before the normal
 catalog apply because the include flag replaces the default resource-kind list.
-The static gate requires manual Homelab Diagnostics and Terragrunt Apply
-dispatches to carry an exact expected `main` SHA and fail before work when the
-resolved workflow commit differs. Every push to `main` runs only the cancellable
-`Terragrunt Apply Request` check; it uses no protected environment, stored
-secret, or OIDC permission and prints the exact dispatch command plus active
-apply links without opening a production approval. The protected apply's first
-post-approval step requires the expected, workflow, and current `main` SHAs to
-match before credentials or live commands.
+The static gate forbids detailed live-cluster diagnostics in public workflows.
+It also confines the Octelium CI credential and endpoint to the exact protected
+plan and apply steps, checks their literal repository script closure, and
+rejects Actions artifact uploads.
+Manual Terragrunt Apply dispatches must carry an exact expected `main` SHA and
+fail before work when the resolved workflow commit differs. Every push to
+`main` runs only the cancellable `Terragrunt Apply Request` check; it uses no
+protected environment, stored secret, or OIDC permission and prints the exact
+dispatch command plus active apply links without opening a production approval.
+The protected apply's first post-approval step requires the expected, workflow,
+and current `main` SHAs to match before credentials or live commands.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. GitHub's native environment/concurrency queue cannot enforce
 an automatic approval SLA; strict expiry needs an externally hosted GitHub App
@@ -311,7 +314,17 @@ The pull request workflow renders temporary Terragrunt plans to policy JSON and
 runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
 then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
 details and live command output are withheld from the public PR and Actions
-logs. Run the same order locally when reproducing a failure.
+logs. Run the same order locally when reproducing a failure. The live plan and
+apply jobs verify the Octelium Kubernetes path with a suppressed
+`kubectl --request-timeout=15s version` probe after
+`scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig.
+
+Detailed `kubectl describe`, event, and workload-log diagnostics must run only
+from a private operator terminal with `scripts/grafana-diagnostics.sh`. Public
+workflows and artifacts are not approved diagnostic sinks because arbitrary
+workload output is not covered by GitHub's registered-secret masking. The
+helper must disconnect before the persistent `--logout` post-run hook and keep
+its temporary state when server-side logout fails.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
@@ -331,8 +344,8 @@ Production Argo CD Application registration saves each affected plan, evaluates
 the Terraform policy JSON, rejects manifest replacement/deletion, then applies
 that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
 name to reconcile committed desired state without widening the run to its group
-or running any unrelated production apply phase. Manual production and
-diagnostic dispatches reject every ref except `refs/heads/main`; the production
+or running any unrelated production apply phase. Manual production dispatches
+reject every ref except `refs/heads/main`; the production
 environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a

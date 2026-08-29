@@ -62,6 +62,23 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+- **Status:** mitigation staged; historical log deletion pending
+- **Area:** CI/CD / diagnostic-data exposure
+- **Evidence:** Issue `#833` found that the public
+  `.github/workflows/homelab-diagnostics.yml` emitted live Kubernetes object
+  descriptions, events, and Grafana logs. The workflow is removed and
+  `scripts/grafana-diagnostics.sh` retains the same read-only inspection in a
+  private operator terminal through Octelium.
+- **Risk:** Existing public workflow runs may retain internal metadata or
+  arbitrary workload output until their exact log archives are deleted.
+- **Evidence:** A private, output-suppressed detector scan found no credential
+  class in 22 log streams; one cancelled run had no content. Run metadata and
+  content hashes are retained on `#833`. This does not make the exposed live
+  topology, events, or workload output safe.
+- **Next step:** Approve the evidence disposition, delete only the 23 exact log
+  archives, and close `#833` after `#776` restores the public Octelium CLI edge
+  and a private Octelium-backed diagnostic succeeds.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves

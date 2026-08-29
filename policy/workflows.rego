@@ -71,6 +71,17 @@ deny contains msg if {
 deny contains msg if {
 	jobs := object.get(input, "jobs", {})
 	some job_name, job in jobs
+	steps := object.get(job, "steps", [])
+	some index
+	step := steps[index]
+	uses := lower(sprintf("%v", [object.get(step, "uses", "")]))
+	startswith(uses, "actions/upload-artifact@")
+	msg := sprintf("workflow job %q step %d must not upload public-repository artifacts", [job_name, index])
+}
+
+deny contains msg if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
 	image := job_container_image(job)
 	not image_digest_pinned(image)
 	msg := sprintf("workflow job %q must pin its container image by SHA-256 digest", [job_name])
@@ -104,6 +115,19 @@ deny contains msg if {
 }
 
 deny contains msg if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	steps := object.get(job, "steps", [])
+	some index
+	step := steps[index]
+	run := object.get(step, "run", "")
+	segment := workflow_run_segments(run)[_]
+	kubectl_command(segment)
+	not approved_public_kubectl_command(segment)
+	msg := sprintf("workflow job %q step %d must not emit unapproved Kubernetes command output", [job_name, index])
+}
+
+deny contains msg if {
 	live_homelab_workflow
 	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
 	name := object.get(input, "name", "<unnamed workflow>")
@@ -112,8 +136,7 @@ deny contains msg if {
 
 deny contains msg if {
 	live_homelab_workflow
-	value := workflow_env_value("KUBE_API_SERVER_URL")
-	value != "https://kubernetes-api-ci.stinkyboi.com"
+	not workflow_step_env_has_value("KUBE_API_SERVER_URL", "https://kubernetes-api-ci.stinkyboi.com")
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must reach Kubernetes through the Octelium clientless endpoint", [name])
 }
@@ -216,6 +239,20 @@ job_container_image(job) := image if {
 	image != ""
 }
 
+kubectl_command(segment) if {
+	regex.match(`(^|[[:space:]"'(])kubectl([[:space:]]|$)`, segment)
+}
+
+approved_public_kubectl_command(segment) if {
+	regex.match(`^[[:space:]]*kubectl[[:space:]]+--request-timeout=15s[[:space:]]+version[[:space:]]*$`, segment)
+}
+
+approved_public_kubectl_command(segment) if {
+	regex.match(`kubectl[^;&|]*[[:space:]](>|1>)[[:space:]]*/dev/null([[:space:]]|$)`, segment)
+}
+
+workflow_run_segments(run) := regex.split(`\r?\n|[;&|]+`, regex.replace(lower(sprintf("%v", [run])), `\\\r?\n`, " "))
+
 live_homelab_workflow if {
 	workflow_run_contains("scripts/ci/install-kubeconfig.sh")
 }
@@ -270,13 +307,19 @@ private_wrapper_start := "if ! nix develop --command bash >\"$private_log\" 2>&1
 
 live_script_command_count(run) := count(regex.find_all_string_submatch_n(shell_live_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(direct_live_command_pattern, run, -1))
 
-live_cluster_command_count(run) := count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1)) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
+live_cluster_command_count(run) := (count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1))) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
+
+unapproved_kubectl_command_count(run) := count([segment |
+	segment := workflow_run_segments(run)[_]
+	kubectl_command(segment)
+	not approved_public_kubectl_command(segment)
+])
 
 iac_command_count(run) := count(regex.find_all_string_submatch_n(iac_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(iac_local_validation_pattern, run, -1))
 
 helm_command_count(run) := count(regex.find_all_string_submatch_n(helm_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(helm_local_render_pattern, run, -1))
 
-sensitive_command_count(run) := live_script_command_count(run) + live_cluster_command_count(run) + count(regex.find_all_string_submatch_n(aws_command_pattern, run, -1)) + iac_command_count(run) + helm_command_count(run) + count(regex.find_all_string_submatch_n(octeliumctl_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(dynamic_command_pattern, run, -1))
+sensitive_command_count(run) := live_script_command_count(run) + unapproved_kubectl_command_count(run) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(aws_command_pattern, run, -1)) + iac_command_count(run) + helm_command_count(run) + count(regex.find_all_string_submatch_n(octeliumctl_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(dynamic_command_pattern, run, -1))
 
 sensitive_command_run(run) if {
 	sensitive_command_count(run) > 0
@@ -337,7 +380,12 @@ workflow_step_env_has(key) if {
 	object.get(env, key, null) != null
 }
 
-workflow_env_value(key) := value if {
-	env := object.get(input, "env", {})
-	value := sprintf("%v", [object.get(env, key, "")])
+workflow_step_env_has_value(key, expected) if {
+	jobs := object.get(input, "jobs", {})
+	some _, job in jobs
+	steps := object.get(job, "steps", [])
+	some index
+	step := steps[index]
+	env := object.get(step, "env", {})
+	sprintf("%v", [object.get(env, key, "")]) == expected
 }

@@ -273,7 +273,7 @@ plan_and_apply_argocd_apps
 echo "::endgroup::"
 
 echo "::group::External Secrets AWS auth Secret state adoption"
-kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml
+kubectl apply -f clusters/homelab/apps/external-secrets/namespace.yaml >/dev/null
 if kubectl -n external-secrets get secret aws-ssm-auth >/dev/null 2>&1; then
   (
     cd IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth

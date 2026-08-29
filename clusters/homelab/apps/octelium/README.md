@@ -48,7 +48,7 @@ The Octelium resource catalog for the external Octelium Cluster is
   workload User to publish the Kubernetes API Service for CI.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
-- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
+- Workload User `homelab-ci` for GitHub Actions plan/apply.
 - Human User `homelab-e2e` for noninteractive app-access validation.
 - Private `KUBERNETES` Service `kubernetes-api.homelab`, forwarding to
   `https://10.1.0.199:6443` for operator and restricted read-only Cordium
