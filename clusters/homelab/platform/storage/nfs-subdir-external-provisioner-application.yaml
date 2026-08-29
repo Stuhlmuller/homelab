@@ -21,6 +21,9 @@ spec:
     helm:
       releaseName: nfs-subdir-external-provisioner
       values: |
+        image:
+          tag: v4.0.2@sha256:63d5e04551ec8b5aae83b6f35938ca5ddc50a88d85492d9731810c31591fa4c9
+
         nfs:
           server: 10.1.0.2
           path: /homelab

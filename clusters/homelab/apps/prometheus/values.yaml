@@ -3,9 +3,22 @@ grafana:
 nodeExporter:
   enabled: false
 kube-state-metrics:
+  image:
+    sha: sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e
   podAnnotations:
     homelab.rst.io/recovery-revision: "2026-08-21"
 prometheusOperator:
+  image:
+    sha: 52a6a92d915ea2fa94314748d99db7a94922e3fe63274f6182fc033b9126b573
+  prometheusConfigReloader:
+    image:
+      sha: 693faa0b87243cddca2cffb13586e4e2778b0cdf319cb2e601ba7af3fd19ef7d
+  thanosImage:
+    sha: cf3e9b292e4302ad4a4955b56379703aea39516607d382a57604a3d003c35d10
+  admissionWebhooks:
+    patch:
+      image:
+        sha: e133b64c08377a107298ac3352504bd3cd21f13282bc2aac099a88a7888b3f54
   podAnnotations:
     homelab.rst.io/recovery-revision: "2026-08-21"
 defaultRules:
@@ -24,6 +37,8 @@ kubeScheduler:
   enabled: false
 prometheus:
   prometheusSpec:
+    image:
+      sha: cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d
     retention: 15d
     ruleSelectorNilUsesHelmValues: false
     ruleSelector: {}
@@ -44,6 +59,8 @@ prometheus:
 alertmanager:
   enabled: true
   alertmanagerSpec:
+    image:
+      sha: 51a825c2a40acc3e338fdd00d622e01ec090f72be2b3ea46be0839cd47a4d286
     # checkov:skip=CKV_SECRET_6: Kubernetes Secret resource name, not secret material.
     configSecret: alertmanager-discord-webhook
     podMetadata:

@@ -4,6 +4,10 @@ admin:
   passwordKey: password
 deploymentStrategy:
   type: Recreate
+image:
+  sha: 3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
+downloadDashboardsImage:
+  sha: 7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13
 annotations:
   argocd.argoproj.io/sync-options: Replace=true
 extraSecretMounts:

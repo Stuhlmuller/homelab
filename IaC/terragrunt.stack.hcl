@@ -1092,6 +1092,14 @@ unit "argocd_apps_istio" {
               valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
               parameters = [
                 {
+                  name  = "image"
+                  value = "docker.io/istio/pilot:1.27.3-distroless@sha256:70f4f8ccf75ba51187f0920b3f40a6517ba98c068b1b88399a342cbd5e31b857"
+                },
+                {
+                  name  = "global.proxy.image"
+                  value = "docker.io/istio/proxyv2:1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1"
+                },
+                {
                   name  = "pilot.resources.requests.memory"
                   value = "512Mi"
                 }
@@ -1107,6 +1115,12 @@ unit "argocd_apps_istio" {
               releaseName          = "istio-cni"
               skipSchemaValidation = true
               valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+              parameters = [
+                {
+                  name  = "image"
+                  value = "docker.io/istio/install-cni:1.27.3-distroless@sha256:cfe35258547be35aed2f3c94b56949d5460c0dd3810b94a16d3310c7e9337e62"
+                }
+              ]
             }
           },
           {
@@ -1119,6 +1133,10 @@ unit "argocd_apps_istio" {
               skipSchemaValidation = true
               valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
               parameters = [
+                {
+                  name  = "image"
+                  value = "docker.io/istio/ztunnel:1.27.3-distroless@sha256:3837029816e78cb6fc88d928dc5c6c58522ab9346772a1409b7f7da00d9de4ce"
+                },
                 {
                   name  = "resources.requests.memory"
                   value = "256Mi"
@@ -1560,6 +1578,9 @@ unit "argocd_apps_metrics_server" {
               releaseName = "metrics-server"
               valuesObject = {
                 args = ["--kubelet-insecure-tls"]
+                image = {
+                  tag = "v0.8.1@sha256:b2d2efaf5ac3b366ed0f839d2412a2c4279d4fc2a2a733f12c52133faed36c41"
+                }
               }
             }
           }
@@ -2649,6 +2670,11 @@ unit "argocd_apps_platform_crossplane" {
             targetRevision = "2.3.3"
             helm = {
               releaseName = "crossplane"
+              valuesObject = {
+                image = {
+                  tag = "v2.3.3@sha256:f1c88a98f113a5cb78d75c7e94e2a7fefdf86ffb3353c63f01697dc5ad855b19"
+                }
+              }
             }
           }
         ]

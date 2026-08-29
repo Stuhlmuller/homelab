@@ -432,6 +432,7 @@ tag_only_images="$(
     rg -n '^\s*image:\s*[^[:space:]#]+:[^@#[:space:]]+' clusters/homelab || true
   } \
     | rg -v '@sha256:' \
+    | rg -v '^clusters/homelab/apps/kiali/values\.yaml:[0-9]+:\s+tag:\s+[0-9a-f]{64}$' \
     || true
 )"
 
@@ -440,6 +441,117 @@ if [[ -n "$tag_only_images" ]]; then
   printf '%s\n' "$tag_only_images" >&2
   exit 1
 fi
+echo "::endgroup::"
+
+echo "::group::Helm chart image pins"
+sha256_pattern='^sha256:[0-9a-f]{64}$'
+digest_hex_pattern='^[0-9a-f]{64}$'
+tag_digest_pattern='^.+@sha256:[0-9a-f]{64}$'
+
+yq -o=json clusters/homelab/apps/cert-manager/values.yaml |
+  jq -e --arg digest "$sha256_pattern" '
+    [
+      .image.digest,
+      .webhook.image.digest,
+      .cainjector.image.digest,
+      .startupapicheck.image.digest,
+      .acmesolver.image.digest
+    ] |
+    all(.[]; type == "string" and test($digest))
+  ' >/dev/null
+
+yq -o=json clusters/homelab/apps/descheduler/values.yaml |
+  jq -e --arg pin "$tag_digest_pattern" '.image.tag | test($pin)' >/dev/null
+
+yq -o=json clusters/homelab/apps/external-secrets/values.yaml |
+  jq -e --arg pin "$tag_digest_pattern" '
+    [.image.tag, .webhook.image.tag, .certController.image.tag] |
+    all(.[]; type == "string" and test($pin))
+  ' >/dev/null
+
+yq -o=json clusters/homelab/apps/grafana/values.yaml |
+  jq -e --arg digest "$digest_hex_pattern" '
+    [.image.sha, .downloadDashboardsImage.sha] |
+    all(.[]; type == "string" and test($digest))
+  ' >/dev/null
+
+yq -o=json clusters/homelab/apps/kiali/values.yaml |
+  jq -e --arg digest "$digest_hex_pattern" --arg pin "$tag_digest_pattern" '
+    .allowAdHocKialiImage == false and
+    .allowAdHocContainers == false and
+    .image.digest == "sha256" and
+    (.image.tag | test($digest)) and
+    ([.env[] | select(.name == "RELATED_IMAGE_kiali_default") | .value] |
+      length == 1 and all(.[]; test($pin))) and
+    (.cr.spec.deployment | has("image_name") | not) and
+    (.cr.spec.deployment | has("image_digest") | not) and
+    (.cr.spec.deployment | has("image_version") | not)
+  ' >/dev/null
+
+yq -o=json clusters/homelab/apps/prometheus/values.yaml |
+  jq -e --arg digest "$digest_hex_pattern" --arg prefixed "$sha256_pattern" '
+    [
+      .prometheusOperator.image.sha,
+      .prometheusOperator.prometheusConfigReloader.image.sha,
+      .prometheusOperator.thanosImage.sha,
+      .prometheusOperator.admissionWebhooks.patch.image.sha,
+      .prometheus.prometheusSpec.image.sha,
+      .alertmanager.alertmanagerSpec.image.sha
+    ] as $plain |
+    all($plain[]; type == "string" and test($digest)) and
+    (."kube-state-metrics".image.sha | test($prefixed))
+  ' >/dev/null
+
+yq -o=json clusters/homelab/apps/tailscale/values.yaml |
+  jq -e --arg digest "$sha256_pattern" '
+    [.operatorConfig.image.digest, .proxyConfig.image.digest] |
+    all(.[]; type == "string" and test($digest))
+  ' >/dev/null
+
+yq -r '.spec.source.helm.values' \
+  clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml |
+  yq -o=json - |
+  jq -e --arg pin "$tag_digest_pattern" '.image.tag | test($pin)' >/dev/null
+
+render_terragrunt() {
+  terragrunt --log-disable --working-dir "$1" render --json --write=false --no-color
+}
+
+render_terragrunt IaC/bootstrap/argocd |
+  jq -r '.inputs.values[0]' |
+  yq -o=json - |
+  jq -e --arg pin "$tag_digest_pattern" '
+    (.global.image.tag | test($pin)) and
+    (.dex.image.tag | test($pin)) and
+    (.redis.image.tag | test($pin))
+  ' >/dev/null
+
+render_terragrunt IaC/live/argocd-apps/istio |
+  jq -e --arg pin "$tag_digest_pattern" '
+    [.inputs.manifest.spec.sources[] | select(.chart == "istiod")] as $istiod |
+    [.inputs.manifest.spec.sources[] | select(.chart == "cni")] as $cni |
+    [.inputs.manifest.spec.sources[] | select(.chart == "ztunnel")] as $ztunnel |
+    ($istiod | length) == 1 and
+    ($cni | length) == 1 and
+    ($ztunnel | length) == 1 and
+    ([
+      ($istiod[0].helm.parameters[] | select(.name == "image") | .value),
+      ($istiod[0].helm.parameters[] | select(.name == "global.proxy.image") | .value),
+      ($cni[0].helm.parameters[] | select(.name == "image") | .value),
+      ($ztunnel[0].helm.parameters[] | select(.name == "image") | .value)
+    ] | length == 4 and all(.[]; test($pin)))
+  ' >/dev/null
+
+for target in metrics-server:metrics-server platform-crossplane:crossplane; do
+  application="${target%%:*}"
+  chart_name="${target#*:}"
+  render_terragrunt "IaC/live/argocd-apps/$application" |
+    jq -e --arg chart "$chart_name" --arg pin "$tag_digest_pattern" '
+      [.inputs.manifest.spec.sources[] | select(.chart == $chart)] as $sources |
+      ($sources | length) == 1 and
+      ($sources[0].helm.valuesObject.image.tag | test($pin))
+    ' >/dev/null
+done
 echo "::endgroup::"
 
 echo "::group::OpenClaw plugin supply chain"
