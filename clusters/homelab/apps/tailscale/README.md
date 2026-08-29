@@ -39,6 +39,11 @@ revert the chart to `1.98.3` and sync the Argo CD Application.
 `homelab-exit-node`, tags it as `tag:k8s`, advertises it as an exit node, and
 advertises the homelab LAN route `10.1.0.0/24`.
 
+Keep this Connector during the Octelium cutover because it is the current
+remote Talos/LAN fallback. Normal app access and `kubectl` use Octelium; remove
+Tailscale only after those paths and a replacement Talos transport have been
+validated from outside the homelab.
+
 Tailnet policy must allow the operator tag to own `tag:k8s`:
 
 ```json
@@ -81,9 +86,9 @@ kubectl -n tailscale get deployment,statefulset,pod
 kubectl -n istio-system get service istio-ingressgateway
 ```
 
-Expected result: the operator and both managed proxy Pods run `v1.102.3`, both
-StatefulSets have matching current and update revisions, the connector reports
+Expected result: the operator and exit-node proxy run `v1.102.3`, the proxy
+StatefulSet has matching current and update revisions, the connector reports
 `ISEXITNODE` as `true`, its condition is ready, the advertised route includes
-`10.1.0.0/24`, and the Istio Service retains its Tailscale address. Then select
-`homelab-exit-node` on a client and verify DNS, HTTPS egress, and access to a
-LAN address in `10.1.0.0/24`.
+`10.1.0.0/24`, and the Istio Service remains `ClusterIP` with no Tailscale
+address. Then select `homelab-exit-node` on a client and verify DNS, HTTPS
+egress, and access to a LAN address in `10.1.0.0/24`.

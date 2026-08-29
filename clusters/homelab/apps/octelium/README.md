@@ -39,12 +39,20 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if a future Service needs a connector
   served upstream.
+- Policy `homelab-private-kubernetes-access`, allowing the `homelab-owner`
+  client full operator access and limiting `homelab-cordium-user` to
+  Kubernetes `get`, `list`, and `watch` requests while denying Secrets,
+  ConfigMaps, service accounts, authorization reviews, and sensitive
+  subresources.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the `homelab-ci`
   workload User to publish the Kubernetes API Service for CI.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
 - Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics.
 - Human User `homelab-e2e` for noninteractive app-access validation.
+- Private `KUBERNETES` Service `kubernetes-api.homelab`, forwarding to
+  `https://10.1.0.199:6443` for operator and restricted read-only Cordium
+  access, using the upstream kubeconfig CA for server verification.
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
@@ -282,24 +290,38 @@ scripts/octelium-e2e-check.sh \
   --homelab-context <homelab-context>
 ```
 
-From an Octelium client session, query one of the existing app URLs:
+Use the private Kubernetes Service from an operator workstation:
 
 ```sh
-octelium connect --domain stinkyboi.com --ip-mode=v4
-curl -I https://grafana.stinkyboi.com/
+octelium login --domain stinkyboi.com
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+octelium config kubernetes-api.homelab --domain stinkyboi.com
 ```
 
+Run the `KUBECONFIG` export printed by `octelium config`, set the generated file
+to mode `0600`, then run `kubectl --request-timeout=15s get nodes`. A Cordium
+Workspace already has a client session, so run the same `octelium config`,
+`chmod`, and `kubectl` commands inside the Workspace. The server-side upstream
+<!-- checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data. -->
+kubeconfig stays in Octelium Secret `homelab-ci-kubeconfig`; neither Kubernetes
+path needs Tailscale. Talos still uses the retained fallback transport.
+
+Run `octelium disconnect --domain stinkyboi.com` after finishing the operator
+session.
+
 The app hostnames publish exact proxied Cloudflare Tunnel CNAME records, so
-browser users can reach Octelium clientless `WEB` Services without running a
-local VPN session first. Octelium CLI/VPN sessions still use
-`octelium-api.stinkyboi.com` and the Gateway records.
+browser users can reach Octelium clientless `WEB` Services without a local VPN
+session. Octelium CLI client sessions still use `octelium-api.stinkyboi.com` and
+the Gateway records.
 
 Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:
 
 ```sh
-octelium connect --domain stinkyboi.com -p homelab-demo.homelab:18081
+octelium connect --domain stinkyboi.com -d \
+  -p homelab-demo.homelab:18081
 curl http://127.0.0.1:18081/version
+octelium disconnect --domain stinkyboi.com
 ```
 
 ## Adding A Service
@@ -333,13 +355,14 @@ To remove the external Octelium resources:
 for service in \
   affine.homelab argocd.homelab compass.homelab deluge.homelab \
   dispatcharr.homelab grafana.homelab homelab-demo.homelab \
-  kiali.homelab litellm.homelab n8n.homelab \
+  kiali.homelab kubernetes-api.homelab litellm.homelab n8n.homelab \
   octobot.homelab openclaw.homelab policy-bot.homelab \
   prowlarr.homelab radarr.homelab sonarr.homelab; do
   octeliumctl delete svc "${service}"
 done
 
 octeliumctl delete user homelab-octelium-client
+octeliumctl delete policy homelab-private-kubernetes-access
 octeliumctl delete policy homelab-human-web-access
 ```
 

@@ -9,9 +9,9 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig PATH [options]
 
-Store a Kubernetes kubeconfig in Octelium for the clientless CI Kubernetes
-Service. The kubeconfig stays outside git and is reconciled through the
-authenticated Octelium admin API.
+Store a Kubernetes kubeconfig in Octelium for the CI and private human/Cordium
+Kubernetes Services. The kubeconfig stays outside git and is reconciled through
+the authenticated Octelium admin API.
 
 Options:
   --kubeconfig PATH   Source kubeconfig file (required).
@@ -35,7 +35,8 @@ done
 command -v octeliumctl >/dev/null || { echo "error: octeliumctl is required" >&2; exit 127; }
 
 if octeliumctl get secret "$secret_name" --domain "$domain" >/dev/null 2>&1; then
-  octeliumctl delete secret "$secret_name" --domain "$domain" >/dev/null
+  octeliumctl update secret "$secret_name" --domain "$domain" --file "$kubeconfig" >/dev/null
+else
+  octeliumctl create secret "$secret_name" --domain "$domain" --file "$kubeconfig" >/dev/null
 fi
-octeliumctl create secret "$secret_name" --domain "$domain" --file "$kubeconfig" >/dev/null
 echo "Reconciled Octelium secret ${secret_name}."

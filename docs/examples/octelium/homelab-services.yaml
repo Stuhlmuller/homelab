@@ -39,6 +39,47 @@ spec:
 ---
 kind: Policy
 metadata:
+  name: homelab-private-kubernetes-access
+spec:
+  rules:
+    - name: cordium-sensitive-read-deny
+      effect: DENY
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-cordium-user"
+            - match: ctx.user.spec.type == "HUMAN"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.metadata.name == "kubernetes-api.homelab"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+            - any:
+                of:
+                  - match: ctx.request.kubernetes.resource in ["secrets", "configmaps", "serviceaccounts", "tokenreviews", "subjectaccessreviews", "selfsubjectaccessreviews", "localsubjectaccessreviews", "selfsubjectrulesreviews"]
+                  - match: ctx.request.kubernetes.subresource in ["proxy", "log", "exec", "attach", "portforward", "ephemeralcontainers", "token"]
+    - name: operator-client
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.spec.type == "HUMAN"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.metadata.name == "kubernetes-api.homelab"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+            - match: ctx.user.metadata.name == "homelab-owner"
+    - name: cordium-read-only-client
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.spec.type == "HUMAN"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.metadata.name == "kubernetes-api.homelab"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+            - match: ctx.user.metadata.name == "homelab-cordium-user"
+            - match: ctx.request.kubernetes.verb in ["get", "list", "watch"]
+---
+kind: Policy
+metadata:
   name: homelab-ci-kubernetes-api-access
 spec:
   rules:
@@ -384,6 +425,25 @@ spec:
         fromSecret: homelab-ci-kubeconfig
     tls:
       insecureSkipVerify: true
+---
+kind: Service
+metadata:
+  name: kubernetes-api.homelab
+spec:
+  displayName: Homelab Kubernetes API
+  isPublic: false
+  mode: KUBERNETES
+  port: 6443
+  authorization:
+    policies:
+      - homelab-private-kubernetes-access
+  config:
+    upstream:
+      url: https://10.1.0.199:6443
+    kubernetes:
+      kubeconfig:
+        # checkov:skip=CKV_SECRET_6:Reference to an externally materialized Octelium Secret, not secret data.
+        fromSecret: homelab-ci-kubeconfig
 ---
 kind: Service
 metadata:

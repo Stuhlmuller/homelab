@@ -7,6 +7,9 @@ Canonical runbook: [`docs/talos-control-plane-maintenance.md`](../../talos-contr
 Render and validate Talos configuration before applying it. Use
 `talosctl validate --mode metal --strict`, authenticated access after bootstrap,
 and repository-owned patches for control-plane changes.
+Direct-IP `talosctl` operations require the homelab LAN or retained Tailscale
+fallback; the Octelium Kubernetes Service and Cordium session do not route the
+Talos API or LAN subnet.
 
 For remote ZimaBoard recovery, the canonical runbook maps each worker to its
 Talos address and uses authenticated `talosctl reboot`; reboot one worker at a

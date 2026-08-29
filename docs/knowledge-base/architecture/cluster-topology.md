@@ -164,6 +164,8 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 
 - Talos endpoint: `10.1.0.199`
 - Kubernetes API endpoint: `https://10.1.0.199:6443`
+- Remote Kubernetes Service: `kubernetes-api.homelab` through
+  `octelium connect` and an Octelium-generated kubeconfig
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -172,6 +174,12 @@ The previous control-plane address `10.1.0.216` is stale. If it appears in
 Talos config, kubeconfig, service-account issuer discovery, OIDC setup, or
 troubleshooting notes, fix the repository-owned desired state to use
 `https://10.1.0.199:6443`.
+
+Cordium Workspaces use the same private Kubernetes Service with restricted
+read-only access through their automatic Octelium client session. Sensitive
+resources and subresources stay denied. Tailscale remains only as the temporary
+remote Talos/LAN fallback; Octelium does not provide a Talos-native Service
+mode.
 
 ## Source Files
 

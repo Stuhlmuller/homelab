@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD013 -->
 
-# Octelium Client Bridge
+# Octelium Access Plane
 
 This repository uses Octelium for human access to homelab applications. App
 hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
@@ -10,9 +10,11 @@ existing Istio app routes. All app Services except AFFiNE enforce Octelium
 login. AFFiNE permits anonymous transport so its native client can delegate
 login to the application.
 
-CI cluster reachability now uses the Octelium `kubernetes-api-ci` Service.
-Keep only separately reviewed non-app exceptions, such as public webhook
-ingress, on their existing paths until they are replaced in their own changes.
+Human and Cordium Workspace Kubernetes access uses the private Octelium
+`kubernetes-api.homelab` Service. CI uses the separate public, workload-only
+`kubernetes-api-ci` Service. Tailscale remains deployed as a temporary
+LAN/egress fallback, but it is not required for normal app or Kubernetes API
+access.
 
 ## Current Model
 
@@ -72,6 +74,10 @@ They create:
 - Policy `homelab-workload-web-serve`, reserved for the
   `homelab-octelium-client` workload User if future Services need connector
   served upstreams.
+- Policy `homelab-private-kubernetes-access`, allowing the `homelab-owner`
+  client full operator access and limiting `homelab-cordium-user` to
+  Kubernetes `get`, `list`, and `watch` requests while denying sensitive
+  resources and subresources.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the
   `homelab-ci` workload User to create an Octelium client session and access
   the Kubernetes API Service.
@@ -81,6 +87,9 @@ They create:
   with matching 30-day clientless-session and access-token lifetimes. Rotate
   its credential every 21 days with `scripts/octelium-ci-credential.sh`.
 - Human User `homelab-e2e` for noninteractive app-access validation.
+- Private `KUBERNETES` Service `kubernetes-api.homelab`, forwarding to
+  `https://10.1.0.199:6443` for operator and restricted read-only Cordium
+  access.
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
@@ -188,6 +197,68 @@ workspace subdomains, while agent automation uses the separate workload
 identity with access restricted to the package-managed Cordium
 `ManagementService`.
 
+## Private Kubernetes Access
+
+The private `kubernetes-api.homelab` Service is the normal operator path. It
+<!-- checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data. -->
+reuses the existing server-side Octelium Secret `homelab-ci-kubeconfig`; the
+upstream kubeconfig stays inside Octelium and is never copied to the client or
+committed to this repository. The Service uses that kubeconfig's cluster CA;
+do not add `insecureSkipVerify`.
+
+Recreating that shared Secret briefly affects this private Service and the CI
+Service, so validate both after rotation.
+
+From an operator workstation, install the current
+[Octelium CLI](https://octelium.com/docs/octelium/latest/install/cli/install)
+and [Cordium CLI](https://octelium.com/docs/cordium/latest/use/cli) first. They
+are not included in this repository's Nix shell.
+
+```sh
+octelium login --domain stinkyboi.com
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+octelium config kubernetes-api.homelab --domain stinkyboi.com
+```
+
+Run the `KUBECONFIG` export printed by `octelium config`, then restrict the
+generated file and verify the private path:
+
+```sh
+chmod 0600 "$KUBECONFIG"
+kubectl --request-timeout=15s get nodes
+# Run after finishing Octelium-backed work.
+octelium disconnect --domain stinkyboi.com
+```
+
+`octelium config` does not replace `~/.kube/config`, which the repository's
+local Kubernetes and Helm providers read. Keep protected Terragrunt applies in
+CI unless the Octelium context is deliberately merged into that file.
+
+For an in-cluster developer shell, start a Cordium Workspace:
+
+```sh
+cordium run --rm --domain stinkyboi.com \
+  --repository https://github.com/Stuhlmuller/homelab.git
+```
+
+Each running Workspace already has its own Octelium client session. Inside the
+Workspace, run `octelium config kubernetes-api.homelab --domain
+stinkyboi.com`, run the printed `KUBECONFIG` export, set it to mode `0600`, and
+run the same `kubectl` check. Cordium is limited to nonsensitive `get`, `list`,
+and `watch`; verify Secret reads and a server-side dry-run create are denied:
+
+```sh
+! kubectl get secrets --all-namespaces
+! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
+```
+
+Neither path needs the Tailscale subnet route.
+
+This Service covers Kubernetes only. Octelium has no Talos-native Service
+mode; `talosctl` still needs `.talos/talosconfig` and a separately validated
+private transport. Keep Tailscale available as the temporary Talos/LAN fallback
+until that path is replaced and tested.
+
 ## Microsoft Entra Login
 
 The Octelium portal login provider is Microsoft Entra OIDC. The Entra
@@ -293,6 +364,7 @@ The gate verifies:
   exists in the Octelium Cluster, and
   Cordium's generated `default.cordium` Service is present without a duplicate
   primary hostname;
+- `kubernetes-api.homelab` is a private `KUBERNETES` Service;
 - IdentityProvider `entra` exists in the Octelium Cluster;
 - each existing app hostname resolves publicly through Cloudflare and responds
   over HTTPS without `octelium connect`; the Enterprise console check must not
@@ -307,7 +379,7 @@ The gate verifies:
   callback routes.
 
 Keep per-app `VirtualService` objects as private Istio backend routes for the
-Octelium `WEB` Services. CI cluster access now uses the `kubernetes-api-ci`
+Octelium `WEB` Services. CI Kubernetes access now uses the `kubernetes-api-ci`
 Octelium Service, and reviewed external callbacks use the `octelium-public`
 tunnel with path-limited Istio routes. If the gate fails, treat the failure
 output as the repair work queue.

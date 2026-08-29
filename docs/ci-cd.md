@@ -102,11 +102,14 @@ contract for Grafana.
   Trusted pull requests only open this live access path when the diff includes
   the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
   inputs.
-- The upstream kubeconfig is stored only as the Octelium Secret
+- The upstream kubeconfig for both `kubernetes-api-ci` and the private
+  `kubernetes-api.homelab` Service is stored only as the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
   `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
   into GitHub. CI writes a token-only kubeconfig with mode `0600`, then verifies
-  the Kubernetes API with authenticated `kubectl`.
+  the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
+  briefly affects CI, operator, and Cordium access, so validate both Services
+  after rotation.
 - Plans are not uploaded as artifacts because Terraform/OpenTofu plans can
   include sensitive state context. Trusted same-repository PR plans render the
   saved `plan.out` files with `terragrunt show -no-color plan.out` and replace

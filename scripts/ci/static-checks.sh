@@ -470,6 +470,76 @@ echo "::group::Renovate config"
 jq empty renovate.json
 echo "::endgroup::"
 
+echo "::group::Private cluster access"
+yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
+  jq -e '
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
+    ($policies | length) == 1 and
+    $policies[0].spec.rules == [
+      {
+        "name": "cordium-sensitive-read-deny",
+        "effect": "DENY",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.resource in [\"secrets\", \"configmaps\", \"serviceaccounts\", \"tokenreviews\", \"subjectaccessreviews\", \"selfsubjectaccessreviews\", \"localsubjectaccessreviews\", \"selfsubjectrulesreviews\"]"},
+            {"match": "ctx.request.kubernetes.subresource in [\"proxy\", \"log\", \"exec\", \"attach\", \"portforward\", \"ephemeralcontainers\", \"token\"]"}
+          ]}}
+        ]}}
+      },
+      {
+        "name": "operator-client",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
+        ]}}
+      },
+      {
+        "name": "cordium-read-only-client",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "ctx.user.metadata.name == \"homelab-cordium-user\""},
+          {"match": "ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"}
+        ]}}
+      }
+    ] and
+    ($services | length) == 1 and
+    ($services[0].spec.isPublic // false) == false and
+    $services[0].spec.mode == "KUBERNETES" and
+    $services[0].spec.port == 6443 and
+    $services[0].spec.authorization.policies == ["homelab-private-kubernetes-access"] and
+    $services[0].spec.config.upstream.url == "https://10.1.0.199:6443" and
+    # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
+    $services[0].spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and
+    ($services[0].spec.config.tls.insecureSkipVerify // false) == false
+  ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/istio/values.yaml |
+  jq -e '
+    .service.type == "ClusterIP" and
+    .service.loadBalancerClass == null and
+    (.service.annotations["tailscale.com/hostname"] // null) == null and
+    (.service.annotations["homelab.rst.io/pod-security"] // "") != "tailscale-proxy-requires-privileged"
+  ' >/dev/null
+rg -Fq 'octeliumctl update secret "$secret_name"' scripts/octelium-ci-kubeconfig-secret.sh
+if rg -Fq 'octeliumctl delete secret' scripts/octelium-ci-kubeconfig-secret.sh; then
+  echo "Shared Octelium kubeconfig rotation must not delete the active Secret." >&2
+  exit 1
+fi
+echo "::endgroup::"
+
 echo "::group::Image digest pins"
 cert_manager_values="clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"
 terragrunt --log-disable --working-dir IaC/live/argocd-apps/cert-manager \

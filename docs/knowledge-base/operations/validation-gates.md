@@ -168,6 +168,17 @@ It accepts only the expected unauthenticated response: HTTP `200` with
 Do not treat the repository-side target change as recovery until the CronJob
 has a recent success and the public probe passes.
 
+Before treating Tailscale as unnecessary for Kubernetes access, validate both
+human paths from outside the homelab. On the operator workstation, run
+`octelium connect -d`, generate the client kubeconfig with `octelium config
+kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
+and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
+config, mode, and `kubectl` check inside a Cordium Workspace, whose client
+session is created automatically. Also require Secret reads and a server-side
+dry-run create to be denied there; Cordium has restricted read-only access.
+Keep the Tailscale fallback until both pass; Talos transport is a separate
+retirement gate.
+
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
 
@@ -194,7 +205,8 @@ an automatic approval SLA; strict expiry needs an externally hosted GitHub App
 deployment-protection rule with a durable lease. Until then, dispatch only when
 a reviewer is ready to approve.
 
-The gate checks the Octelium control plane, IdentityProvider `entra`, synced
+The gate checks the Octelium control plane, IdentityProvider `entra`, private
+`kubernetes-api.homelab` Service, synced
 workload credential, ready connector replica, and
 `ambient.istio.io/redirection=enabled` on every active connector pod. It also
 checks Cluster/API/portal TLS responses, the complete homelab WEB Service
