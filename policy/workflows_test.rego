@@ -2,6 +2,32 @@ package main
 
 import rego.v1
 
+test_rejects_pull_request_target_event_forms if {
+	every events in [
+		"pull_request_target",
+		["push", "pull_request_target"],
+		{"pull_request_target": null},
+		{"pull_request_target": false},
+		{"pull_request_target": {"types": ["opened"]}},
+	] {
+		violations := deny with input as {"name": "Unsafe event", "on": events}
+		some msg in violations
+		contains(msg, "must not use pull_request_target")
+	}
+}
+
+test_allows_pull_request_event_forms if {
+	every events in [
+		"pull_request",
+		["push", "pull_request"],
+		{"pull_request": null},
+		{"pull_request": {"types": ["opened"]}},
+	] {
+		violations := deny with input as {"name": "Safe event", "on": events}
+		count(violations) == 0
+	}
+}
+
 test_rejects_mutable_docker_action_image if {
 	violations := deny with input as workflow_with_images(
 		"docker://alpine:3.21",
