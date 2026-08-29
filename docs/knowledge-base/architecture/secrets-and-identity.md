@@ -167,9 +167,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   GitHub environment writes until both store the replacement token.
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
-  receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
-  affects CI, operator, and Cordium Kubernetes access, so validate both Services
-  after rotation.
+  receive only Octelium-generated kubeconfigs. The repository helper validates
+  and minifies one direct, non-plugin context containing exactly one current
+  embedded CA certificate and proves authenticated API access before creating a
+  Secret. Existing Secret names are immutable: stage a versioned replacement,
+  switch both catalog references in one reviewed change, keep the prior Secret
+  as rollback, and validate CI, operator, and Cordium access before closing the
+  rollback window. See `docs/octelium.md`.
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is

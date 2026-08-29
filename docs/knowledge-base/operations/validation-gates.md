@@ -200,6 +200,10 @@ plane and homelab connector live in different Kubernetes clusters.
 CI/CD Octelium changes should also pass shell syntax checks for
 `scripts/ci/install-kubeconfig.sh`, `scripts/octelium-ci-credential.sh`, and
 `scripts/octelium-ci-kubeconfig-secret.sh`. Validate that
+`scripts/ci/octelium-ci-kubeconfig-secret-test.sh` passes; it proves a wrong
+endpoint, multiple CA certificates, an uppercase Secret name, and a failed
+authenticated probe cannot reach Octelium, and that only the selected minified
+context reaches a successful create. Validate that
 `docs/examples/octelium/homelab-services.yaml` parses and contains Service
 `kubernetes-api-ci` plus core `ClusterConfig` `default` with human
 `maxPerUser: 32`, and that User `homelab-ci` keeps matching 30-day clientless
@@ -312,6 +316,26 @@ runs Terraform-plan Conftest policy during `scripts/ci/terragrunt-plan.sh`. It
 then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
 details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
+
+`scripts/ci/install-kubeconfig.sh` writes the token-only kubeconfig and then
+verifies Octelium upstream credential injection with
+`kubectl --request-timeout=15s auth whoami`. The live plan, apply, and
+diagnostics jobs give every step a stable ID and place that helper at
+`install_kubeconfig` before `live`; both steps withhold command output. The
+whole-workflow fingerprint includes display names because a step name may
+evaluate a secret expression. Policy hashes each complete job attached to
+`homelab-plan` or `homelab-production` plus the workflow trigger, permissions,
+concurrency, environment, and run defaults. It therefore rejects every
+unreviewed step, action, command, shell, condition, working directory, job
+setting, or trigger without parsing shell text. Environment names must be
+literal and are classified case-insensitively, matching GitHub. The Kubernetes
+preflight's effective endpoint and token expression must be exact, while its
+live step must inherit neither credential value. This applies GitHub's
+step-over-job-over-workflow environment precedence and rejects override drift.
+Unexpected protected-environment jobs or jobs referencing the Octelium endpoint
+or case-insensitive CI token name are also denied. `conftest` reports the
+reviewed and computed hashes when a legitimate protected-job change needs
+policy review.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`

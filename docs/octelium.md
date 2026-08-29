@@ -218,11 +218,43 @@ The private `kubernetes-api.homelab` Service is the normal operator path. It
 <!-- checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data. -->
 reuses the existing server-side Octelium Secret `homelab-ci-kubeconfig`; the
 upstream kubeconfig stays inside Octelium and is never copied to the client or
-committed to this repository. The Service uses that kubeconfig's cluster CA;
-do not add `insecureSkipVerify`.
+committed to this repository. Both Kubernetes Services use that kubeconfig's
+cluster CA; do not add `insecureSkipVerify`.
 
-Recreating that shared Secret briefly affects this private Service and the CI
-Service, so validate both after rotation.
+`scripts/octelium-ci-kubeconfig-secret.sh` selects one context, requires the
+canonical `https://10.1.0.199:6443` server, exactly one embedded current CA
+certificate, embedded credentials, and verified TLS without file references,
+plugins, or proxies. It completes an
+authenticated, non-persistent `kubectl auth whoami` probe before calling
+Octelium and stores only the minified context. The helper creates a Secret and
+never overwrites an existing name.
+
+For the first installation, create the catalog's default Secret. For every
+later rotation, use a new versioned name:
+
+```sh
+secret_name="homelab-ci-kubeconfig-$(date -u +%Y%m%dt%H%M%Sz)"
+scripts/octelium-ci-kubeconfig-secret.sh \
+  --kubeconfig /secure/path/homelab.kubeconfig \
+  --secret-name "$secret_name"
+```
+
+The file's current context is selected by default. Pass `--context <name>` when
+the intended context is not current.
+
+In a reviewed pull request, change both `fromSecret` values in
+`docs/examples/octelium/homelab-services.yaml` to that exact staged name. Merge
+the change, apply the catalog, then run the CI clientless check below and the
+operator and Cordium checks in
+`docs/knowledge-base/operations/validation-gates.md`. Cordium must still be
+unable to read Secrets or perform a server-side dry-run create. Keep the prior
+Secret throughout the observation window.
+
+Rollback is a catalog-only cutback: restore both `fromSecret` values to the
+prior Secret name and reapply the reviewed catalog. The prior credential bytes
+never need to be exported or printed. Do not remove the prior Secret until CI,
+operator, and Cordium access have all passed after the cutover and the rollback
+window has closed.
 
 From an operator workstation, install the current
 [Octelium CLI](https://octelium.com/docs/octelium/latest/install/cli/install)
@@ -743,6 +775,7 @@ bash -n scripts/octelium-gateway-dns.sh
 bash -n scripts/octelium-public-dns.sh
 bash -n scripts/octelium-cloudflare-origin-port.sh
 bash -n scripts/octelium-entra-oidc.sh
+bash scripts/ci/octelium-ci-kubeconfig-secret-test.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
 scripts/octelium-e2e-check.sh --help
@@ -807,17 +840,20 @@ Check the CI Kubernetes API Service through Octelium from a client machine:
 KUBE_API_SERVER_URL=https://kubernetes-api-ci.stinkyboi.com \
 OCTELIUM_AUTH_TOKEN=<octelium-clientless-access-token> \
 bash scripts/ci/install-kubeconfig.sh
-kubectl --request-timeout=15s version
 ```
 
 The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
-this clientless workload credential. The upstream kubeconfig lives only in the
-Octelium Secret `homelab-ci-kubeconfig`, created with
-`scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`. GitHub Actions
-uses the access token as the public Service bearer credential, avoiding the
-IPv6-only Gateway transport entirely. The rotation helper deletes this
-dedicated User's old Sessions before issuing the replacement, so Octelium
-creates a fresh 30-day Session instead of reusing the prior expiry.
+this clientless workload credential. The install helper fails unless its final
+`kubectl auth whoami` proves Octelium injected the authenticated upstream
+credential. The upstream kubeconfig lives only in the Octelium Secret
+referenced by both Kubernetes Services. Create the initial
+Secret, or a uniquely named staged replacement, with
+`scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`; use the safe
+cutover above for every replacement. GitHub Actions uses the access token as
+the public Service bearer credential, avoiding the IPv6-only Gateway transport
+entirely. The separate credential rotation helper deletes this dedicated
+User's old Sessions before issuing the replacement, so Octelium creates a fresh
+30-day Session instead of reusing the prior expiry.
 
 ## Rollback
 

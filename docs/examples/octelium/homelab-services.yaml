@@ -433,8 +433,6 @@ spec:
       kubeconfig:
         # checkov:skip=CKV_SECRET_6:Reference to an externally materialized Octelium Secret, not secret data.
         fromSecret: homelab-ci-kubeconfig
-    tls:
-      insecureSkipVerify: true
 ---
 kind: Service
 metadata:
