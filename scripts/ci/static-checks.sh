@@ -887,6 +887,7 @@ terragrunt --log-disable --working-dir IaC/live/aws-ssm-parameters \
       "/homelab/grafana/azuread/token-url"
     ]
   ' >/dev/null
+yq ea -o=json -I=0 '[.]' "$openclaw_values" | jq -e 'length == 1' >/dev/null
 yq -o=json '.' "$openclaw_values" |
   jq -e '
     .controllers.openclaw as $controller |
