@@ -99,6 +99,70 @@ rg -n \
   docs/knowledge-base .agents/skills
 ```
 
+## Scanner Runtime Pin
+
+For #791, this follow-up replaces Trivy `0.69.3` proposed in PR #905 with a
+temporary package-only `0.74.0` override. The proposed older scanner is affected
+by [CVE-2026-55092](https://github.com/aquasecurity/trivy/security/advisories/GHSA-mcj4-mphf-j9ff),
+fixed in `0.71.1`; this is not evidence of an already-merged scanner job on
+`main`. The version, source hash, and vendor hash come from the
+[upstream nixpkgs recipe](https://github.com/NixOS/nixpkgs/blob/83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c/pkgs/by-name/tr/trivy/package.nix).
+The scanner-only builder also uses Go `1.26.7`, with its source hash from the
+[upstream Go recipe](https://github.com/NixOS/nixpkgs/blob/83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c/pkgs/development/compilers/go/1.26.nix).
+Go `1.26.3` meets Trivy's build requirement but lacks subsequent
+[standard-library security fixes](https://go.dev/doc/devel/release#go1.26.0).
+The native Go recipe and bootstrap remain unchanged; `flake.lock`, other
+tools, Checkov inclusion, and all four platforms remain unchanged.
+
+The #888 full-lock candidate at `83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c`
+cannot replace this pin: its Checkov dependency `ecdsa-0.19.2` is blocked for
+`CVE-2024-23342`, and nixpkgs 26.11 drops Intel Mac support. Remove the override
+only when a reviewed full refresh supplies a patched scanner and passes the
+all-platform, static, Conftest, and pre-commit gates. Roll back the package
+change through a reviewed revert; do not substitute unpinned local binaries.
+
+Operator client skew is unchanged and tracked in #788. The documented cluster
+is Kubernetes `1.34.1` / Talos `1.11.3`, but the existing shell supplies
+kubectl `1.36.1` / talosctl `1.13.2`. This exceeds the supported
+[kubectl minor skew](https://kubernetes.io/releases/version-skew-policy/#kubectl)
+and does not match
+[Talosctl guidance](https://docs.siderolabs.com/talos/v1.11/getting-started/talosctl).
+No new live version check was performed. Correct clients together with the
+supported server baseline; this scanner change does not endorse live use.
+
+PR #905's wrapper isolation and #915 reference/argument validation are separate
+requirements. The runtime pin does not fix option injection or replace those
+controls. They are not an OS sandbox or a local credential boundary; other
+inherited Trivy settings and credential providers may still apply locally.
+
+The local Go `1.26.7` and Trivy `0.74.0` source builds passed on
+`aarch64-darwin`, after an initial disk-space failure and approved cleanup of
+disposable caches. All three source/vendor hashes were independently verified.
+All four no-build evaluations pass; native builds on the other three platforms
+were not run. Combined static, Conftest, scanner self-check, ShellCheck, scoped
+workflow lint, Markdown and pre-commit checks pass. The newly covered images
+still fail the vulnerability policy (#918, #919); BusyBox coverage is unknown
+(#920). Local code checks are not a successful hosted vulnerability gate.
+
+Issue #916 records a scanner-audit limitation: `govulncheck 1.7.0` rejects the
+`-X:jsonv2` suffix in Go build versions and can silently omit standard-library
+findings. Preserve each binary's original extraction and remove only that
+suffix in a separate diagnostic copy; never rewrite the binary or substitute
+a different compiler version. A fresh extraction from the Go `1.26.7` build
+removed all 13 standard-library matches found with Go `1.26.3`.
+These extracts lack `pkgSymbols`, so results have module/version precision,
+not proof of symbol presence or call reachability.
+
+The module-level [OpenPGP finding GO-2026-5932](https://pkg.go.dev/vuln/GO-2026-5932)
+is not an affected package in the exact Linux/amd64 import graph checked under
+issue #917. Offline dependency selection with the final source/vendor and Go `1.26.7`
+(`CGO_ENABLED=1`, `GOEXPERIMENT=jsonv2`, no extra tags) selected 3,082 packages,
+with zero unsafe OpenPGP or Rekor PKI imports and no incomplete packages/errors.
+Other `x/crypto` packages explain the module metadata match; the selected
+OpenPGP implementation is the maintained ProtonMail library. This is cross-target
+package analysis, not verification of a built Linux executable. Keep #917 open
+for that artifact check; no exception or vulnerability-free claim is made.
+
 ## Kubernetes Source Checks
 
 Use the renderer that matches the changed source:
