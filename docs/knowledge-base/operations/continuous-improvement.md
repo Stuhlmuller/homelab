@@ -117,6 +117,10 @@ organization-policy blocker is tracked below.
   No runtime pin changed. See [[platform-image-vulnerability-followup]] for
   controller evidence and [[busybox-image-coverage]] for the incomplete upstream
   SBOM, helper compatibility constraints and remaining callers.
+  Exact Argo CD, Dex and Redis scans also fail, including the existing Argo CD
+  `v3.4.8` candidate. See [[argocd-image-inventory]] for bundled-helper findings,
+  the OpenSSL vendor-severity/platform qualification, and existing #788/#850
+  remediation scope. Their HCL/chart defaults still need #791 CI coverage.
   [Issue #915](https://github.com/Stuhlmuller/homelab/issues/915) adds whole-scalar
   reference validation, explicit extraction-error propagation, and `--` before
   the image argument. Literal shell extraction retains registry ports, tagless
