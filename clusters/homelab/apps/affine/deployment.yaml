@@ -40,7 +40,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: migration
-          image: ghcr.io/toeverything/affine:0.27.0@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f
+          image: ghcr.io/toeverything/affine:0.27.4@sha256:c312116a134184947d98749c8a8e29f4e3bc97f4f2a51c9a3497f9baea2eec2b
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -101,7 +101,7 @@ spec:
               readOnly: true
       containers:
         - name: affine
-          image: ghcr.io/toeverything/affine:0.27.0@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f
+          image: ghcr.io/toeverything/affine:0.27.4@sha256:c312116a134184947d98749c8a8e29f4e3bc97f4f2a51c9a3497f9baea2eec2b
           imagePullPolicy: IfNotPresent
           env:
             - name: DATABASE_PASSWORD
