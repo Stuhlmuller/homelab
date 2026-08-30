@@ -26,6 +26,20 @@ the complete extracted inventory so newly published advisories are detected
 without a repository change. Existing vulnerable images remain visible in the
 weekly baseline without blocking unrelated pull requests.
 
+Each image scan writes a fresh Trivy JSON report with all detected packages.
+The native table converter keeps human-readable findings, including suppressed
+ones. Scanner and conversion failures remain failures. Under #920, acceptance
+also requires one schema-v2 container-image report with at least one recognized
+OS or language package carrying a name and version. Missing, malformed,
+multi-object or inventory-free reports fail, even if Trivy exits zero; one
+image's report cannot supply coverage for the next. Temporary reports are
+removed with the existing scan-directory cleanup.
+
+This proves some recognized package inventory, not complete image coverage or
+runtime exploitability. An unsupported image needs a supported build or SBOM
+path; there is no blanket coverage exception. The existing extraction/delta,
+severity and vulnerability-exception expiry rules are unchanged.
+
 Inspect the inventory and test extraction locally without invoking Trivy:
 
 ```sh
@@ -82,6 +96,9 @@ Extraction/list self-checks do not prove images are vulnerability-free. The
 21 fixable HIGH tuples in local-path (#918) and 11-12 in each cert-manager image
 (#919). BusyBox returned no package targets, so its zero findings mean unknown
 coverage (#920). These existing images block acceptance; no exception was added.
+The #920 self-check covers OS/language positive cases, empty or invalid reports,
+stale-output prevention and scanner/converter failures without invoking Trivy.
+It does not resolve BusyBox's missing package inventory.
 
 Rollback by reverting the scanner, workflow, ignore file, and Nix package
 change; the check writes only temporary CI/local cache and never changes live

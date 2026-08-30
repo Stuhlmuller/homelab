@@ -100,6 +100,17 @@ organization-policy blocker is tracked below.
   BusyBox returned no package targets, so its successful exit is unknown coverage,
   not a clean-image result (#920). These are package/version matches, not proof
   of exploitability or the inaccessible cluster's current runtime state.
+  The #920 follow-up rejects missing, malformed, multi-object or inventory-free
+  Trivy JSON reports, including an exit-zero scan. Each image gets a fresh report;
+  recognized named/versioned OS or language packages are required. Native table
+  conversion retains findings, and scanner/converter failures stay failures.
+  The existing self-check covers positive inventories, invalid/absent reports,
+  stale-output prevention and both command failures without a registry scan.
+  Offline replay with the pinned native converter rejected the saved BusyBox
+  report, retained failures and advisory IDs for all six vulnerable reports,
+  and accepted a synthetic package-covered, zero-vulnerability control.
+  This rejects absent coverage; it does not establish complete image coverage or
+  supply the missing BusyBox inventory.
   [Issue #915](https://github.com/Stuhlmuller/homelab/issues/915) adds whole-scalar
   reference validation, explicit extraction-error propagation, and `--` before
   the image argument. Literal shell extraction retains registry ports, tagless
@@ -107,8 +118,8 @@ organization-policy blocker is tracked below.
   stubbed invocation protect those boundaries without running Trivy. This is not
   an OS sandbox or local credential isolation; scans belong in the unprivileged
   hosted gate without operator credentials.
-- **Risk:** The newly covered platform images require remediation, and empty
-  package inventories must fail closed under #920. At least the
+- **Risk:** The newly covered platform images require remediation; BusyBox remains
+  blocked until package-aware evidence is available under #920. At least the
   [24 confirmed tag-only identities recorded in #791](https://github.com/Stuhlmuller/homelab/issues/791#issuecomment-5466003981)
   remain outside this phase. Remaining implicit chart/operator images, SBOM,
   and signature verification still require separate coverage.
