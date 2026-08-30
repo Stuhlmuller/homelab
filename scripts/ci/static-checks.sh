@@ -292,8 +292,7 @@ kubectl kustomize clusters/homelab/apps/cordium |
     $bootstrap_apps[0].spec.source == {
       "repoURL": "https://github.com/Stuhlmuller/homelab.git",
       "targetRevision": "main",
-      "path": "clusters/homelab/apps/cordium-bootstrap",
-      "kustomize": {}
+      "path": "clusters/homelab/apps/cordium-bootstrap"
     } and
     $bootstrap_apps[0].spec.destination == {
       "server": "https://kubernetes.default.svc",
