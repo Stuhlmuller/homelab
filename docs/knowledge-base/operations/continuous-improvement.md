@@ -111,6 +111,12 @@ organization-policy blocker is tracked below.
   and accepted a synthetic package-covered, zero-vulnerability control.
   This rejects absent coverage; it does not establish complete image coverage or
   supply the missing BusyBox inventory.
+  Follow-up candidate scans still fail: local-path `v0.0.37` and cert-manager's
+  `v1.21.1` controller each contain eight fixable HIGH Go findings; Alpine
+  `3.24.1` provides BusyBox package coverage but has two HIGH OpenSSL findings.
+  No runtime pin changed. See [[platform-image-vulnerability-followup]] for
+  controller evidence and [[busybox-image-coverage]] for the incomplete upstream
+  SBOM, helper compatibility constraints and remaining callers.
   [Issue #915](https://github.com/Stuhlmuller/homelab/issues/915) adds whole-scalar
   reference validation, explicit extraction-error propagation, and `--` before
   the image argument. Literal shell extraction retains registry ports, tagless
