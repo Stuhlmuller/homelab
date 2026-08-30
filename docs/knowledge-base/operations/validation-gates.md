@@ -163,6 +163,70 @@ OpenPGP implementation is the maintained ProtonMail library. This is cross-targe
 package analysis, not verification of a built Linux executable. Keep #917 open
 for that artifact check; no exception or vulnerability-free claim is made.
 
+## Runtime Image Inventory
+
+Issue #791's scanner uses native Terragrunt evaluation and Helm/Kustomize
+rendering, not only literal images in values files. The same current helper
+and toolchain inspect both revisions; historical scanner scripts are never
+executed. Current-source snapshots include non-ignored local edits and exclude
+ignored generated units/caches. Base snapshots come from the exact Git commit.
+Neither snapshot changes the operator's checkout or Git refs.
+
+```sh
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --self-check
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --list
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --list <base-commit-sha>
+```
+
+The self-check is offline. Listing may fetch public charts; it reports selected
+image references, not a successful vulnerability scan. Scan mode rejects
+selected unpinned references while still scanning selected immutable images.
+Unchanged images remain the weekly/full scan's responsibility. Malformed
+references, failed renders, missing values, and unsupported image-generation
+contracts fail before scanning; none become an empty successful inventory.
+
+The renderer covers the bootstrap Helm release, evaluated Argo CD sources,
+and nested Applications discovered in local Kustomize output. It preserves
+values-file ordering, inline values/values-object precedence, parameters,
+release names, and namespaces. Unsupported source/options fail instead of
+silently approximating Argo CD. Native client-only rendering uses no cluster
+connection, provider initialization, state, or apply hook. Reviewed HCL and
+charts still need to be trusted: this is not an arbitrary-code sandbox.
+Temporary rendered output carries an inventory-only namespace annotation;
+never apply it or reuse it as a deployment manifest.
+
+Each chart source/version is fetched once per run and the same bytes are reused
+for current/base comparison. HTTPS and an exact version are not signature
+verification or a committed chart digest; that provenance work remains in #791.
+The offline Kubernetes capability baseline is `1.34.1`, unless the Application
+explicitly supplies a version. It is not a live cluster/API-discovery result.
+
+Typed extraction includes PodSpecs, installation/upgrade/deletion hooks,
+Prometheus and Alertmanager image fields, reloader and cert-manager solver
+arguments, Tailscale proxy configuration, and the local-path helper Pod template.
+Monitoring sidecar/init-container overrides, Thanos, PrometheusAgent and
+ThanosRuler require explicit review and currently fail closed. Istio
+gateway `auto` images must resolve through rendered injector/mesh settings;
+unknown overrides fail. Kiali's hidden server default is restricted to the
+source-verified `v2.26.0` operator/default-CR contract, which uses the operator
+Pod's version label. A new operator release or customization needs its image
+contract reviewed, not an assumed default. See the upstream
+[Kiali supported-image mapping](https://github.com/kiali/kiali-operator/blob/v2.26.0/playbooks/kiali-default-supported-images.yml)
+and [resolution logic](https://github.com/kiali/kiali-operator/blob/v2.26.0/roles/default/kiali-deploy/tasks/main.yml).
+
+The 2026-08-30 local regression rendered 29 Helm releases and expanded the
+inventory from 66 to 90 textual references: 24 unpinned additions, no removals.
+One existing BusyBox alias accounts for the difference from unique identities.
+An unchanged-base comparison selected nothing. Replaying draft #820's six
+Prometheus digest overrides selected all six, including the reloader argument;
+the old values-only extractor selected none. These are inventory checks, not
+successful vulnerability scans or rollout approval.
+
+This is repository-declared image coverage, not a live Pod census, proof of
+complete package/SBOM coverage, or a vulnerability exception. No runtime image
+pins or protected-job permissions change. Roll back through a reviewed revert;
+do not waive the pin or package-coverage checks to obtain a green result.
+
 ## Kubernetes Source Checks
 
 Use the renderer that matches the changed source:
