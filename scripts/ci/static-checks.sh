@@ -137,6 +137,42 @@ done
 )
 echo "::endgroup::"
 
+echo "::group::Octelium bootstrap node containment"
+(
+  # Run the actual prerequisites against mocked API responses, without cluster access.
+  bootstrap_label_checks="$(awk '/^require_label\(\)/,/^}/; /^require_label /' scripts/octelium-cluster-bootstrap.sh)"
+  check_bootstrap_labels() (
+    node_two_state="$1"
+    # Used by the prerequisites evaluated below.
+    # shellcheck disable=SC2034
+    kubectl_cmd=(kubectl)
+    # shellcheck disable=SC2329
+    kubectl() {
+      case "$4" in
+        octelium.com/node-mode-dataplane) printf '%s\n' node/zimaboard-0 ;;
+        octelium.com/node-mode-controlplane) printf '%s\n' node/zimaboard-1 ;;
+        '!octelium.com/node-mode-dataplane')
+          case "$node_two_state" in
+            absent) printf '%s\n' node/zimaboard-2 ;;
+            present | missing) return 0 ;;
+            error) return 1 ;;
+          esac
+          ;;
+        *) return 1 ;;
+      esac
+    }
+    eval "$bootstrap_label_checks"
+  )
+  check_bootstrap_labels absent
+  for node_two_state in present missing error; do
+    if check_bootstrap_labels "$node_two_state"; then
+      echo "Octelium bootstrap accepted unsafe node state: ${node_two_state}" >&2
+      exit 1
+    fi
+  done
+)
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
