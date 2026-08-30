@@ -7,6 +7,8 @@ Canonical runbook: [`docs/talos-control-plane-maintenance.md`](../../talos-contr
 Render and validate Talos configuration before applying it. Use
 `talosctl validate --mode metal --strict`, authenticated access after bootstrap,
 and repository-owned patches for control-plane changes.
+Emergency recovery does not permit live machineconfig edits followed by
+backfilling; use the validated patch workflow first.
 Direct-IP `talosctl` operations require the homelab LAN or retained Tailscale
 fallback; the Octelium Kubernetes Service and Cordium session do not route the
 Talos API or LAN subnet.

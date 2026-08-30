@@ -252,6 +252,11 @@ terragrunt_deleted_unit_paths() {
   head_stack_unit_paths="$(terragrunt_stack_unit_paths_at_ref "$head_ref")"
 
   while IFS= read -r unit_dir; do
+    # Catalog templates and operator-owned state are outside the CI apply scope.
+    case "$unit_dir" in
+      IaC/bootstrap/*|IaC/live/*) ;;
+      *) continue ;;
+    esac
     if grep -Fxq "$unit_dir" <<<"$head_stack_unit_paths"; then
       continue
     fi
@@ -293,6 +298,10 @@ include "root" {
   path = find_in_parent_folders("root.hcl")
 }
 
+include "kubernetes_provider" {
+  path = find_in_parent_folders("kubernetes-provider.hcl")
+}
+
 locals {
   root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   aws_region  = local.root_config.locals.aws_region
@@ -328,6 +337,12 @@ provider "aws" {
 
 provider "azuread" {}
 provider "random" {}
+
+provider "helm" {
+  kubernetes = {
+    config_path = pathexpand("${local.root_config.locals.kubernetes_config_path}")
+  }
+}
 TF
 }
 EOF

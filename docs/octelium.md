@@ -652,7 +652,7 @@ Terragrunt/OpenTofu manages the Octelium node labels:
 | --- | --- |
 | `zimaboard-0` | `octelium.com/node-mode-dataplane=` |
 | `zimaboard-1` | `octelium.com/node-mode-controlplane=`, `octelium.com/node-mode-cordium=` |
-| `zimaboard-2` | `octelium.com/node-mode-dataplane=` |
+| `zimaboard-2` | No Octelium dataplane label; insufficient memory for the fleet |
 
 Argo CD manages:
 

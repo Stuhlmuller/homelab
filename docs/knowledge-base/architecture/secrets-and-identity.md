@@ -39,6 +39,25 @@ roles need identity-based KMS permissions for both keys.
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
 
+The operator-owned External Secrets permissions boundary denies direct
+temporary-session requests using `aws:TokenIssueTime` only when
+`aws:ViaAWSService` is false. SSM must still forward the caller's authorization
+to KMS for SecureString decryption; excluding this AWS service hop from the
+deny does not grant any new action or resource. Exact reader policy ARNs and
+the existing boundary Allow statements still apply. On 2026-08-30, the broader
+deny caused `cordium-agent-auth` refreshes to fail at `kms:Decrypt`. The
+administrator applied the reviewed single-update plan from
+`IaC/operator/github-actions-role-policy`; Cordium's scheduled refresh succeeded
+at `2026-08-30T16:56:48Z`. The native policy regression checks all four direct
+and forwarded request contexts, retaining direct temporary-credential denial.
+Only Cordium refreshes periodically (every five minutes); the other 23 live
+ExternalSecrets use `OnChange`. Their existing Ready conditions and the global
+store's Ready status do not prove that a new decryption works under the current
+boundary. After repair, verify a controlled repository-driven refresh before
+rotating dependent credentials.
+See [AWS forward access sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html)
+and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-viaawsservice).
+
 ## Identity Notes
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
@@ -93,7 +112,8 @@ roles need identity-based KMS permissions for both keys.
 - The retired GitHub Actions runner no longer consumes an SSM registration
   token. `/homelab/github-actions-runner/registration-token` remains declared
   and adoptable only as an OpenTofu state tombstone because the production
-  policy rejects SSM parameter deletion. Remove it only with a reviewed
+  policy rejects SSM parameter deletion. It is excluded from the External
+  Secrets reader IAM policy. Remove it only with a reviewed
   repository-owned state and secret-retirement workflow.
 - Dispatcharr's dedicated PostgreSQL password is generated at
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
@@ -141,7 +161,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   (strict) TLS/HTTP2 origin transport; the token value never enters git or
   workflow output. The former
   `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
-  consumer and remains only until secret retirement is reviewed separately.
+  consumer, is excluded from the External Secrets reader IAM policy, and
+  remains only until secret retirement is reviewed separately.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -161,7 +182,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
   CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
   it must not grant the bearer access to other public Services. The User owns
-  matching 30-day clientless-session and access-token lifetimes. Rotate it every 21 days with
+  matching 30-day clientless-session and access-token lifetimes. Rotate it every
+  21 days with
   `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
   Sessions first so Octelium cannot retain an older Session expiry, then retries
   GitHub environment writes until both store the replacement token.
@@ -205,8 +227,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `homelab-ssm-parameter-readers` group. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
   with an operator-owned boundary that allows only homelab SSM reads and
-  runtime-secret KMS decrypt/describe access. The boundary denies temporary STS
-  credentials, and the reader policy excludes the two parameters that hold
+  runtime-secret KMS decrypt/describe access. The boundary denies direct
+  temporary STS requests while preserving SSM's AWS-managed KMS calls, and the
+  reader policy excludes the two parameters that hold
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [[../operations/continuous-improvement]].

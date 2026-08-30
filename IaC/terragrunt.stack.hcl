@@ -1869,7 +1869,7 @@ unit "argocd_apps_n8n" {
         info = [
           {
             name  = "rollout"
-            value = "automated; update the n8n encryption key before storing real credentials and verify n8n-postgres plus NFS backup coverage before relying on automation history"
+            value = "automated; preserve the instance encryption key on the n8n PVC and verify n8n-postgres plus NFS backup coverage before relying on automation history"
           }
         ]
       }

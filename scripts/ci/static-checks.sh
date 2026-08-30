@@ -30,6 +30,46 @@ if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")
 fi
 echo "::endgroup::"
 
+echo "::group::Terragrunt deleted-unit ownership"
+(
+  git() {
+    case "$1" in
+      rev-parse) return 0 ;;
+      diff) printf '%s\n' IaC/.catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
+      *) return 1 ;;
+    esac
+  }
+  terragrunt_stack_unit_paths_at_ref() {
+    printf '%s\n' IaC/live/old
+    if [[ "$1" == "base" ]]; then
+      printf '%s\n' IaC/live/retired IaC/operator/retired
+    fi
+  }
+  export TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF="base"
+  export TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF="head"
+  [[ "$(terragrunt_deleted_unit_paths)" == $'IaC/bootstrap/old\nIaC/live/retired' ]]
+)
+echo "::endgroup::"
+
+echo "::group::Terragrunt deleted-unit providers"
+(
+  deleted_unit_test_root="$(mktemp -d)"
+  trap 'rm -rf -- "$deleted_unit_test_root"' EXIT
+  terragrunt_create_deleted_unit_destroy_stack "$deleted_unit_test_root" IaC/live/argocd-apps/deleted-unit-test
+  (
+    cd "${deleted_unit_test_root}/IaC/live/argocd-apps/deleted-unit-test"
+    terragrunt render --json
+  ) | jq -e '
+    .generate.kubernetes_provider.contents as $kubernetes |
+    .generate.deleted_unit_destroy_config.contents as $config |
+    ($kubernetes | contains("provider \"kubernetes\"")) and
+    ($kubernetes | contains("config_path = pathexpand(\"~/.kube/config\")")) and
+    ($config | contains("provider \"helm\"")) and
+    ($config | contains("config_path = pathexpand(\"~/.kube/config\")"))
+  ' >/dev/null
+)
+echo "::endgroup::"
+
 echo "::group::Terragrunt generated-unit filters"
 (
   cd IaC/live/argocd-apps
@@ -71,9 +111,15 @@ echo "::endgroup::"
 echo "::group::Operator OpenTofu validation"
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/modules/aws-github-actions-role-policy/main.tf
 rg -Fq 'variable = "aws:TokenIssueTime"' IaC/modules/aws-github-actions-role-policy/main.tf
+rg -Fq 'variable = "aws:ViaAWSService"' IaC/modules/aws-github-actions-role-policy/main.tf
 for parameter in \
   '/homelab/external-secrets/aws-ssm/access-key-id' \
-  '/homelab/external-secrets/aws-ssm/secret-access-key'; do
+  '/homelab/external-secrets/aws-ssm/secret-access-key' \
+  '/homelab/github-actions-runner/registration-token' \
+  '/homelab/octelium/cloudflare-zone-settings-token' \
+  '/homelab/argocd-image-updater/github-app/id' \
+  '/homelab/argocd-image-updater/github-app/installation-id' \
+  '/homelab/argocd-image-updater/github-app/private-key'; do
   parameter_block="$(
     awk -v target="\"${parameter}\" = {" '
       index($0, target) { found = 1 }
@@ -86,7 +132,44 @@ done
 (
   cd IaC/operator/github-actions-role-policy
   terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-  terragrunt --log-disable validate -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+echo "::endgroup::"
+
+echo "::group::Octelium bootstrap node containment"
+(
+  # Run the actual prerequisites against mocked API responses, without cluster access.
+  bootstrap_label_checks="$(awk '/^require_label\(\)/,/^}/; /^require_label /' scripts/octelium-cluster-bootstrap.sh)"
+  check_bootstrap_labels() (
+    node_two_state="$1"
+    # Used by the prerequisites evaluated below.
+    # shellcheck disable=SC2034
+    kubectl_cmd=(kubectl)
+    # shellcheck disable=SC2329
+    kubectl() {
+      case "$4" in
+        octelium.com/node-mode-dataplane) printf '%s\n' node/zimaboard-0 ;;
+        octelium.com/node-mode-controlplane) printf '%s\n' node/zimaboard-1 ;;
+        '!octelium.com/node-mode-dataplane')
+          case "$node_two_state" in
+            absent) printf '%s\n' node/zimaboard-2 ;;
+            present | missing) return 0 ;;
+            error) return 1 ;;
+          esac
+          ;;
+        *) return 1 ;;
+      esac
+    }
+    eval "$bootstrap_label_checks"
+  )
+  check_bootstrap_labels absent
+  for node_two_state in present missing error; do
+    if check_bootstrap_labels "$node_two_state"; then
+      echo "Octelium bootstrap accepted unsafe node state: ${node_two_state}" >&2
+      exit 1
+    fi
+  done
 )
 echo "::endgroup::"
 
@@ -99,6 +182,25 @@ done < <(
     -name kustomization.yaml \
     -exec dirname {} \; | sort
 )
+echo "::endgroup::"
+
+echo "::group::Multica PostgreSQL recovery probes"
+kubectl kustomize clusters/homelab/apps/multica |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "Deployment" and .metadata.name == "multica-postgres")] |
+    length == 1 and (.[0].spec.template.spec |
+      .terminationGracePeriodSeconds == 120 and
+      (.containers[] | select(.name == "postgres") |
+        .startupProbe.exec.command == ["pg_isready", "-U", "multica", "-d", "multica"] and
+        [.startupProbe.periodSeconds, .startupProbe.timeoutSeconds, .startupProbe.failureThreshold] == [10, 5, 180] and
+        .readinessProbe.exec.command == ["psql", "-U", "multica", "-d", "multica", "-Atqc", "SELECT 1"] and
+        [.readinessProbe.periodSeconds, .readinessProbe.timeoutSeconds, .readinessProbe.failureThreshold] == [10, 5, 6] and
+        .livenessProbe.exec.command == .readinessProbe.exec.command and
+        [.livenessProbe.periodSeconds, .livenessProbe.timeoutSeconds, .livenessProbe.failureThreshold] == [30, 5, 60]
+      )
+    )
+  ' >/dev/null
 echo "::endgroup::"
 
 echo "::group::Octelium PostgreSQL backup contract"
@@ -926,6 +1028,7 @@ rg -Fq 'live-secret-before.json' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'probe_controller_key "$old_key_id" "$old_secret_access_key" old-key' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'probe_controller_key "$new_access_key_id" "$new_secret_access_key" new-key' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'DenyTemporarySessionCredentials' scripts/rotate-external-secrets-aws-key.sh
+rg -Fq '"Bool": {"aws:ViaAWSService": "false"}' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'probe_temporary_session_denied' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'duration-seconds 900' scripts/rotate-external-secrets-aws-key.sh
 rg -Fq 'new-parameters.json' scripts/rotate-external-secrets-aws-key.sh

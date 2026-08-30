@@ -1,5 +1,7 @@
 # Argo CD Bootstrap Runbook
 
+<!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
+
 This runbook bootstraps Argo CD into the Talos-backed homelab cluster using the
 repository-owned Terragrunt stack at `IaC/bootstrap/argocd`.
 
@@ -96,7 +98,8 @@ Expected plan:
   `argocd-self-management` Application with the Terragrunt `after_hook` only
   after `applications.argoproj.io` and `appprojects.argoproj.io` are
   established.
-- Uses the Terragrunt catalog `helm-release` module pinned to `0.3.0`.
+- Uses the Terragrunt catalog `helm-release` module at the immutable commit
+  declared in `IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl`.
 - Shows no raw secrets, kubeconfigs, tokens, keys, or certificate material.
 
 ## Apply
@@ -120,7 +123,8 @@ self-management Application manifest from this repository.
 ```sh
 kubectl get namespace argocd
 kubectl -n argocd get pods
-kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
+kubectl -n argocd get svc argocd-application-controller-metrics \
+  argocd-repo-server-metrics argocd-server-metrics
 kubectl -n argocd get applications.argoproj.io argocd-self-management
 kubectl -n argocd describe applications.argoproj.io argocd-self-management
 ```
@@ -179,10 +183,10 @@ stack.
 
 ## Drift And Reconciliation
 
-Do not hand-edit the live Application as a permanent change. If Argo CD-owned
-state drifts, correct the repository file and let Argo CD reconcile it. A live
-mutation is incomplete until the final desired state is backfilled into this
-repository and validated.
+Do not hand-edit the live Application. If Argo CD-owned state drifts, correct
+and validate the repository file first, then let Argo CD reconcile it. Recovery
+uses the same repository-owned path; do not make live changes and backfill them
+afterward.
 
 ## Recovery
 
@@ -196,7 +200,8 @@ Missing CRDs:
 Bad repository path or target revision:
 
 1. Inspect `kubectl -n argocd describe application argocd-self-management`.
-2. Correct `repoURL`, `path`, or `targetRevision` in the repo-owned Application manifest.
+2. Correct `repoURL`, `path`, or `targetRevision` in the repo-owned Application
+   manifest.
 3. Re-run `terragrunt plan` and `terragrunt apply`.
 
 Missing credentials:
@@ -238,12 +243,13 @@ Existing manual Argo CD install conflict:
 2. Decide whether Terragrunt should adopt or replace it in a reviewed change.
 3. Do not force adoption with live patches that are not represented in code.
 
-Break-glass live change:
+Emergency recovery:
 
-1. Make the smallest live change needed to recover service.
-2. Record the command and output.
-3. Backfill the final desired state into this repository before the work is
-   considered complete.
+1. Inspect the failure with read-only commands.
+2. Make the smallest recovery change in repository-owned desired state and run
+   the relevant validation gates.
+3. Apply through the documented Terragrunt or GitOps path. If that path cannot
+   express the recovery, add and review the missing code path before mutation.
 
 ## Storage And Backup Impact
 
@@ -255,7 +261,8 @@ state recoverable from this repository plus external secret material.
 
 ## Validation Log
 
-Validation results are recorded during implementation:
+Historical initial-bootstrap results follow; these are not evidence for the
+current revision. Re-run the validation gates above before each apply.
 
 - Terragrunt HCL formatting: passed with `terragrunt hcl fmt --check`.
 - OpenTofu formatting: no repository-local module files remain; the bootstrap

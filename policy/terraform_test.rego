@@ -2,6 +2,19 @@ package main
 
 import rego.v1
 
+test_rejects_sensitive_resource_destroy_plans if {
+	every resource_type in {"aws_kms_key", "aws_ssm_parameter", "kubernetes_secret", "kubernetes_secret_v1"} {
+		plan := {"resource_changes": [{
+			"address": sprintf("%s.this", [resource_type]),
+			"type": resource_type,
+			"change": {"actions": ["delete"], "after": null},
+		}]}
+		violations := deny with input as plan
+		some msg in violations
+		contains(msg, "must not delete sensitive resource")
+	}
+}
+
 test_allows_expected_write_only_external_secrets_auth if {
 	plan := secret_plan("kubernetes_secret_v1.this", "aws-ssm-auth", "external-secrets", null, null, 1, true, false)
 	violations := deny with input as plan

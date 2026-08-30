@@ -24,3 +24,26 @@ for regular multi-user authentication.
 
 PostgreSQL data and backend uploads use `nfs-default` PVCs. Preserve both PVCs
 on rollback unless intentionally rebuilding the Multica instance from scratch.
+
+PostgreSQL startup and liveness allow 30 minutes for NFS recovery, with a
+120-second shutdown grace period, matching the other NFS-backed app databases.
+Readiness executes `SELECT 1` and removes an unusable database from its Service
+after six failed checks; accepting connections alone does not prove queries
+work. This avoids repeatedly interrupting slow recovery while keeping failed
+queries out of service.
+
+After the reviewed GitOps rollout, verify one ready replica, stable restart
+counts, and query execution:
+
+```sh
+kubectl -n ai rollout status deployment/multica-postgres --timeout=35m
+kubectl -n ai get pods \
+  -l app.kubernetes.io/name=multica,app.kubernetes.io/component=postgres
+kubectl -n ai exec deployment/multica-postgres -- \
+  psql -U multica -d multica -Atqc 'SELECT 1'
+```
+
+The query must print `1`. Repeated NFS errors need NAS/network diagnosis;
+preserve the PVC and never remove PostgreSQL locks while a writer may be alive.
+Reverting these probe settings through Git does not change the image or data,
+but restores the unsafe short recovery window.

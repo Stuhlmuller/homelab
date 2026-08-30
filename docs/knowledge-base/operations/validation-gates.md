@@ -7,6 +7,15 @@ Tags: #operations #validation
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
 
+Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
+`IaC/live`, including removals from the explicit stack. Catalog templates and
+`IaC/operator` are never retired by the workflow. Every saved destroy plan must
+pass the same Conftest policy as ordinary plans before production applies it;
+protected resource deletion cannot bypass policy through unit removal.
+Synthetic retirement units reuse the canonical Kubernetes and Helm connection
+configuration. Encrypted-state retirement remains gated on the decoder work in
+[PR #837](https://github.com/Stuhlmuller/homelab/pull/837).
+
 For most repo changes, start with:
 
 ```sh
@@ -23,7 +32,7 @@ and an administrator-authenticated plan before apply:
 ```sh
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-terragrunt --log-disable validate -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
@@ -48,6 +57,8 @@ that directory.
 
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
+Keep `--no-auto-init` on the backend-free validation and test commands;
+otherwise Terragrunt can initialize the real S3 backend before running them.
 
 ## GitHub Workflow Checks
 

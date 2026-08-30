@@ -13,6 +13,11 @@ end-to-end gate on their repository-owned scripts and manifests. The catalog
 also owns the core human session ceiling; apply its `ClusterConfig` include
 separately before the normal catalog apply.
 
+Bootstrap and upgrade require the dataplane label on `zimaboard-0`, the
+control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.
+The bootstrap script refuses to mutate the cluster if these selectors fail,
+including a missing node or failed API lookup.
+
 The public CLI edge uses the host-networked `octelium-api-upnp` CronJob on
 `zimaboard-0` to renew WAN TCP/8443 to `10.1.0.200:30443`. The job cannot enable
 Xfinity UPnP, so router authority remains a rollout gate. Grafana alerts before
