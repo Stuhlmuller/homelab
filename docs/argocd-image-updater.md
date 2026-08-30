@@ -12,19 +12,25 @@ stateful migration decisions happen during normal pull-request review.
 ## Vulnerability Scanning
 
 `scripts/ci/image-vulnerability-scan.sh` extracts exact digest-pinned images
-from repository-owned Kubernetes YAML, Helm values, and operator scripts. The
-required `validate` job scans each exact image whose occurrence count increases
+from repository-owned Kubernetes YAML, Helm values, and operator scripts.
+The YAML extractor also reads Argo CD Application `spec.source.helm.values` and
+`spec.sources[].helm.values` strings. A nonempty image `digest` takes precedence
+over `tag`; repository-plus-digest mappings do not require a tag. Other embedded
+configuration strings are not parsed as Helm values. Operator scripts contribute
+literal whitespace/quote-delimited pins, not evaluated shell expressions.
+
+The required `validate` job scans each exact image whose occurrence count increases
 in a change for fixable HIGH and CRITICAL vulnerabilities. Reusing a vulnerable
 baseline digest in another workload is therefore blocked. The weekly run scans
 the complete extracted inventory so newly published advisories are detected
 without a repository change. Existing vulnerable images remain visible in the
 weekly baseline without blocking unrelated pull requests.
 
-Run the same checks locally:
+Inspect the inventory and test extraction locally without invoking Trivy:
 
 ```sh
 nix develop --command bash scripts/ci/image-vulnerability-scan.sh --list
-nix develop --command bash scripts/ci/image-vulnerability-scan.sh
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --self-check
 ```
 
 Temporary exceptions belong in `.trivyignore.yaml`. Each exception must name
@@ -33,17 +39,49 @@ Trivy stops suppressing an expired finding, and the wrapper also rejects
 expired or unscoped entries. A PURL exception applies to that package across
 images, so keep its issue scope and lifetime narrow.
 
-The locked Nix input currently supplies Trivy `0.69.3`, which predates the fix
+The development shell temporarily overrides the locked Trivy `0.69.3` package
+with `0.74.0`, built with scanner-only Go `1.26.7` under #916. This includes the fix
 for [CVE-2026-55092](https://github.com/aquasecurity/trivy/security/advisories/GHSA-mcj4-mphf-j9ff).
-Until the Nix toolchain update tracked by #888 supplies `0.71.1` or newer, the
-wrapper scans from an empty directory, ignores repository configuration,
-removes registry override variables, and uses the trusted default database
-source. It also forces the cluster's `linux/amd64` platform.
+The upstream lock remains unchanged; the full refresh remains blocked under
+issue #888. See [the runtime pin](knowledge-base/operations/validation-gates.md#scanner-runtime-pin)
+for reproducible build evidence and removal gates. As defense in depth, the
+wrapper still scans from an empty directory, ignores repository configuration,
+removes named registry/database override variables, and uses the trusted default
+database source. It also forces the cluster's `linux/amd64` platform.
 
-The extractor does not invent image names for remote Helm chart defaults that
-declare only a digest. Make those chart image repositories and tags explicit
-before treating #791 as complete. SBOM and signature verification remain
-separate follow-up work under that issue.
+[Issue #915](https://github.com/Stuhlmuller/homelab/issues/915) hardens that
+boundary: complete image scalars are validated before line serialization,
+malformed or option-shaped digest references fail before any Trivy invocation,
+and `--` separates the image argument from scanner options. Extraction failures
+propagate for both current and base files, including list and no-delta paths.
+The self-check covers earlier invalid scalars or documents followed by valid
+ones, literal shell registry ports, tagless pins, overlong digests, and the final
+invocation arguments with a stub, without running Trivy.
+
+This setup is not an OS sandbox or a local credential boundary. Other inherited
+Trivy settings and GitHub, Podman, or cloud credential sources may still apply
+locally. Run vulnerability scans in the unprivileged hosted `validate` gate
+without operator credentials.
+
+The cert-manager and local-path image repositories are explicit copies of their
+pinned charts' effective defaults; their digests and rendered images are
+unchanged. Compared with draft #905's 59-reference inventory, extraction now
+lists 66 textual references representing 65 image identities: five cert-manager
+images and the local-path provisioner are newly covered; the fully qualified
+BusyBox helper is an alias of an already-covered image. The scanner deliberately
+keeps textual references and occurrence counting unchanged.
+Reverting this extraction follow-up restores the prior inventory without
+changing rendered workloads.
+
+The extractor does not invent image names for remaining remote chart defaults.
+At least the [24 confirmed tag-only identities recorded in #791](https://github.com/Stuhlmuller/homelab/issues/791#issuecomment-5466003981)
+remain outside this phase; that inventory is not a claim of live or complete
+coverage. SBOM and signature verification remain separate follow-up work.
+Extraction/list self-checks do not prove images are vulnerability-free. The
+2026-08-30 uncredentialed `linux/amd64` audit with the patched scanner found
+21 fixable HIGH tuples in local-path (#918) and 11-12 in each cert-manager image
+(#919). BusyBox returned no package targets, so its zero findings mean unknown
+coverage (#920). These existing images block acceptance; no exception was added.
 
 Rollback by reverting the scanner, workflow, ignore file, and Nix package
 change; the check writes only temporary CI/local cache and never changes live

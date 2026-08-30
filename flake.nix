@@ -58,7 +58,34 @@
             sops
             talosctl
             terragrunt
-            trivy
+            # Temporary scanner-only security pin; see validation-gates.md and #888.
+            (
+              (trivy.override {
+                buildGoModule = buildGoModule.override {
+                  go = go_1_26.overrideAttrs (
+                    finalAttrs: _: {
+                      version = "1.26.7";
+                      src = fetchurl {
+                        url = "https://go.dev/dl/go${finalAttrs.version}.src.tar.gz";
+                        hash = "sha256-DtJOrHVRBQhbif6cq8J0K5GgrXuUtZ0602SRjryJVq0=";
+                      };
+                    }
+                  );
+                };
+              }).overrideAttrs
+              (
+                finalAttrs: _: {
+                  version = "0.74.0";
+                  src = fetchFromGitHub {
+                    owner = "aquasecurity";
+                    repo = "trivy";
+                    tag = "v${finalAttrs.version}";
+                    hash = "sha256-OXOT8qwqh8Gy+IJcvBza5nai5bvNMcAMeeT+b2zuWDg=";
+                  };
+                  vendorHash = "sha256-ajXgC6CCw0IaS/e3k0wGNIUOs9mTBIEuV21ZnwZj7SQ=";
+                }
+              )
+            )
             unzip
             yamllint
             yq-go

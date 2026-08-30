@@ -76,17 +76,42 @@ organization-policy blocker is tracked below.
   operator scripts with Trivy; its weekly run scans the complete extracted
   inventory. Fixable HIGH and CRITICAL findings fail the job. Exceptions
   scoped to a package PURL require an issue link and future expiry, after which
-  they fail closed. Trivy `0.69.3` in the locked Nix input is affected by
-  CVE-2026-55092; the wrapper mitigates it
-  by running from an empty directory with repository configuration and OCI
-  database overrides disabled until issue `#888` updates the Nix toolchain.
+  they fail closed. Trivy `0.69.3` in the unchanged Nix input is affected by
+  CVE-2026-55092; a temporary, fixed-hash package override supplies `0.74.0`
+  built with scanner-only Go `1.26.7` under `#916`. Module/version analysis of
+  the rebuilt binary removes 13 standard-library advisory matches; the
+  OpenPGP advisory's applicability remains under investigation in `#917`.
+  The full lock refresh remains blocked under `#888`; see
+  [[validation-gates#Scanner Runtime Pin|runtime pin evidence and removal gates]].
+  The wrapper retains its empty working directory and repository configuration
+  and named registry/database override restrictions as defense in depth.
   The first `linux/amd64` baseline scanned 59 exact references: 54 had 75
   CRITICAL and 2,053 HIGH unique vulnerability/package/fixed-version tuples.
   Existing upgrade issues retain their scope; uncovered app groups are tracked
   by issues `#895` through `#904`.
-- **Risk:** Remote Helm defaults that expose only a digest remain outside the
-  extractor until their repository and tag are explicit. SBOM and signature
-  verification are not yet enforced.
+  Extraction now includes separate image digests and scoped embedded Argo Helm
+  values. Explicit cert-manager and local-path repositories preserve their
+  pinned charts' rendered images. The inventory expands from 59 to 66 textual
+  references (65 image identities; BusyBox has two aliases), without changing
+  scanner isolation or occurrence counting. The 2026-08-30 uncredentialed
+  `linux/amd64` audit with the patched scanner found 21 fixable HIGH tuples in
+  local-path (#918), and 11-12 in each of the five cert-manager images (#919).
+  All six scans failed the vulnerability policy; no CRITICAL findings appeared.
+  BusyBox returned no package targets, so its successful exit is unknown coverage,
+  not a clean-image result (#920). These are package/version matches, not proof
+  of exploitability or the inaccessible cluster's current runtime state.
+  [Issue #915](https://github.com/Stuhlmuller/homelab/issues/915) adds whole-scalar
+  reference validation, explicit extraction-error propagation, and `--` before
+  the image argument. Literal shell extraction retains registry ports, tagless
+  pins, and malformed suffixes for validation. Runnable negative cases and a
+  stubbed invocation protect those boundaries without running Trivy. This is not
+  an OS sandbox or local credential isolation; scans belong in the unprivileged
+  hosted gate without operator credentials.
+- **Risk:** The newly covered platform images require remediation, and empty
+  package inventories must fail closed under #920. At least the
+  [24 confirmed tag-only identities recorded in #791](https://github.com/Stuhlmuller/homelab/issues/791#issuecomment-5466003981)
+  remain outside this phase. Remaining implicit chart/operator images, SBOM,
+  and signature verification still require separate coverage.
 - **Next step:** Complete the chart-default image inventory, remediate the
   weekly baseline findings, then add the smallest SBOM and signature gates
   under issue `#791`.
