@@ -95,6 +95,8 @@ destroy_deleted_terragrunt_units() {
         echo "Resources in deleted Terragrunt unit state:"
         cat "$state_list_file"
         terragrunt plan -destroy -refresh=false -out plan.out -no-color >/dev/null
+        terragrunt --log-disable show -json plan.out >plan.json
+        conftest test --policy "${snapshot_dir}/policy" --output github plan.json
         terragrunt apply -no-color plan.out
       else
         echo "Deleted Terragrunt unit ${unit_dir} has no resources in remote state."

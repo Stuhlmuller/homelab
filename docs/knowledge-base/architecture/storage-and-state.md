@@ -96,6 +96,11 @@ turns over NFS. The volume is capped at `2Gi` to protect node storage. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
+Multica PostgreSQL now follows the recovered NFS database probe pattern:
+30-minute startup and liveness windows, SQL-query readiness, and 120-second
+shutdown grace. Its image, credentials, scheduling, and PVC are unchanged.
+This prevents short liveness windows from interrupting recovery; it does not
+resolve the underlying NFS reliability or backup risks.
 The latest rscstore recovery preserves the unreplayable 2026-08-26 DuckDB WAL
 by renaming it on the retained PVC before starting from the last valid
 checkpoint. A new completion marker leaves the earlier 2026-08-21 recovery

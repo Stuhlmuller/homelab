@@ -1,5 +1,7 @@
 # CI/CD Pipeline
 
+<!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
+
 This repository uses GitHub Actions for the review and rollout path:
 
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
@@ -79,11 +81,8 @@ contract for Grafana.
 - The `main` ruleset requires pull requests, squash-only linear history,
   verified signatures, strict always-on checks, and blocks branch deletion and
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
-  `Analyze (python)`, `analyze-actions`, and `release-dry-run`. `Terragrunt Gate`
-  is the stable candidate for merge-blocking Terragrunt validation; do not add
-  it to ruleset `14700233` until a merged workflow revision has emitted the
-  context for both a no-live-plan pull request and a trusted live-plan pull
-  request.
+  `Analyze (python)`, `analyze-actions`, `release-dry-run`, and
+  `Terragrunt Gate`, confirmed in active ruleset `14700233` on 2026-08-30.
 - The Terragrunt plan and apply workflows restore and save a GitHub Actions
   cache for the Nix store after Nix is installed and before the first
   `nix develop --command ...` step. The cache key is derived from the runner OS,
@@ -162,13 +161,19 @@ contract for Grafana.
   retirement.
 - Deleted Terragrunt units are handled separately because the current checkout
   no longer contains the directory that owns their state. The plan and apply
-  scripts diff the base and head refs for deleted `IaC/**/terragrunt.hcl`
-  files, create temporary empty Terragrunt units at those deleted paths, and
+  scripts diff the base and head refs for deleted units under `IaC/bootstrap`
+  and `IaC/live`, including units removed from the explicit stack. Catalog
+  templates and administrator-owned `IaC/operator` units are excluded. They
+  create temporary empty Terragrunt units at the deleted deployment paths and
   reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
-  the original backend key. Pull request plans list the remote-state resources
+  the original backend key. Synthetic Kubernetes and Helm providers reuse the
+  canonical root kubeconfig instead of relying on implicit local defaults.
+  Pull request plans list the remote-state resources
   and save a destroy plan without rendering potentially sensitive values.
-  Production apply lists the same state resources, applies the saved destroy
-  plan, and then continues with the current checkout.
+  Production apply lists the same state resources, checks the destroy plan
+  against the existing Conftest policy, applies that saved plan only if policy
+  passes, and then continues with the current checkout. Protected SSM, KMS,
+  backend, and Kubernetes Secret deletions remain denied during retirement.
 - The protected full apply runs the production phases explicitly:
   destroy resources from deleted Terragrunt unit state, bootstrap Argo CD, apply
   SSM parameter declarations, apply Entra application registrations, apply Argo
@@ -264,7 +269,8 @@ nix develop --command aws sso login --profile default
 nix develop --command bash <<'EOF'
 set -euo pipefail
 
-test "$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')" = \
+test "$(kubectl config view --minify \
+  -o jsonpath='{.clusters[0].cluster.server}')" = \
   "https://10.1.0.199:6443"
 kubectl --request-timeout=15s version
 
@@ -363,7 +369,8 @@ only after Octelium confirms logout:
       --domain "$domain" \
       --logout \
       get clusterconfig >/dev/null; then
-      echo "error: server revocation failed; retained ${octelium_homedir} for retry" >&2
+      printf 'error: revocation failed; retained %s for retry\n' \
+        "$octelium_homedir" >&2
       exit 1
     fi
     rm -rf -- "$octelium_homedir"
@@ -407,7 +414,8 @@ find_new_run_id() {
         --event workflow_dispatch \
         --limit 20 \
         --json databaseId \
-        --jq "[.[] | select(.databaseId > ${before_id})] | max_by(.databaseId).databaseId // empty"
+        --jq "[.[] | select(.databaseId > ${before_id})] |
+          max_by(.databaseId).databaseId // empty"
     )"
     if test -n "$run_id"; then
       printf '%s\n' "$run_id"
@@ -434,7 +442,9 @@ wait_for_success() {
       )"
       case "$state" in
         "completed success") ;;
-        "completed "*) echo "error: run ${run_id} ended ${state}" >&2; return 1 ;;
+        "completed "*)
+          echo "error: run ${run_id} ended ${state}" >&2
+          return 1 ;;
         *) all_complete=false ;;
       esac
     done
@@ -452,10 +462,14 @@ gh workflow run homelab-diagnostics.yml --repo "$github_repo" --ref main \
 gh workflow run terragrunt-apply.yml --repo "$github_repo" --ref main \
   -f expected_sha="$main_sha"
 
-diagnostics_run_id="$(find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id")"
+diagnostics_run_id="$(
+  find_new_run_id homelab-diagnostics.yml "$diagnostics_before_id"
+)"
 apply_run_id="$(find_new_run_id terragrunt-apply.yml "$apply_before_id")"
-test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
-test "$(gh run view "$apply_run_id" --repo "$github_repo" --json headSha --jq .headSha)" = "$main_sha"
+test "$(gh run view "$diagnostics_run_id" --repo "$github_repo" \
+  --json headSha --jq .headSha)" = "$main_sha"
+test "$(gh run view "$apply_run_id" --repo "$github_repo" \
+  --json headSha --jq .headSha)" = "$main_sha"
 wait_for_success "$diagnostics_run_id" "$apply_run_id"
 ```
 
@@ -552,7 +566,7 @@ administrator-authenticated un-targeted plan after backend-free validation:
 aws sso login --profile <administrator-profile>
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-terragrunt --log-disable validate -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 ```
@@ -574,7 +588,8 @@ Then save, review, and apply the same plan from a private temporary directory:
 umask 077
 plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-operator.XXXXXX")"
 trap 'rm -rf -- "$plan_dir"' EXIT
-AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan -out="$plan_dir/plan.out" -no-color
+AWS_PROFILE=<administrator-profile> terragrunt --log-disable plan \
+  -out="$plan_dir/plan.out" -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable show -no-color "$plan_dir/plan.out"
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable apply -no-color "$plan_dir/plan.out"
 ```
@@ -588,8 +603,10 @@ The unit also adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and attaches an operator-owned
 permissions boundary. That boundary caps effective access at
 `ssm:GetParameter`/`ssm:GetParameters` under `/homelab/*` plus decrypt/describe
-access on the regional runtime-secret KMS key and denies every request made
-with temporary STS credentials. The generated reader policies exclude the two
+access on the regional runtime-secret KMS key and denies direct requests made
+with temporary STS credentials. AWS forward access sessions are excluded from
+that deny so SSM-to-KMS decryption still works within the existing allow rules.
+The generated reader policies exclude the two
 parameters that store this user's own access key. This keeps the existing group
 management path from becoming an indirect route to unrelated AWS permissions
 or a way for a compromised key to copy its replacement.

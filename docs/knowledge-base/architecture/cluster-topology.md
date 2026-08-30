@@ -18,6 +18,18 @@ control-plane node and three Zimaboard workers.
 
 ## Current Worker Recovery Blocker
 
+Read-only inspection on 2026-08-30 found `acer`, `zimaboard-0`, and
+`zimaboard-1` Ready. `zimaboard-2` remains unreachable; its last kubelet
+heartbeat is `2026-08-26T16:56:41Z`. Istio remains Degraded and Multus
+Progressing, with Octelium replacement Pods still stranded on that worker.
+The available default Talos client certificate still expired on 2026-05-17;
+the repository-local client file has no selected context. No reboot or
+force-deletion was attempted. Recover authenticated Talos access and use a
+reviewed degraded-state recovery path or physical intervention; the routine
+healthy-cluster reboot runbook is not sufficient. See
+[[operations/audit-2026-08-30]] and issue
+[#775](https://github.com/Stuhlmuller/homelab/issues/775).
+
 Read-only live inspection on 2026-08-28 found `zimaboard-1` and
 `zimaboard-2` NotReady with stopped kubelet heartbeats; `acer` and
 `zimaboard-0` remained Ready. Both failed workers still answered on the LAN and
@@ -65,8 +77,12 @@ AppArmor profile to clear stale server-side-applied defaults.
 
 ### Octelium dataplane capacity
 
-Terragrunt currently assigns the Octelium dataplane label to `zimaboard-0` and
-`zimaboard-2`. The August 2026 outage showed that this is not resilient enough:
+Terragrunt assigns the Octelium dataplane label only to `zimaboard-0`.
+The reviewed Terragrunt plan removed it from the undersized `zimaboard-2` on
+2026-08-30 before any reboot; live inspection confirmed the label absent, all
+bound Octelium Pods terminating, and no PVC consumers on that node. The worker
+remains in the cluster without native dataplane eligibility.
+The August 2026 outage showed that the former two-worker pool was unsafe:
 a failover can start 51 dataplane-selected Deployments plus the node-local
 gateway agent at once. Seven-day measurements put the full fleet near 3.1 GiB
 memory at p95, while its declared memory requests total only about 315 MiB.
@@ -87,7 +103,7 @@ label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 
 ### Temporary August 2026 recovery
 
-While both labeled dataplane nodes are NotReady,
+For the outage of both labeled dataplane nodes,
 `clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 26
 uniquely named temporary Deployments on `acer`: the Octelium ingress, shared
 Octovigil authorization service, Portal, login, Auth API, admin API, OctoBot,

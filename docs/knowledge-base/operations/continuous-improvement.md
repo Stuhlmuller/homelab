@@ -62,6 +62,12 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+The [[audit-2026-08-30]] records the latest repository fixes, read-only cluster
+snapshot, validation, and existing remediation PRs. In that snapshot
+`zimaboard-1` is Ready again, but `zimaboard-2`, Cordium secret sync, and the
+public API port mapping remain unresolved; older observations below retain
+their original dates.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves

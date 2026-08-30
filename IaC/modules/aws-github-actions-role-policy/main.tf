@@ -129,6 +129,14 @@ data "aws_iam_policy_document" "external_secrets_boundary" {
       variable = "aws:TokenIssueTime"
       values   = ["false"]
     }
+
+    # SSM forwards the caller's identity to KMS to decrypt SecureStrings.
+    # Deny direct STS requests without denying that AWS-managed service hop.
+    condition {
+      test     = "Bool"
+      variable = "aws:ViaAWSService"
+      values   = ["false"]
+    }
   }
 
   statement {

@@ -162,9 +162,9 @@ declared Kubernetes Service, not the Talos API or LAN subnet.
   continue to exist until they rotate. Verify new discovery state first, then
   restart only workloads that prove they are still using stale projected tokens
   through their normal GitOps path.
-- Do not use `talosctl patch machineconfig` or `talosctl edit machineconfig` as
-  the durable fix. Those are acceptable only for emergency recovery when the
-  final desired state is immediately backfilled into this repository.
+- Do not use `talosctl patch machineconfig` or `talosctl edit machineconfig`.
+  Emergency recovery also requires a repository-owned patch, rendered config,
+  and validation before applying through the documented path.
 
 ## Remote Worker Reboot
 
@@ -230,6 +230,81 @@ If a normal reboot completes but the node remains stuck and the Talos API still
 answers, retry the reboot with `--mode=powercycle`. Never add `--insecure` for
 an already configured node. If authenticated Talos access is unavailable,
 stop; physical intervention is required.
+
+### Degraded Recovery: `zimaboard-2`
+
+This exception covers only the unreachable `zimaboard-2` (`10.1.0.202`) from
+the August 2026 outage. It does not relax the healthy-cluster gate for routine
+reboots. Its 1.28 GiB allocatable memory cannot hold the measured Octelium
+dataplane fleet; rebooting while its dataplane label remains would permit the
+same overload again.
+
+Before recovery, require the other three nodes Ready and verify the native
+Octelium Deployments have available replicas on `zimaboard-0`. Keep the
+emergency Deployments in place. Inspect every Pod bound to `zimaboard-2`,
+including terminating Pods; if any mounts a PVC, stop and establish a separate
+writer-fencing and data-recovery plan before proceeding.
+
+Apply the reviewed `IaC/live/kubernetes-node-labels` unit through the
+[documented saved-plan recovery path](ci-cd.md#octelium-ci-access-setup).
+Its `zimaboard-2 = {}` input removes the Terragrunt-owned dataplane label while
+retaining the label-management resource and Node. The expected plan updates
+only `kubernetes_labels.nodes["zimaboard-2"]`; reject unrelated changes.
+The Octelium gateway-agent DaemonSet should then mark its old Pod for deletion.
+Label removal does not evict already bound Deployment Pods, so verify they are
+already terminating rather than assuming the label change fenced them.
+
+Run these read-only gates immediately before either authenticated or physical
+recovery; every command must succeed:
+
+```sh
+set -euo pipefail
+kubectl wait --for=condition=Ready node/acer node/zimaboard-0 node/zimaboard-1 --timeout=1m
+kubectl get node zimaboard-2 -o json |
+  jq -e '.metadata.labels | has("octelium.com/node-mode-dataplane") | not'
+kubectl get pods -A --field-selector spec.nodeName=zimaboard-2 -o json |
+  jq -e '
+    all(.items[]; all(.spec.volumes[]?; has("persistentVolumeClaim") | not)) and
+    all(.items[] | select(.metadata.namespace == "octelium");
+      .metadata.deletionTimestamp != null)
+  '
+```
+
+Use a current Talos client configuration trusted by this cluster; an expired
+certificate or one signed by an old CA is not usable. Verify authenticated
+access to this exact worker before a remote reboot:
+
+```sh
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.202 --nodes 10.1.0.202 get services
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.202 --nodes 10.1.0.202 reboot --wait
+```
+
+If authentication is unavailable, do not run the reboot command or use
+`--insecure`. An operator with physical access must identify `zimaboard-2`
+before power-cycling only that worker. Do not force-delete Pods, clear locks,
+patch labels, or change other live resources manually.
+
+After recovery, require a fresh Ready heartbeat and ready node-local Pods:
+
+```sh
+kubectl wait --for=condition=Ready node/zimaboard-2 --timeout=10m
+kubectl wait --for=condition=Ready pod -A \
+  --field-selector \
+    'spec.nodeName=zimaboard-2,status.phase!=Succeeded,status.phase!=Failed' \
+  --timeout=10m
+kubectl get nodes -o wide
+kubectl top nodes
+kubectl get pods -A --field-selector spec.nodeName=zimaboard-2 -o wide
+```
+
+Verify old terminating Pods disappear through kubelet reconciliation, Multus
+and Istio node agents recover, the dataplane label remains absent, and restart
+counts stop rising. Stop if readiness times out; do not reboot another node.
+Do not restore the dataplane label as a rollback on this undersized worker.
+Restore redundancy only after a dedicated replacement passes the capacity and
+24-hour stability gates in the knowledge-base topology note.
 
 ## Talos And Kubernetes Upgrade Checklist
 
