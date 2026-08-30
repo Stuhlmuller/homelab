@@ -77,6 +77,42 @@ external dead-man's-switch receiver. Without that receiver, `Watchdog` is
 expected to remain permanently firing in the UI but does not prove anything
 actionable.
 
+## Node Filesystem Telemetry
+
+The existing authenticated kubelet/cAdvisor scrape retains these root-cgroup
+(`id="/"`) gauges in desired state:
+
+- `container_fs_limit_bytes`
+- `container_fs_usage_bytes`
+- `container_fs_inodes_free`
+- `container_fs_inodes_total`
+
+The chart's default last relabel rule drops every cgroup without a Pod label,
+including the root cgroup. The replacement retains only these four root
+filesystem gauges while preserving machine metrics, Pod metrics, and every
+other upstream filter. Helm replaces lists, so the filters from chart 85.2.0
+are copied explicitly; compare them again when upgrading the chart.
+No exporter, host mount, host namespace, device access, or permission is added.
+The `monitoring` namespace remains baseline and node-exporter remains disabled.
+
+This is the first phase of [issue #909](https://github.com/Stuhlmuller/homelab/issues/909),
+not proof of disk-health coverage. The metrics identify devices, not mount
+points. After protected access and node recovery, query
+`container_fs_limit_bytes{id="/"}` and the other three gauges through Grafana,
+then map each instance/device to Talos `EPHEMERAL` using authenticated
+`talosctl get mountstatus` and `talosctl get disks`. Record all eligible nodes;
+do not infer the device from its enumeration order. Capacity minus usage is
+kernel free space, not necessarily space available to an unprivileged writer.
+
+Do not derive I/O-latency or hardware-health alerts from this phase. The
+cluster's cAdvisor 0.52.1 root-filesystem fallback has device and time-unit
+limitations; SMART, wear, and device errors are not these gauges. Device
+mapping, useful warning/critical thresholds, explicit missing-signal alerts,
+and a controlled notification test remain acceptance gates in #909.
+
+Rollback removes the relabel override and restores the chart's filtering; it
+does not alter storage or running workloads, but removes the new telemetry.
+
 ## Ingress
 
 Prometheus is intentionally not exposed through the tailnet ingress gateway.
