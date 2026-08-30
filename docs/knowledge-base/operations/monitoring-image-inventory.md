@@ -139,6 +139,9 @@ before accepting changes. These six manual scans do not fix continuous CI
 coverage for all 24 omitted chart-default identities; the pins remain in
 [draft #820][draft]. No parallel pin PR or live change is part of this note.
 
+See [[monitoring-upgrade-candidates]] for the subsequent stable-bundle scans:
+two images pass this policy, four still fail; no bundle upgrade is accepted.
+
 [issue]: https://github.com/Stuhlmuller/homelab/issues/791
 [stack]: ../../../IaC/terragrunt.stack.hcl
 [values]: ../../../clusters/homelab/apps/prometheus/values.yaml
