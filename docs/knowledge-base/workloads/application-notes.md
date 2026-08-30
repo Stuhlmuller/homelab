@@ -90,8 +90,8 @@ source README before changing an application.
 
 ## Prometheus
 
-Prometheus owns the durable notification path from in-cluster alert rules to
-Alertmanager, Discord, and OpenClaw. It selects repo-owned `ServiceMonitor`
+Prometheus owns the durable notification path from in-cluster alert rules through
+Alertmanager to Discord. It selects repo-owned `ServiceMonitor`
 objects and repo-owned `PrometheusRule` objects in the `monitoring` namespace
 without requiring Helm release labels, so cross-workload alert coverage can
 live beside the responsible application manifests.
@@ -102,6 +102,9 @@ that rule file aligned with the Grafana-managed Argo CD alerts, but do not
 depend on Grafana rule evaluation for the only Argo CD notification path. After
 rollout, validate that the `argocd-application-health` `PrometheusRule` is
 present and that Prometheus is receiving `argocd_app_info`.
+
+See [[../operations/monitoring-image-inventory]] for the six chart-default
+images, immutable audit references, and unresolved package vulnerabilities.
 
 ## Sonarr
 

@@ -86,7 +86,10 @@ the in-cluster service URL configured in `clusters/homelab/apps/grafana`.
 Do not add a Prometheus `VirtualService` until the access path has a reviewed
 authentication story, an owner, and a rollback note. If temporary direct access
 is required for an incident, prefer a short-lived operator port-forward after
-read-only diagnosis and record the reason in the PR or incident notes.
+read-only diagnosis. Use the existing
+[Octelium-generated operator Kubernetes context](../../../../docs/octelium.md#private-kubernetes-access)
+with an identity authorized for Kubernetes port-forwarding, and record the
+reason in the PR or incident notes.
 
 ## Validation
 
@@ -102,6 +105,6 @@ After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
 kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
 kubectl -n monitoring get prometheusrule argocd-application-health
-kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
-kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
+kubectl -n monitoring get externalsecret alertmanager-discord-webhook
+kubectl -n monitoring get secret alertmanager-discord-webhook
 ```
