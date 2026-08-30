@@ -79,6 +79,15 @@ index digest matches this public-registry resolution. This is overlapping
 evidence for that draft, not a reason for a parallel pin PR or a claim that its
 pins are already deployed. Leave its code and values unchanged in this pass.
 
+Pinning alone does not establish scanner coverage. Drafts #921 (`021a5106`)
+and #922 (`022cbbb5`) extract **zero** references from #820's monitoring values:
+all six pins use native chart `image.sha` fields, which the scoped extractor
+does not support, with registry/repository/tag inherited from chart defaults.
+Merging those defaults still yields zero extracted references. Rendered
+manifests expose five images; the reloader remains in an operator argument.
+This is part of #791's existing Helm/generated-image gap, not a new parser
+defect. The package-coverage guard cannot detect an image omitted from its input.
+
 Retained local metadata, not committed:
 `/private/tmp/homelab-monitoring-791.Nt1ByQ/registry-metadata.json` records full
 references, index/amd64/config digests, public endpoints and checks. Resolution
