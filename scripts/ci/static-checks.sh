@@ -690,10 +690,50 @@ echo "::endgroup::"
 
 echo "::group::Renovate config"
 jq -e '
+  [.customManagers[] | select(.description == "Update Helm charts declared in Terragrunt HCL")] as $helm_managers |
   .nix.enabled == true and
   .lockFileMaintenance.enabled == true and
-  .lockFileMaintenance.automerge == false
+  .lockFileMaintenance.automerge == false and
+  .argocd.managerFilePatterns == [
+    "/^clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application\\.yaml$/"
+  ] and
+  ($helm_managers | length) == 1 and
+  $helm_managers[0].customType == "regex" and
+  $helm_managers[0].managerFilePatterns == [
+    "/^IaC/(?:terragrunt\\.stack\\.hcl|\\.catalog/units/bootstrap/argocd/terragrunt\\.hcl)$/"
+  ] and
+  ($helm_managers[0].matchStrings | length) == 2 and
+  $helm_managers[0].datasourceTemplate == "{{#if registryUrl}}helm{{else}}docker{{/if}}" and
+  $helm_managers[0].depNameTemplate == "{{#if registryUrl}}{{{chart}}}{{else}}{{{repoUrl}}}/{{{chart}}}{{/if}}" and
+  $helm_managers[0].versioningTemplate == "{{#if registryUrl}}helm{{else}}docker{{/if}}"
 ' renovate.json >/dev/null
+
+renovate_hcl_files=(
+  IaC/terragrunt.stack.hcl
+  IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
+)
+renovate_hcl_chart_count="$({
+  rg -c '^\s+chart\s*=' "${renovate_hcl_files[@]}" || true
+} | awk -F: '{ count += $NF } END { print count + 0 }')"
+renovate_hcl_match_count=0
+while IFS= read -r renovate_pattern; do
+  renovate_pattern_match_count="$(
+    jq -Rrs --arg pattern "$renovate_pattern" '[scan($pattern)] | length' "${renovate_hcl_files[@]}"
+  )"
+  renovate_hcl_match_count=$((renovate_hcl_match_count + renovate_pattern_match_count))
+done < <(
+  jq -r '.customManagers[] | select(.description == "Update Helm charts declared in Terragrunt HCL") | .matchStrings[]' renovate.json
+)
+[[ "$renovate_hcl_match_count" -eq "$renovate_hcl_chart_count" ]] || {
+  echo "Renovate extracts ${renovate_hcl_match_count}/${renovate_hcl_chart_count} Terragrunt Helm pins." >&2
+  exit 1
+}
+
+renovate_argocd_yaml="$(rg -l '^\s+chart:' clusters/homelab --glob '*.yaml' --glob '*.yml')"
+[[ "$renovate_argocd_yaml" == "clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml" ]] || {
+  echo "Renovate native Argo CD coverage does not match the repository Helm sources." >&2
+  exit 1
+}
 echo "::endgroup::"
 
 echo "::group::Private cluster access"
