@@ -227,6 +227,33 @@ complete package/SBOM coverage, or a vulnerability exception. No runtime image
 pins or protected-job permissions change. Roll back through a reviewed revert;
 do not waive the pin or package-coverage checks to obtain a green result.
 
+## GitHub Commit Signature Verification
+
+[Issue #931](https://github.com/Stuhlmuller/homelab/issues/931) records a
+2026-08-30 signing-identity mismatch. Local `git verify-commit` succeeds, but
+GitHub returns `verified: false`, `reason: bad_email` for draft #930 and two
+sampled parent/peer drafts. The repository's configured no-reply committer
+address is absent from the registered signing key identities; the key itself
+is registered, signing-capable and has a verified email. Do not confuse local
+cryptographic validity with GitHub's identity verification or CI test results.
+
+For a proposed commit, replace `COMMIT_SHA` below with its exact SHA. The check
+must return `true` and exit 0; the sampled commits currently return `false`.
+
+```sh
+gh api repos/Stuhlmuller/homelab/commits/COMMIT_SHA \
+  --jq '.commit.verification | {verified,reason}' |
+  jq -e '.verified == true and .reason == "valid"'
+```
+
+[GitHub's documented reason](https://docs.github.com/en/rest/commits/commits#get-a-commit)
+and the registered-key metadata isolate the cause, so broad bisection or
+temporary instrumentation is unnecessary. Repair requires an owner-approved
+key/identity change. Preserve no-reply privacy; never silently publish another
+email, edit private/global signing state, disable signing, or rewrite stacked
+history. Verify a new commit through GitHub, then explicitly decide how to
+repair existing records. This does not waive #813/#815 or rollout approvals.
+
 ## Kubernetes Source Checks
 
 Use the renderer that matches the changed source:
