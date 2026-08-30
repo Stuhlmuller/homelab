@@ -125,6 +125,13 @@ each refresh with the full pre-commit, static, Conftest, and
 `nix flake check --no-build --all-systems` gates. Roll back the generated lock
 change rather than editing it manually.
 
+Renovate also extracts every Helm chart pin from the Terragrunt stack and Argo
+CD bootstrap HCL, using the Helm datasource for HTTPS repositories and Docker
+for OCI repositories. Native Argo CD extraction is intentionally restricted to
+the NFS provisioner Application; broader matching would let digest pinning
+replace repository-owned `targetRevision: main` values. The static gate compares
+configured extraction against every current HCL and YAML chart declaration.
+
 For `platform-dns` changes, render the overlay and compare upstream answers
 before rollout. After Argo CD syncs, verify CoreDNS contains the intended
 resolvers and a workload pod receives a public answer rather than a sinkhole:

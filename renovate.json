@@ -7,10 +7,31 @@
   "kubernetes": {
     "managerFilePatterns": ["/^clusters/homelab/.+\\.ya?ml$/"]
   },
+  "argocd": {
+    "managerFilePatterns": [
+      "/^clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application\\.yaml$/"
+    ]
+  },
   "nix": {
     "enabled": true
   },
   "pinDigests": true,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Helm charts declared in Terragrunt HCL",
+      "managerFilePatterns": [
+        "/^IaC/(?:terragrunt\\.stack\\.hcl|\\.catalog/units/bootstrap/argocd/terragrunt\\.hcl)$/"
+      ],
+      "matchStrings": [
+        "(?:repoURL|repository)\\s*=\\s*\"(?:(?<registryUrl>https?://[^\"]+)|(?<repoUrl>[^\":\\s]+))\"\\s*\\n\\s*chart\\s*=\\s*\"(?<chart>[^\"]+)\"\\s*\\n(?:\\s*path\\s*=\\s*\"[^\"]+\"\\s*\\n)?\\s*(?:targetRevision|chart_version)\\s*=\\s*\"(?<currentValue>[^\"]+)\"",
+        "chart\\s*=\\s*\"(?<chart>[^\"]+)\"\\s*\\n\\s*(?:repoURL|repository)\\s*=\\s*\"(?:(?<registryUrl>https?://[^\"]+)|(?<repoUrl>[^\":\\s]+))\"\\s*\\n(?:\\s*path\\s*=\\s*\"[^\"]+\"\\s*\\n)?\\s*(?:targetRevision|chart_version)\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "{{#if registryUrl}}helm{{else}}docker{{/if}}",
+      "depNameTemplate": "{{#if registryUrl}}{{{chart}}}{{else}}{{{repoUrl}}}/{{{chart}}}{{/if}}",
+      "versioningTemplate": "{{#if registryUrl}}helm{{else}}docker{{/if}}"
+    }
+  ],
   "packageRules": [
     {
       "description": "Keep OctoBot on the last image compatible with its retained config.",
