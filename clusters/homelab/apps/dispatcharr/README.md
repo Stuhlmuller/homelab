@@ -5,7 +5,8 @@ manager at `https://dispatcharr.stinkyboi.com`.
 
 ## Runtime Shape
 
-- Image: `ghcr.io/dispatcharr/dispatcharr`
+- Image: `ghcr.io/dispatcharr/dispatcharr:0.30.0`, pinned to the same immutable
+  multi-architecture digest for web and Celery
 - Mode: upstream modular container with web and Celery containers
 - PostgreSQL: dedicated `dispatcharr-postgres` PostgreSQL 17 StatefulSet
 - Redis: in-pod sidecar, ephemeral cache/queue state
@@ -21,6 +22,12 @@ execute `SELECT 1`, so accepting a socket without completing database work does
 not count as healthy. The Pod still mounts a memory-backed `/dev/shm` volume
 larger than the container runtime default for worker and stream-processing
 scratch space.
+
+The `0.30.0` image passed the repository's fixed HIGH/CRITICAL Trivy policy
+with zero findings. The `0.29.0` to `0.30.0` source change adds no new Django
+migration file, but both retained claims still require a verified snapshot
+before rollout. Redis remains on the supported `8.10.1-alpine` image while #898
+tracks an upstream rebuild for its two remaining OpenSSL findings.
 
 ## Storage
 
@@ -53,7 +60,9 @@ Configure those through the UI or a future ExternalSecret-backed integration.
 
 ## Rollback
 
-Revert the Argo CD Application registration and app manifests, then sync the
-`dispatcharr` Application. Preserve the `data` PVC and the
+Revert both Dispatcharr container pins together to
+`0.29.0@sha256:df768adcb9993b58f5e67010cc802c8659b7f964cb1213ab7ff9bb9384db9145`,
+then sync the `dispatcharr` Application. Preserve the `data` PVC and the
 `dispatcharr-postgres` PVC unless the operator explicitly chooses to discard
-Dispatcharr state.
+Dispatcharr state. Restore a snapshot only if the application changed retained
+state incompatibly; upstream provides no downgrade guarantee.
