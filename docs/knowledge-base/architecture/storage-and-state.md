@@ -50,6 +50,17 @@ archive targets. Their media paths still use static PV/PVC pairs against the
 QNAP `/media` export for downloads, movies, and TV library data. Read-only
 `showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
+## Node-Local Disk Telemetry
+
+The Prometheus desired state retains root-cgroup filesystem capacity, usage,
+and inode gauges from the existing kubelet/cAdvisor scrape. This adds no
+exporter or host access. Live device-to-`EPHEMERAL` mapping and coverage remain
+unverified; these gauges do not provide SMART, wear, device errors, or trusted
+I/O latency. Keep [issue #909](https://github.com/Stuhlmuller/homelab/issues/909)
+open until every node eligible for retained local state has validated signals,
+actionable thresholds, and tested notification delivery. See
+`clusters/homelab/apps/prometheus/README.md` before moving more state off NFS.
+
 ## Stateful Workload Gate
 
 Stateful workloads can be registered before they are considered operationally

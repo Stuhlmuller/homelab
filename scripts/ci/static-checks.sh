@@ -101,6 +101,40 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Root filesystem metric retention"
+yq -o=json '.' clusters/homelab/apps/prometheus/values.yaml |
+  jq -e '
+    def retained($labels):
+      all(.[];
+        . as $rule |
+        ([$rule.sourceLabels[] | $labels[.] // ""] |
+          join($rule.separator // ";") |
+          test("^(" + $rule.regex + ")$")) as $matches |
+        if $rule.action == "drop" then ($matches | not)
+        elif $rule.action == "keep" then $matches
+        else error("Unsupported metric relabel action") end
+      );
+    .nodeExporter.enabled == false and
+    (.kubelet.serviceMonitor.cAdvisorMetricRelabelings as $rules |
+      (["limit_bytes", "usage_bytes", "inodes_free", "inodes_total"] |
+        map({labels: {__name__: ("container_fs_" + .), id: "/"}, keep: true})) + [
+        {labels: {__name__: "machine_memory_bytes"}, keep: true},
+        {labels: {__name__: "container_cpu_usage_seconds_total", id: "/kubepods/pod1", pod: "app-0"}, keep: true},
+        {labels: {__name__: "container_fs_usage_bytes", id: "/kubepods/pod1", pod: "app-0"}, keep: true},
+        {labels: {__name__: "container_cpu_usage_seconds_total", id: "/"}, keep: false},
+        {labels: {__name__: "container_network_receive_bytes_total", id: "/"}, keep: false},
+        {labels: {__name__: "container_fs_usage_bytes", id: "/system.slice"}, keep: false},
+        {labels: {__name__: "container_cpu_usage_seconds_total", id: "/custom;group"}, keep: false},
+        {labels: {__name__: "container_fs_io_time_seconds_total", id: "/"}, keep: false},
+        {labels: {__name__: "container_fs_read_seconds_total", id: "/"}, keep: false},
+        {labels: {__name__: "container_fs_io_time_seconds_total", id: "/kubepods/pod1", pod: "app-0"}, keep: false},
+        {labels: {__name__: "container_cpu_system_seconds_total", id: "/kubepods/pod1", pod: "app-0"}, keep: false}
+      ] |
+      all(.[]; . as $case | ($rules | retained($case.labels)) == $case.keep)
+    )
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Octelium PostgreSQL backup contract"
 kubectl kustomize clusters/homelab/apps/octelium-storage |
   yq ea -o=json -I=0 '[.]' - |
