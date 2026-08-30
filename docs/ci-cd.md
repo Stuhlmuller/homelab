@@ -35,6 +35,11 @@ This repository uses GitHub Actions for the review and rollout path:
   `Policy/homelab-private-kubernetes-access` and
   `Service/kubernetes-api.homelab`. It repeats the exact-`main` and production
   approval gates, never prunes, and proves a second apply has no live diff.
+- `Release` dry-runs semantic-release independently on pull requests. Main
+  publishers share the non-canceling `semantic-release-main` lane and time out
+  after 15 minutes. A surviving pending publisher checks out current
+  `refs/heads/main` after acquiring the lane, then semantic-release publishes
+  the complete unreleased history from git.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.

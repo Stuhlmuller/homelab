@@ -606,6 +606,23 @@ expected_credentialed_job_inventory="$({
   exit 1
 }
 
+yq -o=json '.' .github/workflows/release.yml |
+  jq -e '
+    .concurrency == null and
+    .jobs.release.permissions == {"contents": "write"} and
+    .jobs.release["timeout-minutes"] == 15 and
+    .jobs.release.concurrency == {
+      "group": "semantic-release-main",
+      "cancel-in-progress": false
+    } and
+    .jobs.release.steps[0].with.ref == "refs/heads/main" and
+    .jobs["release-dry-run"].permissions == {"contents": "read"} and
+    .jobs["release-dry-run"].concurrency == null
+  ' >/dev/null || {
+    echo "Release publisher must keep its bounded non-canceling lane separate from pull request dry runs." >&2
+    exit 1
+  }
+
 while read -r workflow expected_hash; do
   [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {
     echo "Credential-bearing workflow changed; review it and update its exact security hash: $workflow" >&2
@@ -618,7 +635,7 @@ done <<'EOF'
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
-.github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
+.github/workflows/release.yml f027d31ac0c8fee8cb571f92b4c80bd075b3533bf2668b1f3a1bd4c21035d472
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
 .github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240

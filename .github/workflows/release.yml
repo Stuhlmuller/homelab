@@ -34,13 +34,18 @@ jobs:
 
   release:
     if: github.event_name == 'push'
+    concurrency:
+      group: semantic-release-main
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: write # for creating releases
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          ref: refs/heads/main
           fetch-depth: 0
           persist-credentials: false
 
