@@ -8,9 +8,15 @@ This repository uses GitHub Actions for the review and rollout path:
   and `validate`.
 - `validate` runs on pull requests, pushes to `main`, and weekly. It evaluates
   the Nix flake, Terragrunt HCL, rendered Kustomize sources, whitespace, and
-  secrets. Pull requests and pushes also scan exact digest-pinned images whose
-  occurrence count increases for fixable HIGH or CRITICAL vulnerabilities;
-  the weekly run scans the complete extracted image inventory.
+  secrets. Image inventory evaluates Terragrunt declarations and renders their
+  Helm and local Kustomize sources, including bootstrap Argo CD, nested storage
+  Applications, and the reviewed operator-generated image contracts. Pull
+  requests and pushes gate images whose occurrence count increases: unpinned
+  images fail, and exact digest pins are scanned for fixable HIGH or CRITICAL
+  vulnerabilities. The weekly run checks the complete inventory, including
+  unchanged pinning and vulnerability debt. See
+  [runtime image inventory](knowledge-base/operations/validation-gates.md#runtime-image-inventory)
+  for rendering limits and local checks.
 - `Terragrunt Plan` runs on every pull request. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,
