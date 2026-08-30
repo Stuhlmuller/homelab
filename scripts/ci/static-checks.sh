@@ -689,7 +689,11 @@ rg -Fq 'terragrunt run -- untaint -no-color kubernetes_manifest.this' scripts/ci
 echo "::endgroup::"
 
 echo "::group::Renovate config"
-jq empty renovate.json
+jq -e '
+  .nix.enabled == true and
+  .lockFileMaintenance.enabled == true and
+  .lockFileMaintenance.automerge == false
+' renovate.json >/dev/null
 echo "::endgroup::"
 
 echo "::group::Private cluster access"

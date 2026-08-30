@@ -629,6 +629,13 @@ silently ignored.
 
 ## Local Equivalents
 
+Renovate's native Nix manager tracks the `nixpkgs` input in `flake.nix` and its
+scheduled lock-file maintenance refreshes `flake.lock` in one reviewed,
+non-auto-merged PR. Before merging that PR, run the full pre-commit, static,
+Conftest, and all-system flake checks below. Roll back a bad refresh by reverting
+the generated `flake.lock` change and rerunning the same checks; do not hand-edit
+lock-file revisions.
+
 Run the same checks locally through the Nix shell:
 
 ```sh
@@ -637,6 +644,7 @@ nix develop --command pre-commit run --all-files
 nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
+nix flake check --no-build --all-systems
 ```
 
 The local pre-commit run is the closest repository-owned equivalent to the
