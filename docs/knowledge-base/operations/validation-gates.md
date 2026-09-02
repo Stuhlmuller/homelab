@@ -349,8 +349,9 @@ Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
 Azure credential gate compares AzureAD unit sources and stack blocks plus the
-shared root inputs they consume; unrelated stack changes do not require Azure
-credentials.
+normalized shared root source they consume. It ignores only the
+forbidden legacy root plan-output directive; every other root source change
+fails closed. Unrelated stack changes do not require Azure credentials.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;

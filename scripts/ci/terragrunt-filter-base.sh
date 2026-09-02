@@ -66,6 +66,58 @@ terragrunt_stack_unit_paths_at_ref() {
   terragrunt_stack_units_at_ref "$1" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
 }
 
+terragrunt_normalized_root_source_at_ref() {
+  local ref="$1"
+  local root_source
+  local legacy_plan_block=$'terraform {\n  extra_arguments "plan" {\n    commands  = ["plan"]\n    arguments = ["-out", "plan.out"]\n  }\n}\n\n'
+
+  root_source="$(git show "${ref}:IaC/root.hcl")" || return 1
+  printf '%s\n' "${root_source/"$legacy_plan_block"/}"
+}
+
+terragrunt_azuread_stack_changed() {
+  local base_sha="${APPLY_BASE_SHA:-}"
+  local head_sha="${APPLY_HEAD_SHA:-${GITHUB_SHA:-HEAD}}"
+  local base_root_source
+  local head_root_source
+  local base_stack_units
+  local head_stack_units
+
+  if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
+    return 0
+  fi
+
+  if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+
+  if ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+
+  if ! git diff --quiet "$base_sha" "$head_sha" -- \
+    IaC/live/azuread-applications \
+    IaC/.catalog/units/live/azuread-applications; then
+    return 0
+  fi
+
+  if ! base_stack_units="$(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/')" ||
+    ! head_stack_units="$(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/')"; then
+    return 0
+  fi
+
+  if [[ "$base_stack_units" != "$head_stack_units" ]]; then
+    return 0
+  fi
+
+  if ! base_root_source="$(terragrunt_normalized_root_source_at_ref "$base_sha")" ||
+    ! head_root_source="$(terragrunt_normalized_root_source_at_ref "$head_sha")"; then
+    return 0
+  fi
+
+  [[ "$base_root_source" != "$head_root_source" ]]
+}
+
 terragrunt_stack_changed() {
   local base_ref="${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}"
   local generated_group="${1:-}"
