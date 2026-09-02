@@ -19,6 +19,22 @@ if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
+terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
+  render --json --write=false --no-color \
+  | jq -e '
+      any(.inputs.manifest.spec.sources[];
+        .chart == "ztunnel" and
+        any(.helm.parameters[]?;
+          .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
+          .value == "10-1-0-199-v1")
+        and any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxSurge" and
+          .value == "0")
+        and any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxUnavailable" and
+          .value == "1")
+      )
+    ' >/dev/null
 while IFS= read -r unit_dir; do
   if [[ ! -f "${unit_dir}/.terraform.lock.hcl" ]]; then
     echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
@@ -1144,7 +1160,7 @@ echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
-rg -Fq '"npm:@openclaw/discord@${openclaw_version}" \' "$openclaw_values"
+rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
 rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
 rg -Fq 'openclaw plugins enable discord --accept-capabilities' "$openclaw_values"
 rg -Fq 'openclaw plugins inspect discord --runtime --json |' "$openclaw_values"
@@ -1157,7 +1173,7 @@ rg -Fq 'package.get("version") == expected_version' "$openclaw_values"
 rg -Fq 'for delay in 0 5 15 30' "$openclaw_values"
 rg -Fq 'verify_discord_plugin installed' "$openclaw_values"
 rg -Fq 'verify_discord_plugin loaded' "$openclaw_values"
-rg -Fq 'tar --one-file-system \' "$openclaw_values"
+rg -Fq 'tar --one-file-system' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
 rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"

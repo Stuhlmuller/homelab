@@ -1115,6 +1115,18 @@ unit "argocd_apps_istio" {
                 {
                   name  = "env.IPV6_ENABLED"
                   value = "false"
+                },
+                {
+                  name  = "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover"
+                  value = "10-1-0-199-v1"
+                },
+                {
+                  name  = "updateStrategy.rollingUpdate.maxSurge"
+                  value = "0"
+                },
+                {
+                  name  = "updateStrategy.rollingUpdate.maxUnavailable"
+                  value = "1"
                 }
               ]
             }
