@@ -171,10 +171,19 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
      get services
 
    kubectl wait --for=condition=Ready node/acer --timeout=10m
-   kubectl wait --for=condition=Ready pod --all --all-namespaces \
-     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
-     --timeout=10m
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
    ```
+
+   Do not require cluster-wide Pod readiness between the Acer reboot and the
+   first worker reboot. Talos 1.11 switches the only accepted issuer at once,
+   so worker CNI credentials minted by the old issuer can reject API requests
+   until that worker reboots. Continue only when every Node is Ready, Acer's
+   services and etcd are healthy, and unready workloads are attributable to
+   worker CNI authorization or API reachability. Stop on any unrelated failure.
 
 4. Verify issuer discovery no longer reports `10.1.0.216`:
 
@@ -199,11 +208,74 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    kubectl config set-cluster homelab --server=https://10.1.0.199:6443
    ```
 
-6. Run the [remote worker reboot](#remote-worker-reboot) procedure one node at
-   a time in this order: `zimaboard-2`, `zimaboard-1`, `zimaboard-0`. Require
-   full readiness after each reboot. This recreates worker-bound projected
-   tokens; `zimaboard-0` runs Istiod and the Octelium dataplane, so reboot it
-   last.
+6. Reboot workers one at a time in this order: `zimaboard-2`, `zimaboard-1`,
+   `zimaboard-0`. Before each reboot, require every Node, Acer's services and
+   etcd, and the target worker's Talos services to be healthy. Start with an
+   empty allowlist, then add only Pods whose Events or logs positively trace
+   their failure to old-issuer credentials on workers that have not rebooted:
+
+   ```sh
+   set -euo pipefail
+   node_name=zimaboard-2
+   node_ip=10.1.0.202
+   approved_unready_pods='[]'
+
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     get services
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes "$node_ip" \
+     get services
+
+   kubectl get pods --all-namespaces -o json | jq -e \
+     --argjson approved "$approved_unready_pods" '
+       [.items[]
+        | select(.status.phase != "Succeeded" and .status.phase != "Failed")
+        | select((.status.conditions // [] |
+            any(.type == "Ready" and .status == "True")) | not)
+        | "\(.metadata.namespace)/\(.metadata.name)" as $pod
+        | select($approved | index($pod) | not)]
+       | length == 0
+     '
+
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes "$node_ip" \
+     reboot --wait --timeout=10m
+
+   kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector \
+       "spec.nodeName=$node_name,status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
+   ```
+
+   Set `node_name` and `node_ip` from the
+   [worker address table](#remote-worker-reboot). This is the issuer cutover's
+   narrow degraded-state exception to the normal worker reboot preflight.
+   Rebuild `approved_unready_pods` before every worker; never carry names
+   forward without fresh evidence. Accept direct CNI `Unauthorized` errors or
+   dependents whose failure traces to such a CNI error on an unrebooted worker.
+   Missing or different evidence is an unrelated failure and stops the
+   sequence. Also stop if the reboot or target-local readiness gate fails.
+   The sequence recreates worker-bound projected tokens, and keeps
+   `zimaboard-0`, which runs Istiod and the Octelium dataplane, until last.
+
+7. After `zimaboard-0`, restore the normal global gates:
+
+   ```sh
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
+   ```
 
 ## Issuer Apply Risks
 
