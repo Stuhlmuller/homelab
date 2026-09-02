@@ -173,6 +173,26 @@ echo "::group::Octelium bootstrap node containment"
 )
 echo "::endgroup::"
 
+echo "::group::Descheduler deployment cadence"
+yq -e '
+  .kind == "Deployment" and
+  .deschedulingInterval == "30m" and
+  (.schedule == null)
+' clusters/homelab/apps/descheduler/values.yaml >/dev/null
+helm template descheduler descheduler \
+  --repo https://kubernetes-sigs.github.io/descheduler \
+  --version 0.33.0 \
+  --namespace kube-system \
+  --values clusters/homelab/apps/descheduler/values.yaml |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    ([.[] | select(.kind == "Deployment")] | length) == 1 and
+    ([.[] | select(.kind == "CronJob")] | length) == 0 and
+    ([.[] | select(.kind == "Deployment")][0].spec.template.spec.containers[0].args |
+      index("--descheduling-interval=30m")) != null
+  ' >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
