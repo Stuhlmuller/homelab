@@ -776,7 +776,7 @@ bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(shasum -a 256 scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "53ae8623de77869e4269fec263bc6ba4ed56f5d2c706661909d9d465ea7fd3d9" ]] || {
+  "b91ccb55d0e1e689d3c49a17309a575c4e1ffe2458900b02d2790761dd5b0518" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }
@@ -798,6 +798,8 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")] as $policies |
     [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-talos-access")] as $talos_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "talos-api.homelab")] as $talos_services |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
@@ -850,6 +852,32 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     # checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data.
     $services[0].spec.config.kubernetes.kubeconfig.fromSecret == "homelab-ci-kubeconfig" and
     ($services[0].spec.config.tls.insecureSkipVerify // false) == false and
+    ($talos_policies | length) == 1 and
+    $talos_policies[0].spec.rules == [
+      {
+        "name": "operator-client",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.spec.type == \"HUMAN\""},
+          {"match": "ctx.session.status.type == \"CLIENT\""},
+          {"match": "ctx.service.metadata.name == \"talos-api.homelab\""},
+          {"match": "ctx.service.spec.mode == \"TCP\""},
+          {"match": "ctx.user.metadata.name == \"homelab-owner\""}
+        ]}}
+      }
+    ] and
+    ($talos_services | length) == 1 and
+    $talos_services[0].spec == {
+      "displayName": "Homelab Talos API",
+      "isPublic": false,
+      "isTLS": false,
+      "mode": "TCP",
+      "port": 50000,
+      "authorization": {"policies": ["homelab-private-talos-access"]},
+      "config": {"upstream": {"url": "tcp://10.1.0.199:50000"}}
+    } and
+    ($talos_services[0].spec.config.tls // null) == null and
+    ($talos_services[0].spec.config.clientCertificate // null) == null and
     ($catalog_users | length) == 1 and
     $catalog_users[0].spec == {
       "type": "WORKLOAD",

@@ -57,7 +57,11 @@ claim in issued service-account tokens and drives service-account issuer
 discovery. The rendered control-plane config must also keep `10.1.0.199` in
 `cluster.apiServer.certSANs` so clients can verify the canonical endpoint.
 
-## Render And Validate The Issuer Fix
+The separate `.talos/patches/controlplane-octelium-talos-api.yaml` patch adds
+`talos-api.homelab.local.stinkyboi.com` to `machine.certSANs`. That name is the
+private Octelium TCP Service endpoint for the Talos API.
+
+## Render And Validate The Control-Plane Changes
 
 This checkout does not currently contain `.talos/controlplane.yaml` or
 `.talos/talosconfig`. Add or restore those files only through the established
@@ -69,14 +73,21 @@ When `.talos/controlplane.yaml` is available locally, render a candidate config:
 ```sh
 talosctl machineconfig patch .talos/controlplane.yaml \
   --patch @.talos/patches/controlplane-service-account-issuer.yaml \
-  --output /private/tmp/controlplane-service-account-issuer.yaml
+  --patch @.talos/patches/controlplane-octelium-talos-api.yaml \
+  --output /private/tmp/controlplane-access.yaml
+
+yq -e '
+  [.machine.certSANs[] |
+    select(. == "talos-api.homelab.local.stinkyboi.com")]
+  | length == 1
+' /private/tmp/controlplane-access.yaml
 ```
 
 Validate before any live apply:
 
 ```sh
 talosctl validate \
-  --config /private/tmp/controlplane-service-account-issuer.yaml \
+  --config /private/tmp/controlplane-access.yaml \
   --mode metal \
   --strict
 ```
@@ -88,14 +99,16 @@ are:
 - `cluster.apiServer.certSANs` includes `10.1.0.199`
 - `cluster.apiServer.extraArgs.service-account-issuer:
   https://10.1.0.199:6443`
+- `machine.certSANs` includes `talos-api.homelab.local.stinkyboi.com`
 
 ## Apply Sequence For Issuer Drift
 
 Do not run these commands until the rendered config has passed validation and
 the operator has explicitly approved the live Talos apply sequence.
-The direct `10.1.0.199` Talos endpoint requires the homelab LAN or retained
-Tailscale fallback; `octelium connect` and Cordium currently expose only the
-declared Kubernetes Service, not the Talos API or LAN subnet.
+Use the direct `10.1.0.199` Talos endpoint for this first apply because the
+Octelium hostname is not valid until the new machine certificate is active.
+Use the homelab LAN or the temporarily retained Tailscale subnet route, and do
+not withdraw that fallback until the Octelium path passes the off-LAN check.
 
 1. Confirm API and Talos access are healthy with read-only commands:
 
@@ -113,8 +126,14 @@ declared Kubernetes Service, not the Talos API or LAN subnet.
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
+     apply-config --dry-run \
+     --file /private/tmp/controlplane-access.yaml
+
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
      apply-config \
-     --file /private/tmp/controlplane-service-account-issuer.yaml
+     --file /private/tmp/controlplane-access.yaml
    ```
 
 3. Watch the control plane recover:
@@ -165,6 +184,27 @@ declared Kubernetes Service, not the Talos API or LAN subnet.
 - Do not use `talosctl patch machineconfig` or `talosctl edit machineconfig`.
   Emergency recovery also requires a repository-owned patch, rendered config,
   and validation before applying through the documented path.
+
+## Remote Talos Through Octelium
+
+The private `talos-api.homelab` Octelium TCP Service forwards raw port `50000`
+to `10.1.0.199`. Its policy permits only the `homelab-owner` human client;
+Talos mutual TLS still authenticates every request.
+
+After the control-plane patch and Octelium catalog workflow both complete,
+validate from an off-LAN workstation before withdrawing the Tailscale subnet
+route:
+
+```sh
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints talos-api.homelab.local.stinkyboi.com:50000 \
+  --nodes 10.1.0.199,10.1.0.200,10.1.0.201,10.1.0.202 \
+  version
+```
+
+The node addresses select Talos API targets; the client connection itself uses
+the Octelium Service endpoint. Keep direct IP access as the LAN recovery path.
 
 ## Remote Worker Reboot
 

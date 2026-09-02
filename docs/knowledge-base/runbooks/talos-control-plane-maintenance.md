@@ -9,9 +9,11 @@ Render and validate Talos configuration before applying it. Use
 and repository-owned patches for control-plane changes.
 Emergency recovery does not permit live machineconfig edits followed by
 backfilling; use the validated patch workflow first.
-Direct-IP `talosctl` operations require the homelab LAN or retained Tailscale
-fallback; the Octelium Kubernetes Service and Cordium session do not route the
-Talos API or LAN subnet.
+Remote `talosctl` will use owner-only Octelium TCP Service
+`talos-api.homelab` after the control-plane `machine.certSANs` patch is applied
+and the off-LAN check passes. Talos mutual TLS remains required. Until then,
+direct-IP operations require the LAN or temporary Tailscale subnet route;
+direct IP remains the LAN recovery path after cutover.
 
 For remote ZimaBoard recovery, the canonical runbook maps each worker to its
 Talos address and uses authenticated `talosctl reboot`; reboot one worker at a

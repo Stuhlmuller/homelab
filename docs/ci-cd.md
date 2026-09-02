@@ -31,10 +31,10 @@ This repository uses GitHub Actions for the review and rollout path:
   They compare against the latest successful historical push apply or full
   dispatch so failed or deferred changes remain in the next affected range;
   targeted Argo reconciliations never advance that checkpoint.
-- `Octelium Private Kubernetes Apply` is a separate manual lane for only
-  `Policy/homelab-private-kubernetes-access` and
-  `Service/kubernetes-api.homelab`. It repeats the exact-`main` and production
-  approval gates, never prunes, and proves a second apply has no live diff.
+- `Octelium Private Kubernetes Apply` is a separate manual lane for the private
+  Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
+  production approval gates, never prunes, and proves a second apply has no
+  live diff.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -104,7 +104,7 @@ contract for Grafana.
   Trusted pull requests only open this live access path when the diff includes
   the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
   inputs.
-- The private Kubernetes catalog lane uses a different, one-authentication
+- The private cluster-access catalog lane uses a different, one-authentication
   `AUTH_TOKEN` Credential. Octelium auto-deletes it when the job logs in; the
   unused Credential expires after 30 minutes, the resulting client Session
   lasts at most 15 minutes, and the job logs it out. Its highest-priority inline
@@ -477,12 +477,12 @@ Both exact-head runs must exit successfully. If either fails because the token
 is unusable, rerun the same recovery block; no second short-lived recovery
 identity is needed.
 
-## Private Kubernetes Catalog Rollout
+## Private Cluster-Access Catalog Rollout
 
 Use the focused workflow for changes to
-`homelab-private-kubernetes-access` or `kubernetes-api.homelab`. From a clean
-checkout at the current `main` commit and an authenticated Octelium
-administrator session:
+`homelab-private-kubernetes-access`, `kubernetes-api.homelab`,
+`homelab-private-talos-access`, or `talos-api.homelab`. From a clean checkout at
+the current `main` commit and an authenticated Octelium administrator session:
 
 ```sh
 nix develop --command bash scripts/octelium-private-kubernetes-credential.sh rollout
@@ -494,8 +494,8 @@ its deliberately expired timestamp with a 30-minute expiry. It verifies the
 complete live Credential spec, clears older Sessions, and rotates the token
 directly into the `homelab-production` secret without printing it. It binds the
 watch to the uniquely identified run it dispatched. The workflow extracts only
-the reviewed Policy and Service, applies without `--prune`, then requires the
-second identical apply to report no changes. On success, failure, or interrupt,
+those four reviewed objects, applies without `--prune`, then requires the second
+identical apply to report no changes. On success, failure, or interrupt,
 cleanup removes any unused Credential, clears and verifies Sessions, and deletes
 and verifies the GitHub secret. For an emergency cleanup retry, run:
 
@@ -504,7 +504,7 @@ nix develop --command bash scripts/octelium-private-kubernetes-credential.sh rev
 ```
 
 This lane does not run Terragrunt or advance its successful full-apply
-checkpoint. Roll back through a PR that restores the prior Policy or Service,
+checkpoint. Roll back through a PR that restores the prior Policies or Services,
 then provision and dispatch this workflow again.
 
 ## AWS Setup
