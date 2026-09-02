@@ -155,15 +155,20 @@ below retain their original dates.
   Desired state moves the existing miniupnpc reconciler to Ready `zimaboard-0`,
   pins the end-to-end gRPC request to a public `1.1.1.1` answer, and alerts when
   the last successful renewal is stale or absent. Live IGD discovery still
-  reports no usable UPnP gateway.
+  reports no usable UPnP gateway. Read-only checks on 2026-09-02 confirmed the
+  public API still times out while the direct LAN origin returns HTTP/2 and
+  unauthenticated `grpc-status: 16`; the latest lease Jobs still fail.
 - **Risk:** Without a persistent WAN TCP/8443 mapping, the public CLI, VPN, and
   admin path remains unavailable while browser and app tunnel traffic stays
-  healthy.
+  healthy. Do not merge the exit-node-only Tailscale cutover until the external
+  Octelium access checks pass. The cutover must also wait until the owner-only
+  `talos-api.homelab` proxy is Ready and an off-LAN authenticated `talosctl`
+  request succeeds through it.
 - **Next step:** Xfinity account authority must enable UPnP or provide a
   reviewed static TCP/8443 forward to `10.1.0.200:30443`. Then sync the Istio
   app, require a recent CronJob success, reconcile public DNS, and verify public
-  `grpc-status: 16` plus an authenticated CLI call. Track worker recovery
-  separately in [[architecture/cluster-topology]].
+  `grpc-status: 16` plus authenticated CLI and Talos calls. Track worker
+  recovery separately in [[architecture/cluster-topology]].
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation

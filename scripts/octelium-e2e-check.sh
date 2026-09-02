@@ -129,6 +129,7 @@ policy-bot-hook.stinkyboi.com /api/github/hook expect-policy-bot-400 POST
 REQUIRED_SERVICES="
 kubernetes-api-ci
 kubernetes-api.homelab
+talos-api.homelab
 affine
 argocd
 compass
@@ -154,6 +155,7 @@ FAILURES=0
 GRPC_READY=1
 SERVICES_JSON=""
 EXPECTED_KUBERNETES_POLICY=""
+EXPECTED_TALOS_POLICY=""
 
 note() {
   printf '==> %s\n' "$*"
@@ -450,8 +452,14 @@ else
   EXPECTED_KUBERNETES_POLICY="$(
     yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access")' "${CATALOG}"
   )"
+  EXPECTED_TALOS_POLICY="$(
+    yq ea -o=json -I=0 'select(.kind == "Policy" and .metadata.name == "homelab-private-talos-access")' "${CATALOG}"
+  )"
   if [ -z "${EXPECTED_KUBERNETES_POLICY}" ]; then
     fail "catalog is missing Policy homelab-private-kubernetes-access"
+  fi
+  if [ -z "${EXPECTED_TALOS_POLICY}" ]; then
+    fail "catalog is missing Policy homelab-private-talos-access"
   fi
 fi
 
@@ -509,6 +517,11 @@ if [ "${GRPC_READY}" -eq 1 ]; then
       pass "Octelium Service kubernetes-api.homelab is private and policy-bound"
     else
       fail "Octelium Service kubernetes-api.homelab is not private policy-bound KUBERNETES access"
+    fi
+    if jq -e '.items[] | select(.metadata.name == "talos-api.homelab" and .spec.mode == "TCP" and (.spec.isPublic // false) == false and (.spec.isTLS // false) == false and .spec.port == 50000 and .spec.authorization.policies == ["homelab-private-talos-access"] and .spec.config.upstream.url == "tcp://10.1.0.199:50000" and (.spec.config.tls // null) == null and (.spec.config.clientCertificate // null) == null)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service talos-api.homelab is private and policy-bound"
+    else
+      fail "Octelium Service talos-api.homelab is not private owner-only TCP access"
     fi
     if jq -e '.items[] | select((.metadata.name == "affine" or .status.primaryHostname == "affine") and .spec.isAnonymous == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Octelium Service affine delegates login to the application"
@@ -572,6 +585,28 @@ else
   note "Skipping Octelium private Kubernetes Policy check because public Octelium gRPC is not available"
 fi
 rm -f /tmp/octelium-kubernetes-policy.$$ /tmp/octelium-kubernetes-policy.err.$$
+
+if [ "${GRPC_READY}" -eq 1 ]; then
+  if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get policy homelab-private-talos-access -o json >/tmp/octelium-talos-policy.$$ 2>/tmp/octelium-talos-policy.err.$$; then
+    if [ -n "${EXPECTED_TALOS_POLICY}" ] &&
+      jq -e --argjson expected "${EXPECTED_TALOS_POLICY}" \
+        '.metadata.name == "homelab-private-talos-access" and .spec == $expected.spec' \
+        >/dev/null 2>&1 </tmp/octelium-talos-policy.$$; then
+      pass "Octelium private Talos Policy matches the repository catalog"
+    else
+      fail "Octelium private Talos Policy is missing or broader than declared"
+    fi
+  else
+    if [ -s /tmp/octelium-talos-policy.err.$$ ]; then
+      fail "Octelium private Talos Policy is unavailable: $(tr '\n' ' ' </tmp/octelium-talos-policy.err.$$)"
+    else
+      fail "Octelium private Talos Policy could not be read within ${OCTELIUMCTL_TIMEOUT_SECONDS}s"
+    fi
+  fi
+else
+  note "Skipping Octelium private Talos Policy check because public Octelium gRPC is not available"
+fi
+rm -f /tmp/octelium-talos-policy.$$ /tmp/octelium-talos-policy.err.$$
 
 if [ "${GRPC_READY}" -eq 1 ]; then
   if run_with_timeout "${OCTELIUMCTL_TIMEOUT_SECONDS}" octeliumctl_cluster get user homelab-cordium-user -o json >/tmp/octelium-user.$$ 2>/tmp/octelium-user.err.$$; then
