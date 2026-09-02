@@ -333,9 +333,14 @@ The Entra application unit registers `https://grafana.stinkyboi.com/` and
 `https://grafana.stinkyboi.com/login/azuread` as redirect URIs, writes the
 client ID and generated one-year client secret to SSM, and derives the
 tenant-specific authorization and token URLs from the active AzureAD client
-configuration. Rotating the client secret means applying the Entra unit so the
-generated password and SSM value update together, then letting External Secrets
-refresh `grafana-azuread-sso`.
+configuration. Reapplying an unchanged Entra unit does not rotate its password;
+both application-password resources currently lack a rotation trigger. Before
+either password expires, add or advance a reviewed `rotate_when_changed`
+revision, apply only that Entra unit, then force the `OnChange`
+`grafana-azuread-sso` ExternalSecret through a repository-owned metadata change
+and sync Grafana. Rerun `scripts/octelium-entra-oidc.sh` immediately after an
+Octelium password rotation. Keep this coordinated because SSM updates alone do
+not refresh either consumer.
 
 The Octelium unit registers `https://stinkyboi.com/callback` and
 `https://portal.stinkyboi.com/callback`, writes the client ID,
@@ -343,9 +348,11 @@ generated one-year client secret, tenant ID, and issuer URL to SSM, and leaves
 the Octelium native IdentityProvider activation to
 `scripts/octelium-entra-oidc.sh`.
 
-Deluge stores only VPN WireGuard material in SSM. Sonarr, Radarr, and Prowlarr
-store only their PostgreSQL password contract in SSM through
-`media-postgres-arr-env`. Each app writes that value into the
+Deluge stores only VPN WireGuard material in SSM. Only the full
+`/homelab/deluge/vpn/wireguard-config` remains readable by External Secrets;
+the six retired split-profile parameters are non-readable state tombstones.
+Sonarr, Radarr, and Prowlarr store only their PostgreSQL password contract in
+SSM through `media-postgres-arr-env`. Each app writes that value into the
 upstream-supported `config.xml` PostgreSQL fields during pod startup;
 application passwords, API keys, indexers, and app integrations still live on
 the persistent `/config` volumes and are managed through each app after first

@@ -41,7 +41,11 @@ retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
 the former NFS data claim remains retained for verified nightly logical backups
 at 03:00 `America/Los_Angeles` with 14-day retention. The local volume removes
 QNAP latency from the live database but couples recovery to the single
-control-plane node and its system disk.
+control-plane node and its system disk. GitOps explicitly declares the retained
+`data-media-postgres-0` claim with `Prune=false,Delete=false`; the inactive
+legacy StatefulSet keeps its compatible claim template for rollback. A clean
+bootstrap therefore creates the backup target even while that StatefulSet stays
+at zero replicas.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to

@@ -121,21 +121,36 @@ cf_api() {
   local method="$1"
   local path="$2"
   local data="${3:-}"
+  local response
+  local -a curl_args=(
+    -fsS
+    -X "$method"
+    -H "Authorization: Bearer ${cloudflare_token}"
+    -H "Content-Type: application/json"
+  )
 
   if [[ -n "$data" ]]; then
-    curl -fsS \
-      -X "$method" \
-      -H "Authorization: Bearer ${cloudflare_token}" \
-      -H "Content-Type: application/json" \
-      --data "$data" \
-      "https://api.cloudflare.com/client/v4${path}"
-  else
-    curl -fsS \
-      -X "$method" \
-      -H "Authorization: Bearer ${cloudflare_token}" \
-      -H "Content-Type: application/json" \
-      "https://api.cloudflare.com/client/v4${path}"
+    curl_args+=(--data "$data")
   fi
+
+  if ! response="$(curl "${curl_args[@]}" "https://api.cloudflare.com/client/v4${path}")"; then
+    echo "error: Cloudflare API transport failed for ${method} ${path}" >&2
+    return 1
+  fi
+
+  if ! jq -e 'type == "object" and .success == true' >/dev/null 2>&1 <<<"$response"; then
+    if jq -e 'type == "object" and (.errors | type) == "array"' >/dev/null 2>&1 <<<"$response"; then
+      jq -r '
+        .errors[]?
+        | select(type == "object")
+        | "Cloudflare API error \(.code // "unknown"): \(.message // "unspecified")"
+      ' <<<"$response" >&2
+    fi
+    echo "error: Cloudflare API rejected or returned an invalid response for ${method} ${path}" >&2
+    return 1
+  fi
+
+  printf '%s\n' "$response"
 }
 
 zone_id="$(

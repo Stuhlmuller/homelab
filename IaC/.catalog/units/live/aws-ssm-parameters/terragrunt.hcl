@@ -188,6 +188,7 @@ inputs = {
     "/homelab/deluge/vpn/wireguard-private-key" = {
       description   = "Deluge AirVPN WireGuard private key."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-config" = {
       description   = "Deluge AirVPN WireGuard wg0.conf profile."
@@ -196,22 +197,27 @@ inputs = {
     "/homelab/deluge/vpn/wireguard-preshared-key" = {
       description   = "Deluge AirVPN WireGuard pre-shared key."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-public-key" = {
       description   = "Deluge AirVPN WireGuard peer public key from the selected profile."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-addresses" = {
       description   = "Deluge AirVPN WireGuard interface address CIDR."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-endpoint-ip" = {
       description   = "Deluge AirVPN WireGuard endpoint IP from the selected profile."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-endpoint-port" = {
       description   = "Deluge AirVPN WireGuard endpoint port from the selected profile."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/media-postgres/app-password" = {
       description = "Shared PostgreSQL password for Sonarr, Radarr, and Prowlarr."

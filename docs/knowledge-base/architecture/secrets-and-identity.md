@@ -78,7 +78,11 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   policy, until a separate reviewed secret-retirement change. See
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
-  `IaC/live/azuread-applications/grafana`.
+  `IaC/live/azuread-applications/grafana`. Grafana and Octelium passwords expire
+  one year after creation, but their current resources have no rotation trigger;
+  an unchanged apply does not rotate them. Coordinate a reviewed
+  `rotate_when_changed` revision with the Grafana `OnChange` ExternalSecret and
+  the Octelium native-secret sync before either expiry.
 - Alertmanager owns notification delivery credentials for Grafana-managed
   alerts. The Prometheus app materializes the
   `alertmanager-discord-webhook` ExternalSecret in `monitoring`, sourced from
@@ -243,6 +247,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
+  is the only Deluge VPN parameter readable by External Secrets; the six
+  retired split-profile parameters remain non-readable state tombstones. It
   refreshes on ExternalSecret changes; after replacing the SSM profile value,
   bump `homelab.rst.io/wireguard-profile-ssm-version` on both the
   ExternalSecret and Deluge pod template so the Secret is rerendered and

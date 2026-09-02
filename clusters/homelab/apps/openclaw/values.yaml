@@ -384,7 +384,7 @@ controllers:
               httpGet:
                 path: /
                 port: 8080
-              failureThreshold: 3
+              failureThreshold: 36
               periodSeconds: 10
               timeoutSeconds: 3
       proxy:
