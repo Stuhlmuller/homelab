@@ -60,6 +60,10 @@ discovery. The rendered control-plane config must also keep `10.1.0.199` in
 The separate `.talos/patches/controlplane-octelium-talos-api.yaml` patch adds
 `talos-api.homelab.local.stinkyboi.com` to `machine.certSANs`. That name is the
 private Octelium TCP Service endpoint for the Talos API.
+`.talos/patches/controlplane-kubernetes-api-san.yaml` replaces the Kubernetes
+API SAN list with the canonical `10.1.0.199` address. Both SAN patches use
+RFC 6902 list replacement so rerendering an already patched live config stays
+idempotent and removes the stale `10.1.0.216` SAN.
 
 Live validation on 2026-09-02 recovered the current control-plane configuration
 without resetting Talos, generated a new local `os:admin` client from the
@@ -81,13 +85,18 @@ When `.talos/controlplane.yaml` is available locally, render a candidate config:
 ```sh
 talosctl machineconfig patch .talos/controlplane.yaml \
   --patch @.talos/patches/controlplane-service-account-issuer.yaml \
+  --patch @.talos/patches/controlplane-kubernetes-api-san.yaml \
   --patch @.talos/patches/controlplane-octelium-talos-api.yaml \
   --output /private/tmp/controlplane-access.yaml
 
 yq -e '
-  [.machine.certSANs[] |
-    select(. == "talos-api.homelab.local.stinkyboi.com")]
-  | length == 1
+  .cluster.controlPlane.endpoint == "https://10.1.0.199:6443" and
+  (.cluster.apiServer.certSANs | length == 1) and
+  .cluster.apiServer.certSANs[0] == "10.1.0.199" and
+  .cluster.apiServer.extraArgs."service-account-issuer" ==
+    "https://10.1.0.199:6443" and
+  (.machine.certSANs | length == 1) and
+  .machine.certSANs[0] == "talos-api.homelab.local.stinkyboi.com"
 ' /private/tmp/controlplane-access.yaml
 ```
 
@@ -118,14 +127,22 @@ Octelium hostname is not valid until the new machine certificate is active.
 Use the homelab LAN or the temporarily retained Tailscale subnet route, and do
 not withdraw that fallback until the Octelium path passes the off-LAN check.
 
-1. Confirm API and Talos access are healthy with read-only commands:
+1. Confirm every node, non-terminal Pod, the API, and etcd are healthy with
+   read-only commands:
 
    ```sh
    kubectl get nodes -o wide
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=1m
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
      get services
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
    ```
 
 2. Apply the validated rendered config to the Acer control-plane node:
@@ -140,7 +157,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
-     apply-config \
+     apply-config --mode=reboot \
      --file /private/tmp/controlplane-access.yaml
    ```
 
@@ -152,7 +169,10 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
      --nodes 10.1.0.199 \
      get services
 
-   kubectl get nodes -o wide
+   kubectl wait --for=condition=Ready node/acer --timeout=10m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
    ```
 
 4. Verify issuer discovery no longer reports `10.1.0.216`:
@@ -178,6 +198,12 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    kubectl config set-cluster homelab --server=https://10.1.0.199:6443
    ```
 
+6. Run the [remote worker reboot](#remote-worker-reboot) procedure one node at
+   a time in this order: `zimaboard-2`, `zimaboard-1`, `zimaboard-0`. Require
+   full readiness after each reboot. This recreates worker-bound projected
+   tokens; `zimaboard-0` runs Istiod and the Octelium dataplane, so reboot it
+   last.
+
 ## Issuer Apply Risks
 
 - A malformed control-plane config can interrupt the only control-plane node.
@@ -185,10 +211,11 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
   lose trust with the existing cluster. Never regenerate secrets for this fix.
 - If `certSANs` omits `10.1.0.199`, clients may fail TLS verification after the
   endpoint correction.
-- Existing projected service-account tokens minted with the stale issuer may
-  continue to exist until they rotate. Verify new discovery state first, then
-  restart only workloads that prove they are still using stale projected tokens
-  through their normal GitOps path.
+- Talos v1.11 cannot configure both the old and new service-account issuers for
+  a non-disruptive transition. Existing projected tokens minted with the stale
+  issuer fail authentication until kubelet rotates them. The sequence therefore
+  reboots Acer with the apply and then each worker to recreate every projected
+  token. Stop if any readiness gate fails; do not rely on eventual rotation.
 - Do not use `talosctl patch machineconfig` or `talosctl edit machineconfig`.
   Emergency recovery also requires a repository-owned patch, rendered config,
   and validation before applying through the documented path.
@@ -333,7 +360,7 @@ On Talos v1.11, `--mode=powercycle` skips kexec but does not skip graceful
 teardown. If this reboot stalls in `stopAllPods` while stopping an unhealthy
 kubelet, let the bounded command time out and do not submit another reboot.
 The 2026-09-02 recovery attempt reached this state without restarting the node;
-physical intervention is required.
+the subsequent physical power-cycle restored it.
 
 If authentication is unavailable, do not run the reboot command or use
 `--insecure`. An operator with physical access must identify `zimaboard-2`
