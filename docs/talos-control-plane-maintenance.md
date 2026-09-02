@@ -60,6 +60,10 @@ discovery. The rendered control-plane config must also keep `10.1.0.199` in
 The separate `.talos/patches/controlplane-octelium-talos-api.yaml` patch adds
 `talos-api.homelab.local.stinkyboi.com` to `machine.certSANs`. That name is the
 private Octelium TCP Service endpoint for the Talos API.
+`.talos/patches/controlplane-kubernetes-api-san.yaml` replaces the Kubernetes
+API SAN list with the canonical `10.1.0.199` address. Both SAN patches use
+RFC 6902 list replacement so rerendering an already patched live config stays
+idempotent and removes the stale `10.1.0.216` SAN.
 
 Live validation on 2026-09-02 recovered the current control-plane configuration
 without resetting Talos, generated a new local `os:admin` client from the
@@ -81,13 +85,18 @@ When `.talos/controlplane.yaml` is available locally, render a candidate config:
 ```sh
 talosctl machineconfig patch .talos/controlplane.yaml \
   --patch @.talos/patches/controlplane-service-account-issuer.yaml \
+  --patch @.talos/patches/controlplane-kubernetes-api-san.yaml \
   --patch @.talos/patches/controlplane-octelium-talos-api.yaml \
   --output /private/tmp/controlplane-access.yaml
 
 yq -e '
-  [.machine.certSANs[] |
-    select(. == "talos-api.homelab.local.stinkyboi.com")]
-  | length == 1
+  .cluster.controlPlane.endpoint == "https://10.1.0.199:6443" and
+  (.cluster.apiServer.certSANs | length == 1) and
+  .cluster.apiServer.certSANs[0] == "10.1.0.199" and
+  .cluster.apiServer.extraArgs."service-account-issuer" ==
+    "https://10.1.0.199:6443" and
+  (.machine.certSANs | length == 1) and
+  .machine.certSANs[0] == "talos-api.homelab.local.stinkyboi.com"
 ' /private/tmp/controlplane-access.yaml
 ```
 
@@ -185,10 +194,11 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
   lose trust with the existing cluster. Never regenerate secrets for this fix.
 - If `certSANs` omits `10.1.0.199`, clients may fail TLS verification after the
   endpoint correction.
-- Existing projected service-account tokens minted with the stale issuer may
-  continue to exist until they rotate. Verify new discovery state first, then
-  restart only workloads that prove they are still using stale projected tokens
-  through their normal GitOps path.
+- Talos v1.11 cannot configure both the old and new service-account issuers for
+  a non-disruptive transition. Existing projected tokens minted with the stale
+  issuer fail authentication until kubelet rotates them. Treat the apply as a
+  maintenance event; verify controllers and workloads after discovery changes,
+  and restart only workloads that prove stale through their normal GitOps path.
 - Do not use `talosctl patch machineconfig` or `talosctl edit machineconfig`.
   Emergency recovery also requires a repository-owned patch, rendered config,
   and validation before applying through the documented path.
