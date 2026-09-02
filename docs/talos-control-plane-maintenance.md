@@ -131,6 +131,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    read-only commands:
 
    ```sh
+   set -euo pipefail
    kubectl get nodes -o wide
    kubectl wait --for=condition=Ready node --all --timeout=1m
    kubectl wait --for=condition=Ready pod --all --all-namespaces \
@@ -155,6 +156,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 2. Apply the validated rendered config to the Acer control-plane node:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
@@ -171,6 +173,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 3. Watch the control plane recover:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
@@ -213,6 +216,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 5. Refresh local kubeconfig only after the API is healthy:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
