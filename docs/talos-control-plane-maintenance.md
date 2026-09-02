@@ -132,6 +132,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 
    ```sh
    kubectl get nodes -o wide
+   kubectl wait --for=condition=Ready node --all --timeout=1m
    kubectl wait --for=condition=Ready pod --all --all-namespaces \
      --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
      --timeout=1m
