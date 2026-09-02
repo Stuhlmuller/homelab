@@ -270,7 +270,9 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
         | select(.status.phase != "Succeeded" and .status.phase != "Failed")
         | select((.status.conditions // [] |
             any(.type == "Ready" and .status == "True")) | not)
-        | "\(.metadata.namespace)/\(.metadata.name)"] as $actual
+        | "\(.metadata.namespace)/\(.metadata.name)" +
+          "@\(.metadata.uid)@" +
+          "\(.spec.nodeName // "<unbound>")"] as $actual
        | ($expected | all(.[]; type == "string")) and
          (($expected | unique | length) == ($expected | length)) and
          (($actual | sort) == ($expected | sort))
@@ -289,13 +291,16 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    ```
 
    Set `node_name` in the order above; the `case` statement derives its address
-   from the [worker address table](#remote-worker-reboot). This is the issuer cutover's
-   narrow degraded-state exception to the normal worker reboot preflight.
+   from the [worker address table](#remote-worker-reboot). This is the issuer
+   cutover's narrow degraded-state exception to the normal worker reboot
+   preflight.
    Rebuild `approved_unready_pods` before every worker; never carry names
-   forward without fresh evidence. Accept direct CNI `Unauthorized` errors or
-   dependents whose failure traces to such a CNI error on an unrebooted worker.
-   Missing or different evidence is an unrelated failure and stops the
-   sequence. Also stop if the reboot or target-local readiness gate fails.
+   forward without fresh evidence. Each entry uses
+   `namespace/name@pod-UID@node`; use `<unbound>` only when `spec.nodeName` is
+   empty. Accept direct CNI `Unauthorized` errors or dependents whose failure
+   traces to such a CNI error on an unrebooted worker. Missing or different
+   evidence is an unrelated failure and stops the sequence. Also stop if the
+   reboot or target-local readiness gate fails.
    The sequence recreates worker-bound projected tokens, and keeps
    `zimaboard-0`, which runs Istiod and the Octelium dataplane, until last.
 
