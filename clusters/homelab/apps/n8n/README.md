@@ -95,11 +95,25 @@ can continue returning HTTP 200 after n8n has closed its database pool, leaving
 webhooks to return HTTP 503 `Database is not ready!` until the process is
 replaced.
 
+## Version And Migration Contract
+
+n8n is pinned to `2.36.8`; the PostgreSQL readiness client is pinned to `18.6`.
+The upgrade from `2.30.6` includes 27 PostgreSQL migrations, four of which are
+irreversible. Upgrade `n8n-postgres` to `14.24` first and observe it for 24
+hours. Before this rollout, stop new executions and callbacks, capture a
+current logical database dump plus a matched snapshot of `/home/node/.n8n`, and
+prove both can be restored together. After Argo CD reconciles, verify the n8n
+version, migration completion, editor and webhook health, stored credentials,
+representative workflows, and 24 hours of errors, restarts, CPU, memory, and
+latency. Do not roll back only the image after migrations run; restore the
+matched database dump and n8n snapshot before syncing the previous version.
+
 ## Validation
 
 ```sh
 kubectl kustomize clusters/homelab/apps/n8n
 kubectl -n automation get deploy/n8n svc/n8n externalsecret/n8n-secrets
+kubectl -n automation exec deploy/n8n -c app -- n8n --version
 kubectl -n automation get virtualservice/n8n-octelium virtualservice/n8n-webhook-octelium
 kubectl -n automation exec deploy/n8n -c app -- \
   node -e '
@@ -115,7 +129,8 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 Expected route behavior: the editor host serves n8n through Octelium, the
 callback host reaches n8n only under the webhook prefixes, and an unknown
 webhook path returns an n8n not-found response until a workflow registers that
-webhook. A generic 404 without n8n webhook text means the request may still be
+webhook. The version command must report `2.36.8`. A generic 404 without n8n
+webhook text means the request may still be
 stopping at the Cloudflare tunnel catch-all or Istio gateway instead of the n8n
 backend. The internal database-aware health request from the n8n pod should
 print `200` after the AuthorizationPolicy syncs. HTTP 503 with `Database is not
