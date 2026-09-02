@@ -19,6 +19,8 @@ For remote ZimaBoard recovery, the canonical runbook maps each worker to its
 Talos address and uses authenticated `talosctl reboot`; reboot one worker at a
 time only from a healthy cluster, verify node and cluster-wide workload
 readiness, and never fall back to `--insecure`.
+The control-plane issuer cutover also requires an explicit all-node Ready wait
+before rebooting the sole control-plane node.
 
 The canonical runbook also owns the dated 2026-08-25 corrupt-object recovery.
 That recovery is exact-key and snapshot-first, with a Talos snapshot-restore
