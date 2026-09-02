@@ -19,16 +19,18 @@ control-plane node and three Zimaboard workers.
 ## Current Worker Recovery Blocker
 
 Read-only inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
-`zimaboard-1` Ready. `zimaboard-2` remains unreachable; its last kubelet
+`zimaboard-1` Ready. `zimaboard-2` remains NotReady; its last kubelet
 heartbeat is `2026-08-26T16:56:41Z`. Istio remains Degraded and Multus
 Progressing, with Octelium replacement Pods still stranded on that worker.
 Authenticated Talos access was restored from the current control-plane
 configuration without resetting any node. The replacement local `os:admin`
 certificate expires on 2027-09-02, and a fresh etcd snapshot was copied off
 `acer`. The reviewed Octelium Talos DNS SAN was then applied without a reboot
-and verified on the live server certificate. No worker reboot or force-deletion
-was attempted; `zimaboard-2` still needs a reviewed degraded-state recovery
-path or physical intervention. See
+and verified on the live server certificate. The reviewed worker preflight
+passed, but an authenticated reboot of `zimaboard-2` stalled in
+`stopAllPods` while gracefully stopping the unhealthy kubelet. The node never
+restarted and requires a physical power-cycle; no force-deletion was attempted.
+See
 [[operations/audit-2026-08-30]] and issue
 [#775](https://github.com/Stuhlmuller/homelab/issues/775).
 

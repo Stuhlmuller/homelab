@@ -329,6 +329,12 @@ talosctl --talosconfig .talos/talosconfig \
   --endpoints 10.1.0.202 --nodes 10.1.0.202 reboot --wait
 ```
 
+On Talos v1.11, `--mode=powercycle` skips kexec but does not skip graceful
+teardown. If this reboot stalls in `stopAllPods` while stopping an unhealthy
+kubelet, let the bounded command time out and do not submit another reboot.
+The 2026-09-02 recovery attempt reached this state without restarting the node;
+physical intervention is required.
+
 If authentication is unavailable, do not run the reboot command or use
 `--insecure`. An operator with physical access must identify `zimaboard-2`
 before power-cycling only that worker. Do not force-delete Pods, clear locks,
