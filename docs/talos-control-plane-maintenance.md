@@ -131,6 +131,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    read-only commands:
 
    ```sh
+   set -euo pipefail
    kubectl get nodes -o wide
    kubectl wait --for=condition=Ready node --all --timeout=1m
    kubectl wait --for=condition=Ready pod --all --all-namespaces \
@@ -139,7 +140,13 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
-     get services
+     get services -o json | jq -se '
+       map(select(.metadata.id != "dashboard")) as $services
+       | ($services | length) > 0 and
+         all($services[];
+           .spec.running == true and .spec.healthy == true and
+           .spec.unknown == false)
+     '
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
@@ -149,6 +156,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 2. Apply the validated rendered config to the Acer control-plane node:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
@@ -165,16 +173,33 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 3. Watch the control plane recover:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
-     get services
+     get services -o json | jq -se '
+       map(select(.metadata.id != "dashboard")) as $services
+       | ($services | length) > 0 and
+         all($services[];
+           .spec.running == true and .spec.healthy == true and
+           .spec.unknown == false)
+     '
 
    kubectl wait --for=condition=Ready node/acer --timeout=10m
-   kubectl wait --for=condition=Ready pod --all --all-namespaces \
-     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
-     --timeout=10m
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
    ```
+
+   Do not require cluster-wide Pod readiness between the Acer reboot and the
+   first worker reboot. Talos 1.11 switches the only accepted issuer at once,
+   so worker CNI credentials minted by the old issuer can reject API requests
+   until that worker reboots. Continue only when every Node is Ready, Acer's
+   services and etcd are healthy, and every unready workload is positively
+   traced to old-issuer CNI authorization on an unrebooted worker. Stop on any
+   unrelated or unexplained failure.
 
 4. Verify issuer discovery no longer reports `10.1.0.216`:
 
@@ -191,6 +216,7 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
 5. Refresh local kubeconfig only after the API is healthy:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
@@ -199,11 +225,94 @@ not withdraw that fallback until the Octelium path passes the off-LAN check.
    kubectl config set-cluster homelab --server=https://10.1.0.199:6443
    ```
 
-6. Run the [remote worker reboot](#remote-worker-reboot) procedure one node at
-   a time in this order: `zimaboard-2`, `zimaboard-1`, `zimaboard-0`. Require
-   full readiness after each reboot. This recreates worker-bound projected
-   tokens; `zimaboard-0` runs Istiod and the Octelium dataplane, so reboot it
-   last.
+6. Reboot workers one at a time in this order: `zimaboard-2`, `zimaboard-1`,
+   `zimaboard-0`. Before each reboot, require every Node, Acer's services and
+   etcd, and the target worker's Talos services to be healthy. Start with an
+   empty allowlist, then add only Pods whose Events or logs positively trace
+   their failure to old-issuer credentials on workers that have not rebooted:
+
+   ```sh
+   set -euo pipefail
+   node_name=zimaboard-2
+   case "$node_name" in
+     zimaboard-0) node_ip=10.1.0.200 ;;
+     zimaboard-1) node_ip=10.1.0.201 ;;
+     zimaboard-2) node_ip=10.1.0.202 ;;
+     *) echo "unsupported worker: $node_name" >&2; exit 1 ;;
+   esac
+   approved_unready_pods='[]'
+
+   services_healthy() {
+     talosctl --talosconfig .talos/talosconfig \
+       --endpoints 10.1.0.199 \
+       --nodes "$1" \
+       get services -o json | jq -se '
+         map(select(.metadata.id != "dashboard")) as $services
+         | ($services | length) > 0 and
+           all($services[];
+             .spec.running == true and .spec.healthy == true and
+             .spec.unknown == false)
+       '
+   }
+
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   services_healthy 10.1.0.199
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
+   services_healthy "$node_ip"
+
+   kubectl get pods --all-namespaces -o json | jq -e \
+     --argjson approved "$approved_unready_pods" '
+       ($approved | arrays) as $expected
+       | [.items[]
+        | select(.status.phase != "Succeeded" and .status.phase != "Failed")
+        | select((.status.conditions // [] |
+            any(.type == "Ready" and .status == "True")) | not)
+        | "\(.metadata.namespace)/\(.metadata.name)" +
+          "@\(.metadata.uid)@" +
+          "\(.spec.nodeName // "<unbound>")"] as $actual
+       | ($expected | all(.[]; type == "string")) and
+         (($expected | unique | length) == ($expected | length)) and
+         (($actual | sort) == ($expected | sort))
+     '
+
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes "$node_ip" \
+     reboot --wait --timeout=10m
+
+   kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector \
+       "spec.nodeName=$node_name,status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
+   ```
+
+   Set `node_name` in the order above; the `case` statement derives its address
+   from the [worker address table](#remote-worker-reboot). This is the issuer
+   cutover's narrow degraded-state exception to the normal worker reboot
+   preflight.
+   Rebuild `approved_unready_pods` before every worker; never carry names
+   forward without fresh evidence. Each entry uses
+   `namespace/name@pod-UID@node`; use `<unbound>` only when `spec.nodeName` is
+   empty. Accept direct CNI `Unauthorized` errors or dependents whose failure
+   traces to such a CNI error on an unrebooted worker. Missing or different
+   evidence is an unrelated failure and stops the sequence. Also stop if the
+   reboot or target-local readiness gate fails.
+   The sequence recreates worker-bound projected tokens, and keeps
+   `zimaboard-0`, which runs Istiod and the Octelium dataplane, until last.
+
+7. After `zimaboard-0`, restore the normal global gates:
+
+   ```sh
+   set -euo pipefail
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
+   ```
 
 ## Issuer Apply Risks
 
