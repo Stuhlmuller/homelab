@@ -416,6 +416,474 @@ answers, retry the reboot with `--mode=powercycle`. Never add `--insecure` for
 an already configured node. If authenticated Talos access is unavailable,
 stop; physical intervention is required.
 
+### Degraded Recovery: Issuer-Cutover Resource Stall
+
+This dated exception covers the 2026-09-02 issuer cutover only. CNI
+authentication failures caused restart and termination churn; memory, eMMC,
+and NFS I/O then wedged the `zimaboard-1` kubelet. `zimaboard-2` showed severe
+pressure and a simultaneous kubelet stall, but its exact cause is unverified.
+Acer and `zimaboard-0` remained healthy. API-deleted NFS Pods may still be
+executing on an unreachable worker, so its reboot is also writer fencing. Do
+not restore it in place, force-delete Pods, or touch PVCs.
+
+Recover `zimaboard-1` first. Run the Talos recovery blocks for `zimaboard-2`
+only after every `zimaboard-1` postflight passes. The self-contained preflight
+validates the healthy cluster first, then preserves but stops Cordium Workspace
+`v64` through
+[Cordium's native lifecycle command](https://octelium.com/docs/cordium/latest/use/cli).
+Its Kubernetes resource name is `ws-v64`. The gate rejects an ephemeral
+Workspace, preserves the exact bound PVC, waits for the controller-owned
+ConfigMap, Service, and Deployment to disappear, and allows only zero-replica
+remnants or deleting Pods. It never scales or deletes Kubernetes resources
+directly.
+
+No worker reboot was submitted before this incident path was added; stop if an
+earlier reboot request might still be outstanding. Set the private snapshot
+path, select one target, then run this preflight and one-shot reboot exactly
+once:
+
+```bash
+set -euo pipefail
+snapshot_file=/path/to/recent-off-node-etcd-snapshot.db
+node_name=zimaboard-1
+workspace_name=v64
+workspace_resource=ws-v64
+
+case "$node_name" in
+  zimaboard-1)
+    node_ip=10.1.0.201
+    healthy_nodes=(acer zimaboard-0)
+    healthy_ips=(10.1.0.199 10.1.0.200)
+    ;;
+  zimaboard-2)
+    node_ip=10.1.0.202
+    healthy_nodes=(acer zimaboard-0 zimaboard-1)
+    healthy_ips=(10.1.0.199 10.1.0.200 10.1.0.201)
+    ;;
+  *) echo "unsupported recovery target: $node_name" >&2; exit 1 ;;
+esac
+attempt_dir="/private/tmp/$node_name.recovery-attempt"
+
+services_healthy() {
+  talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$1" --nodes "$1" get services -o json | jq -se '
+      map(select(.metadata.id != "dashboard")) as $services
+      | ($services | length) > 0 and
+        all($services[];
+          .spec.running == true and .spec.healthy == true and
+          .spec.unknown == false)
+    '
+}
+
+recovery_preflight() {
+  test -s "$snapshot_file"
+  test ! -e "$attempt_dir"
+  for healthy_node in "${healthy_nodes[@]}"; do
+    kubectl wait --for=condition=Ready \
+      "node/$healthy_node" --timeout=1m
+  done
+  kubectl get lease -n kube-node-lease "${healthy_nodes[@]}" -o json |
+    jq -e --argjson expected "${#healthy_nodes[@]}" \
+      --argjson now "$(date -u +%s)" '
+        (.items | length) == $expected and
+        all(.items[];
+          ($now - (.spec.renewTime |
+            sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601)) as $age
+          | $age >= 0 and $age < 60)
+      '
+  for healthy_ip in "${healthy_ips[@]}"; do
+    services_healthy "$healthy_ip"
+  done
+  talosctl --talosconfig .talos/talosconfig \
+    --endpoints 10.1.0.199 --nodes 10.1.0.199 etcd status
+  if [[ "$node_name" == zimaboard-2 ]]; then
+    prerequisite_file=/private/tmp/zimaboard-1.recovery-attempt/complete.boot-id
+    test -s "$prerequisite_file"
+    prerequisite_boot_id="$(talosctl \
+      --talosconfig .talos/talosconfig \
+      --endpoints 10.1.0.201 --nodes 10.1.0.201 \
+      read /proc/sys/kernel/random/boot_id | tr -d '\n')"
+    test -n "$prerequisite_boot_id"
+    test "$prerequisite_boot_id" = \
+      "$(tr -d '\n' <"$prerequisite_file")"
+  fi
+  kubectl get node "$node_name" -o json | jq -e '
+    any(.status.conditions[];
+      .type == "Ready" and .status == "Unknown")
+  '
+  talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$node_ip" --nodes "$node_ip" get services -o json |
+    jq -se '
+      map({key: .metadata.id, value: .spec}) | from_entries as $services
+      | ["apid", "machined", "containerd", "cri"] as $required
+      | all($required[];
+          . as $name
+          | $services[$name].running == true and
+            $services[$name].healthy == true and
+            $services[$name].unknown == false)
+    '
+}
+
+workspace_json="$(cordium get ws "$workspace_name" \
+  --domain stinkyboi.com -o json)"
+jq -e --arg name "$workspace_name" '
+  .metadata.name == $name and (.spec.isEphemeral // false) == false
+' <<<"$workspace_json"
+workspace_uid="$(jq -er '.metadata.uid | select(length > 0)' \
+  <<<"$workspace_json")"
+workspace_pvc="ws-$workspace_uid"
+pvc_json="$(kubectl get pvc "$workspace_pvc" -n cordium -o json)"
+pvc_uid="$(jq -er '
+  select(.status.phase == "Bound") | .metadata.uid | select(length > 0)
+' <<<"$pvc_json")"
+pvc_volume="$(jq -er '.spec.volumeName | select(length > 0)' \
+  <<<"$pvc_json")"
+
+cordium_workspace_stopped() {
+  cordium get ws "$workspace_name" --domain stinkyboi.com -o json |
+    jq -e --arg uid "$workspace_uid" '
+      .metadata.uid == $uid and .status.state == "STOPPED"
+    ' &&
+    kubectl get configmap,deploy,rs,pod,pvc,service -n cordium -o json |
+      jq -e --arg resource "$workspace_resource" \
+        --arg uid "$workspace_uid" --arg pvc "$workspace_pvc" \
+        --arg pvc_uid "$pvc_uid" --arg volume "$pvc_volume" '
+          ([.items[]
+            | select(.kind == "ConfigMap" and
+                .metadata.name == $resource)] | length == 0) and
+          ([.items[]
+            | select(.kind == "Deployment" and
+                .metadata.name == $resource)] | length == 0) and
+          ([.items[]
+            | select(.kind == "Service" and
+                .metadata.name == $resource)] | length == 0) and
+          ([.items[]
+            | select(.kind == "ReplicaSet" and
+                .metadata.labels["octelium.com/workspace-uid"] == $uid)
+            | select((.spec.replicas // 0) != 0 or
+                (.status.replicas // 0) != 0 or
+                (.status.readyReplicas // 0) != 0)] | length == 0) and
+          ([.items[]
+            | select(.kind == "Pod" and
+                .metadata.labels["octelium.com/workspace-uid"] == $uid)
+            | select(.metadata.deletionTimestamp == null)
+            | select(.status.phase != "Succeeded" and
+                .status.phase != "Failed")] | length == 0) and
+          ([.items[]
+            | select(.kind == "PersistentVolumeClaim" and
+                .metadata.name == $pvc and .metadata.uid == $pvc_uid and
+                .spec.volumeName == $volume and
+                .status.phase == "Bound")] | length == 1)
+        '
+}
+
+recovery_preflight
+if [[ "$node_name" == zimaboard-1 ]]; then
+  workspace_state="$(cordium get ws "$workspace_name" \
+    --domain stinkyboi.com -o json |
+    jq -er --arg uid "$workspace_uid" '
+      select(.metadata.uid == $uid) | .status.state
+    ')"
+  case "$workspace_state" in
+    STOPPING_REQUEST | STOPPING | STOPPED) ;;
+    *) cordium stop "$workspace_name" --domain stinkyboi.com ;;
+  esac
+fi
+for attempt in {1..30}; do
+  if cordium_workspace_stopped; then
+    break
+  fi
+  ((attempt < 30)) || {
+    echo "Cordium workspace did not stop safely" >&2
+    exit 1
+  }
+  sleep 10
+done
+recovery_preflight
+cordium_workspace_stopped
+
+umask 077
+mkdir "$attempt_dir"
+boot_id_file="$attempt_dir/boot-id.before"
+start_file="$attempt_dir/start-epoch"
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints "$node_ip" --nodes "$node_ip" \
+  read /proc/sys/kernel/random/boot_id >"$boot_id_file"
+date -u +%s >"$start_file"
+test -s "$boot_id_file"
+test -s "$start_file"
+
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints "$node_ip" --nodes "$node_ip" \
+  reboot --mode=default --wait --timeout=10m
+```
+
+If the reboot times out, do not submit another reboot or immediately power
+cycle. First select the same `node_name` and run this five-minute identity
+gate. It fails closed if the node becomes unreachable or its boot ID changes:
+
+```bash
+set -euo pipefail
+node_name=zimaboard-1
+case "$node_name" in
+  zimaboard-1)
+    node_ip=10.1.0.201
+    healthy_nodes=(acer zimaboard-0)
+    healthy_ips=(10.1.0.199 10.1.0.200)
+    ;;
+  zimaboard-2)
+    node_ip=10.1.0.202
+    healthy_nodes=(acer zimaboard-0 zimaboard-1)
+    healthy_ips=(10.1.0.199 10.1.0.200 10.1.0.201)
+    ;;
+  *) echo "unsupported recovery target: $node_name" >&2; exit 1 ;;
+esac
+
+services_healthy() {
+  talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$1" --nodes "$1" get services -o json | jq -se '
+      map(select(.metadata.id != "dashboard")) as $services
+      | ($services | length) > 0 and
+        all($services[];
+          .spec.running == true and .spec.healthy == true and
+          .spec.unknown == false)
+    '
+}
+
+boot_id_file="/private/tmp/$node_name.recovery-attempt/boot-id.before"
+test -s "$boot_id_file"
+old_boot_id="$(tr -d '\n' <"$boot_id_file")"
+for attempt in {1..30}; do
+  current_boot_id="$(talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$node_ip" --nodes "$node_ip" \
+    read /proc/sys/kernel/random/boot_id | tr -d '\n')"
+  test -n "$current_boot_id"
+  test "$current_boot_id" = "$old_boot_id"
+  ((attempt == 30)) || sleep 10
+done
+kubectl get node "$node_name" -o json | jq -e '
+  any(.status.conditions[];
+    .type == "Ready" and .status == "Unknown")
+'
+for healthy_node in "${healthy_nodes[@]}"; do
+  kubectl wait --for=condition=Ready \
+    "node/$healthy_node" --timeout=1m
+done
+kubectl get lease -n kube-node-lease "${healthy_nodes[@]}" -o json |
+  jq -e --argjson expected "${#healthy_nodes[@]}" \
+    --argjson now "$(date -u +%s)" '
+      (.items | length) == $expected and
+      all(.items[];
+        ($now - (.spec.renewTime |
+          sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601)) as $age
+        | $age >= 0 and $age < 60)
+    '
+for healthy_ip in "${healthy_ips[@]}"; do
+  services_healthy "$healthy_ip"
+done
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints 10.1.0.199 --nodes 10.1.0.199 etcd status
+if [[ "$node_name" == zimaboard-2 ]]; then
+  prerequisite_file=/private/tmp/zimaboard-1.recovery-attempt/complete.boot-id
+  test -s "$prerequisite_file"
+  prerequisite_boot_id="$(talosctl \
+    --talosconfig .talos/talosconfig \
+    --endpoints 10.1.0.201 --nodes 10.1.0.201 \
+    read /proc/sys/kernel/random/boot_id | tr -d '\n')"
+  test -n "$prerequisite_boot_id"
+  test "$prerequisite_boot_id" = \
+    "$(tr -d '\n' <"$prerequisite_file")"
+fi
+kubectl get node "$node_name" -o json | jq -e '
+  any(.status.conditions[];
+    .type == "Ready" and .status == "Unknown")
+'
+final_boot_id="$(talosctl --talosconfig .talos/talosconfig \
+  --endpoints "$node_ip" --nodes "$node_ip" \
+  read /proc/sys/kernel/random/boot_id | tr -d '\n')"
+test -n "$final_boot_id"
+test "$final_boot_id" = "$old_boot_id"
+```
+
+Only a fully passing identity gate permits a physical power-cycle of the exact
+selected worker; the power event fences its stale NFS writers. If the boot ID
+changed, run postflight. If any read failed, wait and inspect the physical node
+instead of assuming the reboot stalled. After the reboot or physical recovery,
+select the same `node_name` and run the postflight:
+
+```bash
+set -euo pipefail
+node_name=zimaboard-1
+
+case "$node_name" in
+  zimaboard-1)
+    node_ip=10.1.0.201
+    allowed_unrecovered_node=zimaboard-2
+    ;;
+  zimaboard-2)
+    node_ip=10.1.0.202
+    allowed_unrecovered_node=
+    ;;
+  *) echo "unsupported recovery target: $node_name" >&2; exit 1 ;;
+esac
+
+attempt_dir="/private/tmp/$node_name.recovery-attempt"
+boot_id_file="$attempt_dir/boot-id.before"
+start_file="$attempt_dir/start-epoch"
+complete_file="$attempt_dir/complete.boot-id"
+test -s "$boot_id_file"
+test -s "$start_file"
+old_boot_id="$(tr -d '\n' <"$boot_id_file")"
+new_boot_id="$(talosctl --talosconfig .talos/talosconfig \
+  --endpoints "$node_ip" --nodes "$node_ip" \
+  read /proc/sys/kernel/random/boot_id | tr -d '\n')"
+test -n "$new_boot_id"
+test "$new_boot_id" != "$old_boot_id"
+
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints "$node_ip" --nodes "$node_ip" get services -o json |
+  jq -se '
+    map(select(.metadata.id != "dashboard")) as $services
+    | ($services | length) > 0 and
+      all($services[];
+        .spec.running == true and .spec.healthy == true and
+        .spec.unknown == false)
+  '
+kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+kubectl get lease -n kube-node-lease "$node_name" -o json |
+  jq -e --argjson now "$(date -u +%s)" '
+    ($now - (.spec.renewTime |
+      sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601)) as $age
+    | $age >= 0 and $age < 60
+  '
+kubectl wait --for=condition=Ready pod --all --all-namespaces \
+  --field-selector \
+    "spec.nodeName=$node_name,status.phase!=Succeeded,status.phase!=Failed" \
+  --timeout=10m
+
+observation_start_epoch="$(date -u +%s)"
+pods_json="$(kubectl get pods --all-namespaces -o json)"
+restart_baseline="$(jq -c --arg node "$node_name" '
+  [.items[]
+   | select(.spec.nodeName == $node)
+   | select(.status.phase != "Succeeded" and
+       .status.phase != "Failed")
+   | . as $pod
+   | (((.status.initContainerStatuses // []) |
+       map({kind: "init", status: .})) +
+      ((.status.containerStatuses // []) |
+       map({kind: "app", status: .})))[]
+   | {key: "\($pod.metadata.uid)/\(.kind)/\(.status.name)",
+      restarts: .status.restartCount}]
+' <<<"$pods_json")"
+for sample in {1..31}; do
+  pods_json="$(kubectl get pods --all-namespaces -o json)"
+  jq -e '
+    [.items[]
+     | select((.spec.nodeName // "") == "" or
+         .spec.nodeName == "zimaboard-1")
+     | select(.metadata.labels["octelium.com/component"] ==
+         "workspace")
+     | select(.metadata.deletionTimestamp == null)
+     | select(.status.phase != "Succeeded" and
+         .status.phase != "Failed")]
+    | length == 0
+  ' <<<"$pods_json"
+  current_restarts="$(jq -c --arg node "$node_name" \
+    --argjson cutoff "$observation_start_epoch" '
+      [.items[]
+       | select(.spec.nodeName == $node)
+       | select(.status.phase != "Succeeded" and
+           .status.phase != "Failed")
+       | . as $pod
+       | (((.status.initContainerStatuses // []) |
+           map({kind: "init", status: .})) +
+          ((.status.containerStatuses // []) |
+           map({kind: "app", status: .})))[]
+       | {key: "\($pod.metadata.uid)/\(.kind)/\(.status.name)",
+          restarts: .status.restartCount,
+          new_oom:
+            (.status.lastState.terminated.reason == "OOMKilled" and
+             ((.status.lastState.terminated.finishedAt |
+               sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) >= $cutoff))}]
+    ' <<<"$pods_json")"
+  jq -en --argjson baseline "$restart_baseline" \
+    --argjson current "$current_restarts" '
+      (($baseline | map({key, restarts}) | sort_by(.key)) ==
+       ($current | map({key, restarts}) | sort_by(.key))) and
+      all($current[]; .new_oom == false)
+    '
+
+  meminfo="$(talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$node_ip" --nodes "$node_ip" read /proc/meminfo)"
+  mem_total_kib="$(awk '$1 == "MemTotal:" {print $2}' <<<"$meminfo")"
+  mem_available_kib="$(awk \
+    '$1 == "MemAvailable:" {print $2}' <<<"$meminfo")"
+  blocked="$(talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$node_ip" --nodes "$node_ip" read /proc/stat |
+    awk '$1 == "procs_blocked" {print $2}')"
+  memory_full_avg60="$(talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$node_ip" --nodes "$node_ip" read /proc/pressure/memory |
+    awk '$1 == "full" {sub("avg60=", "", $3); print $3}')"
+  io_full_avg60="$(talosctl --talosconfig .talos/talosconfig \
+    --endpoints "$node_ip" --nodes "$node_ip" read /proc/pressure/io |
+    awk '$1 == "full" {sub("avg60=", "", $3); print $3}')"
+
+  [[ "$mem_total_kib" =~ ^[0-9]+$ ]]
+  [[ "$mem_available_kib" =~ ^[0-9]+$ ]]
+  [[ "$blocked" =~ ^[0-9]+$ ]]
+  [[ "$memory_full_avg60" =~ ^[0-9]+([.][0-9]+)?$ ]]
+  [[ "$io_full_avg60" =~ ^[0-9]+([.][0-9]+)?$ ]]
+  ((mem_available_kib * 5 > mem_total_kib))
+  ((blocked == 0))
+  awk -v memory="$memory_full_avg60" -v io="$io_full_avg60" \
+    'BEGIN { exit !(memory < 1 && io < 1) }'
+  ((sample == 31)) || sleep 60
+done
+
+kubectl get pods --all-namespaces -o json |
+  jq -e --arg allowed "$allowed_unrecovered_node" '
+    [.items[]
+     | select(.status.phase != "Succeeded" and
+         .status.phase != "Failed")
+     | select((.status.conditions // [] |
+         any(.type == "Ready" and .status == "True")) | not)
+     | select($allowed == "" or .spec.nodeName != $allowed)]
+    | length == 0
+  '
+kubectl get events --all-namespaces -o json |
+  jq -e --argjson cutoff "$observation_start_epoch" '
+    [.items[]
+     | (.series.lastObservedTime // .lastTimestamp // .eventTime //
+        .metadata.creationTimestamp) as $timestamp
+     | select(($timestamp |
+         sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) >= $cutoff)
+     | select((.message // "") |
+         test("unauthorized|credentials are required|token.*issuer"; "i"))]
+    | length == 0
+  '
+verified_boot_id="$(talosctl --talosconfig .talos/talosconfig \
+  --endpoints "$node_ip" --nodes "$node_ip" \
+  read /proc/sys/kernel/random/boot_id | tr -d '\n')"
+test -n "$verified_boot_id"
+test "$verified_boot_id" = "$new_boot_id"
+(
+  set -o noclobber
+  printf '%s\n' "$verified_boot_id" >"$complete_file"
+)
+```
+
+Any postflight failure stops the sequence. After `zimaboard-1` passes, repeat
+both blocks once for `zimaboard-2` only if it remains `Unknown`; never reboot a
+worker that recovered naturally. Then restore the global Node and Pod gates
+from the issuer sequence. Do not reboot `zimaboard-0` merely for symmetry; skip
+it when its services stay healthy and no fresh issuer error appears. A clean
+pressure sample means more than 20% `MemAvailable`, zero blocked processes, and
+less than 1% full memory and I/O stall time over the kernel's 60-second PSI
+window. The 31 one-minute samples cover the incident's observed 18–30 minute
+failure lag and also reject Pod replacement, container-set changes, new
+restarts, OOM kills, or an active Cordium workspace on `zimaboard-1`.
+
 ### Degraded Recovery: `zimaboard-2`
 
 This exception covers only the unreachable `zimaboard-2` (`10.1.0.202`) from
