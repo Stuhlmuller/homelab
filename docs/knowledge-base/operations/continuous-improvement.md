@@ -69,6 +69,33 @@ reconciliation, and the public API port mapping remain open; older observations
 below retain their original dates.
 
 - **Status:** partially fixed
+- **Area:** public identity metadata
+- **Evidence:** historical commits expose the operator's direct email address;
+  new commit-range validation now permits only GitHub noreply author and
+  committer addresses.
+- **Risk:** the historical address enables targeted phishing and identity
+  correlation, but is not an authentication credential.
+- **Next step:** keep GitHub email privacy enabled and use the account's noreply
+  address for every local clone. Historical copies cannot be recalled; do not
+  destabilize signed tags and pull-request history solely to rewrite this
+  already-public metadata.
+
+- **Status:** planned
+- **Area:** secrets / OpenTofu state
+- **Evidence:** `IaC/live/aws-ssm-parameters` has 59 managed SecureStrings and
+  legacy readable `value` attributes plus 20 stateful generator resources. Its
+  versioned S3 state object retains current and noncurrent plaintext secret
+  values inside KMS-encrypted objects. The provider now exposes ephemeral SSM,
+  random, and TLS resources plus write-only `aws_ssm_parameter.value_wo`.
+- **Risk:** anyone who gains state-read permission can recover current or old
+  runtime credentials even when git and SSM access remain protected.
+- **Next step:** complete the controlled preserve-to-write-only migration,
+  prove all 59 values byte-identical, migrate the nine Entra-owned secret-state
+  values, then delete only the reviewed noncurrent state VersionIds and rotate
+  affected credentials. Rotation and irreversible version deletion require
+  explicit approval.
+
+- **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
   Rancher release `v0.0.36` to exact upstream commit

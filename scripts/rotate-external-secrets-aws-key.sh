@@ -104,11 +104,13 @@ chmod 700 "$tmp_dir"
 new_key_created=false
 new_key_id=""
 ssm_updated=false
+ssm_pair_verified=false
 apply_started=false
 old_key_inactive=false
 old_key_deleted=false
 rotation_complete=false
 rotation_lock_acquired=false
+ssm_maintenance_lock_acquired=false
 
 aws_cli=(aws --profile "$profile")
 iam_user="external-secrets_aws-ssm-auth"
@@ -118,6 +120,7 @@ secret_parameter="/homelab/external-secrets/aws-ssm/secret-access-key"
 probe_parameter="/homelab/argocd/oidc/issuer"
 rotation_lock_parameter="/homelab/locks/external-secrets-aws-ssm-auth-key-rotation"
 rotation_lock_token="$(basename "$tmp_dir")"
+ssm_maintenance_lock_token="external-secrets-key-rotation-${rotation_lock_token}"
 
 put_parameter() {
   "${aws_cli[@]}" ssm put-parameter \
@@ -414,6 +417,7 @@ release_rotation_lock() {
 
 cleanup() {
   local rc=$?
+  local retain_maintenance_locks=false
   local safe_to_delete_new=true
   set +e
 
@@ -432,17 +436,20 @@ cleanup() {
     else
       if [[ "$ssm_updated" == true ]]; then
         safe_to_delete_new=false
+        ssm_pair_verified=false
         if put_parameter "$tmp_dir/old-access-parameter.json" &&
           put_parameter "$tmp_dir/old-secret-parameter.json" &&
           read_parameters "$tmp_dir/rollback-parameters.json" &&
           parameters_match_old "$tmp_dir/rollback-parameters.json"; then
           safe_to_delete_new=true
+          ssm_pair_verified=true
         else
           echo "error: old SSM pair was not restored exactly; retaining the new IAM key" >&2
           if put_parameter "$tmp_dir/new-access-parameter.json" &&
             put_parameter "$tmp_dir/new-secret-parameter.json" &&
             read_parameters "$tmp_dir/recovery-parameters.json" &&
             parameters_match_new "$tmp_dir/recovery-parameters.json"; then
+            ssm_pair_verified=true
             echo "error: SSM was recovered to the complete new pair; retry the reviewed rotation" >&2
           else
             echo "error: SSM pair could not be verified as old or new; immediate operator recovery is required" >&2
@@ -458,10 +465,25 @@ cleanup() {
     fi
   fi
 
-  if [[ "$rotation_lock_acquired" == true ]]; then
+  if [[ "$ssm_updated" == true && "$ssm_pair_verified" != true ]]; then
+    retain_maintenance_locks=true
+    echo "error: retaining both maintenance locks until the SSM credential pair is repaired and verified" >&2
+  fi
+
+  if [[ "$rotation_lock_acquired" == true && "$retain_maintenance_locks" != true ]]; then
     if release_rotation_lock; then
       rotation_lock_acquired=false
     else
+      ((rc == 0)) && rc=1
+    fi
+  fi
+
+  if [[ "$ssm_maintenance_lock_acquired" == true && "$retain_maintenance_locks" != true ]]; then
+    if bash "$repo_root/scripts/ssm-secret-maintenance-lock.sh" \
+      --release "$ssm_maintenance_lock_token" "$profile"; then
+      ssm_maintenance_lock_acquired=false
+    else
+      echo "error: failed to release the owned SSM secret-maintenance lock" >&2
       ((rc == 0)) && rc=1
     fi
   fi
@@ -481,6 +503,9 @@ jq -e --slurpfile user "$tmp_dir/iam-user.json" '
   $user[0].User.UserName == "external-secrets_aws-ssm-auth"
 ' "$tmp_dir/profile-caller.json" >/dev/null
 
+bash "$repo_root/scripts/ssm-secret-maintenance-lock.sh" \
+  --acquire "$ssm_maintenance_lock_token" "$profile"
+ssm_maintenance_lock_acquired=true
 acquire_rotation_lock
 
 boundary_arn="$(jq -r '.User.PermissionsBoundary.PermissionsBoundaryArn // empty' "$tmp_dir/iam-user.json")"
@@ -586,6 +611,7 @@ put_parameter "$tmp_dir/new-access-parameter.json"
 put_parameter "$tmp_dir/new-secret-parameter.json"
 read_parameters "$tmp_dir/new-parameters.json"
 parameters_match_new "$tmp_dir/new-parameters.json"
+ssm_pair_verified=true
 
 new_access_key_id="$new_key_id"
 new_secret_access_key="$(jq -r .AccessKey.SecretAccessKey "$tmp_dir/new-key.json")"

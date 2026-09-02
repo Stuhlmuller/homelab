@@ -20,6 +20,17 @@ The SSM SecureString key is managed by `IaC/live/aws-ssm-parameters` in
 OpenTofu remote-state key with the same alias in `us-east-1`; production apply
 roles need identity-based KMS permissions for both keys.
 
+The legacy SSM module also stores decrypted values in encrypted OpenTofu state,
+including noncurrent S3 object versions. The staged write-only migration must
+run from a controlled operator host: its first apply reads each live value
+ephemerally and writes the identical bytes through `value_wo`, then proves
+value equality before any credential rotation. Production apply, credential
+rotation, and migration share the atomic owner-token mutex
+`/homelab/locks/aws-ssm-secret-maintenance` for their full duration. A crash
+retains the lock; never remove it unless the owning run has been identified.
+Old state-version deletion is a separate irreversible step requiring an exact
+version manifest and explicit approval.
+
 ## AWS SSM Pattern
 
 - Public parameter prefix: `/homelab/<app>/<name>`

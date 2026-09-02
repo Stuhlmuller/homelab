@@ -6,9 +6,13 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
 cleanup_dirs=()
+ssm_maintenance_lock_acquired=false
+ssm_maintenance_lock_token="terragrunt-apply-${GITHUB_RUN_ID:-local}-${GITHUB_RUN_ATTEMPT:-0}-$$-${RANDOM}${RANDOM}"
 
 cleanup_temp_dirs() {
+  local rc=$?
   local temp_dir
+  set +e
 
   for temp_dir in "${cleanup_dirs[@]}"; do
     if [[ -d "$temp_dir" ]]; then
@@ -18,6 +22,17 @@ cleanup_temp_dirs() {
 
   find IaC/live/aws-ssm-parameters IaC/live/kubernetes-node-labels \
     \( -name plan.out -o -name plan.json \) -type f -delete 2>/dev/null || true
+
+  if [[ "$ssm_maintenance_lock_acquired" == true ]]; then
+    if bash scripts/ssm-secret-maintenance-lock.sh \
+      --release "$ssm_maintenance_lock_token"; then
+      ssm_maintenance_lock_acquired=false
+    else
+      echo "Failed to release the owned SSM secret-maintenance lock." >&2
+      ((rc == 0)) && rc=1
+    fi
+  fi
+  exit "$rc"
 }
 
 trap cleanup_temp_dirs EXIT
@@ -186,6 +201,9 @@ plan_and_apply_argocd_apps() {
 
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
+bash scripts/ssm-secret-maintenance-lock.sh \
+  --acquire "$ssm_maintenance_lock_token"
+ssm_maintenance_lock_acquired=true
 
 repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
