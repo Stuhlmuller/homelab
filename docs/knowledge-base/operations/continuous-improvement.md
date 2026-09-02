@@ -64,11 +64,11 @@ organization-policy blocker is tracked below.
 
 The [[audit-2026-09-02]] records the latest repository fixes, read-only live
 inspection, validation, and remaining blockers. The broader
-[[audit-2026-08-30]] records prior live repairs and remediation PRs. Worker
-recovery, public API port mapping, image debt, and independent restore proof
-remain open; older observations below retain their original dates.
+[[audit-2026-08-30]] records prior live repairs and remediation PRs. Public API
+port mapping, image debt, and independent restore proof remain open; older
+observations below retain their original dates.
 
-- **Status:** blocked pending physical intervention
+- **Status:** fixed
 - **Area:** Talos / `zimaboard-2` recovery
 - **Evidence:** On 2026-09-02, the reviewed degraded-recovery gates passed:
   the other three nodes were Ready, the dataplane label was absent, no Pod on
@@ -76,14 +76,15 @@ remain open; older observations below retain their original dates.
   Authenticated Talos access showed kubelet health failing for about 171 hours
   with CRI and PLEG timeouts. The bounded reboot stalled at phase 1/10,
   `stopAllPods`, while gracefully stopping kubelet; uptime remained 85.7 days
-  after the client timed out, proving the node did not restart.
-- **Risk:** `zimaboard-2` remains NotReady and blocks complete Multus and Istio
-  DaemonSet readiness. Talos v1.11 has no force reboot mode; its `powercycle`
-  mode skips kexec but still performs the same graceful teardown.
-- **Next step:** Physically identify and power-cycle only `zimaboard-2`, then
-  run the post-recovery node and node-local Pod readiness gates in
-  `docs/talos-control-plane-maintenance.md`. Do not stack another Talos reboot
-  onto the active server-side sequence or force-delete its stale Pods.
+  after the client timed out, proving the node did not restart. A subsequent
+  power-cycle reset uptime and restored healthy kubelet, CRI, and containerd.
+- **Risk:** Talos v1.11 has no force reboot mode; its `powercycle` mode skips
+  kexec but still performs the same graceful teardown. The 1.28 GiB worker
+  remains too small for the Octelium dataplane fleet.
+- **Validation:** All four nodes, every non-terminal cluster Pod, and all five
+  Pods bound to `zimaboard-2` became Ready. The worker retained no Octelium
+  dataplane label. Do not restore that label; use the separately tracked
+  dedicated replacement capacity.
 
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts

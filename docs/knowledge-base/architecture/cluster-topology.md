@@ -16,21 +16,23 @@ control-plane node and three Zimaboard workers.
 | `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
-## Current Worker Recovery Blocker
+## Current Worker Recovery
 
-Read-only inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
-`zimaboard-1` Ready. `zimaboard-2` remains NotReady; its last kubelet
-heartbeat is `2026-08-26T16:56:41Z`. Istio remains Degraded and Multus
-Progressing, with Octelium replacement Pods still stranded on that worker.
+Initial inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
+`zimaboard-1` Ready. `zimaboard-2` was NotReady; its last kubelet
+heartbeat was `2026-08-26T16:56:41Z`. Istio was Degraded and Multus was
+Progressing, with Octelium replacement Pods stranded on that worker.
 Authenticated Talos access was restored from the current control-plane
 configuration without resetting any node. The replacement local `os:admin`
 certificate expires on 2027-09-02, and a fresh etcd snapshot was copied off
 `acer`. The reviewed Octelium Talos DNS SAN was then applied without a reboot
 and verified on the live server certificate. The reviewed worker preflight
 passed, but an authenticated reboot of `zimaboard-2` stalled in
-`stopAllPods` while gracefully stopping the unhealthy kubelet. The node never
-restarted and requires a physical power-cycle; no force-deletion was attempted.
-See
+`stopAllPods` while gracefully stopping the unhealthy kubelet. A subsequent
+power-cycle restarted the node: all four nodes, every non-terminal cluster Pod,
+and all five Pods bound to `zimaboard-2` were Ready. Talos reported kubelet,
+CRI, and containerd healthy; the worker retained no Octelium dataplane label.
+No force-deletion was attempted. See
 [[operations/audit-2026-08-30]] and issue
 [#775](https://github.com/Stuhlmuller/homelab/issues/775).
 
@@ -195,6 +197,11 @@ Talos config, kubeconfig, service-account issuer discovery, OIDC setup, or
 troubleshooting notes, fix the repository-owned desired state to use
 `https://10.1.0.199:6443`.
 
+The control-plane patch stack also replaces the explicit Kubernetes API SAN
+list with `10.1.0.199` and the Talos API SAN list with the private Octelium
+hostname. These list patches use RFC 6902 replacement so repeated renders do
+not retain stale SANs or append duplicates.
+
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
 resources and subresources stay denied. Tailscale remains only as the temporary
@@ -205,6 +212,8 @@ mode.
 
 - `ONBOARDING.md`
 - `docs/talos-control-plane-maintenance.md`
+- `.talos/patches/controlplane-kubernetes-api-san.yaml`
+- `.talos/patches/controlplane-octelium-talos-api.yaml`
 - `.talos/patches/controlplane-service-account-issuer.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`
