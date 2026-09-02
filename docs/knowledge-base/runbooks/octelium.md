@@ -4,10 +4,11 @@ Tags: #runbook #octelium #access
 
 Canonical runbook: [`docs/octelium.md`](../../octelium.md)
 
-Octelium is the primary human-app, private Kubernetes, callback, and CI access
-backbone. Operator machines run `octelium connect` and generate a kubeconfig
-with `octelium config kubernetes-api.homelab`; Cordium Workspaces already have
-their own client session and use the same private Service. Keep Cluster
+Octelium is the primary human-app, private Kubernetes, Talos, callback, and CI
+access backbone. Operator machines run `octelium connect`, use owner-only TCP
+Service `talos-api.homelab` for Talos, and generate a kubeconfig with
+`octelium config kubernetes-api.homelab`; Cordium Workspaces already have their
+own client session and use the same private Kubernetes Service. Keep Cluster
 bootstrap, Enterprise adoption, public Cloudflare routing, Entra OIDC, and the
 end-to-end gate on their repository-owned scripts and manifests. The catalog
 also owns the core human session ceiling; apply its `ClusterConfig` include

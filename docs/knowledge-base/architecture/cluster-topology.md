@@ -193,15 +193,18 @@ troubleshooting notes, fix the repository-owned desired state to use
 
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
-resources and subresources stay denied. Tailscale remains only as the temporary
-remote Talos/LAN fallback; Octelium does not provide a Talos-native Service
-mode.
+resources and subresources stay denied. Tailscale remains only as an outbound
+exit-node VPN and advertises no homelab subnet. The owner-only
+`talos-api.homelab` Octelium TCP Service carries Talos port `50000`; the
+control-plane machine certificate includes its private Service FQDN, and Talos
+mutual TLS remains required.
 
 ## Source Files
 
 - `ONBOARDING.md`
 - `docs/talos-control-plane-maintenance.md`
 - `.talos/patches/controlplane-service-account-issuer.yaml`
+- `.talos/patches/controlplane-octelium-talos-api.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`
 

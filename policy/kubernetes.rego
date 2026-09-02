@@ -71,6 +71,63 @@ deny contains msg if {
 }
 
 deny contains msg if {
+	input.apiVersion == "tailscale.com/v1alpha1"
+	input.kind == "Connector"
+	spec := object.get(input, "spec", {})
+	object.get(spec, "subnetRouter", null) != null
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Tailscale Connector %q advertises a subnet; homelab access must use Octelium", [name])
+}
+
+deny contains msg if {
+	input.apiVersion == "tailscale.com/v1alpha1"
+	input.kind == "Connector"
+	spec := object.get(input, "spec", {})
+	object.get(spec, "appConnector", null) != null
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Tailscale Connector %q enables an app connector; only exit-node egress is allowed", [name])
+}
+
+deny contains msg if {
+	input.kind == "Ingress"
+	object.get(object.get(input, "spec", {}), "ingressClassName", "") == "tailscale"
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Ingress %q exposes homelab access through Tailscale; use Octelium", [name])
+}
+
+deny contains msg if {
+	input.kind == "Service"
+	object.get(object.get(input, "spec", {}), "loadBalancerClass", "") == "tailscale"
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Service %q exposes homelab access through Tailscale; use Octelium", [name])
+}
+
+deny contains msg if {
+	input.kind == "Service"
+	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
+	truthy(object.get(annotations, "tailscale.com/expose", "false"))
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Service %q exposes homelab access through Tailscale; use Octelium", [name])
+}
+
+deny contains msg if {
+	input.kind == "Service"
+	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
+	some annotation in {"tailscale.com/tailnet-fqdn", "tailscale.com/tailnet-ip", "tailscale.com/ts-tailnet-target-ip"}
+	object.get(annotations, annotation, null) != null
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Service %q uses Tailscale egress; only exit-node egress is allowed", [name])
+}
+
+deny contains msg if {
+	input.apiVersion == "tailscale.com/v1alpha1"
+	input.kind == "ProxyGroup"
+	object.get(object.get(input, "spec", {}), "type", "") in {"egress", "ingress", "kube-apiserver"}
+	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
+	msg := sprintf("Tailscale ProxyGroup %q exceeds exit-node-only use; use Octelium", [name])
+}
+
+deny contains msg if {
 	metadata := object.get(input, "metadata", {})
 	annotations := object.get(metadata, "annotations", {})
 	truthy(object.get(annotations, "homelab.rst.io/public-callback", "false"))

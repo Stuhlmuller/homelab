@@ -64,6 +64,5 @@ exist in `monitoring`, the primary gateway reports `ClusterIP` with no load
 balancer class, no Tailscale proxy remains for that Service, and the
 `kiali.stinkyboi.com` hostname responds through Octelium.
 
-If this `ClusterIP` path breaks Octelium routing, revert the Istio gateway
-Service change and sync Istio. Do not restore direct Tailscale exposure until
-that path has its own authentication policy.
+If this `ClusterIP` path breaks, keep the Service private and repair the
+Octelium route. Do not restore direct Tailscale exposure.

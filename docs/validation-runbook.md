@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Validation Runbook
 
 Run these checks before any live mutation. Record output or a short summary in
@@ -54,8 +56,8 @@ kubectl diff --server-side -k clusters/homelab/platform/<service>
 kubectl diff --server-side -k clusters/homelab/apps/<app>
 ```
 
-Before treating Tailscale as unnecessary for Kubernetes, repeat the access
-check inside a disposable Cordium Workspace:
+Validate the Octelium-only Kubernetes path inside a disposable Cordium
+Workspace:
 
 ```sh
 cordium run --rm --domain stinkyboi.com \
@@ -67,8 +69,18 @@ stinkyboi.com`, run its printed export, set the generated file to mode `0600`,
 and require a 15-second `kubectl get nodes` check to succeed. After local
 validation, require `! kubectl get secrets --all-namespaces` and `! kubectl
 create namespace octelium-policy-deny-check --dry-run=server -o name` to
-confirm Cordium sensitive reads and mutation are denied. Then run `octelium
-disconnect --domain stinkyboi.com` on the operator workstation.
+confirm Cordium sensitive reads and mutation are denied.
+
+After the control-plane SAN patch and private catalog workflow complete,
+validate owner-only Talos access from an off-LAN workstation:
+
+```sh
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints talos-api.homelab.local.stinkyboi.com:50000 \
+  --nodes 10.1.0.199 \
+  version
+octelium disconnect --domain stinkyboi.com
+```
 
 Secret scan:
 
@@ -94,8 +106,8 @@ argocd app get platform-dns
 argocd app get platform-storage
 ```
 
-`argocd app get tailscale` checks only the temporary Talos/LAN fallback and
-must not gate Octelium app or Kubernetes readiness.
+`argocd app get tailscale` checks only the exit-node egress VPN and must not
+gate Octelium app or Kubernetes readiness.
 
 For Kiali, verify the operator-created custom resource and Octelium-backed UI:
 
@@ -379,7 +391,7 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 | External Secrets unavailable | Hold dependent apps until `external-secrets` is synced and healthy. |
 | NFS provisioner missing | Restore `platform-storage` readiness first; do not rely on stateful apps until PVC validation passes. |
 | Media PostgreSQL unavailable | Hold Sonarr, Radarr, and Prowlarr; verify `media-postgres-auth`, `media-postgres-arr-env`, the StatefulSet, and the six logical databases before app sync. |
-| Tailscale unavailable | App, human/CI Kubernetes, callback, and Octelium client readiness should be evaluated through Octelium; only the temporary remote Talos/LAN/egress fallback is unavailable. |
+| Tailscale unavailable | App, human/CI Kubernetes, owner Talos API, callback, and Octelium client readiness use Octelium; only exit-node internet egress is unavailable. |
 | Policy Bot webhook unreachable | Inspect the `policy-bot-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and Policy Bot webhook HMAC handling; do not expose additional Funnel routes. |
 | n8n webhook unreachable | Inspect the `n8n-webhook-octelium` VirtualService, `octelium-public` tunnel logs, DNS CNAME, and n8n webhook path config; keep editor/API routes off the callback host. |
 | Image update PR is incompatible | Add a narrow Renovate `allowedVersions` rule or close the PR, then document the workload-specific migration gate; never bypass digest pin checks. |

@@ -933,6 +933,21 @@ yq -o=json '.' clusters/homelab/apps/istio/values.yaml |
     (.service.annotations["tailscale.com/hostname"] // null) == null and
     (.service.annotations["homelab.rst.io/pod-security"] // "") != "tailscale-proxy-requires-privileged"
   ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/tailscale/values.yaml |
+  jq -e '
+    .operatorConfig.extraEnv == [] and
+    .ingressClass.name == "tailscale" and
+    .ingressClass.enabled == false and
+    .apiServerProxyConfig.allowImpersonation == "false" and
+    .apiServerProxyConfig.mode == "false"
+  ' >/dev/null
+yq -o=json '.' clusters/homelab/apps/tailscale/exit-node-connector.yaml |
+  jq -e '
+    .metadata.name == "homelab-exit-node" and
+    .spec.exitNode == true and
+    (.spec.subnetRouter // null) == null and
+    (.spec.appConnector // null) == null
+  ' >/dev/null
 rg -Fq 'octeliumctl update secret "$secret_name"' scripts/octelium-ci-kubeconfig-secret.sh
 if rg -Fq 'octeliumctl delete secret' scripts/octelium-ci-kubeconfig-secret.sh; then
   echo "Shared Octelium kubeconfig rotation must not delete the active Secret." >&2

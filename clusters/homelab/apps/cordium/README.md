@@ -73,9 +73,10 @@ sysctl file and reports the current value through an unprivileged readiness
 check. The init container reapplies the value whenever GitOps or a node reboot
 recreates the Pod, while the Talos patch remains the machine-config source of
 truth.
-These direct-IP Talos operations require a homelab LAN route or the retained
-Tailscale fallback. A Cordium Workspace's Octelium session does not expose the
-Talos API or arbitrary LAN addresses. Render the complete worker config,
+These direct-IP Talos operations require the homelab LAN or another separately
+reviewed transport. A Cordium Workspace's Octelium session and the retained
+Tailscale exit node do not expose the Talos API or arbitrary LAN addresses.
+Render the complete worker config,
 validate it, and apply that reviewed config:
 
 ```sh
