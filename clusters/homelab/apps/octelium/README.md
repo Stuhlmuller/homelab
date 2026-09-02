@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Octelium Client Desired State
 
 This app prepares a repo-owned Octelium client connector in the homelab.
@@ -44,6 +46,8 @@ The Octelium resource catalog for the external Octelium Cluster is
   Kubernetes `get`, `list`, and `watch` requests while denying Secrets,
   ConfigMaps, service accounts, authorization reviews, and sensitive
   subresources.
+- Policy `homelab-private-talos-access`, allowing only the `homelab-owner`
+  human client to use the Talos API Service.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the `homelab-ci`
   workload User to publish the Kubernetes API Service for CI.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
@@ -53,6 +57,8 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Private `KUBERNETES` Service `kubernetes-api.homelab`, forwarding to
   `https://10.1.0.199:6443` for operator and restricted read-only Cordium
   access, using the upstream kubeconfig CA for server verification.
+- Private `TCP` Service `talos-api.homelab`, forwarding raw port `50000` to
+  `10.1.0.199` for owner-only authenticated Talos management.
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
@@ -304,7 +310,17 @@ Workspace already has a client session, so run the same `octelium config`,
 `chmod`, and `kubectl` commands inside the Workspace. The server-side upstream
 <!-- checkov:skip=CKV_SECRET_6:Public name of an Octelium Secret, not secret data. -->
 kubeconfig stays in Octelium Secret `homelab-ci-kubeconfig`; neither Kubernetes
-path needs Tailscale. Talos still uses the retained fallback transport.
+path needs Tailscale.
+
+After the control-plane certificate includes the private Service FQDN, verify
+the owner-only Talos path in the same Octelium client session:
+
+```sh
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints talos-api.homelab.local.stinkyboi.com:50000 \
+  --nodes 10.1.0.199 \
+  version
+```
 
 Run `octelium disconnect --domain stinkyboi.com` after finishing the operator
 session.
@@ -357,19 +373,21 @@ for service in \
   dispatcharr.homelab grafana.homelab homelab-demo.homelab \
   kiali.homelab kubernetes-api.homelab litellm.homelab n8n.homelab \
   octobot.homelab openclaw.homelab policy-bot.homelab \
-  prowlarr.homelab radarr.homelab sonarr.homelab; do
+  prowlarr.homelab radarr.homelab sonarr.homelab talos-api.homelab; do
   octeliumctl delete svc "${service}"
 done
 
 octeliumctl delete user homelab-octelium-client
 octeliumctl delete policy homelab-private-kubernetes-access
+octeliumctl delete policy homelab-private-talos-access
 octeliumctl delete policy homelab-human-web-access
 ```
 
 Do not reintroduce Tailscale Funnel as part of Octelium rollback. The app
 VirtualServices are retained as private Istio backend routing for Octelium
-Services; the remaining Tailscale resources are secondary LAN/egress utilities,
-not the app, callback, VPN, or GitHub Actions backbone.
+Services; the remaining Tailscale resources provide exit-node internet egress,
+not app, Kubernetes, Talos, LAN, callback, private-access, or GitHub Actions
+transport.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Update the desired package version in this README and the

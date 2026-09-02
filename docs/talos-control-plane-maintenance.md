@@ -105,10 +105,10 @@ are:
 
 Do not run these commands until the rendered config has passed validation and
 the operator has explicitly approved the live Talos apply sequence.
-Use the direct `10.1.0.199` Talos endpoint for this first apply because the
-Octelium hostname is not valid until the new machine certificate is active.
-Use the homelab LAN or the temporarily retained Tailscale subnet route, and do
-not withdraw that fallback until the Octelium path passes the off-LAN check.
+Run this first apply from the homelab LAN through the direct `10.1.0.199`
+endpoint because the Octelium hostname is not valid until the new machine
+certificate is active. Complete and verify it before the Tailscale cutover;
+the retained exit node does not provide a LAN route afterward.
 
 1. Confirm API and Talos access are healthy with read-only commands:
 

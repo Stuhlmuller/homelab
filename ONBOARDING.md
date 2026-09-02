@@ -59,8 +59,8 @@ with `https://10.1.0.199:6443` through the desired Talos config path.
 
 ## Remote Kubernetes Access
 
-Use Octelium, not the Tailscale subnet route, for steady-state remote
-`kubectl` access:
+Use Octelium for steady-state remote `kubectl` access. The retained Tailscale
+connector advertises no subnet route:
 
 ```sh
 octelium login --domain stinkyboi.com
@@ -74,17 +74,25 @@ file, then verify:
 ```sh
 chmod 0600 "$KUBECONFIG"
 kubectl --request-timeout=15s get nodes
-# Run after finishing Octelium-backed work.
-octelium disconnect --domain stinkyboi.com
 ```
 
 The same private Service is available inside Cordium Workspaces; see
 `docs/octelium.md`.
 
-The direct `10.1.0.199` commands below are bootstrap and LAN recovery paths.
-Talos still requires `.talos/talosconfig` plus a validated private transport;
-keep Tailscale deployed as the temporary remote Talos/LAN fallback until that
-separate path is replaced.
+After applying the repository-owned control-plane SAN patch, authenticated
+remote Talos operations use the owner-only Octelium TCP Service:
+
+```sh
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints talos-api.homelab.local.stinkyboi.com:50000 \
+  --nodes 10.1.0.199 \
+  version
+# Run after finishing Octelium-backed work.
+octelium disconnect --domain stinkyboi.com
+```
+
+The direct `10.1.0.199` commands below remain bootstrap and LAN recovery paths.
+The retained Tailscale exit node does not expose the Talos API or homelab LAN.
 
 ## Repository Source of Truth
 
@@ -408,8 +416,8 @@ reconciling or rolling back application desired state:
   readiness, and sync/health exception format.
 - `docs/storage-nfs.md`: default NFS StorageClass prerequisite, backup gate,
   and restore expectations.
-- `docs/networking-tailnet-ingress.md`: Octelium primary access, secondary
-  Tailscale reachability, public ingress, and DNS assumptions.
+- `docs/networking-tailnet-ingress.md`: Octelium access, Tailscale exit-node
+  egress, public ingress, and DNS assumptions.
 - `docs/secrets-aws-ssm.md`: AWS SSM Parameter Store references and External
   Secrets rules.
 - `docs/validation-runbook.md`: pre-mutation checks, Argo CD readiness checks,

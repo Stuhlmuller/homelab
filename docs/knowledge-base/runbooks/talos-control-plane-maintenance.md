@@ -11,9 +11,9 @@ Emergency recovery does not permit live machineconfig edits followed by
 backfilling; use the validated patch workflow first.
 Remote `talosctl` will use owner-only Octelium TCP Service
 `talos-api.homelab` after the control-plane `machine.certSANs` patch is applied
-and the off-LAN check passes. Talos mutual TLS remains required. Until then,
-direct-IP operations require the LAN or temporary Tailscale subnet route;
-direct IP remains the LAN recovery path after cutover.
+and the off-LAN check passes. Apply the initial SAN patch from the homelab LAN.
+Talos mutual TLS remains required, and direct IP remains the LAN recovery path
+after cutover; the Tailscale exit node provides no Talos or LAN access.
 
 For remote ZimaBoard recovery, the canonical runbook maps each worker to its
 Talos address and uses authenticated `talosctl reboot`; reboot one worker at a

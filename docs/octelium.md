@@ -12,9 +12,9 @@ login to the application.
 
 Human and Cordium Workspace Kubernetes access uses the private Octelium
 `kubernetes-api.homelab` Service. CI uses the separate public, workload-only
-`kubernetes-api-ci` Service. Tailscale remains deployed as a temporary
-LAN/egress fallback, but it is not required for normal app or Kubernetes API
-access.
+`kubernetes-api-ci` Service. Tailscale remains deployed only as an exit-node
+VPN for outbound internet traffic; it provides no app, Kubernetes, Talos, or
+LAN access.
 
 ## Current Model
 
@@ -150,9 +150,9 @@ second command to apply the catalog's other resource kinds.
 
 Never add `--prune` to that command: this catalog is not an exhaustive list of
 every non-system resource in the Octelium Cluster. Routine changes to the
-private Kubernetes Policy or Service use the protected
+private Kubernetes and Talos Policies or Services use the protected
 `octelium-private-kubernetes-apply.yml` workflow documented in
-`docs/ci-cd.md`. It extracts only those two objects, uses a one-authentication
+`docs/ci-cd.md`. It extracts only those four objects, uses a one-authentication
 Credential, and requires a second no-change apply. IdentityProvider, User,
 Namespace, ClusterConfig, and other Credential changes still use the
 authenticated operator path above. Never apply the helper-only Credential
@@ -241,8 +241,6 @@ generated file and verify the private path:
 ```sh
 chmod 0600 "$KUBECONFIG"
 kubectl --request-timeout=15s get nodes
-# Run after finishing Octelium-backed work.
-octelium disconnect --domain stinkyboi.com
 ```
 
 `octelium config` does not replace `~/.kube/config`, which the repository's
@@ -267,12 +265,22 @@ and `watch`; verify Secret reads and a server-side dry-run create are denied:
 ! kubectl create namespace octelium-policy-deny-check --dry-run=server -o name
 ```
 
-Neither path needs the Tailscale subnet route.
+The retained Tailscale connector advertises no subnet route.
 
-This Service covers Kubernetes only. Octelium has no Talos-native Service
-mode; `talosctl` still needs `.talos/talosconfig` and a separately validated
-private transport. Keep Tailscale available as the temporary Talos/LAN fallback
-until that path is replaced and tested.
+After the control-plane certificate includes the private Service FQDN, use the
+owner-only Octelium TCP Service for authenticated Talos access:
+
+```sh
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints talos-api.homelab.local.stinkyboi.com:50000 \
+  --nodes 10.1.0.199 \
+  version
+# Run after finishing Octelium-backed work.
+octelium disconnect --domain stinkyboi.com
+```
+
+Octelium carries raw TCP; Talos mutual TLS remains the authentication boundary.
+Direct IP access remains the local-LAN recovery path.
 
 ## Microsoft Entra Login
 
@@ -843,8 +851,8 @@ homelab Policies
 from the Octelium Cluster with `octeliumctl`. Do not reintroduce Tailscale
 Funnel during rollback; external callback routes should either stay on
 `octelium-public` or be removed until a replacement is reviewed. The Tailscale
-LAN/exit-node utility is separate from the Octelium app, callback, VPN, and CI
-backbone.
+exit-node utility is separate from the Octelium app, callback, private-access,
+and CI backbone and advertises no homelab subnet routes.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before

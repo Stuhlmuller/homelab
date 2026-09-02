@@ -2,6 +2,127 @@ package main
 
 import rego.v1
 
+test_rejects_tailscale_subnet_router if {
+	violations := deny with input as {
+		"apiVersion": "tailscale.com/v1alpha1",
+		"kind": "Connector",
+		"metadata": {"name": "homelab-exit-node"},
+		"spec": {"exitNode": true, "subnetRouter": {"advertiseRoutes": ["10.1.0.0/24"]}},
+	}
+	some msg in violations
+	contains(msg, "homelab access must use Octelium")
+}
+
+test_rejects_tailscale_app_connector if {
+	violations := deny with input as {
+		"apiVersion": "tailscale.com/v1alpha1",
+		"kind": "Connector",
+		"metadata": {"name": "app-connector"},
+		"spec": {"appConnector": {}},
+	}
+	some msg in violations
+	contains(msg, "only exit-node egress is allowed")
+}
+
+test_rejects_tailscale_ingress if {
+	violations := deny with input as {
+		"apiVersion": "networking.k8s.io/v1",
+		"kind": "Ingress",
+		"metadata": {"name": "tailnet-app"},
+		"spec": {"ingressClassName": "tailscale"},
+	}
+	some msg in violations
+	contains(msg, "exposes homelab access through Tailscale")
+}
+
+test_rejects_tailscale_load_balancer if {
+	violations := deny with input as {
+		"apiVersion": "v1",
+		"kind": "Service",
+		"metadata": {"name": "tailnet-app"},
+		"spec": {"type": "LoadBalancer", "loadBalancerClass": "tailscale"},
+	}
+	some msg in violations
+	contains(msg, "exposes homelab access through Tailscale")
+}
+
+test_rejects_tailscale_expose_annotation if {
+	violations := deny with input as {
+		"apiVersion": "v1",
+		"kind": "Service",
+		"metadata": {"name": "tailnet-app", "annotations": {"tailscale.com/expose": "true"}},
+		"spec": {},
+	}
+	some msg in violations
+	contains(msg, "exposes homelab access through Tailscale")
+}
+
+test_rejects_tailscale_fqdn_egress_service if {
+	violations := deny with input as {
+		"apiVersion": "v1",
+		"kind": "Service",
+		"metadata": {"name": "tailnet-egress", "annotations": {"tailscale.com/tailnet-fqdn": "db.example.com"}},
+		"spec": {},
+	}
+	some msg in violations
+	contains(msg, "only exit-node egress is allowed")
+}
+
+test_rejects_tailscale_ip_egress_service if {
+	violations := deny with input as {
+		"apiVersion": "v1",
+		"kind": "Service",
+		"metadata": {"name": "tailnet-egress", "annotations": {"tailscale.com/tailnet-ip": "100.64.0.1"}},
+		"spec": {},
+	}
+	some msg in violations
+	contains(msg, "only exit-node egress is allowed")
+}
+
+test_rejects_tailscale_legacy_ip_egress_service if {
+	violations := deny with input as {
+		"apiVersion": "v1",
+		"kind": "Service",
+		"metadata": {"name": "tailnet-egress", "annotations": {"tailscale.com/ts-tailnet-target-ip": "100.64.0.1"}},
+		"spec": {},
+	}
+	some msg in violations
+	contains(msg, "only exit-node egress is allowed")
+}
+
+test_rejects_tailscale_access_proxy_group if {
+	violations := deny with input as {
+		"apiVersion": "tailscale.com/v1alpha1",
+		"kind": "ProxyGroup",
+		"metadata": {"name": "tailnet-api"},
+		"spec": {"type": "kube-apiserver"},
+	}
+	some msg in violations
+	contains(msg, "exceeds exit-node-only use; use Octelium")
+}
+
+test_rejects_tailscale_ingress_proxy_group if {
+	violations := deny with input as {
+		"apiVersion": "tailscale.com/v1alpha1",
+		"kind": "ProxyGroup",
+		"metadata": {"name": "tailnet-ingress"},
+		"spec": {"type": "ingress"},
+	}
+	some msg in violations
+	contains(msg, "exceeds exit-node-only use; use Octelium")
+}
+
+test_rejects_tailscale_egress_proxy_group if {
+	violations := deny with input as {
+		"apiVersion": "tailscale.com/v1alpha1",
+		"kind": "ProxyGroup",
+		"metadata": {"name": "tailnet-egress"},
+		"spec": {"type": "egress"},
+	}
+	some msg in violations
+	contains(msg, "exceeds exit-node-only use; use Octelium")
+}
+
 test_rejects_gateway_attached_non_octelium_external_route if {
 	violations := deny with input as {
 		"apiVersion": "networking.istio.io/v1",

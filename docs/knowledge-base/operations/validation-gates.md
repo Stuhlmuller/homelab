@@ -194,16 +194,18 @@ It accepts only the expected unauthenticated response: HTTP `200` with
 Do not treat the repository-side target change as recovery until the CronJob
 has a recent success and the public probe passes.
 
-Before treating Tailscale as unnecessary for Kubernetes access, validate both
-human paths from outside the homelab. On the operator workstation, run
+Validate both Octelium-only human paths from outside the homelab. On the
+operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
 and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
 config, mode, and `kubectl` check inside a Cordium Workspace, whose client
 session is created automatically. Also require Secret reads and a server-side
 dry-run create to be denied there; Cordium has restricted read-only access.
-Keep the Tailscale fallback until both pass; Talos transport is a separate
-retirement gate.
+Before removing the Tailscale subnet route, apply the control-plane Octelium SAN
+patch, reconcile `talos-api.homelab`, require its generated proxy Pod to be
+Ready, and pass an authenticated off-LAN `talosctl version` through the private
+Service. The retained Tailscale exit node then provides internet egress only.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
@@ -231,12 +233,13 @@ an automatic approval SLA; strict expiry needs an externally hosted GitHub App
 deployment-protection rule with a durable lease. Until then, dispatch only when
 a reviewer is ready to approve.
 
-The focused Octelium private Kubernetes workflow has the same exact-`main`,
+The focused Octelium private cluster-access workflow has the same exact-`main`,
 current-head, production-approval, serialized-run, private-log, static, and
 Conftest gates. Its fixed helper extracts exactly
 `Policy/homelab-private-kubernetes-access` and
-`Service/kubernetes-api.homelab`, never prunes, and requires a second apply to
-report no changes. The lifecycle helper installs cleanup before creating its
+`Service/kubernetes-api.homelab` plus `Policy/homelab-private-talos-access` and
+`Service/talos-api.homelab`, never prunes, and requires a second apply to report
+no changes. The lifecycle helper installs cleanup before creating its
 30-minute, one-authentication Credential, binds its watch to the unique run it
 dispatches, and verifies Credential, Session, and GitHub-secret revocation on
 exit. See `docs/ci-cd.md`.
@@ -264,9 +267,11 @@ Bot webhook probe must use the POST shape GitHub sends and require the app-level
 HTTP 400 webhook validation response, not just any non-404 response.
 
 Rendered Kubernetes policy also enforces the access contract:
-`policy/kubernetes.rego` rejects Tailscale Funnel and classifies every
-gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
-the explicit `compass-discovery` class as externally reachable by default.
+`policy/kubernetes.rego` rejects Tailscale Funnel, subnet and app Connectors,
+Tailscale Ingresses and Services, and ingress or Kubernetes API ProxyGroups. It
+classifies every gateway-attached `VirtualService`, every `Gateway`, and every
+`Ingress` except the explicit `compass-discovery` class as externally reachable
+by default.
 Those resources must declare `homelab.rst.io/access-plane: octelium`; only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
