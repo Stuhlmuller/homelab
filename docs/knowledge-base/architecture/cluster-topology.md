@@ -18,15 +18,19 @@ control-plane node and three Zimaboard workers.
 
 ## Current Worker Recovery Blocker
 
-Read-only inspection on 2026-08-30 found `acer`, `zimaboard-0`, and
-`zimaboard-1` Ready. `zimaboard-2` remains unreachable; its last kubelet
+Read-only inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
+`zimaboard-1` Ready. `zimaboard-2` remains NotReady; its last kubelet
 heartbeat is `2026-08-26T16:56:41Z`. Istio remains Degraded and Multus
 Progressing, with Octelium replacement Pods still stranded on that worker.
-The available default Talos client certificate still expired on 2026-05-17;
-the repository-local client file has no selected context. No reboot or
-force-deletion was attempted. Recover authenticated Talos access and use a
-reviewed degraded-state recovery path or physical intervention; the routine
-healthy-cluster reboot runbook is not sufficient. See
+Authenticated Talos access was restored from the current control-plane
+configuration without resetting any node. The replacement local `os:admin`
+certificate expires on 2027-09-02, and a fresh etcd snapshot was copied off
+`acer`. The reviewed Octelium Talos DNS SAN was then applied without a reboot
+and verified on the live server certificate. The reviewed worker preflight
+passed, but an authenticated reboot of `zimaboard-2` stalled in
+`stopAllPods` while gracefully stopping the unhealthy kubelet. The node never
+restarted and requires a physical power-cycle; no force-deletion was attempted.
+See
 [[operations/audit-2026-08-30]] and issue
 [#775](https://github.com/Stuhlmuller/homelab/issues/775).
 
@@ -37,9 +41,9 @@ Talos TCP/50000. Immediately before `zimaboard-1` stopped reporting, OpenClaw
 grew from `530Mi` to `5.36Gi` and all user containers reached `6.51Gi` on its
 `7.58Gi` physical memory. This strongly correlates the outage with memory
 starvation, but authenticated Talos logs are required to distinguish kernel OOM
-from severe thrashing. The available local Talos client certificate expired on
-2026-05-17 and does not match the current cluster CA, so it cannot authenticate
-a safe reboot.
+from severe thrashing. At that time, the available local Talos client
+certificate had expired and did not match the current cluster CA; authenticated
+access was restored on 2026-09-02.
 
 Sync the OpenClaw `4Gi` containment limit before recovering `zimaboard-1`.
 Recover these configured nodes with a current authenticated

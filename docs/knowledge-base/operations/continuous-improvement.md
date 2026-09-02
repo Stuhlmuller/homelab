@@ -68,6 +68,23 @@ inspection, validation, and remaining blockers. The broader
 recovery, public API port mapping, image debt, and independent restore proof
 remain open; older observations below retain their original dates.
 
+- **Status:** blocked pending physical intervention
+- **Area:** Talos / `zimaboard-2` recovery
+- **Evidence:** On 2026-09-02, the reviewed degraded-recovery gates passed:
+  the other three nodes were Ready, the dataplane label was absent, no Pod on
+  the worker mounted a PVC, and every Octelium Pod there was terminating.
+  Authenticated Talos access showed kubelet health failing for about 171 hours
+  with CRI and PLEG timeouts. The bounded reboot stalled at phase 1/10,
+  `stopAllPods`, while gracefully stopping kubelet; uptime remained 85.7 days
+  after the client timed out, proving the node did not restart.
+- **Risk:** `zimaboard-2` remains NotReady and blocks complete Multus and Istio
+  DaemonSet readiness. Talos v1.11 has no force reboot mode; its `powercycle`
+  mode skips kexec but still performs the same graceful teardown.
+- **Next step:** Physically identify and power-cycle only `zimaboard-2`, then
+  run the post-recovery node and node-local Pod readiness gates in
+  `docs/talos-control-plane-maintenance.md`. Do not stack another Talos reboot
+  onto the active server-side sequence or force-delete its stale Pods.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
@@ -217,12 +234,16 @@ remain open; older observations below retain their original dates.
   CRD and Secret informer sync. The dated
   `scripts/recover-kubernetes-storage-20260825.sh` recovery snapshots etcd,
   removes only those corrupt records, and reschedules OpenClaw away from
-  `acer`; desired state keeps it excluded.
+  `acer`; desired state keeps it excluded. On 2026-09-02, the current
+  control-plane configuration restored authenticated Talos access without a
+  reset. A consistent 61,505,568-byte etcd snapshot at revision `36011142` was
+  copied off `acer` before the reviewed Octelium Talos DNS SAN was applied and
+  verified without a reboot.
 - **Risk:** Other image layers or etcd records may be damaged, and the single
   control-plane node remains a cluster-wide failure domain.
-- **Next step:** renew authenticated Talos access, take an off-node etcd
-  snapshot, then test or replace `acer` memory and system storage before
-  allowing workloads to schedule there again.
+- **Next step:** Test or replace `acer` memory and system storage before
+  allowing workloads to schedule there again. Keep current Talos credentials
+  and recurring etcd backups outside the public repository.
 
 - **Status:** mitigated; local database storage still required
 - **Area:** Octelium / access recovery

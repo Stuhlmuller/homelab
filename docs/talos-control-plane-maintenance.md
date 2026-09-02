@@ -61,6 +61,14 @@ The separate `.talos/patches/controlplane-octelium-talos-api.yaml` patch adds
 `talos-api.homelab.local.stinkyboi.com` to `machine.certSANs`. That name is the
 private Octelium TCP Service endpoint for the Talos API.
 
+Live validation on 2026-09-02 recovered the current control-plane configuration
+without resetting Talos, generated a new local `os:admin` client from the
+original CA, and saved a fresh etcd snapshot off-node. The SAN-only patch then
+validated strictly, applied without a reboot, and appeared on Acer's live Talos
+server certificate. Kubernetes readiness and Talos services remained healthy.
+The private Octelium Service still requires its catalog rollout and an off-LAN
+authenticated check before the Tailscale subnet route can be removed.
+
 ## Render And Validate The Control-Plane Changes
 
 This checkout does not currently contain `.talos/controlplane.yaml` or
@@ -320,6 +328,12 @@ talosctl --talosconfig .talos/talosconfig \
 talosctl --talosconfig .talos/talosconfig \
   --endpoints 10.1.0.202 --nodes 10.1.0.202 reboot --wait
 ```
+
+On Talos v1.11, `--mode=powercycle` skips kexec but does not skip graceful
+teardown. If this reboot stalls in `stopAllPods` while stopping an unhealthy
+kubelet, let the bounded command time out and do not submit another reboot.
+The 2026-09-02 recovery attempt reached this state without restarting the node;
+physical intervention is required.
 
 If authentication is unavailable, do not run the reboot command or use
 `--insecure`. An operator with physical access must identify `zimaboard-2`
