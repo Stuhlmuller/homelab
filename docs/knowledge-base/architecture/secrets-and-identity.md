@@ -265,15 +265,19 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   into pod-local storage before config validation without a floating fallback,
   then configures Discord with an OpenClaw SecretRef to that environment value
   instead of storing the token in config. The bootstrap and proxy containers
-  do not receive the app-only LiteLLM, Grafana-login, or GitHub App credentials,
-  and the proxy does not mount persistent OpenClaw state. ChatGPT Pro or Codex OAuth
+  do not receive the app-only LiteLLM or Grafana-login credentials, no
+  container receives GitHub App credentials, and the proxy does not mount
+  persistent OpenClaw state. ChatGPT Pro or Codex OAuth
   credentials are interactive user credentials stored on the OpenClaw PVC, not
-  SSM parameters. OpenClaw GitHub App credentials use
-  `/homelab/openclaw/github-app/id`,
+  SSM parameters. OpenClaw's recoverable GitHub App source credentials remain
+  in `/homelab/openclaw/github-app/id`,
   `/homelab/openclaw/github-app/installation-id`, and
-  `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
-  the private key is mounted into the app as a file referenced by
-  `GITHUB_APP_PRIVATE_KEY_PATH`.
+  `/homelab/openclaw/github-app/private-key`, but they are excluded from the
+  External Secrets reader IAM policy, no ExternalSecret materializes them, and
+  the unsandboxed Pod receives none of them. Keep the ExternalSecret,
+  environment references, reader grant, and private-key mount absent until the
+  App has selected-repository, minimum-permission scope, a rotated key, and the
+  workload has a validated isolation boundary.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]]. Configure

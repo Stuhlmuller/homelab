@@ -22,7 +22,6 @@ controllers:
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
-        homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
       operator-toolbox:
         image:
@@ -315,7 +314,6 @@ controllers:
               secretKeyRef:
                 name: openclaw-secrets
                 key: APP_SECRET
-          GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
           LITELLM_TOKEN:
             valueFrom:
@@ -337,16 +335,6 @@ controllers:
               secretKeyRef:
                 name: openclaw-secrets
                 key: GRAFANA_PASSWORD
-          GITHUB_APP_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_ID
-          GITHUB_APP_INSTALLATION_ID:
-            valueFrom:
-              secretKeyRef:
-                name: openclaw-secrets
-                key: GITHUB_APP_INSTALLATION_ID
         resources:
           requests:
             cpu: 1
@@ -539,15 +527,3 @@ persistence:
           - path: /nix
         bootstrap-config:
           - path: /nix
-  github-app-private-key:
-    enabled: true
-    type: secret
-    name: openclaw-github-app-private-key
-    items:
-      - key: private-key.pem
-        path: private-key.pem
-    advancedMounts:
-      openclaw:
-        app:
-          - path: /var/run/secrets/openclaw/github-app
-            readOnly: true

@@ -280,16 +280,19 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/openclaw/github-app/id" = {
-      description   = "OpenClaw GitHub App ID."
+      description   = "Retired OpenClaw GitHub App ID retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/openclaw/github-app/installation-id" = {
-      description   = "OpenClaw GitHub App installation ID."
+      description   = "Retired OpenClaw GitHub App installation ID retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/openclaw/github-app/private-key" = {
-      description   = "OpenClaw GitHub App private key PEM."
+      description   = "Retired OpenClaw GitHub App private key retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/multica/jwt-secret" = {
       description = "Multica JWT signing secret."

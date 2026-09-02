@@ -198,24 +198,17 @@ refreshes the Secret and rolls the pod that reads it.
 
 ## GitHub App Credentials
 
-OpenClaw receives GitHub App identity through AWS SSM-backed ExternalSecrets:
+OpenClaw receives no GitHub App ID, installation ID, or private key while its
+sandbox is disabled. The source parameters remain in SSM as state tombstones,
+but are excluded from the External Secrets reader IAM policy, no ExternalSecret
+materializes them, and the Pod has no environment reference or Secret mount
+that can consume them. Pruning the removed owner-managed
+ExternalSecret garbage-collects its Kubernetes private-key Secret.
 
-| SSM parameter | Pod surface |
-| --- | --- |
-| `/homelab/openclaw/github-app/id` | `GITHUB_APP_ID` |
-| `/homelab/openclaw/github-app/installation-id` | `GITHUB_APP_INSTALLATION_ID` |
-| `/homelab/openclaw/github-app/private-key` | `/var/run/secrets/openclaw/github-app/private-key.pem` |
-
-The pod sets `GITHUB_APP_PRIVATE_KEY_PATH` to
-`/var/run/secrets/openclaw/github-app/private-key.pem`. The private key is
-mounted as a file from `openclaw-github-app-private-key`, so the PEM is not
-copied into the process environment. Other OpenClaw secret keys are mapped with
-explicit `secretKeyRef` entries rather than a broad `envFrom` import.
-
-After replacing any GitHub App SSM placeholder, bump
-`homelab.rst.io/openclaw-github-app-credentials-ssm-version` in `values.yaml`
-to the resulting SSM parameter version so Argo CD rolls the pod and reloads the
-environment variables.
+Do not restore the mount until the App is limited to selected repositories and
+minimum permissions, its private key is rotated, and OpenClaw has a validated
+sandbox or equivalent isolation boundary. Restoration must add a static denial
+test for unrelated repositories and protected GitHub control surfaces.
 
 ## ChatGPT Pro And Codex
 
@@ -246,8 +239,9 @@ agent runs fail before reply.
 The containment boundary is the Kubernetes workload: the service account token
 is disabled and ambient mesh policy restricts ingress. The NetworkPolicy records
 intent but flannel does not enforce it. Egress is not restricted, and all
-sessions share the pod's persistent workspace, operator toolbox, and mounted
-application credentials. If a sandbox backend is added later, document and
+sessions share the pod's persistent workspace, operator toolbox, and remaining
+application credentials. The organization-wide GitHub App credential is
+deliberately not mounted. If a sandbox backend is added later, document and
 validate it before changing this setting.
 Do not mount a host container-runtime socket into this workload.
 
