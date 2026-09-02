@@ -640,9 +640,10 @@ application registration workflow. Trusted pull request plans render the
 AzureAD stack only when the credentials are configured in `homelab-plan`; the
 production apply script applies that stack when the credentials are configured
 in `homelab-production`. When they are not configured, production apply skips
-that phase only if the unapplied range did not change the AzureAD stack; a
-range that changes the stack requires the credentials so identity drift is not
-silently ignored.
+that phase only if the unapplied range did not change the AzureAD stack or its
+shared root configuration. The comparison ignores only the forbidden legacy
+root plan-output directive; every other root source change fails
+closed and requires the credentials so identity drift is not silently ignored.
 
 ## Local Equivalents
 

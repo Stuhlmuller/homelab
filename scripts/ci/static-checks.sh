@@ -40,6 +40,76 @@ if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")
 fi
 echo "::endgroup::"
 
+echo "::group::Terragrunt Azure credential gate"
+(
+  base_root=$'locals {}\n\nterraform {\n  extra_arguments "plan" {\n    commands  = ["plan"]\n    arguments = ["-out", "plan.out"]\n  }\n}\n\ninputs = {}'
+  head_root=$'locals {}\n\ninputs = {}'
+  direct_azure_change=false
+  root_change=false
+  root_helper_failure=false
+  stack_change=false
+
+  git() {
+    case "$1" in
+      cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
+      diff) [[ "$direct_azure_change" == false ]] ;;
+      show)
+        if [[ "$root_helper_failure" == true ]]; then
+          return 1
+        fi
+        case "$2" in
+          base:IaC/root.hcl) printf '%s\n' "$base_root" ;;
+          head:IaC/root.hcl)
+            if [[ "$root_change" == true ]]; then
+              printf '%s\n' "${head_root/inputs = \{\}/inputs = { changed = true\}}"
+            else
+              printf '%s\n' "$head_root"
+            fi
+            ;;
+          *) return 1 ;;
+        esac
+        ;;
+      *) return 1 ;;
+    esac
+  }
+  terragrunt_stack_units_at_ref() {
+    if [[ "$stack_change" == true && "$1" == head ]]; then
+      printf 'changed\n'
+    else
+      printf 'unchanged\n'
+    fi
+  }
+
+  export APPLY_BASE_SHA="base"
+  export APPLY_HEAD_SHA="head"
+  if terragrunt_azuread_stack_changed; then
+    echo "The removed legacy root plan block must not require Azure credentials." >&2
+    exit 1
+  fi
+
+  root_change=true
+  terragrunt_azuread_stack_changed
+  root_change=false
+
+  direct_azure_change=true
+  terragrunt_azuread_stack_changed
+  direct_azure_change=false
+
+  stack_change=true
+  terragrunt_azuread_stack_changed
+  stack_change=false
+
+  APPLY_BASE_SHA=""
+  terragrunt_azuread_stack_changed
+  APPLY_BASE_SHA=bad
+  terragrunt_azuread_stack_changed
+  APPLY_BASE_SHA="base"
+
+  root_helper_failure=true
+  terragrunt_azuread_stack_changed
+)
+echo "::endgroup::"
+
 echo "::group::Terragrunt deleted-unit ownership"
 (
   git() {
