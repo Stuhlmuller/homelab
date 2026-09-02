@@ -15,6 +15,16 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl; then
+  echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
+  exit 1
+fi
+while IFS= read -r unit_dir; do
+  if [[ ! -f "${unit_dir}/.terraform.lock.hcl" ]]; then
+    echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
+    exit 1
+  fi
+done < <(terragrunt_stack_unit_paths_at_ref HEAD)
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
@@ -116,6 +126,12 @@ for parameter in \
   '/homelab/external-secrets/aws-ssm/access-key-id' \
   '/homelab/external-secrets/aws-ssm/secret-access-key' \
   '/homelab/github-actions-runner/registration-token' \
+  '/homelab/deluge/vpn/wireguard-addresses' \
+  '/homelab/deluge/vpn/wireguard-endpoint-ip' \
+  '/homelab/deluge/vpn/wireguard-endpoint-port' \
+  '/homelab/deluge/vpn/wireguard-preshared-key' \
+  '/homelab/deluge/vpn/wireguard-private-key' \
+  '/homelab/deluge/vpn/wireguard-public-key' \
   '/homelab/octelium/cloudflare-zone-settings-token' \
   '/homelab/argocd-image-updater/github-app/id' \
   '/homelab/argocd-image-updater/github-app/installation-id' \
@@ -173,6 +189,69 @@ echo "::group::Octelium bootstrap node containment"
 )
 echo "::endgroup::"
 
+echo "::group::Cloudflare API response handling"
+(
+  check_cloudflare_response() (
+    local script="$1"
+    local mock_response="$2"
+    local curl_status="${3:-0}"
+    local cf_api_source
+
+    cf_api_source="$(awk '/^cf_api\(\)/,/^}/' "$script")"
+    [[ -n "$cf_api_source" ]]
+
+    # Used by the helper evaluated below.
+    # shellcheck disable=SC2034
+    # checkov:skip=CKV_SECRET_6: Inert leak-detection sentinel, not secret material.
+    cloudflare_token="mock-token-must-not-leak"
+    # Invoked indirectly by the evaluated helper.
+    # shellcheck disable=SC2329
+    curl() {
+      printf '%s\n' "$mock_response"
+      return "$curl_status"
+    }
+
+    eval "$cf_api_source"
+    cf_api GET "/zones/mock"
+  )
+
+  for script in scripts/octelium-public-dns.sh scripts/octelium-gateway-dns.sh; do
+    success_response='{"success":true,"result":[]}'
+    [[ "$(check_cloudflare_response "$script" "$success_response")" == "$success_response" ]]
+
+    for rejected_response in \
+      '{"success":false,"errors":[{"code":1000,"message":"rejected"}]}' \
+      '{}' \
+      'not-json'; do
+      if response_error="$(check_cloudflare_response "$script" "$rejected_response" 2>&1)"; then
+        echo "${script} accepted a rejected or invalid Cloudflare API response" >&2
+        exit 1
+      fi
+      if grep -Fq 'mock-token-must-not-leak' <<<"$response_error"; then
+        echo "${script} exposed the Cloudflare API token while reporting a response error" >&2
+        exit 1
+      fi
+    done
+
+    if transport_error="$(check_cloudflare_response "$script" "$success_response" 22 2>&1)"; then
+      echo "${script} accepted a failed Cloudflare API transport" >&2
+      exit 1
+    fi
+    if grep -Fq 'mock-token-must-not-leak' <<<"$transport_error"; then
+      echo "${script} exposed the Cloudflare API token while reporting a transport error" >&2
+      exit 1
+    fi
+  done
+)
+echo "::endgroup::"
+
+echo "::group::Helm workload token contracts"
+yq -e '.controllers.octobot.pod.automountServiceAccountToken == false' \
+  clusters/homelab/apps/octobot/values.yaml >/dev/null
+yq -e '.automountServiceAccountToken == false' \
+  clusters/homelab/apps/grafana/values.yaml >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -199,6 +278,23 @@ kubectl kustomize clusters/homelab/apps/multica |
         .livenessProbe.exec.command == .readinessProbe.exec.command and
         [.livenessProbe.periodSeconds, .livenessProbe.timeoutSeconds, .livenessProbe.failureThreshold] == [30, 5, 60]
       )
+    )
+  ' >/dev/null
+echo "::endgroup::"
+
+echo "::group::Media PostgreSQL backup claim"
+kubectl kustomize clusters/homelab/apps/media-postgres |
+  yq ea -o=json -I=0 '[.]' - |
+  jq -e '
+    [.[] | select(.kind == "PersistentVolumeClaim" and .metadata.name == "data-media-postgres-0")] as $claims |
+    [.[] | select(.kind == "CronJob" and .metadata.name == "media-postgres-backup")] as $backups |
+    ($claims | length) == 1 and
+    ($backups | length) == 1 and
+    $claims[0].metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false" and
+    $claims[0].spec.storageClassName == "nfs-default" and
+    $claims[0].spec.resources.requests.storage == "20Gi" and
+    any($backups[0].spec.jobTemplate.spec.template.spec.volumes[];
+      .persistentVolumeClaim.claimName == "data-media-postgres-0"
     )
   ' >/dev/null
 echo "::endgroup::"
@@ -617,9 +713,9 @@ done <<'EOF'
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
-.github/workflows/release.yml 1117b4fa6f3f7103f048b914c5f7bb5ef7762484c18c241e3b7ad68d890f7094
+.github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 9a354d6341d5f938e8bc24eef7de989ea1c8f6610b6b7f3993d862f706cd2637
+.github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
 .github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
 EOF
 echo "::endgroup::"
@@ -691,8 +787,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
-      "cancel-in-progress": false,
-      "queue": "single"
+      "cancel-in-progress": false
     } and
     .jobs["terragrunt-apply"].steps[0].name == "Verify Current Main Commit" and
     .jobs["terragrunt-apply"].steps[0].env.ACTUAL_REF == "${{ github.ref }}" and
@@ -998,6 +1093,9 @@ if ! awk '
   exit 1
 fi
 yq -e '
+  .controllers.openclaw.containers.app.probes.liveness.spec.failureThreshold == 36 and
+  .controllers.openclaw.containers.app.probes.liveness.spec.periodSeconds == 10 and
+  .controllers.openclaw.containers.app.probes.liveness.spec.timeoutSeconds == 3 and
   .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and

@@ -45,7 +45,8 @@ isolated under `clusters/homelab/apps/cordium-bootstrap`, so creation starts a
 fresh 15-minute Argo CD operation instead of spending the parent's timeout
 budget. Its foreground resources finalizer cascades all tracked bootstrap
 resources when the parent declaratively removes the child.
-The child uses Kustomize autodetection and omits empty source options because
+The child and every Terragrunt-owned Kustomize source use autodetection and omit
+empty source options because
 [Argo CD v3.4.2 normalizes them to absent fields](https://github.com/argoproj/argo-cd/blob/0dc6b1b57dd5bb925d5b03c3d09419ab9fb4225e/util/argo/argo.go).
 Declaring `kustomize: {}` therefore leaves the parent OutOfSync after normalization.
 Cordium's privileged genesis ServiceAccount, ClusterRole, and binding are

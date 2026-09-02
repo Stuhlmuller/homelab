@@ -106,11 +106,11 @@ connect to the gateway and relay a successful HTTP response.
 
 The app container also owns startup and liveness probes. Startup allows up to
 two minutes for the gateway to load persisted state and plugins. After startup,
-three consecutive failed liveness checks restart only the app container when
-the gateway stops answering HTTP through the proxy. Readiness removes the pod
-from the Service before that recovery threshold is reached. A TCP-only check is
-not sufficient here because the proxy listener can accept a connection even
-when its upstream gateway is unavailable.
+36 consecutive failed liveness checks restart only the app container after
+about six minutes without an HTTP response through the proxy. Readiness removes
+the pod from the Service after two failures. A TCP-only check is not sufficient
+here because the proxy listener can accept a connection even when its upstream
+gateway is unavailable.
 
 Use the event timestamps to distinguish expected startup failures from a live
 stall, then verify the gateway itself:

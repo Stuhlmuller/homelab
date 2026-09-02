@@ -1,3 +1,22 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: data-media-postgres-0
+  namespace: media
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: media-postgres
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 20Gi
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:

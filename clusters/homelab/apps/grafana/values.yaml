@@ -4,6 +4,7 @@ admin:
   passwordKey: password
 deploymentStrategy:
   type: Recreate
+automountServiceAccountToken: false
 annotations:
   argocd.argoproj.io/sync-options: Replace=true
 extraSecretMounts:

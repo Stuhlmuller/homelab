@@ -62,11 +62,11 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
-The [[audit-2026-08-30]] records repository fixes, live repairs, validation, and
-existing remediation PRs. `zimaboard-1` is Ready again and Cordium secret sync
-recovered after the IAM repair. Worker recovery, Cordium's remaining GitOps
-reconciliation, and the public API port mapping remain open; older observations
-below retain their original dates.
+The [[audit-2026-09-02]] records the latest repository fixes, read-only live
+inspection, validation, and remaining blockers. The broader
+[[audit-2026-08-30]] records prior live repairs and remediation PRs. Worker
+recovery, public API port mapping, image debt, and independent restore proof
+remain open; older observations below retain their original dates.
 
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
@@ -579,7 +579,7 @@ below retain their original dates.
   the public end-to-end gate. The durable path remains a correctly sized third
   dataplane worker; the `acer` fallback is incident-only.
 
-- **Status:** open
+- **Status:** mitigation staged; root-cause diagnosis open
 - **Area:** agent runtime / storage
 - **Evidence:** Before OpenClaw was stopped on 2026-07-13, `acer` sustained about
   3,850 NFSv3 reads per second and 206 Mbit/s of receive traffic. Process-level
@@ -597,17 +597,25 @@ below retain their original dates.
   proxy so kubelet no longer depends on container exec, while probe success
   still requires the loopback gateway to return an HTTP response. A TCP probe
   of the proxy listener was rejected because it could succeed before the proxy
-  discovered that the upstream gateway was unavailable.
+  discovered that the upstream gateway was unavailable. Read-only inspection
+  on 2026-09-02 confirmed an active restart loop, not historical counters: the
+  Pod reached 279 app restarts and 180 liveness-triggered kills, while readiness
+  had timed out more than 3,000 times. A bounded comparison found `/`,
+  `/healthz`, and `/readyz` timing out together; the app used 1.13 CPU cores and
+  647 MiB, below its 1.5-core and 4 GiB limits. Previous-container logs showed
+  Kubernetes send SIGTERM during recovered main-session work and OpenClaw exit
+  cleanly. Desired state now preserves the ten-second readiness window but
+  extends liveness from three to 36 ten-second failures, bounding an actual
+  restart at about six minutes instead of repeatedly killing recoverable work.
 - **Risk:** hot OpenClaw gateway state, memory indexing, or workspace scanning
   on the QNAP-backed PVC can amplify storage pressure and obscure independent
   network faults.
-- **Next step:** after fixing the router/switch uplink, reproduce the OpenClaw
-  load in a controlled window and identify which gateway state path is being
-  scanned. Keep durable agent state on the PVC, but move any rebuildable hot
-  index, cache, or watcher-heavy state to pod-local storage through reviewed
-  GitOps desired state if the read storm returns. Correlate any future liveness
-  restart with the gateway log, NFS counters, and the active memory job before
-  changing storage behavior.
+- **Next step:** roll out the liveness change through GitOps and require 24
+  hours without a restart increase. If the app stays unready for the full
+  six-minute window or restarts again, capture the recovered session, gateway
+  log, NFS counters, and CPU profile before changing the threshold further.
+  Keep durable agent state on the PVC, but move any rebuildable hot index,
+  cache, or watcher-heavy state to pod-local storage if the read storm returns.
 
 - **Status:** open
 - **Area:** agent runtime / Codex diagnostics

@@ -238,9 +238,14 @@ talosctl -n TEMP_IP get addresses --insecure
 ```
 
 Confirm the selected install disk is the intended internal disk and not the USB
-installer. Then apply the control-plane config:
+installer. Validate, then apply the control-plane config:
 
 ```sh
+talosctl validate \
+  --config .talos/controlplane.yaml \
+  --mode metal \
+  --strict
+
 talosctl apply-config --insecure \
   -n TEMP_IP \
   --file .talos/controlplane.yaml
