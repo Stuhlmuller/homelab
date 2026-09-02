@@ -61,6 +61,14 @@ The separate `.talos/patches/controlplane-octelium-talos-api.yaml` patch adds
 `talos-api.homelab.local.stinkyboi.com` to `machine.certSANs`. That name is the
 private Octelium TCP Service endpoint for the Talos API.
 
+Live validation on 2026-09-02 recovered the current control-plane configuration
+without resetting Talos, generated a new local `os:admin` client from the
+original CA, and saved a fresh etcd snapshot off-node. The SAN-only patch then
+validated strictly, applied without a reboot, and appeared on Acer's live Talos
+server certificate. Kubernetes readiness and Talos services remained healthy.
+The private Octelium Service still requires its catalog rollout and an off-LAN
+authenticated check before the Tailscale subnet route can be removed.
+
 ## Render And Validate The Control-Plane Changes
 
 This checkout does not currently contain `.talos/controlplane.yaml` or
