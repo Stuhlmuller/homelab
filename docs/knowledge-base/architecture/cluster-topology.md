@@ -53,6 +53,24 @@ Recover these configured nodes with a current authenticated
 `--insecure`, and do not force-delete their single-writer workloads without
 first fencing the old node.
 
+On 2026-09-02, `zimaboard-1` repeated the OpenClaw failure after seven leaked
+hook relays remained blocked in page faults. Memory availability fell to about
+`132Mi`, load exceeded `119`, I/O pressure exceeded 97%, and local eMMC reads
+queued until kubelet stopped reporting. Talos and the NAS endpoint remained
+reachable; no node-scoped evidence established an NFS outage. Eviction started
+replacement PVC workloads on `acer`, so only a confirmed reset and new boot ID
+fence the old writers. Restarting kubelet or networking is unsafe.
+
+After its earlier recovery, the scheduler placed several zero-request Argo CD
+controllers and Prometheus on the 1.28 GiB-allocatable `zimaboard-2`; it then
+fell below 82 MiB available memory and stopped heartbeating. That worker later
+recovered after evictions released memory. `zimaboard-1` also resumed healthy
+heartbeats on its unchanged boot and kubelet reconciled the old Pods, so no
+reboot or cordon was justified. Keep it schedulable until OpenClaw rolls
+forward: current affinity excludes `acer` and the dataplane worker, while
+`zimaboard-2` cannot meet the 2 GiB init request. Any later drain or reboot is
+separate healthy maintenance.
+
 ## Monitoring Contract
 
 Grafana alerting treats this four-node set as the expected hardware inventory

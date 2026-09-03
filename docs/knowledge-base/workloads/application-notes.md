@@ -63,6 +63,25 @@ copying only the profile runtime closure while copying the full database leaves
 missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
 the homelab flake.
 
+On 2026-09-02, five orphaned `openclaw-hooks` processes consumed about `2.04Gi`
+before the `2026.7.1` app reached its `4Gi` limit and was OOM-killed. This
+matches [upstream OpenClaw issue #109421](https://github.com/openclaw/openclaw/issues/109421):
+a timed-out Codex native hook lost ownership of its detached relay child.
+Desired state now pins the first current
+stable release containing the Linux fix, `2026.8.2`; keep the `4Gi` limit and
+require 24 hours without another app restart or orphaned relay before closing
+the incident. Its `Recreate` bootstrap creates a verified, owner-only migration
+archive on the same NFS volume, runs the targeted session SQLite inspect,
+dry-run, import, and post-import inspection, keeps Kubernetes as the external
+supervisor, and pins concurrency at the prior effective value of four. Generic
+doctor repair is intentionally excluded because it can rewrite unrelated skill
+policy. Gateway startup owns deterministic config migrations, not persisted
+session or cron route repair. A pre-rollout count-only inspection found 20
+entries in one session store with no legacy Codex route field and no cron JSON
+store, so this upgrade needs no separate route mutation. The checkpoint is not
+independent protection from NAS failure; retain OpenClaw's migration originals
+until the soak closes.
+
 ## Zimaboard-0 Resource Envelope
 
 A seven-day Prometheus review on 2026-08-26 found that scheduling requests did

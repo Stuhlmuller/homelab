@@ -200,11 +200,15 @@ refreshes the Secret and rolls the pod that reads it.
 
 OpenClaw receives GitHub App identity through AWS SSM-backed ExternalSecrets:
 
+<!-- markdownlint-disable MD013 -->
+
 | SSM parameter | Pod surface |
 | --- | --- |
 | `/homelab/openclaw/github-app/id` | `GITHUB_APP_ID` |
 | `/homelab/openclaw/github-app/installation-id` | `GITHUB_APP_INSTALLATION_ID` |
 | `/homelab/openclaw/github-app/private-key` | `/var/run/secrets/openclaw/github-app/private-key.pem` |
+
+<!-- markdownlint-enable MD013 -->
 
 The pod sets `GITHUB_APP_PRIVATE_KEY_PATH` to
 `/var/run/secrets/openclaw/github-app/private-key.pem`. The private key is
@@ -233,12 +237,37 @@ without storing an API key in SSM or git. The older `openai-codex/gpt-*` and
 `codex/gpt-*` refs are compatibility routes, not the desired bootstrap default
 for this deployment.
 
+Keep OpenClaw at `2026.8.2` or newer while the Codex plugin is enabled.
+`2026.7.1` can leave timed-out native hook relay processes orphaned until the
+container reaches its memory limit; upstream
+[PR #109446](https://github.com/openclaw/openclaw/pull/109446) fixes relay PID
+ownership on Linux. The bootstrap keeps the effective concurrency at four
+instead of adopting `2026.8.2`'s higher default.
+
+The `2026.7.1` to `2026.8.2` rollout is fail-closed. The `Recreate` deployment
+stops the gateway, then bootstrap writes a complete owner-only archive and
+SHA-256 checksum under `/data/openclaw-backups` before invoking any `2026.8.2`
+OpenClaw command. It verifies the tar stream and checksum before running the
+targeted session SQLite migration and starting the new gateway. The archive
+includes credentials, private transcripts, and the workspace. It stays on the
+same QNAP-backed volume and is a migration checkpoint, not an independent NAS
+backup. Reinstallable npm cache and external-plugin directories are excluded.
+OpenClaw also preserves its migration originals and manifests; do not run
+`openclaw update cleanup` before the 24-hour soak closes.
+
+An image-only rollback below `2026.8.2` is unsafe after the session SQLite
+migration and also restores the hook-relay leak. If rollback is required, use a
+reviewed init-container maintenance change to replace `/data/openclaw` from the
+verified pre-upgrade archive while the gateway is stopped; an overlay extraction
+is not a restore. Validate the recovered state before reverting the image. This
+discards post-upgrade state, so prefer repairing `2026.8.2` when possible.
+
 The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
 after the synced pod restarts if those views still show an enable-plugin prompt.
 
 Startup bootstrap pins `agents.defaults.sandbox.mode` to `off`. OpenClaw
-[2026.7.1 supports Docker, SSH, and OpenShell sandbox backends](https://github.com/openclaw/openclaw/blob/v2026.7.1/docs/gateway/sandboxing.md).
+[2026.8.2 supports Docker, SSH, and OpenShell sandbox backends](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/gateway/sandboxing.md).
 This Talos pod has no Docker daemon, while the repository declares neither a
 dedicated SSH target and trust material nor an OpenShell account/runtime.
 Enabling `non-main` without a working backend makes Discord, group, and spawned
@@ -252,13 +281,17 @@ validate it before changing this setting.
 Do not mount a host container-runtime socket into this workload.
 
 During startup, the bootstrap installs the missing official external Discord
-plugin before validating persisted config, then applies desired state. This is
-the only recovery step before validation. It does not run automatic doctor
-repairs: doctor scans session history on the NFS-backed PVC, so accumulated
-orphan transcripts can block the pod before the gateway starts. Run migrations
-as explicit, reviewed maintenance when an upgrade requires them. Bootstrap also
-pins `gateway.mode` to `local`, which is required for the container-managed
-gateway process.
+plugin before validating persisted config, then applies desired state. An exact
+installed version is reused; a missing or mismatched package gets four bounded
+registry attempts so a transient reset cannot leave every restart dependent on
+a fresh successful download. The versioned bootstrap runs the targeted session
+SQLite inspect, dry-run, import, and post-import inspection once after its verified
+backup. It does not run generic doctor repair because that command can rewrite
+unrelated skill policy. Gateway startup owns its documented deterministic
+config migrations; persisted session and cron route repairs remain explicit
+reviewed maintenance. Bootstrap also pins `gateway.mode` to `local`, which is
+required for the container-managed gateway process. External-supervisor mode
+makes Kubernetes the only lifecycle and image-update authority.
 
 Run the interactive login after connecting through Octelium and exporting the
 kubeconfig generated by `octelium config kubernetes-api.homelab`:

@@ -19,6 +19,22 @@ if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
+terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
+  render --json --write=false --no-color \
+  | jq -e '
+      any(.inputs.manifest.spec.sources[];
+        .chart == "ztunnel" and
+        any(.helm.parameters[]?;
+          .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
+          .value == "10-1-0-199-v1")
+        and any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxSurge" and
+          .value == "0")
+        and any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxUnavailable" and
+          .value == "1")
+      )
+    ' >/dev/null
 while IFS= read -r unit_dir; do
   if [[ ! -f "${unit_dir}/.terraform.lock.hcl" ]]; then
     echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
@@ -1144,28 +1160,74 @@ echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
-rg -Fq 'openclaw plugins install "npm:@openclaw/discord@${openclaw_version}" --pin --force' "$openclaw_values"
+rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
+rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
+rg -Fq 'openclaw plugins enable discord --accept-capabilities' "$openclaw_values"
 rg -Fq 'openclaw plugins inspect discord --runtime --json |' "$openclaw_values"
 rg -Fq 'plugin.get("origin") == "global"' "$openclaw_values"
 rg -Fq 'plugin.get("status") == "loaded"' "$openclaw_values"
-rg -Fq 'package.get("version") == expected' "$openclaw_values"
+rg -Fq 'install.get("source") == "npm"' "$openclaw_values"
+rg -Fq 'install.get("spec") == f"@openclaw/discord@{expected_version}"' "$openclaw_values"
+rg -Fq 'install.get("version") == expected_version' "$openclaw_values"
+rg -Fq 'package.get("version") == expected_version' "$openclaw_values"
+rg -Fq 'for delay in 0 5 15 30' "$openclaw_values"
+rg -Fq 'verify_discord_plugin installed' "$openclaw_values"
+rg -Fq 'verify_discord_plugin loaded' "$openclaw_values"
+rg -Fq 'tar --one-file-system' "$openclaw_values"
+rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
+rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
+rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"
+rg -Fq 'required_kib=$((state_kib * 2 + 2097152))' "$openclaw_values"
+[[ "$(rg -Fc 'openclaw doctor --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
+rg -Fq 'openclaw doctor --session-sqlite dry-run' "$openclaw_values"
+rg -Fq 'openclaw doctor --session-sqlite import' "$openclaw_values"
+if rg -Fq 'openclaw doctor --fix' "$openclaw_values" ||
+  rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
+  echo "OpenClaw bootstrap contains an unsafe or ineffective doctor repair" >&2
+  exit 1
+fi
+rg -Fq '"maxConcurrent": 4' "$openclaw_values"
 if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
   rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
   echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2
   exit 1
 fi
 if ! awk '
-  /openclaw plugins install "npm:@openclaw\/discord@\$\{openclaw_version\}" --pin --force/ && !install { install = NR }
-  /openclaw config validate/ && !validate { validate = NR }
-  END { exit !(install && validate && install < validate) }
+  /tar --one-file-system/ && !backup { backup = NR }
+  /^[[:space:]]+verify_backup_dir "\$backup_dir"[[:space:]]*$/ && !backup_verified { backup_verified = NR }
+  /--pin --force --accept-capabilities/ && !install { install = NR }
+  /--session-sqlite inspect/ && !inspect_before { inspect_before = NR; next }
+  /--session-sqlite inspect/ && !inspect_after { inspect_after = NR }
+  /--session-sqlite dry-run/ && !dry_run { dry_run = NR }
+  /--session-sqlite import/ && !import { import = NR }
+  /openclaw config validate/ && !config_validate { config_validate = NR }
+  END {
+    exit !(backup && backup_verified && install && inspect_before && dry_run && import &&
+      inspect_after && config_validate && backup < backup_verified &&
+      backup_verified < install &&
+      install < inspect_before && inspect_before < dry_run &&
+      dry_run < import && import < inspect_after &&
+      inspect_after < config_validate)
+  }
 ' "$openclaw_values"; then
-  echo "OpenClaw must install Discord before persisted-config validation" >&2
+  echo "OpenClaw must back up, install Discord, migrate, then validate persisted state" >&2
   exit 1
 fi
 yq -e '
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "00-operator-toolbox" and
+  .controllers.openclaw.initContainers."00-operator-toolbox" != null and
+  .controllers.openclaw.containers.app.image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.strategy == "Recreate" and
   .controllers.openclaw.containers.app.probes.liveness.spec.failureThreshold == 36 and
   .controllers.openclaw.containers.app.probes.liveness.spec.periodSeconds == 10 and
   .controllers.openclaw.containers.app.probes.liveness.spec.timeoutSeconds == 3 and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_SUPERVISOR_MODE == "external" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_SERVICE_REPAIR_POLICY == "external" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_NO_AUTO_UPDATE == "1" and
+  .controllers.openclaw.containers.app.env.OPENCLAW_SUPERVISOR_MODE == "external" and
+  .controllers.openclaw.containers.app.env.OPENCLAW_NO_AUTO_UPDATE == "1" and
   .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
