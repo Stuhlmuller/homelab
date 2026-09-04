@@ -56,7 +56,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redis
-          image: redis:8.2.1-bookworm@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff
+          image: redis:8.2.9-bookworm@sha256:7d1e4ce8b9395088377ab382d1f6cfdbd13b3690795198a0399ab8d683064d6d
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh

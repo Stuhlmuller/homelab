@@ -21,7 +21,7 @@ must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
   shutdown receives 120 seconds to finish. The 2026-07-20 incident was restored
   after fencing the StatefulSet at zero replicas and running a reviewed one-shot
   hook; that incident-only hook is no longer part of desired state.
-- Cache and jobs: dedicated authenticated Redis 8.2 with AOF and RDB
+- Cache and jobs: dedicated authenticated Redis 8.2.9 with AOF and RDB
   persistence disabled, matching AFFiNE's official deployment model. Redis
   runtime files use a 256 Mi node-local `emptyDir`, so cache and queue churn
   cannot issue NFS writes. The former 5 Gi NFS claim remains retained but
@@ -159,3 +159,15 @@ rollback. After the `0.27.0` database migration has run, do not roll application
 code back to `0.26.x` against the migrated database. Restore the pre-upgrade
 PostgreSQL dump and coordinated blob/config backup before restoring the older
 image.
+
+## Redis Patch Contract
+
+Redis is pinned to `8.2.9`, the supported 8.2 security patch that fixes memory
+safety, ACL-bypass, and crafted-RDB issues. Its active `emptyDir` is disposable,
+so rollout may clear caches and queued work but does not migrate durable state.
+Before rollout, require Ready AFFiNE and PostgreSQL workloads and no critical
+background job that cannot be retried. After Argo CD reconciles, require Redis
+`PONG`, persistence still disabled, AFFiNE readiness, successful background
+work, and 24 hours without errors, latency, restart, CPU, or memory regression.
+Do not roll back below 8.2.9; roll forward to a newer reviewed, digest-pinned
+security release if this image regresses.
