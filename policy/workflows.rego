@@ -163,7 +163,7 @@ deny contains msg if {
 	msg := sprintf("Octelium catalog workflow job %q step %d must use its one-use catalog credential", [job_name, index])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", {}))
 
 has_event(events, event) if {
 	events == event
@@ -176,7 +176,7 @@ has_event(events, event) if {
 
 has_event(events, event) if {
 	is_object(events)
-	events[event]
+	event in object.keys(events)
 }
 
 external_action_reference(uses) if {
