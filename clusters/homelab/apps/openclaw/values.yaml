@@ -4,6 +4,7 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    replicas: 1
     revisionHistoryLimit: 1
     strategy: Recreate
     pod:
@@ -75,6 +76,9 @@ controllers:
             cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
             chown -R 1000:1000 /nix-shared
+            # The NAS maps file ownership to 65534; coordinator locks need local UID ownership.
+            chown 1000:1000 /openclaw-coordinator
+            chmod 700 /openclaw-coordinator
             /toolbox/profile/bin/jq --version
             /toolbox/profile/bin/rg --version
             /toolbox/profile/bin/gh --version
@@ -92,6 +96,10 @@ controllers:
             cpu: 1500m
             memory: 3Gi
       bootstrap-config:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -464,6 +472,19 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
+              # Clear the old authored env reference; otherwise OpenClaw preserves it.
+              if python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_HOOK_REFERENCE'
+            import json
+            import pathlib
+            import sys
+
+            config = json.loads(pathlib.Path(sys.argv[1]).read_text())
+            token = config.get("hooks", {}).get("token")
+            sys.exit(0 if token == "${GRAFANA_ALERT_HOOK_TOKEN}" else 1)
+            OPENCLAW_HOOK_REFERENCE
+              then
+                openclaw config unset hooks.token
+              fi
               HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
               openclaw config set --strict-json \
                 hooks.token \
@@ -532,6 +553,10 @@ controllers:
             fi
     containers:
       app:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
@@ -724,6 +749,18 @@ persistence:
           - path: /data
         bootstrap-config:
           - path: /data
+  identity-coordinator:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 16Mi
+    advancedMounts:
+      openclaw:
+        00-operator-toolbox:
+          - path: /openclaw-coordinator
+        bootstrap-config:
+          - path: /data/openclaw/tmp/openclaw-1000
+        app:
+          - path: /data/openclaw/tmp/openclaw-1000
   plugin-cache:
     enabled: true
     type: emptyDir
