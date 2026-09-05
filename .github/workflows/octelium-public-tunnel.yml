@@ -1,0 +1,66 @@
+name: Reconcile Octelium Public Tunnel
+
+# checkov:skip=CKV_GHA_7: expected_sha binds DNS reconciliation to reviewed main; it cannot alter commands.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed main commit to reconcile
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: octelium-cloudflare-origin-port
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-public-tunnel-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Reconcile Tunnel DNS And Retire WAN Origin Rules
+        env:
+          CLOUDFLARE_ZONE_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_ZONE_SETTINGS_TOKEN }}
+        run: |
+          test -n "$CLOUDFLARE_ZONE_SETTINGS_TOKEN"
+          private_log="$(mktemp "${RUNNER_TEMP}/octelium-public-tunnel.XXXXXX")"
+          chmod 600 "$private_log"
+          trap 'rm -f -- "$private_log"' EXIT
+          if ! scripts/octelium-public-dns.sh --dry-run >"$private_log" 2>&1 ||
+             ! scripts/octelium-cloudflare-origin-port.sh remove >>"$private_log" 2>&1 ||
+             ! scripts/octelium-public-dns.sh >>"$private_log" 2>&1; then
+            echo "::error::Tunnel reconciliation failed; private API output withheld. Fix the declared inputs and rerun this idempotent workflow."
+            exit 1
+          fi
+          echo "Tunnel DNS reconciled; retired WAN origin rules removed. Run the transport and authenticated execution gates before declaring recovery."
