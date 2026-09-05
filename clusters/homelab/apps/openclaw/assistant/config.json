@@ -46,6 +46,17 @@
       "workspaceOnly": true
     }
   },
+  "plugins": {
+    "entries": {
+      "codex": {
+        "config": {
+          "appServer": {
+            "command": "/toolbox/codex/codex"
+          }
+        }
+      }
+    }
+  },
   "cron": {
     "enabled": true,
     "sessionRetention": "24h"
