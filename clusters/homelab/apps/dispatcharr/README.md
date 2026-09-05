@@ -7,7 +7,7 @@ manager at `https://dispatcharr.stinkyboi.com`.
 
 - Image: `ghcr.io/dispatcharr/dispatcharr`
 - Mode: upstream modular container with web and Celery containers
-- PostgreSQL: dedicated `dispatcharr-postgres` PostgreSQL 17 StatefulSet
+- PostgreSQL: dedicated `dispatcharr-postgres` PostgreSQL 17.11 StatefulSet
 - Redis: in-pod sidecar, ephemeral cache/queue state
 - HTTP port: `9191`
 - Access: private app hostname through Octelium, no public unauthenticated
@@ -36,6 +36,22 @@ container sets upstream `PUID`/`PGID` to that owner so nginx and Django can use
 the data directories without a forbidden `chown`. Its short wrapper gives the
 image's existing `nobody` account a login shell before upstream renames that
 account to `dispatcharr`; upstream later drops web processes to that UID.
+
+## PostgreSQL Patch Contract
+
+PostgreSQL is pinned to `17.11`. The update from 17.5 stays within major version
+17 and does not require dump/restore, but rollout still requires a current
+verified logical dump, a paired Dispatcharr data-PVC backup, and a successful
+restore drill tracked by issue #792. Before rollout, inventory non-built-in
+logical decoding plugins, `pgcrypto`, `btree_gist`, `ltree`, and BRIN
+`numeric_minmax_multi_ops` indexes; follow the 17.6 and 17.11 release-note
+cleanup or reindex guidance for every match.
+
+After Argo CD reconciles, verify the StatefulSet, `SHOW server_version`,
+`SELECT 1`, web and Celery readiness, and 24 hours of database errors, query
+latency, restarts, CPU, and memory. Roll back declaratively to the prior digest
+only while the data directory remains compatible; otherwise restore the matched
+database dump and Dispatcharr backup.
 
 ## First Run
 

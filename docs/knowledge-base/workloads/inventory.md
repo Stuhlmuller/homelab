@@ -61,6 +61,11 @@ the former NFS claim; the sibling recovery overlay fences both before restore.
 removed its 2026-08-03 stale lock. The one-shot hook is removed; its explicit
 retained claim, 30-minute startup and liveness windows, and 120-second shutdown
 grace remain.
+
+`dispatcharr-postgres` is digest-pinned to PostgreSQL `17.11`; rollout requires
+a verified logical dump, paired Dispatcharr backup, release-note preflight, and
+successful restore drill.
+
 AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
