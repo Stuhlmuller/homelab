@@ -1,0 +1,251 @@
+{
+  "account_id": "716182248480",
+  "bucket": "rstuhlmuller-aws-s3-use1-datalake",
+  "region": "us-east-1",
+  "source_key_arn": "arn:aws:kms:us-west-2:716182248480:key/959539ca-5646-435c-8ae4-aec13b0f0607",
+  "source_key_region": "us-west-2",
+  "archive_prefix": "IaC/homelab/migrations/legacy-state-2026-09-05/",
+  "archive_kms_key": "alias/aws/s3",
+  "versions": [
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "VpILDAswRRLcR71bKXXbHM_VIXBM6.wr"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "rJidkYSnAz67liH6Z2FV5FFnL_h_zCdU"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "G0ZNdq3UDGRIB4cv3x3OL2GZ2PBs0979"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "SUIaDZkHWVw9TEYlXd4zynCRnJpor.cs"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "LFw63rIMA32c.CQnn.stfQlgFyqawuOp"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "eEqsl2rhJ6zLeovuEfsSunawqw4PwFlI"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "2BZC6dyEJ2rK7sEf7sEI4vYyJPxWG5Mv"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dockploy/terraform.tfstate",
+      "version": "tVTHvOWZOucUKyvdGUGpko4JpvG1QfZL"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "ximm5G35HegJ2wbgbR5vu3azOCAcAW8c"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "A9HMnEjOOJk79QCR5imFlCdH2heQ43K2"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "sTvOK2IRox5bggQJYHDEPkTE_zqo9mQG"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "J2s8c51nL2zz4yrd4eqnElVEuKx37IQ1"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "IGOx6PKin2u_rZAC2LxBVaxAPVdUPajd"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "6CPpb_YbITgOEKmQpM3JAuJfstkx_UdQ"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "kVPa3tt8Ovo.768K0Pr4T0JyyjAVjSzA"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "SXlqtkkYwGqXQ_MusF1.cNGwolPfMlko"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "oo72fdGsE9XFLv8YmgscoZZYkUrh9PT."
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "iNNJvpH8kRKvvpjNanmaRNY0NsgMfYjH"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "GZrLmUe1vExZ0BoNDW07zwTCbayk_i3x"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "Vf0MlhzUTCEQelUfZAs7VWD0UZKfy15I"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "mwPrKeN1nDnc9YsNGiGjT4FS2Rehg8Ru"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "uB5Xl5c8569DrM2DhdwNjah4e8vFlmPx"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/dokploy/terraform.tfstate",
+      "version": "YVhNowEVL59Oo.np2d1cC2RUSVSyY14A"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/nemoclaw/terraform.tfstate",
+      "version": "GSVGUR.JupIg38RziR8F891vxPzJqoSr"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/nemoclaw/terraform.tfstate",
+      "version": "tqmX3_BecXFNt_Bnqf6GIyg3i9rAO12x"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/nfs-csi-plugin/terraform.tfstate",
+      "version": "ZT7dt8EJ_a07kyKT8_kXQ9DJL8ZZB3AZ"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "ujbQo0_63uIa.pQGnL1w30323GREXMT4"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "wf6XyNcgia.Ew7SEN_DzPEcK33TESNJs"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "6XBcN2z_3HewVMGTA_NIqJx5xlA3KXQ."
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "_a3PqP3rHD9Nd7DKRdynVpiVjNuKfnWD"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "vh41o84991Y.03sgxNqtRVTZVmf9LbMQ"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "616Q8G3Q2Lo3o2_qWzGhcub9u8LjJOup"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "AtEBXKQC0cp2ipfTIjIGgzAsZtssDS1E"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "UlKZcpXR6ugEgxX3WkCTzDRsDq_tLncE"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "BSn8UNYwTHmeVc51gTAsvvzdUjiOoqyr"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "lrT.drJJ0AbbJzqGJpC_JTYQNdvyQsil"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "rZRm1QcB1WCYptorQUQcb2T4qLB0eAXu"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "omm_XCi2U9Tus0ok8jtKUfZZNs4yDtpr"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "_cRhiMOEdsk6Bl7XKq17IBxFJdO.56y3"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "fRrOmmPhe8155PO.rMyjY1DIKt.M_X9g"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "zIoN2wingIXWl6YrqFfH4Oqk3.sjUyp4"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "A2AmceF0GZwgroTjOabJH0Fj05Fvz1R7"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "tCMVKHneRw6iLvN5Ulkj82ROKOYAaB.x"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": ".P_kYrlpnarFvgCGPg7Qx4H.UWKSqsKS"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/terraform.tfstate",
+      "version": "dFk9OFHwwnJdz6l1Hb71_h9ocOeT5z6q"
+    },
+    {
+      "key": "IaC/homelab/nomad/jobs/traefik/tf.tfstate",
+      "version": "XCkcxUIRAYY6au6gOQBnN_PP3aj_AhxQ"
+    },
+    {
+      "key": "IaC/homelab/nomad/variables/traefik/cf_dns_api_token/terraform.tfstate",
+      "version": "u8mlaFHVFERVTCt.2U7KUCJ.XHYVG2WP"
+    },
+    {
+      "key": "IaC/homelab/nomad/variables/traefik/cf_dns_api_token/terraform.tfstate",
+      "version": "GH4RRrCF0s4_UYYODxCS46blqGi6Ry0p"
+    },
+    {
+      "key": "IaC/homelab/nomad/variables/traefik/ts_authkey/terraform.tfstate",
+      "version": "u35R_aWP7BbzFNidec6mTVrf4F2I6.V8"
+    },
+    {
+      "key": "IaC/homelab/nomad/variables/traefik/ts_authkey/terraform.tfstate",
+      "version": "FMnc6pkADCcQ6mpQS_Ax5wRicp6ZXTuC"
+    },
+    {
+      "key": "IaC/homelab/nomad/variables/traefik/ts_authkey/terraform.tfstate",
+      "version": "fPauCJ.OaDieo_O286NeOhT4.zz7fO92"
+    },
+    {
+      "key": "IaC/homelab/nomad/variables/traefik/ts_authkey/terraform.tfstate",
+      "version": "lTC1KaWxltQ3YqiqKGcuhYIEEzApElzP"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-data/terraform.tfstate",
+      "version": "EJfN6D8PJGyBFVlQVa4Hr.kuTkKGkm88"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-data/terraform.tfstate",
+      "version": "JZCbO41EETFvzqlb5fVTP6Z7wj6s9sKo"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-data/terraform.tfstate",
+      "version": "DaV4CAPwe9wo6ujwQeEb8mwKYLC9tN08"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-data/terraform.tfstate",
+      "version": "xmlO.uXBLboJr5f8RG0puiyUBIAa5gAL"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-data/terraform.tfstate",
+      "version": "tYLDkCgEHe71W8tKfYCXP6O.p2Xo1xy3"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-data/terraform.tfstate",
+      "version": "BHW9P39ZKfTaT9OvFTKMFBdEKLtqyPFi"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-media/terraform.tfstate",
+      "version": "CKDhyDGQ1Rl8k2ZojkCGhUJ1rrrIJ5m9"
+    },
+    {
+      "key": "IaC/homelab/nomad/volumes/shared-media/terraform.tfstate",
+      "version": ".OI38WJvtyOkD7fCShxVO4geSeokNji7"
+    }
+  ]
+}

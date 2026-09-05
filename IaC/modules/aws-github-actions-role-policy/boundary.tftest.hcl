@@ -19,6 +19,7 @@ override_data {
 }
 
 variables {
+  additional_kms_key_aliases            = []
   apply_role_name                       = "test-apply"
   aws_region                            = "us-west-2"
   external_secrets_boundary_policy_name = "test"
@@ -27,6 +28,32 @@ variables {
   parameter_reader_group_name           = "test-readers"
   parameter_reader_policy_name_prefix   = "test-reader-"
   policy_name                           = "test-policy"
+}
+
+override_data {
+  target = data.aws_kms_alias.additional_runtime_secret
+  values = { target_key_arn = "arn:aws:kms:us-west-2:123456789012:key/managed" }
+}
+
+run "migration_allows_only_both_exact_keys" {
+  command = plan
+
+  variables {
+    additional_kms_key_aliases = ["alias/aws/ssm"]
+  }
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.external_secrets_boundary]
+  }
+
+  assert {
+    condition = toset(jsondecode(data.aws_iam_policy_document.external_secrets_boundary.json).Statement[2].Resource) == toset([
+      "arn:aws:kms:us-west-2:123456789012:key/test",
+      "arn:aws:kms:us-west-2:123456789012:key/managed",
+    ])
+    error_message = "Migration must allow only the two resolved keys, never a KMS wildcard."
+  }
 }
 
 run "temporary_credentials_and_forward_access_sessions" {

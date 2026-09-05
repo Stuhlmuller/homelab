@@ -6,6 +6,11 @@ data "aws_kms_alias" "runtime_secret" {
   name = var.kms_key_id
 }
 
+data "aws_kms_alias" "additional_runtime_secret" {
+  for_each = var.additional_kms_key_aliases
+  name     = each.value
+}
+
 data "aws_iam_openid_connect_provider" "github_actions" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -162,7 +167,10 @@ data "aws_iam_policy_document" "external_secrets_boundary" {
       "kms:DescribeKey",
     ]
 
-    resources = [data.aws_kms_alias.runtime_secret.target_key_arn]
+    resources = concat(
+      [data.aws_kms_alias.runtime_secret.target_key_arn],
+      [for key in data.aws_kms_alias.additional_runtime_secret : key.target_key_arn],
+    )
   }
 }
 
