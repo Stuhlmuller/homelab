@@ -175,3 +175,9 @@ When a workload changes, update this note for:
 - New ingress host or exposure type.
 - New ExternalSecret or SSM parameter contract.
 - Persistent storage, backup, restore, or rollback behavior changes.
+
+OpenClaw keeps its UID-private identity coordinator on a shared Pod-local
+16 MiB volume because the NAS reports anonymous ownership. Persistent identity,
+configuration, sessions, and backups remain on NFS. Its single-replica
+`Recreate` strategy and same-Pod writer restriction are required; see
+[[../architecture/storage-and-state]].

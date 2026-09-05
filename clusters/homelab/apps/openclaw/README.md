@@ -190,7 +190,13 @@ OpenClaw rejects SecretRef objects for `hooks.token`, so bootstrap expands
 `GRAFANA_ALERT_HOOK_TOKEN` from the mounted Secret at pod startup, JSON-encodes
 the actual runtime value, and writes that plain string to the PVC-backed
 OpenClaw config. This keeps the token out of git while satisfying OpenClaw's
-hook-token policy.
+hook-token policy. If an older config contains the authored
+`${GRAFANA_ALERT_HOOK_TOKEN}` reference, bootstrap removes that reference
+before setting the literal value. OpenClaw 2026.8.2 otherwise restores the
+reference during config writes, leaving the gateway without its bootstrap-only
+environment variable. The removal and replacement happen during init, before
+the gateway runs; a failure prevents startup rather than exposing an
+unauthenticated hook.
 
 After rotating the hook token, bump
 `homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD
@@ -350,3 +356,31 @@ OpenClaw home. Its native threads, SQLite indexes, caches, and diagnostics are
 rebuildable and had grown large enough to stall app-server startup and gateway
 turns over NFS. The volume is capped at `2Gi`, and pod replacement clears it.
 OpenClaw auth, sessions, workspace, and application state remain on the PVC.
+
+## Local identity coordinator
+
+OpenClaw 2026.8.2 requires its coordinator directory to belong to the runtime
+UID and have mode `0700`. The QNAP share reports UID/GID `65534` for persistent
+state, while the image runs as UID `1000`; the gateway otherwise refuses
+startup with `device identity coordinator directory belongs to another user`.
+
+Mount a shared 16 MiB `emptyDir` only at
+`/data/openclaw/tmp/openclaw-1000` in bootstrap and the gateway. The existing
+root toolbox init sets this local volume to `1000:1000`, mode `0700`, before
+OpenClaw runs. Upstream ownership and locking checks remain enabled. Device
+identity, configuration, session SQLite databases, and backups stay on the
+retained PVC; the old NAS lock directory is hidden, not removed.
+
+This relies on the existing single-replica `Recreate` controller. All writers
+must run in this Pod and share its coordinator mount. Do not run a second
+Pod or external doctor process against the same PVC: separate local lock
+volumes would not coordinate those writers. Stop the gateway through a
+reviewed declarative maintenance change before any external state repair.
+Revisit this storage design before introducing multiple replicas.
+
+Validate the render and the full static gate before rollout. After Argo sync,
+require the mounted directory to report UID/GID `1000:1000` and mode `0700`,
+then verify gateway readiness, the Discord channel, and the migration marker.
+Rollback removes the local mount through a reviewed PR; persistent data and
+backup files remain, but the known NAS ownership failure would return unless
+an alternative ownership-compatible storage path is deployed first.
