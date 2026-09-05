@@ -35,7 +35,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "18"
+  homelab.rst.io/alerting-provisioning-version: "19"
 plugins:
   - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
@@ -320,6 +320,8 @@ alerting:
               severity: warning
               managed_by: grafana-provisioning
           - uid: homelab-octelium-api-upnp-stale
+            # Retained for history; outbound Tunnel replaces the router lease.
+            isPaused: true
             title: Octelium API UPnP lease renewal stale
             condition: C
             data:

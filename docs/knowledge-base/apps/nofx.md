@@ -32,8 +32,9 @@ both deployments ready with zero restarts, the 10 GiB claim bound, and the
 ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
 gate are owned by `clusters/homelab/apps/octelium-public`,
 `scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
-The DNS reconciler's `--tunnel-only` mode can repair app CNAMEs off-LAN without
-touching the separately UPnP-gated Octelium API A record.
+The public Tunnel workflow now reconciles all declared CNAMEs, including the
+browser API and native TCP carrier. `--tunnel-only` remains a compatibility
+alias and no longer skips the API.
 
 On 2026-09-04, the public root and `/api/health` returned HTTP 200 without
 Octelium denial headers. A read-only projection from `octelium_resources`
