@@ -112,6 +112,10 @@ Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
 
+OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
+briefings, daytime health checks, bounded daily improvements, and preserved
+personal memory. See [[application-notes#OpenClaw]].
+
 ## GitOps Project Boundary
 
 Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use the namespace-limited
