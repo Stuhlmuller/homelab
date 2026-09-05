@@ -1,5 +1,36 @@
 # OpenClaw
 
+## Remaining 2026.8.2 state migration
+
+The session SQLite import alone does not migrate workspace setup state.
+After the coordinator ownership repair, the gateway rejected the retained
+`openclaw-workspace-state.json` and requested `openclaw doctor --fix`.
+Bootstrap now runs the pinned doctor's noninteractive repair once after
+configuring plugins and secrets, with workspace suggestions disabled. It
+keeps the existing external supervisor/service-repair policy and does not use
+`--force` or `--allow-exec`. Because generic repair can rewrite unrelated skill
+policy, bootstrap snapshots the reviewed config privately and restores it
+atomically after doctor, even on failure. An interrupted repair restores that
+snapshot before the next bootstrap applies configuration. Only doctor state
+migrations persist; configuration remains owned by the reviewed bootstrap.
+
+Existing state requires the verified pre-2026.8.2 archive before this step.
+Doctor performs its upstream legacy-state migrations and startup readiness
+checks, including workspace setup/attestations and any other detected legacy
+stores. The session inventory is checked again afterward, and configuration
+must validate before the separate `.doctor-state-migrated-to-2026.8.2` marker
+is written. The original session-import marker is preserved. Failures block
+the gateway and retain private `doctor-state-reports/latest.log` plus one
+previous report; their contents must not be posted in this public repository.
+
+The pinned CLI passed synthetic workspace migration and a repeat run. Local
+bootstrap tests prove failed backup, doctor, session preservation, or config
+validation cannot create the completion marker. Live gateway and Discord
+readiness remain rollout gates. A manifest rollback cannot undo migrated
+state; recovery requires the verified archive and its matching prior version,
+following the existing offline restore procedure. Do not delete the archive
+or archived legacy sources during the recovery soak.
+
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Runtime config and agent state persist on the `openclaw` PVC
@@ -315,11 +346,11 @@ private inventory that survives retries. After inspection, a read-only SQLite
 query verifies each identity still exists before writing the completion marker.
 Missing or changed identities stop bootstrap even if doctor reports no issues.
 
-It does not run generic doctor repair because that command can rewrite
-unrelated skill policy. Gateway startup owns its documented deterministic
-config migrations once startup is reached; plugin installation itself rejects
-unmigrated config. Persisted session and cron route repairs remain explicit
-reviewed maintenance. Bootstrap also pins `gateway.mode` to `local`, which is
+The later doctor state gate restores the reviewed configuration so generic
+repair cannot persist unrelated skill-policy changes. Gateway startup owns
+its documented deterministic config migrations once startup is reached;
+plugin installation itself rejects unmigrated config. Session identity
+preservation remains mandatory after every migration step. Bootstrap also pins `gateway.mode` to `local`, which is
 required for the container-managed gateway process. External-supervisor mode
 makes Kubernetes the only lifecycle and image-update authority.
 

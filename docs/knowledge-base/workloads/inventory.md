@@ -181,3 +181,11 @@ OpenClaw keeps its UID-private identity coordinator on a shared Pod-local
 configuration, sessions, and backups remain on NFS. Its single-replica
 `Recreate` strategy and same-Pod writer restriction are required; see
 [[../architecture/storage-and-state]].
+
+### OpenClaw workspace-state readiness
+
+After the successful session import and coordinator ownership repair, the
+gateway exposed an additional legacy workspace-state migration gate. Bootstrap
+now declares a one-time pinned doctor repair after backup verification and
+configuration, with session identity verification before completion. Live
+gateway/Discord recovery remains pending.
