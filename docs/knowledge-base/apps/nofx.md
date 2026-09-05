@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-08-28
+updated: 2026-09-04
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -32,5 +32,30 @@ both deployments ready with zero restarts, the 10 GiB claim bound, and the
 ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
 gate are owned by `clusters/homelab/apps/octelium-public`,
 `scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
-The DNS reconciler's `--tunnel-only` mode can repair app CNAMEs off-LAN without
-touching the separately UPnP-gated Octelium API A record.
+The public Tunnel workflow now reconciles all declared CNAMEs, including the
+browser API and native TCP carrier. `--tunnel-only` remains a compatibility
+alias and no longer skips the API.
+
+On 2026-09-04, the public root and `/api/health` returned HTTP 200 without
+Octelium denial headers. A read-only projection from `octelium_resources`
+confirmed `Service/nofx.default` had `isAnonymous: true`, no authorization
+policy, and no authorization-header mode. Kubernetes and tunnel routes matched
+git. Desired state now explicitly declares `isAnonymous: false`; the existing
+policy and `authorizationMode: PASS` remain required.
+
+After authenticated Octelium admin transport works, reconcile only this Service
+from the reviewed repository root; do not edit the resource database:
+
+```sh
+set -o pipefail
+yq ea 'select(.kind == "Service" and .metadata.name == "nofx")' \
+  docs/examples/octelium/homelab-services.yaml |
+  octeliumctl apply --domain stinkyboi.com --include Service -
+```
+
+Repeat the command and require `No applied changes in Cluster Core resources`.
+Then require unauthenticated `/` and `/api/health` to return HTTP 401 with the
+Octelium unauthorized header, and verify authenticated NOFX login still works.
+Argo CD syncing the Kubernetes app does not reconcile the native Octelium
+catalog. Rollback must retain the authentication policy and header passthrough;
+do not restore anonymous access.

@@ -446,64 +446,63 @@ Keep the port-forward and temporary host entries in place until the first VPN
 or other private access path is working. Remove the temporary host entries once
 real DNS can resolve the same names to the Octelium ingress.
 
-Verify that the external Octelium API is actually serving before rotating the
-workload credential or rolling the connector:
+The API uses two outbound Cloudflare Tunnel routes. Browser gRPC-Web uses
+`octelium-api.stinkyboi.com` over HTTPS. Native Octelium and Cordium clients
+use `octelium-transport.stinkyboi.com`, a TCP-over-WebSocket carrier to the
+existing API-only Istio TLS gateway. Both DNS records are proxied CNAMEs to
+`<tunnel-uuid>.cfargotunnel.com`. No router forward or WAN address is required.
+The inner connection retains `octelium-api.stinkyboi.com` for certificate
+verification, HTTP/2, and Octelium authentication.
+
+Cloudflare does not support native gRPC on public HTTP Tunnel routes. Its
+[supported TCP carrier](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/non-http/cloudflared-authentication/arbitrary-tcp/)
+transports the TLS stream instead. Cloudflare warns that long-lived carrier
+connections can disconnect; require real Cordium execution, terminal streaming,
+and reconnect tests before treating this as a proven execution transport.
+An account policy requiring Cloudflare Access may add a separate login gate;
+the carrier does not grant Octelium authorization.
+
+After Argo CD loads the new `octelium-public` pod revision, run the protected
+workflow to remove the retired WAN origin rules and reconcile Tunnel DNS:
 
 ```sh
-curl -vI https://octelium-api.stinkyboi.com
+gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
+nix develop --command python3 scripts/octelium-tunnel-check.py
 ```
 
-The TLS certificate must match `octelium-api.stinkyboi.com`, and the
-endpoint must be the Octelium API rather than a generic Istio `404` or gRPC
-`Unimplemented` response. The public CLI and VPN path also needs Cloudflare to
-accept gRPC and keep the long-lived `MainService/Connect` stream open. A
-healthy unauthenticated gRPC-shaped probe returns HTTP/2 with
-`content-type: application/grpc` and `grpc-status: 16`, not a Cloudflare HTTP
-`403`:
+The workflow uses the existing production AWS role to read the DNS token and
+Tunnel UUID from SSM, and `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to remove the old
+hostname-specific origin/TLS rules. The latter needs zone read, Origin Rules
+edit, and Config Settings write. API responses remain in a temporary private
+log. Retry after correcting declared inputs if any stage fails; partial DNS
+changes are possible and the workflow is idempotent.
+
+The old UPnP CronJob is suspended and its Grafana lease alert paused. It no
+longer renews router mappings; any prior leased mapping expires naturally.
+The dedicated gateway and cluster split DNS remain available for in-cluster
+clients. The legacy origin-port apply workflow now rejects use.
+
+For rollback, revert the Tunnel configuration and pod revision through a
+reviewed PR. Do not restore WAN DNS or port forwarding without a separately
+reviewed transport change. Preserve private cluster access during rollout.
+
+Native clients need a local TCP carrier and a resolver mapping scoped to
+their execution environment. The pinned Octelium client calls the canonical
+API hostname on port 443:
 
 ```sh
-curl -sS \
-  --http2 \
-  -H 'content-type: application/grpc' \
-  -H 'te: trailers' \
-  --data-binary '' \
-  -o /dev/null \
-  -D - \
-  https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
+cloudflared access tcp --hostname octelium-transport.stinkyboi.com --url 127.0.0.1:443
 ```
 
-Cloudflare Tunnel public-hostname routes do not support gRPC streams. The CLI
-API hostname therefore uses a separate direct origin: clients reach
-Cloudflare on TCP/443, a hostname-specific Origin Rule changes the destination
-port to `8443`, and the Xfinity gateway maps that port to
-`10.1.0.200:30443`. The dedicated `octelium-api-ingressgateway` accepts
-Cloudflare origin TLS without SNI, while a separate `VirtualService` routes
-only the API Host. Run
-`scripts/octelium-public-dns.sh` from the homelab LAN after the
-`octelium-api-upnp` CronJob creates its leased router mapping. The script
-verifies both that mapping and an unauthenticated `grpc-status: 16` response
-from the NodePort before changing DNS. All browser, app, and callback hostnames
-remain on `octelium-public`.
-
-The repository-owned CronJob renews the lease but cannot enable UPnP on the
-Xfinity gateway. Router account authority must enable UPnP or provide a
-reviewed static TCP/8443 forward before rollout validation can pass. Grafana
-alerts when the last successful renewal is stale or absent. The end-to-end
-check resolves the API hostname through `1.1.1.1` and pins its gRPC request to
-that public address so Octelium split DNS cannot mask a broken WAN edge.
-
-Reconcile the Cloudflare origin-port and TLS Configuration Rules through their
-protected workflow so the token remains masked inside the `homelab-production`
-environment:
-
-```sh
-gh workflow run octelium-cloudflare-origin-port.yml --ref main
-```
-
-The workflow sets Full (strict) SSL for only the Octelium API hostname and
-verifies that the zone allows HTTP/2 to the origin; Octelium's TLS gRPC endpoint
-requires both. Its token needs zone read, Zone Settings read, Origin Rules edit,
-and Config Settings write for `stinkyboi.com`.
+In a dedicated client container or Pod, map `octelium-api.stinkyboi.com` to
+`127.0.0.1` (for example, a declared Pod `hostAliases` entry) and run the
+carrier in that same network namespace. Binding port 443 may require the
+container's low-port capability. Keep the transport hostname publicly resolved;
+do not map it to loopback. Do not add a workstation-wide hosts entry that
+would redirect the browser's gRPC-Web traffic. The standalone transport probe
+uses a temporary high port and curl `--connect-to`, so it needs neither root
+nor a hosts-file change. CI and OpenClaw client integration remains a separate
+rollout gate; the carrier probe alone does not prove authenticated execution.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
@@ -525,23 +524,11 @@ scripts/octelium-public-dns.sh --dry-run
 scripts/octelium-public-dns.sh
 ```
 
-When off the homelab LAN, reconcile only the public-tunnel records without
-changing the API A record or bypassing its UPnP safety gate:
-
-```sh
-scripts/octelium-public-dns.sh --tunnel-only --dry-run
-scripts/octelium-public-dns.sh --tunnel-only
-```
-
-The gateway reconciler prevents `_gw-*` names from falling through to stale
-wildcard records. The public reconciler verifies the CronJob-owned API mapping,
-creates its proxied A record, then creates exact proxied CNAME records to the named Cloudflare
-Tunnel target for `stinkyboi.com`, portal and browser aliases,
-`console.stinkyboi.com`, app hostnames such as `grafana.stinkyboi.com`, and
-callback hostnames such as `n8n-webhook.stinkyboi.com` and
-`policy-bot-hook.stinkyboi.com`.
-`--tunnel-only` skips the API hostname entirely; a later full run from the
-homelab LAN remains responsible for verifying and reconciling that record.
+The public reconciler manages exact proxied CNAME records for all declared
+browser, API, transport, app, and callback hostnames. `--tunnel-only` remains
+a compatibility alias; it no longer skips the API. The gateway reconciler
+separately manages `_gw-*` records. Prefer the protected Tunnel workflow for
+public DNS changes so credentials stay in CI.
 
 ## Octelium Enterprise Package
 

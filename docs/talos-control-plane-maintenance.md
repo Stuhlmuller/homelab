@@ -57,7 +57,23 @@ claim in issued service-account tokens and drives service-account issuer
 discovery. The rendered control-plane config must also keep `10.1.0.199` in
 `cluster.apiServer.certSANs` so clients can verify the canonical endpoint.
 
-## Render And Validate The Issuer Fix
+The separate `.talos/patches/controlplane-octelium-talos-api.yaml` patch adds
+`talos-api.homelab.local.stinkyboi.com` to `machine.certSANs`. That name is the
+private Octelium TCP Service endpoint for the Talos API.
+`.talos/patches/controlplane-kubernetes-api-san.yaml` replaces the Kubernetes
+API SAN list with the canonical `10.1.0.199` address. Both SAN patches use
+RFC 6902 list replacement so rerendering an already patched live config stays
+idempotent and removes the stale `10.1.0.216` SAN.
+
+Live validation on 2026-09-02 recovered the current control-plane configuration
+without resetting Talos, generated a new local `os:admin` client from the
+original CA, and saved a fresh etcd snapshot off-node. The SAN-only patch then
+validated strictly, applied without a reboot, and appeared on Acer's live Talos
+server certificate. Kubernetes readiness and Talos services remained healthy.
+The private Octelium Service still requires its catalog rollout and an off-LAN
+authenticated check before the Tailscale subnet route can be removed.
+
+## Render And Validate The Control-Plane Changes
 
 This checkout does not currently contain `.talos/controlplane.yaml` or
 `.talos/talosconfig`. Add or restore those files only through the established
@@ -69,14 +85,26 @@ When `.talos/controlplane.yaml` is available locally, render a candidate config:
 ```sh
 talosctl machineconfig patch .talos/controlplane.yaml \
   --patch @.talos/patches/controlplane-service-account-issuer.yaml \
-  --output /private/tmp/controlplane-service-account-issuer.yaml
+  --patch @.talos/patches/controlplane-kubernetes-api-san.yaml \
+  --patch @.talos/patches/controlplane-octelium-talos-api.yaml \
+  --output /private/tmp/controlplane-access.yaml
+
+yq -e '
+  .cluster.controlPlane.endpoint == "https://10.1.0.199:6443" and
+  (.cluster.apiServer.certSANs | length == 1) and
+  .cluster.apiServer.certSANs[0] == "10.1.0.199" and
+  .cluster.apiServer.extraArgs."service-account-issuer" ==
+    "https://10.1.0.199:6443" and
+  (.machine.certSANs | length == 1) and
+  .machine.certSANs[0] == "talos-api.homelab.local.stinkyboi.com"
+' /private/tmp/controlplane-access.yaml
 ```
 
 Validate before any live apply:
 
 ```sh
 talosctl validate \
-  --config /private/tmp/controlplane-service-account-issuer.yaml \
+  --config /private/tmp/controlplane-access.yaml \
   --mode metal \
   --strict
 ```
@@ -88,45 +116,90 @@ are:
 - `cluster.apiServer.certSANs` includes `10.1.0.199`
 - `cluster.apiServer.extraArgs.service-account-issuer:
   https://10.1.0.199:6443`
+- `machine.certSANs` includes `talos-api.homelab.local.stinkyboi.com`
 
 ## Apply Sequence For Issuer Drift
 
 Do not run these commands until the rendered config has passed validation and
 the operator has explicitly approved the live Talos apply sequence.
-The direct `10.1.0.199` Talos endpoint requires the homelab LAN or retained
-Tailscale fallback; `octelium connect` and Cordium currently expose only the
-declared Kubernetes Service, not the Talos API or LAN subnet.
+Use the direct `10.1.0.199` Talos endpoint for this first apply because the
+Octelium hostname is not valid until the new machine certificate is active.
+Use the homelab LAN or the temporarily retained Tailscale subnet route, and do
+not withdraw that fallback until the Octelium path passes the off-LAN check.
 
-1. Confirm API and Talos access are healthy with read-only commands:
+1. Confirm every node, non-terminal Pod, the API, and etcd are healthy with
+   read-only commands:
 
    ```sh
+   set -euo pipefail
    kubectl get nodes -o wide
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=1m
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
-     get services
+     get services -o json | jq -se '
+       map(select(.metadata.id != "dashboard")) as $services
+       | ($services | length) > 0 and
+         all($services[];
+           .spec.running == true and .spec.healthy == true and
+           .spec.unknown == false)
+     '
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
    ```
 
 2. Apply the validated rendered config to the Acer control-plane node:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
-     apply-config \
-     --file /private/tmp/controlplane-service-account-issuer.yaml
+     apply-config --dry-run \
+     --file /private/tmp/controlplane-access.yaml
+
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     apply-config --mode=reboot \
+     --file /private/tmp/controlplane-access.yaml
    ```
 
 3. Watch the control plane recover:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
-     get services
+     get services -o json | jq -se '
+       map(select(.metadata.id != "dashboard")) as $services
+       | ($services | length) > 0 and
+         all($services[];
+           .spec.running == true and .spec.healthy == true and
+           .spec.unknown == false)
+     '
 
-   kubectl get nodes -o wide
+   kubectl wait --for=condition=Ready node/acer --timeout=10m
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
    ```
+
+   Do not require cluster-wide Pod readiness between the Acer reboot and the
+   first worker reboot. Talos 1.11 switches the only accepted issuer at once,
+   so worker CNI credentials minted by the old issuer can reject API requests
+   until that worker reboots. Continue only when every Node is Ready, Acer's
+   services and etcd are healthy, and every unready workload is positively
+   traced to old-issuer CNI authorization on an unrebooted worker. Stop on any
+   unrelated or unexplained failure.
 
 4. Verify issuer discovery no longer reports `10.1.0.216`:
 
@@ -143,12 +216,102 @@ declared Kubernetes Service, not the Talos API or LAN subnet.
 5. Refresh local kubeconfig only after the API is healthy:
 
    ```sh
+   set -euo pipefail
    talosctl --talosconfig .talos/talosconfig \
      --endpoints 10.1.0.199 \
      --nodes 10.1.0.199 \
      kubeconfig ~/.kube/config --force
 
    kubectl config set-cluster homelab --server=https://10.1.0.199:6443
+   ```
+
+6. Reboot workers one at a time in this order: `zimaboard-2`, `zimaboard-1`,
+   `zimaboard-0`. Before each reboot, require every Node, Acer's services and
+   etcd, and the target worker's Talos services to be healthy. Start with an
+   empty allowlist, then add only Pods whose Events or logs positively trace
+   their failure to old-issuer credentials on workers that have not rebooted:
+
+   ```sh
+   set -euo pipefail
+   node_name=zimaboard-2
+   case "$node_name" in
+     zimaboard-0) node_ip=10.1.0.200 ;;
+     zimaboard-1) node_ip=10.1.0.201 ;;
+     zimaboard-2) node_ip=10.1.0.202 ;;
+     *) echo "unsupported worker: $node_name" >&2; exit 1 ;;
+   esac
+   approved_unready_pods='[]'
+
+   services_healthy() {
+     talosctl --talosconfig .talos/talosconfig \
+       --endpoints 10.1.0.199 \
+       --nodes "$1" \
+       get services -o json | jq -se '
+         map(select(.metadata.id != "dashboard")) as $services
+         | ($services | length) > 0 and
+           all($services[];
+             .spec.running == true and .spec.healthy == true and
+             .spec.unknown == false)
+       '
+   }
+
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   services_healthy 10.1.0.199
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes 10.1.0.199 \
+     etcd status
+   services_healthy "$node_ip"
+
+   kubectl get pods --all-namespaces -o json | jq -e \
+     --argjson approved "$approved_unready_pods" '
+       ($approved | arrays) as $expected
+       | [.items[]
+        | select(.status.phase != "Succeeded" and .status.phase != "Failed")
+        | select((.status.conditions // [] |
+            any(.type == "Ready" and .status == "True")) | not)
+        | "\(.metadata.namespace)/\(.metadata.name)" +
+          "@\(.metadata.uid)@" +
+          "\(.spec.nodeName // "<unbound>")"] as $actual
+       | ($expected | all(.[]; type == "string")) and
+         (($expected | unique | length) == ($expected | length)) and
+         (($actual | sort) == ($expected | sort))
+     '
+
+   talosctl --talosconfig .talos/talosconfig \
+     --endpoints 10.1.0.199 \
+     --nodes "$node_ip" \
+     reboot --wait --timeout=10m
+
+   kubectl wait --for=condition=Ready "node/$node_name" --timeout=10m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector \
+       "spec.nodeName=$node_name,status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
+   ```
+
+   Set `node_name` in the order above; the `case` statement derives its address
+   from the [worker address table](#remote-worker-reboot). This is the issuer
+   cutover's narrow degraded-state exception to the normal worker reboot
+   preflight.
+   Rebuild `approved_unready_pods` before every worker; never carry names
+   forward without fresh evidence. Each entry uses
+   `namespace/name@pod-UID@node`; use `<unbound>` only when `spec.nodeName` is
+   empty. Accept direct CNI `Unauthorized` errors or dependents whose failure
+   traces to such a CNI error on an unrebooted worker. Missing or different
+   evidence is an unrelated failure and stops the sequence. Also stop if the
+   reboot or target-local readiness gate fails.
+   The sequence recreates worker-bound projected tokens, and keeps
+   `zimaboard-0`, which runs Istiod and the Octelium dataplane, until last.
+
+7. After `zimaboard-0`, restore the normal global gates:
+
+   ```sh
+   set -euo pipefail
+   kubectl wait --for=condition=Ready node --all --timeout=1m
+   kubectl wait --for=condition=Ready pod --all --all-namespaces \
+     --field-selector "status.phase!=Succeeded,status.phase!=Failed" \
+     --timeout=10m
    ```
 
 ## Issuer Apply Risks
@@ -158,13 +321,35 @@ declared Kubernetes Service, not the Talos API or LAN subnet.
   lose trust with the existing cluster. Never regenerate secrets for this fix.
 - If `certSANs` omits `10.1.0.199`, clients may fail TLS verification after the
   endpoint correction.
-- Existing projected service-account tokens minted with the stale issuer may
-  continue to exist until they rotate. Verify new discovery state first, then
-  restart only workloads that prove they are still using stale projected tokens
-  through their normal GitOps path.
+- Talos v1.11 cannot configure both the old and new service-account issuers for
+  a non-disruptive transition. Existing projected tokens minted with the stale
+  issuer fail authentication until kubelet rotates them. The sequence therefore
+  reboots Acer with the apply and then each worker to recreate every projected
+  token. Stop if any readiness gate fails; do not rely on eventual rotation.
 - Do not use `talosctl patch machineconfig` or `talosctl edit machineconfig`.
   Emergency recovery also requires a repository-owned patch, rendered config,
   and validation before applying through the documented path.
+
+## Remote Talos Through Octelium
+
+The private `talos-api.homelab` Octelium TCP Service forwards raw port `50000`
+to `10.1.0.199`. Its policy permits only the `homelab-owner` human client;
+Talos mutual TLS still authenticates every request.
+
+After the control-plane patch and Octelium catalog workflow both complete,
+validate from an off-LAN workstation before withdrawing the Tailscale subnet
+route:
+
+```sh
+octelium connect --domain stinkyboi.com --ip-mode=v4 -d
+talosctl --talosconfig .talos/talosconfig \
+  --endpoints talos-api.homelab.local.stinkyboi.com:50000 \
+  --nodes 10.1.0.199,10.1.0.200,10.1.0.201,10.1.0.202 \
+  version
+```
+
+The node addresses select Talos API targets; the client connection itself uses
+the Octelium Service endpoint. Keep direct IP access as the LAN recovery path.
 
 ## Remote Worker Reboot
 
@@ -280,6 +465,12 @@ talosctl --talosconfig .talos/talosconfig \
 talosctl --talosconfig .talos/talosconfig \
   --endpoints 10.1.0.202 --nodes 10.1.0.202 reboot --wait
 ```
+
+On Talos v1.11, `--mode=powercycle` skips kexec but does not skip graceful
+teardown. If this reboot stalls in `stopAllPods` while stopping an unhealthy
+kubelet, let the bounded command time out and do not submit another reboot.
+The 2026-09-02 recovery attempt reached this state without restarting the node;
+the subsequent physical power-cycle restored it.
 
 If authentication is unavailable, do not run the reboot command or use
 `--insecure`. An operator with physical access must identify `zimaboard-2`

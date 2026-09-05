@@ -18,11 +18,14 @@ control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.
 The bootstrap script refuses to mutate the cluster if these selectors fail,
 including a missing node or failed API lookup.
 
-The public CLI edge uses the host-networked `octelium-api-upnp` CronJob on
-`zimaboard-0` to renew WAN TCP/8443 to `10.1.0.200:30443`. The job cannot enable
-Xfinity UPnP, so router authority remains a rollout gate. Grafana alerts before
-the 24-hour lease expires, and the end-to-end check pins its gRPC request to a
-public DNS answer instead of trusting local split DNS.
+The public API uses outbound Cloudflare Tunnel: HTTPS for browser gRPC-Web
+and `octelium-transport.stinkyboi.com` TCP-over-WebSocket for native TLS gRPC.
+The old UPnP job is suspended and its lease alert paused. Reconcile DNS and
+remove retired origin rules with `octelium-public-tunnel.yml` after Argo sync.
+Run `scripts/octelium-tunnel-check.py`; then prove authenticated console,
+audit queries, Cordium execution, and reconnect behavior separately. Native
+clients need a scoped canonical API resolver mapping and local carrier;
+workstation-wide hosts overrides would also redirect browser API requests.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 additional public WEB Service fallbacks on `acer` without Multus, 19

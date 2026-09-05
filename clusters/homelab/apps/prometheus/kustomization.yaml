@@ -4,6 +4,7 @@ resources:
   - argocd-prometheusrules.yaml
   - argocd-servicemonitors.yaml
   - deluge-servicemonitor.yaml
+  - istio-podmonitors.yaml
   - externalsecret.yaml
   - namespace.yaml
   - authorizationpolicy.yaml
