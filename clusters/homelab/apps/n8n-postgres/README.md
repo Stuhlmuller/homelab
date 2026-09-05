@@ -107,3 +107,15 @@ kubectl -n automation exec statefulset/n8n-postgres -- pg_dump -U postgres n8n
 For a full restore, restore the PostgreSQL PVC or recreate the database from a
 logical dump, restore the n8n `/home/node/.n8n` PVC for the instance config and
 binary data, then re-sync n8n through Argo CD.
+
+## Version And Upgrade Contract
+
+PostgreSQL is pinned to `14.24`. Patch upgrades within major version 14 do not
+convert the data directory, but still require a current logical dump and a
+paired n8n PVC snapshot. Confirm no active n8n executions, extensions, or
+replication slots before rollout. After Argo CD reconciles, verify the
+StatefulSet, `SHOW server_version`, `SELECT 1`, n8n readiness, and 24 hours of
+database errors, restarts, CPU, memory, and latency. Roll back declaratively to
+the prior digest only while the data directory remains compatible; otherwise
+restore the matched database dump and n8n snapshot. PostgreSQL 14 reaches
+upstream end of life on 2026-11-12, so its major upgrade is tracked separately.
