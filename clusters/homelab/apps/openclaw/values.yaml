@@ -4,6 +4,7 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    replicas: 1
     revisionHistoryLimit: 1
     strategy: Recreate
     pod:
@@ -75,6 +76,9 @@ controllers:
             cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
             chown -R 1000:1000 /nix-shared
+            # The NAS maps file ownership to 65534; coordinator locks need local UID ownership.
+            chown 1000:1000 /openclaw-coordinator
+            chmod 700 /openclaw-coordinator
             /toolbox/profile/bin/jq --version
             /toolbox/profile/bin/rg --version
             /toolbox/profile/bin/gh --version
@@ -92,6 +96,10 @@ controllers:
             cpu: 1500m
             memory: 3Gi
       bootstrap-config:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -134,6 +142,18 @@ controllers:
           - -ec
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            doctor_marker="$OPENCLAW_STATE_DIR/.doctor-state-migrated-to-2026.8.2"
+            doctor_reports="$OPENCLAW_STATE_DIR/doctor-state-reports"
+            doctor_config_snapshot="$doctor_reports/config-before.json"
+            restore_doctor_config() {
+              cp "$doctor_config_snapshot" "$OPENCLAW_CONFIG_PATH.doctor-restore"
+              chmod 600 "$OPENCLAW_CONFIG_PATH.doctor-restore"
+              mv "$OPENCLAW_CONFIG_PATH.doctor-restore" "$OPENCLAW_CONFIG_PATH"
+            }
+            # Resume an interrupted doctor before applying this rollout's config.
+            if [ ! -s "$doctor_marker" ] && [ -s "$doctor_config_snapshot" ]; then
+              restore_doctor_config
+            fi
             had_existing_state=false
             if [ -d "$OPENCLAW_STATE_DIR" ] &&
               [ -n "$(find "$OPENCLAW_STATE_DIR" -mindepth 1 -maxdepth 1 \
@@ -247,6 +267,43 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
+            # Targeted 2026.8.2 config migration; the offline backup above owns rollback.
+            python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_CONFIG_MIGRATION'
+            import json
+            import os
+            import pathlib
+            import sys
+            import tempfile
+
+            path = pathlib.Path(sys.argv[1])
+            config = json.loads(path.read_text())
+            before = json.dumps(config)
+            for section, key in (
+                ("meta", "lastTouchedAt"),
+                ("commands", "ownerDisplay"),
+                ("hooks", "maxBodyBytes"),
+                ("plugins", "bundledDiscovery"),
+            ):
+                config.get(section, {}).pop(key, None)
+            defaults = config.get("agents", {}).get("defaults", {})
+            models = defaults.get("models", {})
+            migrated = config.get("meta", {}).get("migrations", {}).get("modelPolicyAllowlist")
+            if models and "modelPolicy" not in defaults and migrated is not True:
+                defaults["modelPolicy"] = {"allow": list(models)}
+            if json.dumps(config) != before:
+                fd, temporary = tempfile.mkstemp(prefix=".config-migration-", dir=path.parent)
+                try:
+                    with os.fdopen(fd, "w") as output:
+                        json.dump(config, output, indent=2)
+                        output.write("\n")
+                        output.flush()
+                        os.fsync(output.fileno())
+                    os.replace(temporary, path)
+                finally:
+                    if os.path.exists(temporary):
+                        os.unlink(temporary)
+            OPENCLAW_CONFIG_MIGRATION
+
             openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
             : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
             verify_discord_plugin() {
@@ -294,16 +351,106 @@ controllers:
             fi
             verify_discord_plugin installed
 
+            session_sqlite() {
+              report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+              mkdir -p "$report_dir"
+              report="$report_dir/$2.latest.json"
+              if [ -f "$report" ]; then
+                mv "$report" "$report_dir/$2.previous.json"
+              fi
+              (umask 077; : > "$report")
+              status=0
+              openclaw doctor "$@" --json > "$report" || status=$?
+              python3 - "$report" "$status" "$2" <<'OPENCLAW_SESSION_REPORT'
+            import json
+            import sys
+
+            path, status, mode = sys.argv[1:]
+            with open(path, encoding="utf-8") as source:
+                report = json.load(source)
+            issues = [(target["agentId"], issue)
+                      for target in report["targets"] for issue in target["issues"]]
+            allowed = all(
+                agent == "main"
+                and issue["code"] == "transcript_missing"
+                and issue.get("sessionKey") == "agent:main:healthcheck-20260813"
+                for agent, issue in issues
+            )
+            valid = (
+                report["mode"] == mode
+                and bool(report["targets"])
+                and report["totals"]["issues"] == len(issues)
+                and int(status) in (0, 1)
+                and (int(status) == 0 or bool(issues))
+                and allowed
+            )
+            print(f"session-sqlite {mode}: {json.dumps(report['totals'], sort_keys=True)}")
+            print(f"Private migration report: {path}")
+            if not valid:
+                sys.exit("Session migration report rejected; preserve report and backup for review")
+            if issues:
+                print("Known missing healthcheck transcript: preserve metadata through upstream import")
+            OPENCLAW_SESSION_REPORT
+            }
+
+            session_preservation() {
+              python3 - "$1" "$report" "$report_dir/expected-sessions.json" <<'OPENCLAW_SESSION_PRESERVATION'
+            import json
+            import os
+            import pathlib
+            import sqlite3
+            import sys
+
+            mode, report_path, expected_path = sys.argv[1:]
+            expected_path = pathlib.Path(expected_path)
+            if mode == "snapshot" and not expected_path.exists():
+                report = json.loads(pathlib.Path(report_path).read_text())
+                expected = []
+                for target in report["targets"]:
+                    store = pathlib.Path(target["storePath"])
+                    entries = json.loads(store.read_text()) if store.exists() else {}
+                    if len(entries) != target["legacyEntries"]:
+                        sys.exit("Legacy session inventory changed before import")
+                    expected.append({"sqlitePath": target["sqlitePath"], "sessions": {
+                        key: entry["sessionId"] for key, entry in entries.items()
+                    }})
+                temporary = expected_path.with_suffix(".tmp")
+                with open(temporary, "w", encoding="utf-8") as output:
+                    os.chmod(temporary, 0o600)
+                    json.dump(expected, output)
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(temporary, expected_path)
+            expected = json.loads(expected_path.read_text())
+            if not expected:
+                sys.exit("Missing pre-import session inventory")
+            if mode == "verify":
+                for target in expected:
+                    uri = pathlib.Path(target["sqlitePath"]).resolve().as_uri() + "?mode=ro"
+                    with sqlite3.connect(uri, uri=True) as db:
+                        for key, session_id in target["sessions"].items():
+                            row = db.execute(
+                                "SELECT current_session_id FROM session_nodes WHERE session_key = ?",
+                                (key,),
+                            ).fetchone()
+                            if row != (session_id,):
+                                sys.exit("Imported session identity missing or changed; preserve backup and reports")
+                print("Verified every pre-import session key and identity in SQLite")
+            OPENCLAW_SESSION_PRESERVATION
+            }
+
             if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
               echo "Migrating session state to OpenClaw 2026.8.2"
-              openclaw doctor --session-sqlite inspect \
+              session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
-              openclaw doctor --session-sqlite dry-run \
-                --session-sqlite-all-agents --json
-              openclaw doctor --session-sqlite import \
+              session_sqlite --session-sqlite dry-run \
                 --session-sqlite-all-agents
-              openclaw doctor --session-sqlite inspect \
+              session_preservation snapshot
+              session_sqlite --session-sqlite import \
                 --session-sqlite-all-agents
+              session_sqlite --session-sqlite inspect \
+                --session-sqlite-all-agents
+              session_preservation verify
               printf 'session SQLite migration imported and inspected\n' > "$migration_marker.tmp"
               mv "$migration_marker.tmp" "$migration_marker"
             fi
@@ -337,6 +484,19 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
+              # Clear the old authored env reference; otherwise OpenClaw preserves it.
+              if python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_HOOK_REFERENCE'
+            import json
+            import pathlib
+            import sys
+
+            config = json.loads(pathlib.Path(sys.argv[1]).read_text())
+            token = config.get("hooks", {}).get("token")
+            sys.exit(0 if token == "${GRAFANA_ALERT_HOOK_TOKEN}" else 1)
+            OPENCLAW_HOOK_REFERENCE
+              then
+                openclaw config unset hooks.token
+              fi
               HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
               openclaw config set --strict-json \
                 hooks.token \
@@ -347,9 +507,6 @@ controllers:
               openclaw config set --strict-json \
                 hooks.allowedAgentIds \
                 '["main"]'
-              openclaw config set --strict-json \
-                hooks.maxBodyBytes \
-                '65536'
               openclaw config set --strict-json \
                 hooks.allowRequestSessionKey \
                 'false'
@@ -406,8 +563,44 @@ controllers:
                 --ref-source env \
                 --ref-id DISCORD_BOT_TOKEN
             fi
+
+            if [ ! -s "$doctor_marker" ]; then
+              if "$had_existing_state" && ! verify_backup_dir "$backup_dir"; then
+                echo "Verified pre-upgrade backup required before doctor state migration" >&2
+                exit 1
+              fi
+              mkdir -p "$doctor_reports"
+              chmod 700 "$doctor_reports"
+              cp "$OPENCLAW_CONFIG_PATH" "$doctor_config_snapshot.tmp"
+              chmod 600 "$doctor_config_snapshot.tmp"
+              mv "$doctor_config_snapshot.tmp" "$doctor_config_snapshot"
+              if [ -f "$doctor_reports/latest.log" ]; then
+                mv "$doctor_reports/latest.log" "$doctor_reports/previous.log"
+              fi
+              echo "Migrating remaining legacy state with pinned OpenClaw doctor"
+              doctor_status=0
+              (umask 077; openclaw doctor --fix --non-interactive \
+                --no-workspace-suggestions > "$doctor_reports/latest.log" 2>&1) || doctor_status=$?
+              # Doctor owns state migration; reviewed bootstrap owns configuration.
+              restore_doctor_config
+              if [ "$doctor_status" -ne 0 ]; then
+                echo "Doctor migration failed; preserve private report and backup for review" >&2
+                exit 1
+              fi
+              if [ -s "$migration_marker" ]; then
+                report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+                session_preservation verify
+              fi
+              openclaw config validate
+              printf 'doctor state migration and readiness checks passed\n' > "$doctor_marker.tmp"
+              mv "$doctor_marker.tmp" "$doctor_marker"
+            fi
     containers:
       app:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
@@ -600,6 +793,18 @@ persistence:
           - path: /data
         bootstrap-config:
           - path: /data
+  identity-coordinator:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 16Mi
+    advancedMounts:
+      openclaw:
+        00-operator-toolbox:
+          - path: /openclaw-coordinator
+        bootstrap-config:
+          - path: /data/openclaw/tmp/openclaw-1000
+        app:
+          - path: /data/openclaw/tmp/openclaw-1000
   plugin-cache:
     enabled: true
     type: emptyDir

@@ -67,6 +67,34 @@ ready, but they must not be treated as production-ready until:
 
 ## Open Audit Findings
 
+- **Status:** config recovery verified; session-warning fix staged
+- **Area:** OpenClaw upgrade / config and session migration
+- **Evidence:** On 2026-09-04, OpenClaw 2026.8.2 bootstrap repeatedly rejected
+  four retired config keys before Discord installation and session migration.
+  `clusters/homelab/apps/openclaw/values.yaml` now migrates those keys after
+  the verified offline backup and preserves legacy model restrictions explicitly.
+  It also stops writing retired `hooks.maxBodyBytes`. PR #953 rolled out on
+  September 5: both archive verification passes succeeded, retired keys were
+  absent, the model policy was present, and Discord 2026.8.2 installed.
+  Session dry-run then stopped on one missing healthcheck transcript: 19 of 20
+  entries validated, with 1,089 events. Upstream treats `transcript_missing` as
+  an import warning and preserves metadata, but its CLI returns exit 1 for all
+  issues. Bootstrap now accepts only that exact known agent/session warning,
+  retains private JSON reports, and rejects all other issues. No live index
+  entries or transcripts were manually altered.
+- **Validation:** A synthetic legacy config failed under the exact 2026.8.2
+  CLI before migration and passed afterward. The actual bootstrap migration
+  has preservation, idempotence, and invalid-input checks in
+  `scripts/ci/openclaw-config-check.py`. The same check exercises the session
+  report gate against unexpected warnings, failure exits, mismatched reports,
+  and malformed JSON. An exact 2026.8.2 CLI fixture returned exit 1 for
+  dry-run and import with a missing transcript, preserved both session metadata
+  entries, and passed post-import inspection. Full static validation, 280
+  rendered policy checks, shell syntax, and server-side diff passed.
+- **Next step:** Roll out through GitOps, require successful bootstrap and
+  session migration, then verify gateway and Discord readiness. Preserve the
+  pre-upgrade archive and migration originals until the 24-hour soak passes.
+
 - **Status:** open
 - **Area:** storage / backup and retained data
 - **Evidence:** Read-only inspection on 2026-08-27 found Prometheus and
@@ -158,6 +186,9 @@ password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup; restore validation remains open.
+Grafana's shared backup-staleness rule includes this CronJob alongside the four
+media backup jobs: warn after 30 hours without success, including an established
+job that has never succeeded. The legacy rule UID is preserved during expansion.
 
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
@@ -228,3 +259,26 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`
+
+## OpenClaw identity coordinator ownership
+
+September 5 read-only inspection found QNAP-backed OpenClaw paths reported as
+UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
+coordinator ownership check blocked gateway startup after session migration
+completed successfully. The repository mounts a shared local `emptyDir` at
+`/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
+Only coordinator locks move off NFS; identity/configuration/session databases
+and the verified pre-upgrade backup remain on the PVC. This requires one
+`Recreate` Pod and all writers using its shared mount. Never start an external
+writer against that PVC with a separate coordinator. See the OpenClaw README
+for verification and rollback limits; live recovery remains pending rollout.
+
+### OpenClaw remaining legacy-state upgrade
+
+The 2026.8.2 session import does not migrate workspace setup/attestation state.
+A separate bootstrap doctor gate verifies the existing pre-upgrade archive,
+runs pinned upstream noninteractive repairs, rechecks imported session
+identities, and validates configuration before writing its own completion
+marker. Private doctor reports retain latest plus previous. State restoration
+requires the archive and compatible software, not merely a manifest revert.
+See the OpenClaw README; gateway readiness is still a live acceptance gate.

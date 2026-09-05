@@ -6,6 +6,18 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
+python3 scripts/ci/octelium-tunnel-check-test.py
+
+echo "::group::Octelium console login redirect"
+(
+  redirect_source="$(mktemp)"
+  trap 'rm -f "$redirect_source"' EXIT
+  yq -r '.spec.configPatches[0].patch.value.typed_config.inlineCode' \
+    clusters/homelab/apps/octelium-cluster/console-redirect.yaml > "$redirect_source"
+  lua scripts/ci/octelium-console-redirect-check.lua "$redirect_source"
+)
+echo "::endgroup::"
+
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
@@ -610,7 +622,7 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
     ($nofx | length) == 1 and
-    ($nofx[0].spec.isAnonymous // false) == false and
+    $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
     $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
     ($policies | length) == 1 and
@@ -769,6 +781,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
+    '.github/workflows/octelium-public-tunnel.yml:reconcile' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -797,8 +810,9 @@ done <<'EOF'
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
-.github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
+.github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
+.github/workflows/octelium-public-tunnel.yml d944741bcf57ca037b1fe7dc83de7a5e66a26dd8b3d35100ca990dbf3df5f3ba
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
@@ -808,6 +822,7 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
@@ -1159,6 +1174,7 @@ fi
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
+python3 scripts/ci/openclaw-config-check.py
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
 rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
@@ -1178,11 +1194,12 @@ rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
 rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"
 rg -Fq 'required_kib=$((state_kib * 2 + 2097152))' "$openclaw_values"
-[[ "$(rg -Fc 'openclaw doctor --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
-rg -Fq 'openclaw doctor --session-sqlite dry-run' "$openclaw_values"
-rg -Fq 'openclaw doctor --session-sqlite import' "$openclaw_values"
-if rg -Fq 'openclaw doctor --fix' "$openclaw_values" ||
-  rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
+[[ "$(rg -Fc 'session_sqlite --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
+rg -Fq 'session_sqlite --session-sqlite dry-run' "$openclaw_values"
+rg -Fq 'session_sqlite --session-sqlite import' "$openclaw_values"
+[[ "$(rg -Fc 'openclaw doctor --fix --non-interactive' "$openclaw_values")" -eq 1 ]]
+rg -Fq 'restore_doctor_config' "$openclaw_values"
+if rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
   echo "OpenClaw bootstrap contains an unsafe or ineffective doctor repair" >&2
   exit 1
 fi

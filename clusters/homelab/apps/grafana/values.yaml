@@ -35,7 +35,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "17"
+  homelab.rst.io/alerting-provisioning-version: "19"
 plugins:
   - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
@@ -320,6 +320,8 @@ alerting:
               severity: warning
               managed_by: grafana-provisioning
           - uid: homelab-octelium-api-upnp-stale
+            # Retained for history; outbound Tunnel replaces the router lease.
+            isPaused: true
             title: Octelium API UPnP lease renewal stale
             condition: C
             data:
@@ -655,7 +657,7 @@ alerting:
               managed_by: grafana-provisioning
               app: postgres
           - uid: homelab-media-backup-stale
-            title: Media backup stale
+            title: Homelab backup stale
             condition: C
             data:
               - refId: A
@@ -672,8 +674,8 @@ alerting:
                     (
                       time()
                       - kube_cronjob_status_last_successful_time{
-                          namespace="media",
-                          cronjob=~"(deluge|radarr|sonarr)-config-backup|media-postgres-backup"
+                          namespace=~"media|octelium-storage",
+                          cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup"
                         }
                       > 30 * 60 * 60
                     )
@@ -682,15 +684,15 @@ alerting:
                       (
                         time()
                         - kube_cronjob_created{
-                            namespace="media",
-                            cronjob=~"(deluge|radarr|sonarr)-config-backup|media-postgres-backup"
+                            namespace=~"media|octelium-storage",
+                            cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup"
                           }
                         > 30 * 60 * 60
                       )
                       unless on (namespace, cronjob)
                       kube_cronjob_status_last_successful_time{
-                        namespace="media",
-                        cronjob=~"(deluge|radarr|sonarr)-config-backup|media-postgres-backup"
+                        namespace=~"media|octelium-storage",
+                        cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup"
                       }
                     )
                   instant: true
@@ -747,18 +749,19 @@ alerting:
             for: 10m
             annotations:
               summary: >-
-                A nightly media backup is older than 30 hours or has never
+                A nightly homelab backup is older than 30 hours or has never
                 succeeded.
               description: >-
-                The alert is scoped to the Deluge, Radarr, Sonarr, and media
-                PostgreSQL backup CronJobs. Restore the owning node or storage
-                path, then verify a successful Job before treating the recovery
+                The alert is scoped to the Deluge, Radarr, Sonarr, media
+                PostgreSQL, and Octelium PostgreSQL backup CronJobs. Restore the
+                owning node or storage path, then verify a successful Job before
+                treating the recovery
                 point as current.
               runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/storage-nfs.md
             labels:
               severity: warning
               managed_by: grafana-provisioning
-              app: media-backup
+              app: homelab-backup
           - uid: homelab-deployment-unavailable
             title: Kubernetes deployment unavailable
             condition: C
