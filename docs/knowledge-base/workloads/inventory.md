@@ -8,6 +8,11 @@ This inventory summarizes the current application and platform ownership map.
 Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt
 units as the source of truth when they disagree with this note.
 
+Runtime secret contract: all 68 SSM parameters use AWS-managed `alias/aws/ssm`.
+Application secret names and values are unchanged. Historical secret/state
+recovery copies and the old-key retirement status are recorded in
+[[operations/kms-cost-audit-2026-09-05]].
+
 ## Import Note
 
 This note reflects the current working tree. Human app access, operator,

@@ -6,7 +6,7 @@ locals {
   root_config = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   app_url     = "https://grafana.stinkyboi.com"
   aws_region  = local.root_config.locals.aws_region
-  kms_key_id  = local.root_config.locals.kms_key_id
+  kms_key_id  = local.root_config.locals.runtime_kms_key_id
   tags = {
     for key, value in local.root_config.locals.default_tags :
     key => tostring(value)

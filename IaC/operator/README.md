@@ -225,3 +225,21 @@ Do not destroy this unit while `IaC/live/aws-ssm-parameters` still manages that
 policy family or the cluster uses the External Secrets IAM user. The user has
 `prevent_destroy`; removing the bootstrap grant or boundary first would prevent
 safe reconciliation or restore the broader direct-policy risk.
+
+## State bucket request costs
+
+`state-bucket-encryption` adopts the existing state bucket's encryption
+configuration and enables S3 Bucket Keys. It preserves the default KMS key,
+explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
+See [KMS audit and rollout](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md)
+for the focused plan/apply path, verification, and declarative rollback.
+
+## Legacy KMS key retirement
+
+`legacy-kms-retirement` owns only the adopted legacy key and its alias. Its
+final desired state schedules deletion with a 30-day window. The active
+east-region OpenTofu key is outside this unit. Dependency audit and archive
+verification are complete. The explicitly approved retirement was applied on
+September 5, 2026; deletion is scheduled for October 5. Keep
+`retirement_requested = true` so re-applies preserve retirement. See the
+[KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).
