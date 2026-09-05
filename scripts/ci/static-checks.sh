@@ -585,6 +585,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync,SyncFail" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/hook-delete-policy"] == "BeforeHookCreation,HookSucceeded" and
     $cleanup_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
+    $cleanup_jobs[0].spec.activeDeadlineSeconds == 120 and
     $cleanup_jobs[0].spec.template.spec.serviceAccountName == "cordium-genesis-cleanup" and
     $cleanup_jobs[0].spec.template.spec.automountServiceAccountToken == true and
     ($cluster_config_jobs | length) == 1 and
@@ -593,6 +594,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     ($cluster_configs | length) == 1 and
     $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260822" and
     ($misowned_prerequisites | length) == 0 and
+    $cleanup_jobs[0].spec.template.spec.containers[0].command == null and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
       "clusterrolebinding.rbac.authorization.k8s.io/cordium-genesis",
@@ -601,7 +603,6 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
       "--namespace=octelium",
       "--ignore-not-found=true",
       "--wait=false",
-      "--request-timeout=30s",
       "--cache-dir=/tmp/kubectl-cache"
     ]
   ' >/dev/null

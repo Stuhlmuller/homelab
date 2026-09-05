@@ -857,6 +857,18 @@ observations below retain their original dates.
   code outside this repository's review path.
 - **Next step:** keep remote Terragrunt module sources pinned to immutable
   commits, or vendor the module before using a mutable release tag again.
+- **Status:** fixed in PR for #830; live cleanup verification pending
+- **Area:** Cordium / Kubernetes RBAC
+- **Evidence:** `cordium-genesis-cleanup` passed `--request-timeout=30s` to
+  kubectl 1.34.1, which prevented deferred client loading from selecting the
+  mounted in-cluster token and CA. The hook targeted unauthenticated localhost
+  and could leave the temporary `cordium-genesis` escalation identity behind.
+- **Risk:** bootstrap RBAC with `bind` and `escalate` could persist after a
+  successful or failed child sync.
+- **Next step:** keep kubectl REST overrides out of the cleanup hook, bound the
+  Job with `activeDeadlineSeconds`, and verify the temporary ServiceAccount,
+  ClusterRole, and ClusterRoleBinding are absent after the next reviewed full
+  child sync.
 - **Status:** fixed
 - **Area:** platform service / Pod Security
 - **Evidence:** June 2026 security audits found namespaces using weak
