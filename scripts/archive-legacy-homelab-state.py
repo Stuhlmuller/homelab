@@ -5,6 +5,7 @@ Does not replace live state, remove original versions, or delete KMS keys.
 Format reference: OpenTofu v1.11.5 internal/encryption/method/aesgcm/aesgcm.go.
 """
 import base64
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -25,6 +26,9 @@ def decode_state(envelope, data_key):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=["archive", "verify"], nargs="?", default="archive")
+    args = parser.parse_args()
     config = json.loads((Path(__file__).resolve().parent / "config/legacy-homelab-state-migration.json").read_text())
     session = boto3.Session()
     assert session.client("sts").get_caller_identity()["Account"] == config["account_id"]
@@ -34,6 +38,19 @@ def main():
     assert target["KeyManager"] == "AWS"
     for source in config["versions"]:
         assert source["key"].startswith("IaC/homelab/")
+        identity = json.dumps(source, sort_keys=True).encode()
+        destination = config["archive_prefix"] + hashlib.sha256(identity).hexdigest() + ".tfstate"
+        if args.action == "verify":
+            archived = s3.get_object(Bucket=config["bucket"], Key=destination)
+            plaintext = archived["Body"].read()
+            archived["Body"].close()
+            assert archived["ServerSideEncryption"] == "aws:kms" and archived["SSEKMSKeyId"] == target["Arn"]
+            assert archived["Metadata"]["source-key"] == source["key"]
+            assert archived["Metadata"]["source-version"] == source["version"]
+            assert hashlib.sha256(plaintext).hexdigest() == archived["Metadata"]["sha256"]
+            assert json.loads(plaintext)["version"] == 4
+            del plaintext
+            continue
         response = s3.get_object(Bucket=config["bucket"], Key=source["key"], VersionId=source["version"])
         envelope = json.loads(response["Body"].read())
         response["Body"].close()
@@ -42,8 +59,6 @@ def main():
         key = kms.decrypt(KeyId=config["source_key_arn"], CiphertextBlob=base64.b64decode(metadata["ciphertext_blob"], validate=True))
         assert key["KeyId"] == config["source_key_arn"]
         plaintext = decode_state(envelope, key.pop("Plaintext"))
-        identity = json.dumps(source, sort_keys=True).encode()
-        destination = config["archive_prefix"] + hashlib.sha256(identity).hexdigest() + ".tfstate"
         digest = hashlib.sha256(plaintext).hexdigest()
         try:
             s3.put_object(Bucket=config["bucket"], Key=destination, Body=plaintext,
@@ -60,7 +75,7 @@ def main():
         assert archived["Metadata"]["sha256"] == digest
         assert restored == plaintext, "Archive readback mismatch"
         del plaintext, restored
-    print(f"Archived and verified {len(config['versions'])} historical homelab states; originals retained")
+    print(f"Verified {len(config['versions'])} historical homelab states under AWS-managed encryption; originals retained")
 
 
 if __name__ == "__main__":

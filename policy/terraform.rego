@@ -14,7 +14,21 @@ deny contains msg if {
 	change.type in sensitive_delete_resource_types
 	action_deletes(change.change.actions)
 	not archived_ssm_key_retirement(change)
+	not archived_legacy_key_retirement(change)
 	msg := sprintf("Terraform plan must not delete sensitive resource %q of type %s", [change.address, change.type])
+}
+
+# Cross-project state audit found no outside dependencies; all 60 legacy
+# homelab backups are preserved under AWS-managed encryption. The active
+# OpenTofu key is deliberately excluded from this exact-ID exception.
+archived_legacy_key_retirement(change) if {
+	change.type == "aws_kms_key"
+	change.address == "aws_kms_key.legacy[0]"
+	change.change.actions == ["delete"]
+	change.change.after == null
+	change.change.before.arn == "arn:aws:kms:us-west-2:716182248480:key/959539ca-5646-435c-8ae4-aec13b0f0607"
+	change.change.before.key_id == "959539ca-5646-435c-8ae4-aec13b0f0607"
+	change.change.before.deletion_window_in_days == 30
 }
 
 # One-time retirement after the 2026-09-05 aws/ssm migration. The 128-version

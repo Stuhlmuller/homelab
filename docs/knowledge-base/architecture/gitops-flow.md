@@ -32,6 +32,11 @@ It also owns state-bucket encryption configuration through
 CI. See [[operations/kms-cost-audit-2026-09-05]] for the adopted configuration,
 validation evidence, and rollback.
 
+`IaC/operator/legacy-kms-retirement` adopts and retires only the historical
+west-region state key after recovery archives and cross-project dependency
+checks pass. It does not change the retained active OpenTofu key. The exact
+deletion approval and rollout status live in the same KMS audit note.
+
 Octelium recovery has one transport exception, not a desired-state exception:
 a trusted LAN operator may apply the reviewed `kubernetes-node-labels`
 Terragrunt unit through the canonical private API and shared remote backend when

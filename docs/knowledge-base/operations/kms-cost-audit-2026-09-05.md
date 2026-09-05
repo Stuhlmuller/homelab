@@ -51,11 +51,38 @@ reviewed repository-owned restore procedure. Original historical SSM versions
 will stop decrypting after old-key deletion; their readable copies are in the
 verified archive. Do not discard the archive when cleaning up migration code.
 
-The old `tofu-encryption-key` is not yet cleared for retirement. Metadata
-inventory found retained state versions in other projects. Automatic approval
-review rejected full-content inspection of those unrelated states; broader
-scope approval is pending. A separate user choice is pending on retaining
-OpenTofu's $1/month client-side key versus changing to S3-only encryption.
+The user authorized the cross-project dependency audit and chose to retain
+OpenTofu's east-region client-side key. The refreshed S3 inventory covered all
+15 account buckets. Inspection of 6,953 other-project state versions found no
+legacy-key references, wrapping-key dependencies, server-side encryption uses,
+or Terraform ownership of that key. Another 43 filename matches were HTML
+pages or gzip CloudTrail logs, not state files. All relevant JSON state
+versions were readable; 92 other-project encrypted versions use the retained
+east-region key. No state values or data keys were printed.
+
+The exact legacy key and alias are now adopted into
+`IaC/operator/legacy-kms-retirement`. Adoption imported two resources, set the
+30-day deletion window, and enabled standard annual rotation without rotating
+key material. The committed `retirement_requested = true` is the proposed
+retirement: its saved plan deletes only that key and alias and passes the
+policy gate. A second exact-UUID exception protects all other keys, including
+the active OpenTofu key, from deletion. Automatic approval review rejected
+executing the plan pending the user's explicit approval for this exact key
+deletion. The legacy key remains enabled; no further savings are claimed yet.
+
+After explicit approval, apply only the reviewed operator plan, verify the
+legacy key is PendingDeletion with a 30-day date, and run archive verification
+without the original key:
+
+```sh
+/private/tmp/homelab-kms-sdk/bin/python scripts/archive-legacy-homelab-state.py verify
+```
+
+The operator unit is generated from
+`IaC/.catalog/units/operator/legacy-kms-retirement/terragrunt.hcl` and uses
+`IaC/modules/aws-kms-key-retirement`. Keep `retirement_requested = true` after
+retirement; normal re-applies must not recreate a key. Adoption requires an
+explicit temporary false value and the existing key/alias import blocks.
 
 The homelab-only history check resolved all 4,739 retained state-version key
 dependencies: 515 client-encrypted versions use the retained east-region key,
@@ -83,8 +110,8 @@ python3 -m venv /private/tmp/homelab-kms-sdk
 
 The archival AES-GCM format follows
 [OpenTofu v1.11.5](https://github.com/opentofu/opentofu/blob/v1.11.5/internal/encryption/method/aesgcm/aesgcm.go).
-Do not delete the legacy key until its possible dependencies outside the
-homelab prefix are resolved too.
+The cross-project dependency check is complete. Exact deletion approval is
+the remaining retirement gate; retain the active OpenTofu key.
 
 The original audit below is a pre-migration snapshot.
 

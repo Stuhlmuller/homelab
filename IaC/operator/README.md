@@ -233,3 +233,11 @@ configuration and enables S3 Bucket Keys. It preserves the default KMS key,
 explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
 See [KMS audit and rollout](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md)
 for the focused plan/apply path, verification, and declarative rollback.
+
+## Legacy KMS key retirement
+
+`legacy-kms-retirement` owns only the adopted legacy key and its alias. Its
+final desired state schedules deletion with a 30-day window. The active
+east-region OpenTofu key is outside this unit. Dependency audit and archive
+verification are complete; applying the saved retirement plan requires the
+explicit exact-key approval recorded in the [KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).
