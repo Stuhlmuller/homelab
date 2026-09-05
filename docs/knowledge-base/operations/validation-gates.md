@@ -135,6 +135,12 @@ npx --yes --package renovate renovate-config-validator renovate.json
 nix develop --command bash scripts/ci/static-checks.sh
 ```
 
+Renovate's opt-in Nix manager exposes the `nixpkgs` input and scheduled lock-file
+maintenance refreshes `flake.lock` in one reviewed, non-auto-merged PR. Validate
+each refresh with the full pre-commit, static, Conftest, and
+`nix flake check --no-build --all-systems` gates. Roll back the generated lock
+change rather than editing it manually.
+
 For `platform-dns` changes, render the overlay and compare upstream answers
 before rollout. After Argo CD syncs, verify CoreDNS contains the intended
 resolvers and a workload pod receives a public answer rather than a sinkhole:
