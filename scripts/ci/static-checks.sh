@@ -1180,6 +1180,7 @@ echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
 python3 scripts/ci/openclaw-config-check.py
+python3 scripts/ci/openclaw-assistant-check.py
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
 rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
@@ -1208,7 +1209,7 @@ if rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
   echo "OpenClaw bootstrap contains an unsafe or ineffective doctor repair" >&2
   exit 1
 fi
-rg -Fq '"maxConcurrent": 4' "$openclaw_values"
+rg -Fq '"maxConcurrent": 4' clusters/homelab/apps/openclaw/assistant/config.json
 if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
   rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
   echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2

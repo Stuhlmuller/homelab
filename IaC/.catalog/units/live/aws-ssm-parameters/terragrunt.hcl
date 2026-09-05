@@ -25,7 +25,8 @@ EOF
 
 inputs = {
   aws_region     = local.aws_region
-  create_kms_key = true
+  create_kms_key = false
+  kms_key_id     = local.root_config.locals.runtime_kms_key_id
   parameter_reader_iam_user_names = [
     "external-secrets_aws-ssm-auth",
   ]

@@ -1,5 +1,10 @@
 data "aws_caller_identity" "current" {}
 
+data "aws_kms_key" "parameter" {
+  count  = var.parameter_kms_key_id == null ? 0 : 1
+  key_id = var.parameter_kms_key_id
+}
+
 data "aws_kms_key" "existing" {
   count = var.create_kms_key ? 0 : 1
 
@@ -46,8 +51,9 @@ resource "aws_kms_alias" "this" {
 }
 
 locals {
-  effective_kms_key_id  = var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id
-  effective_kms_key_arn = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
+  retained_kms_key_arn  = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
+  effective_kms_key_id  = var.parameter_kms_key_id != null ? var.parameter_kms_key_id : (var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id)
+  effective_kms_key_arn = var.parameter_kms_key_id == null ? local.retained_kms_key_arn : data.aws_kms_key.parameter[0].arn
   parameter_reader_names = setunion(toset([
     for name, parameter in var.parameters : name
     if parameter.reader_access
@@ -119,7 +125,8 @@ resource "tls_private_key" "generated" {
 }
 
 resource "aws_ssm_parameter" "this" {
-  for_each = local.external_parameters
+  for_each   = local.external_parameters
+  depends_on = [aws_iam_group_policy.parameter_reader]
 
   region      = var.aws_region
   name        = each.key
@@ -140,7 +147,8 @@ resource "aws_ssm_parameter" "this" {
 }
 
 resource "aws_ssm_parameter" "generated" {
-  for_each = local.generated_parameters
+  for_each   = local.generated_parameters
+  depends_on = [aws_iam_group_policy.parameter_reader]
 
   region      = var.aws_region
   name        = each.key
@@ -213,6 +221,7 @@ data "aws_iam_policy_document" "parameter_reader_kms" {
 
     resources = [
       local.effective_kms_key_arn,
+      local.retained_kms_key_arn,
     ]
   }
 }
