@@ -11,6 +11,9 @@ spec:
             matchAny: true
           effect: ALLOW
   workspace:
+    limit:
+      maxPerUser: 4
+      maxActivePerUser: 1
     storage:
       storageClass:
         rules:

@@ -307,3 +307,10 @@ talosctl --talosconfig .talos/talosconfig \
 ```
 
 The final command must print `0`.
+
+## Repository checks inside Cordium
+
+The optional manual CI workflow uses a dedicated GitHub OIDC workload identity
+and a pinned disposable workspace definition. See the
+[Cordium CI runbook](../../../../docs/cordium-ci.md) for its exact-commit guard,
+transport, capacity limits, rollout, cleanup, and pending live acceptance gates.

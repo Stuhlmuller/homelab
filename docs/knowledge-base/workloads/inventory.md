@@ -191,6 +191,14 @@ configuration, sessions, and backups remain on NFS. Its single-replica
 `Recreate` strategy and same-Pod writer restriction are required; see
 [[../architecture/storage-and-state]].
 
+### Cordium CI execution contract
+
+The optional `cordium-check.yml` workflow uses a dedicated OIDC workload user
+and `.cordium/workspace.yaml` to execute repository checks remotely. Workspace
+data is disposable node-local state. Cluster limits allow four stored and one
+active workspace per user, including interactive users. Live execution and
+negative-policy acceptance remain pending; see [Cordium CI](../../cordium-ci.md).
+
 ### OpenClaw workspace-state readiness
 
 After the successful session import and coordinator ownership repair, the

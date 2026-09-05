@@ -401,6 +401,26 @@ with the risk. Desired state must be represented in the repo before applying it.
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
 
+## Cordium remote repository gate
+
+The optional manual `cordium-check.yml` workflow executes the exact reviewed
+main commit inside a disposable Cordium workspace using dedicated GitHub OIDC.
+Its workflow is included in the credentialed-job inventory, normalized hash,
+and exact-dispatch guard. Local lifecycle tests are part of the static gate;
+live execution, cleanup, denied identity/method cases, and audit correlation
+remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).
+
+Cordium cleanup polls bounded inventory until asynchronous deletion completes.
+Its fixed retirement helper requires the workflow and CI catalog definitions
+to be removed first, deletes only the three dedicated CI identity resources,
+and verifies absence. Tests reject remaining declarations, network errors,
+and incomplete deletion. Ordinary catalog apply does not prune these objects.
+
+The Tunnel probe accepts the protocol-defined empty-body gRPC-Web response
+with status trailers in headers. Live browser and native TCP-carrier probes
+passed after PR 957; malformed bodies and spoofed status headers still fail.
+[Protocol reference](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md).
+
 ## OpenClaw doctor state gate
 
 The static gate permits one exact noninteractive pinned doctor repair after
@@ -413,3 +433,7 @@ generic doctor changes must not persist unrelated skill-policy rewrites.
 The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
+
+Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
+format as well as raw gRPC stderr errors. Already-absent resources are skipped;
+other native failures remain errors.

@@ -69,8 +69,10 @@ Interactive sessions use `cordium run --file PATH --domain stinkyboi.com`.
 require an Octelium client connection; they are not a substitute for repairing
 the public route. [CLI](https://octelium.com/docs/cordium/latest/use/cli).
 
-Current homelab workflows use GitHub-hosted `runs-on` values; no Cordium workflow
-was found. OpenClaw's values and ExternalSecret contain no Cordium integration.
+The new optional `cordium-check.yml` workflow uses a GitHub-hosted orchestrator
+and remote Cordium execution; see [the CI runbook](../../cordium-ci.md). Live
+acceptance remains pending. OpenClaw's values and ExternalSecret contain no
+Cordium integration.
 The existing `homelab-cordium-agent` credential serves ClusterConfig bootstrap:
 do not hand that management credential to builds or OpenClaw. Declare separate
 least-privileged execution identities and their repository-owned secret or

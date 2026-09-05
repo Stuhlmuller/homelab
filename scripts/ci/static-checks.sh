@@ -6,6 +6,8 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
+python3 scripts/ci/cordium-check-test.py
+python3 scripts/ci/cordium-ci-retire-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 
 echo "::group::Octelium console login redirect"
@@ -591,7 +593,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
     $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
     ($cluster_configs | length) == 1 and
-    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260822" and
+    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
     ($misowned_prerequisites | length) == 0 and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
@@ -775,6 +777,7 @@ jq -en '
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
@@ -806,6 +809,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/cordium-check.yml fbddc9b43ee22c61e0917a629714e29385ed0def844b4a0a02b0769dc5991fa1
 .github/workflows/codeql.yml 054c9f0d5c7305fe445b849942924088ee49ca660a3f5f2931ba650b7da471be
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
@@ -822,6 +826,7 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \

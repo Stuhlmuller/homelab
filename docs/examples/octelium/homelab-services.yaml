@@ -778,3 +778,100 @@ spec:
             value: "443"
           - key: X-Forwarded-Proto
             value: https
+---
+kind: IdentityProvider
+metadata:
+  name: homelab-cordium-ci-oidc
+spec:
+  oidcIdentityToken:
+    issuerURL: https://token.actions.githubusercontent.com
+    audience: https://stinkyboi.com
+  aalRules:
+    # AAL1 denotes an accepted signed workload assertion here, not human MFA.
+    - aal: AAL1
+      condition:
+        match: >-
+          ctx.assertionMap.repository == "Stuhlmuller/homelab" &&
+          ctx.assertionMap.repository_id == "973476220" &&
+          ctx.assertionMap.repository_owner_id == "252389862" &&
+          ctx.assertionMap.ref == "refs/heads/main" &&
+          ctx.assertionMap.workflow_ref ==
+          "Stuhlmuller/homelab/.github/workflows/cordium-check.yml@refs/heads/main" &&
+          ctx.assertionMap.event_name == "workflow_dispatch"
+  postAuthenticationRules:
+    - effect: ALLOW
+      condition:
+        match: >-
+          ctx.user.metadata.name == "homelab-cordium-ci" &&
+          ctx.user.spec.type == "WORKLOAD" &&
+          ctx.authenticationInfo.aal == "AAL1"
+    - effect: DENY
+      condition:
+        matchAny: true
+---
+kind: User
+metadata:
+  name: homelab-cordium-ci
+spec:
+  type: WORKLOAD
+  session:
+    clientDuration:
+      minutes: 60
+    maxPerUser: 1
+  authentication:
+    identities:
+      - identityProvider: homelab-cordium-ci-oidc
+        identifier: repo:Stuhlmuller/homelab:ref:refs/heads/main
+  authorization:
+    policies:
+      - homelab-cordium-ci-execution
+---
+kind: Policy
+metadata:
+  name: homelab-cordium-ci-execution
+spec:
+  rules:
+    # Genesis has a broad priority-0 MainService allow. Deny other methods first.
+    - name: deny-other-cordium-methods
+      priority: -4
+      effect: DENY
+      condition:
+        match: >-
+          ctx.user.metadata.name == "homelab-cordium-ci" &&
+          ctx.service.metadata.name == "default-cordium.octelium-api" &&
+          !(
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.MainService" &&
+              ctx.request.grpc.method in
+              ["CreateWorkspace", "StartWorkspace", "GetWorkspace",
+               "ListWorkspace", "DeleteWorkspace"]
+            ) ||
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.WorkspaceService" &&
+              ctx.request.grpc.method == "Exec"
+            )
+          )
+    - name: allow-ci-execution
+      effect: ALLOW
+      condition:
+        match: >-
+          ctx.user.metadata.name == "homelab-cordium-ci" &&
+          ctx.user.spec.type == "WORKLOAD" &&
+          ctx.service.metadata.name == "default-cordium.octelium-api" &&
+          ctx.service.spec.mode == "GRPC" &&
+          (
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.MainService" &&
+              ctx.request.grpc.method in
+              ["CreateWorkspace", "StartWorkspace", "GetWorkspace",
+               "ListWorkspace", "DeleteWorkspace"]
+            ) ||
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.WorkspaceService" &&
+              ctx.request.grpc.method == "Exec"
+            )
+          )
