@@ -334,7 +334,11 @@ controllers:
             session_sqlite() {
               report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
               mkdir -p "$report_dir"
-              report="$(mktemp "$report_dir/$2.XXXXXX")"
+              report="$report_dir/$2.latest.json"
+              if [ -f "$report" ]; then
+                mv "$report" "$report_dir/$2.previous.json"
+              fi
+              (umask 077; : > "$report")
               status=0
               openclaw doctor "$@" --json > "$report" || status=$?
               python3 - "$report" "$status" "$2" <<'OPENCLAW_SESSION_REPORT'

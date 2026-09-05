@@ -97,6 +97,13 @@ with tempfile.TemporaryDirectory() as directory:
     saved = list((pathlib.Path(directory) / "session-sqlite-reports").iterdir())
     assert len(saved) == 1 and saved[0].stat().st_mode & 0o777 == 0o600
     assert json.loads(saved[0].read_text()) == warning_report
+    for _ in range(3):
+        subprocess.run(["sh", "-ec", script, "fixture", directory, str(path)],
+                       check=True, capture_output=True)
+    saved = list((pathlib.Path(directory) / "session-sqlite-reports").iterdir())
+    assert len(saved) == 2
+    assert all(item.stat().st_mode & 0o777 == 0o600 for item in saved)
+    assert all(json.loads(item.read_text()) == warning_report for item in saved)
 print("OpenClaw session report: known warning accepted; unexpected issues and failures rejected")
 
 marker = "OPENCLAW_SESSION_PRESERVATION"

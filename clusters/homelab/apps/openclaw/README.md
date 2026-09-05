@@ -296,7 +296,8 @@ registry attempts so a transient reset cannot leave every restart dependent on
 a fresh successful download. The versioned bootstrap runs the targeted session
 SQLite inspect, dry-run, import, and post-import inspection once after its verified
 backup. Reports are retained with owner-only permissions under
-`/data/openclaw/session-sqlite-reports`; logs contain totals instead of thousands
+`/data/openclaw/session-sqlite-reports`, keeping only the latest and previous
+report for each mode; logs contain totals instead of thousands
 of transcript paths. The report gate accepts only the observed
 `transcript_missing` warning for `agent:main:healthcheck-20260813` on agent
 `main`. OpenClaw 2026.8.2 preserves that entry's metadata during import but
