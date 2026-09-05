@@ -13,6 +13,9 @@ policy, bootstrap snapshots the reviewed config privately and restores it
 atomically after doctor, even on failure. An interrupted repair restores that
 snapshot before the next bootstrap applies configuration. Only doctor state
 migrations persist; configuration remains owned by the reviewed bootstrap.
+The repair has a ten-minute deadline and a 30-second kill grace period because
+an earlier generic doctor run stalled scanning NFS transcripts. Timeout
+restores configuration, retains diagnostics, and leaves completion unset.
 
 Existing state requires the verified pre-2026.8.2 archive before this step.
 Doctor performs its upstream legacy-state migrations and startup readiness
