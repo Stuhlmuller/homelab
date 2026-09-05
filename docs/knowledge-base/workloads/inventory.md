@@ -8,6 +8,11 @@ This inventory summarizes the current application and platform ownership map.
 Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt
 units as the source of truth when they disagree with this note.
 
+Runtime secret contract: all 68 SSM parameters use AWS-managed `alias/aws/ssm`.
+Application secret names and values are unchanged. Historical secret/state
+recovery copies and the old-key retirement status are recorded in
+[[operations/kms-cost-audit-2026-09-05]].
+
 ## Import Note
 
 This note reflects the current working tree. Human app access, operator,
@@ -106,6 +111,10 @@ Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
+
+OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
+briefings, daytime health checks, bounded daily improvements, and preserved
+personal memory. See [[application-notes#OpenClaw]].
 
 ## GitOps Project Boundary
 

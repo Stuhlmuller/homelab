@@ -3455,3 +3455,15 @@ unit "operator_github_actions_role_policy" {
   path                    = "operator/github-actions-role-policy"
   no_dot_terragrunt_stack = true
 }
+
+unit "operator_state_bucket_encryption" {
+  source                  = "./.catalog/units/operator/state-bucket-encryption"
+  path                    = "operator/state-bucket-encryption"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_legacy_kms_retirement" {
+  source                  = "./.catalog/units/operator/legacy-kms-retirement"
+  path                    = "operator/legacy-kms-retirement"
+  no_dot_terragrunt_stack = true
+}
