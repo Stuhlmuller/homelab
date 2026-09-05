@@ -142,6 +142,18 @@ controllers:
           - -ec
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            doctor_marker="$OPENCLAW_STATE_DIR/.doctor-state-migrated-to-2026.8.2"
+            doctor_reports="$OPENCLAW_STATE_DIR/doctor-state-reports"
+            doctor_config_snapshot="$doctor_reports/config-before.json"
+            restore_doctor_config() {
+              cp "$doctor_config_snapshot" "$OPENCLAW_CONFIG_PATH.doctor-restore"
+              chmod 600 "$OPENCLAW_CONFIG_PATH.doctor-restore"
+              mv "$OPENCLAW_CONFIG_PATH.doctor-restore" "$OPENCLAW_CONFIG_PATH"
+            }
+            # Resume an interrupted doctor before applying this rollout's config.
+            if [ ! -s "$doctor_marker" ] && [ -s "$doctor_config_snapshot" ]; then
+              restore_doctor_config
+            fi
             had_existing_state=false
             if [ -d "$OPENCLAW_STATE_DIR" ] &&
               [ -n "$(find "$OPENCLAW_STATE_DIR" -mindepth 1 -maxdepth 1 \
@@ -550,6 +562,38 @@ controllers:
                 --ref-provider default \
                 --ref-source env \
                 --ref-id DISCORD_BOT_TOKEN
+            fi
+
+            if [ ! -s "$doctor_marker" ]; then
+              if "$had_existing_state" && ! verify_backup_dir "$backup_dir"; then
+                echo "Verified pre-upgrade backup required before doctor state migration" >&2
+                exit 1
+              fi
+              mkdir -p "$doctor_reports"
+              chmod 700 "$doctor_reports"
+              cp "$OPENCLAW_CONFIG_PATH" "$doctor_config_snapshot.tmp"
+              chmod 600 "$doctor_config_snapshot.tmp"
+              mv "$doctor_config_snapshot.tmp" "$doctor_config_snapshot"
+              if [ -f "$doctor_reports/latest.log" ]; then
+                mv "$doctor_reports/latest.log" "$doctor_reports/previous.log"
+              fi
+              echo "Migrating remaining legacy state with pinned OpenClaw doctor"
+              doctor_status=0
+              (umask 077; openclaw doctor --fix --non-interactive \
+                --no-workspace-suggestions > "$doctor_reports/latest.log" 2>&1) || doctor_status=$?
+              # Doctor owns state migration; reviewed bootstrap owns configuration.
+              restore_doctor_config
+              if [ "$doctor_status" -ne 0 ]; then
+                echo "Doctor migration failed; preserve private report and backup for review" >&2
+                exit 1
+              fi
+              if [ -s "$migration_marker" ]; then
+                report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+                session_preservation verify
+              fi
+              openclaw config validate
+              printf 'doctor state migration and readiness checks passed\n' > "$doctor_marker.tmp"
+              mv "$doctor_marker.tmp" "$doctor_marker"
             fi
     containers:
       app:

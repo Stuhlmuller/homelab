@@ -189,3 +189,11 @@ and `.cordium/workspace.yaml` to execute repository checks remotely. Workspace
 data is disposable node-local state. Cluster limits allow four stored and one
 active workspace per user, including interactive users. Live execution and
 negative-policy acceptance remain pending; see [Cordium CI](../../cordium-ci.md).
+
+### OpenClaw workspace-state readiness
+
+After the successful session import and coordinator ownership repair, the
+gateway exposed an additional legacy workspace-state migration gate. Bootstrap
+now declares a one-time pinned doctor repair after backup verification and
+configuration, with session identity verification before completion. Live
+gateway/Discord recovery remains pending.

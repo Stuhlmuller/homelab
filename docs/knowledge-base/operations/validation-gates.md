@@ -420,3 +420,12 @@ The Tunnel probe accepts the protocol-defined empty-body gRPC-Web response
 with status trailers in headers. Live browser and native TCP-carrier probes
 passed after PR 957; malformed bodies and spoofed status headers still fail.
 [Protocol reference](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md).
+
+## OpenClaw doctor state gate
+
+The static gate permits one exact noninteractive pinned doctor repair after
+backup verification. Bootstrap tests require configuration restoration on
+success and failure, plus session preservation and config validation before
+the separate completion marker. A private config snapshot also repairs an
+interrupted doctor before the next bootstrap applies desired configuration;
+generic doctor changes must not persist unrelated skill-policy rewrites.

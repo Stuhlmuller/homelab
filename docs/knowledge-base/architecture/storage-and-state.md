@@ -272,3 +272,13 @@ and the verified pre-upgrade backup remain on the PVC. This requires one
 `Recreate` Pod and all writers using its shared mount. Never start an external
 writer against that PVC with a separate coordinator. See the OpenClaw README
 for verification and rollback limits; live recovery remains pending rollout.
+
+### OpenClaw remaining legacy-state upgrade
+
+The 2026.8.2 session import does not migrate workspace setup/attestation state.
+A separate bootstrap doctor gate verifies the existing pre-upgrade archive,
+runs pinned upstream noninteractive repairs, rechecks imported session
+identities, and validates configuration before writing its own completion
+marker. Private doctor reports retain latest plus previous. State restoration
+requires the archive and compatible software, not merely a manifest revert.
+See the OpenClaw README; gateway readiness is still a live acceptance gate.
