@@ -173,6 +173,9 @@ password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup; restore validation remains open.
+Grafana's shared backup-staleness rule includes this CronJob alongside the four
+media backup jobs: warn after 30 hours without success, including an established
+job that has never succeeded. The legacy rule UID is preserved during expansion.
 
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
