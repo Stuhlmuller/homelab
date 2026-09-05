@@ -1,5 +1,6 @@
 name: Terragrunt Apply
 
+# checkov:skip=CKV_GHA_7: inputs pin reviewed main and optionally select one fixed Application unit; they cannot alter commands.
 on:
   workflow_dispatch:
     inputs:
@@ -75,7 +76,6 @@ jobs:
     concurrency:
       group: terragrunt-apply-production
       cancel-in-progress: false
-      queue: single
     runs-on: ubuntu-24.04
     environment:
       name: homelab-production

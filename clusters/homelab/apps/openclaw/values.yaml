@@ -4,7 +4,9 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    replicas: 1
     revisionHistoryLimit: 1
+    strategy: Recreate
     pod:
       automountServiceAccountToken: false
       affinity:
@@ -24,7 +26,7 @@ controllers:
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
     initContainers:
-      operator-toolbox:
+      00-operator-toolbox:
         image:
           repository: docker.io/nixos/nix
           tag: "2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c"
@@ -74,6 +76,9 @@ controllers:
             cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
             chown -R 1000:1000 /nix-shared
+            # The NAS maps file ownership to 65534; coordinator locks need local UID ownership.
+            chown 1000:1000 /openclaw-coordinator
+            chmod 700 /openclaw-coordinator
             /toolbox/profile/bin/jq --version
             /toolbox/profile/bin/rg --version
             /toolbox/profile/bin/gh --version
@@ -91,9 +96,14 @@ controllers:
             cpu: 1500m
             memory: 3Gi
       bootstrap-config:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+        dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.7.1@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c"
+          tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
         resources:
           requests:
             cpu: 500m
@@ -106,6 +116,9 @@ controllers:
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          OPENCLAW_SUPERVISOR_MODE: external
+          OPENCLAW_SERVICE_REPAIR_POLICY: external
+          OPENCLAW_NO_AUTO_UPDATE: "1"
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           NIX_CONFIG: experimental-features = nix-command flakes
           PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -129,6 +142,71 @@ controllers:
           - -ec
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            had_existing_state=false
+            if [ -d "$OPENCLAW_STATE_DIR" ] &&
+              [ -n "$(find "$OPENCLAW_STATE_DIR" -mindepth 1 -maxdepth 1 \
+                ! -name npm ! -name extensions -print -quit)" ]; then
+              had_existing_state=true
+            fi
+            backup_root=/data/openclaw-backups
+            backup_name=pre-2026.8.2
+            backup_dir="$backup_root/$backup_name"
+            backup_staging="$backup_root/.$backup_name.partial"
+            backup_archive=openclaw.tar.gz
+            backup_checksum="$backup_archive.sha256"
+            migration_marker="$OPENCLAW_STATE_DIR/.migrated-to-2026.8.2"
+            verify_backup_dir() {
+              [ -d "$1" ] &&
+                [ -s "$1/$backup_archive" ] &&
+                [ -s "$1/$backup_checksum" ] &&
+                tar -tzf "$1/$backup_archive" >/dev/null &&
+                (cd "$1" && sha256sum -c "$backup_checksum")
+            }
+            if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
+              echo "Creating or verifying offline pre-2026.8.2 OpenClaw backup"
+              (
+                umask 077
+                mkdir -p "$backup_root"
+                if [ -e "$backup_dir" ]; then
+                  if [ -e "$backup_staging" ]; then
+                    echo "OpenClaw backup staging still exists; preserve both paths for review" >&2
+                    exit 1
+                  fi
+                  if ! verify_backup_dir "$backup_dir"; then
+                    echo "OpenClaw backup is incomplete or corrupt: $backup_dir" >&2
+                    exit 1
+                  fi
+                elif [ -e "$backup_staging" ]; then
+                  if ! verify_backup_dir "$backup_staging"; then
+                    echo "OpenClaw backup staging is incomplete; preserve it for review" >&2
+                    exit 1
+                  fi
+                  mv "$backup_staging" "$backup_dir"
+                else
+                  state_kib="$(du -skx "$OPENCLAW_STATE_DIR" | awk '{print $1}')"
+                  available_kib="$(df -Pk /data | awk 'NR == 2 {print $4}')"
+                  required_kib=$((state_kib * 2 + 2097152))
+                  if [ "$available_kib" -lt "$required_kib" ]; then
+                    echo "OpenClaw migration needs ${required_kib}KiB free; only ${available_kib}KiB available" >&2
+                    exit 1
+                  fi
+                  mkdir "$backup_staging"
+                  tar --one-file-system \
+                    --exclude=openclaw/npm \
+                    --exclude=openclaw/extensions \
+                    -C /data \
+                    -czf "$backup_staging/$backup_archive" openclaw
+                  tar -tzf "$backup_staging/$backup_archive" >/dev/null
+                  (
+                    cd "$backup_staging" || exit 1
+                    sha256sum "$backup_archive" > "$backup_checksum"
+                    sha256sum -c "$backup_checksum"
+                  )
+                  mv "$backup_staging" "$backup_dir"
+                fi
+                verify_backup_dir "$backup_dir"
+              )
+            fi
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
             mkdir -p "$OPENCLAW_WORKSPACE_DIR/.openclaw/trash" "$OPENCLAW_STATE_DIR/src"
             mkdir -p "$(dirname "$OPENCLAW_CONFIG_PATH")"
@@ -143,7 +221,7 @@ controllers:
                 -o Debug::NoLocking=1 \
                 update
               (
-                cd "$OPENCLAW_STATE_DIR/pkg-cache"
+                cd "$OPENCLAW_STATE_DIR/pkg-cache" || exit 1
                 apt-get \
                   -o Dir::State="$OPENCLAW_STATE_DIR/apt/state" \
                   -o Dir::Cache="$OPENCLAW_STATE_DIR/apt/cache" \
@@ -177,10 +255,193 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
-            echo "Installing the Discord channel plugin"
+            # Targeted 2026.8.2 config migration; the offline backup above owns rollback.
+            python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_CONFIG_MIGRATION'
+            import json
+            import os
+            import pathlib
+            import sys
+            import tempfile
+
+            path = pathlib.Path(sys.argv[1])
+            config = json.loads(path.read_text())
+            before = json.dumps(config)
+            for section, key in (
+                ("meta", "lastTouchedAt"),
+                ("commands", "ownerDisplay"),
+                ("hooks", "maxBodyBytes"),
+                ("plugins", "bundledDiscovery"),
+            ):
+                config.get(section, {}).pop(key, None)
+            defaults = config.get("agents", {}).get("defaults", {})
+            models = defaults.get("models", {})
+            migrated = config.get("meta", {}).get("migrations", {}).get("modelPolicyAllowlist")
+            if models and "modelPolicy" not in defaults and migrated is not True:
+                defaults["modelPolicy"] = {"allow": list(models)}
+            if json.dumps(config) != before:
+                fd, temporary = tempfile.mkstemp(prefix=".config-migration-", dir=path.parent)
+                try:
+                    with os.fdopen(fd, "w") as output:
+                        json.dump(config, output, indent=2)
+                        output.write("\n")
+                        output.flush()
+                        os.fsync(output.fileno())
+                    os.replace(temporary, path)
+                finally:
+                    if os.path.exists(temporary):
+                        os.unlink(temporary)
+            OPENCLAW_CONFIG_MIGRATION
+
             openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
             : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
-            openclaw plugins install "npm:@openclaw/discord@${openclaw_version}" --pin --force
+            verify_discord_plugin() {
+              openclaw plugins inspect discord --runtime --json |
+                python3 -c '
+            import json
+            import pathlib
+            import sys
+
+            expected_version, expected_status = sys.argv[1:]
+            report = json.load(sys.stdin)
+            plugin = report["plugin"]
+            install = report.get("install") or {}
+            root = pathlib.Path(plugin["rootDir"])
+            package = json.loads((root / "package.json").read_text())
+            valid = (
+                plugin.get("id") == "discord"
+                and plugin.get("origin") == "global"
+                and install.get("source") == "npm"
+                and install.get("spec") == f"@openclaw/discord@{expected_version}"
+                and install.get("version") == expected_version
+                and package.get("name") == "@openclaw/discord"
+                and package.get("version") == expected_version
+                and (expected_status != "loaded" or plugin.get("status") == "loaded")
+            )
+            valid or sys.exit("Discord external runtime verification failed")
+            ' "$openclaw_version" "$1"
+            }
+            if ! verify_discord_plugin installed; then
+              installed=false
+              for delay in 0 5 15 30; do
+                [ "$delay" -eq 0 ] || sleep "$delay"
+                echo "Installing Discord channel plugin (retry delay ${delay}s)"
+                if openclaw plugins install \
+                  "npm:@openclaw/discord@${openclaw_version}" \
+                  --pin --force --accept-capabilities; then
+                  installed=true
+                  break
+                fi
+              done
+              "$installed" || {
+                echo "Exact Discord plugin install failed after bounded retries" >&2
+                exit 1
+              }
+            fi
+            verify_discord_plugin installed
+
+            session_sqlite() {
+              report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+              mkdir -p "$report_dir"
+              report="$report_dir/$2.latest.json"
+              if [ -f "$report" ]; then
+                mv "$report" "$report_dir/$2.previous.json"
+              fi
+              (umask 077; : > "$report")
+              status=0
+              openclaw doctor "$@" --json > "$report" || status=$?
+              python3 - "$report" "$status" "$2" <<'OPENCLAW_SESSION_REPORT'
+            import json
+            import sys
+
+            path, status, mode = sys.argv[1:]
+            with open(path, encoding="utf-8") as source:
+                report = json.load(source)
+            issues = [(target["agentId"], issue)
+                      for target in report["targets"] for issue in target["issues"]]
+            allowed = all(
+                agent == "main"
+                and issue["code"] == "transcript_missing"
+                and issue.get("sessionKey") == "agent:main:healthcheck-20260813"
+                for agent, issue in issues
+            )
+            valid = (
+                report["mode"] == mode
+                and bool(report["targets"])
+                and report["totals"]["issues"] == len(issues)
+                and int(status) in (0, 1)
+                and (int(status) == 0 or bool(issues))
+                and allowed
+            )
+            print(f"session-sqlite {mode}: {json.dumps(report['totals'], sort_keys=True)}")
+            print(f"Private migration report: {path}")
+            if not valid:
+                sys.exit("Session migration report rejected; preserve report and backup for review")
+            if issues:
+                print("Known missing healthcheck transcript: preserve metadata through upstream import")
+            OPENCLAW_SESSION_REPORT
+            }
+
+            session_preservation() {
+              python3 - "$1" "$report" "$report_dir/expected-sessions.json" <<'OPENCLAW_SESSION_PRESERVATION'
+            import json
+            import os
+            import pathlib
+            import sqlite3
+            import sys
+
+            mode, report_path, expected_path = sys.argv[1:]
+            expected_path = pathlib.Path(expected_path)
+            if mode == "snapshot" and not expected_path.exists():
+                report = json.loads(pathlib.Path(report_path).read_text())
+                expected = []
+                for target in report["targets"]:
+                    store = pathlib.Path(target["storePath"])
+                    entries = json.loads(store.read_text()) if store.exists() else {}
+                    if len(entries) != target["legacyEntries"]:
+                        sys.exit("Legacy session inventory changed before import")
+                    expected.append({"sqlitePath": target["sqlitePath"], "sessions": {
+                        key: entry["sessionId"] for key, entry in entries.items()
+                    }})
+                temporary = expected_path.with_suffix(".tmp")
+                with open(temporary, "w", encoding="utf-8") as output:
+                    os.chmod(temporary, 0o600)
+                    json.dump(expected, output)
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(temporary, expected_path)
+            expected = json.loads(expected_path.read_text())
+            if not expected:
+                sys.exit("Missing pre-import session inventory")
+            if mode == "verify":
+                for target in expected:
+                    uri = pathlib.Path(target["sqlitePath"]).resolve().as_uri() + "?mode=ro"
+                    with sqlite3.connect(uri, uri=True) as db:
+                        for key, session_id in target["sessions"].items():
+                            row = db.execute(
+                                "SELECT current_session_id FROM session_nodes WHERE session_key = ?",
+                                (key,),
+                            ).fetchone()
+                            if row != (session_id,):
+                                sys.exit("Imported session identity missing or changed; preserve backup and reports")
+                print("Verified every pre-import session key and identity in SQLite")
+            OPENCLAW_SESSION_PRESERVATION
+            }
+
+            if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
+              echo "Migrating session state to OpenClaw 2026.8.2"
+              session_sqlite --session-sqlite inspect \
+                --session-sqlite-all-agents
+              session_sqlite --session-sqlite dry-run \
+                --session-sqlite-all-agents
+              session_preservation snapshot
+              session_sqlite --session-sqlite import \
+                --session-sqlite-all-agents
+              session_sqlite --session-sqlite inspect \
+                --session-sqlite-all-agents
+              session_preservation verify
+              printf 'session SQLite migration imported and inspected\n' > "$migration_marker.tmp"
+              mv "$migration_marker.tmp" "$migration_marker"
+            fi
 
             openclaw config validate
 
@@ -211,6 +472,19 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
+              # Clear the old authored env reference; otherwise OpenClaw preserves it.
+              if python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_HOOK_REFERENCE'
+            import json
+            import pathlib
+            import sys
+
+            config = json.loads(pathlib.Path(sys.argv[1]).read_text())
+            token = config.get("hooks", {}).get("token")
+            sys.exit(0 if token == "${GRAFANA_ALERT_HOOK_TOKEN}" else 1)
+            OPENCLAW_HOOK_REFERENCE
+              then
+                openclaw config unset hooks.token
+              fi
               HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
               openclaw config set --strict-json \
                 hooks.token \
@@ -221,9 +495,6 @@ controllers:
               openclaw config set --strict-json \
                 hooks.allowedAgentIds \
                 '["main"]'
-              openclaw config set --strict-json \
-                hooks.maxBodyBytes \
-                '65536'
               openclaw config set --strict-json \
                 hooks.allowRequestSessionKey \
                 'false'
@@ -244,6 +515,7 @@ controllers:
                   "model": {
                     "primary": "openai/gpt-5.5"
                   },
+                  "maxConcurrent": 4,
                   "models": {
                     "openai/gpt-5.5": {
                       "agentRuntime": {
@@ -268,26 +540,8 @@ controllers:
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel config"
             else
               echo "DISCORD_BOT_TOKEN is populated; configuring the Discord channel"
-              openclaw plugins enable discord
-              openclaw plugins inspect discord --runtime --json |
-                python3 -c '
-            import json
-            import pathlib
-            import sys
-
-            expected = sys.argv[1]
-            plugin = json.load(sys.stdin)["plugin"]
-            root = pathlib.Path(plugin["rootDir"])
-            package = json.loads((root / "package.json").read_text())
-            valid = (
-                plugin.get("id") == "discord"
-                and plugin.get("origin") == "global"
-                and plugin.get("status") == "loaded"
-                and package.get("name") == "@openclaw/discord"
-                and package.get("version") == expected
-            )
-            valid or sys.exit("Discord external runtime verification failed")
-            ' "$openclaw_version"
+              openclaw plugins enable discord --accept-capabilities
+              verify_discord_plugin loaded
               openclaw config set --strict-json \
                 channels.discord.enabled \
                 'true'
@@ -299,14 +553,20 @@ controllers:
             fi
     containers:
       app:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.7.1@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c"
+          tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
           OPENCLAW_STATE_DIR: /data/openclaw
           OPENCLAW_WORKSPACE_DIR: /data/openclaw/workspace
+          OPENCLAW_SUPERVISOR_MODE: external
+          OPENCLAW_NO_AUTO_UPDATE: "1"
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           NIX_CONFIG: experimental-features = nix-command flakes
           PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -384,13 +644,13 @@ controllers:
               httpGet:
                 path: /
                 port: 8080
-              failureThreshold: 3
+              failureThreshold: 36
               periodSeconds: 10
               timeoutSeconds: 3
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.7.1@sha256:6a31d44b2944e7adcd2b582bf6fb463111264ebca97a0201795b799135bd102c"
+          tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
         command:
           - python3
           - -u
@@ -489,6 +749,18 @@ persistence:
           - path: /data
         bootstrap-config:
           - path: /data
+  identity-coordinator:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 16Mi
+    advancedMounts:
+      openclaw:
+        00-operator-toolbox:
+          - path: /openclaw-coordinator
+        bootstrap-config:
+          - path: /data/openclaw/tmp/openclaw-1000
+        app:
+          - path: /data/openclaw/tmp/openclaw-1000
   plugin-cache:
     enabled: true
     type: emptyDir
@@ -520,7 +792,7 @@ persistence:
     type: emptyDir
     advancedMounts:
       openclaw:
-        operator-toolbox:
+        00-operator-toolbox:
           - path: /toolbox
         app:
           - path: /toolbox
@@ -533,7 +805,7 @@ persistence:
     type: emptyDir
     advancedMounts:
       openclaw:
-        operator-toolbox:
+        00-operator-toolbox:
           - path: /nix-shared
         app:
           - path: /nix

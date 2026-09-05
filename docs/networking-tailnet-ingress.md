@@ -4,8 +4,7 @@ Octelium is the primary access plane for homelab apps, human and CI Kubernetes
 API reachability, private Service sessions, Cordium Workspaces, and external
 callback paths. Existing
 `*.stinkyboi.com` app hostnames resolve through the repo-owned
-`octelium-public` Cloudflare Tunnel connector; the Octelium CLI API uses the
-separate direct gRPC origin documented below. Octelium `WEB` Services normally
+`octelium-public` Cloudflare Tunnel connector, including the browser API and native TCP carrier. Octelium `WEB` Services normally
 enforce clientless browser login before proxying to the existing private Istio
 routes. AFFiNE is anonymous at Octelium so its stock native client can use
 application authentication. NOFX requires Octelium login before its own login.
@@ -21,24 +20,25 @@ CNAMEs to the `homelab-octelium-public` Cloudflare Tunnel target,
 anycast addresses, not Octelium private service IPs or the old tailnet
 LoadBalancer IP.
 
-`octelium-api.stinkyboi.com` is the exception. Cloudflare Tunnel public
-hostnames do not support the long-running gRPC stream used by
-`octelium connect`, so this name is a proxied A record to the current WAN IPv4
-address. `scripts/octelium-public-dns.sh`, run from the homelab LAN, discovers
-that address through UPnP, verifies the leased mapping maintained by the
-`octelium-api-upnp` CronJob to the dedicated `octelium-api-ingressgateway`
-NodePort at `10.1.0.200:30443`, verifies the origin gRPC response, and
-reconciles the record. The dedicated gateway accepts Cloudflare origin TLS
-without SNI, but a separate `VirtualService` routes only
-`octelium-api.stinkyboi.com`; browser, app, and callback hostnames remain
-unavailable through the WAN mapping.
-See Cloudflare's
-[gRPC limitation](https://developers.cloudflare.com/network/grpc-connections/#limitations)
-for the public-hostname restriction.
+The API uses two outbound Cloudflare Tunnel routes. Browser gRPC-Web uses
+`octelium-api.stinkyboi.com` over HTTPS. Native Octelium and Cordium clients
+use `octelium-transport.stinkyboi.com`, a TCP-over-WebSocket carrier to the
+existing API-only Istio TLS gateway. Both DNS records are proxied CNAMEs to
+`<tunnel-uuid>.cfargotunnel.com`. No router forward or WAN address is required.
+The inner connection retains `octelium-api.stinkyboi.com` for certificate
+verification, HTTP/2, and Octelium authentication.
+
+Cloudflare does not support native gRPC on public HTTP Tunnel routes. Its
+[supported TCP carrier](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/non-http/cloudflared-authentication/arbitrary-tcp/)
+transports the TLS stream instead. Cloudflare warns that long-lived carrier
+connections can disconnect; require real Cordium execution, terminal streaming,
+and reconnect tests before treating this as a proven execution transport.
+An account policy requiring Cloudflare Access may add a separate login gate;
+the carrier does not grant Octelium authorization.
 
 Inside Kubernetes, `platform-dns` rewrites the same API hostname to the
 dedicated `octelium-api-ingressgateway` Service. Clients keep the original
-hostname for TLS and SNI while bypassing the WAN mapping and hairpin NAT. This
+hostname for TLS and SNI while bypassing the public Tunnel carrier. This
 split-horizon route is cluster-only; public DNS remains unchanged.
 
 The public tunnel forwards app UI hostnames to the Octelium public ingress
@@ -60,7 +60,7 @@ Total TLS does not issue certificates for Cloudflare Tunnel hostnames.
 | Surface | HTTPS host | Backbone |
 | --- | --- | --- |
 | Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
-| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Cloudflare normal gRPC proxy on client TCP/443, Origin Rule to WAN TCP/8443, then UPnP to the API-only Istio gateway NodePort |
+| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Browser gRPC-Web over HTTPS Tunnel; native TLS gRPC over the `octelium-transport.stinkyboi.com` TCP Tunnel carrier |
 | Kubernetes API for humans and Cordium | private Service `kubernetes-api.homelab` | `octelium connect`, then `octelium config kubernetes-api.homelab`; Cordium Workspaces already have a restricted read-only client session |
 | app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
 | n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
@@ -96,43 +96,29 @@ an internal Istio TLS-routing resource. A separate gateway-chart release and
 `octelium-api-gateway` TLS configuration expose fixed NodePort `30443`. Its
 workload selector and API-only `VirtualService` are separate from
 `tailnet-gateway`, preventing another app hostname from using the WAN listener.
-The router mapping exposes only public TCP/8443 and targets worker
-`zimaboard-0` at `10.1.0.200`; no public HTTP or status NodePort is declared.
-The host-networked CronJob must run on that worker because the Xfinity UPnP
-implementation rejects mappings submitted by a different LAN client. It
-refreshes the Xfinity gateway's minimum 86,400-second lease every five minutes,
-so reverting or suspending the CronJob closes the WAN listener within 24 hours.
-Requests still terminate at the Octelium API and require Octelium
-authentication.
-The CronJob can renew a mapping but cannot enable router UPnP. Xfinity account
-authority must enable UPnP or provide a reviewed static forward before this
-edge can recover; do not report recovery until the CronJob has a recent success
-and the public gRPC probe returns status `16`.
-If the mapping exists but WAN connections time out, use Xfinity Advanced
-Security's device-specific **Allow Access** flow for `zimaboard-0`; Xfinity
-[documents](https://www.xfinity.com/support/articles/xfi-port-forwarding)
-that Advanced Security can block all inbound traffic to a forwarded device.
-Grafana warns when the CronJob's last successful renewal is stale or missing,
-well before the 24-hour lease expires.
-Cloudflare rules must match
-`http.host eq "octelium-api.stinkyboi.com"` and override the destination port
-to `8443` while setting SSL to Full (strict); the client URL remains standard
-HTTPS on port `443`. Reconcile them without exposing the token by running the
-protected workflow:
+After Argo CD loads the new `octelium-public` pod revision, run the protected
+workflow to remove the retired WAN origin rules and reconcile Tunnel DNS:
 
 ```sh
-gh workflow run octelium-cloudflare-origin-port.yml --ref main
+gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
+nix develop --command python3 scripts/octelium-tunnel-check.py
 ```
 
-The `homelab-production` environment secret
-`CLOUDFLARE_ZONE_SETTINGS_TOKEN` must grant zone read, Zone Settings read,
-Origin Rules edit, and Config Settings write for `stinkyboi.com`. Zone Settings
-read authorizes the workflow's SSL and HTTP/2-to-origin checks.
-Rollback is the same protected path and is safe to repeat:
+The workflow uses the existing production AWS role to read the DNS token and
+Tunnel UUID from SSM, and `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to remove the old
+hostname-specific origin/TLS rules. The latter needs zone read, Origin Rules
+edit, and Config Settings write. API responses remain in a temporary private
+log. Retry after correcting declared inputs if any stage fails; partial DNS
+changes are possible and the workflow is idempotent.
 
-```sh
-gh workflow run octelium-cloudflare-origin-port-remove.yml --ref main
-```
+The old UPnP CronJob is suspended and its Grafana lease alert paused. It no
+longer renews router mappings; any prior leased mapping expires naturally.
+The dedicated gateway and cluster split DNS remain available for in-cluster
+clients. The legacy origin-port apply workflow now rejects use.
+
+For rollback, revert the Tunnel configuration and pod revision through a
+reviewed PR. Do not restore WAN DNS or port forwarding without a separately
+reviewed transport change. Preserve private cluster access during rollout.
 
 The workflow succeeds with an `already absent` message when no owned rule
 remains. Reapply it with the default command above.
