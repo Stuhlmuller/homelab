@@ -658,8 +658,13 @@ while read -r HOST; do
       pass "https://${HOST} resolves publicly for clientless access"
     fi
 
+    CURL_REQUEST=(-I)
+    if [ "${HOST}" = "console.stinkyboi.com" ]; then
+      # Octelium returns a bare 401 to curl but a login redirect to browsers.
+      CURL_REQUEST=(-H 'Accept: text/html' -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36')
+    fi
     CURL_OUT="$(
-      curl -sS -I --max-time 20 -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
+      curl -sS "${CURL_REQUEST[@]}" --max-time 20 -D "${HEADER_FILE}" -o /dev/null -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
     )"
     HTTP_CODE="${CURL_OUT%% *}"
     REMOTE_IP="${CURL_OUT#* }"
@@ -673,7 +678,7 @@ while read -r HOST; do
     fi
 
     case "${HTTP_CODE}" in
-      200|204|301|302|307|308|401|403|405)
+      200|204|301|302|303|307|308|401|403|405)
         pass "https://${HOST}${TEST_PATH} responded through the public access path with HTTP ${HTTP_CODE}"
         ;;
       404)
