@@ -164,12 +164,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
   The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected `octelium-cloudflare-origin-port.yml` workflow uses the
-  `homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN`
-  only for zone read, Zone Settings read, Origin Rules edit, and Config Settings
-  write while reconciling the exact API hostname's destination port and Full
-  (strict) TLS/HTTP2 origin transport; the token value never enters git or
-  workflow output. The former
+  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
+  existing production AWS role for SSM reads and the `homelab-production`
+  secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` for removal of retired origin/TLS
+  rules (zone read, Origin Rules edit, Config Settings write). DNS reconciliation
+  uses the SSM-backed DNS token. Native TLS gRPC uses the separate Tunnel TCP
+  carrier; no UPnP or WAN address is required. The token values never enter git
+  or workflow output. The former
   `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
   consumer, is excluded from the External Secrets reader IAM policy, and
   remains only until secret retirement is reviewed separately.

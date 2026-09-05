@@ -166,7 +166,7 @@ observations below retain their original dates.
   `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
   hostnames, so use an explicit advanced wildcard.
 
-- **Status:** mitigated in desired state; blocked by router authority and rollout
+- **Status:** superseded by outbound Tunnel transport; rollout verification pending
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** On 2026-08-28 the public API completed Cloudflare TLS and HTTP/2
   but returned no gRPC response, while direct NodePort `10.1.0.200:30443`
@@ -178,17 +178,16 @@ observations below retain their original dates.
   reports no usable UPnP gateway. Read-only checks on 2026-09-02 confirmed the
   public API still times out while the direct LAN origin returns HTTP/2 and
   unauthenticated `grpc-status: 16`; the latest lease Jobs still fail.
-- **Risk:** Without a persistent WAN TCP/8443 mapping, the public CLI, VPN, and
-  admin path remains unavailable while browser and app tunnel traffic stays
-  healthy. Do not merge the exit-node-only Tailscale cutover until the external
-  Octelium access checks pass. The cutover must also wait until the owner-only
-  `talos-api.homelab` proxy is Ready and an off-LAN authenticated `talosctl`
-  request succeeds through it.
-- **Next step:** Xfinity account authority must enable UPnP or provide a
-  reviewed static TCP/8443 forward to `10.1.0.200:30443`. Then sync the Istio
-  app, require a recent CronJob success, reconcile public DNS, and verify public
-  `grpc-status: 16` plus authenticated CLI and Talos calls. Track worker
-  recovery separately in [[architecture/cluster-topology]].
+- **Risk:** The old WAN path remains unavailable. September 5 operator
+  clarification selects Cloudflare Tunnel; the replacement separates browser
+  gRPC-Web from native TLS gRPC over a TCP carrier. Do not retire private
+  fallback access until authenticated CLI, console, Cordium, and Talos gates
+  pass. Long-lived TCP-carrier reconnect behavior remains unverified.
+- **Next step:** Sync the reviewed Tunnel routes, run the protected
+  `octelium-public-tunnel.yml` DNS/rule reconciliation, then pass
+  `scripts/octelium-tunnel-check.py` and authenticated execution tests.
+  The UPnP job and lease alert are suspended in desired state. Historical
+  router observations above no longer prescribe the current rollout.
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation
@@ -326,9 +325,9 @@ observations below retain their original dates.
   `isConnected: true`; the test session then shut down cleanly.
 - **Risk:** Public client availability still depends on the leased UPnP mapping,
   the two exact-host Cloudflare rules, and normal certificate renewal.
-- **Next step:** Follow the current router and worker recovery finding above.
-  Keep the protected reconciliation workflow as the edge-path diagnostic; this
-  historical success no longer proves current public availability.
+- **Next step:** Follow the outbound Tunnel replacement finding above. This
+  historical WAN success no longer proves current public availability; the
+  origin-port apply workflow is retired.
 
 - **Status:** fixed; direct availability alert retained
 - **Area:** observability / kube-state-metrics

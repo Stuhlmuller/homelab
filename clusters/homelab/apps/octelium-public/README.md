@@ -15,8 +15,8 @@ tailnet:
 - `kubernetes-api-ci.stinkyboi.com` for the policy-bound clientless CI
   Kubernetes Service
 
-`octelium-api.stinkyboi.com` uses the separate direct gRPC origin documented
-below.
+`octelium-api.stinkyboi.com` serves the browser API;
+`octelium-transport.stinkyboi.com` carries native clients over TCP.
 
 ## Secret Contract
 
@@ -35,18 +35,21 @@ the in-cluster Istio gateway at
 the matching origin SNI and Host header. Istio then uses the existing
 `octelium-cluster` `VirtualService` to route to
 `octelium-ingress-dataplane.octelium.svc.cluster.local:8080`.
-The `octelium-api.stinkyboi.com` CLI hostname does not use this public-hostname
-tunnel because Cloudflare does not support gRPC streams on that route type.
-It uses Cloudflare's normal proxied gRPC path on client TCP/443. A
-hostname-specific Origin Rule sends that traffic to WAN TCP/8443, which the
-`octelium-api-upnp` CronJob maps with UPnP to the dedicated
-`octelium-api-ingressgateway` at `10.1.0.200:30443`.
-`scripts/octelium-public-dns.sh` verifies that mapping and reconciles DNS. The
-gateway accepts Cloudflare origin TLS without SNI, but its separate
-`octelium-api` `VirtualService` routes only the API Host, so app hostnames
-cannot bypass their Tunnel and Octelium clientless path through the WAN
-mapping. The connector remains pinned to `2026.7.3` for browser, app, and
-callback routes.
+The API uses two outbound Cloudflare Tunnel routes. Browser gRPC-Web uses
+`octelium-api.stinkyboi.com` over HTTPS. Native Octelium and Cordium clients
+use `octelium-transport.stinkyboi.com`, a TCP-over-WebSocket carrier to the
+existing API-only Istio TLS gateway. Both DNS records are proxied CNAMEs to
+`<tunnel-uuid>.cfargotunnel.com`. No router forward or WAN address is required.
+The inner connection retains `octelium-api.stinkyboi.com` for certificate
+verification, HTTP/2, and Octelium authentication.
+
+Cloudflare does not support native gRPC on public HTTP Tunnel routes. Its
+[supported TCP carrier](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/non-http/cloudflared-authentication/arbitrary-tcp/)
+transports the TLS stream instead. Cloudflare warns that long-lived carrier
+connections can disconnect; require real Cordium execution, terminal streaming,
+and reconnect tests before treating this as a proven execution transport.
+An account policy requiring Cloudflare Access may add a separate login gate;
+the carrier does not grant Octelium authorization.
 
 App hostnames forward directly to
 `http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080` with their
@@ -66,16 +69,47 @@ directly to the Istio gateway with its original Host header, and
 `console.octelium.stinkyboi.com` name is a nested hostname and is not part of
 the public certificate/DNS shape.
 
-The Cloudflare DNS records for browser, app, and callback hostnames must be
-exact proxied CNAMEs to the named tunnel target,
-`<tunnel-uuid>.cfargotunnel.com`. The API hostname must be a proxied A record
-to the WAN address. After Argo CD syncs the `octelium-api-upnp` CronJob,
-reconcile DNS with `scripts/octelium-public-dns.sh` from the homelab LAN.
-Public resolvers should return Cloudflare anycast addresses, not private
-Octelium or old tailnet addresses.
-The CronJob cannot enable Xfinity UPnP; router account authority remains a
-rollout gate. `scripts/octelium-e2e-check.sh` pins its gRPC request to a public
-`1.1.1.1` answer so local split DNS cannot produce a false success.
+After Argo CD loads the new `octelium-public` pod revision, run the protected
+workflow to remove the retired WAN origin rules and reconcile Tunnel DNS:
+
+```sh
+gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
+nix develop --command python3 scripts/octelium-tunnel-check.py
+```
+
+The workflow uses the existing production AWS role to read the DNS token and
+Tunnel UUID from SSM, and `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to remove the old
+hostname-specific origin/TLS rules. The latter needs zone read, Origin Rules
+edit, and Config Settings write. API responses remain in a temporary private
+log. Retry after correcting declared inputs if any stage fails; partial DNS
+changes are possible and the workflow is idempotent.
+
+The old UPnP CronJob is suspended and its Grafana lease alert paused. It no
+longer renews router mappings; any prior leased mapping expires naturally.
+The dedicated gateway and cluster split DNS remain available for in-cluster
+clients. The legacy origin-port apply workflow now rejects use.
+
+For rollback, revert the Tunnel configuration and pod revision through a
+reviewed PR. Do not restore WAN DNS or port forwarding without a separately
+reviewed transport change. Preserve private cluster access during rollout.
+
+Native clients need a local TCP carrier and a resolver mapping scoped to
+their execution environment. The pinned Octelium client calls the canonical
+API hostname on port 443:
+
+```sh
+cloudflared access tcp --hostname octelium-transport.stinkyboi.com --url 127.0.0.1:443
+```
+
+In a dedicated client container or Pod, map `octelium-api.stinkyboi.com` to
+`127.0.0.1` (for example, a declared Pod `hostAliases` entry) and run the
+carrier in that same network namespace. Binding port 443 may require the
+container's low-port capability. Keep the transport hostname publicly resolved;
+do not map it to loopback. Do not add a workstation-wide hosts entry that
+would redirect the browser's gRPC-Web traffic. The standalone transport probe
+uses a temporary high port and curl `--connect-to`, so it needs neither root
+nor a hosts-file change. CI and OpenClaw client integration remains a separate
+rollout gate; the carrier probe alone does not prove authenticated execution.
 
 Cloudflare edge TLS and Istio origin TLS use the apex plus first-level
 `*.stinkyboi.com` certificate shape. The cluster domain is `stinkyboi.com` so
@@ -90,13 +124,7 @@ kubectl kustomize clusters/homelab/apps/istio
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
 scripts/octelium-public-dns.sh --dry-run
-curl -sS --http2 \
-  -H 'content-type: application/grpc' \
-  -H 'te: trailers' \
-  --data-binary '' \
-  -o /dev/null \
-  -D - \
-  https://octelium-api.stinkyboi.com/octelium.api.main.user.v1.MainService/GetStatus
+python3 scripts/octelium-tunnel-check.py
 dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/
 curl -fsS -o /dev/null -w '%{http_code}\n' https://octelium.stinkyboi.com/

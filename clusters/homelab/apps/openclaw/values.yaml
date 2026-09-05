@@ -4,6 +4,7 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    replicas: 1
     revisionHistoryLimit: 1
     strategy: Recreate
     pod:
@@ -75,6 +76,9 @@ controllers:
             cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
             chown -R 1000:1000 /nix-shared
+            # The NAS maps file ownership to 65534; coordinator locks need local UID ownership.
+            chown 1000:1000 /openclaw-coordinator
+            chmod 700 /openclaw-coordinator
             /toolbox/profile/bin/jq --version
             /toolbox/profile/bin/rg --version
             /toolbox/profile/bin/gh --version
@@ -92,6 +96,10 @@ controllers:
             cpu: 1500m
             memory: 3Gi
       bootstrap-config:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -134,6 +142,18 @@ controllers:
           - -ec
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            doctor_marker="$OPENCLAW_STATE_DIR/.doctor-state-migrated-to-2026.8.2"
+            doctor_reports="$OPENCLAW_STATE_DIR/doctor-state-reports"
+            doctor_config_snapshot="$doctor_reports/config-before.json"
+            restore_doctor_config() {
+              cp "$doctor_config_snapshot" "$OPENCLAW_CONFIG_PATH.doctor-restore"
+              chmod 600 "$OPENCLAW_CONFIG_PATH.doctor-restore"
+              mv "$OPENCLAW_CONFIG_PATH.doctor-restore" "$OPENCLAW_CONFIG_PATH"
+            }
+            # Resume an interrupted doctor before applying this rollout's config.
+            if [ ! -s "$doctor_marker" ] && [ -s "$doctor_config_snapshot" ]; then
+              restore_doctor_config
+            fi
             had_existing_state=false
             if [ -d "$OPENCLAW_STATE_DIR" ] &&
               [ -n "$(find "$OPENCLAW_STATE_DIR" -mindepth 1 -maxdepth 1 \
@@ -464,6 +484,19 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
+              # Clear the old authored env reference; otherwise OpenClaw preserves it.
+              if python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_HOOK_REFERENCE'
+            import json
+            import pathlib
+            import sys
+
+            config = json.loads(pathlib.Path(sys.argv[1]).read_text())
+            token = config.get("hooks", {}).get("token")
+            sys.exit(0 if token == "${GRAFANA_ALERT_HOOK_TOKEN}" else 1)
+            OPENCLAW_HOOK_REFERENCE
+              then
+                openclaw config unset hooks.token
+              fi
               HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
               openclaw config set --strict-json \
                 hooks.token \
@@ -530,8 +563,44 @@ controllers:
                 --ref-source env \
                 --ref-id DISCORD_BOT_TOKEN
             fi
+
+            if [ ! -s "$doctor_marker" ]; then
+              if "$had_existing_state" && ! verify_backup_dir "$backup_dir"; then
+                echo "Verified pre-upgrade backup required before doctor state migration" >&2
+                exit 1
+              fi
+              mkdir -p "$doctor_reports"
+              chmod 700 "$doctor_reports"
+              cp "$OPENCLAW_CONFIG_PATH" "$doctor_config_snapshot.tmp"
+              chmod 600 "$doctor_config_snapshot.tmp"
+              mv "$doctor_config_snapshot.tmp" "$doctor_config_snapshot"
+              if [ -f "$doctor_reports/latest.log" ]; then
+                mv "$doctor_reports/latest.log" "$doctor_reports/previous.log"
+              fi
+              echo "Migrating remaining legacy state with pinned OpenClaw doctor"
+              doctor_status=0
+              (umask 077; openclaw doctor --fix --non-interactive \
+                --no-workspace-suggestions > "$doctor_reports/latest.log" 2>&1) || doctor_status=$?
+              # Doctor owns state migration; reviewed bootstrap owns configuration.
+              restore_doctor_config
+              if [ "$doctor_status" -ne 0 ]; then
+                echo "Doctor migration failed; preserve private report and backup for review" >&2
+                exit 1
+              fi
+              if [ -s "$migration_marker" ]; then
+                report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+                session_preservation verify
+              fi
+              openclaw config validate
+              printf 'doctor state migration and readiness checks passed\n' > "$doctor_marker.tmp"
+              mv "$doctor_marker.tmp" "$doctor_marker"
+            fi
     containers:
       app:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
@@ -724,6 +793,18 @@ persistence:
           - path: /data
         bootstrap-config:
           - path: /data
+  identity-coordinator:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 16Mi
+    advancedMounts:
+      openclaw:
+        00-operator-toolbox:
+          - path: /openclaw-coordinator
+        bootstrap-config:
+          - path: /data/openclaw/tmp/openclaw-1000
+        app:
+          - path: /data/openclaw/tmp/openclaw-1000
   plugin-cache:
     enabled: true
     type: emptyDir

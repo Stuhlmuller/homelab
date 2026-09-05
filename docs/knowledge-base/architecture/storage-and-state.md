@@ -269,3 +269,26 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`
+
+## OpenClaw identity coordinator ownership
+
+September 5 read-only inspection found QNAP-backed OpenClaw paths reported as
+UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
+coordinator ownership check blocked gateway startup after session migration
+completed successfully. The repository mounts a shared local `emptyDir` at
+`/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
+Only coordinator locks move off NFS; identity/configuration/session databases
+and the verified pre-upgrade backup remain on the PVC. This requires one
+`Recreate` Pod and all writers using its shared mount. Never start an external
+writer against that PVC with a separate coordinator. See the OpenClaw README
+for verification and rollback limits; live recovery remains pending rollout.
+
+### OpenClaw remaining legacy-state upgrade
+
+The 2026.8.2 session import does not migrate workspace setup/attestation state.
+A separate bootstrap doctor gate verifies the existing pre-upgrade archive,
+runs pinned upstream noninteractive repairs, rechecks imported session
+identities, and validates configuration before writing its own completion
+marker. Private doctor reports retain latest plus previous. State restoration
+requires the archive and compatible software, not merely a manifest revert.
+See the OpenClaw README; gateway readiness is still a live acceptance gate.
