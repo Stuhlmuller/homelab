@@ -77,7 +77,10 @@ Claw's reviewed assistant bundle lives in
 personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
 09:00 briefing, twice-hourly daytime health watch, and one bounded daily
 improvement session. Stable automation declaration keys preserve history and
-operator pauses. The existing allowlisted owner supplies the Discord DM route;
+operator pauses. After registering replacements, ID/name-checked reconciliation
+disables the legacy ten-minute auto-triage and daily improvement jobs, preserving
+history and unrelated security, memory, and research routines.
+The existing allowlisted owner supplies the Discord DM route;
 ambiguous routing defers scheduling without breaking gateway startup. Verify
 `assistant-reconciliation.json` reports `ready` as well as Pod readiness.
 Bootstrap retains original files privately and

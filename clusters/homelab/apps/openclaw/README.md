@@ -75,16 +75,26 @@ same-volume rollback checkpoint, not an independent backup.
 
 The app's postStart hook registers three jobs through the public automation
 CLI with stable declaration keys. Retries converge in place; they preserve
-job history and an owner's disabled state. It does not edit scheduler SQLite
-tables or adopt/delete unrelated jobs. An absent or ambiguous owner defers
+job history and an owner's disabled state. After registering replacements, it
+disables the two observed overlapping
+legacy jobs (Grafana auto-triage and the daily improvement loop) only when both
+ID and name match `retired-jobs.json`. Their history remains; security audits,
+memory dreaming, and research routines are preserved. It does not edit
+scheduler SQLite tables or adopt/delete unrelated jobs. An absent or ambiguous
+owner defers
 scheduling rather than guessing a recipient. This keeps a fresh gateway usable
 before Discord setup. Bounded API retries also leave chat available on failure.
 `/data/openclaw/assistant-reconciliation.json` records `deferred`, `pending`,
 `failed`, or `ready` without credentials or recipient IDs. Verify `ready` in
-addition to Pod readiness; after correcting a deferred/failed setup through
-the declared configuration path, rerun `python3
-/etc/openclaw-assistant/reconcile.py` in the app container. Existing alert hooks
-remain enabled.
+addition to Pod readiness. After correcting a deferred/failed setup through
+the declared configuration path, retry the reviewed reconciler:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- \
+  python3 /etc/openclaw-assistant/reconcile.py
+```
+
+Existing alert hooks remain enabled.
 See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 [heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
 
@@ -117,7 +127,8 @@ state survives reconciliation. To retire or rename jobs, include explicit
 removal of their declaration IDs in a reviewed maintenance change. Removing
 the ConfigMap alone does not remove persisted jobs. Roll back through a PR
 that restores the previous model and managed content and disables/removes
-the three declarations through the public CLI. Keep personal memory and
+the three declarations through the public CLI, then re-enable the two retired
+jobs if returning to the old behavior. Keep personal memory and
 session history; use the private originals only for a reviewed offline
 workspace/config restore when needed.
 

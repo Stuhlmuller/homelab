@@ -48,6 +48,20 @@ def command(job, destination):
     ]
 
 
+def retiring_ids(existing, retired):
+    indexed = {job["id"]: job for job in existing}
+    result = []
+    for expected in retired:
+        job = indexed.get(expected["id"])
+        if job is None:
+            continue
+        if job.get("name") != expected["name"]:
+            raise RuntimeError("legacy job identity changed; preserve it for review")
+        if job.get("enabled"):
+            result.append(job["id"])
+    return result
+
+
 def reconcile():
     try:
         destination = owner_destination(json.loads(CONFIG.read_text()))
@@ -58,22 +72,33 @@ def reconcile():
     jobs = json.loads((BUNDLE / "jobs.json").read_text())
     status("pending", "Waiting for the gateway automation API")
     deadline = time.monotonic() + 300
+
+    def run(argv):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("scheduler reconciliation deadline exceeded")
+        result = subprocess.run(argv, capture_output=True, timeout=min(60, remaining), check=False)
+        if result.returncode:
+            raise RuntimeError("gateway automation API request failed")
+        return result.stdout
+
     # postStart runs concurrently with the normal gateway entrypoint. Each retry
     # converges the same declaration keys; disabled jobs stay disabled upstream.
     for attempt in range(6):
         try:
             for job in jobs:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise RuntimeError("scheduler reconciliation deadline exceeded")
-                result = subprocess.run(command(job, destination), capture_output=True,
-                                        timeout=min(60, remaining), check=False)
-                if result.returncode:
-                    raise RuntimeError(f"scheduler rejected managed job {job['key']}")
+                run(command(job, destination))
+            # Retire only the two observed overlapping jobs, after replacements
+            # exist. Keep their history and every unrelated routine untouched.
+            current = json.loads(run(["openclaw", "automations", "list", "--all", "--json",
+                                      "--timeout", "20000"]))
+            retired = json.loads((BUNDLE / "retired-jobs.json").read_text())
+            for job_id in retiring_ids(current["jobs"], retired):
+                run(["openclaw", "automations", "disable", job_id, "--timeout", "20000"])
             status("ready", "All three managed homelab automations reconciled")
             print("All three managed homelab automations reconciled", flush=True)
             return
-        except (RuntimeError, subprocess.TimeoutExpired):
+        except (RuntimeError, ValueError, KeyError, subprocess.TimeoutExpired):
             # CLI diagnostics can contain private routes; keep them out of logs.
             print(f"Assistant scheduler not ready (attempt {attempt + 1}/6)", flush=True)
             if attempt == 5 or time.monotonic() >= deadline:

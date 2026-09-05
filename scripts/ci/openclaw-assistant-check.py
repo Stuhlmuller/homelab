@@ -91,6 +91,18 @@ for job in jobs:
     assert "--best-effort-deliver" not in argv  # Delivery failure must remain visible.
     assert argv[argv.index("--model") + 1] == "openai/gpt-6-astra"
 
+retired = json.loads((BUNDLE / "retired-jobs.json").read_text())
+existing = [dict(job, enabled=True) for job in retired] + [
+    {"id": "keep", "name": "Daily Security Audit", "enabled": True}]
+assert reconcile.retiring_ids(existing, retired) == [job["id"] for job in retired]
+assert reconcile.retiring_ids([], retired) == []
+assert reconcile.retiring_ids([dict(job, enabled=False) for job in retired], retired) == []
+try:
+    reconcile.retiring_ids([dict(retired[0], name="Different purpose")], retired)
+    raise AssertionError("repurposed legacy job retired")
+except RuntimeError:
+    pass
+
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     reconcile.CONFIG = root / "config.json"
@@ -105,8 +117,9 @@ with tempfile.TemporaryDirectory() as directory:
     reconcile.CONFIG.write_text(json.dumps(fixture))
     with patch.object(reconcile.subprocess, "run") as run:
         run.return_value.returncode = 0
+        run.return_value.stdout = b'{"jobs": []}'
         reconcile.reconcile()
-        assert run.call_count == 3
+        assert run.call_count == 4
     assert json.loads(reconcile.STATUS.read_text())["state"] == "ready"
     with patch.object(reconcile.subprocess, "run") as run, patch.object(reconcile.time, "sleep"):
         run.return_value.returncode = 1
