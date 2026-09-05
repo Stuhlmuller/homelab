@@ -181,6 +181,39 @@ Secrets Operator CRDs and AWS SSM access. Automated sync may retry those
 resources until External Secrets Operator is installed by the app onboarding
 stack.
 
+## Version And Security Upgrade Contract
+
+The bootstrap pins argo-helm `10.0.0` and Argo CD `v3.4.8` by OCI index digest.
+Chart 10 renders five component NetworkPolicies, and this repository keeps
+`global.networkPolicy.create=true` explicit. The current kube-flannel data
+plane does not enforce those objects, so their presence alone does not close
+`GHSA-47m3-95c7-g2g8`. Keep the advisory open until issue #784 installs an
+enforcing data plane and a live negative test proves an otherwise-untrusted Pod
+cannot connect to either the Argo CD repo-server or Redis Service.
+
+Before an upgrade, require Ready nodes, no active Argo CD operations, a captured
+Helm revision and values, and a protected saved Terragrunt plan showing one
+in-place `helm_release` update with no creates or destroys. Issue #784 and its
+negative repo-server and Redis connectivity test are rollout gates, not
+follow-up hardening.
+
+After rollout, verify every Argo CD workload is Ready and uses the reviewed
+image digest, all five NetworkPolicies exist, Applications and AppProjects are
+healthy, repository generation and sync work, Entra login and admin/readonly
+RBAC work through Octelium, and Prometheus still scrapes Argo CD. After #784,
+also prove an otherwise-untrusted Pod cannot reach repo-server or Redis while
+normal Argo CD reconciliation still succeeds. Observe reconcile errors, auth
+failures, restarts, CPU, memory, and latency for 24 hours.
+
+If chart 10 regresses, roll back only the chart to `9.5.15`; retain
+`global.networkPolicy.create=true` and the current exact Argo CD
+`v3.4.8@sha256:527df4ae3f60662a06334d4f3ada018bea056f29f53639fc618a4bf5bfb6c585`
+image. Static validation renders that fallback from the immutable chart OCI
+digest and requires the same image plus five NetworkPolicies. An Argo CD image
+downgrade is break glass only: pin an exact `tag@sha256` in repository-owned
+desired state, record the upstream CVEs reintroduced by that version, and
+restore `v3.4.8` after recovery.
+
 ## Drift And Reconciliation
 
 Do not hand-edit the live Application. If Argo CD-owned state drifts, correct
