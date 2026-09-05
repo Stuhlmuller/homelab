@@ -579,7 +579,8 @@ controllers:
               fi
               echo "Migrating remaining legacy state with pinned OpenClaw doctor"
               doctor_status=0
-              (umask 077; openclaw doctor --fix --non-interactive \
+              (umask 077; timeout --signal=TERM --kill-after=30s 10m \
+                openclaw doctor --fix --non-interactive \
                 --no-workspace-suggestions > "$doctor_reports/latest.log" 2>&1) || doctor_status=$?
               # Doctor owns state migration; reviewed bootstrap owns configuration.
               restore_doctor_config

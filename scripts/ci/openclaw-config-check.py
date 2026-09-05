@@ -150,7 +150,8 @@ print("OpenClaw import preservation: missing/changed sessions rejected; restart 
 
 doctor_setup = bootstrap[bootstrap.index('doctor_marker="$OPENCLAW_STATE_DIR/') : bootstrap.index('had_existing_state=false')]
 doctor = bootstrap[bootstrap.rindex('if [ ! -s "$doctor_marker" ]; then') :]
-for failure in ("backup", "doctor", "preservation", "validate", "none"):
+assert 'timeout --signal=TERM --kill-after=30s 10m' in doctor
+for failure in ("backup", "doctor", "timeout", "preservation", "validate", "none"):
     with tempfile.TemporaryDirectory() as directory:
         root = pathlib.Path(directory)
         (root / "sessions-migrated").write_text("complete\n")
@@ -164,6 +165,11 @@ backup_dir="$1/backup"
 migration_marker="$1/sessions-migrated"
 verify_backup_dir() { test "$failure" != backup; }
 session_preservation() { test "$failure" != preservation; }
+timeout() {
+  test "$failure" != timeout || return 124
+  shift 3
+  "$@"
+}
 openclaw() {
   if [ "$1" = doctor ]; then
     printf '{"doctorChangedPolicy":true}\n' > "$OPENCLAW_CONFIG_PATH"

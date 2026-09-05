@@ -676,7 +676,11 @@ observations below retain their original dates.
 - **Evidence:** The first 2026-08-13 rollout stalled in `bootstrap-config`
   before the app container started. Automatic `openclaw doctor --fix` found
   5,344 orphan transcripts and remained blocked scanning the NFS-backed session
-  directory. Repository bootstrap now validates config without running doctor.
+  directory. The original repair removed doctor from ordinary bootstrap. The
+  reviewed 2026.8.2 recovery adds a one-time state migration after the targeted
+  session import, with a ten-minute deadline and 30-second kill grace period.
+  It restores reviewed configuration and fails closed without a completion
+  marker on timeout; no unbounded generic scan is permitted.
 - **Risk:** future OpenClaw upgrades that require config migration will fail
   validation instead of repairing persisted state automatically.
 - **Validation:** the replacement pod completed both init containers and became
