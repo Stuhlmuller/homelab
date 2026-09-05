@@ -295,7 +295,21 @@ installed version is reused; a missing or mismatched package gets four bounded
 registry attempts so a transient reset cannot leave every restart dependent on
 a fresh successful download. The versioned bootstrap runs the targeted session
 SQLite inspect, dry-run, import, and post-import inspection once after its verified
-backup. It does not run generic doctor repair because that command can rewrite
+backup. Reports are retained with owner-only permissions under
+`/data/openclaw/session-sqlite-reports`, keeping only the latest and previous
+report for each mode; logs contain totals instead of thousands
+of transcript paths. The report gate accepts only the observed
+`transcript_missing` warning for `agent:main:healthcheck-20260813` on agent
+`main`. OpenClaw 2026.8.2 preserves that entry's metadata during import but
+returns exit code 1 for any warning. Every other issue, malformed report, or
+unexplained nonzero exit remains fatal. The original archive and any retained
+legacy/trajectory files remain available; no replacement transcript is invented.
+Before import, bootstrap saves every legacy session key and session ID in a
+private inventory that survives retries. After inspection, a read-only SQLite
+query verifies each identity still exists before writing the completion marker.
+Missing or changed identities stop bootstrap even if doctor reports no issues.
+
+It does not run generic doctor repair because that command can rewrite
 unrelated skill policy. Gateway startup owns its documented deterministic
 config migrations once startup is reached; plugin installation itself rejects
 unmigrated config. Persisted session and cron route repairs remain explicit

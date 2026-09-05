@@ -1189,9 +1189,9 @@ rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
 rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"
 rg -Fq 'required_kib=$((state_kib * 2 + 2097152))' "$openclaw_values"
-[[ "$(rg -Fc 'openclaw doctor --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
-rg -Fq 'openclaw doctor --session-sqlite dry-run' "$openclaw_values"
-rg -Fq 'openclaw doctor --session-sqlite import' "$openclaw_values"
+[[ "$(rg -Fc 'session_sqlite --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
+rg -Fq 'session_sqlite --session-sqlite dry-run' "$openclaw_values"
+rg -Fq 'session_sqlite --session-sqlite import' "$openclaw_values"
 if rg -Fq 'openclaw doctor --fix' "$openclaw_values" ||
   rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
   echo "OpenClaw bootstrap contains an unsafe or ineffective doctor repair" >&2

@@ -331,16 +331,106 @@ controllers:
             fi
             verify_discord_plugin installed
 
+            session_sqlite() {
+              report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+              mkdir -p "$report_dir"
+              report="$report_dir/$2.latest.json"
+              if [ -f "$report" ]; then
+                mv "$report" "$report_dir/$2.previous.json"
+              fi
+              (umask 077; : > "$report")
+              status=0
+              openclaw doctor "$@" --json > "$report" || status=$?
+              python3 - "$report" "$status" "$2" <<'OPENCLAW_SESSION_REPORT'
+            import json
+            import sys
+
+            path, status, mode = sys.argv[1:]
+            with open(path, encoding="utf-8") as source:
+                report = json.load(source)
+            issues = [(target["agentId"], issue)
+                      for target in report["targets"] for issue in target["issues"]]
+            allowed = all(
+                agent == "main"
+                and issue["code"] == "transcript_missing"
+                and issue.get("sessionKey") == "agent:main:healthcheck-20260813"
+                for agent, issue in issues
+            )
+            valid = (
+                report["mode"] == mode
+                and bool(report["targets"])
+                and report["totals"]["issues"] == len(issues)
+                and int(status) in (0, 1)
+                and (int(status) == 0 or bool(issues))
+                and allowed
+            )
+            print(f"session-sqlite {mode}: {json.dumps(report['totals'], sort_keys=True)}")
+            print(f"Private migration report: {path}")
+            if not valid:
+                sys.exit("Session migration report rejected; preserve report and backup for review")
+            if issues:
+                print("Known missing healthcheck transcript: preserve metadata through upstream import")
+            OPENCLAW_SESSION_REPORT
+            }
+
+            session_preservation() {
+              python3 - "$1" "$report" "$report_dir/expected-sessions.json" <<'OPENCLAW_SESSION_PRESERVATION'
+            import json
+            import os
+            import pathlib
+            import sqlite3
+            import sys
+
+            mode, report_path, expected_path = sys.argv[1:]
+            expected_path = pathlib.Path(expected_path)
+            if mode == "snapshot" and not expected_path.exists():
+                report = json.loads(pathlib.Path(report_path).read_text())
+                expected = []
+                for target in report["targets"]:
+                    store = pathlib.Path(target["storePath"])
+                    entries = json.loads(store.read_text()) if store.exists() else {}
+                    if len(entries) != target["legacyEntries"]:
+                        sys.exit("Legacy session inventory changed before import")
+                    expected.append({"sqlitePath": target["sqlitePath"], "sessions": {
+                        key: entry["sessionId"] for key, entry in entries.items()
+                    }})
+                temporary = expected_path.with_suffix(".tmp")
+                with open(temporary, "w", encoding="utf-8") as output:
+                    os.chmod(temporary, 0o600)
+                    json.dump(expected, output)
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(temporary, expected_path)
+            expected = json.loads(expected_path.read_text())
+            if not expected:
+                sys.exit("Missing pre-import session inventory")
+            if mode == "verify":
+                for target in expected:
+                    uri = pathlib.Path(target["sqlitePath"]).resolve().as_uri() + "?mode=ro"
+                    with sqlite3.connect(uri, uri=True) as db:
+                        for key, session_id in target["sessions"].items():
+                            row = db.execute(
+                                "SELECT current_session_id FROM session_nodes WHERE session_key = ?",
+                                (key,),
+                            ).fetchone()
+                            if row != (session_id,):
+                                sys.exit("Imported session identity missing or changed; preserve backup and reports")
+                print("Verified every pre-import session key and identity in SQLite")
+            OPENCLAW_SESSION_PRESERVATION
+            }
+
             if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
               echo "Migrating session state to OpenClaw 2026.8.2"
-              openclaw doctor --session-sqlite inspect \
+              session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
-              openclaw doctor --session-sqlite dry-run \
-                --session-sqlite-all-agents --json
-              openclaw doctor --session-sqlite import \
+              session_sqlite --session-sqlite dry-run \
                 --session-sqlite-all-agents
-              openclaw doctor --session-sqlite inspect \
+              session_preservation snapshot
+              session_sqlite --session-sqlite import \
                 --session-sqlite-all-agents
+              session_sqlite --session-sqlite inspect \
+                --session-sqlite-all-agents
+              session_preservation verify
               printf 'session SQLite migration imported and inspected\n' > "$migration_marker.tmp"
               mv "$migration_marker.tmp" "$migration_marker"
             fi
