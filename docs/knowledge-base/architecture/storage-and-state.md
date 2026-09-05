@@ -67,17 +67,30 @@ ready, but they must not be treated as production-ready until:
 
 ## Open Audit Findings
 
-- **Status:** fix staged; rollout pending
-- **Area:** OpenClaw upgrade / config migration
+- **Status:** config recovery verified; session-warning fix staged
+- **Area:** OpenClaw upgrade / config and session migration
 - **Evidence:** On 2026-09-04, OpenClaw 2026.8.2 bootstrap repeatedly rejected
   four retired config keys before Discord installation and session migration.
   `clusters/homelab/apps/openclaw/values.yaml` now migrates those keys after
   the verified offline backup and preserves legacy model restrictions explicitly.
-  It also stops writing retired `hooks.maxBodyBytes`.
+  It also stops writing retired `hooks.maxBodyBytes`. PR #953 rolled out on
+  September 5: both archive verification passes succeeded, retired keys were
+  absent, the model policy was present, and Discord 2026.8.2 installed.
+  Session dry-run then stopped on one missing healthcheck transcript: 19 of 20
+  entries validated, with 1,089 events. Upstream treats `transcript_missing` as
+  an import warning and preserves metadata, but its CLI returns exit 1 for all
+  issues. Bootstrap now accepts only that exact known agent/session warning,
+  retains private JSON reports, and rejects all other issues. No live index
+  entries or transcripts were manually altered.
 - **Validation:** A synthetic legacy config failed under the exact 2026.8.2
   CLI before migration and passed afterward. The actual bootstrap migration
   has preservation, idempotence, and invalid-input checks in
-  `scripts/ci/openclaw-config-check.py`.
+  `scripts/ci/openclaw-config-check.py`. The same check exercises the session
+  report gate against unexpected warnings, failure exits, mismatched reports,
+  and malformed JSON. An exact 2026.8.2 CLI fixture returned exit 1 for
+  dry-run and import with a missing transcript, preserved both session metadata
+  entries, and passed post-import inspection. Full static validation, 280
+  rendered policy checks, shell syntax, and server-side diff passed.
 - **Next step:** Roll out through GitOps, require successful bootstrap and
   session migration, then verify gateway and Discord readiness. Preserve the
   pre-upgrade archive and migration originals until the 24-hour soak passes.

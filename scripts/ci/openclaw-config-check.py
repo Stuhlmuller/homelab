@@ -50,3 +50,51 @@ with tempfile.TemporaryDirectory() as directory:
     result = subprocess.run([sys.executable, "-c", migration, str(path)], capture_output=True)
     assert result.returncode != 0 and path.read_text() == '{"broken":'
 print("OpenClaw config migration: preservation, idempotence, and invalid-input checks passed")
+
+marker = "OPENCLAW_SESSION_REPORT"
+gate = bootstrap.split(f"<<'{marker}'\n", 1)[1].split(f"\n{marker}", 1)[0]
+known_issue = {"code": "transcript_missing", "sessionKey": "agent:main:healthcheck-20260813"}
+clean_report = {"mode": "dry-run", "targets": [{"agentId": "main", "issues": []}],
+                "totals": {"issues": 0}}
+warning_report = copy.deepcopy(clean_report)
+warning_report["targets"][0]["issues"] = [known_issue]
+warning_report["totals"]["issues"] = 1
+cases = [(clean_report, 0, True), (clean_report, 1, False),
+         (warning_report, 1, True), (warning_report, 2, False)]
+for field, value in (("code", "transcript_malformed"), ("code", "sqlite_corrupt"),
+                     ("sessionKey", "agent:main:real-session")):
+    report = copy.deepcopy(warning_report)
+    report["targets"][0]["issues"][0][field] = value
+    cases.append((report, 1, False))
+for field, value in (("mode", "import"), ("targets", []), ("totals", {"issues": 0})):
+    report = copy.deepcopy(warning_report)
+    report[field] = value
+    cases.append((report, 1, False))
+report = copy.deepcopy(warning_report)
+report["targets"][0]["agentId"] = "other"
+cases.append((report, 1, False))
+with tempfile.TemporaryDirectory() as directory:
+    path = pathlib.Path(directory) / "report.json"
+    for report, status, accepted in cases:
+        path.write_text(json.dumps(report))
+        before = path.read_bytes()
+        result = subprocess.run([sys.executable, "-c", gate, str(path), str(status), "dry-run"],
+                                capture_output=True)
+        assert (result.returncode == 0) == accepted, result.stderr.decode()
+        assert path.read_bytes() == before
+    path.write_text('{"broken":')
+    result = subprocess.run([sys.executable, "-c", gate, str(path), "1", "dry-run"],
+                            capture_output=True)
+    assert result.returncode != 0
+    path.write_text(json.dumps(warning_report))
+    helper = bootstrap[bootstrap.index("session_sqlite() {"):]
+    helper = helper.split('\nif "$had_existing_state"', 1)[0]
+    script = 'OPENCLAW_STATE_DIR="$1"\nfixture="$2"\n'
+    script += 'openclaw() { cat "$fixture"; return 1; }\n' + helper
+    script += '\nsession_sqlite --session-sqlite dry-run --session-sqlite-all-agents\n'
+    subprocess.run(["sh", "-ec", script, "fixture", directory, str(path)],
+                   check=True, capture_output=True)
+    saved = list((pathlib.Path(directory) / "session-sqlite-reports").iterdir())
+    assert len(saved) == 1 and saved[0].stat().st_mode & 0o777 == 0o600
+    assert json.loads(saved[0].read_text()) == warning_report
+print("OpenClaw session report: known warning accepted; unexpected issues and failures rejected")

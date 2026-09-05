@@ -331,15 +331,53 @@ controllers:
             fi
             verify_discord_plugin installed
 
+            session_sqlite() {
+              report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
+              mkdir -p "$report_dir"
+              report="$(mktemp "$report_dir/$2.XXXXXX")"
+              status=0
+              openclaw doctor "$@" --json > "$report" || status=$?
+              python3 - "$report" "$status" "$2" <<'OPENCLAW_SESSION_REPORT'
+            import json
+            import sys
+
+            path, status, mode = sys.argv[1:]
+            with open(path, encoding="utf-8") as source:
+                report = json.load(source)
+            issues = [(target["agentId"], issue)
+                      for target in report["targets"] for issue in target["issues"]]
+            allowed = all(
+                agent == "main"
+                and issue["code"] == "transcript_missing"
+                and issue.get("sessionKey") == "agent:main:healthcheck-20260813"
+                for agent, issue in issues
+            )
+            valid = (
+                report["mode"] == mode
+                and bool(report["targets"])
+                and report["totals"]["issues"] == len(issues)
+                and int(status) in (0, 1)
+                and (int(status) == 0 or bool(issues))
+                and allowed
+            )
+            print(f"session-sqlite {mode}: {json.dumps(report['totals'], sort_keys=True)}")
+            print(f"Private migration report: {path}")
+            if not valid:
+                sys.exit("Session migration report rejected; preserve report and backup for review")
+            if issues:
+                print("Known missing healthcheck transcript: preserve metadata through upstream import")
+            OPENCLAW_SESSION_REPORT
+            }
+
             if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
               echo "Migrating session state to OpenClaw 2026.8.2"
-              openclaw doctor --session-sqlite inspect \
+              session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
-              openclaw doctor --session-sqlite dry-run \
-                --session-sqlite-all-agents --json
-              openclaw doctor --session-sqlite import \
+              session_sqlite --session-sqlite dry-run \
                 --session-sqlite-all-agents
-              openclaw doctor --session-sqlite inspect \
+              session_sqlite --session-sqlite import \
+                --session-sqlite-all-agents
+              session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
               printf 'session SQLite migration imported and inspected\n' > "$migration_marker.tmp"
               mv "$migration_marker.tmp" "$migration_marker"
