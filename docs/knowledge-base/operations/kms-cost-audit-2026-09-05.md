@@ -60,19 +60,21 @@ pages or gzip CloudTrail logs, not state files. All relevant JSON state
 versions were readable; 92 other-project encrypted versions use the retained
 east-region key. No state values or data keys were printed.
 
-The exact legacy key and alias are now adopted into
+The exact legacy key and alias were adopted into
 `IaC/operator/legacy-kms-retirement`. Adoption imported two resources, set the
 30-day deletion window, and enabled standard annual rotation without rotating
-key material. The committed `retirement_requested = true` is the proposed
-retirement: its saved plan deletes only that key and alias and passes the
-policy gate. A second exact-UUID exception protects all other keys, including
-the active OpenTofu key, from deletion. Automatic approval review rejected
-executing the plan pending the user's explicit approval for this exact key
-deletion. The legacy key remains enabled; no further savings are claimed yet.
+key material. After the user explicitly approved this exact key's deletion,
+the saved plan for `retirement_requested = true` passed all 56 policy checks
+and removed only the legacy key and alias from managed state. The key
+`959539ca-5646-435c-8ae4-aec13b0f0607` is now `PendingDeletion`, scheduled for
+October 5, 2026 at 14:21:13 UTC (30 days); its alias was removed. A fresh plan
+returned no changes. The active east-region OpenTofu key remains Enabled.
+Exact-UUID policy exceptions preserve deletion protection for other keys.
 
-After explicit approval, apply only the reviewed operator plan, verify the
-legacy key is PendingDeletion with a 30-day date, and run archive verification
-without the original key:
+All 60 archives verified readable after the legacy key entered PendingDeletion,
+without access to that key. Both obsolete keys are now pending deletion,
+reducing fixed customer-key fees from approximately $3/month to $1/month;
+request charges remain separate. Repeat archive verification with:
 
 ```sh
 /private/tmp/homelab-kms-sdk/bin/python scripts/archive-legacy-homelab-state.py verify
@@ -110,8 +112,8 @@ python3 -m venv /private/tmp/homelab-kms-sdk
 
 The archival AES-GCM format follows
 [OpenTofu v1.11.5](https://github.com/opentofu/opentofu/blob/v1.11.5/internal/encryption/method/aesgcm/aesgcm.go).
-The cross-project dependency check is complete. Exact deletion approval is
-the remaining retirement gate; retain the active OpenTofu key.
+The cross-project dependency check and approved retirement are complete.
+Retain the active OpenTofu key and confidential recovery archives.
 
 The original audit below is a pre-migration snapshot.
 

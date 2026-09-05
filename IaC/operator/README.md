@@ -239,5 +239,7 @@ for the focused plan/apply path, verification, and declarative rollback.
 `legacy-kms-retirement` owns only the adopted legacy key and its alias. Its
 final desired state schedules deletion with a 30-day window. The active
 east-region OpenTofu key is outside this unit. Dependency audit and archive
-verification are complete; applying the saved retirement plan requires the
-explicit exact-key approval recorded in the [KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).
+verification are complete. The explicitly approved retirement was applied on
+September 5, 2026; deletion is scheduled for October 5. Keep
+`retirement_requested = true` so re-applies preserve retirement. See the
+[KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).
