@@ -409,3 +409,14 @@ Its workflow is included in the credentialed-job inventory, normalized hash,
 and exact-dispatch guard. Local lifecycle tests are part of the static gate;
 live execution, cleanup, denied identity/method cases, and audit correlation
 remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).
+
+Cordium cleanup polls bounded inventory until asynchronous deletion completes.
+Its fixed retirement helper requires the workflow and CI catalog definitions
+to be removed first, deletes only the three dedicated CI identity resources,
+and verifies absence. Tests reject remaining declarations, network errors,
+and incomplete deletion. Ordinary catalog apply does not prune these objects.
+
+The Tunnel probe accepts the protocol-defined empty-body gRPC-Web response
+with status trailers in headers. Live browser and native TCP-carrier probes
+passed after PR 957; malformed bodies and spoofed status headers still fail.
+[Protocol reference](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md).

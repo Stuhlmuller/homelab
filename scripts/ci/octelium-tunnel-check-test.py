@@ -49,6 +49,15 @@ class TransportCheck(unittest.TestCase):
         self.assertFalse(self.check_response(headers.replace(b"16", b"0"), native=True))
         self.assertFalse(self.check_response(b"content-type: text/html\r\n", native=True))
 
+    def test_browser_trailers_only(self):
+        headers = b"content-type: application/grpc-web+proto\r\ngrpc-status: 16\r\n"
+        self.assertTrue(self.check_response(headers))
+        self.assertFalse(self.check_response(headers, b"malformed body"))
+        self.assertFalse(self.check_response(headers.replace(b"grpc-status", b"x-grpc-status")))
+        self.assertFalse(self.check_response(headers.replace(b"16", b"0")))
+        self.assertFalse(self.check_response(headers, code=60))
+        self.assertFalse(self.check_response(headers, result="502 2"))
+
 
 if __name__ == "__main__":
     unittest.main()

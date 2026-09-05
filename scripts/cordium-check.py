@@ -74,9 +74,16 @@ def main():
         if workspace:
             try:
                 call("delete", "workspace", workspace)
-                remaining = json.loads(call("get", "workspace", "--out", "json", capture=True).stdout)
-                if any(item["metadata"]["name"] == workspace for item in remaining.get("items", [])):
-                    raise RuntimeError("Deleted workspace is still listed")
+                deadline = time.monotonic() + 60
+                while True:
+                    seconds_left = deadline - time.monotonic()
+                    if seconds_left <= 0:
+                        raise RuntimeError("Deleted workspace is still listed after one minute")
+                    remaining = json.loads(call("get", "workspace", "--out", "json",
+                                                capture=True, timeout=min(15, seconds_left)).stdout)
+                    if not any(item["metadata"]["name"] == workspace for item in remaining.get("items", [])):
+                        break
+                    time.sleep(min(2, max(0, deadline - time.monotonic())))
                 print(f"Verified deletion of disposable workspace: {workspace}", flush=True)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError, RuntimeError) as error:
                 print(f"Cleanup failed for {workspace}: {error}", file=sys.stderr)

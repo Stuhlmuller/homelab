@@ -40,7 +40,8 @@ workspace browser hostname or its wildcard certificate.
 an ephemeral workspace, waits for readiness, verifies its checked-out SHA,
 and executes `bash scripts/ci/static-checks.sh` through `nix develop`.
 Remote failure remains a failed job. Cleanup deletes only the workspace named
-by a successful create response and verifies its absence afterward.
+by a successful create response and polls for up to one minute to verify its
+absence afterward, accommodating asynchronous controller deletion.
 
 Cordium's cluster configuration limits every user to four stored workspaces
 and one active workspace. These limits also affect interactive users; they
@@ -84,10 +85,26 @@ capacity, remote Nix permissions, or live transport stability.
 
 ## Rollback
 
-Stop dispatching this optional workflow; existing required repository checks
-remain independent. Revert its repository-owned workflow and policy grant
-through a reviewed PR and reconcile the native catalog. Restore the previous
-Cordium limits through Argo CD only if reverting that capacity decision is
-intended. Do not delete workspace storage until the owner confirms it is
-disposable. OpenClaw execution uses a separate future identity and is not
-enabled by this CI workflow.
+Stop dispatching this optional workflow and wait for active runs to finish.
+Inspect the dedicated user's workspace inventory and remove only confirmed
+disposable workspaces through the Cordium lifecycle before retiring its owner.
+Existing required repository checks remain independent.
+
+In a reviewed retirement commit, remove `cordium-check.yml` and the three CI
+catalog definitions, but retain `scripts/cordium-ci-retire.py`. Normal catalog
+reapplication does not prune absent native resources. Using an operator admin
+session, run the fixed retirement path from that commit:
+
+```sh
+python3 scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN
+python3 scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN --execute
+```
+
+The helper refuses retirement while the workflow or CI catalog definitions
+remain. It removes only `homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
+`homelab-cordium-ci-execution`, in that order, and verifies each is absent.
+Authentication/network errors are failures, not evidence of absence. Repeating
+it skips already-absent objects. Keep the helper until retirement is verified.
+Restore previous Cordium capacity limits through Argo CD only if reverting that
+capacity decision is intended. OpenClaw execution uses a separate future
+identity and is not enabled by this CI workflow.

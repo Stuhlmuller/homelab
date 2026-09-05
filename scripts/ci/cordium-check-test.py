@@ -3,6 +3,7 @@
 import contextlib
 import importlib.util
 import io
+import itertools
 import json
 import signal
 import subprocess
@@ -18,7 +19,7 @@ SHA = "a" * 40
 
 
 class Lifecycle(unittest.TestCase):
-    def exercise(self, *, remote_exit=0, wrong_sha=False, cleanup_fails=False, leftover=False, create_name="abc", preexisting=False):
+    def exercise(self, *, remote_exit=0, wrong_sha=False, cleanup_fails=False, leftover=False, create_name="abc", preexisting=False, delayed=False):
         commands = []
         lists = 0
 
@@ -29,7 +30,7 @@ class Lifecycle(unittest.TestCase):
             output = ""
             if args[:2] == ["get", "workspace"] and args[2] == "--out":
                 lists += 1
-                items = [{"metadata": {"name": "abc"}}] if (preexisting or (leftover and lists > 1)) else []
+                items = [{"metadata": {"name": "abc"}}] if (preexisting or (leftover and lists > 1) or (delayed and lists == 2)) else []
                 output = json.dumps({"items": items})
             elif args[:2] == ["create", "workspace"]:
                 self.assertNotIn("--start", args)
@@ -46,7 +47,7 @@ class Lifecycle(unittest.TestCase):
 
         previous = signal.getsignal(signal.SIGTERM)
         try:
-            with patch.object(sys, "argv", ["cordium-check.py", "--checkout", SHA, "--homedir", "/tmp/test-login"]), patch.object(runner.subprocess, "run", side_effect=run), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            with patch.object(sys, "argv", ["cordium-check.py", "--checkout", SHA, "--homedir", "/tmp/test-login"]), patch.object(runner.subprocess, "run", side_effect=run), patch.object(runner.time, "monotonic", side_effect=itertools.count(0, 5)), patch.object(runner.time, "sleep"), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
                 result = runner.main()
         finally:
             signal.signal(signal.SIGTERM, previous)
@@ -73,6 +74,11 @@ class Lifecycle(unittest.TestCase):
         result, commands = self.exercise(create_name="--all")
         self.assertNotEqual(result, 0)
         self.assertFalse(any(command[0] == "delete" for command in commands))
+
+    def test_asynchronous_deletion_is_verified(self):
+        result, commands = self.exercise(delayed=True)
+        self.assertEqual(result, 0)
+        self.assertEqual(commands.count(["get", "workspace", "--out", "json"]), 3)
 
     def test_retained_workspace_prevents_new_creation(self):
         result, commands = self.exercise(preexisting=True)
