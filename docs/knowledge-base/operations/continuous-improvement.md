@@ -62,7 +62,9 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
-The [[audit-2026-09-02]] records the latest repository fixes, read-only live
+The [[audit-2026-09-04]] records the current audit, OpenClaw config-migration
+repair, and newly confirmed NOFX access-boundary failure. The
+[[audit-2026-09-02]] records the preceding repository fixes, read-only live
 inspection, validation, and remaining blockers. The broader
 [[audit-2026-08-30]] records prior live repairs and remediation PRs. Public API
 port mapping, image debt, and independent restore proof remain open; older

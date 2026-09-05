@@ -67,6 +67,21 @@ ready, but they must not be treated as production-ready until:
 
 ## Open Audit Findings
 
+- **Status:** fix staged; rollout pending
+- **Area:** OpenClaw upgrade / config migration
+- **Evidence:** On 2026-09-04, OpenClaw 2026.8.2 bootstrap repeatedly rejected
+  four retired config keys before Discord installation and session migration.
+  `clusters/homelab/apps/openclaw/values.yaml` now migrates those keys after
+  the verified offline backup and preserves legacy model restrictions explicitly.
+  It also stops writing retired `hooks.maxBodyBytes`.
+- **Validation:** A synthetic legacy config failed under the exact 2026.8.2
+  CLI before migration and passed afterward. The actual bootstrap migration
+  has preservation, idempotence, and invalid-input checks in
+  `scripts/ci/openclaw-config-check.py`.
+- **Next step:** Roll out through GitOps, require successful bootstrap and
+  session migration, then verify gateway and Discord readiness. Preserve the
+  pre-upgrade archive and migration originals until the 24-hour soak passes.
+
 - **Status:** open
 - **Area:** storage / backup and retained data
 - **Evidence:** Read-only inspection on 2026-08-27 found Prometheus and

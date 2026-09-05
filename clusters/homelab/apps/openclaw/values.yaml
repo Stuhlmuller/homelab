@@ -247,6 +247,43 @@ controllers:
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
 
+            # Targeted 2026.8.2 config migration; the offline backup above owns rollback.
+            python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_CONFIG_MIGRATION'
+            import json
+            import os
+            import pathlib
+            import sys
+            import tempfile
+
+            path = pathlib.Path(sys.argv[1])
+            config = json.loads(path.read_text())
+            before = json.dumps(config)
+            for section, key in (
+                ("meta", "lastTouchedAt"),
+                ("commands", "ownerDisplay"),
+                ("hooks", "maxBodyBytes"),
+                ("plugins", "bundledDiscovery"),
+            ):
+                config.get(section, {}).pop(key, None)
+            defaults = config.get("agents", {}).get("defaults", {})
+            models = defaults.get("models", {})
+            migrated = config.get("meta", {}).get("migrations", {}).get("modelPolicyAllowlist")
+            if models and "modelPolicy" not in defaults and migrated is not True:
+                defaults["modelPolicy"] = {"allow": list(models)}
+            if json.dumps(config) != before:
+                fd, temporary = tempfile.mkstemp(prefix=".config-migration-", dir=path.parent)
+                try:
+                    with os.fdopen(fd, "w") as output:
+                        json.dump(config, output, indent=2)
+                        output.write("\n")
+                        output.flush()
+                        os.fsync(output.fileno())
+                    os.replace(temporary, path)
+                finally:
+                    if os.path.exists(temporary):
+                        os.unlink(temporary)
+            OPENCLAW_CONFIG_MIGRATION
+
             openclaw_version="$(openclaw --version | awk 'NR == 1 { if ($1 == "OpenClaw") print $2; else print $1 }')"
             : "${openclaw_version:?failed to parse OpenClaw version for Discord plugin install}"
             verify_discord_plugin() {
@@ -347,9 +384,6 @@ controllers:
               openclaw config set --strict-json \
                 hooks.allowedAgentIds \
                 '["main"]'
-              openclaw config set --strict-json \
-                hooks.maxBodyBytes \
-                '65536'
               openclaw config set --strict-json \
                 hooks.allowRequestSessionKey \
                 'false'

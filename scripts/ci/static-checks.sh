@@ -610,7 +610,7 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
     ($nofx | length) == 1 and
-    ($nofx[0].spec.isAnonymous // false) == false and
+    $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
     $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
     ($policies | length) == 1 and
@@ -1159,6 +1159,7 @@ fi
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
+python3 scripts/ci/openclaw-config-check.py
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
 rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"

@@ -280,15 +280,25 @@ application credentials. If a sandbox backend is added later, document and
 validate it before changing this setting.
 Do not mount a host container-runtime socket into this workload.
 
-During startup, the bootstrap installs the missing official external Discord
-plugin before validating persisted config, then applies desired state. An exact
+After the verified offline backup, bootstrap migrates the four observed retired
+config keys (`meta.lastTouchedAt`, `commands.ownerDisplay`,
+`hooks.maxBodyBytes`, and `plugins.bundledDiscovery`) before invoking OpenClaw.
+It preserves model metadata and copies a legacy model restriction into
+`agents.defaults.modelPolicy.allow` only when no explicit policy exists.
+The owner-only config replacement is atomic and leaves unrelated settings,
+credentials, skill policy, and session files untouched. The retired hook body
+limit is no longer written; OpenClaw 2026.8.2 enforces its built-in 256 KiB limit.
+
+Bootstrap then installs the missing official external Discord plugin before
+validating persisted config and applying desired state. An exact
 installed version is reused; a missing or mismatched package gets four bounded
 registry attempts so a transient reset cannot leave every restart dependent on
 a fresh successful download. The versioned bootstrap runs the targeted session
 SQLite inspect, dry-run, import, and post-import inspection once after its verified
 backup. It does not run generic doctor repair because that command can rewrite
 unrelated skill policy. Gateway startup owns its documented deterministic
-config migrations; persisted session and cron route repairs remain explicit
+config migrations once startup is reached; plugin installation itself rejects
+unmigrated config. Persisted session and cron route repairs remain explicit
 reviewed maintenance. Bootstrap also pins `gateway.mode` to `local`, which is
 required for the container-managed gateway process. External-supervisor mode
 makes Kubernetes the only lifecycle and image-update authority.
