@@ -78,7 +78,9 @@ personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
 09:00 briefing, twice-hourly daytime health watch, and one bounded daily
 improvement session. Stable automation declaration keys preserve history and
 operator pauses. The existing allowlisted owner supplies the Discord DM route;
-ambiguous routing fails closed. Bootstrap retains original files privately and
+ambiguous routing defers scheduling without breaking gateway startup. Verify
+`assistant-reconciliation.json` reports `ready` as well as Pod readiness.
+Bootstrap retains original files privately and
 preserves personal memory. The Pod annotation hashes the full bundle so GitOps
 changes take effect on restart. See the app README for validation and rollback;
 configured Astra is not proof of account access until a real turn succeeds.

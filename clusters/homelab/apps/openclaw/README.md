@@ -76,8 +76,15 @@ same-volume rollback checkpoint, not an independent backup.
 The app's postStart hook registers three jobs through the public automation
 CLI with stable declaration keys. Retries converge in place; they preserve
 job history and an owner's disabled state. It does not edit scheduler SQLite
-tables or adopt/delete unrelated jobs. An absent or ambiguous owner fails
-closed rather than guessing a recipient. Existing alert hooks remain enabled.
+tables or adopt/delete unrelated jobs. An absent or ambiguous owner defers
+scheduling rather than guessing a recipient. This keeps a fresh gateway usable
+before Discord setup. Bounded API retries also leave chat available on failure.
+`/data/openclaw/assistant-reconciliation.json` records `deferred`, `pending`,
+`failed`, or `ready` without credentials or recipient IDs. Verify `ready` in
+addition to Pod readiness; after correcting a deferred/failed setup through
+the declared configuration path, rerun `python3
+/etc/openclaw-assistant/reconcile.py` in the app container. Existing alert hooks
+remain enabled.
 See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 [heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
 
@@ -428,7 +435,8 @@ The later doctor state gate restores the reviewed configuration so generic
 repair cannot persist unrelated skill-policy changes. Gateway startup owns
 its documented deterministic config migrations once startup is reached;
 plugin installation itself rejects unmigrated config. Session identity
-preservation remains mandatory after every migration step. Bootstrap also pins `gateway.mode` to `local`, which is
+preservation remains mandatory after every migration step. Bootstrap also pins
+`gateway.mode` to `local`, which is
 required for the container-managed gateway process. External-supervisor mode
 makes Kubernetes the only lifecycle and image-update authority.
 

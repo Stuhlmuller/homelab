@@ -4,8 +4,10 @@ import copy
 import hashlib
 import importlib.util
 import json
+import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 BUNDLE = Path("clusters/homelab/apps/openclaw/assistant")
 
@@ -13,6 +15,7 @@ BUNDLE = Path("clusters/homelab/apps/openclaw/assistant")
 def module(name):
     spec = importlib.util.spec_from_file_location(name, BUNDLE / f"{name}.py")
     result = importlib.util.module_from_spec(spec)
+    sys.modules[name] = result
     spec.loader.exec_module(result)
     return result
 
@@ -87,6 +90,30 @@ for job in jobs:
     assert "--disabled" not in argv  # Let declarative reconciliation preserve pauses.
     assert "--best-effort-deliver" not in argv  # Delivery failure must remain visible.
     assert argv[argv.index("--model") + 1] == "openai/gpt-6-astra"
+
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    reconcile.CONFIG = root / "config.json"
+    reconcile.STATUS = root / "status.json"
+    reconcile.BUNDLE = BUNDLE
+    for config in ({}, {"channels": {"discord": {"enabled": False}}}):
+        reconcile.CONFIG.write_text(json.dumps(config))
+        with patch.object(reconcile.subprocess, "run") as run:
+            reconcile.reconcile()
+            run.assert_not_called()
+        assert json.loads(reconcile.STATUS.read_text())["state"] == "deferred"
+    reconcile.CONFIG.write_text(json.dumps(fixture))
+    with patch.object(reconcile.subprocess, "run") as run:
+        run.return_value.returncode = 0
+        reconcile.reconcile()
+        assert run.call_count == 3
+    assert json.loads(reconcile.STATUS.read_text())["state"] == "ready"
+    with patch.object(reconcile.subprocess, "run") as run, patch.object(reconcile.time, "sleep"):
+        run.return_value.returncode = 1
+        reconcile.reconcile()
+        assert run.call_count == 6
+    assert json.loads(reconcile.STATUS.read_text())["state"] == "failed"
+    assert reconcile.STATUS.stat().st_mode & 0o777 == 0o600
 
 digest = hashlib.sha256()
 for path in sorted(BUNDLE.iterdir()):
