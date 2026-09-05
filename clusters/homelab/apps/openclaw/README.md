@@ -515,3 +515,23 @@ then verify gateway readiness, the Discord channel, and the migration marker.
 Rollback removes the local mount through a reviewed PR; persistent data and
 backup files remain, but the known NAS ownership failure would return unless
 an alternative ownership-compatible storage path is deployed first.
+
+## Container privilege boundary
+
+The gateway, bootstrap, and proxy run as UID/GID 1000, drop all Linux
+capabilities, and deny privilege escalation. The Pod explicitly selects the
+runtime's default seccomp profile. The proxy listens on unprivileged port 8080
+and needs no root identity or network capabilities.
+
+The Nix toolbox init remains a root exception: it copies the shared Nix store
+and assigns UID 1000 ownership before the non-root containers start. This Pod
+therefore does not claim full Restricted Pod Security compliance. Keep the
+exception scoped to that init container; moving installation into a built
+image would permit a separate reduction later.
+
+Validate the rendered contexts and server-side dry run before rollout. After
+Argo CD reconciles, require successful toolbox/bootstrap completion, gateway
+readiness, a read-only Discord credential probe, and operator-tool execution.
+The effective app/proxy process must report `NoNewPrivs: 1`, zero `CapEff`,
+and seccomp filtering in `/proc/self/status`. Revert these Helm values through
+GitOps if a required runtime operation fails; do not patch the live Pod.
