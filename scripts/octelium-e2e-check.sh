@@ -658,22 +658,34 @@ while read -r HOST; do
       pass "https://${HOST} resolves publicly for clientless access"
     fi
 
+    CURL_REQUEST=(-I)
+    if [ "${HOST}" = "console.stinkyboi.com" ]; then
+      # Octelium returns a bare 401 to curl but a login redirect to browsers.
+      CURL_REQUEST=(-H 'Accept: text/html' -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36')
+    fi
     CURL_OUT="$(
-      curl -sS -I --max-time 20 -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
+      curl -sS "${CURL_REQUEST[@]}" --max-time 20 -D "${HEADER_FILE}" -o /dev/null -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
     )"
     HTTP_CODE="${CURL_OUT%% *}"
     REMOTE_IP="${CURL_OUT#* }"
     SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
     LOCATION="$(awk 'tolower($1) == "location:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
 
-    if [ "${HOST}" = "console.stinkyboi.com" ] && printf '%s' "${LOCATION}" | grep -F "console.octelium.stinkyboi.com" >/dev/null 2>&1; then
-      fail "https://${HOST}${TEST_PATH} redirected to unsupported nested console hostname: ${LOCATION}"
+    if [ "${HOST}" = "console.stinkyboi.com" ]; then
+      case "${HTTP_CODE} ${LOCATION}" in
+        '303 https://stinkyboi.com/login?redirect=https%3A%2F%2Fconsole.stinkyboi.com%2F'*)
+          pass "https://${HOST}${TEST_PATH} returns browsers to the public console after login"
+          ;;
+        *)
+          fail "https://${HOST}${TEST_PATH} did not return the expected console login redirect (HTTP ${HTTP_CODE}, Location: ${LOCATION:-missing})"
+          ;;
+      esac
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
     fi
 
     case "${HTTP_CODE}" in
-      200|204|301|302|307|308|401|403|405)
+      200|204|301|302|303|307|308|401|403|405)
         pass "https://${HOST}${TEST_PATH} responded through the public access path with HTTP ${HTTP_CODE}"
         ;;
       404)

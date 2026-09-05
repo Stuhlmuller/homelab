@@ -172,11 +172,21 @@ kubectl -n octelium get events --field-selector reason=FailedCreatePodSandBox
 After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
 checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
 PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
-The `octelium-cluster` app must render only the Istio front-door route and its
-HTTP/2 upstream `DestinationRule` in `istio-system`; it must not create the
+The `octelium-cluster` app renders the Istio front-door route, its HTTP/2
+upstream `DestinationRule`, and the scoped console login-return `EnvoyFilter`
+in `istio-system`; it must not create the
 `octelium` namespace because Octelium genesis owns that namespace during
 bootstrap. The bootstrap wrapper applies the required privileged Pod Security
 labels to the namespace after `octops` creates it.
+
+The filter rewrites only the exact unauthorized browser login redirect for
+`console.stinkyboi.com`. Validate its rendered Lua with the static gate and
+the public browser probe in `scripts/octelium-e2e-check.sh`, then verify
+authenticated page rendering and audit queries. Revalidate Envoy compatibility
+when upgrading Istio. Automated pruning is disabled for this app: rollback
+must commit an empty `spec.configPatches` list and adjust the filter test gate,
+as described in `clusters/homelab/apps/octelium-cluster/README.md`; deleting
+the file alone leaves the live filter installed.
 
 Before declaring Octelium-backed app UI access healthy, the replacement path
 must pass:
