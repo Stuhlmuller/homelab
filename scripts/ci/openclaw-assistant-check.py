@@ -4,6 +4,8 @@ import copy
 import hashlib
 import importlib.util
 import json
+import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -134,4 +136,20 @@ for path in sorted(BUNDLE.iterdir()):
         digest.update(path.name.encode() + b"\0" + path.read_bytes())
 values = Path("clusters/homelab/apps/openclaw/values.yaml").read_text()
 assert f'homelab.rst.io/openclaw-assistant-sha256: "{digest.hexdigest()}"' in values
+# A new backup must not suppress import when restoring pre-SQLite session state.
+guard = re.search(r'(if "\$had_existing_state"[^\n]+)\n\s+echo "Migrating session state',
+                  values).group(1)
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    migration_marker = root / "migrated"
+    backup_marker = root / "backup"
+    backup_marker.write_text("verified")
+    script = ('had_existing_state=true; migration_marker=$1; backup_marker=$2; '
+              + guard + ' printf import; fi')
+    for migrated, expected in ((False, "import"), (True, "")):
+        if migrated:
+            migration_marker.write_text("verified")
+        result = subprocess.run(["sh", "-c", script, "check", str(migration_marker),
+                                 str(backup_marker)], capture_output=True, text=True, check=True)
+        assert result.stdout == expected
 print("OpenClaw assistant: preservation, idempotence, routing, schedules, rollout checksum passed")
