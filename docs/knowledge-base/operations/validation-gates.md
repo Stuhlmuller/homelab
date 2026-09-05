@@ -413,3 +413,22 @@ generic doctor changes must not persist unrelated skill-policy rewrites.
 The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
+
+### Post-start session lifecycle
+
+The pre-import identity inventory is a migration gate, not an immutable runtime
+inventory. OpenClaw 2026.8.2 replaces legacy managed Memory Dreaming Promotion
+jobs with declaration-keyed jobs; removing the old job also removes its base
+cron session. A later exact-key comparison can therefore report an intentional
+missing legacy entry after the migration itself passed.
+
+Before classifying an absent entry as data loss, check its job ownership, the
+replacement declaration, retained migration reports, and backup. Do not relax
+the bootstrap preservation gate or recreate retired sessions manually. Keep
+gateway readiness, channel authentication, and backup retention as separate
+acceptance checks.
+
+Source: pinned upstream
+[managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
+[cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
+and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
