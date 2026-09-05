@@ -74,7 +74,12 @@ inputs = {
         }
 
         params = {
-          "server.insecure" = "true"
+          annotations = {
+            "argocd.argoproj.io/compare-options" = "IgnoreExtraneous"
+            "argocd.argoproj.io/sync-options"    = "Prune=false"
+          }
+          "controller.sync.timeout.seconds" = "900"
+          "server.insecure"                 = "true"
         }
 
         rbac = {
@@ -91,7 +96,7 @@ inputs = {
       controller = {
         metrics = local.argocd_metrics
         podAnnotations = {
-          "homelab.stuhlmuller.dev/sync-timeout-revision" = "v1"
+          "homelab.stuhlmuller.dev/sync-timeout-revision" = "v2"
         }
       }
 

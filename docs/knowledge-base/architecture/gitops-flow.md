@@ -21,6 +21,11 @@ resource cannot hold an Application operation forever and block later reviewed
 revisions.
 The bootstrap chart carries a revision annotation on the application-controller
 Pod so command-parameter changes restart the controller and take effect.
+The `argocd-cmd-params-cm` ownership transfer is deliberately staged. Bootstrap
+Helm and self-management first declare the same required parameters with
+no-prune and ignore-extraneous guards. Only after a protected bootstrap apply
+and read-only live verification may a later change remove the self-management
+manifest and leave Helm as the sole declared owner.
 
 `IaC/operator` is the deliberate exception to workflow-driven apply. It owns
 bootstrap permissions that the GitHub OIDC role must never change for itself;

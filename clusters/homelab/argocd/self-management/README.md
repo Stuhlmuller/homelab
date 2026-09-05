@@ -19,7 +19,30 @@ path, revision, or sync policy must still be reviewed in git instead of patched
 as permanent live mutations.
 
 `cmd-params-configmap.yaml` bounds sync operations to 15 minutes so a failed
-resource cannot leave an Application operation running forever.
+resource cannot leave an Application operation running forever. During the
+reviewed ownership transfer, bootstrap Helm declares the same required data and
+both copies carry no-prune and ignore-extraneous annotations. Remove this file
+only after the protected bootstrap apply and live parameter checks pass; Helm
+then becomes the sole declared owner without an automated-prune deletion gap.
+
+Before the follow-up removal, run these read-only checks:
+
+```sh
+helm get values argocd --namespace argocd --all -o json |
+  jq -e '.configs.params."controller.sync.timeout.seconds" == "900" and
+    .configs.params."server.insecure" == "true" and
+    .configs.params.annotations."argocd.argoproj.io/sync-options" == "Prune=false" and
+    .configs.params.annotations."argocd.argoproj.io/compare-options" == "IgnoreExtraneous"'
+kubectl --namespace argocd get configmap argocd-cmd-params-cm -o json |
+  jq -e '.data."controller.sync.timeout.seconds" == "900" and
+    .data."server.insecure" == "true" and
+    .metadata.annotations."argocd.argoproj.io/sync-options" == "Prune=false" and
+    .metadata.annotations."argocd.argoproj.io/compare-options" == "IgnoreExtraneous"'
+kubectl --namespace argocd get application argocd-self-management -o json |
+  jq -e '.status.sync.status == "Synced" and .status.health.status == "Healthy"'
+```
+
+All three commands must exit successfully before phase two.
 
 Keep each named AppProject's sources, destinations, and resource allow-lists
 aligned with the Applications registered under `IaC/live/argocd-apps`.
