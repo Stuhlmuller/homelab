@@ -1,0 +1,15 @@
+---
+# Shared developer/CI workspace; CI supplies an exact commit and --ephemeral.
+spec:
+  image:
+    registry:
+      url: docker.io/nixos/nix:2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c
+  repository:
+    url: https://github.com/Stuhlmuller/homelab.git
+  limit:
+    cpu:
+      millicores: 2000
+    memory:
+      megabytes: 2048
+    storage:
+      megabytes: 10000

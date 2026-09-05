@@ -1,0 +1,61 @@
+name: Cordium Workspace Checks
+
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed main and cannot alter commands.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed main commit to execute inside Cordium
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: homelab-cordium-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    # Keep the branch OIDC subject; an environment would change its identity.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+
+      - name: Install Pinned Clients
+        run: |
+          scripts/ci/install-octelium-client.sh
+          bash scripts/ci/install-cordium-client.sh --install-dir "$HOME/.local/bin"
+
+      - name: Execute Checks In Cordium
+        run: |
+          private_log="$(mktemp "${RUNNER_TEMP}/cordium-check.XXXXXX")"
+          chmod 600 "$private_log"
+          trap 'rm -f -- "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/cordium-ci.sh >"$private_log" 2>&1; then
+            echo "::error::Cordium execution or cleanup failed; private output withheld. Inspect the dedicated CI identity before retrying."
+            exit 1
+          fi
+          echo "Reviewed main passed checks inside Cordium; disposable workspace deletion verified."

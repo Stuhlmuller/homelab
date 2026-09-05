@@ -395,3 +395,12 @@ with the risk. Desired state must be represented in the repo before applying it.
 
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
+
+## Cordium remote repository gate
+
+The optional manual `cordium-check.yml` workflow executes the exact reviewed
+main commit inside a disposable Cordium workspace using dedicated GitHub OIDC.
+Its workflow is included in the credentialed-job inventory, normalized hash,
+and exact-dispatch guard. Local lifecycle tests are part of the static gate;
+live execution, cleanup, denied identity/method cases, and audit correlation
+remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).

@@ -298,3 +298,12 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - `IaC/live/aws-ssm-parameters`
 - `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`
 - `clusters/homelab/apps/external-secrets`
+
+## Dedicated Cordium CI assertion
+
+`homelab-cordium-ci-oidc` accepts GitHub assertions only for the exact repository,
+owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
+separate workload identity with bounded sessions and workspace lifecycle/exec
+permissions; bootstrap management credentials are not shared. A catch-all
+post-authentication denial and priority -4 method denial close upstream
+default allowances. See [the contract and pending live gates](../../cordium-ci.md).
