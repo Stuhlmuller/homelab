@@ -59,10 +59,9 @@ omit the `email_verified` claim from ID tokens; the connector sets
 `insecureSkipEmailVerified: true` for this trusted upstream while preserving
 client-secret and RBAC controls.
 
-Argo CD grants `role:admin` to the homelab-specific `argocd-admins` group and
-directly to `rodman@stuhlmuller.net`. The direct email binding uses the existing
-RBAC `email` scope and keeps the named operator's access independent of Entra
-group-claim configuration.
+Argo CD grants `role:admin` only to the homelab-specific `argocd-admins` group.
+Keep operator identities out of this public repository and manage membership in
+Microsoft Entra.
 
 The `terraform.source` value points directly at the Terragrunt catalog
 `helm-release` module pinned to version `0.3.0`. There are no repository-local

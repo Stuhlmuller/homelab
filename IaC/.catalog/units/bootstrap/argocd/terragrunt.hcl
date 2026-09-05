@@ -11,7 +11,6 @@ locals {
   oidc_sso_secret_name                 = "argocd-oidc-sso"
   oidc_sso_issuer                      = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
   oidc_sso_admin_group                 = "argocd-admins"
-  oidc_sso_admin_email                 = "rodman@stuhlmuller.net"
   argocd_metrics = {
     enabled = true
   }
@@ -79,8 +78,8 @@ inputs = {
 
         rbac = {
           "policy.default" = "role:readonly"
-          "policy.csv"     = "g, ${local.oidc_sso_admin_group}, role:admin\ng, ${local.oidc_sso_admin_email}, role:admin\n"
-          scopes           = "[groups, email]"
+          "policy.csv"     = "g, ${local.oidc_sso_admin_group}, role:admin\n"
+          scopes           = "[groups]"
         }
       }
 
