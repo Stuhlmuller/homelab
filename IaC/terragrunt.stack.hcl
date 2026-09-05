@@ -3455,3 +3455,9 @@ unit "operator_github_actions_role_policy" {
   path                    = "operator/github-actions-role-policy"
   no_dot_terragrunt_stack = true
 }
+
+unit "operator_state_bucket_encryption" {
+  source                  = "./.catalog/units/operator/state-bucket-encryption"
+  path                    = "operator/state-bucket-encryption"
+  no_dot_terragrunt_stack = true
+}

@@ -225,3 +225,11 @@ Do not destroy this unit while `IaC/live/aws-ssm-parameters` still manages that
 policy family or the cluster uses the External Secrets IAM user. The user has
 `prevent_destroy`; removing the bootstrap grant or boundary first would prevent
 safe reconciliation or restore the broader direct-policy risk.
+
+## State bucket request costs
+
+`state-bucket-encryption` adopts the existing state bucket's encryption
+configuration and enables S3 Bucket Keys. It preserves the default KMS key,
+explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
+See [KMS audit and rollout](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md)
+for the focused plan/apply path, verification, and declarative rollback.

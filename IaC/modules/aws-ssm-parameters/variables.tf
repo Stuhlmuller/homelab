@@ -66,6 +66,12 @@ variable "kms_key_description" {
   default     = "Homelab OpenTofu-managed SSM Parameter Store key."
 }
 
+variable "parameter_kms_key_id" {
+  description = "Optional runtime encryption key, separate from a retained historical customer key."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Tags applied to every SSM parameter."
   type        = map(string)

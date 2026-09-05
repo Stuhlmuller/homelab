@@ -13,7 +13,21 @@ deny contains msg if {
 	some change in terraform_resource_changes
 	change.type in sensitive_delete_resource_types
 	action_deletes(change.change.actions)
+	not archived_ssm_key_retirement(change)
 	msg := sprintf("Terraform plan must not delete sensitive resource %q of type %s", [change.address, change.type])
+}
+
+# One-time retirement after the 2026-09-05 aws/ssm migration. The 128-version
+# archive and unchanged-value verification are recorded in the KMS audit note.
+# KMS UUIDs cannot be reused; no other key, replacement, or secret deletion is allowed.
+archived_ssm_key_retirement(change) if {
+	change.type == "aws_kms_key"
+	change.address == "aws_kms_key.this[0]"
+	change.change.actions == ["delete"]
+	change.change.after == null
+	change.change.before.arn == "arn:aws:kms:us-west-2:716182248480:key/d3332190-27f9-4b5b-867d-ccccc3e5efc8"
+	change.change.before.key_id == "d3332190-27f9-4b5b-867d-ccccc3e5efc8"
+	change.change.before.deletion_window_in_days == 30
 }
 
 deny contains msg if {

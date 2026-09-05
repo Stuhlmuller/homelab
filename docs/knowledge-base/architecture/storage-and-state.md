@@ -1,5 +1,15 @@
 # Storage And State
 
+The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
+the existing S3 state bucket's encryption configuration, enabling S3 Bucket
+Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
+[[operations/kms-cost-audit-2026-09-05]] for evidence, rollout, and rollback.
+
+The same bucket holds confidential AWS-managed-encryption recovery archives
+for 128 SSM versions and 60 legacy homelab state versions under
+`IaC/homelab/migrations/`. Preserve these when retiring old KMS keys. Archive
+objects contain secret material and must never be copied into this public repo.
+
 Tags: #architecture #storage #stateful
 
 ## Durable Storage

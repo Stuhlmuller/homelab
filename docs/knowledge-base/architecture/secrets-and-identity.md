@@ -15,10 +15,16 @@ Secrets. External Secrets itself uses a Kubernetes Secret created through the
 after placeholder SSM parameters exist and real credential values are injected
 outside git.
 
-The SSM SecureString key is managed by `IaC/live/aws-ssm-parameters` in
-`us-west-2` under `alias/homelab-opentofu`. It is distinct from the
-OpenTofu remote-state key with the same alias in `us-east-1`; production apply
-roles need identity-based KMS permissions for both keys.
+SSM SecureStrings now use AWS-managed `alias/aws/ssm` in `us-west-2`, selected
+by `runtime_kms_key_id` in `IaC/root.hcl`. The OpenTofu client-side state key
+remains `alias/homelab-opentofu` in `us-east-1`. The September migration
+archives old SSM versions under AWS-managed S3 encryption before retiring
+the former west-region customer key; see the audit below for rollout status.
+
+The [[operations/kms-cost-audit-2026-09-05]] inventories three customer-managed
+keys and 16 AWS-managed keys. The third customer key, `tofu-encryption-key`,
+is a legacy retirement candidate, not safe to delete without checking retained
+ciphertext. Account KMS costs were $3.05 in August 2026.
 
 ## AWS SSM Pattern
 

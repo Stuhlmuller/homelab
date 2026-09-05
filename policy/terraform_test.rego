@@ -2,6 +2,29 @@ package main
 
 import rego.v1
 
+test_allows_only_archived_ssm_key_retirement if {
+	change := {
+		"address": "aws_kms_key.this[0]",
+		"type": "aws_kms_key",
+		"change": {
+			"actions": ["delete"], "after": null,
+			"before": {
+				"arn": "arn:aws:kms:us-west-2:716182248480:key/d3332190-27f9-4b5b-867d-ccccc3e5efc8",
+				"key_id": "d3332190-27f9-4b5b-867d-ccccc3e5efc8",
+				"deletion_window_in_days": 30,
+			},
+		},
+	}
+	archived_ssm_key_retirement(change)
+	violations := deny with input as {"resource_changes": [change]}
+	count(violations) == 0
+	wrong_key := object.union(change.change.before, {"key_id": "other"})
+	not archived_ssm_key_retirement(object.union(change, {"change": object.union(change.change, {"before": wrong_key})}))
+	short_window := object.union(change.change.before, {"deletion_window_in_days": 7})
+	not archived_ssm_key_retirement(object.union(change, {"change": object.union(change.change, {"before": short_window})}))
+	not archived_ssm_key_retirement(object.union(change, {"change": object.union(change.change, {"actions": ["delete", "create"]})}))
+}
+
 test_rejects_sensitive_resource_destroy_plans if {
 	every resource_type in {"aws_kms_key", "aws_ssm_parameter", "kubernetes_secret", "kubernetes_secret_v1"} {
 		plan := {"resource_changes": [{

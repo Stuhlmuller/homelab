@@ -6,9 +6,14 @@ must not commit secret values.
 
 All homelab runtime secret parameters live in AWS region `us-west-2`.
 The Terragrunt stack at `IaC/live/aws-ssm-parameters` manages those parameters
-as SecureStrings with a regional KMS key. It inherits the repository KMS alias
-`alias/homelab-opentofu`, but the SSM key is a `us-west-2` key and is separate
-from the OpenTofu remote-state key in `us-east-1`.
+as SecureStrings using the AWS-managed `alias/aws/ssm` key. The root input
+`runtime_kms_key_id` is separate from OpenTofu's client-side state key in
+`us-east-1`. SSM IAM permissions remain the runtime access boundary; the
+AWS-managed key does not have a customizable customer key policy.
+
+The September 2026 migration preserves all 68 current values and archives
+128 historical versions under AWS-managed S3 encryption. See
+[migration evidence and recovery](knowledge-base/operations/kms-cost-audit-2026-09-05.md).
 
 ## Placeholder Rules
 
