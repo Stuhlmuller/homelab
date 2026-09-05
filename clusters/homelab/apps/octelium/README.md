@@ -297,7 +297,6 @@ clients use the existing private API split DNS and do not need the public
 carrier. Do not use a workstation-wide API hosts override, which would also
 redirect browser gRPC-Web traffic:
 
-
 ```sh
 octelium login --domain stinkyboi.com
 octelium connect --domain stinkyboi.com --ip-mode=v4 -d
