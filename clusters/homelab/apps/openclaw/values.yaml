@@ -9,6 +9,9 @@ controllers:
     strategy: Recreate
     pod:
       automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -116,6 +119,9 @@ controllers:
           runAsUser: 1000
           runAsGroup: 1000
           runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -610,6 +616,9 @@ controllers:
           runAsUser: 1000
           runAsGroup: 1000
           runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
@@ -701,6 +710,13 @@ controllers:
               periodSeconds: 10
               timeoutSeconds: 3
       proxy:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
