@@ -369,16 +369,64 @@ controllers:
             OPENCLAW_SESSION_REPORT
             }
 
+            session_preservation() {
+              python3 - "$1" "$report" "$report_dir/expected-sessions.json" <<'OPENCLAW_SESSION_PRESERVATION'
+            import json
+            import os
+            import pathlib
+            import sqlite3
+            import sys
+
+            mode, report_path, expected_path = sys.argv[1:]
+            expected_path = pathlib.Path(expected_path)
+            if mode == "snapshot" and not expected_path.exists():
+                report = json.loads(pathlib.Path(report_path).read_text())
+                expected = []
+                for target in report["targets"]:
+                    store = pathlib.Path(target["storePath"])
+                    entries = json.loads(store.read_text()) if store.exists() else {}
+                    if len(entries) != target["legacyEntries"]:
+                        sys.exit("Legacy session inventory changed before import")
+                    expected.append({"sqlitePath": target["sqlitePath"], "sessions": {
+                        key: entry["sessionId"] for key, entry in entries.items()
+                    }})
+                temporary = expected_path.with_suffix(".tmp")
+                with open(temporary, "w", encoding="utf-8") as output:
+                    os.chmod(temporary, 0o600)
+                    json.dump(expected, output)
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(temporary, expected_path)
+            expected = json.loads(expected_path.read_text())
+            if not expected:
+                sys.exit("Missing pre-import session inventory")
+            if mode == "verify":
+                for target in expected:
+                    uri = pathlib.Path(target["sqlitePath"]).resolve().as_uri() + "?mode=ro"
+                    with sqlite3.connect(uri, uri=True) as db:
+                        for key, session_id in target["sessions"].items():
+                            row = db.execute(
+                                "SELECT current_session_id FROM session_nodes WHERE session_key = ?",
+                                (key,),
+                            ).fetchone()
+                            if row != (session_id,):
+                                sys.exit("Imported session identity missing or changed; preserve backup and reports")
+                print("Verified every pre-import session key and identity in SQLite")
+            OPENCLAW_SESSION_PRESERVATION
+            }
+
             if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
               echo "Migrating session state to OpenClaw 2026.8.2"
               session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
               session_sqlite --session-sqlite dry-run \
                 --session-sqlite-all-agents
+              session_preservation snapshot
               session_sqlite --session-sqlite import \
                 --session-sqlite-all-agents
               session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
+              session_preservation verify
               printf 'session SQLite migration imported and inspected\n' > "$migration_marker.tmp"
               mv "$migration_marker.tmp" "$migration_marker"
             fi

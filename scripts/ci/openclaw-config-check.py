@@ -98,3 +98,45 @@ with tempfile.TemporaryDirectory() as directory:
     assert len(saved) == 1 and saved[0].stat().st_mode & 0o777 == 0o600
     assert json.loads(saved[0].read_text()) == warning_report
 print("OpenClaw session report: known warning accepted; unexpected issues and failures rejected")
+
+marker = "OPENCLAW_SESSION_PRESERVATION"
+preservation = bootstrap.split(f"<<'{marker}'\n", 1)[1].split(f"\n{marker}", 1)[0]
+assert bootstrap.index("session_preservation snapshot") < bootstrap.index(
+    "session_sqlite --session-sqlite import")
+assert bootstrap.index("session_preservation verify") < bootstrap.index(
+    "printf 'session SQLite migration imported and inspected")
+with tempfile.TemporaryDirectory() as directory:
+    import sqlite3
+
+    root = pathlib.Path(directory)
+    store = root / "sessions.json"
+    database = root / "sessions.sqlite"
+    report_path = root / "report.json"
+    expected_path = root / "expected-sessions.json"
+    key = "agent:main:healthcheck-20260813"
+    store.write_text(json.dumps({key: {"sessionId": "original-id"}}))
+    report_path.write_text(json.dumps({"targets": [{"storePath": str(store),
+        "sqlitePath": str(database), "legacyEntries": 1}]}))
+
+    def preserve(mode):
+        return subprocess.run([sys.executable, "-c", preservation, mode,
+                               str(report_path), str(expected_path)], capture_output=True)
+
+    assert preserve("snapshot").returncode == 0
+    assert expected_path.stat().st_mode & 0o777 == 0o600
+    inventory = expected_path.read_bytes()
+    store.unlink()  # Upstream archives the legacy store after import.
+    assert preserve("snapshot").returncode == 0
+    assert expected_path.read_bytes() == inventory  # Restart cannot erase expectations.
+    assert preserve("verify").returncode != 0 and not database.exists()
+    with sqlite3.connect(database) as db:
+        db.execute("CREATE TABLE session_nodes (session_key TEXT, current_session_id TEXT)")
+    assert preserve("verify").returncode != 0
+    with sqlite3.connect(database) as db:
+        db.execute("INSERT INTO session_nodes VALUES (?, ?)", (key, "wrong-id"))
+    assert preserve("verify").returncode != 0
+    with sqlite3.connect(database) as db:
+        db.execute("UPDATE session_nodes SET current_session_id = 'original-id'")
+    assert preserve("verify").returncode == 0
+    assert expected_path.read_bytes() == inventory
+print("OpenClaw import preservation: missing/changed sessions rejected; restart inventory retained")

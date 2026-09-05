@@ -303,6 +303,10 @@ of transcript paths. The report gate accepts only the observed
 returns exit code 1 for any warning. Every other issue, malformed report, or
 unexplained nonzero exit remains fatal. The original archive and any retained
 legacy/trajectory files remain available; no replacement transcript is invented.
+Before import, bootstrap saves every legacy session key and session ID in a
+private inventory that survives retries. After inspection, a read-only SQLite
+query verifies each identity still exists before writing the completion marker.
+Missing or changed identities stop bootstrap even if doctor reports no issues.
 
 It does not run generic doctor repair because that command can rewrite
 unrelated skill policy. Gateway startup owns its documented deterministic
