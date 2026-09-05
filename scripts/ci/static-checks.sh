@@ -6,6 +6,7 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
+python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 
 echo "::group::Octelium console login redirect"

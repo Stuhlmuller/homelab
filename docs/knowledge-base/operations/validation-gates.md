@@ -413,3 +413,12 @@ generic doctor changes must not persist unrelated skill-policy rewrites.
 The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
+
+## NOFX catalog gate
+
+The fixed NOFX reconciliation command defaults to read-only inspection and
+requires exact local/remote reviewed main for execution. Tests reject wrong
+resource identities, missing or mismatched pinned CLI builds, reported native apply errors, missing convergence, and
+remaining anonymous access. Live acceptance requires an unauthenticated denial,
+authorized human access, and audit correlation after the reviewed apply.
+See [the operator path](../../octelium-nofx-reconciliation.md).
