@@ -60,7 +60,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: backup
-              image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+              image: postgres:14.24-bookworm@sha256:185c7c7a36448bcb7e0d3d6aef97ac973ddfae0cc4fa29581ce4e789988a74b1
               imagePullPolicy: Always
               command:
                 - /bin/sh
