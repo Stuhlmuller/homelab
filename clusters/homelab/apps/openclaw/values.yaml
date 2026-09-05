@@ -4,6 +4,7 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
+    replicas: 1
     revisionHistoryLimit: 1
     strategy: Recreate
     pod:
@@ -75,6 +76,9 @@ controllers:
             cp -a /nix/store/. /nix-shared/store/
             cp -a /nix/var/nix/db /nix-shared/var/nix/db
             chown -R 1000:1000 /nix-shared
+            # The NAS maps file ownership to 65534; coordinator locks need local UID ownership.
+            chown 1000:1000 /openclaw-coordinator
+            chmod 700 /openclaw-coordinator
             /toolbox/profile/bin/jq --version
             /toolbox/profile/bin/rg --version
             /toolbox/profile/bin/gh --version
@@ -724,6 +728,18 @@ persistence:
           - path: /data
         bootstrap-config:
           - path: /data
+  identity-coordinator:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 16Mi
+    advancedMounts:
+      openclaw:
+        00-operator-toolbox:
+          - path: /openclaw-coordinator
+        bootstrap-config:
+          - path: /data/openclaw/tmp/openclaw-1000
+        app:
+          - path: /data/openclaw/tmp/openclaw-1000
   plugin-cache:
     enabled: true
     type: emptyDir
