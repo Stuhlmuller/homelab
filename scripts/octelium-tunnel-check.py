@@ -38,6 +38,7 @@ def probe(api, directory, *, port=None):
                 socket.inet_pton(socket.AF_INET, value)
                 addresses.append(value)
             except OSError:
+                # dig can include CNAME answers; only IPv4 addresses can pin curl.
                 pass
         if not addresses:
             return False
