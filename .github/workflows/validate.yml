@@ -15,13 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Install Nix
-        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
 
       - name: Check flake
         run: nix flake check --no-build --all-systems

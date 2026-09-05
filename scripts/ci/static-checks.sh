@@ -66,6 +66,39 @@ if ! yq -e '[.repos[] | select(.repo != "local") | .rev | test("^[0-9a-f]{40}$")
   echo "Remote pre-commit hooks must be pinned to full commit SHAs." >&2
   exit 1
 fi
+external_action_pin_pattern="^[[:space:]]*(?:-[[:space:]]+)?uses:[[:space:]]+[\"']?[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+@[0-9a-f]{40}[\"']?([[:space:]]+#.*)?[[:space:]]*$"
+renovate_action_pin_pattern="^[[:space:]]*(?:-[[:space:]]+)?uses:[[:space:]]+[\"']?[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+@[0-9a-f]{40}[\"']?[[:space:]]+#[[:space:]]+v[0-9]+([.][0-9]+){0,2}[[:space:]]*$"
+action_pin_regression_samples="$(printf '%s\n' \
+  'uses: "owner/action@0000000000000000000000000000000000000000"' \
+  '- uses: owner/action@0000000000000000000000000000000000000000' \
+  'uses: "owner/action@0000000000000000000000000000000000000000" # v1.2.3' \
+  '- uses: owner/action@0000000000000000000000000000000000000000 # v1')"
+[[ "$(printf '%s\n' "$action_pin_regression_samples" | rg -c "$external_action_pin_pattern")" == 4 &&
+  "$(printf '%s\n' "$action_pin_regression_samples" | rg -c "$renovate_action_pin_pattern")" == 2 ]] || {
+  echo "External action pin inventory regression failed." >&2
+  exit 1
+}
+external_action_pins="$(
+  rg --no-heading --line-number \
+    "$external_action_pin_pattern" \
+    .github --glob '*.yml' --glob '*.yaml' | LC_ALL=C sort
+)"
+renovate_action_pins="$(
+  rg --no-heading --line-number \
+    "$renovate_action_pin_pattern" \
+    .github --glob '*.yml' --glob '*.yaml' | LC_ALL=C sort
+)"
+[[ -n "$external_action_pins" && "$external_action_pins" == "$renovate_action_pins" ]] || {
+  echo "External action SHAs need same-line release metadata for Renovate." >&2
+  diff -u \
+    <(printf '%s\n' "$external_action_pins") \
+    <(printf '%s\n' "$renovate_action_pins") >&2 || true
+  exit 1
+}
+if rg -Fq 'cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee' .github; then
+  echo "The install-nix v31 tag object must not replace its peeled commit pin." >&2
+  exit 1
+fi
 echo "::endgroup::"
 
 echo "::group::Terragrunt Azure credential gate"
