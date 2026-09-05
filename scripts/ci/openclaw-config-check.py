@@ -147,3 +147,51 @@ with tempfile.TemporaryDirectory() as directory:
     assert preserve("verify").returncode == 0
     assert expected_path.read_bytes() == inventory
 print("OpenClaw import preservation: missing/changed sessions rejected; restart inventory retained")
+
+doctor_setup = bootstrap[bootstrap.index('doctor_marker="$OPENCLAW_STATE_DIR/') : bootstrap.index('had_existing_state=false')]
+doctor = bootstrap[bootstrap.rindex('if [ ! -s "$doctor_marker" ]; then') :]
+for failure in ("backup", "doctor", "preservation", "validate", "none"):
+    with tempfile.TemporaryDirectory() as directory:
+        root = pathlib.Path(directory)
+        (root / "sessions-migrated").write_text("complete\n")
+        original_config = '{"skills":{"allowBundled":["fixture-skill"]}}\n'
+        (root / "config.json").write_text(original_config)
+        harness = '''OPENCLAW_STATE_DIR="$1"
+OPENCLAW_CONFIG_PATH="$1/config.json"
+failure="$2"
+had_existing_state=true
+backup_dir="$1/backup"
+migration_marker="$1/sessions-migrated"
+verify_backup_dir() { test "$failure" != backup; }
+session_preservation() { test "$failure" != preservation; }
+openclaw() {
+  if [ "$1" = doctor ]; then
+    printf '{"doctorChangedPolicy":true}\n' > "$OPENCLAW_CONFIG_PATH"
+    printf 'private diagnostic fixture\n'
+    test "$failure" != doctor
+  else
+    test "$failure" != validate
+  fi
+}
+'''
+        result = subprocess.run(["sh", "-ec", harness + doctor_setup + doctor, "fixture", directory, failure],
+                                capture_output=True)
+        marker_path = root / ".doctor-state-migrated-to-2026.8.2"
+        assert (result.returncode == 0) == (failure == "none")
+        assert marker_path.exists() == (failure == "none")
+        assert (root / "config.json").read_text() == original_config
+        assert b"private diagnostic fixture" not in result.stdout + result.stderr
+        report_path = root / "doctor-state-reports/latest.log"
+        if report_path.exists():
+            assert report_path.stat().st_mode & 0o777 == 0o600
+        if failure == "doctor":
+            # Simulate termination after doctor rewrites config but before restore.
+            (root / "config.json").write_text('{"interruptedRewrite":true}')
+            subprocess.run(["sh", "-ec", harness + doctor_setup, "fixture", directory, failure],
+                           check=True, capture_output=True)
+            assert (root / "config.json").read_text() == original_config
+        if failure == "none":
+            # A completed marker skips all migration work on a later rollout.
+            subprocess.run(["sh", "-ec", harness + doctor_setup + doctor, "fixture", directory, "doctor"],
+                           check=True, capture_output=True)
+print("OpenClaw doctor gate: backup, repair, preservation, and validation failures block completion")
