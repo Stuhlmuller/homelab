@@ -36,7 +36,8 @@ def main():
         result = subprocess.run(client + ["get", kind.lower(), name, "-o", "json"],
                                 capture_output=True, text=True, timeout=30)
         if result.returncode:
-            if re.search(r"\bcode = NotFound\b", result.stderr):
+            if (re.search(r"^gRPC error NotFound:", result.stdout, re.MULTILINE)
+                    or re.search(r"\bcode = NotFound\b", result.stderr)):
                 return None
             raise RuntimeError(f"Cannot inspect {kind} {name}; private error output withheld")
         value = json.loads(result.stdout)

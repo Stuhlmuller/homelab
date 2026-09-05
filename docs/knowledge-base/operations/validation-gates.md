@@ -433,3 +433,7 @@ generic doctor changes must not persist unrelated skill-policy rewrites.
 The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
+
+Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
+format as well as raw gRPC stderr errors. Already-absent resources are skipped;
+other native failures remain errors.

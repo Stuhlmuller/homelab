@@ -14,7 +14,7 @@ spec.loader.exec_module(retire)
 
 
 class Retirement(unittest.TestCase):
-    def exercise(self, *, declared=False, stuck=False, unavailable=False, execute=True):
+    def exercise(self, *, declared=False, stuck=False, unavailable=False, execute=True, already_absent=False, native_errors=True):
         deleted = []
 
         def run(command, **_kwargs):
@@ -27,8 +27,13 @@ class Retirement(unittest.TestCase):
                     code, error = 1, "rpc error: code = Unavailable"
                 elif operation == "delete":
                     deleted.append((kind, name))
-                elif (kind, name) in deleted and not stuck:
-                    code, error = 1, "rpc error: code = NotFound desc = not found"
+                elif already_absent or ((kind, name) in deleted and not stuck):
+                    code = 1
+                    if native_errors:
+                        output = f"gRPC error NotFound: core.v1.{kind} {name} does not exist\n"
+                        error = "Usage: octeliumctl get [flags]"
+                    else:
+                        error = "rpc error: code = NotFound desc = not found"
                 else:
                     output = json.dumps({"metadata": {"name": name}})
             return subprocess.CompletedProcess(command, code, output, error)
@@ -46,6 +51,10 @@ class Retirement(unittest.TestCase):
         success, deleted = self.exercise()
         self.assertTrue(success)
         self.assertEqual(deleted, [(kind.lower(), name) for kind, name in retire.TARGETS])
+
+    def test_absent_resources_are_skipped_with_native_cli_output(self):
+        self.assertEqual(self.exercise(already_absent=True), (True, []))
+        self.assertTrue(self.exercise(native_errors=False)[0])
 
     def test_catalog_removal_is_required(self):
         self.assertEqual(self.exercise(declared=True), (False, []))
