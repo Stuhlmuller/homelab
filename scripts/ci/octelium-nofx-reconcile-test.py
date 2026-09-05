@@ -58,6 +58,20 @@ class Reconciliation(unittest.TestCase):
     def test_wrong_identity_prevents_apply(self):
         self.assertEqual(self.exercise(wrong_identity=True), (False, 0))
 
+    def test_client_release_and_commit_are_required(self):
+        with patch.object(nofx.shutil, "which", return_value=None):
+            with self.assertRaises(RuntimeError):
+                nofx.verified_client()
+        good = "releaseVersion: v0.35.0\ngitCommit: 5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce\n"
+        with patch.object(nofx.shutil, "which", return_value="/pinned/octeliumctl"):
+            for output in [good, good.replace("v0.35.0", "v0.36.0"), good.replace("5e4eb3", "000000")]:
+                with patch.object(nofx, "run", return_value=subprocess.CompletedProcess([], 0, output, "")):
+                    if output == good:
+                        self.assertEqual(nofx.verified_client(), "/pinned/octeliumctl")
+                    else:
+                        with self.assertRaises(RuntimeError):
+                            nofx.verified_client()
+
     def test_reviewed_commit_is_required(self):
         with self.assertRaises(RuntimeError):
             nofx.verify_reviewed_main(None)

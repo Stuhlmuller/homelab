@@ -9,6 +9,7 @@ import pathlib
 import re
 import select
 import signal
+import shutil
 import socket
 import socketserver
 import subprocess
@@ -23,6 +24,18 @@ API = "octelium-api.stinkyboi.com"
 
 def run(*command, **kwargs):
     return subprocess.run(command, capture_output=True, text=True, timeout=45, check=True, **kwargs)
+
+
+def verified_client():
+    executable = shutil.which("octeliumctl")
+    if not executable:
+        raise RuntimeError("Install the pinned CLI with scripts/install-octeliumctl.sh")
+    version = run(executable, "version").stdout
+    expected = {"releaseVersion": "v0.35.0", "gitCommit": "5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce"}
+    fields = dict(re.findall(r"^([A-Za-z]+):\s*(\S+)\s*$", version, re.MULTILINE))
+    if any(fields.get(key) != value for key, value in expected.items()):
+        raise RuntimeError("Octelium CLI must match the pinned release and source commit")
+    return executable
 
 
 def declared_service():
@@ -168,7 +181,7 @@ def main():
     desired = declared_service()
     if args.execute:
         verify_reviewed_main(args.expected_sha)
-    client = ["octeliumctl", "--domain", "stinkyboi.com"]
+    client = [verified_client(), "--domain", "stinkyboi.com"]
     if args.homedir:
         client += ["--homedir", str(pathlib.Path(args.homedir).resolve())]
     with tempfile.TemporaryDirectory(prefix="octelium-nofx-") as temporary:

@@ -7,7 +7,15 @@ reconcile that native Service.
 
 `scripts/octelium-nofx-reconcile.py` is the fixed operator path for this change.
 It reads only NOFX by default, using an existing operator Octelium session.
-The Nix shell supplies the pinned Cloudflare client; use Octelium CLI 0.35.0.
+The Nix shell supplies the pinned Cloudflare client. Install Octelium CLI 0.35.0
+from the fixed release archives with committed SHA-256 checksums:
+
+```sh
+bash scripts/install-octeliumctl.sh "$HOME/.local/bin"
+```
+
+Keep that directory on your normal PATH. Reconciliation rejects a missing client,
+a different release, or a different source commit before opening the transport.
 
 ```sh
 nix develop --command python3 scripts/octelium-nofx-reconcile.py
