@@ -671,8 +671,15 @@ while read -r HOST; do
     SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
     LOCATION="$(awk 'tolower($1) == "location:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
 
-    if [ "${HOST}" = "console.stinkyboi.com" ] && printf '%s' "${LOCATION}" | grep -F "console.octelium.stinkyboi.com" >/dev/null 2>&1; then
-      fail "https://${HOST}${TEST_PATH} redirected to unsupported nested console hostname: ${LOCATION}"
+    if [ "${HOST}" = "console.stinkyboi.com" ]; then
+      case "${HTTP_CODE} ${LOCATION}" in
+        '303 https://stinkyboi.com/login?redirect=https%3A%2F%2Fconsole.stinkyboi.com%2F'*)
+          pass "https://${HOST}${TEST_PATH} returns browsers to the public console after login"
+          ;;
+        *)
+          fail "https://${HOST}${TEST_PATH} did not return the expected console login redirect (HTTP ${HTTP_CODE}, Location: ${LOCATION:-missing})"
+          ;;
+      esac
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
     fi
