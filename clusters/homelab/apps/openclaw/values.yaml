@@ -458,7 +458,7 @@ controllers:
             OPENCLAW_SESSION_PRESERVATION
             }
 
-            if "$had_existing_state" && [ ! -s "$backup_marker" ]; then
+            if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
               echo "Migrating session state to OpenClaw 2026.8.2"
               session_sqlite --session-sqlite inspect \
                 --session-sqlite-all-agents
