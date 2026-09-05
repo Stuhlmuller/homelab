@@ -34,6 +34,23 @@ workload README and [[../architecture/storage-and-state]]. Secret values stay
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [[../architecture/secrets-and-identity]].
 
+## Kiali mesh visibility
+
+The 2026-09-05 read-only probes found cluster-wide namespace and Istio config
+listing working, but zero graph connections and no `istio_*` Prometheus series.
+Kiali's API reported a startup Prometheus reachability failure retained in
+memory, even though its CR enabled Prometheus. Upstream v2.26.0
+`cmd/server.go` installs a permanent no-op client in that case.
+
+`clusters/homelab/apps/kiali/values.yaml` waits for Prometheus readiness before
+Kiali starts. `clusters/homelab/apps/prometheus/istio-podmonitors.yaml` owns
+ztunnel L4, Envoy and Istiod scrape discovery. See the Kiali README for the
+operator security flags, rollback and UI namespace selection. Validate rollout
+with `python3 scripts/kiali-check.py`; Argo CD health alone is insufficient.
+Live recovery remains unverified until the GitOps change rolls out. Grafana's
+frontend-settings endpoint also returned 401; dashboard integration is a separate
+follow-up requiring its existing authentication contract to be checked.
+
 ## Dispatcharr
 
 Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
