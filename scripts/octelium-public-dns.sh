@@ -7,10 +7,6 @@ aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 tunnel_id_parameter="/homelab/octelium/cloudflare-tunnel-id"
 dry_run="false"
-tunnel_only="false"
-api_origin_ip="10.1.0.200"
-api_origin_port="30443"
-api_public_port="8443"
 
 usage() {
   cat <<'USAGE'
@@ -19,10 +15,9 @@ Usage: scripts/octelium-public-dns.sh [options]
 Reconcile the public Octelium ingress route and Cloudflare DNS records.
 
 The script reads the Cloudflare API token and Cloudflare Tunnel UUID from AWS
-SSM Parameter Store. It verifies the leased UPnP mapping maintained by the
-octelium-api-upnp CronJob and creates a proxied A record for the API hostname.
-Other hostnames remain proxied CNAME records to the named Cloudflare Tunnel. It
-does not touch wildcard records.
+SSM Parameter Store. All declared hostnames, including the browser API and
+native TCP carrier, become proxied CNAME records to the named Cloudflare
+Tunnel. Only the declared Cordium wildcard is managed.
 
 Options:
   --domain DOMAIN                 Octelium Cluster domain. Default: stinkyboi.com
@@ -32,7 +27,7 @@ Options:
                                   Default: /homelab/cert-manager/cloudflare-api-token
   --tunnel-id-parameter NAME      SSM parameter containing the Cloudflare Tunnel UUID.
                                   Default: /homelab/octelium/cloudflare-tunnel-id
-  --tunnel-only                   Reconcile tunnel CNAMEs without the LAN-only API record.
+  --tunnel-only                   Deprecated compatibility flag; all records now use the tunnel.
   --dry-run                       Print intended DNS changes without writing.
   -h, --help                      Show this help.
 USAGE
@@ -61,7 +56,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --tunnel-only)
-      tunnel_only="true"
+      # All routes now use the tunnel.
       shift
       ;;
     --dry-run)
@@ -90,9 +85,6 @@ require_command() {
 require_command aws
 require_command curl
 require_command jq
-if [[ "$tunnel_only" == "false" ]]; then
-  require_command upnpc
-fi
 
 cloudflare_token="$(
   aws ssm get-parameter \
@@ -160,82 +152,11 @@ zone_id="$(
 
 tunnel_target="${tunnel_id}.cfargotunnel.com"
 api_hostname="octelium-api.${domain}"
-public_ipv4=""
-
-valid_ipv4() {
-  local value="$1"
-  local octets octet
-  IFS=. read -r -a octets <<<"$value"
-  [[ "${#octets[@]}" -eq 4 ]] || return 1
-  for octet in "${octets[@]}"; do
-    [[ "$octet" =~ ^[0-9]+$ ]] || return 1
-    ((10#$octet <= 255)) || return 1
-  done
-}
-
-verify_api_port_mapping() {
-  local grpc_status mapping_current mappings
-  mappings="$(upnpc -l 2>/dev/null)"
-  mapping_current="false"
-
-  if grep -Eq "TCP[[:space:]]+${api_public_port}->${api_origin_ip}:${api_origin_port}([[:space:]]|$)" <<<"$mappings"; then
-    mapping_current="true"
-  elif grep -Eq "TCP[[:space:]]+${api_public_port}->" <<<"$mappings"; then
-    echo "error: TCP/${api_public_port} already maps to a different LAN target" >&2
-    exit 1
-  fi
-
-  if [[ "$dry_run" == "true" ]]; then
-    if [[ "$mapping_current" == "true" ]]; then
-      echo "DRY-RUN Octelium API TCP/${api_public_port} mapping is current"
-    else
-      echo "DRY-RUN Octelium API mapping is pending from the octelium-api-upnp CronJob"
-    fi
-    return 0
-  fi
-
-  grpc_status="$(
-    curl -fsS --http2 --max-time 10 \
-      --resolve "${api_hostname}:${api_origin_port}:${api_origin_ip}" \
-      -H 'content-type: application/grpc' \
-      -H 'te: trailers' \
-      --data-binary '' \
-      -o /dev/null \
-      -D - \
-      "https://${api_hostname}:${api_origin_port}/octelium.api.main.user.v1.MainService/GetStatus" |
-      tr -d '\r' |
-      awk -F ': ' 'tolower($1) == "grpc-status" { print $2; exit }'
-  )"
-
-  if [[ "$grpc_status" != "16" ]]; then
-    echo "error: Octelium API NodePort returned gRPC status ${grpc_status:-missing}, expected 16" >&2
-    exit 1
-  fi
-
-  if [[ "$mapping_current" != "true" ]]; then
-    echo "error: wait for the octelium-api-upnp CronJob to map TCP/${api_public_port} to ${api_origin_ip}:${api_origin_port}" >&2
-    exit 1
-  fi
-
-  echo "Octelium API TCP/${api_public_port} mapping and origin are current"
-}
-
-if [[ "$tunnel_only" == "false" ]]; then
-  upnp_status="$(upnpc -s 2>/dev/null)"
-  public_ipv4="$(
-    awk -F ' = ' '/^ExternalIPAddress = / { print $2; exit }' <<<"$upnp_status"
-  )"
-  if ! valid_ipv4 "$public_ipv4"; then
-    echo "error: UPnP did not return a valid public IPv4 address" >&2
-    exit 1
-  fi
-  verify_api_port_mapping
-fi
-
 hostnames=(
   "$domain"
   "portal.${domain}"
   "$api_hostname"
+  "octelium-transport.${domain}"
   "affine.${domain}"
   "argocd.${domain}"
   "compass.${domain}"
@@ -349,18 +270,9 @@ upsert_record() {
 }
 
 for hostname in "${hostnames[@]}"; do
-  if [[ "$hostname" == "$api_hostname" ]]; then
-    if [[ "$tunnel_only" == "true" ]]; then
-      continue
-    fi
-    delete_exact_records "$hostname" AAAA
-    delete_exact_records "$hostname" CNAME
-    upsert_record A "$hostname" "$public_ipv4"
-  else
-    delete_exact_records "$hostname" A
-    delete_exact_records "$hostname" AAAA
-    upsert_record CNAME "$hostname" "$tunnel_target"
-  fi
+  delete_exact_records "$hostname" A
+  delete_exact_records "$hostname" AAAA
+  upsert_record CNAME "$hostname" "$tunnel_target"
 done
 
 for hostname in "${retired_hostnames[@]}"; do

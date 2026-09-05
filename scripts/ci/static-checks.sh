@@ -6,6 +6,18 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
+python3 scripts/ci/octelium-tunnel-check-test.py
+
+echo "::group::Octelium console login redirect"
+(
+  redirect_source="$(mktemp)"
+  trap 'rm -f "$redirect_source"' EXIT
+  yq -r '.spec.configPatches[0].patch.value.typed_config.inlineCode' \
+    clusters/homelab/apps/octelium-cluster/console-redirect.yaml > "$redirect_source"
+  lua scripts/ci/octelium-console-redirect-check.lua "$redirect_source"
+)
+echo "::endgroup::"
+
 echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
@@ -19,6 +31,22 @@ if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
+terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
+  render --json --write=false --no-color \
+  | jq -e '
+      any(.inputs.manifest.spec.sources[];
+        .chart == "ztunnel" and
+        any(.helm.parameters[]?;
+          .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
+          .value == "10-1-0-199-v1")
+        and any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxSurge" and
+          .value == "0")
+        and any(.helm.parameters[]?;
+          .name == "updateStrategy.rollingUpdate.maxUnavailable" and
+          .value == "1")
+      )
+    ' >/dev/null
 while IFS= read -r unit_dir; do
   if [[ ! -f "${unit_dir}/.terraform.lock.hcl" ]]; then
     echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
@@ -594,7 +622,7 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
     ($nofx | length) == 1 and
-    ($nofx[0].spec.isAnonymous // false) == false and
+    $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
     $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
     ($policies | length) == 1 and
@@ -753,6 +781,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
+    '.github/workflows/octelium-public-tunnel.yml:reconcile' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -781,8 +810,9 @@ done <<'EOF'
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
-.github/workflows/octelium-cloudflare-origin-port.yml a4e2e5601e475466eb72281b228e7f2372473cbe56cc8f6035ea3e2024bf8e19
+.github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
+.github/workflows/octelium-public-tunnel.yml d944741bcf57ca037b1fe7dc83de7a5e66a26dd8b3d35100ca990dbf3df5f3ba
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
@@ -792,6 +822,7 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
@@ -1143,29 +1174,77 @@ fi
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
+python3 scripts/ci/openclaw-config-check.py
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
-rg -Fq 'openclaw plugins install "npm:@openclaw/discord@${openclaw_version}" --pin --force' "$openclaw_values"
+rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
+rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
+rg -Fq 'openclaw plugins enable discord --accept-capabilities' "$openclaw_values"
 rg -Fq 'openclaw plugins inspect discord --runtime --json |' "$openclaw_values"
 rg -Fq 'plugin.get("origin") == "global"' "$openclaw_values"
 rg -Fq 'plugin.get("status") == "loaded"' "$openclaw_values"
-rg -Fq 'package.get("version") == expected' "$openclaw_values"
+rg -Fq 'install.get("source") == "npm"' "$openclaw_values"
+rg -Fq 'install.get("spec") == f"@openclaw/discord@{expected_version}"' "$openclaw_values"
+rg -Fq 'install.get("version") == expected_version' "$openclaw_values"
+rg -Fq 'package.get("version") == expected_version' "$openclaw_values"
+rg -Fq 'for delay in 0 5 15 30' "$openclaw_values"
+rg -Fq 'verify_discord_plugin installed' "$openclaw_values"
+rg -Fq 'verify_discord_plugin loaded' "$openclaw_values"
+rg -Fq 'tar --one-file-system' "$openclaw_values"
+rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
+rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
+rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"
+rg -Fq 'required_kib=$((state_kib * 2 + 2097152))' "$openclaw_values"
+[[ "$(rg -Fc 'session_sqlite --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
+rg -Fq 'session_sqlite --session-sqlite dry-run' "$openclaw_values"
+rg -Fq 'session_sqlite --session-sqlite import' "$openclaw_values"
+[[ "$(rg -Fc 'openclaw doctor --fix --non-interactive' "$openclaw_values")" -eq 1 ]]
+rg -Fq 'restore_doctor_config' "$openclaw_values"
+if rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
+  echo "OpenClaw bootstrap contains an unsafe or ineffective doctor repair" >&2
+  exit 1
+fi
+rg -Fq '"maxConcurrent": 4' "$openclaw_values"
 if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
   rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
   echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2
   exit 1
 fi
 if ! awk '
-  /openclaw plugins install "npm:@openclaw\/discord@\$\{openclaw_version\}" --pin --force/ && !install { install = NR }
-  /openclaw config validate/ && !validate { validate = NR }
-  END { exit !(install && validate && install < validate) }
+  /tar --one-file-system/ && !backup { backup = NR }
+  /^[[:space:]]+verify_backup_dir "\$backup_dir"[[:space:]]*$/ && !backup_verified { backup_verified = NR }
+  /--pin --force --accept-capabilities/ && !install { install = NR }
+  /--session-sqlite inspect/ && !inspect_before { inspect_before = NR; next }
+  /--session-sqlite inspect/ && !inspect_after { inspect_after = NR }
+  /--session-sqlite dry-run/ && !dry_run { dry_run = NR }
+  /--session-sqlite import/ && !import { import = NR }
+  /openclaw config validate/ && !config_validate { config_validate = NR }
+  END {
+    exit !(backup && backup_verified && install && inspect_before && dry_run && import &&
+      inspect_after && config_validate && backup < backup_verified &&
+      backup_verified < install &&
+      install < inspect_before && inspect_before < dry_run &&
+      dry_run < import && import < inspect_after &&
+      inspect_after < config_validate)
+  }
 ' "$openclaw_values"; then
-  echo "OpenClaw must install Discord before persisted-config validation" >&2
+  echo "OpenClaw must back up, install Discord, migrate, then validate persisted state" >&2
   exit 1
 fi
 yq -e '
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "00-operator-toolbox" and
+  .controllers.openclaw.initContainers."00-operator-toolbox" != null and
+  .controllers.openclaw.containers.app.image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.strategy == "Recreate" and
   .controllers.openclaw.containers.app.probes.liveness.spec.failureThreshold == 36 and
   .controllers.openclaw.containers.app.probes.liveness.spec.periodSeconds == 10 and
   .controllers.openclaw.containers.app.probes.liveness.spec.timeoutSeconds == 3 and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_SUPERVISOR_MODE == "external" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_SERVICE_REPAIR_POLICY == "external" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_NO_AUTO_UPDATE == "1" and
+  .controllers.openclaw.containers.app.env.OPENCLAW_SUPERVISOR_MODE == "external" and
+  .controllers.openclaw.containers.app.env.OPENCLAW_NO_AUTO_UPDATE == "1" and
   .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
