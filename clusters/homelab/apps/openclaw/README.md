@@ -190,7 +190,13 @@ OpenClaw rejects SecretRef objects for `hooks.token`, so bootstrap expands
 `GRAFANA_ALERT_HOOK_TOKEN` from the mounted Secret at pod startup, JSON-encodes
 the actual runtime value, and writes that plain string to the PVC-backed
 OpenClaw config. This keeps the token out of git while satisfying OpenClaw's
-hook-token policy.
+hook-token policy. If an older config contains the authored
+`${GRAFANA_ALERT_HOOK_TOKEN}` reference, bootstrap removes that reference
+before setting the literal value. OpenClaw 2026.8.2 otherwise restores the
+reference during config writes, leaving the gateway without its bootstrap-only
+environment variable. The removal and replacement happen during init, before
+the gateway runs; a failure prevents startup rather than exposing an
+unauthenticated hook.
 
 After rotating the hook token, bump
 `homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD

@@ -472,6 +472,19 @@ controllers:
               openclaw config set --strict-json \
                 hooks.path \
                 '"/hooks"'
+              # Clear the old authored env reference; otherwise OpenClaw preserves it.
+              if python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_HOOK_REFERENCE'
+            import json
+            import pathlib
+            import sys
+
+            config = json.loads(pathlib.Path(sys.argv[1]).read_text())
+            token = config.get("hooks", {}).get("token")
+            sys.exit(0 if token == "${GRAFANA_ALERT_HOOK_TOKEN}" else 1)
+            OPENCLAW_HOOK_REFERENCE
+              then
+                openclaw config unset hooks.token
+              fi
               HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
               openclaw config set --strict-json \
                 hooks.token \
