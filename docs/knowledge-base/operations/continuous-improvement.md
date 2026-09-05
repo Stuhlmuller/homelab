@@ -103,7 +103,7 @@ observations below retain their original dates.
 - **Next step:** Complete the remaining image inventory and add the smallest
   continuous scan and exception-expiry gate under issue `#791`.
 
-- **Status:** mitigation pending rollout and observation
+- **Status:** fixed
 - **Area:** Istio ambient / ztunnel readiness
 - **Evidence:** Read-only inspection on 2026-08-28 found the `zimaboard-0`
   ztunnel returning 13,872 readiness HTTP 500 responses over 36 hours. Its
@@ -115,20 +115,18 @@ observations below retain their original dates.
   in both CNI and ztunnel, forces the CNI DaemonSet to roll, and explicitly
   enrolls the connector pod so its replacement receives a fresh network
   namespace.
-- **Risk:** The connector remains reachable without ambient redirection, but
-  its Istio workload identity and policy telemetry are absent. Ztunnel
-  readiness on `zimaboard-1` and `zimaboard-2` cannot recover while those nodes
-  remain NotReady.
-- **Next step:** Merge and apply the committed state, then recover both NotReady
-  nodes under issue `#775`. The live CNI DaemonSet already has two unavailable
-  nodes against `maxUnavailable=1`, so its Ready-node rollout can complete only
-  after node recovery. Close `#778` only after all four ztunnel pods run the new
-  template and are Ready, Argo CD reports Istio
-  `Synced/Healthy`, every active connector reports redirection `enabled`, and
-  ztunnel records no readiness HTTP 500 or IPv6 bind/route errors for 24 hours.
-  Roll back by reverting these desired-state settings and letting Argo CD
-  reconcile; do not opt the connector out of ambient because protected
-  workloads depend on its service-account principal.
+- **Validation:** Read-only verification on 2026-09-05 met the recovery gates
+  for `#778`: CNI and ztunnel were fully updated and Ready on all four nodes,
+  live IPv6 settings were disabled, Istio was `Synced/Healthy`, and every active
+  connector reported redirection `enabled`. Prometheus recorded uninterrupted
+  ztunnel readiness and no failed CNI or ztunnel readiness probes for 24 hours.
+  Current and retained rotated logs covered that window without readiness
+  HTTP 500 or IPv6 bind/route errors. See [[audit-2026-09-04]].
+- **Risk:** Future node recovery can interrupt ambient enrollment. Protected
+  workloads depend on the connector's Istio service-account principal.
+- **Next step:** Retain the recovery checks in [[validation-gates]]. Roll back
+  by reverting the desired-state settings and letting Argo CD reconcile;
+  do not opt the connector out of ambient to bypass readiness failures.
 
 - **Status:** fixed
 - **Area:** observability / Grafana startup and security
@@ -215,17 +213,21 @@ observations below retain their original dates.
   configuration that enables dependency graph and Dependabot alerts for
   `Stuhlmuller/homelab` while leaving Dependabot security updates disabled.
 
-- **Status:** internal workloads and GitOps fixed; public access pending
+- **Status:** transport recovered; authenticated UI verification pending
 - **Area:** Dispatcharr / NFS ownership and access
 - **Evidence:** The UID/GID correction produced a healthy three-container web
   Pod and ready PostgreSQL StatefulSet on 2026-08-27. Declaring the API-normalized
   PVC template type returned Argo CD to `Synced/Healthy`. An in-Pod HTTP check
-  returns `200` and the Service endpoint is ready, while the Octelium-protected
-  hostname still returns HTTP `503`.
-- **Risk:** The public UI remains unavailable despite healthy internal
-  workloads and converged GitOps state.
-- **Next step:** diagnose the repo-owned Octelium and Istio route, then verify
-  the protected hostname no longer returns `503`.
+  returned `200` and the Service endpoint was ready, while the Octelium-protected
+  hostname returned HTTP `503` at that inspection. Read-only verification on
+  2026-09-05 found the app and database Ready and Argo CD `Synced/Healthy`.
+  In-Pod HTTP still returned `200`; the public hostname returned an Octelium
+  `401` authorization denial, including a browser-shaped request. The previous
+  app and Celery restarts dated from August 27. See [[audit-2026-09-04]].
+- **Risk:** An unauthenticated denial proves the public authentication boundary
+  responds, but does not establish successful authenticated upstream access.
+- **Next step:** Verify the UI through an authenticated Octelium browser session
+  before closing the remaining access check. Preserve the protected route.
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity
