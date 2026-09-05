@@ -281,7 +281,8 @@ The public Octelium control plane uses a Cloudflare Tunnel connector in
 `/homelab/octelium/cloudflare-tunnel-id`, then run
 `scripts/octelium-public-dns.sh` to route `stinkyboi.com`,
 `octelium.stinkyboi.com`, `portal.stinkyboi.com`,
-`octelium-api.stinkyboi.com`, `console.stinkyboi.com`, and the committed app
+`octelium-api.stinkyboi.com`, `octelium-transport.stinkyboi.com`,
+`console.stinkyboi.com`, and the committed app
 hostnames
 through proxied CNAME records to the tunnel target
 `<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
@@ -290,20 +291,20 @@ API token outside git. Cloudflare edge TLS uses the apex plus first-level
 would force the client onto the unsupported nested
 `octelium-api.octelium.stinkyboi.com` hostname.
 
-Octelium CLI and VPN sessions use gRPC against `octelium-api.stinkyboi.com`.
-The `octelium-api-upnp` CronJob maintains its leased UPnP port mapping;
-run `scripts/octelium-public-dns.sh` from the homelab LAN to verify the mapping
-and reconcile the proxied A record. The script reuses the cert-manager
-Cloudflare token because DNS edit permission is sufficient; no separate
-zone-settings token is required for DNS. The protected
-`octelium-cloudflare-origin-port.yml` workflow separately uses the
-`homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to
-reconcile the exact-host destination-port and Full (strict) TLS overrides
-without exposing the value. That token needs zone read, Zone Settings read,
-Origin Rules edit, and Config Settings write for `stinkyboi.com`. Zone Settings
-read authorizes the workflow's SSL mode and HTTP/2-to-origin checks. The old
-`/homelab/octelium/cloudflare-zone-settings-token` declaration is retained
-temporarily so removing a secret value is a separate reviewed operation.
+Octelium's browser API uses HTTPS/gRPC-Web through the Tunnel. Native CLI
+and VPN sessions retain `octelium-api.stinkyboi.com` inside a TLS stream carried
+by `octelium-transport.stinkyboi.com`; configure the scoped local carrier
+before login as documented in the Octelium public app README.
+The protected `octelium-public-tunnel.yml` workflow requires an exact reviewed
+main SHA. Its existing production AWS role reads the cert-manager Cloudflare
+DNS token and Tunnel UUID from SSM to reconcile both API records as CNAMEs.
+It uses `CLOUDFLARE_ZONE_SETTINGS_TOKEN` from `homelab-production` only to
+remove retired hostname-specific origin/TLS rules (zone read, Origin Rules
+edit, Config Settings write). DNS itself needs only zone read and DNS edit.
+The UPnP job is suspended; the old origin-port apply workflow rejects use.
+The old `/homelab/octelium/cloudflare-zone-settings-token` declaration remains
+until secret retirement is reviewed separately. No token value enters git or
+workflow output.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
@@ -333,9 +334,14 @@ The Entra application unit registers `https://grafana.stinkyboi.com/` and
 `https://grafana.stinkyboi.com/login/azuread` as redirect URIs, writes the
 client ID and generated one-year client secret to SSM, and derives the
 tenant-specific authorization and token URLs from the active AzureAD client
-configuration. Rotating the client secret means applying the Entra unit so the
-generated password and SSM value update together, then letting External Secrets
-refresh `grafana-azuread-sso`.
+configuration. Reapplying an unchanged Entra unit does not rotate its password;
+both application-password resources currently lack a rotation trigger. Before
+either password expires, add or advance a reviewed `rotate_when_changed`
+revision, apply only that Entra unit, then force the `OnChange`
+`grafana-azuread-sso` ExternalSecret through a repository-owned metadata change
+and sync Grafana. Rerun `scripts/octelium-entra-oidc.sh` immediately after an
+Octelium password rotation. Keep this coordinated because SSM updates alone do
+not refresh either consumer.
 
 The Octelium unit registers `https://stinkyboi.com/callback` and
 `https://portal.stinkyboi.com/callback`, writes the client ID,
@@ -343,9 +349,11 @@ generated one-year client secret, tenant ID, and issuer URL to SSM, and leaves
 the Octelium native IdentityProvider activation to
 `scripts/octelium-entra-oidc.sh`.
 
-Deluge stores only VPN WireGuard material in SSM. Sonarr, Radarr, and Prowlarr
-store only their PostgreSQL password contract in SSM through
-`media-postgres-arr-env`. Each app writes that value into the
+Deluge stores only VPN WireGuard material in SSM. Only the full
+`/homelab/deluge/vpn/wireguard-config` remains readable by External Secrets;
+the six retired split-profile parameters are non-readable state tombstones.
+Sonarr, Radarr, and Prowlarr store only their PostgreSQL password contract in
+SSM through `media-postgres-arr-env`. Each app writes that value into the
 upstream-supported `config.xml` PostgreSQL fields during pod startup;
 application passwords, API keys, indexers, and app integrations still live on
 the persistent `/config` volumes and are managed through each app after first

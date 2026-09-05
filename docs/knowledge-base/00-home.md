@@ -25,6 +25,8 @@ in the same change.
   vault notes.
 - [[operations/continuous-improvement]] records the standing stewardship loop
   for security, reliability, findings, and follow-up work.
+- [[operations/octelium-capability-research-2026-09-05]] records the requested
+  security, audit-console, and Cordium CI/developer/agent execution expansion.
 - [[source-map]] lists the source docs and repo paths imported into the vault.
 - [[patterns/new-application]] is the checklist for adding a new workload.
 - [[patterns/new-platform-service]] is the checklist for shared platform

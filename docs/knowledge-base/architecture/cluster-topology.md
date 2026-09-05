@@ -16,17 +16,23 @@ control-plane node and three Zimaboard workers.
 | `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
-## Current Worker Recovery Blocker
+## Current Worker Recovery
 
-Read-only inspection on 2026-08-30 found `acer`, `zimaboard-0`, and
-`zimaboard-1` Ready. `zimaboard-2` remains unreachable; its last kubelet
-heartbeat is `2026-08-26T16:56:41Z`. Istio remains Degraded and Multus
-Progressing, with Octelium replacement Pods still stranded on that worker.
-The available default Talos client certificate still expired on 2026-05-17;
-the repository-local client file has no selected context. No reboot or
-force-deletion was attempted. Recover authenticated Talos access and use a
-reviewed degraded-state recovery path or physical intervention; the routine
-healthy-cluster reboot runbook is not sufficient. See
+Initial inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
+`zimaboard-1` Ready. `zimaboard-2` was NotReady; its last kubelet
+heartbeat was `2026-08-26T16:56:41Z`. Istio was Degraded and Multus was
+Progressing, with Octelium replacement Pods stranded on that worker.
+Authenticated Talos access was restored from the current control-plane
+configuration without resetting any node. The replacement local `os:admin`
+certificate expires on 2027-09-02, and a fresh etcd snapshot was copied off
+`acer`. The reviewed Octelium Talos DNS SAN was then applied without a reboot
+and verified on the live server certificate. The reviewed worker preflight
+passed, but an authenticated reboot of `zimaboard-2` stalled in
+`stopAllPods` while gracefully stopping the unhealthy kubelet. A subsequent
+power-cycle restarted the node: all four nodes, every non-terminal cluster Pod,
+and all five Pods bound to `zimaboard-2` were Ready. Talos reported kubelet,
+CRI, and containerd healthy; the worker retained no Octelium dataplane label.
+No force-deletion was attempted. See
 [[operations/audit-2026-08-30]] and issue
 [#775](https://github.com/Stuhlmuller/homelab/issues/775).
 
@@ -37,15 +43,33 @@ Talos TCP/50000. Immediately before `zimaboard-1` stopped reporting, OpenClaw
 grew from `530Mi` to `5.36Gi` and all user containers reached `6.51Gi` on its
 `7.58Gi` physical memory. This strongly correlates the outage with memory
 starvation, but authenticated Talos logs are required to distinguish kernel OOM
-from severe thrashing. The available local Talos client certificate expired on
-2026-05-17 and does not match the current cluster CA, so it cannot authenticate
-a safe reboot.
+from severe thrashing. At that time, the available local Talos client
+certificate had expired and did not match the current cluster CA; authenticated
+access was restored on 2026-09-02.
 
 Sync the OpenClaw `4Gi` containment limit before recovering `zimaboard-1`.
 Recover these configured nodes with a current authenticated
 `.talos/talosconfig` or physical console or power access. Do not use
 `--insecure`, and do not force-delete their single-writer workloads without
 first fencing the old node.
+
+On 2026-09-02, `zimaboard-1` repeated the OpenClaw failure after seven leaked
+hook relays remained blocked in page faults. Memory availability fell to about
+`132Mi`, load exceeded `119`, I/O pressure exceeded 97%, and local eMMC reads
+queued until kubelet stopped reporting. Talos and the NAS endpoint remained
+reachable; no node-scoped evidence established an NFS outage. Eviction started
+replacement PVC workloads on `acer`, so only a confirmed reset and new boot ID
+fence the old writers. Restarting kubelet or networking is unsafe.
+
+After its earlier recovery, the scheduler placed several zero-request Argo CD
+controllers and Prometheus on the 1.28 GiB-allocatable `zimaboard-2`; it then
+fell below 82 MiB available memory and stopped heartbeating. That worker later
+recovered after evictions released memory. `zimaboard-1` also resumed healthy
+heartbeats on its unchanged boot and kubelet reconciled the old Pods, so no
+reboot or cordon was justified. Keep it schedulable until OpenClaw rolls
+forward: current affinity excludes `acer` and the dataplane worker, while
+`zimaboard-2` cannot meet the 2 GiB init request. Any later drain or reboot is
+separate healthy maintenance.
 
 ## Monitoring Contract
 
@@ -191,6 +215,11 @@ Talos config, kubeconfig, service-account issuer discovery, OIDC setup, or
 troubleshooting notes, fix the repository-owned desired state to use
 `https://10.1.0.199:6443`.
 
+The control-plane patch stack also replaces the explicit Kubernetes API SAN
+list with `10.1.0.199` and the Talos API SAN list with the private Octelium
+hostname. These list patches use RFC 6902 replacement so repeated renders do
+not retain stale SANs or append duplicates.
+
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
 resources and subresources stay denied. Tailscale remains only as the temporary
@@ -201,6 +230,8 @@ mode.
 
 - `ONBOARDING.md`
 - `docs/talos-control-plane-maintenance.md`
+- `.talos/patches/controlplane-kubernetes-api-san.yaml`
+- `.talos/patches/controlplane-octelium-talos-api.yaml`
 - `.talos/patches/controlplane-service-account-issuer.yaml`
 - `.talos/patches/worker-zimaboard-2.yaml`
 - `clusters/homelab/platform/multus`

@@ -20,6 +20,25 @@ The Enterprise console is the exception: `console.stinkyboi.com` routes to the
 package-owned `svc-console-octelium` Service so the public URL stays first-level
 and does not require the nested `console.octelium.stinkyboi.com` hostname.
 
+The package still generates browser login return URLs with that nested name.
+`console-redirect.yaml` adds a scoped Lua response filter to the existing
+`istio: ingressgateway` workload. Only requests for `console.stinkyboi.com`
+with HTTP 303 and `x-octelium-unauthorized: true` qualify. The filter replaces
+only the exact canonical login-return prefix, preserving the encoded path and
+query. Cookies, authentication, status codes, response bodies, and unrelated
+redirects are untouched. Core 0.35.0 accepts the friendly hostname as a valid
+login return; neither Enterprise 0.22.0 nor 0.29.0 exposes a console-alias
+setting. See the source-backed
+[capability research](../../../../docs/knowledge-base/operations/octelium-capability-research-2026-09-05.md).
+
+The static gate runs the actual Lua against root, deep-link, query, wrong-host,
+wrong-status, missing-marker, and lookalike-target cases. After GitOps rollout,
+require a browser login return to the friendly hostname, then separately verify
+console queries through `octelium-api.stinkyboi.com`. This filter does not repair
+the public API transport. Because this app disables automated pruning, roll
+back by committing an empty `spec.configPatches` list and adjusting its
+regression gate, rather than merely removing the file from Kustomization.
+
 Client VPN traffic uses Octelium Gateway hostnames generated from the cluster
 domain, such as `_gw-*.stinkyboi.com`, not the Istio front-proxy route. After
 `octops` creates or updates Gateway status, run

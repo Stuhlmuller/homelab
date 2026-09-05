@@ -1,6 +1,6 @@
 name: "Release"
 
-permissions: read-all
+permissions: {}
 
 on:
   pull_request:

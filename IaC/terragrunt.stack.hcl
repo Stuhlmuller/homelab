@@ -49,7 +49,6 @@ unit "argocd_apps_affine" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/affine"
-            kustomize      = {}
           }
         ]
 
@@ -150,7 +149,6 @@ unit "argocd_apps_argocd_image_updater" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/argocd-image-updater"
-            kustomize      = {}
           }
         ]
 
@@ -239,7 +237,6 @@ unit "argocd_apps_cert_manager" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/cert-manager"
-            kustomize      = {}
           }
         ]
 
@@ -325,7 +322,6 @@ unit "argocd_apps_compass" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/compass"
-            kustomize      = {}
           }
         ]
 
@@ -404,7 +400,6 @@ unit "argocd_apps_cordium" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/cordium"
-            kustomize      = {}
           }
         ]
 
@@ -506,7 +501,6 @@ unit "argocd_apps_deluge" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/deluge"
-            kustomize      = {}
           }
         ]
 
@@ -675,7 +669,6 @@ unit "argocd_apps_dispatcharr" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/dispatcharr"
-            kustomize      = {}
           }
         ]
 
@@ -764,7 +757,6 @@ unit "argocd_apps_external_secrets" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/external-secrets"
-            kustomize      = {}
           }
         ]
 
@@ -834,7 +826,6 @@ unit "argocd_apps_github_actions_runner" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/github-actions-runner"
-            kustomize      = {}
           }
         ]
 
@@ -924,7 +915,6 @@ unit "argocd_apps_grafana" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/grafana"
-            kustomize      = {}
           }
         ]
 
@@ -1005,7 +995,6 @@ unit "argocd_apps_grafana_alert_cleanup" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/grafana-alert-cleanup"
-            kustomize      = {}
           }
         ]
 
@@ -1126,6 +1115,18 @@ unit "argocd_apps_istio" {
                 {
                   name  = "env.IPV6_ENABLED"
                   value = "false"
+                },
+                {
+                  name  = "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover"
+                  value = "10-1-0-199-v1"
+                },
+                {
+                  name  = "updateStrategy.rollingUpdate.maxSurge"
+                  value = "0"
+                },
+                {
+                  name  = "updateStrategy.rollingUpdate.maxUnavailable"
+                  value = "1"
                 }
               ]
             }
@@ -1165,7 +1166,6 @@ unit "argocd_apps_istio" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/istio"
-            kustomize      = {}
           }
         ]
 
@@ -1298,7 +1298,6 @@ unit "argocd_apps_kiali" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/kiali"
-            kustomize      = {}
           }
         ]
 
@@ -1396,7 +1395,6 @@ unit "argocd_apps_litellm" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/litellm"
-            kustomize      = {}
           }
         ]
 
@@ -1469,7 +1467,6 @@ unit "argocd_apps_media_postgres" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/media-postgres"
-            kustomize      = {}
           }
         ]
 
@@ -1655,7 +1652,6 @@ unit "argocd_apps_multica" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/multica"
-            kustomize      = {}
           }
         ]
 
@@ -1738,7 +1734,6 @@ unit "argocd_apps_nofx" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/nofx"
-            kustomize      = {}
           }
         ]
 
@@ -1841,7 +1836,6 @@ unit "argocd_apps_n8n" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/n8n"
-            kustomize      = {}
           }
         ]
 
@@ -1914,7 +1908,6 @@ unit "argocd_apps_n8n_postgres" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/n8n-postgres"
-            kustomize      = {}
           }
         ]
 
@@ -2018,7 +2011,6 @@ unit "argocd_apps_octelium" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/octelium"
-            kustomize      = {}
           }
         ]
 
@@ -2104,7 +2096,6 @@ unit "argocd_apps_octelium_cluster" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/octelium-cluster"
-            kustomize      = {}
           }
         ]
 
@@ -2177,7 +2168,6 @@ unit "argocd_apps_octelium_enterprise" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/octelium-enterprise"
-            kustomize      = {}
           }
         ]
 
@@ -2299,7 +2289,6 @@ unit "argocd_apps_octelium_public" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/octelium-public"
-            kustomize      = {}
           }
         ]
 
@@ -2365,7 +2354,6 @@ unit "argocd_apps_octelium_storage" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/octelium-storage"
-            kustomize      = {}
           }
         ]
 
@@ -2481,7 +2469,6 @@ unit "argocd_apps_octobot" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/octobot"
-            kustomize      = {}
           }
         ]
 
@@ -2576,7 +2563,6 @@ unit "argocd_apps_openclaw" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/openclaw"
-            kustomize      = {}
           }
         ]
 
@@ -2724,7 +2710,6 @@ unit "argocd_apps_platform_dns" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/platform/dns"
-            kustomize      = {}
           }
         ]
 
@@ -2797,7 +2782,6 @@ unit "argocd_apps_platform_multus" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/platform/multus"
-            kustomize      = {}
           }
         ]
 
@@ -2866,7 +2850,6 @@ unit "argocd_apps_platform_storage" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/platform/storage"
-            kustomize      = {}
           }
         ]
 
@@ -2943,7 +2926,6 @@ unit "argocd_apps_policy_bot" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/policy-bot"
-            kustomize      = {}
           }
         ]
 
@@ -3035,7 +3017,6 @@ unit "argocd_apps_prometheus" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/prometheus"
-            kustomize      = {}
           }
         ]
 
@@ -3133,7 +3114,6 @@ unit "argocd_apps_prowlarr" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/prowlarr"
-            kustomize      = {}
           }
         ]
 
@@ -3229,7 +3209,6 @@ unit "argocd_apps_radarr" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/radarr"
-            kustomize      = {}
           }
         ]
 
@@ -3325,7 +3304,6 @@ unit "argocd_apps_sonarr" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/sonarr"
-            kustomize      = {}
           }
         ]
 
@@ -3414,7 +3392,6 @@ unit "argocd_apps_tailscale" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/tailscale"
-            kustomize      = {}
           }
         ]
 

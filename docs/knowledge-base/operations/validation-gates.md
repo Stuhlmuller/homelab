@@ -83,6 +83,11 @@ rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
 
+The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
+included in that closed credentialed-workflow inventory. It uses only the
+existing production AWS role and Cloudflare rule-removal secret, with private
+API output withheld. Validate its full definition before updating the hash.
+
 The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
 blobs whose working-tree file was removed.
@@ -172,27 +177,37 @@ kubectl -n octelium get events --field-selector reason=FailedCreatePodSandBox
 After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
 checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
 PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
-The `octelium-cluster` app must render only the Istio front-door route and its
-HTTP/2 upstream `DestinationRule` in `istio-system`; it must not create the
+The `octelium-cluster` app renders the Istio front-door route, its HTTP/2
+upstream `DestinationRule`, and the scoped console login-return `EnvoyFilter`
+in `istio-system`; it must not create the
 `octelium` namespace because Octelium genesis owns that namespace during
 bootstrap. The bootstrap wrapper applies the required privileged Pod Security
 labels to the namespace after `octops` creates it.
+
+The filter rewrites only the exact unauthorized browser login redirect for
+`console.stinkyboi.com`. Validate its rendered Lua with the static gate and
+the public browser probe in `scripts/octelium-e2e-check.sh`, then verify
+authenticated page rendering and audit queries. Revalidate Envoy compatibility
+when upgrading Istio. Automated pruning is disabled for this app: rollback
+must commit an empty `spec.configPatches` list and adjust the filter test gate,
+as described in `clusters/homelab/apps/octelium-cluster/README.md`; deleting
+the file alone leaves the live filter installed.
 
 Before declaring Octelium-backed app UI access healthy, the replacement path
 must pass:
 
 ```sh
-kubectl -n istio-system get cronjob octelium-api-upnp \
-  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+nix develop --command python3 scripts/octelium-tunnel-check.py
 scripts/octelium-e2e-check.sh
 ```
 
-The gRPC check resolves the API host through `1.1.1.1` and pins curl to that
-public address, so an Octelium split-DNS answer cannot hide a broken WAN edge.
-It accepts only the expected unauthenticated response: HTTP `200` with
-`grpc-status: 16`; generic HTTP responses fail the gate.
-Do not treat the repository-side target change as recovery until the CronJob
-has a recent success and the public probe passes.
+The transport probe resolves the browser API through `1.1.1.1` and validates
+its gRPC-Web status-16 trailer. It separately starts a temporary TCP carrier
+and requires verified origin TLS, HTTP/2, and native gRPC status 16. Generic
+HTTP responses and local listener readiness do not pass. The catalog checks
+still require authenticated `octeliumctl` with a configured native transport
+or the existing private route. Also verify authenticated console rendering,
+audit queries, and real Cordium execution/reconnects before declaring recovery.
 
 Before treating Tailscale as unnecessary for Kubernetes access, validate both
 human paths from outside the homelab. On the operator workstation, run
@@ -349,8 +364,9 @@ Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
 Azure credential gate compares AzureAD unit sources and stack blocks plus the
-shared root inputs they consume; unrelated stack changes do not require Azure
-credentials.
+normalized shared root source they consume. It ignores only the
+forbidden legacy root plan-output directive; every other root source change
+fails closed. Unrelated stack changes do not require Azure credentials.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
@@ -384,3 +400,12 @@ with the risk. Desired state must be represented in the repo before applying it.
 
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
+
+## OpenClaw doctor state gate
+
+The static gate permits one exact noninteractive pinned doctor repair after
+backup verification. Bootstrap tests require configuration restoration on
+success and failure, plus session preservation and config validation before
+the separate completion marker. A private config snapshot also repairs an
+interrupted doctor before the next bootstrap applies desired configuration;
+generic doctor changes must not persist unrelated skill-policy rewrites.
