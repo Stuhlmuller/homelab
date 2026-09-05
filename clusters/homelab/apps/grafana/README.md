@@ -150,8 +150,9 @@ The provisioned rules cover:
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
 - Repository-owned PostgreSQL readiness probes missing or no longer succeeding
   for approximately 5 minutes.
-- Deluge, Radarr, Sonarr, or media PostgreSQL backups older than 30 hours,
-  including an established CronJob with no recorded success.
+- Deluge, Radarr, Sonarr, media PostgreSQL, or Octelium PostgreSQL backups
+  older than 30 hours, including an established CronJob with no recorded success.
+  The rule retains UID `homelab-media-backup-stale` to update existing provisioning.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
 - Deluge VPN or daemon health missing or failing for 5 minutes, using the
