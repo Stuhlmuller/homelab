@@ -299,3 +299,12 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - `IaC/live/aws-ssm-parameters`
 - `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`
 - `clusters/homelab/apps/external-secrets`
+
+## NOFX native reconciliation boundary
+
+NOFX anonymous-access removal is applied by the fixed repository operator
+command, independently from Kubernetes Argo CD. It requires an exact reviewed
+main commit, selects only `nofx.default`, proves a second apply is empty, and
+verifies the human-access policy. Existing operator credentials stay private;
+the temporary native transport changes no saved host or client settings.
+See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).

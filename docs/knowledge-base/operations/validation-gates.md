@@ -409,3 +409,12 @@ success and failure, plus session preservation and config validation before
 the separate completion marker. A private config snapshot also repairs an
 interrupted doctor before the next bootstrap applies desired configuration;
 generic doctor changes must not persist unrelated skill-policy rewrites.
+
+## NOFX catalog gate
+
+The fixed NOFX reconciliation command defaults to read-only inspection and
+requires exact local/remote reviewed main for execution. Tests reject wrong
+resource identities, reported native apply errors, missing convergence, and
+remaining anonymous access. Live acceptance requires an unauthenticated denial,
+authorized human access, and audit correlation after the reviewed apply.
+See [the operator path](../../octelium-nofx-reconciliation.md).
