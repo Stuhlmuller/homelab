@@ -1,0 +1,53 @@
+{
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai/gpt-6-astra",
+        "fallbacks": []
+      },
+      "models": {
+        "openai/gpt-6-astra": {
+          "alias": "astra",
+          "agentRuntime": {
+            "id": "codex"
+          }
+        }
+      },
+      "thinkingDefault": "medium",
+      "userTimezone": "America/Los_Angeles",
+      "timeoutSeconds": 600,
+      "heartbeat": {
+        "every": "1h",
+        "model": "openai/gpt-6-astra",
+        "target": "owner",
+        "activeHours": {
+          "start": "08:00",
+          "end": "22:00",
+          "timezone": "America/Los_Angeles"
+        },
+        "timeoutSeconds": 120,
+        "prompt": "Read HEARTBEAT.md in your workspace and follow it. Only follow up on explicitly tracked work or a completed background task. Recurring homelab checks have separate automation jobs. If nothing meaningful needs the owner, reply exactly NO_REPLY."
+      },
+      "maxConcurrent": 4
+    }
+  },
+  "tools": {
+    "profile": "coding",
+    "alsoAllow": [
+      "group:web",
+      "group:messaging",
+      "automations",
+      "heartbeat_respond"
+    ],
+    "loopDetection": {
+      "enabled": true
+    },
+    "fs": {
+      "workspaceOnly": true
+    }
+  },
+  "cron": {
+    "enabled": true,
+    "sessionRetention": "24h"
+  }
+}

@@ -21,6 +21,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
+        homelab.rst.io/openclaw-assistant-sha256: "a45763ab31bd6fe26f0246f86c7290ce1c4cbbd79e69ef32b398577d26642999"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -520,25 +521,8 @@ controllers:
               plugins.entries.memory-wiki.enabled \
               'true'
 
-            openclaw config patch --stdin <<'OPENCLAW_MODEL_PATCH'
-            {
-              "agents": {
-                "defaults": {
-                  "model": {
-                    "primary": "openai/gpt-5.5"
-                  },
-                  "maxConcurrent": 4,
-                  "models": {
-                    "openai/gpt-5.5": {
-                      "agentRuntime": {
-                        "id": "codex"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-            OPENCLAW_MODEL_PATCH
+            python3 /etc/openclaw-assistant/bootstrap.py
+            openclaw config validate
 
             openclaw config set --strict-json \
               agents.defaults.sandbox.mode \
@@ -597,6 +581,12 @@ controllers:
             fi
     containers:
       app:
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - python3
+                - /etc/openclaw-assistant/reconcile.py
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -782,6 +772,18 @@ service:
       http:
         port: 8080
 persistence:
+  assistant-bundle:
+    enabled: true
+    type: configMap
+    name: openclaw-assistant
+    advancedMounts:
+      openclaw:
+        bootstrap-config:
+          - path: /etc/openclaw-assistant
+            readOnly: true
+        app:
+          - path: /etc/openclaw-assistant
+            readOnly: true
   config:
     enabled: true
     storageClass: nfs-default

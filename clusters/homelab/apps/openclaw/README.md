@@ -36,6 +36,84 @@ URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Runtime config and agent state persist on the `openclaw` PVC
 under `/data/openclaw`.
 
+## Claw's assistant configuration
+
+`assistant/` owns Claw's homelab personality, operating agreement, tool notes,
+heartbeat checklist, model configuration, and scheduled work. The default is
+`openai/gpt-6-astra` through the existing Codex OAuth harness, with medium
+reasoning and no silent model fallback. `astra` is the selection alias. See
+the [official model definition](https://developers.openai.com/api/docs/models/gpt-6-astra).
+Account access must be verified with an actual turn; configuration validation
+alone does not prove Astra entitlement.
+
+The behavior is conversational and evidence-driven: remember corrections,
+follow through on requested work, keep unchanged checks silent, and report
+what was actually validated or deployed. Existing owner authorization for
+homelab branch/PR/CI/merge work remains in force; branch policy and protected
+deployment approval still apply. Proactive improvement is bounded to one open
+PR and an eight-minute daily work window.
+
+All schedules use `America/Los_Angeles` and deliver to the existing allowlisted
+owner's Discord DM:
+
+| Job | Schedule | Behavior |
+| --- | --- | --- |
+| Morning brief | Daily 09:00 | Health, changes, blockers, next step |
+| Health watch | :17/:47, 08:00-21:59 | New incidents or recovery |
+| Daily improvement | Daily 14:30 | One verified improvement or PR |
+| Heartbeat | Hourly, 08:00-22:00 | Follow up on tracked work |
+
+The fixed-name ConfigMap mounts only in bootstrap and the app. Its content
+digest in the Pod template triggers replacement when the bundle changes.
+Bootstrap adds managed sections to SOUL.md, AGENTS.md, and TOOLS.md and
+replaces the old heartbeat checklist so its legacy polling does not duplicate
+the new jobs. It preserves IDENTITY.md, USER.md, MEMORY.md, daily notes,
+existing tool additions, credentials, and unrelated config. It extends any
+restricted model policy to allow Astra. The first pre-change files and config
+are retained privately under `/data/openclaw/assistant-backups/v1`; this is a
+same-volume rollback checkpoint, not an independent backup.
+
+The app's postStart hook registers three jobs through the public automation
+CLI with stable declaration keys. Retries converge in place; they preserve
+job history and an owner's disabled state. It does not edit scheduler SQLite
+tables or adopt/delete unrelated jobs. An absent or ambiguous owner fails
+closed rather than guessing a recipient. Existing alert hooks remain enabled.
+See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
+[heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
+
+Before rollout, run the static gate and render app-template 4.4.0 plus this
+Kustomize directory. The focused `scripts/ci/openclaw-assistant-check.py`
+exercises preservation, repeatability, ambiguous routing, symlink rejection,
+stable declarations, and the Pod content digest. After editing `assistant/`,
+recompute the SHA-256 over sorted file names followed by a NUL byte and their
+contents, and update `homelab.rst.io/openclaw-assistant-sha256` in values.yaml.
+
+After the PR is merged and Argo syncs, verify:
+
+```sh
+kubectl -n ai rollout status deployment/openclaw --timeout=15m
+kubectl -n ai exec deploy/openclaw -c app -- openclaw config validate
+kubectl -n ai exec deploy/openclaw -c app -- openclaw models status --json
+kubectl -n ai exec deploy/openclaw -c app -- openclaw automations list --all --json
+```
+
+Confirm one instance of each managed declaration, the intended Discord route,
+and successful execution/delivery in automation run history. Send an owner
+Discord message and verify the actual session model is Astra and the reply is
+natural. Existing sessions with explicit model overrides must be inspected and
+changed through an owner-authorized session/model operation; do not rewrite
+session databases. Check monitoring/GitHub access using bounded read-only
+queries; report missing access instead of claiming the tools work.
+
+To pause a managed job, use `openclaw automations disable <job-id>`; its paused
+state survives reconciliation. To retire or rename jobs, include explicit
+removal of their declaration IDs in a reviewed maintenance change. Removing
+the ConfigMap alone does not remove persisted jobs. Roll back through a PR
+that restores the previous model and managed content and disables/removes
+the three declarations through the public CLI. Keep personal memory and
+session history; use the private originals only for a reviewed offline
+workspace/config restore when needed.
+
 ## Resource Profile
 
 The app container requests `1` CPU and `2Gi` memory, with `1500m` CPU and `4Gi`
