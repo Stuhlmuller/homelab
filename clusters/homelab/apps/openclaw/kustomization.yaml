@@ -17,5 +17,6 @@ configMapGenerator:
       - assistant/retired-jobs.json
       - assistant/bootstrap.py
       - assistant/reconcile.py
+      - assistant/install-codex.py
 generatorOptions:
   disableNameSuffixHash: true

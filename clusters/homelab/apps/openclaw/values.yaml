@@ -21,7 +21,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "96385fb71af988b884e4430a8c75572d137be5fde7755622369603cc8ac29c38"
+        homelab.rst.io/openclaw-assistant-sha256: "4ad7a71b66d2fe09081807dda0abd0b937a9c102bd5006e25f3f07580bb67b8a"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -89,6 +89,21 @@ controllers:
             /toolbox/profile/bin/terragrunt --version
             /toolbox/profile/bin/tofu version
             /toolbox/profile/bin/pre-commit --version
+            # Astra requires Codex 0.153.1+; use a verified release asset.
+            case "$(uname -m)" in
+              x86_64) codex_arch=x86_64; codex_sha=e8cd1160071f725d2a10cab81073dd6818fc8b096372125d27ef6e66fdf0979e ;;
+              aarch64) codex_arch=aarch64; codex_sha=878693f9b370320ea21793f99ea1f5687b7d9aa1f2c733de693d9ec0baa4e62a ;;
+              *) echo "Unsupported Codex architecture" >&2; exit 1 ;;
+            esac
+            mkdir -p /toolbox/codex
+            /toolbox/profile/bin/curl --fail --location --retry 3 --max-time 180 \
+              "https://github.com/openai/codex/releases/download/rust-v0.153.2/codex-${codex_arch}-unknown-linux-musl.tar.gz" \
+              --output /tmp/codex.tar.gz
+            printf '%s  /tmp/codex.tar.gz\n' "$codex_sha" | /toolbox/profile/bin/sha256sum --check --strict
+            /toolbox/profile/bin/tar -xzf /tmp/codex.tar.gz -C /toolbox/codex
+            mv "/toolbox/codex/codex-${codex_arch}-unknown-linux-musl" /toolbox/codex/codex
+            chmod 755 /toolbox/codex/codex
+            /toolbox/codex/codex --version
         resources:
           requests:
             cpu: 1
@@ -104,7 +119,7 @@ controllers:
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
+          tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
         resources:
           requests:
             cpu: 500m
@@ -162,7 +177,8 @@ controllers:
               had_existing_state=true
             fi
             backup_root=/data/openclaw-backups
-            backup_name=pre-2026.8.2
+            backup_name=pre-2026.9.1
+            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.1"
             backup_dir="$backup_root/$backup_name"
             backup_staging="$backup_root/.$backup_name.partial"
             backup_archive=openclaw.tar.gz
@@ -175,8 +191,8 @@ controllers:
                 tar -tzf "$1/$backup_archive" >/dev/null &&
                 (cd "$1" && sha256sum -c "$backup_checksum")
             }
-            if "$had_existing_state" && [ ! -s "$migration_marker" ]; then
-              echo "Creating or verifying offline pre-2026.8.2 OpenClaw backup"
+            if "$had_existing_state" && [ ! -s "$backup_marker" ]; then
+              echo "Creating or verifying offline pre-2026.9.1 OpenClaw backup"
               (
                 umask 077
                 mkdir -p "$backup_root"
@@ -218,6 +234,7 @@ controllers:
                   mv "$backup_staging" "$backup_dir"
                 fi
                 verify_backup_dir "$backup_dir"
+                printf 'verified pre-2026.9.1 archive\n' > "$backup_marker"
               )
             fi
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
@@ -351,6 +368,7 @@ controllers:
               }
             fi
             verify_discord_plugin installed
+            python3 /etc/openclaw-assistant/install-codex.py
 
             session_sqlite() {
               report_dir="$OPENCLAW_STATE_DIR/session-sqlite-reports"
@@ -594,7 +612,7 @@ controllers:
           runAsNonRoot: true
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
+          tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -685,7 +703,7 @@ controllers:
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4"
+          tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
         command:
           - python3
           - -u
