@@ -290,7 +290,13 @@ scripts/octelium-e2e-check.sh \
   --homelab-context <homelab-context>
 ```
 
-Use the private Kubernetes Service from an operator workstation:
+Use the private Kubernetes Service from a dedicated operator client environment.
+First configure the [local TCP carrier and scoped API resolver mapping](../octelium-public/README.md#routing).
+Run these commands in that same container/network namespace. In-cluster
+clients use the existing private API split DNS and do not need the public
+carrier. Do not use a workstation-wide API hosts override, which would also
+redirect browser gRPC-Web traffic:
+
 
 ```sh
 octelium login --domain stinkyboi.com
@@ -311,8 +317,10 @@ session.
 
 The app hostnames publish exact proxied Cloudflare Tunnel CNAME records, so
 browser users can reach Octelium clientless `WEB` Services without a local VPN
-session. Octelium CLI client sessions still use `octelium-api.stinkyboi.com` and
-the Gateway records.
+session. Octelium CLI client sessions retain `octelium-api.stinkyboi.com` inside the
+verified TLS stream carried through `octelium-transport.stinkyboi.com`, plus
+the Gateway records. The smoke test below requires the same native transport
+setup.
 
 Use the smoke-test service when you want to validate the bridge separately from
 app-specific auth:

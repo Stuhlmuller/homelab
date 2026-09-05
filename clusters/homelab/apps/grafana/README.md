@@ -132,9 +132,9 @@ The provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
-- Octelium API UPnP renewal older than 15 minutes for another 5 minutes, or a
-  missing last-success metric. This warns before the 24-hour router lease
-  expires.
+- The former Octelium API UPnP lease rule is retained but paused; outbound
+  Cloudflare Tunnel replaced the router lease. Verify API transport with
+  `scripts/octelium-tunnel-check.py`.
 - Kube-state-metrics unavailable for 5 minutes. This alert owns telemetry
   failures that would otherwise make the Kubernetes node rules return no data.
 - Expected homelab hardware node inventory missing for 5 minutes. The current
