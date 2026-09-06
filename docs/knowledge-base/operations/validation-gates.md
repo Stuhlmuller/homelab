@@ -115,6 +115,15 @@ rg -n \
   docs/knowledge-base .agents/skills
 ```
 
+## Gluetun Image Checks
+
+[[gluetun-image-build]] links the pinned candidate's complete-image build and
+native fixture gate. Run `nix develop --command python3
+scripts/ci/gluetun-image-build.py` from a committed, clean native Linux/amd64
+checkout with local Docker. Source/schema checks and Darwin cross-compilation
+do not satisfy this gate. Native CI success is still pending; publishing and
+real VPN rollout acceptance remain separately authorized work.
+
 ## Kubernetes Source Checks
 
 Use the renderer that matches the changed source:

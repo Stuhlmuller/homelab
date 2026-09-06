@@ -8,6 +8,22 @@ terragrunt_generate_stack
 
 python3 scripts/ci/octelium-tunnel-check-test.py
 
+echo "::group::Gluetun image inputs and fixture syntax"
+python3 scripts/ci/gluetun-image-build.py --check-inputs
+python3 scripts/ci/gluetun-image-build-test.py
+python3 - <<'PY'
+from pathlib import Path
+for name in ('gluetun-image-build.py', 'gluetun-image-native.py'):
+    path = Path('scripts/ci') / name
+    compile(path.read_bytes(), str(path), 'exec')
+PY
+sh -n images/gluetun/native-build.sh
+for fixture in scripts/ci/gluetun-image-fixtures/*.sh; do
+  sh -n "$fixture"
+done
+python3 -m json.tool scripts/ci/gluetun-image-fixtures/settings.json >/dev/null
+echo "::endgroup::"
+
 echo "::group::Octelium console login redirect"
 (
   redirect_source="$(mktemp)"

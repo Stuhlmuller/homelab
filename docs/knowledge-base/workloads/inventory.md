@@ -130,6 +130,9 @@ reconciles the cluster-scoped `automation` Namespace.
 
 ## Worker Resource Contracts
 
+The inactive Gluetun candidate in [[../operations/gluetun-image-build]] adds
+build validation only; it does not change Deluge's deployed image or resources.
+
 - OpenClaw requests `1` CPU and `2Gi` memory for the app and caps it at
   `1500m` and `4Gi`; its init containers have matching CPU limits, and required
   affinity keeps the workload off Octelium dataplane nodes.
