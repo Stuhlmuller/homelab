@@ -77,7 +77,8 @@ extra credentials are not an implicit part of this prerequisite. [GHCR visibilit
 `restore-image-publish-test.py` exercises source-context rejection, content/source
 binding, malformed/corrupt OCI data, explicit registry absence, overwrite refusal,
 idempotent readback and changed response rejection without any network calls.
-The normal static gate runs it. The Linux image job additionally performs two
+The normal static gate runs it and pins both credential-bearing jobs plus the
+complete workflow hash in its reviewed inventory. The Linux image job additionally performs two
 independent complete image builds/tests/OCI exports and requires matching bytes;
 it has no publishing permission or credentials. These gates must pass on the
 final combined source, including the parent's SCM_RIGHTS denial fix.
