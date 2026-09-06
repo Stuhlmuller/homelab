@@ -9,7 +9,8 @@ metadata:
 spec:
   groups:
     - name: homelab.jobs
-      interval: 1m
+      # Bound the retained-history scan on the constrained Prometheus host.
+      interval: 5m
       rules:
         # Require one controller owner and reject a recreated CronJob whose
         # creation is newer than the retained Job. Duplicate scrape targets

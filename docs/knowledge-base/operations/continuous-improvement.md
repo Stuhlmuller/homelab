@@ -340,6 +340,8 @@ observations below retain their original dates.
   from establishing recovery; missing metrics leave failures eligible.
 - **Risk:** Observation history is limited to the configured 15-day retention.
   Missing or coarse history can preserve an alert until another successful run.
+  The dedicated five-minute group bounds scan frequency; the 15-minute firing
+  hold begins after detection at a group evaluation.
   Suspension alone does not establish recovery, including the retired UPnP path.
 - **Next step:** After Argo CD reconciliation, verify one healthy replacement
   rule, recovered backup alerts cleared, and later or unrecovered failures still

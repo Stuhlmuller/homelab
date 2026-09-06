@@ -102,6 +102,8 @@ case("never succeeded CronJob remains alerting", fixture(success=None), OLD)
 case("a non-failed Job does not alert", fixture(failure="0x59"))
 case("original fifteen minute alert delay is preserved", fixture(success=None), at="10m")
 case("the same failure fires after the delay", fixture(success=None), OLD, at="20m")
+case("between-boundary failure waits for five-minute detection and hold", fixture(success=None, failure="0x5 1x53"), at="24m")
+case("between-boundary failure fires after the unchanged fifteen-minute hold", fixture(success=None, failure="0x5 1x53"), OLD, at="25m")
 
 for missing in ["owner", "created", "active", "cronjob_created"]:
     case(f"missing {missing} preserves failure", fixture(**{missing: None}), OLD)
@@ -139,7 +141,9 @@ with tempfile.TemporaryDirectory(prefix="homelab-job-rules-") as directory:
     rule_file.write_text(json.dumps(spec))
     test_file = Path(directory) / "tests.json"
     test_file.write_text(
-        json.dumps({"rule_files": [str(rule_file)], "evaluation_interval": "1m", "tests": tests})
+        # promtool's suite interval controls evaluation, so use the real group
+        # interval instead of silently testing a faster schedule.
+        json.dumps({"rule_files": [str(rule_file)], "evaluation_interval": spec["groups"][0]["interval"], "tests": tests})
     )
     subprocess.run([PROMTOOL, "check", "rules", str(rule_file)], check=True)
     subprocess.run([PROMTOOL, "test", "rules", str(test_file)], check=True)

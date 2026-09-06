@@ -36,6 +36,9 @@ keeping its warning severity and 15-minute delay. Retained failed CronJob runs
 stop alerting only when metrics prove their owner succeeded after the failure.
 Standalone Jobs and CronJobs without a newer success continue alerting. Do not
 delete failed Jobs to clear notifications; their retained status is evidence.
+The dedicated rule group evaluates every five minutes to bound history-query
+cost. Detection can therefore take up to five minutes before the unchanged
+15-minute firing hold; a proven recovery clears on the next group evaluation.
 
 Job creation alone cannot establish that ordering: overlapping runs can fail
 after another run succeeds. kube-state-metrics exposes no failure-transition
@@ -62,7 +65,9 @@ and [CronJobs](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/m
 
 After Argo CD reconciles, verify `job-failure-recovery` exists and Prometheus
 reports one healthy `KubeJobFailed` rule in the `homelab.jobs` group. Check that
-recovered historical failures disappear while later failures remain. Roll back
+the five-minute group remains healthy and its evaluation duration stays well
+below its interval. Verify recovered historical failures disappear while later
+failures remain. Roll back
 by reverting both the custom rule registration and
 `defaultRules.disabled.KubeJobFailed`; this restores the chart rule without
 removing Job evidence.

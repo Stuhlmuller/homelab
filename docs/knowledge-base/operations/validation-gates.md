@@ -30,7 +30,8 @@ The static gate runs `scripts/ci/job-alert-recovery-check.py` with the Nix-pinne
 promtool against the actual Job recovery rules. Its synthetic histories cover
 failure/success ordering, overlap, later failed runs, namespace isolation,
 missing metrics, conflicting owners, duplicate scrapes, recreated names, and
-the existing 15-minute firing delay. The check also requires the custom rule's
+the existing 15-minute firing hold after five-minute group detection. The check
+also requires the custom rule's
 Kustomize registration, the chart-default replacement switch, and matching
 15-day retention. Live rollout must leave one healthy `KubeJobFailed` rule;
 see `clusters/homelab/apps/prometheus/README.md` for verification and rollback.
