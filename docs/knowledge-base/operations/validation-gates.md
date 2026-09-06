@@ -105,6 +105,11 @@ application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
 
+[[codeql-analysis-categories]] records a pre-existing legacy category on main
+that leaves PR introduced-alert comparison incomplete even when the current
+Actions analysis uploads successfully. Do not treat its neutral aggregate as
+complete scanning coverage.
+
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
 

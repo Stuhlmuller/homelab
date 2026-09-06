@@ -204,10 +204,25 @@ def check_listener(owned, target, enabled):
     require(listeners == (['0100007F:17AC'] if enabled else []), 'pprof binding mismatch')
 
 
-def case(owned, image, peer_ip, enabled, directory, invalid=None):
+def http(owned, target, url, output='-', seconds=3, check=True):
+    """Bound the whole HTTP client inside its namespace, below the transport deadline."""
+    code, body = owned.execute(target, 'sh', '-ec',
+                               'umask 077; exec timeout -s KILL "$1" wget -q -T "$1" -O "$2" "$3"',
+                               'fixture-http', str(seconds), output, url, check=False, timeout=seconds + 5)
+    require(code in (0, 1, 124, 137, 143), 'HTTP probe command could not execute')
+    require(not check or code == 0, 'HTTP positive control failed')
+    return code, body
+
+
+def stage(value):
     global STAGE
-    STAGE = directory.name + '/' + (invalid or ('pprof-on' if enabled else 'pprof-off'))
+    STAGE = value
     print(json.dumps({'stage': STAGE}), flush=True)
+
+
+def case(owned, image, peer_ip, enabled, directory, invalid=None):
+    prefix = directory.name + '/' + (invalid or ('pprof-on' if enabled else 'pprof-off'))
+    stage(prefix + '/setup')
     config = directory / (invalid if invalid else 'on' if enabled else 'off')
     settings(config, enabled, invalid)
     target = owned.create(image, '--cap-add', 'NET_ADMIN', '--device', '/dev/net/tun',
@@ -217,7 +232,8 @@ def case(owned, image, peer_ip, enabled, directory, invalid=None):
     # Fresh connection before Gluetun establishes a routed positive control.
     wait_until(lambda: owned.execute(target, 'test', '-e', '/tmp/before-ready', check=False)[0] == 0,
                'Target routing setup failed')
-    code, body = owned.execute(target, 'wget', '-q', '-T', '2', '-O', '-', 'http://' + PEER_ADDRESS + ':8080/marker')
+    stage(prefix + '/before-firewall-positive')
+    code, body = http(owned, target, 'http://' + PEER_ADDRESS + ':8080/marker')
     require(code == 0 and body == b'fixture-ok\n', 'Off-subnet positive control failed')
     owned.execute(target, 'touch', '/tmp/start-gluetun')
     if invalid:
@@ -238,22 +254,24 @@ def case(owned, image, peer_ip, enabled, directory, invalid=None):
             'Expected version/provider/type startup evidence missing')
     check_listener(owned, target, enabled)
     # Same-subnet LAN remains allowed by Gluetun; off-subnet connection must be new.
-    code, body = owned.execute(target, 'wget', '-q', '-T', '2', '-O', '-', 'http://' + peer_ip + ':8080/marker')
+    stage(prefix + '/lan-positive')
+    code, body = http(owned, target, 'http://' + peer_ip + ':8080/marker')
     require(code == 0 and body == b'fixture-ok\n', 'Expected fixture LAN access was blocked')
+    stage(prefix + '/firewall-route-and-deny')
     _, route = owned.execute(target, 'ip', 'route', 'get', PEER_ADDRESS)
     route_words = route.decode().split()
     require(route_words[:5] == [PEER_ADDRESS, 'via', peer_ip, 'dev', 'eth0'],
             'Post-start off-subnet route changed')
-    require(owned.execute(target, 'wget', '-q', '-T', '2', '-O', '/dev/null',
-                          'http://' + PEER_ADDRESS + ':8080/marker', check=False, timeout=5)[0] != 0,
+    require(http(owned, target, 'http://' + PEER_ADDRESS + ':8080/marker',
+                 output='/dev/null', check=False)[0] != 0,
             'Firewall leaked a fresh off-subnet connection without a VPN')
     # A narrow allow on this owned namespace must restore the same fresh connection.
     # This proves firewall causality instead of mistaking a broken route for isolation.
     allow = ['-o', 'eth0', '-d', PEER_ADDRESS + '/32', '-p', 'tcp', '--dport', '8080', '-j', 'ACCEPT']
+    stage(prefix + '/firewall-allow-positive')
     try:
         owned.execute(target, 'iptables', '-I', 'OUTPUT', '1', *allow)
-        code, body = owned.execute(target, 'wget', '-q', '-T', '2', '-O', '-',
-                                   'http://' + PEER_ADDRESS + ':8080/marker', timeout=5)
+        code, body = http(owned, target, 'http://' + PEER_ADDRESS + ':8080/marker')
         require(code == 0 and body == b'fixture-ok\n', 'Firewall allow positive control failed')
     finally:
         # If insertion had an uncertain result, -C distinguishes absent from present.
@@ -264,11 +282,13 @@ def case(owned, image, peer_ip, enabled, directory, invalid=None):
     _, policies = owned.execute(target, 'iptables', '-S')
     require(all(b'-P ' + chain + b' DROP' in policies for chain in (b'INPUT', b'FORWARD', b'OUTPUT')),
             'VPN firewall default DROP policies missing')
+    stage(prefix + '/healthcheck')
     require(owned.execute(target, '/gluetun-entrypoint', 'healthcheck', check=False, timeout=15)[0] != 0,
             'Synthetic disconnected VPN incorrectly reported healthy')
+    stage(prefix + '/profile')
     if enabled:
-        owned.execute(target, 'sh', '-ec', 'umask 077; wget -q -T 5 -O /tmp/cpu.pprof '
-                      '"http://127.0.0.1:6060/debug/pprof/profile?seconds=1"', timeout=10)
+        http(owned, target, 'http://127.0.0.1:6060/debug/pprof/profile?seconds=1',
+             output='/tmp/cpu.pprof', seconds=5)
         private_profile = directory / 'cpu.pprof'
         docker('cp', target['id'] + ':/tmp/cpu.pprof', str(private_profile))
         private_profile.chmod(0o600)
@@ -277,8 +297,8 @@ def case(owned, image, peer_ip, enabled, directory, invalid=None):
             require(0 < len(profile.read(4 * 1024 * 1024 + 1)) <= 4 * 1024 * 1024, 'Invalid bounded CPU profile')
         private_profile.unlink()
     else:
-        require(owned.execute(target, 'wget', '-q', '-T', '1', '-O', '/dev/null',
-                              'http://127.0.0.1:6060/debug/pprof/profile?seconds=1', check=False)[0] != 0,
+        require(http(owned, target, 'http://127.0.0.1:6060/debug/pprof/profile?seconds=1',
+                     output='/dev/null', check=False)[0] != 0,
                 'Disabled pprof remained accessible')
     require(owned.inspect(target)['Running'], 'Target exited during compatibility test')
 
@@ -340,8 +360,8 @@ def openvpn_pair(owned, image, family, directory, expected_version=None, expecte
         print(json.dumps({'stage': STAGE}), flush=True)
         destination = subnet + '.' + str(2 - index)
         def transferred():
-            code, body = owned.execute(target, 'timeout', '2', 'wget', '-q', '-T', '1', '-O', '-',
-                                       'http://' + destination + ':8080/marker', check=False, timeout=5)
+            code, body = http(owned, target, 'http://' + destination + ':8080/marker',
+                              seconds=2, check=False)
             return code == 0 and body == b'fixture-ok\n'
         wait_until(transferred, 'Encrypted OpenVPN TUN traffic failed')
         _, route = owned.execute(target, 'ip', 'route', 'get', destination)
@@ -356,8 +376,8 @@ def openvpn_pair(owned, image, family, directory, expected_version=None, expecte
     STAGE = directory.name + '/openvpn-' + family + '/stop-negative-control'
     print(json.dumps({'stage': STAGE}), flush=True)
     docker('stop', '--time', '2', peers[1][0]['id'], timeout=10)
-    require(owned.execute(peers[0][0], 'timeout', '2', 'wget', '-q', '-T', '1', '-O', '/dev/null',
-                          'http://' + subnet + '.2:8080/marker', check=False, timeout=5)[0] != 0,
+    require(http(owned, peers[0][0], 'http://' + subnet + '.2:8080/marker',
+                 seconds=2, output='/dev/null', check=False)[0] != 0,
             'OpenVPN disconnected negative control unexpectedly succeeded')
 
 
@@ -423,8 +443,8 @@ def suite(args):
         _, raw = docker('inspect', '--format', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', peer['id'])
         peer_ip = raw.decode().strip()
         require(ipaddress.ip_address(peer_ip).version == 4, 'Peer IPv4 address missing')
-        wait_until(lambda: owned.execute(peer, 'wget', '-q', '-T', '1', '-O', '-',
-                   'http://127.0.0.1:8080/marker', check=False) == (0, b'fixture-ok\n'),
+        wait_until(lambda: http(owned, peer, 'http://127.0.0.1:8080/marker',
+                               seconds=2, check=False) == (0, b'fixture-ok\n'),
                    'Synthetic peer did not start')
         for label, image in (('baseline', args.baseline), ('candidate', args.candidate)):
             target = owned.create(image, command=['-c', 'exec /gluetun-entrypoint unknown-fixture-command'])
