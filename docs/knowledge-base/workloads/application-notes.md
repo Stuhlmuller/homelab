@@ -72,6 +72,9 @@ steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
 ## OpenClaw
 
+[[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
+remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
+
 Claw's reviewed assistant bundle lives in
 `clusters/homelab/apps/openclaw/assistant/`: Astra via Codex OAuth, managed
 personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
