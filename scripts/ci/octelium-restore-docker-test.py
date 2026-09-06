@@ -30,13 +30,41 @@ class DockerContracts(unittest.TestCase):
         with self.assertRaises(ValueError):
             DOCKER.DockerFixtures("image:latest", self.root / "probe")
 
-    def test_exec_always_reenters_launcher(self):
+    def test_exec_uses_absolute_image_tools_after_launcher(self):
+        commands = {name: f"/usr/lib/postgresql/14/bin/{name}" for name in DOCKER.PG_COMMANDS}
+        commands.update({"mkdir": "/usr/bin/mkdir", "cat": "/usr/bin/cat", "tar": "/usr/bin/tar", "/bin/sh": "/bin/sh"})
+        for name, path in commands.items():
+            with self.subTest(name=name):
+                self.assertEqual(self.backend.exec_command("synthetic-container", name, "fixture"),
+                                 ["docker", "exec", "synthetic-container", self.backend.boundary.LAUNCHER, path, "fixture"])
         with patch.object(DOCKER.subprocess, "run") as run:
             self.backend.execute("synthetic-container", "pg_restore", "--list", "/backup/archive")
         command = run.call_args.args[0]
         self.assertEqual(command[:5], ["docker", "exec", "synthetic-container",
-                                     self.backend.boundary.LAUNCHER, "pg_restore"])
+                                     self.backend.boundary.LAUNCHER, "/usr/lib/postgresql/14/bin/pg_restore"])
         self.assertNotIn("--privileged", command)
+
+    def test_unknown_image_command_cannot_fall_back_to_path(self):
+        with patch.object(DOCKER.subprocess, "run") as run:
+            for command in ((), ("curl",), ("/tmp/psql",), ("sh",)):
+                with self.subTest(command=command), self.assertRaises(ValueError):
+                    self.backend.execute("synthetic-container", *command)
+        run.assert_not_called()
+
+    def test_unexpected_exec_failure_has_bounded_stderr_without_stdout(self):
+        error = subprocess.CalledProcessError(1, ["synthetic"], output="synthetic stdout", stderr="x" * 512 + "tail")
+        with patch.object(DOCKER.subprocess, "run", side_effect=error):
+            with self.assertRaises(subprocess.CalledProcessError) as failure:
+                self.backend.execute("synthetic-container", "mkdir", "/work/socket")
+        note = failure.exception.__notes__[0]
+        self.assertIn("x" * 512, note)
+        self.assertNotIn("tail", note)
+        self.assertNotIn("synthetic stdout", note)
+        self.assertLess(len(note), 600)
+        result = subprocess.CompletedProcess([], 1, "", "expected fixture failure")
+        with patch.object(DOCKER.subprocess, "run", return_value=result) as run:
+            self.assertIs(self.backend.execute("synthetic-container", "/bin/sh", "fixture", check=False), result)
+        self.assertFalse(run.call_args.kwargs["check"])
 
     def test_inspection_routes_to_disposable_restored_database(self):
         self.backend.root = self.root

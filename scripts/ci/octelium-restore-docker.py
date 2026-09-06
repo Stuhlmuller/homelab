@@ -14,6 +14,9 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 PG_COMMANDS = {"initdb", "pg_ctl", "createdb", "psql", "pg_dumpall", "pg_dump", "pg_restore"}
+IMAGE_COMMANDS = {name: f"/usr/lib/postgresql/14/bin/{name}" for name in PG_COMMANDS}
+IMAGE_COMMANDS.update({name: f"/usr/bin/{name}" for name in ("mkdir", "cat", "tar")})
+IMAGE_COMMANDS["/bin/sh"] = "/bin/sh"
 MAX_ARCHIVE = 256 * 1024 * 1024
 MAX_FILES = 128 * 1024 * 1024  # Same bound as the synthetic container tmpfs.
 
@@ -77,11 +80,21 @@ class DockerFixtures:
 
     def exec_command(self, container, *command):
         # docker exec does not inherit PID1's seccomp filter. Re-enter explicitly.
-        return ["docker", "exec", container, self.boundary.LAUNCHER, *command]
+        # The launcher uses execv, so resolve only this pinned image's known tools.
+        if not command or command[0] not in IMAGE_COMMANDS:
+            raise ValueError("Only declared image fixture commands may be executed")
+        return ["docker", "exec", container, self.boundary.LAUNCHER,
+                IMAGE_COMMANDS[command[0]], *command[1:]]
 
     def execute(self, container, *command, check=True, **kwargs):
-        return subprocess.run(self.exec_command(container, *command),
-                              check=check, text=True, capture_output=True, timeout=90, **kwargs)
+        try:
+            return subprocess.run(self.exec_command(container, *command),
+                                  check=check, text=True, capture_output=True, timeout=90, **kwargs)
+        except subprocess.CalledProcessError as error:
+            # Only inert fixture data enters this backend. Keep unexpected exec
+            # failures useful without printing stdout or unbounded child output.
+            error.add_note(f"Synthetic fixture stderr (first 512 characters): {(error.stderr or '')[:512]!r}")
+            raise
 
     def read_binary(self, container, limit, *command):
         # Docker cp cannot reliably read tmpfs. Stream through a filtered exec,

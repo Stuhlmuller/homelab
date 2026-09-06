@@ -99,7 +99,10 @@ The final-image harness also requires all nine existing
 Python plus offline Kustomize rendering on the host; all PostgreSQL commands,
 the exact local `restore-drill.sh`, and restored-locale inspection run in the
 tested image under the launcher. `docker exec` does not inherit PID1's filter,
-so every exec names the launcher explicitly. Source PostgreSQL and each restore
+so every exec names the launcher explicitly. The launcher uses `execv` without
+PATH lookup: the backend maps its declared tools to the pinned image's absolute
+PostgreSQL 14 and Debian utility paths. Unexpected fixture command failures
+include at most 512 stderr characters and omit stdout. Source PostgreSQL and each restore
 use separate disposable containers with the same shared runtime flags. Only
 synthetic backup files, the local restore script, and the synthetic probe are
 mounted; all mounts are read-only. Database scratch uses bounded tmpfs. Filtered
