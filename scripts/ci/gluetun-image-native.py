@@ -207,10 +207,12 @@ def check_listener(owned, target, enabled):
 def http(owned, target, url, output='-', seconds=3, check=True):
     """Bound the whole HTTP client inside its namespace, below the transport deadline."""
     code, body = owned.execute(target, 'sh', '-ec',
-                               'umask 077; exec timeout -s KILL "$1" wget -q -T "$1" -O "$2" "$3"',
+                               'umask 077; exec timeout -s KILL "$1" /usr/bin/wget --tries=1 --no-proxy -q -T "$1" -O "$2" "$3"',
                                'fixture-http', str(seconds), output, url, check=False, timeout=seconds + 5)
-    require(code in (0, 1, 124, 137, 143), 'HTTP probe command could not execute')
-    require(not check or code == 0, 'HTTP positive control failed')
+    # GNU wget 1.25.0: only network failure (4) is an expected HTTP negative.
+    # The other accepted nonzero values belong to the owned deadline wrapper.
+    require(code in (0, 4, 124, 137, 143), f'HTTP probe unexpected exit {code}')
+    require(not check or code == 0, f'HTTP positive control failed with exit {code}')
     return code, body
 
 
