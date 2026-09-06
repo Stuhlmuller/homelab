@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Build and test the exact Linux image with real networking enabled; never publish."""
+from contextlib import contextmanager
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import socketserver
 import subprocess
@@ -32,9 +35,20 @@ class UDP(socketserver.BaseRequestHandler):
         connection.sendto(data, self.client_address)
 
 
-def main():
+@dataclass(frozen=True)
+class TestedImage:
+    tag: str
+    image_id: str
+    source_sha: str
+
+
+@contextmanager
+def verified_image():
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise SystemExit("Required image tests need native x86_64 Linux and Docker; not verified on this host")
+    source = run("git", "rev-parse", "HEAD", cwd=ROOT, capture_output=True).stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", source):
+        raise RuntimeError("Invalid source commit")
     run("docker", "info", stdout=subprocess.DEVNULL)
     built = run("nix", "build", ".#restore-egress-tools", "--no-link", "--print-out-paths",
                 cwd=ROOT, capture_output=True).stdout.strip()
@@ -51,7 +65,9 @@ def main():
         tag = f"homelab-restore-egress-test:{os.getpid()}"
         try:
             run("docker", "build", "--platform", "linux/amd64", "--build-arg",
-                "SOURCE_DATE_EPOCH=1", "--tag", tag, str(context))
+                "SOURCE_DATE_EPOCH=1", "--label", f"org.opencontainers.image.revision={source}",
+                "--label", "org.opencontainers.image.source=https://github.com/Stuhlmuller/homelab",
+                "--tag", tag, str(context))
             probe = scratch / "probe"
             shutil.copy2(tools / "restore-network-probe", probe)
             # Docker bind mounts must be traversable by UID65534.
@@ -100,9 +116,18 @@ def main():
                 assert message in failed.stderr
                 assert "UNSAFE_COMMAND_EXECUTED" not in failed.stdout
             print("Linux image gates passed: real connectivity control, inherited EPERM, Unix restore, fail-closed exec")
+            info = json.loads(run("docker", "image", "inspect", tag, capture_output=True).stdout)[0]
+            labels = info["Config"]["Labels"]
+            if (not re.fullmatch(r"sha256:[0-9a-f]{64}", info["Id"])
+                    or info["Architecture"] != "amd64" or info["Os"] != "linux"
+                    or labels.get("org.opencontainers.image.revision") != source
+                    or labels.get("org.opencontainers.image.source") != "https://github.com/Stuhlmuller/homelab"):
+                raise RuntimeError("Tested image/source binding failed")
+            yield TestedImage(tag, info["Id"], source)
         finally:
             subprocess.run(["docker", "image", "rm", tag], check=False, capture_output=True, timeout=60)
 
 
 if __name__ == "__main__":
-    main()
+    with verified_image():
+        pass
