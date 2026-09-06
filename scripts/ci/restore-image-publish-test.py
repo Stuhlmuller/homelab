@@ -127,6 +127,36 @@ class Contracts(unittest.TestCase):
                 PUBLISH.verified_manifest(layout, SimpleNamespace(
                     image_id=manifest["config"]["digest"], source_sha=SHA))
 
+    def test_builder_cleanup_and_config_identity_before_load(self):
+        boundary = PUBLISH.load_boundary()
+        image_id = "sha256:" + "a" * 64
+        for failure in (None, "build", "metadata", "load"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
+                scratch = Path(directory)
+                commands = []
+
+                def command(*args, **kwargs):
+                    commands.append(args)
+                    if args[:3] == ("docker", "buildx", "build"):
+                        if failure == "build":
+                            raise RuntimeError("synthetic build failure")
+                        (scratch / "build-metadata.json").write_text(json.dumps({
+                            "containerimage.config.digest": "invalid" if failure == "metadata" else image_id,
+                            "containerimage.digest": "sha256:" + "b" * 64}))
+                    if args[:2] == ("docker", "load") and failure == "load":
+                        raise RuntimeError("synthetic load failure")
+
+                with patch.object(boundary, "run", side_effect=command):
+                    if failure:
+                        with self.assertRaises(RuntimeError):
+                            boundary.build_image(scratch, scratch, "test-tag", SHA)
+                    else:
+                        self.assertEqual(boundary.build_image(scratch, scratch, "test-tag", SHA), image_id)
+                builder = commands[0][commands[0].index("--name") + 1]
+                self.assertEqual(commands[-1], ("docker", "buildx", "rm", "--force", builder))
+                if failure in ("build", "metadata"):
+                    self.assertFalse(any(args[:2] == ("docker", "load") for args in commands))
+
     def test_absence_readback_conflict_and_idempotency(self):
         candidate = ("sha256:" + "a" * 64, b"exact manifest")
         registry = Mock()

@@ -24,6 +24,7 @@ def main():
             PUBLISH.run("skopeo", "copy", "--format", "v2s2", "--dest-compress",
                         f"docker-daemon:{image.image_id}", f"dir:{layout}")
             candidate = PUBLISH.verified_manifest(layout, image)
+            print(f"Tested source {image.source_sha}: config {image.image_id}, manifest {candidate[0]}", flush=True)
             if expected is not None and candidate != expected:
                 raise RuntimeError("Independent tested image exports differ")
             expected = candidate

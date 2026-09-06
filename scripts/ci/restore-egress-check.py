@@ -15,6 +15,7 @@ import socketserver
 import subprocess
 import tempfile
 import threading
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 LAUNCHER = "/usr/local/bin/restore-no-network"
@@ -94,6 +95,33 @@ def rights_case(common, tag, scratch, method, expected, state):
             path.unlink(missing_ok=True)
 
 
+def build_image(context, scratch, tag, source):
+    """Rewrite layers before loading/testing, using only this invocation's builder."""
+    builder = "restore-image-" + uuid.uuid4().hex
+    created = False
+    metadata = scratch / "build-metadata.json"
+    archive = scratch / "image.tar"
+    try:
+        run("docker", "buildx", "create", "--name", builder, "--driver", "docker-container",
+            "--driver-opt", "image=moby/buildkit:v0.33.0@sha256:6c2fa84a6b61ccd72899dde4239f8d5717f05f9a8ca6f3cad185fb1a95a94de3")
+        created = True
+        run("docker", "buildx", "build", "--builder", builder, "--no-cache", "--platform", "linux/amd64",
+            "--build-arg", "SOURCE_DATE_EPOCH=1", "--provenance=false",
+            "--output", f"type=docker,dest={archive},rewrite-timestamp=true,oci-mediatypes=false",
+            "--label", f"org.opencontainers.image.revision={source}",
+            "--label", "org.opencontainers.image.source=https://github.com/Stuhlmuller/homelab",
+            "--metadata-file", str(metadata), "--tag", tag, str(context))
+        # Buildx's manifest digest is not the Docker config/image ID.
+        image_id = json.loads(metadata.read_text())["containerimage.config.digest"]
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
+            raise RuntimeError("Build did not return an immutable config ID")
+        run("docker", "load", "--input", str(archive))
+        return image_id
+    finally:
+        if created:
+            run("docker", "buildx", "rm", "--force", builder)
+
+
 @dataclass(frozen=True)
 class TestedImage:
     tag: str
@@ -123,14 +151,7 @@ def verified_image():
         os.utime(context / "restore-no-network", (1, 1))
         tag = f"homelab-restore-egress-test:{os.getpid()}"
         try:
-            iid_file = scratch / "image-id"
-            run("docker", "build", "--no-cache", "--platform", "linux/amd64", "--build-arg",
-                "SOURCE_DATE_EPOCH=1", "--label", f"org.opencontainers.image.revision={source}",
-                "--label", "org.opencontainers.image.source=https://github.com/Stuhlmuller/homelab",
-                "--iidfile", str(iid_file), "--tag", tag, str(context))
-            image_id = iid_file.read_text().strip()
-            if not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
-                raise RuntimeError("Docker build did not return an immutable image ID")
+            image_id = build_image(context, scratch, tag, source)
             info = json.loads(run("docker", "image", "inspect", image_id, capture_output=True).stdout)[0]
             labels = info["Config"]["Labels"]
             if (info["Id"] != image_id

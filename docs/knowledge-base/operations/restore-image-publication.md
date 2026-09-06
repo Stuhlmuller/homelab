@@ -28,9 +28,17 @@ No PR code, downloaded Actions artifact, floating image tag or saved runner imag
 is promoted into the protected job. Credentials are injected only by CI; there
 is no PAT, cached-login or local-operator credential fallback.
 
-The Docker image ID is captured and validated immediately after building, then
+A UUID-named disposable `docker-container` builder uses the digest-pinned official
+BuildKit v0.33.0 image (official release and registry manifest digest verified
+on 2026-09-06). It exports a rewritten Docker archive, loads that archive,
+and is removed in `finally` before runtime tests. The build context contains only
+the public Dockerfile and launcher; no credentials or secrets are forwarded.
+The daemon is CI build infrastructure, separate from the non-root/drop-ALL runtime.
+Buildx metadata’s `containerimage.config.digest` is validated against the loaded
+Docker image ID before tests; its manifest digest is never treated as an image ID.
+[Docker archive exporter support][docker-export]. Then
 all tests and the export address that immutable ID. The temporary tag is used
-only for building and cleanup. The config is bound to source SHA and repository
+only for building and cleanup. No default builder selection is changed. The config is bound to source SHA and repository
 label before tests. [Docker-daemon image ID syntax][transport]. The publisher exports that very image as Docker schema2 into Skopeo’s `dir:` layout, hashes every config,
 manifest and layer blob, and confirms the tested config ID and amd64 identity.
 Export uses `--format v2s2 --dest-compress` to preserve tested config bytes and
@@ -83,12 +91,18 @@ extra credentials are not an implicit part of this prerequisite. [GHCR visibilit
 
 `restore-image-publish-test.py` exercises source-context rejection, content/source
 binding, malformed/corrupt schema2 data, explicit registry absence, overwrite refusal,
-idempotent readback and changed response rejection without any network calls.
+idempotent readback, changed response rejection, and builder cleanup after
+build/metadata/load failure without any network calls.
 The normal static gate runs it and pins both credential-bearing jobs plus the
 complete workflow hash in its reviewed inventory. The Linux image job additionally performs two
 independent complete image builds/tests/schema2 exports and requires matching bytes.
 Both builds disable Docker layer caching and are separated by two seconds to
-expose creation-time drift; the immutable base image may remain cached. The job
+expose creation-time drift; the immutable base image may remain cached. Docker
+export explicitly sets `rewrite-timestamp=true` alongside `SOURCE_DATE_EPOCH=1`:
+the build argument alone does not normalize file timestamps inside layers.
+Run `34012857646` caught that difference in the new launcher layer while both
+runtime tests and exact schema2 config checks passed. [BuildKit reproducibility][repro].
+The job
 has no publishing permission or credentials. These gates must pass on the
 final combined source, including the parent's SCM_RIGHTS denial fix.
 
@@ -106,3 +120,7 @@ Neither a new registry digest nor Docker success authorizes real backup reads.
 [transport]: https://github.com/containers/image/blob/main/docs/containers-transports.5.md
 
 [directory]: https://github.com/containers/image/blob/main/directory/directory_dest.go
+
+[repro]: https://github.com/moby/buildkit/blob/master/docs/build-repro.md
+
+[docker-export]: https://docs.docker.com/build/exporters/oci-docker/
