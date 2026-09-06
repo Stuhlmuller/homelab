@@ -35,7 +35,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "19"
+  homelab.rst.io/alerting-provisioning-version: "20"
 plugins:
   - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
@@ -675,7 +675,7 @@ alerting:
                       time()
                       - kube_cronjob_status_last_successful_time{
                           namespace=~"media|octelium-storage",
-                          cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup"
+                          cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup|octelium-postgres-restore-drill"
                         }
                       > 30 * 60 * 60
                     )
@@ -685,14 +685,14 @@ alerting:
                         time()
                         - kube_cronjob_created{
                             namespace=~"media|octelium-storage",
-                            cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup"
+                            cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup|octelium-postgres-restore-drill"
                           }
                         > 30 * 60 * 60
                       )
                       unless on (namespace, cronjob)
                       kube_cronjob_status_last_successful_time{
                         namespace=~"media|octelium-storage",
-                        cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup"
+                        cronjob=~"(deluge|radarr|sonarr)-config-backup|(media|octelium)-postgres-backup|octelium-postgres-restore-drill"
                       }
                     )
                   instant: true
@@ -749,11 +749,12 @@ alerting:
             for: 10m
             annotations:
               summary: >-
-                A nightly homelab backup is older than 30 hours or has never
-                succeeded.
+                A nightly homelab backup or restore drill is older than 30 hours
+                or has never succeeded.
               description: >-
                 The alert is scoped to the Deluge, Radarr, Sonarr, media
-                PostgreSQL, and Octelium PostgreSQL backup CronJobs. Restore the
+                PostgreSQL, and Octelium PostgreSQL backup CronJobs, plus the
+                isolated Octelium PostgreSQL restore drill. Restore the
                 owning node or storage path, then verify a successful Job before
                 treating the recovery
                 point as current.

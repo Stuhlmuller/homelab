@@ -52,7 +52,9 @@ credentials yet.
 retained NFS. A daily CronJob writes a verified 14-day PostgreSQL logical
 archive to a separate retained NFS claim. The archive supports later migration
 and logical recovery, but it shares the QNAP failure domain and has not passed a
-restore drill; Redis still lacks an independent backup.
+restore drill. The daily isolated PostgreSQL drill now has a repository-owned
+path; its scheduled success remains required. Redis still lacks an independent
+backup.
 
 `media-postgres` keeps recovery-aware 30-minute startup and runtime liveness
 windows plus a 120-second termination grace period, but active data now uses a

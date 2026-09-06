@@ -60,6 +60,7 @@
             opentofu
             openssh
             pre-commit
+            postgresql_14
             ripgrep
             shellcheck
             shfmt
@@ -73,10 +74,12 @@
           checkovPackages = pkgs.lib.optionals (system != "x86_64-darwin") [
             pkgs.checkov
           ];
+          # PostgreSQL restore fixtures require a real non-C locale on Linux.
+          localePackages = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.glibcLocales ];
         in
         {
           default = pkgs.mkShell {
-            packages = basePackages ++ checkovPackages;
+            packages = basePackages ++ checkovPackages ++ localePackages;
           };
         }
       );
