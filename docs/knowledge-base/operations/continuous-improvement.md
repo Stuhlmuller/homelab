@@ -121,10 +121,14 @@ observations below retain their original dates.
   connector reported redirection `enabled`. Prometheus recorded uninterrupted
   ztunnel readiness and no failed CNI or ztunnel readiness probes for 24 hours.
   Current and retained rotated logs covered that window without readiness
-  HTTP 500 or IPv6 bind/route errors. See [[audit-2026-09-04]].
+  HTTP 500 or IPv6 bind/route errors. September 6 revalidation found one later,
+  unclassified CNI probe miss with continuous Pod readiness and no matching IPv6
+  signature; a fresh zero-failure 24-hour gate remains pending. This does not
+  establish recurrence of the original defect. See [[audit-2026-09-04]].
 - **Risk:** Future node recovery can interrupt ambient enrollment. Protected
   workloads depend on the connector's Istio service-account principal.
-- **Next step:** Retain the recovery checks in [[validation-gates]]. Roll back
+- **Next step:** Repeat [[validation-gates#Istio Ambient Recovery]] and classify any
+  further probe failure. Roll back
   by reverting the desired-state settings and letting Argo CD reconcile;
   do not opt the connector out of ambient to bypass readiness failures.
 
@@ -223,7 +227,8 @@ observations below retain their original dates.
   2026-09-05 found the app and database Ready and Argo CD `Synced/Healthy`.
   In-Pod HTTP still returned `200`; the public hostname returned an Octelium
   `401` authorization denial, including a browser-shaped request. The previous
-  app and Celery restarts dated from August 27. See [[audit-2026-09-04]].
+  app and Celery restarts dated from August 27. September 6 browser verification
+  reached the Octelium login redirect. See [[audit-2026-09-04]].
 - **Risk:** An unauthenticated denial proves the public authentication boundary
   responds, but does not establish successful authenticated upstream access.
 - **Next step:** Verify the UI through an authenticated Octelium browser session

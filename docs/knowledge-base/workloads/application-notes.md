@@ -62,8 +62,13 @@ image recursively changes ownership below `/data/db`, which conflicts with the
 QNAP export's squashed UID behavior. The web container uses upstream
 `PUID`/`PGID` `65534` so nginx and Django match the export's anonymous owner.
 The 2026-08-27 rollout then produced a ready three-container web Pod and ready
-PostgreSQL StatefulSet. Internal HTTP returns `200`, but the Octelium-protected
-hostname still returns `503`; public access validation remains open.
+PostgreSQL StatefulSet; internal HTTP returned `200` while the protected
+hostname returned `503`. September 5 revalidation found internal HTTP `200`,
+converged GitOps state, and an Octelium `401` denial at the public hostname.
+September 6 browser verification reached the Octelium login redirect.
+Authenticated Dispatcharr UI access remains unverified; complete that check
+before declaring application access recovered. See
+[[../operations/audit-2026-09-04]] and [[../operations/continuous-improvement]].
 Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
 Generated or adopted upstream resources must still have one declared owner.

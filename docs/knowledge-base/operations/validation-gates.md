@@ -295,6 +295,129 @@ exit code when any check fails. Keep expected-negative probes inside guarded
 conditionals and avoid empty-array expansion under `set -u`, so macOS Bash 3.2
 does not exit before the failure summary.
 
+## Istio Ambient Recovery
+
+Use these read-only checks after node recovery or an ambient configuration
+rollout. All must pass before closing the readiness finding; connector access
+alone is insufficient. Keep raw logs outside git.
+
+Require every node Ready and both DaemonSets fully updated, observed, and
+available on every node, with no misscheduled instances:
+
+```sh
+kubectl get nodes -o json | jq -e '
+  all(.items[]; any(.status.conditions[]; .type == "Ready" and .status == "True"))'
+ambient_node_count="$(kubectl get nodes -o json | jq '.items | length')"
+kubectl -n istio-system get ds istio-cni-node ztunnel -o json |
+  jq -e --argjson n "$ambient_node_count" '
+    (.items | length) == 2 and all(.items[];
+      .status.observedGeneration == .metadata.generation and
+      .status.desiredNumberScheduled == $n and
+      .status.updatedNumberScheduled == $n and
+      .status.numberReady == $n and .status.numberAvailable == $n and
+      .status.numberMisscheduled == 0)'
+```
+
+Check the live CNI ConfigMap, the rolled CNI Pods' configuration references,
+every ztunnel Pod's IPv6 setting, active connector enrollment, and Argo state:
+
+```sh
+kubectl -n istio-system get cm istio-cni-config -o json |
+  jq -e '.data.AMBIENT_IPV6 == "false"'
+kubectl -n istio-system get pods -l k8s-app=istio-cni-node -o json |
+  jq -e '(.items | length) > 0 and all(.items[];
+    .metadata.annotations["homelab.rst.io/ambient-ip-family"] == "ipv4" and
+    any(.spec.containers[] | select(.name == "install-cni") | .envFrom[]?;
+      .configMapRef.name == "istio-cni-config"))'
+kubectl -n istio-system get pods -l app=ztunnel -o json |
+  jq -e '(.items | length) > 0 and all(.items[];
+    any(.spec.containers[] | select(.name == "istio-proxy") | .env[]?;
+      .name == "IPV6_ENABLED" and .value == "false"))'
+kubectl -n octelium-client get pods -l app.kubernetes.io/instance=octelium-client -o json |
+  jq -e '[.items[] | select(.status.phase != "Succeeded" and .status.phase != "Failed")] as $pods |
+    ($pods | length) > 0 and all($pods[];
+      .metadata.annotations["ambient.istio.io/redirection"] == "enabled" and
+      any(.status.conditions[]; .type == "Ready" and .status == "True"))'
+kubectl -n argocd get application istio -o json |
+  jq -e '.status.sync.status == "Synced" and .status.health.status == "Healthy"'
+```
+
+Query the existing Prometheus service through the Kubernetes API. This helper
+uses the operator's kubeconfig and does not expose Prometheus publicly:
+
+```sh
+ambient_promql() {
+  kubectl get --raw "/api/v1/namespaces/monitoring/services/http:prometheus-kube-prometheus-prometheus:9090/proxy/api/v1/query?$(
+    python3 -c 'import sys, urllib.parse; print(urllib.parse.urlencode({"query": sys.argv[1]}))' "$1"
+  )" | jq -e 'if .status != "success" then error("Prometheus query failed") else .data.result end'
+}
+ambient_promql 'min_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])'
+ambient_promql 'count_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])'
+ambient_promql 'sum by (pod) (increase(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h]))'
+ambient_promql 'count_over_time(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h])'
+ambient_promql 'min_over_time(up{job="kube-state-metrics"}[24h])'
+ambient_promql 'min_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])'
+```
+
+Require readiness minimum `1` and failed-probe increase `0` for every current
+CNI and ztunnel Pod. At the declared 30-second scrape cadence, each readiness
+and failed-probe counter series needs 2,880 samples over 24 hours, with
+kube-state-metrics and every node's kubelet probe endpoint continuously
+`up == 1`. Match the returned Pod names to the live DaemonSet Pods;
+missing series, gaps, counter absence, or a replacement with less than 24 hours
+of observation do not prove recovery. If scrape cadence or target identity
+changed, establish equivalent complete coverage before closing the finding;
+do not replace missing data with zero.
+
+Inspect all CNI and ztunnel logs for the same 24-hour window. Save current logs
+privately and print only their first/last timestamps when assessing retention:
+
+```sh
+umask 077
+ambient_logs="$(mktemp -d)"
+kubectl -n istio-system get pods -o json | jq -r '
+  .items[] | select(any(.metadata.ownerReferences[]?;
+    .kind == "DaemonSet" and (.name == "istio-cni-node" or .name == "ztunnel"))) |
+  [.metadata.name, .spec.containers[0].name] | @tsv' |
+  while IFS="$(printf '\t')" read -r ambient_pod ambient_container; do
+    kubectl -n istio-system logs "$ambient_pod" -c "$ambient_container" --timestamps \
+      > "$ambient_logs/$ambient_pod.current.log"
+  done
+for ambient_file in "$ambient_logs"/*.log; do
+  awk 'NR == 1 {print FILENAME, "first", $1} END {print FILENAME, "last", $1}' "$ambient_file"
+done
+```
+
+`kubectl logs --since=24h` alone cannot establish that rotated records still
+cover the window. If any current log starts too recently, identify its Pod UID,
+node InternalIP, and container name with
+`kubectl -n istio-system get pod POD -o json` and
+`kubectl get node NODE -o json`. Use authenticated Talos access to list
+`/var/log/pods/istio-system_<pod>_<uid>/<container>/` on that node:
+
+```sh
+talosctl --endpoints 10.1.0.199 --nodes NODE_INTERNAL_IP ls POD_LOG_DIRECTORY
+talosctl --endpoints 10.1.0.199 --nodes NODE_INTERNAL_IP read ROTATED_LOG_PATH > "$ambient_logs/rotated.log"
+```
+
+Replace the uppercase placeholders with the observed values. Preserve distinct
+local filenames for each Pod/rotation; decompress `.gz` files before inspection.
+If a container restarted, include its previous logs. Require a complete retained
+file chain covering the observation window on every node. Missing older files
+leave the log gate unverified even if current readiness is healthy.
+
+Search the collected, uncompressed logs for readiness failures and the observed
+IPv6 bind/route signatures, restricting any matches to the 24-hour window:
+
+```sh
+rg -n -i 'readiness.*(500|fail)|500.*readiness|\[::1\]:15053|::/0|ipv6.*(fail|error)' "$ambient_logs"
+```
+
+No in-window matches are permitted. `rg` exit `1` means no matches; exit `2`
+means inspection failed. Older matching errors are historical evidence, not a
+current failure. Record the observation window and aggregate verdicts; never
+commit raw logs or substitute a shorter window for this recovery gate.
+
 ## Policy Bot Checks
 
 Repository-local `.policy.yml` changes need Policy Bot validation, not just YAML
