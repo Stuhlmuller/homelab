@@ -1176,6 +1176,7 @@ echo "::endgroup::"
 echo "::group::OpenClaw Discord plugin"
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
+node --experimental-vm-modules scripts/ci/openclaw-subscription-recovery-check.mjs
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
 rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"

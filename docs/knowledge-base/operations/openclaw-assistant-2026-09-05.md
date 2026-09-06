@@ -80,6 +80,56 @@ Live inference remains the acceptance gate.
 Still required: successful Astra inference, confirmed Discord delivery, and a
 successful bounded health check using real homelab tools after the runtime fix.
 
+## Stale subscription block, September 6
+
+At 18:39 UTC, `heartbeat-main` failed with `agent-runner-failure`; gateway
+auth preparation rejected Astra before inference. The saved auth usage state
+held an account-wide `subscription_limit` block from `wham`, expiring at
+02:29 UTC September 7. A read-only provider usage request with the same
+OpenClaw credential returned `allowed: true`, `limit_reached: false`, and
+6 percent weekly use. The credential had not expired. This is a stale local
+block, not evidence that another login or paid usage reset is needed.
+
+`scripts/openclaw-recover-subscription.mjs` uses the pinned runtime's actual
+cooldown predicate for its read-only check, and its native generation-checked
+provider recheck for recovery. The original check reproduced the failure.
+The helper fails closed on other versions, ambiguous profiles, unrelated auth
+failures, or provider denial. See the app README for execution and rollback.
+Native provider recheck cleared the saved block; a separate public
+`secrets.reload` was necessary to refresh the running gateway auth snapshot.
+The next heartbeat reached Codex but failed with `thread not loaded` for its
+retained main-session binding. The per-agent Codex home is rebuilt on Pod
+replacement; that retained binding did not recover transparently in this run.
+A one-shot public session-reset recovery ran for this failed session.
+At 19:03 UTC it cleared
+active model context and the native binding while verifying all 244 original
+canonical transcript events remained unchanged. Workspace memory is preserved.
+At 19:08:43 UTC the next isolated verification completed on
+`openai/gpt-6-astra`, with run status `completed` and outcome `mute`.
+Canonical transcript records show successful `bash` and `heartbeat_respond`
+tool results. The preceding attempt had reached tools but failed saving plugin
+state with `database is locked`; the successful retry ran without concurrent
+OpenClaw diagnostic CLI commands. This establishes recovery, not resolution
+of the underlying intermittent SQLite contention.
+
+The recovery regression suites and the assistant preservation/scheduler suite
+passed locally. The initial PR revision also passed GitHub static policy and
+security checks plus the Terragrunt gate; later revision checks must be checked
+on the PR. Local full Nix validation was unavailable because the sandbox denied
+its cache lock, and the existing config checker lacked local `yq`.
+
+Review identified a race between the one-shot reset preflight and the public
+mutation: the API accepts no expected session identity/generation. The already
+completed reset helper and its tests were removed before merge. Any future
+reset recovery must use atomic conditional identity checks or explicit session
+quiescence; prior successful execution does not make the helper safe to reuse.
+
+Follow-up: verify retained native bindings recover across Pod replacement
+before treating the Codex home as universally rebuildable. Do not make it
+persistent on NFS without reviewing SQLite/storage implications. Existing
+SQLite lock contention also delayed maintenance and CLI diagnostics during
+this incident; its underlying cause remains unverified.
+
 ## Sources
 
 - `clusters/homelab/apps/openclaw/README.md`
