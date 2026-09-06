@@ -37,8 +37,8 @@ def require(ok, message):
         raise RuntimeError(message)
 
 
-def run(*command, input=None, timeout=30):
-    result = subprocess.run(command, input=input, check=False, text=True,
+def run(*command, input=None, timeout=30, text=True):
+    result = subprocess.run(command, input=input, check=False, text=text,
                             capture_output=True, timeout=timeout, cwd=ROOT)
     require(result.returncode == 0, "Required command failed; output withheld")
     require(len(result.stdout) <= 2 * 1024 * 1024, "Command output exceeded its bound")
@@ -64,8 +64,8 @@ def contract(expected):
     require(not run("git", "status", "--porcelain=v1", "--untracked-files=all"), "Reviewed checkout must be clean")
     run("git", "merge-base", "--is-ancestor", pin["source_commit"], expected)
     for path in IMAGE_SOURCES:
-        previous = run("git", "show", f'{pin["source_commit"]}:{path}')
-        require(previous == (ROOT / path).read_text(), "Published image source or fixture ABI differs from current source")
+        previous = run("git", "show", f'{pin["source_commit"]}:{path}', text=False)
+        require(previous == (ROOT / path).read_bytes(), "Published image source or fixture ABI differs from current source")
     return pin, verifier
 
 

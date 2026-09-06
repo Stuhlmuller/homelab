@@ -40,7 +40,8 @@ login is assumed. A newer main commit requires a fresh reviewed dispatch.
 
 The pin's source must be an ancestor of current main. `Dockerfile`, launcher,
 Nix image derivation, probe, PostgreSQL fixture, `flake.nix` and `flake.lock`
-must match that source byte for byte. This deliberately requires republication
+must match that source byte for byte, with no text decoding or line-ending
+normalization. This deliberately requires republication
 after even an unrelated flake change. The pin is the reviewed attestation that
 the cited protected publisher output matched the image; public run metadata and
 registry bytes do not independently prove approval or publisher provenance.
@@ -162,7 +163,9 @@ is broader than node metadata read; absent permission fails, never silently
 expands RBAC. GitHub metadata uses the workflow's contents-read token; no AWS,
 OIDC or registry write permission is requested.
 
-Offline tests cover admission drift, returned-UID cleanup, uncertain creates,
+Offline tests compare real Git blobs and local files across LF, CRLF and lone-CR
+line endings, without creating fixture commits. They also cover admission drift,
+returned-UID cleanup, uncertain creates,
 replacement resources, strict image identity, stale capacity and dependency
 cleanup. Credential-free native CI additionally executes the exact fixture
 script and fault helper inside **each** independently built and tested image

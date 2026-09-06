@@ -148,6 +148,41 @@ class Tests(unittest.TestCase):
                 M.contract("d" * 40)
             run.assert_not_called()
 
+    def test_source_contract_compares_git_blob_bytes_without_newline_normalization(self):
+        expected = "d" * 40
+        real_run = M.run
+
+        def checked_run(*command, **kwargs):
+            # Only commit/checkout housekeeping is mocked; git show reads real objects.
+            if command == ("git", "rev-parse", "HEAD"):
+                return expected + "\n"
+            if command[:2] in (("git", "status"), ("git", "merge-base")):
+                return ""
+            return real_run(*command, **kwargs)
+
+        endings = {"LF": b"\n", "CRLF": b"\r\n", "CR": b"\r"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(["git", "init", "--bare", "--quiet", "--template=", directory], check=True)
+            with patch.object(M, "ROOT", root), patch.object(M, "IMAGE_SOURCES", ("source.sh",)), \
+                    patch.object(M, "anonymous_module") as anonymous, patch.object(M, "run", side_effect=checked_run):
+                for source_name, source_ending in endings.items():
+                    source = source_ending.join((b"#!/bin/sh", b"printf synthetic", b""))
+                    blob = subprocess.run(["git", "hash-object", "-w", "--stdin"], input=source,
+                                          check=True, capture_output=True, cwd=root).stdout.strip()
+                    # A tree addresses source.sh directly, without creating unsigned commits.
+                    tree = subprocess.run(["git", "mktree"], input=b"100644 blob " + blob + b"\tsource.sh\n",
+                                          check=True, capture_output=True, cwd=root).stdout.strip().decode()
+                    anonymous.return_value.read_contract.return_value = {"source_commit": tree}
+                    for current_name, current_ending in endings.items():
+                        with self.subTest(source=source_name, current=current_name):
+                            (root / "source.sh").write_bytes(current_ending.join((b"#!/bin/sh", b"printf synthetic", b"")))
+                            if source_name == current_name:
+                                M.contract(expected)
+                            else:
+                                with self.assertRaisesRegex(RuntimeError, "source or fixture ABI differs"):
+                                    M.contract(expected)
+
     def test_workflow_supplies_locked_registry_tool_for_every_pull(self):
         workflow = (M.ROOT / ".github/workflows/restore-talos-synthetic.yml").read_text()
         commands = workflow.split("run: >-")[1:]
