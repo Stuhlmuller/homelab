@@ -59,8 +59,10 @@ still owns native model availability and account authorization. The endpoint
 is `https://chatgpt.com/backend-api/codex`.
 
 The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
-architecture's SHA-256, and exposes `/toolbox/codex/codex` to the existing
-OpenClaw Codex plugin. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
+architecture's SHA-256 for both the CLI and its code-mode host, and exposes
+`/toolbox/codex/codex` to the existing
+OpenClaw Codex plugin. The sibling `codex-code-mode-host` executable is required
+for native tool execution; text-only inference does not test its presence. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
 added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
 OpenClaw is pinned to `2026.9.1`, which includes hidden models when discovering
 the Codex catalog. This matters because Astra's initial catalog entry is hidden
@@ -101,7 +103,10 @@ same-volume rollback checkpoint, not an independent backup.
 
 The app's postStart hook registers three jobs through the public automation
 CLI with stable declaration keys. Retries converge in place; they preserve
-job history and an owner's disabled state. After registering replacements, it
+job history and an owner's disabled state. A targeted recovery re-enables only
+the health job auto-disabled by the recorded September 5 authentication outage;
+it matches that exact failure timestamp and leaves subsequent failures paused.
+After registering replacements, it
 disables the two observed overlapping
 legacy jobs (Grafana auto-triage and the daily improvement loop) only when both
 ID and name match `retired-jobs.json`. Their history remains; security audits,

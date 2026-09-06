@@ -96,3 +96,23 @@ models before an auth profile is selected. An explicit Astra subscription
 model row supplies the missing metadata, retaining native account checks.
 A temporary `agent exec` test did not inherit a usable credential; it is not
 proof of gateway inference. Validate the actual gateway after rollout.
+
+## Native tool execution follow-up
+
+After PR 974, the gateway returned an actual `ASTRA_READY` response. Its terminal
+receipt confirmed requested, effective, and response model `gpt-6-astra`, native
+Codex harness, and no rerouting or fallback. A second Astra turn was delivered
+successfully to the owner through Discord (`deliveryStatus.status: sent`).
+
+That second turn exposed a separate tool failure: `failed to spawn code-mode
+host /toolbox/codex/codex-code-mode-host: No such file or directory`. The toolbox
+had installed only the main Codex binary. The follow-up installs the matching
+0.153.2 code-mode host beside it, verifying the official architecture-specific
+release digest. Live read-only tool acceptance remains required after rollout.
+
+The public scheduler inventory also showed the daytime health job auto-disabled
+after ten pre-fix authentication errors. Recovery matches only that recorded
+auto-disable timestamp, declaration, and auth reason, then uses the public enable
+command. Operator pauses and any later automatic pause remain untouched. Revert
+the recovery code to prevent this specific restoration; ordinary operator
+pausing remains supported. No scheduler database mutation is used.
