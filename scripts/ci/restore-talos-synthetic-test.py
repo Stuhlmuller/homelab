@@ -233,7 +233,22 @@ class Tests(unittest.TestCase):
         current["spec"].pop("schedulingGates")
         current["spec"]["nodeName"] = M.PROFILE["node"]
         current["metadata"].pop("finalizers")
+        current["status"] = {"phase": "Succeeded"}
         M.validate_pod(current, PIN, NAME, JOB_UID, gated=False)
+
+    def test_tracking_finalizer_is_required_until_pod_termination(self):
+        current = pod()
+        current["spec"].pop("schedulingGates")
+        current["spec"]["nodeName"] = M.PROFILE["node"]
+        current["metadata"].pop("finalizers")
+        for phase in (None, "Pending", "Running", "Unknown"):
+            with self.subTest(phase=phase), self.assertRaisesRegex(RuntimeError, "finalizer"):
+                current["status"] = {} if phase is None else {"phase": phase}
+                M.validate_pod(current, PIN, NAME, JOB_UID, gated=False)
+        for phase in ("Succeeded", "Failed"):
+            with self.subTest(phase=phase):
+                current["status"] = {"phase": phase}
+                M.validate_pod(current, PIN, NAME, JOB_UID, gated=False)
 
     def test_imageID_requires_exact_repository_manifest_reference(self):
         value = pod()

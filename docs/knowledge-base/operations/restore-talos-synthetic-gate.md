@@ -78,8 +78,10 @@ Service-account automounting and service links are disabled.
 Committed labels and annotations are checked on the Job, template and Pod,
 including after release. The template and Pod must carry the four exact
 Job-UID/name-derived controller labels (legacy and `batch.kubernetes.io` keys).
-The gated Pod requires the job-tracking finalizer; its later controller removal
-is allowed. Unknown policy labels, annotation prefixes or finalizers fail
+Every nonterminal Pod requires the job-tracking finalizer, including after gate
+release. Its controller removal is allowed only once the Pod reaches `Succeeded`
+or `Failed`; missing or unknown phase evidence does not relax this check.
+Unknown policy labels, annotation prefixes or finalizers fail
 acceptance even when the Pod spec is unchanged.
 [Pinned Job label generation](https://github.com/kubernetes/kubernetes/blob/93248f9ae092f571eb870b7664c534bfc7d00f03/pkg/registry/batch/job/strategy.go#L223-L265).
 

@@ -153,7 +153,7 @@ def identity(obj, name):
     return metadata["uid"]
 
 
-def validate_metadata(metadata, pin, name, job_uid, kind, gated=False):
+def validate_metadata(metadata, pin, name, job_uid, kind, terminal=False):
     local = manifest(pin, name)
     wanted = local["metadata"] if kind == "job" else local["spec"]["template"]["metadata"]
     labels = metadata.get("labels", {})
@@ -175,7 +175,7 @@ def validate_metadata(metadata, pin, name, job_uid, kind, gated=False):
         allowed.update(("generateName", "ownerReferences", "finalizers"))
         require(metadata.get("generateName", name + "-") == name + "-", "Pod generated name changed")
         expected_finalizers = ["batch.kubernetes.io/job-tracking"]
-        allowed_finalizers = [expected_finalizers] if gated else [[], expected_finalizers]
+        allowed_finalizers = [[], expected_finalizers] if terminal else [expected_finalizers]
         require(metadata.get("finalizers", []) in allowed_finalizers,
                 "Pod has an unexpected finalizer")
     require(set(metadata) <= allowed, "Admitted resource metadata changed")
@@ -206,7 +206,8 @@ def validate_pod(pod, pin, name, job_uid, gated, image_status=False):
     require(metadata.get("namespace") == PROFILE["namespace"], "Pod namespace changed")
     require(re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", metadata.get("uid", "")) is not None,
             "Pod UID is absent or invalid")
-    validate_metadata(metadata, pin, name, job_uid, "pod", gated=gated)
+    terminal = not gated and pod.get("status", {}).get("phase") in ("Succeeded", "Failed")
+    validate_metadata(metadata, pin, name, job_uid, "pod", terminal=terminal)
     validate_spec(spec, pin, name, gated)
     if gated:
         require(pod.get("status", {}).get("phase") in (None, "Pending") and
