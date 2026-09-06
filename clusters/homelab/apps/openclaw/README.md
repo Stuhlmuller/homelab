@@ -49,6 +49,20 @@ the [official model definition](https://developers.openai.com/api/docs/models/gp
 Account access must be verified with an actual turn; configuration validation
 alone does not prove Astra entitlement.
 
+The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
+architecture's SHA-256, and exposes `/toolbox/codex/codex` to the existing
+OpenClaw Codex plugin. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
+added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
+OpenClaw is pinned to `2026.9.1`, which includes hidden models when discovering
+the Codex catalog. This matters because Astra's initial catalog entry is hidden
+from the interactive picker. Bootstrap takes a verified offline
+`pre-2026.9.1` archive before touching runtime state; older migration markers
+remain intact. The explicit app-server command preserves the existing OAuth
+account and
+per-agent runtime home. Roll back the pin and command together through GitOps;
+the bundled version cannot satisfy the Astra requirement. The official Codex
+plugin is installed and checked at the exact gateway version during bootstrap.
+
 The behavior is conversational and evidence-driven: remember corrections,
 follow through on requested work, keep unchanged checks silent, and report
 what was actually validated or deployed. Existing owner authorization for
@@ -365,7 +379,7 @@ billing, but OpenAI Codex can sign in with a ChatGPT plan and store local
 credentials on the OpenClaw PVC.
 
 The pod startup bootstrap enables the bundled `codex` plugin and sets the
-default agent model to `openai/gpt-5.5` with model-scoped
+default agent model to `openai/gpt-6-astra` with model-scoped
 `agentRuntime.id: "codex"`. OpenClaw 2026.6.10 routes canonical `openai/gpt-*`
 agent refs through the Codex app-server harness when that runtime policy is
 selected, so the PVC-backed Codex OAuth profile supplies the ChatGPT Pro auth

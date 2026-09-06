@@ -1232,11 +1232,11 @@ if ! awk '
   exit 1
 fi
 yq -e '
-  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
   .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "00-operator-toolbox" and
   .controllers.openclaw.initContainers."00-operator-toolbox" != null and
-  .controllers.openclaw.containers.app.image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
-  .controllers.openclaw.containers.proxy.image.tag == "2026.8.2@sha256:5d25165995041caa6a7175bec82b25ad98c44eb269bb42435da8e27ec06e6be4" and
+  .controllers.openclaw.containers.app.image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
   .controllers.openclaw.strategy == "Recreate" and
   .controllers.openclaw.containers.app.probes.liveness.spec.failureThreshold == 36 and
   .controllers.openclaw.containers.app.probes.liveness.spec.periodSeconds == 10 and
