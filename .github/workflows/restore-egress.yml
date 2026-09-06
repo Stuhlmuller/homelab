@@ -1,0 +1,35 @@
+---
+name: Restore egress boundary
+on:
+  pull_request:
+    paths:
+      - images/postgres-restore-egress/**
+      - scripts/ci/restore-egress/**
+      - scripts/ci/restore-egress-check.py
+      - flake.nix
+      - flake.lock
+      - .github/workflows/restore-egress.yml
+  push:
+    branches: [main]
+    paths:
+      - images/postgres-restore-egress/**
+      - scripts/ci/restore-egress/**
+      - scripts/ci/restore-egress-check.py
+      - flake.nix
+      - flake.lock
+      - .github/workflows/restore-egress.yml
+permissions:
+  contents: read
+jobs:
+  image-boundary:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+      - name: Install locked Nix toolchain
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Build local image and prove inherited network denial
+        run: python3 scripts/ci/restore-egress-check.py

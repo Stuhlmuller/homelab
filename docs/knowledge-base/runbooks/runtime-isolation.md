@@ -9,3 +9,6 @@ contexts are enforced desired state. NetworkPolicy objects remain intent-only
 where the current flannel data plane cannot enforce them.
 
 See [[../operations/validation-gates]] and [[../workloads/inventory]].
+
+[[../operations/restore-egress-boundary]] describes the unactivated PostgreSQL
+restore launcher prerequisite and its required Linux negative-network gates.
