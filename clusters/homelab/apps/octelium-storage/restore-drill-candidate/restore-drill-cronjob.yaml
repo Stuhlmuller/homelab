@@ -10,6 +10,8 @@ metadata:
     app.kubernetes.io/component: restore-drill
     app.kubernetes.io/part-of: octelium
 spec:
+  # Secondary hold: activation requires a separately reviewed image/runtime proof.
+  suspend: true
   schedule: "45 4 * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid

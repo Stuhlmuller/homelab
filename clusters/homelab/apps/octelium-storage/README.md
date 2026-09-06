@@ -48,8 +48,14 @@ independent backup, and application recovery remain separate requirements.
 ## Isolated PostgreSQL Restore Drill
 
 **Activation is blocked until the process isolation gate below passes.** The
-current manifests do not establish an enforced no-network boundary and must not
-be rolled out as an active drill yet.
+`restore-drill-candidate/` kustomization owns the candidate CronJob, declared
+NetworkPolicy, and script ConfigMap. The live application does not reference
+this directory, and the candidate also declares `spec.suspend: true`. Its current
+image/command do not establish an enforced no-network boundary. A separate
+reviewed activation change must wire the verified image digest and launcher,
+pass the Talos runtime gate, then add the candidate to the live resource graph
+and lift suspension. Neither rendering nor merging these candidate files starts
+a drill.
 
 `octelium-postgres-restore-drill` declares a daily 04:45 UTC schedule. The 02:30
 backup can start one hour late and run for one hour, so the drill waits until 15 minutes
@@ -124,6 +130,7 @@ change before merge:
 nix develop --command python3 scripts/ci/octelium-restore-drill-test.py
 nix develop --command bash scripts/ci/static-checks.sh
 kubectl kustomize clusters/homelab/apps/octelium-storage
+kubectl kustomize clusters/homelab/apps/octelium-storage/restore-drill-candidate
 ```
 
 Only after the enforced isolation gate passes and the activation change is
@@ -151,8 +158,8 @@ Enterprise package-store PVCs, or protect against NAS loss. It proves the named
 PostgreSQL recovery set can be restored and passes these explicit invariants.
 Keep external encryption-key recovery material and the existing backup target.
 
-To stop future runs, commit `spec.suspend: true` to this CronJob and let Argo CD
-sync it. Suspension leaves an already running drill to finish within its deadline.
+After activation, to stop future runs, commit `spec.suspend: true` to this
+CronJob and let Argo CD sync it. Suspension leaves an already running drill to finish within its deadline.
 For full removal, revert the drill resources, ConfigMap, and alert expansion
 through a reviewed PR; preserve the backup CronJob and claim. No production data
 rollback is needed because the drill never writes there.

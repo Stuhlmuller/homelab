@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the deployed restore script against disposable PostgreSQL fixtures."""
+"""Exercise the candidate restore script against disposable PostgreSQL fixtures."""
 import datetime
 import hashlib
 import json
@@ -10,6 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "clusters/homelab/apps/octelium-storage"
+CANDIDATE = APP / "restore-drill-candidate"
 
 
 def run(*args, **kwargs):
@@ -82,7 +83,7 @@ class RestoreDrillTest(unittest.TestCase):
 
     def drill(self):
         # GNU coreutils/findutils are declared in the Nix development shell.
-        return subprocess.run(["sh", str(APP / "restore-drill.sh"), str(self.backups), str(self.work)],
+        return subprocess.run(["sh", str(CANDIDATE / "restore-drill.sh"), str(self.backups), str(self.work)],
                               capture_output=True, text=True, timeout=90)
 
     def assert_failure(self, result, stage):
@@ -167,13 +168,20 @@ class RestoreDrillTest(unittest.TestCase):
     def test_manifest_declares_storage_credential_and_network_policy_contracts(self):
         # Rendering cannot prove enforcement by the CNI or a process boundary.
         rendered = run("kubectl", "kustomize", str(APP)).stdout
-        objects = json.loads(run("yq", "ea", "-o=json", "[.]", "-", input=rendered).stdout)
+        live = json.loads(run("yq", "ea", "-o=json", "[.]", "-", input=rendered).stdout)
+        self.assertFalse(any(o["kind"] in {"CronJob", "ConfigMap", "NetworkPolicy"} and
+                             o["metadata"]["name"].startswith("octelium-postgres-restore-drill") for o in live))
+        rendered = run("kubectl", "kustomize", str(CANDIDATE)).stdout
+        candidate = json.loads(run("yq", "ea", "-o=json", "[.]", "-", input=rendered).stdout)
+        self.assertEqual({o["kind"] for o in candidate}, {"CronJob", "ConfigMap", "NetworkPolicy"})
+        objects = live + candidate
         job = next(o for o in objects if o["kind"] == "CronJob" and
                    o["metadata"]["name"] == "octelium-postgres-restore-drill")
         backup = next(o for o in objects if o["kind"] == "CronJob" and
                       o["metadata"]["name"] == "octelium-postgres-backup")
         self.assertEqual(backup["spec"]["timeZone"], "Etc/UTC")
         self.assertEqual(job["spec"]["timeZone"], "Etc/UTC")
+        self.assertIs(job["spec"]["suspend"], True)
         backup_minute, backup_hour, *backup_days = backup["spec"]["schedule"].split()
         drill_minute, drill_hour, *drill_days = job["spec"]["schedule"].split()
         self.assertEqual(backup_days, ["*", "*", "*"])
