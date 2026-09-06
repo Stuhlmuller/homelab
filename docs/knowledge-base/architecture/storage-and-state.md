@@ -195,16 +195,23 @@ CI Kubernetes API tunnel. A daily CronJob writes PostgreSQL globals without
 password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
-migration checkpoint, not an off-NAS backup. A daily isolated restore drill now
-runs at 04:45 UTC, after the backup's full late-start/runtime window, and requires
-the newest complete PostgreSQL set to be from the current UTC day. It restores
+migration checkpoint, not an off-NAS backup. The proposed restore drill declares
+a daily 04:45 UTC schedule after the backup's full late-start/runtime window and
+requires the newest complete PostgreSQL set to be from the current UTC day. It restores
 into disposable local scratch using the custom archive's database creation
 metadata, preserving encoding, collation, character classification, and owner;
 the bootstrap cluster's C locale does not replace the source locale. It
 checks resource identities, encrypted-resource key references, and index validity.
-It mounts only the backup claim read-only, has no credentials or Pod network
-access, and has a 30-minute deadline. The scheduled live success and production
-application recovery remain acceptance gates; Redis and Enterprise package-store
+It mounts only the backup claim read-only, injects no production credentials or
+live Kubernetes Secrets, and has a 30-minute deadline. The backup itself contains
+sensitive material. A Unix-only PostgreSQL listener does not block outbound
+traffic or other processes, and the current Flannel deployment does not enforce
+the declared NetworkPolicies; see [[runbooks/runtime-isolation]]. **Activation
+requires a reviewed, enforced no-network boundary for all restore processes and
+children, with negative tests under the exact runtime profile before real backup
+material is loaded.** The application README defines that gate; manifest checks
+prove declarations only. Scheduled live success and production application
+recovery remain additional acceptance gates; Redis and Enterprise package-store
 recovery are outside this PostgreSQL drill.
 Grafana's shared backup-staleness rule includes this CronJob alongside the four
 media backup jobs and the isolated PostgreSQL restore drill: warn after 30 hours

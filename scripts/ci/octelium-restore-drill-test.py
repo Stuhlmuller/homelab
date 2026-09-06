@@ -164,7 +164,8 @@ class RestoreDrillTest(unittest.TestCase):
         self.backup()
         self.assert_failure(self.drill(), "restored-data-invariants")
 
-    def test_manifest_has_no_production_storage_credentials_or_network(self):
+    def test_manifest_declares_storage_credential_and_network_policy_contracts(self):
+        # Rendering cannot prove enforcement by the CNI or a process boundary.
         rendered = run("kubectl", "kustomize", str(APP)).stdout
         objects = json.loads(run("yq", "ea", "-o=json", "[.]", "-", input=rendered).stdout)
         job = next(o for o in objects if o["kind"] == "CronJob" and

@@ -47,8 +47,12 @@ independent backup, and application recovery remain separate requirements.
 
 ## Isolated PostgreSQL Restore Drill
 
-`octelium-postgres-restore-drill` runs daily at 04:45 UTC. The 02:30 backup can
-start one hour late and run for one hour, so the drill waits until 15 minutes
+**Activation is blocked until the process isolation gate below passes.** The
+current manifests do not establish an enforced no-network boundary and must not
+be rolled out as an active drill yet.
+
+`octelium-postgres-restore-drill` declares a daily 04:45 UTC schedule. The 02:30
+backup can start one hour late and run for one hour, so the drill waits until 15 minutes
 after that complete 04:30 window. It selects the newest atomically published
 recovery set, requires a timestamp from the current UTC day and no older than
 30 hours, and copies only
@@ -74,10 +78,13 @@ resources to reference present nonempty wrapped keys, and application indexes
 to be valid. These checks exercise the database backup, including the encrypted
 recovery set, without printing resource contents or key material.
 
-The Pod has no production database volume, Secret, service-account token, TCP
-listener, or network access. Its only PVC is the backup claim, read-only at both
-the volume and mount. PostgreSQL uses a private Unix socket and a size-limited
-`2Gi` disk `emptyDir`; the Job has a 30-minute deadline and bounded CPU, memory,
+The Pod has no production database volume, injected production credentials,
+Kubernetes Secret mount, or service-account token. The backup itself contains
+sensitive database material. Its only PVC is the backup claim, read-only at both
+the volume and mount. PostgreSQL's empty `listen_addresses` disables its TCP
+listener; it does not restrict outbound connections or other processes.
+PostgreSQL uses a private Unix socket and a size-limited `2Gi` disk `emptyDir`;
+the Job has a 30-minute deadline and bounded CPU, memory,
 and ephemeral storage. Restored data and private diagnostics disappear when the
 Pod is deleted; finished Jobs expire after one hour. The retained source archive
 continues to follow its existing 14-day policy.
@@ -85,10 +92,29 @@ continues to follow its existing 14-day policy.
 NetworkPolicies are additive: the former namespace-wide Octelium ingress rule
 now selects only the existing PostgreSQL and Redis server labels. Their Services
 and allowed ingress are unchanged. Backup Jobs initiate connections and need no
-inbound rule. A namespace-wide ingress default deny keeps all other Pods
-isolated. The drill's separate policy permits neither ingress nor egress;
-read-only NFS volume access is performed by the node mount, outside Pod network
-traffic. No broader allow policy may select the drill.
+inbound rule. A namespace-wide ingress default deny and the drill's separate
+ingress/egress deny policy declare the intended boundary. The current Flannel
+deployment does not enforce these policies; see
+[`docs/runtime-isolation.md`](../../../../docs/runtime-isolation.md).
+These manifests and their tests prove declared policy and storage contracts only,
+not network isolation. No broader allow policy may select the drill once policy
+enforcement is available. Read-only NFS volume access is performed by the node
+mount, outside Pod network traffic.
+
+Before activation or loading real backup material, implement a reviewed,
+actually enforced no-network process boundary covering the restore client,
+PostgreSQL, and every child process from before archive processing starts.
+Restore input can cause arbitrary code execution; checksums and a Unix-only
+database listener do not contain it. See the
+[PostgreSQL restore warning](https://www.postgresql.org/docs/14/app-pgrestore.html).
+Negative-test the exact launcher, image, UID, and security profile with synthetic
+archives: direct IPv4/IPv6 and DNS attempts to Pod, Service, node/LAN, and public
+destinations must be denied, including attempts from archive-triggered child
+processes. Verify actual enforcement rather than treating unreachable test
+endpoints as proof, and require the local Unix-socket restore to pass. The
+boundary must fail closed if it cannot be installed and must persist through
+the entire drill. Record that evidence before approving activation; the present
+manifest test and successful local fixtures do not satisfy this gate.
 
 The shared Grafana backup-staleness alert also requires a successful drill within
 30 hours, including a CronJob that has never succeeded. Validate the reviewed
@@ -100,8 +126,9 @@ nix develop --command bash scripts/ci/static-checks.sh
 kubectl kustomize clusters/homelab/apps/octelium-storage
 ```
 
-After normal Argo CD rollout, wait for the scheduled run; do not create an ad hoc
-Job or modify live state. Check:
+Only after the enforced isolation gate passes and the activation change is
+reviewed, use normal Argo CD rollout and wait for the scheduled run; do not create
+an ad hoc Job or modify live state. Check:
 
 ```sh
 kubectl -n octelium-storage get cronjob octelium-postgres-restore-drill \
