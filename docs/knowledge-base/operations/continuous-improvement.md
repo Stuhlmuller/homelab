@@ -123,12 +123,16 @@ observations below retain their original dates.
   Current and retained rotated logs covered that window without readiness
   HTTP 500 or IPv6 bind/route errors. September 6 revalidation found one later,
   unclassified CNI probe miss with continuous Pod readiness and no matching IPv6
-  signature; a fresh zero-failure 24-hour gate remains pending. This does not
-  establish recurrence of the original defect. See [[audit-2026-09-04]].
+  signature; this does not establish recurrence of the original defect. A full
+  repeat at September 6 23:01 UTC passed the 24-hour acceptance gate, including
+  exact Pod-UID series, complete scrape coverage, zero failed probes, and
+  current/rotated log coverage without error signatures. The acceptance hold is
+  closed; the earlier transient's cause remains unknown. See [[audit-2026-09-04]].
 - **Risk:** Future node recovery can interrupt ambient enrollment. Protected
   workloads depend on the connector's Istio service-account principal.
-- **Next step:** Repeat [[validation-gates#Istio Ambient Recovery]] and classify any
-  further probe failure. Roll back by reverting the desired-state settings
+- **Next step:** After future node recovery, repeat
+  [[validation-gates#Istio Ambient Recovery]] and classify any further probe
+  failure. Roll back by reverting the desired-state settings
   and letting Argo CD reconcile;
   do not opt the connector out of ambient to bypass readiness failures.
 
