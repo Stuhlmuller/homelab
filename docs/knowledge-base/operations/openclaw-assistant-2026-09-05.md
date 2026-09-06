@@ -135,3 +135,8 @@ Grafana application authentication remains enforced; direct Prometheus access
 and Kubernetes API privileges remain unchanged. Roll back by removing that
 principal through GitOps. Verify authenticated datasource discovery and actual
 Prometheus query results from an Astra tool call after sync.
+
+The managed `TOOLS.md` carries this monitoring path and the bare-kubectl guard.
+Its content digest triggers a rollout so scheduled checks receive the corrected
+instructions. The canonical mesh table and workload inventory record the new
+OpenClaw-to-Grafana dependency.
