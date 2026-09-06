@@ -78,12 +78,13 @@ pg_ctl --pgdata="$work/pgdata" --log="$work/postgres.log" --wait --timeout=60 \
 stage="globals-restore"
 psql --host="$socket" --username=restore_drill --dbname=postgres \
   --no-psqlrc --set=ON_ERROR_STOP=1 --file=globals.sql
-createdb --host="$socket" --username=restore_drill --owner=octelium \
-  --template=template0 octelium
 
 stage="database-restore"
-pg_restore --host="$socket" --username=restore_drill --dbname=octelium \
-  --exit-on-error octelium.dump
+# Custom archives include DATABASE metadata even without pg_dump --create.
+# Recreate its encoding, LC_COLLATE, LC_CTYPE, and owner instead of inheriting
+# the disposable bootstrap cluster's C locale. An unavailable locale must fail.
+pg_restore --host="$socket" --username=restore_drill --dbname=postgres \
+  --create --exit-on-error octelium.dump
 
 stage="restored-data-invariants"
 psql --host="$socket" --username=restore_drill --dbname=octelium \

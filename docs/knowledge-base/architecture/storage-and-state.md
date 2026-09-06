@@ -198,7 +198,9 @@ atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup. A daily isolated restore drill now
 runs at 04:45 UTC, after the backup's full late-start/runtime window, and requires
 the newest complete PostgreSQL set to be from the current UTC day. It restores
-into disposable local scratch and
+into disposable local scratch using the custom archive's database creation
+metadata, preserving encoding, collation, character classification, and owner;
+the bootstrap cluster's C locale does not replace the source locale. It
 checks resource identities, encrypted-resource key references, and index validity.
 It mounts only the backup claim read-only, has no credentials or Pod network
 access, and has a 30-minute deadline. The scheduled live success and production

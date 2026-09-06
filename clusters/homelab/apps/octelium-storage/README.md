@@ -58,8 +58,16 @@ older backup or changes the source. A valid previous-day set cannot count as
 today's successful drill.
 
 After verifying the exact checksum manifest and archive listing, it initializes
-PostgreSQL 14.23, restores role globals, creates an `octelium` database owned by
-the restored role, and performs an actual `pg_restore --exit-on-error`. It then
+PostgreSQL 14.23, restores role globals, and uses
+`pg_restore --create --exit-on-error --dbname=postgres` to recreate the archived
+database's encoding, `LC_COLLATE`, `LC_CTYPE`, and owner before restoring objects.
+The C locale initializes only the disposable bootstrap cluster. PostgreSQL's
+custom archive already retains database metadata; the backup does not need a
+new `pg_dump --create` option. Missing locale support fails the drill instead
+of substituting C. See [PG14 dump options](https://www.postgresql.org/docs/14/app-pgdump.html)
+and [restore options](https://www.postgresql.org/docs/14/app-pgrestore.html).
+The real PG14 fixture uses `en_US.UTF-8` and compares restored database metadata
+with its source; Linux Nix shells include the locale archive. The drill then
 requires all three deployed Core/Enterprise resource and wrapped-key tables to
 contain rows, normal resource JSON UIDs to match their row identities, encrypted
 resources to reference present nonempty wrapped keys, and application indexes

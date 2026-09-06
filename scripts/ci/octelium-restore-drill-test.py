@@ -24,7 +24,10 @@ class RestoreDrillTest(unittest.TestCase):
         cls.socket = cls.root / "socket"
         cls.socket.mkdir()
         cls.source = cls.root / "source"
-        run("initdb", "-D", str(cls.source), "-U", "octelium", "--auth=trust", "--locale=C")
+        # Source metadata must differ from the drill's C-locale bootstrap.
+        # Do not skip the regression if the real non-C locale is absent.
+        run("initdb", "-D", str(cls.source), "-U", "octelium", "--auth=trust",
+            "--encoding=UTF8", "--locale=en_US.UTF-8")
         run("pg_ctl", "-D", str(cls.source), "-l", str(cls.root / "postgres.log"),
             "-o", f"-c listen_addresses= -c unix_socket_directories={cls.socket}", "-w", "start")
         run("createdb", "-h", str(cls.socket), "-U", "octelium", "octelium")
@@ -102,6 +105,33 @@ class RestoreDrillTest(unittest.TestCase):
         self.assertEqual(before, {p.name: p.read_bytes() for p in target.iterdir()})
         self.assertEqual((self.work / "restore-drill/details.log").stat().st_mode & 0o777, 0o600)
         self.assertFalse((self.work / "restore-drill/pgdata/postmaster.pid").exists())
+
+    def test_custom_archive_restores_database_locale_encoding_and_owner(self):
+        target = self.backup()  # Same pg_dump --format=custom without --create as production.
+        listing = run("pg_restore", "--create", "--list", str(target / "octelium.dump")).stdout
+        self.assertRegex(listing, r"(?m)^\d+; \d+ \d+ DATABASE - octelium octelium$")
+        metadata_sql = """
+            SELECT json_build_object('encoding', pg_encoding_to_char(encoding),
+                                     'collate', datcollate, 'ctype', datctype,
+                                     'owner', pg_get_userbyid(datdba))
+            FROM pg_database WHERE datname = 'octelium';
+        """
+        expected = run("psql", "-h", str(self.socket), "-U", "octelium", "-d", "octelium",
+                       "-XAt", "-v", "ON_ERROR_STOP=1", "-c", metadata_sql).stdout
+        self.assertEqual(json.loads(expected), {"encoding": "UTF8", "collate": "en_US.UTF-8",
+                                              "ctype": "en_US.UTF-8", "owner": "octelium"})
+        result = self.drill()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        restored = self.work / "restore-drill/pgdata"
+        socket = self.work / "restore-drill/socket"
+        run("pg_ctl", "-D", str(restored), "-l", str(self.work / "inspection.log"),
+            "-o", f"-c listen_addresses= -c unix_socket_directories={socket}", "-w", "start")
+        try:
+            actual = run("psql", "-h", str(socket), "-U", "restore_drill", "-d", "octelium",
+                         "-XAt", "-v", "ON_ERROR_STOP=1", "-c", metadata_sql).stdout
+            self.assertEqual(json.loads(actual), json.loads(expected))
+        finally:
+            run("pg_ctl", "-D", str(restored), "-m", "immediate", "-w", "stop")
 
     def test_corrupt_latest_archive_does_not_fall_back(self):
         self.backup(hours_old=24)
