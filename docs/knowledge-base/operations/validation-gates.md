@@ -360,17 +360,56 @@ ambient_promql() {
     python3 -c 'import sys, urllib.parse; print(urllib.parse.urlencode({"query": sys.argv[1]}))' "$1"
   )" | jq -e 'if .status != "success" then error("Prometheus query failed") else .data.result end'
 }
+ambient_ds_uids="$(kubectl -n istio-system get ds istio-cni-node ztunnel -o json | jq -ce '
+  def text: type == "string" and length > 0;
+  if (.items | type) == "array" and (.items | length) == 2 and
+     ([.items[].metadata.name] | sort) == ["istio-cni-node", "ztunnel"] and
+     all(.items[]; .kind == "DaemonSet" and .metadata.namespace == "istio-system" and
+       .metadata.deletionTimestamp == null and (.metadata.uid | text)) and
+     ([.items[].metadata.uid] | unique | length) == 2
+  then [.items[].metadata.uid] | sort else error("Invalid ambient DaemonSet inventory") end')"
+ambient_pods="$(kubectl -n istio-system get pods -o json | jq -ce --argjson owners "$ambient_ds_uids" '
+  def text: type == "string" and length > 0;
+  if (.items | type) != "array" then error("Invalid Pod inventory") else .items end |
+  [.[] | select(.metadata.deletionTimestamp == null and
+      .status.phase != "Failed" and .status.phase != "Succeeded") |
+    .status.phase as $phase | (.metadata.ownerReferences // []) as $refs |
+    if .kind == "Pod" and .metadata.namespace == "istio-system" and
+       (.metadata.name | text) and (.metadata.uid | text) and
+       (["Pending", "Running", "Unknown"] | index($phase)) != null and
+       ($refs | type) == "array" and all($refs[];
+         (.kind | text) and (.name | text) and (.uid | text))
+    then . else error("Malformed live Pod identity or owner") end |
+    [$refs[] | select(.uid as $uid | $owners | index($uid))] as $matching |
+    select(($matching | length) > 0) |
+    [$refs[] | select(.controller == true)] as $controllers |
+    if ($matching | length) == 1 and $controllers == $matching and
+       $matching[0].kind == "DaemonSet"
+    then [.metadata.namespace, .metadata.name, .metadata.uid, $matching[0].uid]
+    else error("Ambiguous ambient Pod controller") end] as $pods |
+  if ($pods | length) > 0 and ([$pods[][3]] | sort | unique) == $owners and
+     ([$pods[] | .[0:2]] | unique | length) == ($pods | length) and
+     ([$pods[][2]] | unique | length) == ($pods | length)
+  then [$pods[] | .[0:3]] | sort else error("Missing or duplicate ambient Pods") end')"
 ambient_promql 'min_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])' |
-  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 1)
-    then . else error("Missing or unhealthy readiness series") end'
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing, replaced or unhealthy readiness series") end'
 ambient_promql 'count_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])' |
-  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) >= 2880)
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
     then . else error("Missing or incomplete readiness history") end'
-ambient_promql 'sum by (pod) (increase(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h]))' |
-  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 0)
+ambient_promql 'sum by (namespace, pod, pod_uid) (increase(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h]))' |
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.pod_uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 0)
     then . else error("Missing probe history or observed probe failures") end'
 ambient_promql 'count_over_time(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h])' |
-  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) >= 2880)
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.pod_uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
     then . else error("Missing or incomplete probe history") end'
 ambient_nodes="$(kubectl get nodes -o json | jq -ce '
   [.items[] | [.metadata.name,
@@ -414,8 +453,11 @@ scrape cadence, each readiness and failed-probe counter series needs at least
 2,880 samples over 24 hours. Exporter `up` checks require the same coverage and
 match each live Pod/node and scrape address; the current IPv4 endpoints use
 ports 8080 and 10250. Every expected target must remain `up == 1`.
-Match the returned readiness/probe Pod names to the live DaemonSet Pods;
-missing series, gaps, counter absence, or a replacement with less than 24 hours
+All four readiness/probe assertions match namespace, Pod name and UID against
+current nonterminal, nondeleting Pods controlled by the live DaemonSet UIDs.
+Read-only inspection confirmed the readiness `uid` and prober `pod_uid` labels;
+the probe aggregation retains that identity. Invalid/empty inventory, missing
+series, gaps, counter absence, or a replacement with less than 24 hours
 of observation do not prove recovery. If scrape cadence or target identity
 changed, establish equivalent complete coverage before closing the finding;
 do not replace missing data with zero.
