@@ -94,6 +94,38 @@ production backups or contact production services. Restoring dumps can execute
 source-superuser code, so a checksum alone cannot replace this boundary.
 [PostgreSQL restore warning](https://www.postgresql.org/docs/14/app-pgrestore.html).
 
+The final-image harness also requires all nine existing
+`scripts/ci/octelium-restore-drill-test.py` cases. Its Docker backend keeps
+Python plus offline Kustomize rendering on the host; all PostgreSQL commands,
+the exact local `restore-drill.sh`, and restored-locale inspection run in the
+tested image under the launcher. `docker exec` does not inherit PID1's filter,
+so every exec names the launcher explicitly. Source PostgreSQL and each restore
+use separate disposable containers with the same shared runtime flags. Only
+synthetic backup files, the local restore script, and the synthetic probe are
+mounted; all mounts are read-only. Database scratch uses bounded tmpfs. Filtered
+`cat`/`tar` streams retrieve fixture results because Docker documents limitations
+copying tmpfs with `docker cp`. Host ingestion caps bytes, file count and elapsed
+time; extraction rejects traversal, links and special files before writing.
+Results contain fixture data only and are removed with the host temporary tree.
+[Docker tmpfs copy behavior](https://docs.docker.com/reference/cli/docker/container/cp/#corner-cases).
+
+Eight cases execute PostgreSQL: source preservation/private diagnostics,
+non-C encoding/collation/owner preservation, newest-archive corruption,
+checksum-path confinement, stale and previous-day rejection, missing wrapped
+keys, and empty required tables. The ninth validates declared manifest
+contracts on the host. Synthetic globals additionally run the denial probe
+through SQL `COPY FROM PROGRAM`, so the actual globals-restore server and its
+program child must retain the filter. Existing client-child/broker/fault probes
+remain required. Each restore container is removed after its case; source and
+uncertain container creations are cleaned up even on test failure.
+
+This fixture integration combines the reviewed publication and restore-drill
+drafts temporarily. It does not authorize applying their combined manifests:
+the real CronJob still requires explicit launcher wiring, a published digest,
+anonymous pull proof, and the Talos synthetic gate below. Filtered Octelium
+fixture execution remains unverified until native CI passes this combined
+source; local PostgreSQL or mocked backend tests cannot establish that result.
+
 ## Integration and rollout gates
 
 1. Obtain genuine green native Linux results for the exact reviewed source and
@@ -117,6 +149,8 @@ source-superuser code, so a checksum alone cannot replace this boundary.
    image, launcher and production security settings, but no backup PVC or
    credentials. Require its startup denial checks and a synthetic Unix-socket
    PostgreSQL restore to pass on the target runtime. Do not use ad hoc live probes.
+   [[restore-talos-runtime-validation]] records the dated runtime baseline and
+   the proof still required; it does not establish stacked-filter compatibility.
 5. Only after that proof, enable the real drill through GitOps. Verify the
    actual scheduled Job's startup denial checks and successful restore before
    claiming recovery coverage. A normal restore success without filter checks

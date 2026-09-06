@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Exercise the deployed restore script against disposable PostgreSQL fixtures."""
+"""Exercise the repository restore script against disposable PostgreSQL fixtures."""
+import argparse
 import datetime
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -10,9 +12,12 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "clusters/homelab/apps/octelium-storage"
+BACKEND = None
 
 
 def run(*args, **kwargs):
+    if BACKEND is not None and args[0] in BACKEND.pg_commands:
+        return BACKEND.run(*args, **kwargs)
     return subprocess.run(args, check=True, text=True, capture_output=True, timeout=60, **kwargs)
 
 
@@ -24,6 +29,8 @@ class RestoreDrillTest(unittest.TestCase):
         cls.socket = cls.root / "socket"
         cls.socket.mkdir()
         cls.source = cls.root / "source"
+        if BACKEND is not None:
+            BACKEND.start(cls.root)
         # Source metadata must differ from the drill's C-locale bootstrap.
         # Do not skip the regression if the real non-C locale is absent.
         run("initdb", "-D", str(cls.source), "-U", "octelium", "--auth=trust",
@@ -37,7 +44,11 @@ class RestoreDrillTest(unittest.TestCase):
         try:
             run("pg_ctl", "-D", str(cls.source), "-m", "immediate", "-w", "stop")
         finally:
-            cls.temp.cleanup()
+            try:
+                if BACKEND is not None:
+                    BACKEND.close()
+            finally:
+                cls.temp.cleanup()
 
     def setUp(self):
         self.case = Path(tempfile.mkdtemp(prefix="case-", dir=self.root))
@@ -62,6 +73,10 @@ class RestoreDrillTest(unittest.TestCase):
                 VALUES ('fixture-encrypted', 'fixture-key', decode('0304', 'hex'));
         """)
 
+    def tearDown(self):
+        if BACKEND is not None:
+            BACKEND.finish_case()
+
     def sql(self, sql):
         run("psql", "-h", str(self.socket), "-U", "octelium", "-d", "octelium",
             "-X", "-v", "ON_ERROR_STOP=1", "-c", sql)
@@ -72,6 +87,19 @@ class RestoreDrillTest(unittest.TestCase):
         target.mkdir()
         globals_sql = run("pg_dumpall", "-h", str(self.socket), "-U", "octelium",
                           "--no-role-passwords", "--globals-only").stdout
+        if BACKEND is not None:
+            # The real globals-restore psql/server path must also contain SQL
+            # program children. This inert probe requires actual syscall EPERM.
+            globals_sql += """
+CREATE TEMP TABLE fixture_program_child (value INTEGER);
+COPY fixture_program_child FROM PROGRAM '/tests/probe denied && printf "1\\n"';
+DO $fixture$ BEGIN
+  IF (SELECT count(*) FROM fixture_program_child WHERE value = 1) <> 1 THEN
+    RAISE EXCEPTION 'filtered SQL child probe did not complete';
+  END IF;
+END; $fixture$;
+DROP TABLE fixture_program_child;
+"""
         (target / "globals.sql").write_text(globals_sql)
         run("pg_dump", "-h", str(self.socket), "-U", "octelium", "--format=custom",
             "--file", str(target / "octelium.dump"), "octelium")
@@ -81,6 +109,8 @@ class RestoreDrillTest(unittest.TestCase):
         return target
 
     def drill(self):
+        if BACKEND is not None:
+            return BACKEND.drill(self.backups, self.work, APP / "restore-drill.sh")
         # GNU coreutils/findutils are declared in the Nix development shell.
         return subprocess.run(["sh", str(APP / "restore-drill.sh"), str(self.backups), str(self.work)],
                               capture_output=True, text=True, timeout=90)
@@ -216,4 +246,19 @@ class RestoreDrillTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--image-id")
+    parser.add_argument("--probe")
+    options, remaining = parser.parse_known_args()
+    if bool(options.image_id) != bool(options.probe):
+        parser.error("--image-id and --probe must be supplied together")
+    if options.image_id:
+        spec = importlib.util.spec_from_file_location("fixture_docker", ROOT / "scripts/ci/octelium-restore-docker.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        BACKEND = module.DockerFixtures(options.image_id, options.probe)
+    try:
+        unittest.main(argv=[__file__, *remaining])
+    finally:
+        if BACKEND is not None:
+            BACKEND.close()

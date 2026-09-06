@@ -13,6 +13,8 @@ on:
       - scripts/ci/restore-image-publish.py
       - scripts/ci/restore-image-publish-test.py
       - scripts/ci/restore-image-export-check.py
+      - scripts/ci/octelium-restore-*.py
+      - clusters/homelab/apps/octelium-storage/**
   push:
     branches: [main]
     paths:
@@ -26,6 +28,8 @@ on:
       - scripts/ci/restore-image-publish.py
       - scripts/ci/restore-image-publish-test.py
       - scripts/ci/restore-image-export-check.py
+      - scripts/ci/octelium-restore-*.py
+      - clusters/homelab/apps/octelium-storage/**
 permissions:
   contents: read
 jobs:

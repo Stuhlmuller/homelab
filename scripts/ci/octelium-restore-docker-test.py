@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""Offline failures/routing contracts; native image CI supplies execution proof."""
+import importlib.util
+import io
+from pathlib import Path
+import subprocess
+import sys
+import tarfile
+import tempfile
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[2]
+SPEC = importlib.util.spec_from_file_location("fixture_docker", ROOT / "scripts/ci/octelium-restore-docker.py")
+DOCKER = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(DOCKER)
+IMAGE = "sha256:" + "a" * 64
+
+
+class DockerContracts(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        probe = self.root / "probe"
+        probe.write_text("synthetic")
+        self.backend = DOCKER.DockerFixtures(IMAGE, probe)
+
+    def test_mutable_image_reference_is_rejected(self):
+        with self.assertRaises(ValueError):
+            DOCKER.DockerFixtures("image:latest", self.root / "probe")
+
+    def test_exec_always_reenters_launcher(self):
+        with patch.object(DOCKER.subprocess, "run") as run:
+            self.backend.execute("synthetic-container", "pg_restore", "--list", "/backup/archive")
+        command = run.call_args.args[0]
+        self.assertEqual(command[:5], ["docker", "exec", "synthetic-container",
+                                     self.backend.boundary.LAUNCHER, "pg_restore"])
+        self.assertNotIn("--privileged", command)
+
+    def test_inspection_routes_to_disposable_restored_database(self):
+        self.backend.root = self.root
+        self.backend.source = "source-container"
+        self.backend.restore = "restore-container"
+        self.backend.work = self.root / "case/work"
+        with patch.object(self.backend, "execute") as execute:
+            self.backend.run("psql", "-h", str(self.backend.work / "restore-drill/socket"), "-d", "octelium")
+            self.assertEqual(execute.call_args.args[:4],
+                             ("restore-container", "psql", "-h", "/work/restore-drill/socket"))
+            self.backend.run("psql", "-h", str(self.root / "socket"), "-d", "octelium")
+            self.assertEqual(execute.call_args.args[:4], ("source-container", "psql", "-h", "/work/socket"))
+        with self.assertRaises(ValueError):
+            self.backend.run("curl", "https://example.invalid")
+
+    def test_restore_mounts_only_synthetic_readonly_inputs(self):
+        backups, work = self.root / "backups", self.root / "work"
+        backups.mkdir()
+        work.mkdir()
+        (backups / "synthetic.dump").write_text("synthetic")
+        script = ROOT / "clusters/homelab/apps/octelium-storage/restore-drill.sh"
+        result = subprocess.CompletedProcess([], 1, "", "expected synthetic failure")
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode="w"):
+            pass
+        with patch.object(self.backend, "docker") as docker, \
+                patch.object(self.backend, "read_binary", return_value=stream.getvalue()) as read, \
+                patch.object(self.backend, "execute", return_value=result) as execute:
+            self.assertIs(self.backend.drill(backups, work, script), result)
+        command = docker.call_args_list[0].args
+        self.assertIn(f"type=bind,src={backups},dst=/backup,readonly", command)
+        self.assertIn(f"type=bind,src={script},dst=/tests/restore-drill.sh,readonly", command)
+        self.assertIn(IMAGE, command)
+        self.assertNotIn("--entrypoint", command)
+        self.assertEqual(execute.call_args.args[1:],
+                         ("/bin/sh", "/tests/restore-drill.sh", "/backup", "/work"))
+        self.assertFalse(execute.call_args.kwargs["check"])
+        self.assertEqual(read.call_args.args[2:], ("tar", "-C", "/work", "-cf", "-", "."))
+        self.assertEqual(len(docker.call_args_list), 1)
+
+    def test_archive_rejects_traversal_links_devices_and_oversized_files(self):
+        for kind in ("traversal", "symlink", "hardlink", "device", "size"):
+            with self.subTest(kind=kind):
+                stream = io.BytesIO()
+                member = tarfile.TarInfo("../outside" if kind == "traversal" else "fixture")
+                if kind == "symlink":
+                    member.type, member.linkname = tarfile.SYMTYPE, "../outside"
+                elif kind == "hardlink":
+                    member.type, member.linkname = tarfile.LNKTYPE, "../outside"
+                elif kind == "device":
+                    member.type = tarfile.CHRTYPE
+                elif kind == "size":
+                    member.size = DOCKER.MAX_FILES + 1
+                if kind == "size":
+                    stream.write(member.tobuf() + b"\0" * 1024)
+                else:
+                    with tarfile.open(fileobj=stream, mode="w") as archive:
+                        archive.addfile(member)
+                with self.assertRaises(ValueError):
+                    DOCKER.extract_fixture(stream.getvalue(), self.root)
+                self.assertFalse((self.root / "fixture").exists())
+
+    def test_regular_fixture_output_keeps_private_file_mode(self):
+        stream = io.BytesIO()
+        member = tarfile.TarInfo("details.log")
+        member.mode, member.size = 0o600, 7
+        with tarfile.open(fileobj=stream, mode="w") as archive:
+            archive.addfile(member, io.BytesIO(b"fixture"))
+        DOCKER.extract_fixture(stream.getvalue(), self.root)
+        self.assertEqual((self.root / "details.log").read_bytes(), b"fixture")
+        self.assertEqual((self.root / "details.log").stat().st_mode & 0o777, 0o600)
+
+    def test_binary_output_is_bounded_before_host_use(self):
+        command = [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'x' * 1024)"]
+        with patch.object(self.backend, "exec_command", return_value=command):
+            with self.assertRaises(ValueError):
+                self.backend.read_binary("synthetic", 16, "cat", "/fixture")
+
+    def test_uncertain_container_start_is_owned_and_removed(self):
+        failed = subprocess.CalledProcessError(1, ["docker", "run"])
+        with patch.object(self.backend, "docker", side_effect=failed), \
+                patch.object(DOCKER.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as remove:
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.backend.start(self.root)
+        self.assertEqual(remove.call_args.args[0][:3], ["docker", "rm", "--force"])
+        self.assertRegex(remove.call_args.args[0][3], r"^octelium-fixture-[0-9a-f]{32}$")
+        self.assertEqual(self.backend.containers, [])
+
+
+if __name__ == "__main__":
+    unittest.main()
