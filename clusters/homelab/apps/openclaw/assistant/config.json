@@ -46,8 +46,28 @@
       "workspaceOnly": true
     }
   },
+  "plugins": {
+    "entries": {
+      "codex": {
+        "config": {
+          "appServer": {
+            "command": "/toolbox/codex/codex"
+          }
+        }
+      }
+    }
+  },
   "cron": {
     "enabled": true,
     "sessionRetention": "24h"
+  },
+  "models": {
+    "providers": {
+      "openai": {
+        "baseUrl": "https://chatgpt.com/backend-api",
+        "api": "openai-chatgpt-responses",
+        "models": []
+      }
+    }
   }
 }

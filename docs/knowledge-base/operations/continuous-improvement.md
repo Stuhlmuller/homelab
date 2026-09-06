@@ -128,8 +128,8 @@ observations below retain their original dates.
 - **Risk:** Future node recovery can interrupt ambient enrollment. Protected
   workloads depend on the connector's Istio service-account principal.
 - **Next step:** Repeat [[validation-gates#Istio Ambient Recovery]] and classify any
-  further probe failure. Roll back
-  by reverting the desired-state settings and letting Argo CD reconcile;
+  further probe failure. Roll back by reverting the desired-state settings
+  and letting Argo CD reconcile;
   do not opt the connector out of ambient to bypass readiness failures.
 
 - **Status:** fixed
