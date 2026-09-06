@@ -217,8 +217,26 @@ class Tests(unittest.TestCase):
     def test_dormant_template_keeps_normal_hcl_validation_pin_independent(self):
         root, _, _ = self.catalog_fixture()
         checked("terragrunt", "hcl", "validate", "--no-color", cwd=root)
-        self.assertFalse((ROOT / TEMPLATE).with_suffix("").exists())
-        self.assertNotIn("argocd-octelium-restore", (ROOT / "IaC/terragrunt.stack.hcl").read_text())
+        # Check this dormant fixture, not the repository's future release state:
+        # registration must not require changing these publication-bound tests.
+        self.assertFalse((root / TEMPLATE).with_suffix("").exists())
+
+    def test_later_release_iac_keeps_publication_source_unchanged(self):
+        helper = SOURCE_TESTS.Tests()
+        self.addCleanup(helper.doCleanups)
+        root = helper.source_repository()
+        files = {path: ("100644", (ROOT / path).read_bytes()) for path in (
+            "scripts/ci/restore-activation-reference.py", "scripts/ci/restore-activation-reference-test.py")}
+        original = helper.source_tree(root, files)
+        released = {**files,
+                    "IaC/.catalog/units/live/argocd-octelium-restore/terragrunt.hcl": (
+                        "100644", (ROOT / TEMPLATE).read_bytes()),
+                    "IaC/terragrunt.stack.hcl": ("100644", b'# synthetic reviewed release registration\n')}
+        current = helper.source_tree(root, released)
+        helper.source_working_files(root, released)
+        # Real Git inventory permits release-only additions; no bound test or
+        # candidate edit is needed to preserve the published source contract.
+        helper.source_contract(root, original, current)
 
     def test_instantiated_template_rejects_absent_pin_without_source_commands(self):
         _, unit, script = self.catalog_fixture(instantiate=True)

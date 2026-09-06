@@ -60,7 +60,10 @@ reviewed pin. Retain separate successful anonymous-pull, native-CI and protected
 Talos receipts for the exact source/image. A later reviewed IaC-only change may
 instantiate this template, register the dedicated unit with its storage
 dependency and provider lock, and validate its final rendered manifests and
-Terragrunt plan. Keep the bound constructor and candidate unchanged.
+Terragrunt plan. Copy and retain the dormant `.hcl.template` for its bootstrap
+fixtures; modify the separate canonical release unit. The bound tests check
+isolated fixture state, not whether the real stack is permanently unregistered.
+Keep the bound constructor, tests and candidate unchanged.
 
 Registration initially remains suspended. Activation requires separate review
 of an exact CronJob suspension patch in the release IaC, plus the existing real
