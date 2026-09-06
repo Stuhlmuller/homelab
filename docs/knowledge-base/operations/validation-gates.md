@@ -28,7 +28,8 @@ git diff --check
 
 The static gate runs `scripts/ci/job-alert-recovery-check.py` with the Nix-pinned
 promtool against the actual Job recovery rules. Its synthetic histories cover
-failure/success ordering, overlap, later failed runs, namespace isolation,
+failure/success ordering, false/unknown condition gauges and transitions to true,
+overlap, later failed runs, namespace isolation,
 missing metrics, conflicting owners, duplicate scrapes, recreated names, and
 the existing 15-minute firing hold after five-minute group detection. The check
 also requires the custom rule's

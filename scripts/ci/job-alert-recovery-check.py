@@ -100,6 +100,23 @@ case("a future success timestamp cannot establish recovery", fixture(success="36
 case("zero success timestamp cannot establish recovery", fixture(success="0x59"), OLD)
 case("never succeeded CronJob remains alerting", fixture(success=None), OLD)
 case("a non-failed Job does not alert", fixture(failure="0x59"))
+# KSM emits one-hot condition gauges: false/unknown can be 1 without failure.
+for condition in ["false", "unknown"]:
+    other = "unknown" if condition == "false" else "false"
+    labels = {"namespace": "apps", "job_name": "backup-old"}
+    case(f"condition {condition} at one is not a failed Job", fixture(
+        success=None, failure="0x59",
+        non_failure=series("kube_job_failed", "1x59", condition=condition, **labels),
+        other_condition=series("kube_job_failed", "0x59", condition=other, **labels),
+    ))
+    transition = fixture(
+        success=None, failure="0x19 1x39",
+        non_failure=series("kube_job_failed", "1x19 0x39", condition=condition, **labels),
+        other_condition=series("kube_job_failed", "0x59", condition=other, **labels),
+    )
+    case(f"{condition} to true starts a fresh firing hold", transition, at="30m")
+    case(f"{condition} to true fires after fifteen minutes", transition, OLD, at="35m")
+
 case("original fifteen minute alert delay is preserved", fixture(success=None), at="10m")
 case("the same failure fires after the delay", fixture(success=None), OLD, at="20m")
 case("between-boundary failure waits for five-minute detection and hold", fixture(success=None, failure="0x5 1x53"), at="24m")

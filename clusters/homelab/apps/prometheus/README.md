@@ -32,7 +32,9 @@ The secret is not committed.
 ## Job Failure Recovery
 
 `job-prometheusrules.yaml` replaces the chart's `KubeJobFailed` rule while
-keeping its warning severity and 15-minute delay. Retained failed CronJob runs
+keeping its warning severity and 15-minute delay. Only `condition="true"`
+counts as a failure: kube-state-metrics also emits false/unknown condition
+gauges whose value can be one. Retained failed CronJob runs
 stop alerting only when metrics prove their owner succeeded after the failure.
 Standalone Jobs and CronJobs without a newer success continue alerting. Do not
 delete failed Jobs to clear notifications; their retained status is evidence.
