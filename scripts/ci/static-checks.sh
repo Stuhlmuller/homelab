@@ -8,6 +8,7 @@ terragrunt_generate_stack
 
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/restore-image-publish-test.py
+python3 scripts/ci/restore-image-anonymous-pull-test.py
 python3 scripts/ci/octelium-restore-docker-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 

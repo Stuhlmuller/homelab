@@ -437,3 +437,12 @@ requires its scheduled Job success and `lastSuccessfulTime`, plus the shared
 30-hour staleness alert. Static fixtures alone do not prove live restoration.
 See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
 rollback, and the limits of this PostgreSQL-only drill.
+
+## Anonymous restore image preflight
+
+The static gate runs `scripts/ci/restore-image-anonymous-pull-test.py` with only
+synthetic manifests and public-metadata fixtures. Missing committed publication
+pins fail before network access; default verification binds public run-attempt
+metadata and all anonymously pulled image bytes. See
+[[restore-image-anonymous-pull]] for the strict pin, source-attestation limit,
+credential isolation and the still-unexecuted real pull/Talos gates.
