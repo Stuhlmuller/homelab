@@ -108,7 +108,7 @@ All deployed repository references remain on `main`.
    pass. The restore proof runs separately against the sealed copy, so it need
    not extend routine capture downtime. Until it passes, status is
    **captured, restore unverified**, never a successful recovery drill.
-6. **Prove restore in disposable storage.** Restore PostgreSQL with the archive's
+6. **Verify data in disposable storage.** Restore PostgreSQL with the archive's
    own database creation metadata, then restore the matched `.n8n` tree using
    the exact captured n8n image and feature configuration. Permit only the
    local PostgreSQL socket; no production DB/PVC, live Kubernetes Secret mounts,
@@ -117,7 +117,14 @@ All deployed repository references remain on `main`.
    Do not launch the n8n server, worker, webhook processor,
    or workflow runner. Check schema/ownership, private source-vs-restored
    inventories, every persisted binary reference and metadata file, legacy/key-ID
-   decryption, and waiting-execution data. Preserve all source copies.
+   decryption, and waiting-execution data. Preserve all source copies. Passing
+   these checks means **data verified, startup unverified**.
+7. **Prove isolated startup.** Restore a fresh disposable clone from the same
+   sealed set, not the CLI-mutated verification clone. Run the captured n8n
+   main image with its restored extensions, storage and feature configuration
+   behind the enforced startup boundary below. Require bounded startup and
+   readiness proof before reporting **restore verified in isolation**; live
+   workflow acceptance remains a separate production gate.
 
 The exact fence-evidence transport and fail-closed publication handshake still
 need implementation and review. A static approval file or expired check cannot
@@ -140,6 +147,42 @@ only expected connection timeouts. Recheck after CNI/runtime changes. This
 platform/runtime gate remains open; choosing an enforcer or another isolated
 execution boundary is a separate reviewed change. [Flannel policy support][flannel-policy].
 
+Startup needs a **separately declared, enforced loopback-only runtime**. The
+pinned HTTP server listens on TCP; the PostgreSQL verifier's Unix-socket-only
+launcher does not suffice. Keep PostgreSQL on its private Unix socket and bind
+n8n HTTP to loopback inside a private network namespace with no external
+interfaces, routes, published ports, ingress, or egress. The probe must run
+inside that same boundary. No Pod/host network, host/runtime sockets, live
+Secrets or production mounts may be available; only disposable DB/data/scratch
+may be written. Preserve the sealed archive outside the application runtime.
+Before real data is loaded, prove loopback readiness traffic works and external
+IPv4/IPv6, DNS and inbound traffic cannot cross this exact runtime boundary.
+Apply the existing enforcement checks to all descendants throughout startup
+and shutdown; flags or an unreachable destination are not isolation proof.
+The runtime implementation and its synthetic preflight remain open review
+gates. [HTTP listener and readiness][abstract-server].
+
+Normal startup can resume waiting/enqueued executions and activate triggers
+without an incoming request. Their local effects must stay in disposable
+storage and **no external workflow side effects may escape**. Do not deactivate
+workflows, erase waiting executions, omit extensions, or change captured feature
+flags to produce a passing result. Declare only the necessary isolated DB and
+listener address overrides. [Startup][start-command], [wait tracking][wait-tracker].
+
+The startup wrapper must enforce a reviewed hard deadline, require the same
+main process to remain alive without restart and return HTTP `200` from
+`/healthz/readiness` for a continuous declared observation interval, then stop
+and reap every descendant before discarding the clone. Set and test both time
+bounds with synthetic fixtures before handling real data; they are not an RTO.
+`/healthz` alone is insufficient. Readiness is necessary but does not prove
+every workflow activation: also check private startup/extension/storage and
+activation results, including asynchronous initialization, and require unchanged
+migration inventory. Any unresolved failure or incomplete evidence leaves
+**startup unverified**, even with HTTP `200`. If isolation blocks a required
+external activation, record that dependency and keep the gate open; never grant
+egress to make the drill pass. [HTTP readiness][abstract-server],
+[startup activation][start-command], [activation handling][active-workflows].
+
 The pinned `export:credentials --all --decrypted --output=<private-scratch-file>`
 command can exercise credential decryption without running workflows. Its
 output is plaintext, and some failure branches only log/return. A wrapper must
@@ -157,8 +200,15 @@ execution, the persisted instance key, legacy and rotated-key ciphertext,
 and matching image/config identity. Negative cases must reject a missing blob,
 wrong/missing key, omitted historical key row, mismatched DB/file set, corruption,
 interrupted capture, stale node evidence, and a silent CLI export failure.
+Startup fixtures must also fail for a broken restored extension, unwritable
+runtime storage, process exit/restart, readiness timeout and activation failure;
+prove that scheduled/resumed fixture workflows cannot reach an external sink.
 Checks may compare private counts internally; public logs report fixed stages
-and pass/fail only. This is recovery proof, not a live callback delivery test.
+and pass/fail only. Keep **captured**, **data verified**, **isolated startup
+verified**, and **live workflow accepted** evidence separate. Only the combined
+data and startup gates prove an isolated restore. Real callback delivery,
+schedules and external credential/provider behavior require separately approved
+live workflow acceptance after production restoration.
 
 Capture/verification never overwrites production state. Before any production
 restore, fence **all** writers again and restore both components into new
@@ -191,7 +241,7 @@ must preserve the fence and alert the operator, never force a green result.
 | Argo | Existing ownership of declared Deployment, routes, PVCs and Jobs; no new backup identity may scale workloads |
 | Private observer | Kubernetes get/list/watch on relevant workloads, nodes, claims, Jobs and Applications; authenticated Talos read-only health/process/mount/boot inspection; no Talos mutation |
 | Capture Job | Read-only n8n PVC and file-backed DB credential; DB read/dump privileges for required schema/roles, no password hashes or superuser requirement by default; egress only to its PostgreSQL Service and required DNS; write only backup/scratch |
-| Verifier Job | Read-only matched backup, including its persisted key; bounded disposable data/scratch; no live Kubernetes Secret mounts, service-account token, Pod network, or host access |
+| Verifier Job | Read-only matched backup, including its persisted key; bounded disposable data/scratch; private PostgreSQL socket and, for startup only, reviewed isolated loopback TCP; no live Kubernetes Secret mounts, service-account token, Pod network, or host access |
 
 Both Jobs disable service-account token mounting. Use restrictive archive
 permissions, no privilege escalation, non-root IDs, dropped capabilities,
@@ -206,11 +256,12 @@ Implementation order: (1) exact-version synthetic fixtures, observer rejection
 tests, and proof of the enforced network boundary before real data is loaded;
 (2) inactive manifests, capture/publication protocol, scoped credentials and
 restore verifier; (3) reviewed maintenance rehearsal and recovery evidence;
-(4) freshness alerts distinguishing capture from verified restore; (5) an
-explicit cadence/interruption decision. Until then, only verification of sealed
-sets may be scheduled. Recurring captures must use the same reviewed GitOps
-entry/capture/resume path; a future autonomous maintenance controller would
-require a separate ownership, node-fencing, permissions, and outage design.
+(4) freshness alerts distinguishing capture, data verification and isolated
+startup proof; (5) an explicit cadence/interruption decision. Until then, only
+verification of sealed sets may be scheduled. Recurring captures must use the
+same reviewed GitOps entry/capture/resume path; a future autonomous maintenance
+controller would require a separate ownership, node-fencing, permissions, and
+outage design.
 
 [binary-config]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/core/src/binary-data/binary-data.config.ts
 [storage-config]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/core/src/storage.config.ts
@@ -225,3 +276,7 @@ require a separate ownership, node-fencing, permissions, and outage design.
 [generic-config]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/@n8n/config/src/configs/generic.config.ts
 [executions-config]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/@n8n/config/src/configs/executions.config.ts
 [flannel-policy]: https://github.com/flannel-io/flannel#network-policy
+[abstract-server]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/cli/src/abstract-server.ts
+[start-command]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/cli/src/commands/start.ts
+[wait-tracker]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/cli/src/wait-tracker.ts
+[active-workflows]: https://github.com/n8n-io/n8n/blob/5542b8b6419cb6925cca8f11b270c9bfbe09d85e/packages/cli/src/active-workflow-manager.ts
