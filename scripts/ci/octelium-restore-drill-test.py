@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Exercise the deployed restore script against disposable PostgreSQL fixtures."""
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+APP = ROOT / "clusters/homelab/apps/octelium-storage"
+
+
+def run(*args, **kwargs):
+    return subprocess.run(args, check=True, text=True, capture_output=True, timeout=60, **kwargs)
+
+
+class RestoreDrillTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.temp = tempfile.TemporaryDirectory(prefix="od-", dir="/tmp")
+        cls.root = Path(cls.temp.name)
+        cls.socket = cls.root / "socket"
+        cls.socket.mkdir()
+        cls.source = cls.root / "source"
+        run("initdb", "-D", str(cls.source), "-U", "octelium", "--auth=trust", "--locale=C")
+        run("pg_ctl", "-D", str(cls.source), "-l", str(cls.root / "postgres.log"),
+            "-o", f"-c listen_addresses= -c unix_socket_directories={cls.socket}", "-w", "start")
+        run("createdb", "-h", str(cls.socket), "-U", "octelium", "octelium")
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            run("pg_ctl", "-D", str(cls.source), "-m", "immediate", "-w", "stop")
+        finally:
+            cls.temp.cleanup()
+
+    def setUp(self):
+        self.case = Path(tempfile.mkdtemp(prefix="case-", dir=self.root))
+        self.backups = self.case / "backups"
+        self.backups.mkdir()
+        self.work = self.case / "work"
+        self.work.mkdir()
+        self.sql("""
+            DROP SCHEMA public CASCADE;
+            CREATE SCHEMA public;
+            CREATE TABLE octelium_resources (
+                id BIGSERIAL PRIMARY KEY, uid TEXT UNIQUE NOT NULL, resource JSONB);
+            CREATE TABLE octelium_data_encryption_keys (
+                id BIGSERIAL PRIMARY KEY, uid TEXT UNIQUE NOT NULL, ciphertext BYTEA);
+            CREATE TABLE octelium_encrypted_resources (
+                id BIGSERIAL PRIMARY KEY, uid TEXT UNIQUE NOT NULL, key_uid TEXT, ciphertext BYTEA);
+            INSERT INTO octelium_resources (uid, resource)
+                VALUES ('fixture-resource', '{"metadata":{"uid":"fixture-resource"}}');
+            INSERT INTO octelium_data_encryption_keys (uid, ciphertext)
+                VALUES ('fixture-key', decode('0102', 'hex'));
+            INSERT INTO octelium_encrypted_resources (uid, key_uid, ciphertext)
+                VALUES ('fixture-encrypted', 'fixture-key', decode('0304', 'hex'));
+        """)
+
+    def sql(self, sql):
+        run("psql", "-h", str(self.socket), "-U", "octelium", "-d", "octelium",
+            "-X", "-v", "ON_ERROR_STOP=1", "-c", sql)
+
+    def backup(self, hours_old=0):
+        instant = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=hours_old)
+        target = self.backups / instant.strftime("%Y%m%dT%H%M%SZ")
+        target.mkdir()
+        globals_sql = run("pg_dumpall", "-h", str(self.socket), "-U", "octelium",
+                          "--no-role-passwords", "--globals-only").stdout
+        (target / "globals.sql").write_text(globals_sql)
+        run("pg_dump", "-h", str(self.socket), "-U", "octelium", "--format=custom",
+            "--file", str(target / "octelium.dump"), "octelium")
+        checksum_lines = [f"{hashlib.sha256((target / name).read_bytes()).hexdigest()}  {name}\n"
+                          for name in ("globals.sql", "octelium.dump")]
+        (target / "SHA256SUMS").write_text("".join(checksum_lines))
+        return target
+
+    def drill(self):
+        # GNU coreutils/findutils are declared in the Nix development shell.
+        return subprocess.run(["sh", str(APP / "restore-drill.sh"), str(self.backups), str(self.work)],
+                              capture_output=True, text=True, timeout=90)
+
+    def assert_failure(self, result, stage):
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
+        self.assertIn(f"failed at {stage};", result.stderr)
+        self.assertNotIn("fixture-", result.stderr)
+        self.assertFalse((self.work / "restore-drill/pgdata/postmaster.pid").exists())
+
+    def test_actual_restore_preserves_source_and_withholds_private_output(self):
+        target = self.backup()
+        before = {p.name: p.read_bytes() for p in target.iterdir()}
+        for p in target.iterdir():
+            p.chmod(0o400)
+        result = self.drill()
+        self.assertEqual(result.returncode, 0, result.stderr + "\n" +
+                         (self.work / "restore-drill/details.log").read_text())
+        self.assertEqual(result.stdout, "Octelium PostgreSQL restore drill passed\n")
+        self.assertEqual(result.stderr, "")
+        self.assertEqual(before, {p.name: p.read_bytes() for p in target.iterdir()})
+        self.assertEqual((self.work / "restore-drill/details.log").stat().st_mode & 0o777, 0o600)
+        self.assertFalse((self.work / "restore-drill/pgdata/postmaster.pid").exists())
+
+    def test_corrupt_latest_archive_does_not_fall_back(self):
+        self.backup(hours_old=1)
+        latest = self.backup()
+        with (latest / "octelium.dump").open("ab") as stream:
+            stream.write(b"corrupt")
+        self.assert_failure(self.drill(), "archive-verification")
+
+    def test_checksum_manifest_cannot_read_outside_recovery_set(self):
+        latest = self.backup()
+        (latest / "SHA256SUMS").write_text("0" * 64 + "  /etc/passwd\n")
+        self.assert_failure(self.drill(), "archive-verification")
+
+    def test_stale_latest_backup_fails_before_restore(self):
+        self.backup(hours_old=31)
+        self.assert_failure(self.drill(), "backup-selection")
+
+    def test_restored_encrypted_resource_without_key_fails(self):
+        self.sql("UPDATE octelium_encrypted_resources SET key_uid='missing-key'")
+        self.backup()
+        self.assert_failure(self.drill(), "restored-data-invariants")
+
+    def test_empty_required_table_fails(self):
+        self.sql("DELETE FROM octelium_resources")
+        self.backup()
+        self.assert_failure(self.drill(), "restored-data-invariants")
+
+    def test_manifest_has_no_production_storage_credentials_or_network(self):
+        rendered = run("kubectl", "kustomize", str(APP)).stdout
+        objects = json.loads(run("yq", "ea", "-o=json", "[.]", "-", input=rendered).stdout)
+        job = next(o for o in objects if o["kind"] == "CronJob" and
+                   o["metadata"]["name"] == "octelium-postgres-restore-drill")
+        pod = job["spec"]["jobTemplate"]["spec"]["template"]["spec"]
+        self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertNotIn("initContainers", pod)
+        self.assertEqual(len(pod["containers"]), 1)
+        volumes = {v["name"]: v for v in pod["volumes"]}
+        self.assertEqual(set(volumes), {"backup", "scratch", "script"})
+        self.assertEqual(volumes["backup"]["persistentVolumeClaim"],
+                         {"claimName": "octelium-postgres-backup", "readOnly": True})
+        self.assertEqual(volumes["scratch"]["emptyDir"], {"sizeLimit": "2Gi"})
+        container = pod["containers"][0]
+        self.assertNotIn("env", container)
+        self.assertNotIn("envFrom", container)
+        self.assertTrue(next(m for m in container["volumeMounts"] if m["name"] == "backup")["readOnly"])
+        policies = {o["metadata"]["name"]: o["spec"] for o in objects if o["kind"] == "NetworkPolicy"}
+        self.assertEqual(set(policies), {"octelium-storage", "octelium-postgres-backup",
+                                         "octelium-postgres-restore-drill", "octelium-storage-default-deny"})
+        self.assertEqual(policies["octelium-storage"]["podSelector"], {"matchExpressions": [{
+            "key": "app.kubernetes.io/name", "operator": "In",
+            "values": ["octelium-postgres", "octelium-redis"]}]})
+        self.assertEqual(policies["octelium-postgres-backup"]["podSelector"],
+                         {"matchLabels": {"app.kubernetes.io/name": "octelium-postgres"}})
+        default = policies["octelium-storage-default-deny"]
+        self.assertEqual(default, {"podSelector": {}, "policyTypes": ["Ingress"]})
+        server_services = [o for o in objects if o["kind"] == "Service"]
+        self.assertEqual({o["spec"]["selector"]["app.kubernetes.io/name"] for o in server_services},
+                         {"octelium-postgres", "octelium-redis"})
+        deny = policies["octelium-postgres-restore-drill"]
+        self.assertEqual(set(deny["policyTypes"]), {"Ingress", "Egress"})
+        self.assertEqual(deny.get("ingress", []), [])
+        self.assertEqual(deny.get("egress", []), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

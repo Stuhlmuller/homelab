@@ -413,3 +413,20 @@ generic doctor changes must not persist unrelated skill-policy rewrites.
 The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
+
+## Octelium PostgreSQL Restore Drill
+
+`scripts/ci/octelium-restore-drill-test.py` exercises the deployed shell entry
+point against disposable PostgreSQL 14 fixtures using the pinned Nix toolchain.
+It requires actual globals/database restore, preserved backup source, private
+output, and failure on corrupt or stale newest archives, invalid checksum paths,
+empty required tables, and missing encrypted-resource keys. Rendered guards
+require only the read-only backup PVC plus bounded scratch, no credentials, and
+no additive NetworkPolicy allow selecting the drill. The full static gate runs
+this check; `postgresql_14` is a validation dependency in `flake.nix`.
+
+GitOps creates the daily `octelium-postgres-restore-drill` CronJob. Acceptance
+requires its scheduled Job success and `lastSuccessfulTime`, plus the shared
+30-hour staleness alert. Static fixtures alone do not prove live restoration.
+See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
+rollback, and the limits of this PostgreSQL-only drill.

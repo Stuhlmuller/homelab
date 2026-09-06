@@ -41,9 +41,83 @@ completed sets.
 The nominal RPO is 24 hours; the actual RPO is the age of the newest successful
 Job. The source and backup claims use the same QNAP export, so this protects
 against logical database failure and supports a later storage migration, but it
-does not protect against NAS loss or malicious modification. A restore path and
-restore drill remain required before this backup can be treated as proven
-disaster recovery.
+does not protect against NAS loss or malicious modification. The isolated
+restore drill below checks logical recoverability. A production cutover path,
+independent backup, and application recovery remain separate requirements.
+
+## Isolated PostgreSQL Restore Drill
+
+`octelium-postgres-restore-drill` runs daily at 03:45 UTC, after the backup's
+one-hour deadline. It selects the newest atomically published recovery set,
+requires its timestamp to be no older than 30 hours, and copies only
+`globals.sql`, `octelium.dump`, and `SHA256SUMS` into disposable storage. Missing,
+stale, invalid, or corrupt newest sets fail; the drill never falls back to an
+older backup or changes the source.
+
+After verifying the exact checksum manifest and archive listing, it initializes
+PostgreSQL 14.23, restores role globals, creates an `octelium` database owned by
+the restored role, and performs an actual `pg_restore --exit-on-error`. It then
+requires all three deployed Core/Enterprise resource and wrapped-key tables to
+contain rows, normal resource JSON UIDs to match their row identities, encrypted
+resources to reference present nonempty wrapped keys, and application indexes
+to be valid. These checks exercise the database backup, including the encrypted
+recovery set, without printing resource contents or key material.
+
+The Pod has no production database volume, Secret, service-account token, TCP
+listener, or network access. Its only PVC is the backup claim, read-only at both
+the volume and mount. PostgreSQL uses a private Unix socket and a size-limited
+`2Gi` disk `emptyDir`; the Job has a 30-minute deadline and bounded CPU, memory,
+and ephemeral storage. Restored data and private diagnostics disappear when the
+Pod is deleted; finished Jobs expire after one hour. The retained source archive
+continues to follow its existing 14-day policy.
+
+NetworkPolicies are additive: the former namespace-wide Octelium ingress rule
+now selects only the existing PostgreSQL and Redis server labels. Their Services
+and allowed ingress are unchanged. Backup Jobs initiate connections and need no
+inbound rule. A namespace-wide ingress default deny keeps all other Pods
+isolated. The drill's separate policy permits neither ingress nor egress;
+read-only NFS volume access is performed by the node mount, outside Pod network
+traffic. No broader allow policy may select the drill.
+
+The shared Grafana backup-staleness alert also requires a successful drill within
+30 hours, including a CronJob that has never succeeded. Validate the reviewed
+change before merge:
+
+```sh
+nix develop --command python3 scripts/ci/octelium-restore-drill-test.py
+nix develop --command bash scripts/ci/static-checks.sh
+kubectl kustomize clusters/homelab/apps/octelium-storage
+```
+
+After normal Argo CD rollout, wait for the scheduled run; do not create an ad hoc
+Job or modify live state. Check:
+
+```sh
+kubectl -n octelium-storage get cronjob octelium-postgres-restore-drill \
+  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+kubectl -n octelium-storage get jobs \
+  -l app.kubernetes.io/name=octelium-postgres-restore-drill
+kubectl -n octelium-storage logs job/<scheduled-restore-drill-job>
+```
+
+Success emits only `Octelium PostgreSQL restore drill passed`. Failure identifies
+a fixed stage; private details remain in `/work/restore-drill/details.log` only
+until Job cleanup. Inspect them privately if needed; never copy them into public
+CI logs, issues, or PRs. Fix archive format/schema changes in code, and increase
+scratch limits only after checking node capacity. No live success is claimed
+until a scheduled Job completes.
+
+This drill does not connect Octelium to the restored database, decrypt resources
+with external encryption keys, exercise production cutover, restore Redis or
+Enterprise package-store PVCs, or protect against NAS loss. It proves the named
+PostgreSQL recovery set can be restored and passes these explicit invariants.
+Keep external encryption-key recovery material and the existing backup target.
+
+To stop future runs, commit `spec.suspend: true` to this CronJob and let Argo CD
+sync it. Suspension leaves an already running drill to finish within its deadline.
+For full removal, revert the drill resources, ConfigMap, and alert expansion
+through a reviewed PR; preserve the backup CronJob and claim. No production data
+rollback is needed because the drill never writes there.
 
 ## Validation
 

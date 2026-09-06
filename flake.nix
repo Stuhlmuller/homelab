@@ -53,6 +53,7 @@
             opentofu
             openssh
             pre-commit
+            postgresql_14
             ripgrep
             shellcheck
             shfmt
