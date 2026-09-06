@@ -292,3 +292,11 @@ identities, and validates configuration before writing its own completion
 marker. Private doctor reports retain latest plus previous. State restoration
 requires the archive and compatible software, not merely a manifest revert.
 See the OpenClaw README; gateway readiness is still a live acceptance gate.
+
+### Monitoring storage migration design
+
+[[../operations/monitoring-storage-migration-draft-2026-09-06]] records the
+pinned operator's new-claim migration path, separate writer fences, restore
+proof, capacity reservations, and rollback. Healthy target hardware remains
+unselected; the draft does not authorize use of Acer's unverified storage or
+reduction of existing retention.
