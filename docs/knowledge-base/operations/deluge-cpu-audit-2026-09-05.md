@@ -112,8 +112,9 @@ and limits compare unchanged. Rendering `"off"` changes only the ConfigMap's
 enabled value and checksum. The proposed ConfigMap name was absent from the
 live namespace at preflight.
 
-Nine offline helper tests cover ownership/identity races, loopback-only sockets,
-committed config, private files, cleanup, HTTP deadlines, and complete gzip/CRC
+Eleven offline helper tests cover endpoint/TLS fences, ownership/identity races,
+loopback-only sockets, committed config, private files, idempotent cleanup,
+HTTP deadlines, and complete gzip/CRC
 validation under compressed and expanded size bounds. These synthetic cases
 do not validate the live Gluetun listener, profiling overhead, or the CPU cause.
 

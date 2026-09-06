@@ -19,6 +19,8 @@ import threading
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+API_SERVER = 'https://10.1.0.199:6443'
+API_FLAGS = ['--server=' + API_SERVER, '--insecure-skip-tls-verify=false', '--tls-server-name=10.1.0.199']
 VALUES = 'clusters/homelab/apps/deluge/values.yaml'
 IMAGE = 'ghcr.io/qdm12/gluetun:v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027'
 LIMIT = 16 * 1024 * 1024
@@ -39,6 +41,7 @@ def stop(process):
         try:
             process.terminate()
         except ProcessLookupError:
+            # The owned process can exit between poll() and terminate().
             pass
         try:
             process.wait(timeout=3)
@@ -46,6 +49,7 @@ def stop(process):
             try:
                 process.kill()
             except ProcessLookupError:
+                # It may also exit after wait times out but before kill().
                 pass
             process.wait(timeout=3)
     for stream in (process.stdout, process.stderr):
@@ -81,8 +85,25 @@ def command(args, timeout=15, limit=4 * 1024 * 1024):
         stop(process)
 
 
+def check_context():
+    # Local, redacted projection only; never export kubeconfig or trust --raw.
+    config = json.loads(command(['kubectl', 'config', 'view', '--minify', '-o', 'json']))
+    clusters = config.get('clusters', [])
+    contexts = config.get('contexts', [])
+    require(len(clusters) == len(contexts) == 1 and
+            contexts[0].get('name') == config.get('current-context') and
+            contexts[0].get('context', {}).get('cluster') == clusters[0].get('name'),
+            'Expected one current Kubernetes context and cluster')
+    cluster = clusters[0].get('cluster', {})
+    require(cluster.get('server') == API_SERVER and
+            cluster.get('insecure-skip-tls-verify', False) is False and
+            cluster.get('tls-server-name', '') in ('', '10.1.0.199'),
+            'Current Kubernetes context must use the reviewed API endpoint with TLS verification')
+
+
 def kubectl(*args):
-    return command(['kubectl', '-n', 'media', *args])
+    # Explicit flags prevent an ambient context change redirecting later calls.
+    return command(['kubectl', *API_FLAGS, '-n', 'media', *args])
 
 
 def document(*args):
@@ -101,8 +122,9 @@ def declared_image(enabled):
     require(not command(['git', 'status', '--porcelain', '--untracked-files=all', '--', VALUES]).strip() and
             (ROOT / VALUES).is_file() and not (ROOT / VALUES).is_symlink() and
             (ROOT / VALUES).read_bytes() == raw, 'Profiling values are not committed and unchanged')
-    process = subprocess.run(['yq', '-o=json', '{"image": (.controllers.deluge.initContainers.gluetun.image | '
-                              '.repository + ":" + .tag), "profiling": .configMaps.gluetun-profiling.data}'],
+    query = ('{"image": (.controllers.deluge.initContainers.gluetun.image | '
+             '.repository + ":" + .tag), "profiling": .configMaps.gluetun-profiling.data}')
+    process = subprocess.run(['yq', '-o=json', query],
                              input=raw, capture_output=True, timeout=10, check=False)
     require(process.returncode == 0, 'Cannot read committed profiling contract')
     projection = json.loads(process.stdout)
@@ -175,7 +197,7 @@ def listener(identity, enabled):
 
 
 def forward(identity):
-    return subprocess.Popen(['kubectl', '-n', 'media', 'port-forward', '--address=127.0.0.1',
+    return subprocess.Popen(['kubectl', *API_FLAGS, '-n', 'media', 'port-forward', '--address=127.0.0.1',
                              f'pod/{identity["pod"]}', ':6060'], stdin=subprocess.DEVNULL,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -222,6 +244,7 @@ def download(port, path):
             try:
                 transport.shutdown(socket.SHUT_RDWR)
             except OSError:
+                # The peer or normal cleanup may have already closed this socket.
                 pass
         timer = threading.Timer(remaining, expire)
         timer.daemon = True
@@ -276,6 +299,7 @@ def download(port, path):
 
 def operate(mode):
     declared_image(mode != 'check-disabled')
+    check_context()
     before = snapshot()
     listener(before, mode != 'check-disabled')
     require(snapshot() == before, 'Pod identity changed during inspection')
@@ -314,6 +338,16 @@ def operate(mode):
             if not retained:
                 try:
                     shutil.rmtree(directory)
+                except FileNotFoundError:
+                    try:
+                        directory.lstat()
+                    except FileNotFoundError:
+                        # Already-absent root means cleanup completed, unlike a missing child.
+                        pass
+                    except OSError:
+                        raise CleanupFailure(f'Private capture cleanup failed; inspect/remove {directory}') from None
+                    else:
+                        raise CleanupFailure(f'Private capture cleanup failed; inspect/remove {directory}') from None
                 except OSError:
                     raise CleanupFailure(f'Private capture cleanup failed; inspect/remove {directory}') from None
 

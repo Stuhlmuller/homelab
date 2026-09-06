@@ -40,6 +40,27 @@ def inventory():
 
 
 class Tests(unittest.TestCase):
+    def test_context_tls_contract_before_api_and_pinned_inspection(self):
+        config = {'current-context': 'homelab', 'contexts': [{'name': 'homelab', 'context': {'cluster': 'home'}}],
+                  'clusters': [{'name': 'home', 'cluster': {'server': M.API_SERVER}}]}
+        with patch.object(M, 'command', return_value=json.dumps(config).encode()) as command:
+            M.check_context()
+            command.assert_called_once_with(['kubectl', 'config', 'view', '--minify', '-o', 'json'])
+        for field, value in (('server', 'https://unrelated.example:6443'), ('server', 'http://10.1.0.199:6443'),
+                             ('insecure-skip-tls-verify', True), ('tls-server-name', 'unrelated.example')):
+            changed = copy.deepcopy(config)
+            changed['clusters'][0]['cluster'][field] = value
+            with patch.object(M, 'command', return_value=json.dumps(changed).encode()), \
+                    patch.object(M, 'declared_image'), patch.object(M, 'snapshot') as api:
+                with self.assertRaises(RuntimeError):
+                    M.operate('check')
+                api.assert_not_called()
+        with patch.object(M, 'command', return_value=b'{}') as command:
+            M.kubectl('get', 'pods', '-o', 'json')
+            self.assertEqual(command.call_args.args[0], ['kubectl', '--server=https://10.1.0.199:6443',
+                '--insecure-skip-tls-verify=false', '--tls-server-name=10.1.0.199', '-n', 'media',
+                'get', 'pods', '-o', 'json'])
+
     def test_ownership_readiness_and_container_identity(self):
         fixtures = inventory()
         with patch.object(M, 'document', side_effect=lambda *args: fixtures[args]):
@@ -130,7 +151,7 @@ class Tests(unittest.TestCase):
                     path.chmod(0o600)
                     if fault == 'download':
                         raise RuntimeError('truncated')
-                with patch.object(M, 'declared_image'), patch.object(M, 'snapshot', side_effect=snapshots), \
+                with patch.object(M, 'declared_image'), patch.object(M, 'check_context'), patch.object(M, 'snapshot', side_effect=snapshots), \
                         patch.object(M, 'listener'), patch.object(M, 'forward', return_value=process), \
                         patch.object(M, 'forwarded_port', side_effect=RuntimeError('startup') if fault == 'startup' else None,
                                      return_value=45678), patch.object(M, 'download', side_effect=download), \
@@ -208,7 +229,7 @@ class Tests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as parent:
             directory = Path(parent) / 'owned-capture'
             directory.mkdir()
-            with patch.object(M, 'declared_image'), patch.object(M, 'snapshot', return_value=identity), \
+            with patch.object(M, 'declared_image'), patch.object(M, 'check_context'), patch.object(M, 'snapshot', return_value=identity), \
                     patch.object(M, 'listener'), patch.object(M.tempfile, 'mkdtemp', return_value=str(directory)), \
                     patch.object(M, 'forward', side_effect=RuntimeError('private vendor output')), \
                     patch.object(M.shutil, 'rmtree', side_effect=PermissionError('private diagnostic')):
@@ -216,6 +237,27 @@ class Tests(unittest.TestCase):
                     M.operate('capture')
                 self.assertNotIn('private diagnostic', str(failure.exception))
                 self.assertNotIn('no profile retained', str(failure.exception))
+
+    def test_cleanup_absent_root_succeeds_but_missing_child_fails(self):
+        for absent_root in (True, False):
+            with self.subTest(absent_root=absent_root), tempfile.TemporaryDirectory() as parent:
+                directory = Path(parent) / 'owned-capture'
+                directory.mkdir()
+                def cleanup(path):
+                    if absent_root:
+                        path.rmdir()
+                    raise FileNotFoundError('root or child disappeared')
+                with patch.object(M, 'declared_image'), patch.object(M, 'check_context'), \
+                        patch.object(M, 'snapshot', return_value={'pod': 'deluge-abc'}), \
+                        patch.object(M, 'listener'), patch.object(M.tempfile, 'mkdtemp', return_value=str(directory)), \
+                        patch.object(M, 'forward', side_effect=RuntimeError('original failure')), \
+                        patch.object(M.shutil, 'rmtree', side_effect=cleanup):
+                    if absent_root:
+                        with self.assertRaisesRegex(RuntimeError, '^original failure$'):
+                            M.operate('capture')
+                    else:
+                        with self.assertRaises(M.CleanupFailure):
+                            M.operate('capture')
 
     def test_forward_startup_and_exact_owned_command(self):
         process = Mock()
@@ -235,7 +277,7 @@ class Tests(unittest.TestCase):
                         M.forwarded_port(process)
         with patch.object(M.subprocess, 'Popen', return_value=process) as popen:
             M.forward({'pod': 'deluge-abc'})
-            self.assertEqual(popen.call_args.args[0], ['kubectl', '-n', 'media', 'port-forward',
+            self.assertEqual(popen.call_args.args[0], ['kubectl', *M.API_FLAGS, '-n', 'media', 'port-forward',
                                                       '--address=127.0.0.1', 'pod/deluge-abc', ':6060'])
 
     def test_stop_kills_only_owned_uncooperative_process(self):

@@ -224,8 +224,12 @@ nix develop --command python3 scripts/gluetun-cpu-profile.py check
 nix develop --command python3 scripts/gluetun-cpu-profile.py capture
 ```
 
-The helper resolves the Deployment's one Ready Pod, verifies the pinned Gluetun
-image and loopback-only listener, then collects a 30-second CPU profile through
+The helper requires the current kubeconfig to select the authenticated direct
+API at `https://10.1.0.199:6443`, then pins that TLS endpoint for all inspections
+and forwarding. Other cluster contexts and insecure TLS configuration are
+rejected before cluster access. It resolves the Deployment's one Ready Pod,
+verifies the pinned Gluetun image and loopback-only listener, then collects a
+30-second CPU profile through
 an owned local port-forward. It uses a deadline and size limit and rejects a
 capture if Pod identity, Gluetun restart state, or readiness changes. Output is
 a private temporary directory outside the repository. Treat profiles as private
