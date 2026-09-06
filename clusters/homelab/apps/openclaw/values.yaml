@@ -484,33 +484,46 @@ controllers:
 
             openclaw config validate
 
-            openclaw config set --strict-json \
-              gateway.mode \
-              '"local"'
-
-            openclaw config set --strict-json \
-              gateway.auth.mode \
-              '"token"'
-
-            openclaw config set \
-              gateway.auth.token \
-              --ref-provider default \
-              --ref-source env \
-              --ref-id OPENCLAW_GATEWAY_TOKEN
-
-            openclaw config set --strict-json \
-              gateway.controlUi.allowedOrigins \
-              '["https://openclaw.stinkyboi.com","http://openclaw.homelab","https://openclaw.homelab"]'
+            # Config CLI batches preserve unrelated keys in one validated write per phase.
+            config_batch_dir="$(mktemp -d /tmp/openclaw-config-batch.XXXXXX)"
+            trap 'rm -rf "$config_batch_dir"' 0
+            trap 'exit 129' HUP
+            trap 'exit 130' INT
+            trap 'exit 143' TERM
+            config_batch() {
+              python3 -c '
+            import json, os, sys
+            data = sys.stdin.buffer.read(1048577)
+            if len(data) > 1048576:
+                raise SystemExit("Config batch exceeds 1 MiB")
+            entries = json.loads(data)
+            if not isinstance(entries, list):
+                raise SystemExit("Config batch must be a list")
+            fd = os.open(sys.argv[1], os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(fd, "wb") as output:
+                output.write(data)
+            ' "$config_batch_dir/assignments.json"
+              openclaw config set --batch-file "$config_batch_dir/assignments.json"
+              rm "$config_batch_dir/assignments.json"
+            }
+            config_batch <<'OPENCLAW_GATEWAY_BATCH'
+            [
+              {"path":"gateway.mode","value":"local"},
+              {"path":"gateway.auth.mode","value":"token"},
+              {"path":"gateway.auth.token","ref":{"source":"env","provider":"default","id":"OPENCLAW_GATEWAY_TOKEN"}},
+              {"path":"gateway.controlUi.allowedOrigins","value":["https://openclaw.stinkyboi.com","http://openclaw.homelab","https://openclaw.homelab"]}
+            ]
+            OPENCLAW_GATEWAY_BATCH
 
             if [ -z "${GRAFANA_ALERT_HOOK_TOKEN:-}" ] || [ "$GRAFANA_ALERT_HOOK_TOKEN" = "REPLACE_ME" ]; then
               echo "GRAFANA_ALERT_HOOK_TOKEN is not populated; skipping hooks bootstrap"
             else
-              openclaw config set --strict-json \
-                hooks.enabled \
-                'true'
-              openclaw config set --strict-json \
-                hooks.path \
-                '"/hooks"'
+              config_batch <<'OPENCLAW_HOOK_ENABLE_BATCH'
+            [
+              {"path":"hooks.enabled","value":true},
+              {"path":"hooks.path","value":"/hooks"}
+            ]
+            OPENCLAW_HOOK_ENABLE_BATCH
               # Clear the old authored env reference; otherwise OpenClaw preserves it.
               if python3 - "$OPENCLAW_CONFIG_PATH" <<'OPENCLAW_HOOK_REFERENCE'
             import json
@@ -525,38 +538,33 @@ controllers:
                 openclaw config unset hooks.token
               fi
               HOOK_TOKEN_JSON="$(python3 -c 'import json, os; print(json.dumps(os.environ["GRAFANA_ALERT_HOOK_TOKEN"]))')"
-              openclaw config set --strict-json \
-                hooks.token \
-                "$HOOK_TOKEN_JSON"
-              openclaw config set --strict-json \
-                hooks.defaultSessionKey \
-                '"agent:main:hooks:grafana-alerts"'
-              openclaw config set --strict-json \
-                hooks.allowedAgentIds \
-                '["main"]'
-              openclaw config set --strict-json \
-                hooks.allowRequestSessionKey \
-                'false'
+              config_batch <<OPENCLAW_HOOK_BATCH
+            [
+              {"path":"hooks.token","value":$HOOK_TOKEN_JSON},
+              {"path":"hooks.defaultSessionKey","value":"agent:main:hooks:grafana-alerts"},
+              {"path":"hooks.allowedAgentIds","value":["main"]},
+              {"path":"hooks.allowRequestSessionKey","value":false}
+            ]
+            OPENCLAW_HOOK_BATCH
+              unset HOOK_TOKEN_JSON
             fi
 
-            openclaw config set --strict-json \
-              plugins.entries.codex.enabled \
-              'true'
-
-            openclaw config set --strict-json \
-              plugins.entries.memory-wiki.enabled \
-              'true'
+            config_batch <<'OPENCLAW_PLUGIN_BATCH'
+            [
+              {"path":"plugins.entries.codex.enabled","value":true},
+              {"path":"plugins.entries.memory-wiki.enabled","value":true}
+            ]
+            OPENCLAW_PLUGIN_BATCH
 
             python3 /etc/openclaw-assistant/bootstrap.py
             openclaw config validate
 
-            openclaw config set --strict-json \
-              agents.defaults.sandbox.mode \
-              '"off"'
-
-            openclaw config set --strict-json \
-              tools.fs.workspaceOnly \
-              'true'
+            config_batch <<'OPENCLAW_SANDBOX_BATCH'
+            [
+              {"path":"agents.defaults.sandbox.mode","value":"off"},
+              {"path":"tools.fs.workspaceOnly","value":true}
+            ]
+            OPENCLAW_SANDBOX_BATCH
 
             if [ -z "${DISCORD_BOT_TOKEN:-}" ] || [ "$DISCORD_BOT_TOKEN" = "REPLACE_ME" ]; then
               echo "DISCORD_BOT_TOKEN is not populated; skipping Discord channel config"
@@ -564,14 +572,12 @@ controllers:
               echo "DISCORD_BOT_TOKEN is populated; configuring the Discord channel"
               openclaw plugins enable discord --accept-capabilities
               verify_discord_plugin loaded
-              openclaw config set --strict-json \
-                channels.discord.enabled \
-                'true'
-              openclaw config set \
-                channels.discord.token \
-                --ref-provider default \
-                --ref-source env \
-                --ref-id DISCORD_BOT_TOKEN
+              config_batch <<'OPENCLAW_DISCORD_BATCH'
+            [
+              {"path":"channels.discord.enabled","value":true},
+              {"path":"channels.discord.token","ref":{"source":"env","provider":"default","id":"DISCORD_BOT_TOKEN"}}
+            ]
+            OPENCLAW_DISCORD_BATCH
             fi
 
             if [ ! -s "$doctor_marker" ]; then

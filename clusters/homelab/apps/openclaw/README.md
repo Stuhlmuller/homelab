@@ -333,6 +333,14 @@ the pod from the Service after two failures. A TCP-only check is not sufficient
 here because the proxy listener can accept a connection even when its upstream
 gateway is unavailable.
 
+Initialization precedes those app probes. Two measured successful starts took
+about 23 minutes, exceeding the default ten-minute Deployment progress deadline;
+the pinned chart has no supported value for changing that field. Bootstrap uses
+OpenClaw 2026.9.1's validated batches within existing configuration phases to
+reduce repeated CLI invocations and writes. Private temporary batch files are
+cleaned on exit. See the [startup measurements and rollout checks](../../../../docs/knowledge-base/operations/openclaw-bootstrap-batching.md);
+actual improvement requires measurement after rollout.
+
 Use the event timestamps to distinguish expected startup failures from a live
 stall, then verify the gateway itself:
 
