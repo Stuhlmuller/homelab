@@ -31,10 +31,11 @@ def require(ok, message):
         raise RuntimeError(message)
 
 
-def run(args, timeout=20, check=True, limit=2 * 1024 * 1024, env=None):
+def run(args, timeout=20, check=True, limit=2 * 1024 * 1024, env=None, include_stderr=False):
     process = subprocess.Popen(args, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     streams = [process.stdout, process.stderr]
     output = bytearray()
+    errors = bytearray()
     size = 0
     deadline = time.monotonic() + timeout
     try:
@@ -51,9 +52,11 @@ def run(args, timeout=20, check=True, limit=2 * 1024 * 1024, env=None):
                 require(size <= limit, 'Fixture command exceeded output bound')
                 if stream is process.stdout:
                     output.extend(data)
+                elif include_stderr:
+                    errors.extend(data)
         code = process.wait(timeout=max(0.01, deadline - time.monotonic()))
         require(not check or code == 0, 'Fixture command failed; vendor output withheld')
-        return code, bytes(output)
+        return code, bytes(output + errors)
     finally:
         if process.poll() is None:
             try:
@@ -70,6 +73,8 @@ def docker(*args, **kwargs):
     environment = {key: value for key, value in os.environ.items()
                    if not key.startswith(('DOCKER_', 'BUILDX_', 'BUILDKIT_'))}
     operation = args[0]
+    if operation == 'logs':
+        kwargs['include_stderr'] = True
     if operation == 'exec':
         operation += ':' + Path(args[2]).name
     require(re.fullmatch(r'[a-zA-Z0-9_.:-]+', operation), 'Invalid diagnostic operation')
@@ -324,7 +329,7 @@ def openvpn_pair(owned, image, family, directory, expected_version=None, expecte
         other = 1 - index
         text = ('dev tun0\nproto udp4\nport 1194\nlocal ' + address + '\nremote ' + peers[other][2] +
                 ' 1194\nifconfig ' + subnet + '.' + str(index + 1) + ' ' + subnet + '.' + str(other + 1) +
-                '\nsecret /settings/static.key\ncipher AES-256-CBC\nauth SHA256\nverb 3\nping 1\nping-restart 10\n')
+                '\nsecret /settings/static.key\ncipher AES-256-CBC\nauth SHA256\nverb 4\nping 1\nping-restart 10\n')
         # Publishing complete config by rename avoids a reader observing partial bytes.
         temporary = config / 'pending.conf'
         temporary.write_text(text)
@@ -341,9 +346,12 @@ def openvpn_pair(owned, image, family, directory, expected_version=None, expecte
         wait_until(transferred, 'Encrypted OpenVPN TUN traffic failed')
         _, route = owned.execute(target, 'ip', 'route', 'get', destination)
         require(b'dev tun0' in route, 'OpenVPN traffic did not route through TUN')
-        _, logs = docker('logs', target['id'])
-        require(b'Initialization Sequence Completed' in logs and b'AES-256-CBC' in logs,
-                'OpenVPN encrypted initialization evidence missing')
+        def initialized():
+            _, logs = docker('logs', target['id'])
+            return (b'Initialization Sequence Completed' in logs and
+                    b"Cipher 'AES-256-CBC' initialized" in logs)
+        # Docker log delivery can lag traffic; preserve both exact markers with a deadline.
+        wait_until(initialized, 'OpenVPN encrypted initialization evidence missing', seconds=10)
     # Stop one peer and require a fresh connection to fail: bridge HTTP cannot satisfy this test.
     STAGE = directory.name + '/openvpn-' + family + '/stop-negative-control'
     print(json.dumps({'stage': STAGE}), flush=True)
