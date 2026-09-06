@@ -417,7 +417,9 @@ completion marker. This bounds the previously observed NFS session scan.
 ## NOFX catalog gate
 
 The fixed NOFX reconciliation command defaults to read-only inspection and
-requires exact local/remote reviewed main for execution. Tests reject wrong
+requires exact local/remote reviewed main and a clean checkout, including staged
+and untracked files, before parsing the catalog or opening transport. This also
+guards the Nix dependency files and local Python modules. Tests reject wrong
 resource identities, missing or mismatched pinned CLI builds, reported native apply errors, missing convergence, and
 remaining anonymous access. Live acceptance requires an unauthenticated denial,
 authorized human access, and audit correlation after the reviewed apply.

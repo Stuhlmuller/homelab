@@ -39,7 +39,10 @@ nix develop --command python3 scripts/octelium-nofx-reconcile.py \
 ```
 
 The command requires local HEAD and remote main to equal that commit and
-rejects changes to its tracked code or catalog. It selects only Service `nofx`
+rejects any staged, unstaged, or untracked checkout changes before reading the
+catalog or opening transport. Keep local scratch files outside the checkout.
+This includes dependency changes in `flake.nix`/`flake.lock` and untracked
+Python modules. It selects only Service `nofx`
 from the committed catalog and explicitly names `nofx.default` during apply.
 It cannot apply Users, Policies, credentials, or another Service. It applies
 through the native catalog API twice, requires the second run to report no
@@ -50,7 +53,8 @@ Then verify unauthenticated NOFX requests are rejected or redirected to login,
 authorized human access works, and the console records the access decision and
 resource change. A successful controller rollout or CLI exit alone is not this
 acceptance test. Local regression tests cover the fixed resource scope,
-read-only default, commit mismatch, reported apply errors, convergence, and
+read-only default, commit mismatch, dirty dependency files and untracked
+modules, reported apply errors, convergence, and
 post-apply anonymous-access verification.
 
 ## Rollback

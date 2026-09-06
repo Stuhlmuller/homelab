@@ -51,13 +51,14 @@ def declared_service():
 def verify_reviewed_main(expected):
     if not expected or not re.fullmatch(r"[0-9a-f]{40}", expected):
         raise RuntimeError("Execution requires --expected-sha with the full reviewed main commit")
+    if run("git", "-C", str(ROOT), "status", "--porcelain=v1",
+           "--untracked-files=all", "--ignore-submodules=none").stdout:
+        raise RuntimeError("Execution requires a clean checkout, including untracked files")
     head = run("git", "-C", str(ROOT), "rev-parse", "HEAD").stdout.strip()
     remote = run("git", "ls-remote", "https://github.com/Stuhlmuller/homelab.git", "refs/heads/main").stdout.split()[0]
     if head != expected or remote != expected:
         raise RuntimeError("Checkout and remote main must match the reviewed execution commit")
     run("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/octelium-nofx-reconcile.py")
-    run("git", "-C", str(ROOT), "diff", "--quiet", "HEAD", "--", CATALOG,
-        "scripts/octelium-nofx-reconcile.py", "scripts/octelium-tunnel-check.py")
 
 
 @contextlib.contextmanager
@@ -178,9 +179,9 @@ def main():
     def interrupted(signum, _frame):
         raise SystemExit(128 + signum)
     signal.signal(signal.SIGTERM, interrupted)
-    desired = declared_service()
     if args.execute:
         verify_reviewed_main(args.expected_sha)
+    desired = declared_service()
     client = [verified_client(), "--domain", "stinkyboi.com"]
     if args.homedir:
         client += ["--homedir", str(pathlib.Path(args.homedir).resolve())]

@@ -75,9 +75,47 @@ class Reconciliation(unittest.TestCase):
     def test_reviewed_commit_is_required(self):
         with self.assertRaises(RuntimeError):
             nofx.verify_reviewed_main(None)
-        with patch.object(nofx, "run", return_value=subprocess.CompletedProcess([], 0, "b" * 40, "")):
+        def mismatched_commit(*command, **_kwargs):
+            return subprocess.CompletedProcess(command, 0, "" if "status" in command else "b" * 40, "")
+
+        with patch.object(nofx, "run", side_effect=mismatched_commit):
             with self.assertRaises(RuntimeError):
                 nofx.verify_reviewed_main("a" * 40)
+
+    def test_dirty_checkout_fails_before_catalog_or_transport(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            checkout = pathlib.Path(temporary) / "checkout"
+            nofx.run("git", "clone", "--quiet", "--shared", str(nofx.ROOT), str(checkout))
+            expected = nofx.run("git", "-C", str(checkout), "rev-parse", "HEAD").stdout.strip()
+            real_run = nofx.run
+
+            def run(*command, **kwargs):
+                if command[:2] == ("git", "ls-remote"):
+                    return subprocess.CompletedProcess(command, 0, f"{expected}\trefs/heads/main\n", "")
+                return real_run(*command, **kwargs)
+
+            with patch.object(nofx, "ROOT", checkout), patch.object(nofx, "run", side_effect=run):
+                nofx.verify_reviewed_main(expected)
+                for relative, staged in [("flake.nix", False), ("flake.lock", True),
+                                         ("scripts/unreviewed.py", False)]:
+                    with self.subTest(path=relative, staged=staged):
+                        target = checkout / relative
+                        original = target.read_bytes() if target.exists() else None
+                        target.write_bytes((original or b"") + b"\n# unreviewed fixture change\n")
+                        if staged:
+                            real_run("git", "-C", str(checkout), "add", "--", relative)
+                        with patch("sys.argv", ["reconcile", "--execute", "--expected-sha", expected]), \
+                                patch.object(nofx, "declared_service") as catalog, \
+                                patch.object(nofx, "native_transport") as transport:
+                            with self.assertRaisesRegex(RuntimeError, "clean checkout"):
+                                nofx.main()
+                            catalog.assert_not_called()
+                            transport.assert_not_called()
+                        if original is None:
+                            target.unlink()
+                        else:
+                            real_run("git", "-C", str(checkout), "restore", "--staged", "--worktree", "--", relative)
+                nofx.verify_reviewed_main(expected)
 
 
 if __name__ == "__main__":
