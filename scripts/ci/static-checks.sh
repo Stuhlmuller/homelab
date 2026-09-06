@@ -11,6 +11,7 @@ python3 scripts/ci/restore-image-publish-test.py
 python3 scripts/ci/restore-image-anonymous-pull-test.py
 python3 scripts/ci/restore-talos-synthetic-test.py
 python3 scripts/ci/restore-talos-native-test.py
+python3 scripts/ci/restore-activation-reference-test.py
 python3 scripts/ci/octelium-restore-docker-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 

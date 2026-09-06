@@ -62,11 +62,12 @@ The pin is the reviewed attestation that the cited protected publisher output
 matched the image; public run metadata and registry bytes do not independently
 prove approval or publisher provenance. See [[restore-image-anonymous-pull]].
 
-Future activation cannot simply embed a new image digest in the bound candidate:
-that changes the publication source and therefore the image's source label and
-digest again. A separate artifact/reference code path must resolve this
-self-reference before activation; excluding candidate inputs to bypass this
-source check is not a solution. The inactive candidate remains unchanged here.
+The dormant [[restore-activation-reference]] constructor resolves the image
+reference outside the bound candidate, using a separate suspended Application.
+Finalize that bound constructor before publication; later registration and
+suspension changes belong to reviewed release IaC. Embedding the digest in the
+candidate would change the publication source and image digest again. The
+candidate remains unchanged and inactive; no source exclusion bypass is added.
 
 ## Fixed execution and placement contract
 

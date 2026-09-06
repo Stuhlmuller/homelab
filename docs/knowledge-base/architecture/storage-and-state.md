@@ -215,6 +215,9 @@ material is loaded.** The application README defines that gate; manifest checks
 prove declarations only. Scheduled live success and production application
 recovery remain additional acceptance gates; Redis and Enterprise package-store
 recovery are outside this PostgreSQL drill.
+The dormant [[../operations/restore-activation-reference]] constructor keeps the
+published image reference in a separate suspended Application, avoiding changes
+to the publication-bound candidate. It grants no real backup-read activation.
 Grafana's shared backup-staleness rule includes this CronJob alongside the four
 media backup jobs and the isolated PostgreSQL restore drill: warn after 30 hours
 without success, including an established job that has never succeeded. The legacy rule UID is preserved during expansion.

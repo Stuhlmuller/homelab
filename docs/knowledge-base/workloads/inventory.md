@@ -54,8 +54,10 @@ archive to a separate retained NFS claim. The archive supports later migration
 and logical recovery, but it shares the QNAP failure domain and has not passed a
 restore drill. The daily isolated PostgreSQL drill has a repository-owned
 candidate excluded from live GitOps and suspended; activation and scheduled
-success remain required. Redis still lacks an independent
-backup.
+success remain required. The dormant
+[[../operations/restore-activation-reference]] template prepares a separate
+Application using the future published image; it is not registered in the stack.
+Redis still lacks an independent backup.
 
 `media-postgres` keeps recovery-aware 30-minute startup and runtime liveness
 windows plus a 120-second termination grace period, but active data now uses a
