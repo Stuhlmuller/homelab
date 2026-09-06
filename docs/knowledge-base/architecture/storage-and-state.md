@@ -252,6 +252,11 @@ failures so stale catalog state cannot trigger a silent redownload.
 
 ## Source Files
 
+The [[operations/n8n-paired-recovery-draft-2026-09-06|n8n paired recovery draft]]
+requires a matched database/configuration/filesystem checkpoint, node-level
+writer fencing, and an isolated restore. It records version-identity and
+maintenance-window gates; it does not authorize a recurring interruption.
+
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/cordium-bootstrap/cluster-config.yaml`
