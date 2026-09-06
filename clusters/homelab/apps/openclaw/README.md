@@ -49,6 +49,13 @@ the [official model definition](https://developers.openai.com/api/docs/models/gp
 Account access must be verified with an actual turn; configuration validation
 alone does not prove Astra entitlement.
 
+The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
+official ChatGPT endpoint. This deployment uses its retained subscription OAuth
+profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
+catalog but select API-key authentication because Astra is newer than its
+default dual-route model list. The empty authored model list leaves discovery
+to Codex; it does not manufacture runtime availability.
+
 The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
 architecture's SHA-256, and exposes `/toolbox/codex/codex` to the existing
 OpenClaw Codex plugin. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
