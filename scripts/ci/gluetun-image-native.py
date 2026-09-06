@@ -18,6 +18,7 @@ import time
 import uuid
 
 DOCKER_CONFIG = None
+STAGE = 'preflight'
 LABEL = 'homelab.gluetun-native-fixture'
 PEER_ADDRESS = '198.18.0.2'
 IMAGE_PATTERN = r'sha256:[0-9a-f]{64}'
@@ -68,8 +69,15 @@ def docker(*args, **kwargs):
     require(DOCKER_CONFIG is not None, 'Private Docker configuration is required')
     environment = {key: value for key, value in os.environ.items()
                    if not key.startswith(('DOCKER_', 'BUILDX_', 'BUILDKIT_'))}
-    return run(['docker', '--config', str(DOCKER_CONFIG), '--host', 'unix:///var/run/docker.sock', *args],
-               env=environment, **kwargs)
+    operation = args[0]
+    if operation == 'exec':
+        operation += ':' + Path(args[2]).name
+    require(re.fullmatch(r'[a-zA-Z0-9_.:-]+', operation), 'Invalid diagnostic operation')
+    try:
+        return run(['docker', '--config', str(DOCKER_CONFIG), '--host', 'unix:///var/run/docker.sock', *args],
+                   env=environment, **kwargs)
+    except RuntimeError as error:
+        raise RuntimeError(STAGE + ' [' + operation + ']: ' + str(error)) from None
 
 
 def image_contract(image):
@@ -192,6 +200,9 @@ def check_listener(owned, target, enabled):
 
 
 def case(owned, image, peer_ip, enabled, directory, invalid=None):
+    global STAGE
+    STAGE = directory.name + '/' + (invalid or ('pprof-on' if enabled else 'pprof-off'))
+    print(json.dumps({'stage': STAGE}), flush=True)
     config = directory / (invalid if invalid else 'on' if enabled else 'off')
     settings(config, enabled, invalid)
     target = owned.create(image, '--cap-add', 'NET_ADMIN', '--device', '/dev/net/tun',
@@ -270,6 +281,9 @@ def case(owned, image, peer_ip, enabled, directory, invalid=None):
 
 def openvpn_pair(owned, image, family, directory, expected_version=None, expected_ssl=None):
     """Fresh bidirectional HTTP over encrypted static-key TUN, never a provider VPN."""
+    global STAGE
+    STAGE = directory.name + '/openvpn-' + family + '/create-and-version'
+    print(json.dumps({'stage': STAGE}), flush=True)
     folder = directory / ('openvpn-' + family)
     folder.mkdir(mode=0o700)
     key_hex = os.urandom(256).hex()
@@ -317,9 +331,11 @@ def openvpn_pair(owned, image, family, directory, expected_version=None, expecte
         temporary.chmod(0o600)
         temporary.rename(config / 'openvpn.conf')
     for index, (target, _, _) in enumerate(peers):
+        STAGE = directory.name + '/openvpn-' + family + '/traffic-' + str(index)
+        print(json.dumps({'stage': STAGE}), flush=True)
         destination = subnet + '.' + str(2 - index)
         def transferred():
-            code, body = owned.execute(target, 'wget', '-q', '-T', '1', '-O', '-',
+            code, body = owned.execute(target, 'timeout', '2', 'wget', '-q', '-T', '1', '-O', '-',
                                        'http://' + destination + ':8080/marker', check=False, timeout=5)
             return code == 0 and body == b'fixture-ok\n'
         wait_until(transferred, 'Encrypted OpenVPN TUN traffic failed')
@@ -329,8 +345,10 @@ def openvpn_pair(owned, image, family, directory, expected_version=None, expecte
         require(b'Initialization Sequence Completed' in logs and b'AES-256-CBC' in logs,
                 'OpenVPN encrypted initialization evidence missing')
     # Stop one peer and require a fresh connection to fail: bridge HTTP cannot satisfy this test.
+    STAGE = directory.name + '/openvpn-' + family + '/stop-negative-control'
+    print(json.dumps({'stage': STAGE}), flush=True)
     docker('stop', '--time', '2', peers[1][0]['id'], timeout=10)
-    require(owned.execute(peers[0][0], 'wget', '-q', '-T', '1', '-O', '/dev/null',
+    require(owned.execute(peers[0][0], 'timeout', '2', 'wget', '-q', '-T', '1', '-O', '/dev/null',
                           'http://' + subnet + '.2:8080/marker', check=False, timeout=5)[0] != 0,
             'OpenVPN disconnected negative control unexpectedly succeeded')
 

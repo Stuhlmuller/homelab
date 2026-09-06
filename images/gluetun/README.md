@@ -2,7 +2,7 @@
 
 This path builds and validates a local Linux/amd64 candidate. It does not
 publish an image, change Deluge's image pin, or modify cluster state. Complete
-native Linux CI validation is still pending; local source and input checks
+native Linux CI validation is required; local source and input checks alone
 do not establish runtime compatibility or reproducible image output.
 
 ## Pinned inputs

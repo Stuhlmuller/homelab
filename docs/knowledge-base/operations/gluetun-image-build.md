@@ -5,8 +5,8 @@ Tags: #operations #validation #images
 The [candidate build runbook](../../../images/gluetun/README.md) owns the
 source, SDK, validation, and future rollout contract. The candidate is
 inactive: the build workflow has no publishing step and Deluge's image pin
-is unchanged. Native Linux CI has not yet established a successful complete
-build, reproducibility, or runtime compatibility.
+is unchanged. Native Linux CI must establish a successful complete build,
+reproducibility, runtime compatibility, and image scan for the reviewed source.
 
 The build keeps the pinned Gluetun application revision, updates its Go
 toolchain/dependencies, and retains both OpenVPN binary paths. The maintained
