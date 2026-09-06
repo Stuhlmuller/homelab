@@ -305,7 +305,10 @@ Require every node Ready and both DaemonSets fully updated, observed, and
 available on every node, with no misscheduled instances:
 
 ```sh
+(
+set -euo pipefail
 kubectl get nodes -o json | jq -e '
+  (.items | length) > 0 and
   all(.items[]; any(.status.conditions[]; .type == "Ready" and .status == "True"))'
 ambient_node_count="$(kubectl get nodes -o json | jq '.items | length')"
 kubectl -n istio-system get ds istio-cni-node ztunnel -o json |
@@ -316,12 +319,15 @@ kubectl -n istio-system get ds istio-cni-node ztunnel -o json |
       .status.updatedNumberScheduled == $n and
       .status.numberReady == $n and .status.numberAvailable == $n and
       .status.numberMisscheduled == 0)'
+)
 ```
 
 Check the live CNI ConfigMap, the rolled CNI Pods' configuration references,
 every ztunnel Pod's IPv6 setting, active connector enrollment, and Argo state:
 
 ```sh
+(
+set -euo pipefail
 kubectl -n istio-system get cm istio-cni-config -o json |
   jq -e '.data.AMBIENT_IPV6 == "false"'
 kubectl -n istio-system get pods -l k8s-app=istio-cni-node -o json |
@@ -340,29 +346,48 @@ kubectl -n octelium-client get pods -l app.kubernetes.io/instance=octelium-clien
       any(.status.conditions[]; .type == "Ready" and .status == "True"))'
 kubectl -n argocd get application istio -o json |
   jq -e '.status.sync.status == "Synced" and .status.health.status == "Healthy"'
+)
 ```
 
 Query the existing Prometheus service through the Kubernetes API. This helper
 uses the operator's kubeconfig and does not expose Prometheus publicly:
 
 ```sh
+(
+set -euo pipefail
 ambient_promql() {
   kubectl get --raw "/api/v1/namespaces/monitoring/services/http:prometheus-kube-prometheus-prometheus:9090/proxy/api/v1/query?$(
     python3 -c 'import sys, urllib.parse; print(urllib.parse.urlencode({"query": sys.argv[1]}))' "$1"
   )" | jq -e 'if .status != "success" then error("Prometheus query failed") else .data.result end'
 }
-ambient_promql 'min_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])'
-ambient_promql 'count_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])'
-ambient_promql 'sum by (pod) (increase(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h]))'
-ambient_promql 'count_over_time(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h])'
-ambient_promql 'min_over_time(up{job="kube-state-metrics"}[24h])'
-ambient_promql 'min_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])'
+ambient_promql 'min_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])' |
+  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing or unhealthy readiness series") end'
+ambient_promql 'count_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])' |
+  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete readiness history") end'
+ambient_promql 'sum by (pod) (increase(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h]))' |
+  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 0)
+    then . else error("Missing probe history or observed probe failures") end'
+ambient_promql 'count_over_time(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h])' |
+  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete probe history") end'
+ambient_promql 'min_over_time(up{job="kube-state-metrics"}[24h])' |
+  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing or unhealthy kube-state-metrics history") end'
+ambient_promql 'min_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])' |
+  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing or unhealthy kubelet probe scrape history") end'
+)
 ```
 
-Require readiness minimum `1` and failed-probe increase `0` for every current
-CNI and ztunnel Pod. At the declared 30-second scrape cadence, each readiness
-and failed-probe counter series needs 2,880 samples over 24 hours, with
-kube-state-metrics and every node's kubelet probe endpoint continuously
+The subshell stops at the first failed command without changing the caller's
+shell options. Each assertion must exit zero; empty results, bad values, and
+short observation windows fail. Require readiness minimum `1` and failed-probe
+increase `0` for every current CNI and ztunnel Pod. At the declared 30-second
+scrape cadence, each readiness and failed-probe counter series needs at least
+2,880 samples over 24 hours, with kube-state-metrics and every node's kubelet
+probe endpoint continuously
 `up == 1`. Match the returned Pod names to the live DaemonSet Pods;
 missing series, gaps, counter absence, or a replacement with less than 24 hours
 of observation do not prove recovery. If scrape cadence or target identity
