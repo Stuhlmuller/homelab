@@ -86,3 +86,13 @@ successful bounded health check using real homelab tools after the runtime fix.
 - `clusters/homelab/apps/openclaw/assistant/`
 - [[workloads/application-notes#OpenClaw]]
 - [[architecture/storage-and-state]]
+
+## Authenticated model preparation follow-up
+
+PR 971 selected subscription authentication, but the real gateway turn then
+failed with `Unable to materialize openai/gpt-6-astra for its prepared
+subscription route`. The pinned fallback builder only synthesizes unknown
+models before an auth profile is selected. An explicit Astra subscription
+model row supplies the missing metadata, retaining native account checks.
+A temporary `agent exec` test did not inherit a usable credential; it is not
+proof of gateway inference. Validate the actual gateway after rollout.

@@ -53,8 +53,10 @@ The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
 official ChatGPT endpoint. This deployment uses its retained subscription OAuth
 profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
 catalog but select API-key authentication because Astra is newer than its
-default dual-route model list. The empty authored model list leaves discovery
-to Codex; it does not manufacture runtime availability.
+default dual-route model list. An explicit Astra model row supplies subscription transport metadata for
+OpenClaw 2026.9.1, whose authenticated fallback builder predates Astra. Codex
+still owns native model availability and account authorization. The endpoint
+is `https://chatgpt.com/backend-api/codex`.
 
 The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
 architecture's SHA-256, and exposes `/toolbox/codex/codex` to the existing
