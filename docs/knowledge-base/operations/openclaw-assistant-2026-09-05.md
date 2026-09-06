@@ -116,3 +116,33 @@ auto-disable timestamp, declaration, and auth reason, then uses the public enabl
 command. Operator pauses and any later automatic pause remain untouched. Revert
 the recovery code to prevent this specific restoration; ordinary operator
 pausing remains supported. No scheduler database mutation is used.
+
+## Monitoring access acceptance
+
+PR 979 deployed successfully. The new code-mode host completed a local protocol
+execution test, and an actual Astra turn then read `TOOLS.md` and executed a
+command with no model fallback. All three managed schedules were enabled; the
+health watch had a successful scheduler run. This proves tool execution, not
+that monitoring data was available.
+
+The next acceptance check found no default Kubernetes context. Bare kubectl
+reached OpenClaw's local port 8080, whose `/readyz` response is not Kubernetes
+health. The public Grafana endpoint returned Cloudflare error 1010; the internal
+service reset the connection because OpenClaw was absent from its Istio client
+allowlist. Add only `cluster.local/ns/ai/sa/openclaw` to the existing Grafana
+policy and use the dedicated Grafana login with the internal service URL.
+Grafana application authentication remains enforced; direct Prometheus access
+and Kubernetes API privileges remain unchanged. Roll back by removing that
+principal through GitOps. Verify authenticated datasource discovery and actual
+Prometheus query results from an Astra tool call after sync.
+
+The managed `TOOLS.md` carries this monitoring path and the bare-kubectl guard.
+Its content digest triggers a rollout so scheduled checks receive the corrected
+instructions. The canonical mesh table and workload inventory record the new
+OpenClaw-to-Grafana dependency.
+
+Health checks must inspect both Prometheus metrics/rules and Alertmanager via
+Grafana datasource proxies. Most homelab rules are Grafana-managed and publish
+to Alertmanager, so an empty Prometheus ALERTS result cannot establish that no
+alerts are firing. Managed instructions now require both sources and explicitly
+report partial visibility if either fails.
