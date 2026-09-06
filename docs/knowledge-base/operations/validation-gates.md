@@ -372,12 +372,37 @@ ambient_promql 'sum by (pod) (increase(prober_probe_total{namespace="istio-syste
 ambient_promql 'count_over_time(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h])' |
   jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) >= 2880)
     then . else error("Missing or incomplete probe history") end'
+ambient_nodes="$(kubectl get nodes -o json | jq -ce '
+  [.items[] | [.metadata.name,
+    (([.status.addresses[] | select(.type == "InternalIP" and (.address | contains(":") | not)) | .address][0]) + ":10250")]] |
+  sort | unique | if length > 0 then . else error("No expected kubelet targets") end')"
+ambient_ksm_selector="$(kubectl -n monitoring get service prometheus-kube-state-metrics -o json |
+  jq -er '.spec.selector | to_entries | map("\(.key)=\(.value)") | join(",") | select(length > 0)')"
+ambient_ksm="$(kubectl -n monitoring get pods -l "$ambient_ksm_selector" -o json | jq -ce '
+  [.items[] | select(.metadata.deletionTimestamp == null and
+    .status.phase != "Failed" and .status.phase != "Succeeded") |
+    [.metadata.name, (.status.podIP + ":8080")]] |
+  sort | unique | if length > 0 then . else error("No expected kube-state-metrics targets") end')"
 ambient_promql 'min_over_time(up{job="kube-state-metrics"}[24h])' |
-  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 1)
-    then . else error("Missing or unhealthy kube-state-metrics history") end'
+  jq -e --argjson expected "$ambient_ksm" '
+    if ([.[] | [.metric.pod, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing, replaced or unhealthy kube-state-metrics targets") end'
+ambient_promql 'count_over_time(up{job="kube-state-metrics"}[24h])' |
+  jq -e --argjson expected "$ambient_ksm" '
+    if ([.[] | [.metric.pod, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete kube-state-metrics history") end'
 ambient_promql 'min_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])' |
-  jq -e 'if length > 0 and all(.[]; (.value[1] | tonumber) == 1)
-    then . else error("Missing or unhealthy kubelet probe scrape history") end'
+  jq -e --argjson expected "$ambient_nodes" '
+    if ([.[] | [.metric.node, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing, replaced or unhealthy kubelet probe targets") end'
+ambient_promql 'count_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])' |
+  jq -e --argjson expected "$ambient_nodes" '
+    if ([.[] | [.metric.node, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete kubelet probe scrape history") end'
 )
 ```
 
@@ -386,9 +411,10 @@ shell options. Each assertion must exit zero; empty results, bad values, and
 short observation windows fail. Require readiness minimum `1` and failed-probe
 increase `0` for every current CNI and ztunnel Pod. At the declared 30-second
 scrape cadence, each readiness and failed-probe counter series needs at least
-2,880 samples over 24 hours, with kube-state-metrics and every node's kubelet
-probe endpoint continuously
-`up == 1`. Match the returned Pod names to the live DaemonSet Pods;
+2,880 samples over 24 hours. Exporter `up` checks require the same coverage and
+match each live Pod/node and scrape address; the current IPv4 endpoints use
+ports 8080 and 10250. Every expected target must remain `up == 1`.
+Match the returned readiness/probe Pod names to the live DaemonSet Pods;
 missing series, gaps, counter absence, or a replacement with less than 24 hours
 of observation do not prove recovery. If scrape cadence or target identity
 changed, establish equivalent complete coverage before closing the finding;
@@ -398,20 +424,32 @@ Inspect all CNI and ztunnel logs for the same 24-hour window. Save current logs
 privately and print only their first/last timestamps when assessing retention:
 
 ```sh
+ambient_logs="$(umask 077; mktemp -d)"
+(
+set -euo pipefail
 umask 077
-ambient_logs="$(mktemp -d)"
-kubectl -n istio-system get pods -o json | jq -r '
-  .items[] | select(any(.metadata.ownerReferences[]?;
+test -n "$ambient_logs"
+test -d "$ambient_logs"
+kubectl -n istio-system get pods -o json | jq -er '
+  [.items[] | select(any(.metadata.ownerReferences[]?;
     .kind == "DaemonSet" and (.name == "istio-cni-node" or .name == "ztunnel"))) |
-  [.metadata.name, .spec.containers[0].name] | @tsv' |
+    [.metadata.name, .spec.containers[0].name]] |
+  if length > 0 then .[] | @tsv else error("No ambient Pods to collect") end' |
   while IFS="$(printf '\t')" read -r ambient_pod ambient_container; do
     kubectl -n istio-system logs "$ambient_pod" -c "$ambient_container" --timestamps \
       > "$ambient_logs/$ambient_pod.current.log"
+    test -s "$ambient_logs/$ambient_pod.current.log"
   done
 for ambient_file in "$ambient_logs"/*.log; do
+  test -s "$ambient_file"
   awk 'NR == 1 {print FILENAME, "first", $1} END {print FILENAME, "last", $1}' "$ambient_file"
 done
+)
 ```
+
+The directory variable remains available to later commands. Any failed fetch,
+empty log or empty Pod inventory exits nonzero; discard that incomplete capture
+and rerun the block before assessing retention.
 
 `kubectl logs --since=24h` alone cannot establish that rotated records still
 cover the window. If any current log starts too recently, identify its Pod UID,
