@@ -53,12 +53,16 @@ The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
 official ChatGPT endpoint. This deployment uses its retained subscription OAuth
 profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
 catalog but select API-key authentication because Astra is newer than its
-default dual-route model list. The empty authored model list leaves discovery
-to Codex; it does not manufacture runtime availability.
+default dual-route model list. An explicit Astra model row supplies subscription transport metadata for
+OpenClaw 2026.9.1, whose authenticated fallback builder predates Astra. Codex
+still owns native model availability and account authorization. The endpoint
+is `https://chatgpt.com/backend-api/codex`.
 
 The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
-architecture's SHA-256, and exposes `/toolbox/codex/codex` to the existing
-OpenClaw Codex plugin. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
+architecture's SHA-256 for both the CLI and its code-mode host, and exposes
+`/toolbox/codex/codex` to the existing
+OpenClaw Codex plugin. The sibling `codex-code-mode-host` executable is required
+for native tool execution; text-only inference does not test its presence. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
 added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
 OpenClaw is pinned to `2026.9.1`, which includes hidden models when discovering
 the Codex catalog. This matters because Astra's initial catalog entry is hidden
@@ -99,7 +103,10 @@ same-volume rollback checkpoint, not an independent backup.
 
 The app's postStart hook registers three jobs through the public automation
 CLI with stable declaration keys. Retries converge in place; they preserve
-job history and an owner's disabled state. After registering replacements, it
+job history and an owner's disabled state. A targeted recovery re-enables only
+the health job auto-disabled by the recorded September 5 authentication outage;
+it matches that exact failure timestamp and leaves subsequent failures paused.
+After registering replacements, it
 disables the two observed overlapping
 legacy jobs (Grafana auto-triage and the daily improvement loop) only when both
 ID and name match `retired-jobs.json`. Their history remains; security audits,
@@ -121,6 +128,69 @@ kubectl -n ai exec deploy/openclaw -c app -- \
 Existing alert hooks remain enabled.
 See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 [heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
+
+### Stale subscription limit recovery
+
+If heartbeat reports `agent-runner-failure` and gateway logs say the Astra
+auth profile is temporarily unavailable, inspect `openclaw models status
+--json`. A saved subscription block can outlive a provider usage reset:
+the native Codex path in 2026.9.1 may reject auth before reaching OpenClaw's
+normal background usage recheck. A valid OAuth expiry alone does not clear it.
+
+Run the repository helper from this checkout:
+
+```sh
+node --check scripts/openclaw-recover-subscription.mjs
+kubectl -n ai exec -i deploy/openclaw -c app -- \
+  node --input-type=module - --check < scripts/openclaw-recover-subscription.mjs
+kubectl -n ai exec -i deploy/openclaw -c app -- \
+  node --input-type=module - --recover < scripts/openclaw-recover-subscription.mjs
+```
+
+Check mode is read-only and exits nonzero for the same blocked-profile
+predicate used by auth preparation. Recovery invokes one upstream provider
+usage recheck and waits up to 30 seconds for persisted recovery. OpenClaw owns
+the transaction and verifies unchanged credentials and block generation;
+provider denial, active authentication failures, and probe throttling retain
+the block. It never spends a usage-reset credit, replaces credentials, edits
+SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
+profile and the reviewed 2026.9.1 runtime; re-review its internal imports before
+an upgrade. If it fails, inspect provider availability and auth diagnostics;
+do not erase the block or repeatedly force probes.
+
+After persisted recovery, the helper calls public `openclaw secrets reload`
+to refresh the running gateway's separate auth snapshot. This re-resolves
+existing secret references without editing them. Its command has a two-minute
+deadline and a one-minute gateway timeout. An already-clear rerun still reloads
+the gateway, so interrupted recovery converges without another provider probe.
+
+After recovery, repeat check mode. To verify immediately without owner delivery,
+enqueue a quiet internal system event, then inspect the completed heartbeat:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- openclaw system event --mode now \
+  --text 'Recovery verification: read HEARTBEAT.md with your normal file tool, then reply exactly NO_REPLY. Do not notify anyone or start other work.' --json
+kubectl -n ai exec deploy/openclaw -c app -- openclaw system heartbeat last --json
+```
+
+Require a newer successful heartbeat timestamp and check gateway logs.
+Auth recovery alone is not
+proof of inference or tool execution. No configuration rollback is needed:
+only upstream availability bookkeeping changes, and subsequent provider
+failures reinstate normal backoff. Remove the helper when upstream recovery
+covers the native Codex path.
+
+The September 6 incident also required clearing a missing native thread's
+active context through the public session-reset lifecycle; all 244 original
+transcript events were verified unchanged. That completed one-shot helper is
+not shipped: the public reset API lacks an expected session generation, so a
+preflight check cannot prevent owner activity from racing the reset. Future
+recovery needs a conditional mutation API or an explicitly quiesced session.
+Do not reset a live conversation using only a previously observed session key.
+Run OpenClaw CLI diagnostics serially; the incident included SQLite contention
+during concurrent diagnostic traffic.
+
+### Validation
 
 Before rollout, run the static gate and render app-template 4.4.0 plus this
 Kustomize directory. The focused `scripts/ci/openclaw-assistant-check.py`
@@ -308,6 +378,18 @@ login from AWS SSM:
 | --- | --- |
 | `/homelab/openclaw/grafana/username` | `GRAFANA_USERNAME` |
 | `/homelab/openclaw/grafana/password` | `GRAFANA_PASSWORD` |
+
+For in-cluster monitoring, use `http://grafana.monitoring.svc.cluster.local`
+with this dedicated login. Grafana's Istio policy permits the OpenClaw service
+account; Grafana still authenticates and authorizes API requests. The public
+Cloudflare endpoint may reject non-browser clients with error 1010. Use the
+Grafana datasource proxies for Prometheus metrics and Alertmanager alerts
+instead of direct monitoring-service access. Grafana-managed firings are in
+Alertmanager and do not appear in Prometheus ALERTS. Do not print Basic-auth headers or credential values.
+
+OpenClaw has no Kubernetes service-account token or default kubeconfig. Bare
+`kubectl` can contact its local proxy on port 8080 and return misleading results;
+use Grafana monitoring unless a separate authorized kubeconfig is configured.
 
 After replacing those placeholders, bump
 `homelab.rst.io/openclaw-grafana-login-ssm-version` in `values.yaml` to the
