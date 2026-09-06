@@ -1,5 +1,14 @@
 # Validation Gates
 
+The restore runtime prerequisite is documented in
+[[restore-talos-synthetic-gate]]. Its protected, synthetic-only workflow requires
+a committed published-image pin, exact current main, anonymous image-byte proof,
+fixed healthy worker capacity, admitted/process/image identity and verified
+owned-resource cleanup. The pin is intentionally absent and actual Talos proof
+remains unverified. Credential-free Linux CI exercises the exact script and
+startup-fault helper independently of that pin; it does not activate the
+isolated Octelium restore candidate.
+
 Tags: #operations #validation
 
 ## Default Gate

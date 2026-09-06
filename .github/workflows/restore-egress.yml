@@ -6,6 +6,8 @@ on:
       - images/postgres-restore-egress/**
       - scripts/ci/restore-egress/**
       - scripts/ci/restore-egress-check.py
+      - scripts/ci/restore-talos/**
+      - scripts/ci/restore-talos*.py
       - flake.nix
       - flake.lock
       - .github/workflows/restore-egress.yml
@@ -21,6 +23,8 @@ on:
       - images/postgres-restore-egress/**
       - scripts/ci/restore-egress/**
       - scripts/ci/restore-egress-check.py
+      - scripts/ci/restore-talos/**
+      - scripts/ci/restore-talos*.py
       - flake.nix
       - flake.lock
       - .github/workflows/restore-egress.yml

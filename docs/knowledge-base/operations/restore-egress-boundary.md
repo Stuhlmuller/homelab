@@ -49,6 +49,11 @@ checks this expected behavior. [io_uring socket operation](https://man7.org/linu
 
 ## Build and validation
 
+[[restore-talos-synthetic-gate]] adds the exact planned Talos fixture script and
+startup-fault helper to each credential-free native export proof. Actual Talos
+admission and runtime validation remain a separate protected workflow with an
+intentionally absent publication pin; Docker success does not satisfy that gate.
+
 On native x86_64 Linux with Docker and Nix:
 
 ```sh

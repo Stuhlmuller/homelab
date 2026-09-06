@@ -9,6 +9,8 @@ terragrunt_generate_stack
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/restore-image-publish-test.py
 python3 scripts/ci/restore-image-anonymous-pull-test.py
+python3 scripts/ci/restore-talos-synthetic-test.py
+python3 scripts/ci/restore-talos-native-test.py
 python3 scripts/ci/octelium-restore-docker-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 
@@ -790,6 +792,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/restore-image-publish.yml:prepare' \
     '.github/workflows/restore-image-publish.yml:publish' \
+    '.github/workflows/restore-talos-synthetic.yml:prepare' \
+    '.github/workflows/restore-talos-synthetic.yml:validate' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
     '.github/workflows/terragrunt-apply.yml:static-policy' \
     '.github/workflows/terragrunt-apply.yml:terragrunt-apply' \
@@ -821,6 +825,7 @@ done <<'EOF'
 .github/workflows/octelium-public-tunnel.yml d944741bcf57ca037b1fe7dc83de7a5e66a26dd8b3d35100ca990dbf3df5f3ba
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/restore-image-publish.yml ca53c573076af720a4e297c392801b2e2e95b5d44a8984467befa6a31b693dbf
+.github/workflows/restore-talos-synthetic.yml 19da7b2dfcbffd932771d37aa5625539c7a89a2a1625f8b4c41c188f550c0ef5
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
 .github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240

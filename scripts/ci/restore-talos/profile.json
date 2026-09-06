@@ -1,0 +1,32 @@
+{
+  "namespace": "octelium-storage",
+  "node": "zimaboard-1",
+  "nodeInfo": {
+    "architecture": "amd64",
+    "operatingSystem": "linux",
+    "osImage": "Talos (v1.11.3)",
+    "kernelVersion": "6.12.52-talos",
+    "kubeletVersion": "v1.34.1",
+    "containerRuntimeVersion": "containerd://2.1.4"
+  },
+  "capacity": {
+    "cpu": "500m",
+    "memory": "512Mi",
+    "ephemeral-storage": "3Gi",
+    "minimumNodefsBytes": 3221225472,
+    "maximumStatsAgeSeconds": 300
+  },
+  "job": {
+    "parallelism": 1,
+    "completions": 1,
+    "podReplacementPolicy": "Failed",
+    "activeDeadlineSeconds": 1800,
+    "backoffLimit": 0,
+    "ttlSecondsAfterFinished": 3600
+  },
+  "resources": {
+    "requests": {"cpu": "25m", "memory": "128Mi", "ephemeral-storage": "128Mi"},
+    "limits": {"cpu": "500m", "memory": "512Mi", "ephemeral-storage": "3Gi"}
+  },
+  "scratch": {"sizeLimit": "2Gi"}
+}
