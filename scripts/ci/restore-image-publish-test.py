@@ -84,24 +84,24 @@ class Contracts(unittest.TestCase):
                     if dirty:
                         request.assert_not_called()
 
-    def test_oci_content_source_platform_and_tested_image_binding(self):
+    def test_schema2_content_source_platform_and_tested_image_binding(self):
         with tempfile.TemporaryDirectory() as directory:
             layout = Path(directory)
-            (layout / "blobs/sha256").mkdir(parents=True)
 
             def write_blob(value):
                 body = json.dumps(value, sort_keys=True).encode()
                 digest = "sha256:" + hashlib.sha256(body).hexdigest()
-                (layout / "blobs/sha256" / digest[7:]).write_bytes(body)
+                (layout / digest[7:]).write_bytes(body)
                 return digest
 
             config = {"architecture": "amd64", "os": "linux", "config": {"Labels": {
                 "org.opencontainers.image.source": PUBLISH.SOURCE,
                 "org.opencontainers.image.revision": SHA}}}
             config_id = write_blob(config)
-            manifest = {"schemaVersion": 2, "config": {"digest": config_id}, "layers": []}
+            manifest = {"schemaVersion": 2, "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+                        "config": {"digest": config_id}, "layers": [{"digest": write_blob({"synthetic": "layer"})}]}
             digest = write_blob(manifest)
-            (layout / "index.json").write_text(json.dumps({"manifests": [{"digest": digest}]}))
+            (layout / "manifest.json").write_bytes((layout / digest[7:]).read_bytes())
             image = SimpleNamespace(image_id=config_id, source_sha=SHA)
             self.assertEqual(PUBLISH.verified_manifest(layout, image)[0], digest)
             for changed in (SimpleNamespace(image_id="sha256:" + "f" * 64, source_sha=SHA),
@@ -111,12 +111,21 @@ class Contracts(unittest.TestCase):
             config["architecture"] = "arm64"
             manifest["config"]["digest"] = write_blob(config)
             digest = write_blob(manifest)
-            (layout / "index.json").write_text(json.dumps({"manifests": [{"digest": digest}]}))
+            (layout / "manifest.json").write_bytes((layout / digest[7:]).read_bytes())
             with self.assertRaises(RuntimeError):
                 PUBLISH.verified_manifest(layout, SimpleNamespace(image_id=manifest["config"]["digest"], source_sha=SHA))
-            (layout / "blobs/sha256" / digest[7:]).write_bytes(b"corrupt")
+            # Even a supported format conversion with equivalent labels must not
+            # substitute rewritten config bytes for the tested image identity.
+            rewritten = {**config, "architecture": "amd64", "extra": "converted"}
+            manifest["config"]["digest"] = write_blob(rewritten)
+            digest = write_blob(manifest)
+            (layout / "manifest.json").write_bytes((layout / digest[7:]).read_bytes())
             with self.assertRaises(RuntimeError):
                 PUBLISH.verified_manifest(layout, image)
+            (layout / manifest["config"]["digest"][7:]).write_bytes(b"corrupt")
+            with self.assertRaises(RuntimeError):
+                PUBLISH.verified_manifest(layout, SimpleNamespace(
+                    image_id=manifest["config"]["digest"], source_sha=SHA))
 
     def test_absence_readback_conflict_and_idempotency(self):
         candidate = ("sha256:" + "a" * 64, b"exact manifest")

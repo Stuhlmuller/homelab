@@ -20,13 +20,14 @@ def main():
             # Cross a whole-second creation timestamp boundary between independent builds.
             time.sleep(2)
         with boundary.verified_image() as image, tempfile.TemporaryDirectory(prefix="restore-export-") as directory:
-            layout = Path(directory) / "oci"
-            PUBLISH.run("skopeo", "copy", f"docker-daemon:{image.image_id}", f"oci:{layout}:candidate")
+            layout = Path(directory) / "image"
+            PUBLISH.run("skopeo", "copy", "--format", "v2s2", "--dest-compress",
+                        f"docker-daemon:{image.image_id}", f"dir:{layout}")
             candidate = PUBLISH.verified_manifest(layout, image)
             if expected is not None and candidate != expected:
                 raise RuntimeError("Independent tested image exports differ")
             expected = candidate
-    print(f"Independent tested OCI exports matched: {expected[0]}")
+    print(f"Independent tested schema2 exports matched: {expected[0]}")
 
 
 if __name__ == "__main__":

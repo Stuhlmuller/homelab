@@ -67,28 +67,27 @@ def verify_main(expected):
 
 def blob(layout, digest):
     if not re.fullmatch(DIGEST, digest):
-        raise RuntimeError("Malformed OCI digest")
-    body = (layout / "blobs" / "sha256" / digest.split(":")[1]).read_bytes()
+        raise RuntimeError("Malformed Image digest")
+    body = (layout / digest.split(":")[1]).read_bytes()
     if "sha256:" + hashlib.sha256(body).hexdigest() != digest:
-        raise RuntimeError("OCI content digest mismatch")
+        raise RuntimeError("Image content digest mismatch")
     return body
 
 
 def verified_manifest(layout, image):
-    index = json.loads((layout / "index.json").read_bytes())
-    if len(index["manifests"]) != 1:
-        raise RuntimeError("Only the tested single-architecture image may be published")
-    digest = index["manifests"][0]["digest"]
-    raw = blob(layout, digest)
+    raw = (layout / "manifest.json").read_bytes()
+    digest = "sha256:" + hashlib.sha256(raw).hexdigest()
     manifest = json.loads(raw)
-    if manifest["schemaVersion"] != 2 or manifest["config"]["digest"] != image.image_id:
-        raise RuntimeError("OCI export does not match the tested Docker image")
+    if (manifest["schemaVersion"] != 2
+            or manifest.get("mediaType") != "application/vnd.docker.distribution.manifest.v2+json"
+            or manifest["config"]["digest"] != image.image_id):
+        raise RuntimeError("Schema2 export does not match the tested Docker image")
     config = json.loads(blob(layout, image.image_id))
     labels = config["config"]["Labels"]
     if (config["architecture"] != "amd64" or config["os"] != "linux"
             or labels.get("org.opencontainers.image.source") != SOURCE
             or labels.get("org.opencontainers.image.revision") != image.source_sha):
-        raise RuntimeError("OCI source/platform identity mismatch")
+        raise RuntimeError("Image source/platform identity mismatch")
     for layer in manifest["layers"]:
         blob(layout, layer["digest"])
     return digest, raw
@@ -157,8 +156,9 @@ def main():
         if image.source_sha != args.expected_sha:
             raise RuntimeError("Tested source changed")
         scratch = Path(directory)
-        layout = scratch / "oci"
-        run("skopeo", "copy", f"docker-daemon:{image.image_id}", f"oci:{layout}:candidate")
+        layout = scratch / "image"
+        run("skopeo", "copy", "--format", "v2s2", "--dest-compress",
+            f"docker-daemon:{image.image_id}", f"dir:{layout}")
         candidate = verified_manifest(layout, image)
         if args.publish:
             if candidate[0] != args.expected_digest:
@@ -175,7 +175,7 @@ def main():
                     stdout=subprocess.DEVNULL)
                 verify_main(args.expected_sha)
                 run("skopeo", "copy", "--authfile", str(auth), "--preserve-digests",
-                    f"oci:{layout}:candidate", f"docker://{REGISTRY}:{tag}")
+                    f"dir:{layout}", f"docker://{REGISTRY}:{tag}")
 
             publish_candidate(registry, tag, candidate, push)
             receipt = {"source": args.expected_sha, "image": f"{REGISTRY}@{candidate[0]}",

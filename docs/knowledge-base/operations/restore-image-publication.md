@@ -7,7 +7,7 @@ Related: [[restore-egress-boundary]], [[../architecture/gitops-flow]],
 
 This follow-up adds a manual publisher for the exact tested amd64 restore image.
 It changes no live workload, registry visibility, GitHub environment or cloud
-configuration. Publication has not been executed. The extended native OCI
+configuration. Publication has not been executed. The extended native schema2
 reproducibility test also remains pending until this follow-up's Linux CI runs.
 Parent PR #978's Docker result is not evidence that this publisher has run.
 
@@ -20,7 +20,7 @@ its owning declared path before dispatching.
 
 `.github/workflows/restore-image-publish.yml` accepts only an exact expected
 main SHA. Its read-only prepare job runs repository/static policy checks and the
-native image/SQL/network tests, then records a candidate OCI manifest digest.
+native image/SQL/network tests, then records a candidate schema2 manifest digest.
 Only the dependent `homelab-production` job has `contents: read` plus
 `packages: write`. It checks exact dispatch/checkout/current-main identity,
 rebuilds and retests from that main commit, and requires the exact prepare digest.
@@ -31,9 +31,14 @@ is no PAT, cached-login or local-operator credential fallback.
 The Docker image ID is captured and validated immediately after building, then
 all tests and the export address that immutable ID. The temporary tag is used
 only for building and cleanup. The config is bound to source SHA and repository
-label before tests. [Docker-daemon image ID syntax][transport]. The publisher exports that very image to OCI, hashes every config,
+label before tests. [Docker-daemon image ID syntax][transport]. The publisher exports that very image as Docker schema2 into Skopeo’s `dir:` layout, hashes every config,
 manifest and layer blob, and confirms the tested config ID and amd64 identity.
-It transfers with Skopeo `--preserve-digests`. Authenticated registry readback must
+Export uses `--format v2s2 --dest-compress` to preserve tested config bytes and
+prepare compressed layer digests before publication. Default OCI conversion
+rewrote the config in Linux run `34012615040` and correctly failed its binding
+gate. The directory transport supports the original schema2 manifest; the OCI
+layout transport advertises only OCI media types. [Transport implementation][directory].
+Publication transfers with Skopeo `--preserve-digests`. Authenticated registry readback must
 return the same manifest bytes/digest at both the source tag and digest address.
 The prepare/rebuild equality is fail-closed: toolchain/export drift requires
 investigation, not accepting a new digest at the approval boundary.
@@ -77,11 +82,11 @@ extra credentials are not an implicit part of this prerequisite. [GHCR visibilit
 ## Validation and rollback
 
 `restore-image-publish-test.py` exercises source-context rejection, content/source
-binding, malformed/corrupt OCI data, explicit registry absence, overwrite refusal,
+binding, malformed/corrupt schema2 data, explicit registry absence, overwrite refusal,
 idempotent readback and changed response rejection without any network calls.
 The normal static gate runs it and pins both credential-bearing jobs plus the
 complete workflow hash in its reviewed inventory. The Linux image job additionally performs two
-independent complete image builds/tests/OCI exports and requires matching bytes.
+independent complete image builds/tests/schema2 exports and requires matching bytes.
 Both builds disable Docker layer caching and are separated by two seconds to
 expose creation-time drift; the immutable base image may remain cached. The job
 has no publishing permission or credentials. These gates must pass on the
@@ -99,3 +104,5 @@ Neither a new registry digest nor Docker success authorizes real backup reads.
 [registry]: https://distribution.github.io/distribution/spec/api/
 
 [transport]: https://github.com/containers/image/blob/main/docs/containers-transports.5.md
+
+[directory]: https://github.com/containers/image/blob/main/directory/directory_dest.go
