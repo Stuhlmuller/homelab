@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/component: restore-drill
     app.kubernetes.io/part-of: octelium
 spec:
-  schedule: "45 3 * * *"
+  schedule: "45 4 * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 3600

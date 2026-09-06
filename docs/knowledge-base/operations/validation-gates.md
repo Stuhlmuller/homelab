@@ -420,7 +420,10 @@ completion marker. This bounds the previously observed NFS session scan.
 point against disposable PostgreSQL 14 fixtures using the pinned Nix toolchain.
 It requires actual globals/database restore, preserved backup source, private
 output, and failure on corrupt or stale newest archives, invalid checksum paths,
-empty required tables, and missing encrypted-resource keys. Rendered guards
+empty required tables, missing encrypted-resource keys, and previous-day-only
+backups. A current invalid set fails even when a valid previous-day set exists.
+Rendered timing guards include the backup's late-start and execution deadlines
+plus a 15-minute margin. Rendered guards
 require only the read-only backup PVC plus bounded scratch, no credentials, and
 no additive NetworkPolicy allow selecting the drill. The full static gate runs
 this check; `postgresql_14` is a validation dependency in `flake.nix`.

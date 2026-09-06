@@ -196,7 +196,9 @@ password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup. A daily isolated restore drill now
-restores the newest complete PostgreSQL set into disposable local scratch and
+runs at 04:45 UTC, after the backup's full late-start/runtime window, and requires
+the newest complete PostgreSQL set to be from the current UTC day. It restores
+into disposable local scratch and
 checks resource identities, encrypted-resource key references, and index validity.
 It mounts only the backup claim read-only, has no credentials or Pod network
 access, and has a 30-minute deadline. The scheduled live success and production

@@ -34,6 +34,9 @@ find "$backup_root" -mindepth 1 -maxdepth 1 -type d \
 LC_ALL=C sort "$work/backup-ids" > "$work/sorted-backup-ids"
 backup_id="$(tail -n 1 "$work/sorted-backup-ids")"
 test -n "$backup_id"
+# The daily drill must validate today's recovery point. Yesterday's successful
+# set cannot mask a missing, delayed, or invalid current-day backup.
+test "${backup_id%T*}" = "$(date -u +%Y%m%d)"
 backup="$backup_root/$backup_id"
 test ! -L "$backup"
 backup_date="$(printf '%s' "$backup_id" | sed 's/^\(....\)\(..\)\(..\)T\(..\)\(..\)\(..\)Z$/\1-\2-\3 \4:\5:\6 UTC/')"

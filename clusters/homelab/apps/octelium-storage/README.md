@@ -47,12 +47,15 @@ independent backup, and application recovery remain separate requirements.
 
 ## Isolated PostgreSQL Restore Drill
 
-`octelium-postgres-restore-drill` runs daily at 03:45 UTC, after the backup's
-one-hour deadline. It selects the newest atomically published recovery set,
-requires its timestamp to be no older than 30 hours, and copies only
+`octelium-postgres-restore-drill` runs daily at 04:45 UTC. The 02:30 backup can
+start one hour late and run for one hour, so the drill waits until 15 minutes
+after that complete 04:30 window. It selects the newest atomically published
+recovery set, requires a timestamp from the current UTC day and no older than
+30 hours, and copies only
 `globals.sql`, `octelium.dump`, and `SHA256SUMS` into disposable storage. Missing,
 stale, invalid, or corrupt newest sets fail; the drill never falls back to an
-older backup or changes the source.
+older backup or changes the source. A valid previous-day set cannot count as
+today's successful drill.
 
 After verifying the exact checksum manifest and archive listing, it initializes
 PostgreSQL 14.23, restores role globals, creates an `octelium` database owned by

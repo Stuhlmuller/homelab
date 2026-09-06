@@ -104,7 +104,7 @@ class RestoreDrillTest(unittest.TestCase):
         self.assertFalse((self.work / "restore-drill/pgdata/postmaster.pid").exists())
 
     def test_corrupt_latest_archive_does_not_fall_back(self):
-        self.backup(hours_old=1)
+        self.backup(hours_old=24)
         latest = self.backup()
         with (latest / "octelium.dump").open("ab") as stream:
             stream.write(b"corrupt")
@@ -119,7 +119,12 @@ class RestoreDrillTest(unittest.TestCase):
         self.backup(hours_old=31)
         self.assert_failure(self.drill(), "backup-selection")
 
+    def test_previous_day_cannot_count_as_current_restore_success(self):
+        self.backup(hours_old=24)
+        self.assert_failure(self.drill(), "backup-selection")
+
     def test_restored_encrypted_resource_without_key_fails(self):
+        self.backup(hours_old=24)
         self.sql("UPDATE octelium_encrypted_resources SET key_uid='missing-key'")
         self.backup()
         self.assert_failure(self.drill(), "restored-data-invariants")
@@ -134,6 +139,19 @@ class RestoreDrillTest(unittest.TestCase):
         objects = json.loads(run("yq", "ea", "-o=json", "[.]", "-", input=rendered).stdout)
         job = next(o for o in objects if o["kind"] == "CronJob" and
                    o["metadata"]["name"] == "octelium-postgres-restore-drill")
+        backup = next(o for o in objects if o["kind"] == "CronJob" and
+                      o["metadata"]["name"] == "octelium-postgres-backup")
+        self.assertEqual(backup["spec"]["timeZone"], "Etc/UTC")
+        self.assertEqual(job["spec"]["timeZone"], "Etc/UTC")
+        backup_minute, backup_hour, *backup_days = backup["spec"]["schedule"].split()
+        drill_minute, drill_hour, *drill_days = job["spec"]["schedule"].split()
+        self.assertEqual(backup_days, ["*", "*", "*"])
+        self.assertEqual(drill_days, ["*", "*", "*"])
+        latest_backup_finish = (int(backup_hour) * 3600 + int(backup_minute) * 60 +
+                                backup["spec"]["startingDeadlineSeconds"] +
+                                backup["spec"]["jobTemplate"]["spec"]["activeDeadlineSeconds"])
+        drill_start = int(drill_hour) * 3600 + int(drill_minute) * 60
+        self.assertGreaterEqual(drill_start, latest_backup_finish + 15 * 60)
         pod = job["spec"]["jobTemplate"]["spec"]["template"]["spec"]
         self.assertFalse(pod["automountServiceAccountToken"])
         self.assertNotIn("initContainers", pod)
