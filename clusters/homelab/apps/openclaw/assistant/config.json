@@ -64,9 +64,20 @@
   "models": {
     "providers": {
       "openai": {
-        "baseUrl": "https://chatgpt.com/backend-api",
+        "baseUrl": "https://chatgpt.com/backend-api/codex",
         "api": "openai-chatgpt-responses",
-        "models": []
+        "models": [
+          {
+            "id": "gpt-6-astra",
+            "name": "GPT-6 Astra",
+            "api": "openai-chatgpt-responses",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ]
+          }
+        ]
       }
     }
   }
