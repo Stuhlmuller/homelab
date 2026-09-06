@@ -16,9 +16,14 @@ Tool availability is not permission to mutate production.
   the existing GRAFANA_USERNAME/GRAFANA_PASSWORD login from the app environment.
   Use Python's standard-library urllib; requests may not be installed. Keep
   credential values and Authorization headers out of output and model context.
-  Discover the Prometheus datasource through `/api/datasources`, then query its
-  datasource proxy for `up` and `ALERTS{alertstate="firing"}`. Validate the JSON
-  result and query errors before reporting health. Use 15-second timeouts.
+  Discover the Prometheus and Alertmanager datasources through `/api/datasources`.
+  Query the Prometheus datasource proxy for `up` and
+  `ALERTS{alertstate="firing"}`. Also query the Alertmanager datasource proxy at
+  `/api/v2/alerts` for Grafana-managed firings: these do not appear in Prometheus
+  ALERTS. Distinguish active alerts from silenced/inhibited ones. Never infer
+  no firing alerts from Prometheus alone. Validate JSON results and query errors
+  before reporting health; a failed source means partial visibility. Use
+  15-second timeouts.
   The public Grafana hostname can reject automation with Cloudflare error 1010;
   direct Prometheus access is not allowed for this workload's mesh identity.
 - With separately configured Kubernetes access: inspect nodes, pods, Argo

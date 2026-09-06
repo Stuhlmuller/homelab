@@ -140,3 +140,9 @@ The managed `TOOLS.md` carries this monitoring path and the bare-kubectl guard.
 Its content digest triggers a rollout so scheduled checks receive the corrected
 instructions. The canonical mesh table and workload inventory record the new
 OpenClaw-to-Grafana dependency.
+
+Health checks must inspect both Prometheus metrics/rules and Alertmanager via
+Grafana datasource proxies. Most homelab rules are Grafana-managed and publish
+to Alertmanager, so an empty Prometheus ALERTS result cannot establish that no
+alerts are firing. Managed instructions now require both sources and explicitly
+report partial visibility if either fails.

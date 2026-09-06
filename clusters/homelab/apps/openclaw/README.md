@@ -320,8 +320,9 @@ For in-cluster monitoring, use `http://grafana.monitoring.svc.cluster.local`
 with this dedicated login. Grafana's Istio policy permits the OpenClaw service
 account; Grafana still authenticates and authorizes API requests. The public
 Cloudflare endpoint may reject non-browser clients with error 1010. Use the
-Grafana datasource proxy for Prometheus queries instead of direct Prometheus
-access. Do not print Basic-auth headers or credential values.
+Grafana datasource proxies for Prometheus metrics and Alertmanager alerts
+instead of direct monitoring-service access. Grafana-managed firings are in
+Alertmanager and do not appear in Prometheus ALERTS. Do not print Basic-auth headers or credential values.
 
 OpenClaw has no Kubernetes service-account token or default kubeconfig. Bare
 `kubectl` can contact its local proxy on port 8080 and return misleading results;
