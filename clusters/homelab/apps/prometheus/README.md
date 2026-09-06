@@ -29,6 +29,44 @@ the Discord URL into Alertmanager's runtime config Secret because the
 Prometheus Operator schema does not support `webhook_url_file` for Discord.
 The secret is not committed.
 
+## Job Failure Recovery
+
+`job-prometheusrules.yaml` replaces the chart's `KubeJobFailed` rule while
+keeping its warning severity and 15-minute delay. Retained failed CronJob runs
+stop alerting only when metrics prove their owner succeeded after the failure.
+Standalone Jobs and CronJobs without a newer success continue alerting. Do not
+delete failed Jobs to clear notifications; their retained status is evidence.
+
+Job creation alone cannot establish that ordering: overlapping runs can fail
+after another run succeeds. kube-state-metrics exposes no failure-transition
+timestamp, so the rule uses a timestamp from an actual failed-condition sample.
+Its 15-day history matches Prometheus retention, sampled every five minutes.
+Current Job creation excludes older incarnations with reused names. A unique
+controller owner, CronJob creation no later than the Job, and zero active Job
+Pods are also required before suppression. Joins include namespace, and
+duplicate scrape targets are deduplicated.
+
+Missing ownership, activity, creation, success, or historical evidence keeps
+the failure eligible for alerting. Coarse sampling, lost history, or a success
+older than retention may require another successful run to establish recovery.
+Suspending a CronJob does not suppress failures; retirement needs a separate,
+explicitly scoped decision. Backup-staleness alerts remain independent.
+
+Run `nix develop --command python3 scripts/ci/job-alert-recovery-check.py` to
+exercise the actual rules with synthetic failure/success ordering, overlapping
+runs, later failures, reused names, namespace boundaries, missing metrics, and
+duplicate scrapes. The full static gate runs the same promtool fixtures.
+The metric contracts are documented upstream for
+[Jobs](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/metrics/workload/job-metrics.md)
+and [CronJobs](https://github.com/kubernetes/kube-state-metrics/blob/main/docs/metrics/workload/cronjob-metrics.md).
+
+After Argo CD reconciles, verify `job-failure-recovery` exists and Prometheus
+reports one healthy `KubeJobFailed` rule in the `homelab.jobs` group. Check that
+recovered historical failures disappear while later failures remain. Roll back
+by reverting both the custom rule registration and
+`defaultRules.disabled.KubeJobFailed`; this restores the chart rule without
+removing Job evidence.
+
 ## Argo CD Metrics
 
 `argocd-servicemonitors.yaml` owns the ServiceMonitor resources that scrape the

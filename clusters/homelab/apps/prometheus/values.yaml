@@ -16,6 +16,8 @@ defaultRules:
     kubeSchedulerRecording: false
   disabled:
     Watchdog: true
+    # Replaced by job-prometheusrules.yaml with proven CronJob recovery.
+    KubeJobFailed: true
 kubeControllerManager:
   enabled: false
 kubeProxy:

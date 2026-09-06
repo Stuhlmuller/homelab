@@ -329,6 +329,23 @@ observations below retain their original dates.
   historical WAN success no longer proves current public availability; the
   origin-port apply workflow is retired.
 
+- **Status:** fix staged; rollout verification pending
+- **Area:** observability / retained CronJob failure alerts
+- **Evidence:** The September 2026 audit found the default `KubeJobFailed`
+  expression still alerting for retained backup failures after later successful
+  runs. The repository replacement in
+  `clusters/homelab/apps/prometheus/job-prometheusrules.yaml` requires an actual
+  observed failure before a newer success of its unique CronJob controller.
+  Namespace and creation checks prevent unrelated owners or recreated names
+  from establishing recovery; missing metrics leave failures eligible.
+- **Risk:** Observation history is limited to the configured 15-day retention.
+  Missing or coarse history can preserve an alert until another successful run.
+  Suspension alone does not establish recovery, including the retired UPnP path.
+- **Next step:** After Argo CD reconciliation, verify one healthy replacement
+  rule, recovered backup alerts cleared, and later or unrecovered failures still
+  present. Keep retained Jobs and independent backup-staleness alerts. See
+  [[audit-2026-09-04]] and [[validation-gates]].
+
 - **Status:** fixed; direct availability alert retained
 - **Area:** observability / kube-state-metrics
 - **Evidence:** Read-only checks on 2026-07-19 showed all four expected nodes

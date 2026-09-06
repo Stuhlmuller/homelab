@@ -8,6 +8,10 @@ terragrunt_generate_stack
 
 python3 scripts/ci/octelium-tunnel-check-test.py
 
+echo "::group::CronJob failure alert recovery"
+python3 scripts/ci/job-alert-recovery-check.py
+echo "::endgroup::"
+
 echo "::group::Octelium console login redirect"
 (
   redirect_source="$(mktemp)"
