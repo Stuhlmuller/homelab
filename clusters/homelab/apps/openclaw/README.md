@@ -129,6 +129,79 @@ Existing alert hooks remain enabled.
 See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 [heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
 
+### Stale subscription limit recovery
+
+If heartbeat reports `agent-runner-failure` and gateway logs say the Astra
+auth profile is temporarily unavailable, inspect `openclaw models status
+--json`. A saved subscription block can outlive a provider usage reset:
+the native Codex path in 2026.9.1 may reject auth before reaching OpenClaw's
+normal background usage recheck. A valid OAuth expiry alone does not clear it.
+
+Run the repository helper from this checkout:
+
+```sh
+node --check scripts/openclaw-recover-subscription.mjs
+kubectl -n ai exec -i deploy/openclaw -c app -- \
+  node --input-type=module - --check < scripts/openclaw-recover-subscription.mjs
+kubectl -n ai exec -i deploy/openclaw -c app -- \
+  node --input-type=module - --recover < scripts/openclaw-recover-subscription.mjs
+```
+
+Check mode is read-only and exits nonzero for the same blocked-profile
+predicate used by auth preparation. Recovery invokes one upstream provider
+usage recheck and waits up to 30 seconds for persisted recovery. OpenClaw owns
+the transaction and verifies unchanged credentials and block generation;
+provider denial, active authentication failures, and probe throttling retain
+the block. It never spends a usage-reset credit, replaces credentials, edits
+SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
+profile and the reviewed 2026.9.1 runtime; re-review its internal imports before
+an upgrade. If it fails, inspect provider availability and auth diagnostics;
+do not erase the block or repeatedly force probes.
+
+After persisted recovery, the helper calls public `openclaw secrets reload`
+to refresh the running gateway's separate auth snapshot. This re-resolves
+existing secret references without editing them. Its command has a two-minute
+deadline and a one-minute gateway timeout. An already-clear rerun still reloads
+the gateway, so interrupted recovery converges without another provider probe.
+
+After recovery, repeat check mode. To verify immediately without owner delivery,
+enqueue a quiet internal system event, then inspect the completed heartbeat:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- openclaw system event --mode now \
+  --text 'Recovery verification: read HEARTBEAT.md with your normal file tool, then reply exactly NO_REPLY. Do not notify anyone or start other work.' --json
+kubectl -n ai exec deploy/openclaw -c app -- openclaw system heartbeat last --json
+```
+
+Require a newer successful heartbeat timestamp and check gateway logs.
+Auth recovery alone is not
+proof of inference or tool execution. No configuration rollback is needed:
+only upstream availability bookkeeping changes, and subsequent provider
+failures reinstate normal backoff. Remove the helper when upstream recovery
+covers the native Codex path.
+
+The September 6 incident also exposed a missing native thread after auth
+recovered. The one-shot helper below matches only that failed main session and
+observed thread error, calls public `sessions.reset`, and verifies every
+original transcript event remains byte-for-byte unchanged. Reset clears active
+model context and the broken harness binding; workspace memory is unaffected.
+It is not a general response to transient inference failures. Never broaden
+its recorded identity checks to reset another conversation. Run check mode
+first and review the diagnosed failure before recovery:
+
+```sh
+kubectl -n ai exec -i deploy/openclaw -c app -- \
+  python3 - --check < scripts/openclaw-recover-heartbeat-20260906.py
+kubectl -n ai exec -i deploy/openclaw -c app -- \
+  python3 - --recover < scripts/openclaw-recover-heartbeat-20260906.py
+```
+
+Then repeat the quiet heartbeat verification above. Prior history remains in
+the canonical transcript; do not restore the missing native binding. Repeated
+recovery refuses a session that is no longer failed or whose identity changed.
+
+### Validation
+
 Before rollout, run the static gate and render app-template 4.4.0 plus this
 Kustomize directory. The focused `scripts/ci/openclaw-assistant-check.py`
 exercises preservation, repeatability, ambiguous routing, symlink rejection,

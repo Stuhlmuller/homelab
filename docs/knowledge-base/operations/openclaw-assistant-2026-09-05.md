@@ -80,6 +80,38 @@ Live inference remains the acceptance gate.
 Still required: successful Astra inference, confirmed Discord delivery, and a
 successful bounded health check using real homelab tools after the runtime fix.
 
+## Stale subscription block, September 6
+
+At 18:39 UTC, `heartbeat-main` failed with `agent-runner-failure`; gateway
+auth preparation rejected Astra before inference. The saved auth usage state
+held an account-wide `subscription_limit` block from `wham`, expiring at
+02:29 UTC September 7. A read-only provider usage request with the same
+OpenClaw credential returned `allowed: true`, `limit_reached: false`, and
+6 percent weekly use. The credential had not expired. This is a stale local
+block, not evidence that another login or paid usage reset is needed.
+
+`scripts/openclaw-recover-subscription.mjs` uses the pinned runtime's actual
+cooldown predicate for its read-only check, and its native generation-checked
+provider recheck for recovery. The original check reproduced the failure.
+The helper fails closed on other versions, ambiguous profiles, unrelated auth
+failures, or provider denial. See the app README for execution and rollback.
+Native provider recheck cleared the saved block; a separate public
+`secrets.reload` was necessary to refresh the running gateway auth snapshot.
+The next heartbeat reached Codex but failed with `thread not loaded` for its
+retained main-session binding. The per-agent Codex home is rebuilt on Pod
+replacement; that retained binding did not recover transparently in this run.
+The one-shot `scripts/openclaw-recover-heartbeat-20260906.py` uses the public
+session-reset lifecycle for this exact failed session. At 19:03 UTC it cleared
+active model context and the native binding while verifying all 244 original
+canonical transcript events remained unchanged. Workspace memory is preserved.
+Heartbeat inference/tool verification remains required after this reset.
+
+Follow-up: verify retained native bindings recover across Pod replacement
+before treating the Codex home as universally rebuildable. Do not make it
+persistent on NFS without reviewing SQLite/storage implications. Existing
+SQLite lock contention also delayed maintenance and CLI diagnostics during
+this incident; its underlying cause remains unverified.
+
 ## Sources
 
 - `clusters/homelab/apps/openclaw/README.md`
