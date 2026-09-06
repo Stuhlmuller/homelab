@@ -28,8 +28,10 @@ No PR code, downloaded Actions artifact, floating image tag or saved runner imag
 is promoted into the protected job. Credentials are injected only by CI; there
 is no PAT, cached-login or local-operator credential fallback.
 
-The tested Docker config is bound to the source SHA and source-repository label
-before tests. The publisher exports that very image to OCI, hashes every config,
+The Docker image ID is captured and validated immediately after building, then
+all tests and the export address that immutable ID. The temporary tag is used
+only for building and cleanup. The config is bound to source SHA and repository
+label before tests. [Docker-daemon image ID syntax][transport]. The publisher exports that very image to OCI, hashes every config,
 manifest and layer blob, and confirms the tested config ID and amd64 identity.
 It transfers with Skopeo `--preserve-digests`. Authenticated registry readback must
 return the same manifest bytes/digest at both the source tag and digest address.
@@ -79,8 +81,10 @@ binding, malformed/corrupt OCI data, explicit registry absence, overwrite refusa
 idempotent readback and changed response rejection without any network calls.
 The normal static gate runs it and pins both credential-bearing jobs plus the
 complete workflow hash in its reviewed inventory. The Linux image job additionally performs two
-independent complete image builds/tests/OCI exports and requires matching bytes;
-it has no publishing permission or credentials. These gates must pass on the
+independent complete image builds/tests/OCI exports and requires matching bytes.
+Both builds disable Docker layer caching and are separated by two seconds to
+expose creation-time drift; the immutable base image may remain cached. The job
+has no publishing permission or credentials. These gates must pass on the
 final combined source, including the parent's SCM_RIGHTS denial fix.
 
 Before publication, cancelling the dispatch leaves GHCR unchanged. After a
@@ -93,3 +97,5 @@ Neither a new registry digest nor Docker success authorizes real backup reads.
 [ghcr]: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
 [skopeo]: https://github.com/containers/skopeo/blob/main/docs/skopeo-copy.1.md
 [registry]: https://distribution.github.io/distribution/spec/api/
+
+[transport]: https://github.com/containers/image/blob/main/docs/containers-transports.5.md

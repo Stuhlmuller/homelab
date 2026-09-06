@@ -158,7 +158,7 @@ def main():
             raise RuntimeError("Tested source changed")
         scratch = Path(directory)
         layout = scratch / "oci"
-        run("skopeo", "copy", f"docker-daemon:{image.tag}", f"oci:{layout}:candidate")
+        run("skopeo", "copy", f"docker-daemon:{image.image_id}", f"oci:{layout}:candidate")
         candidate = verified_manifest(layout, image)
         if args.publish:
             if candidate[0] != args.expected_digest:
