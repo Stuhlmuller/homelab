@@ -16,11 +16,19 @@ an unenforced NetworkPolicy: this cluster's Flannel does not enforce it.
 The launcher installs its own filter before executing the restore script or
 reading backups. It allows only `AF_UNIX` socket creation, closes inherited
 nonstandard descriptors, accepts only regular-file/FIFO/`/dev/null` standard descriptors, and denies
-io_uring, tracing, descriptor stealing and namespace-switching calls. It rejects
+io_uring, ancillary descriptor receipt, tracing, descriptor stealing and namespace-switching calls. It rejects
 foreign syscall architectures and x86 x32 calls. Every startup must prove denied
 IP sockets return `EPERM` and Unix communication works; inability to install or
 verify the filter exits before command execution. Read-only backup mounts and
 bounded disposable storage remain separate requirements.
+
+`recvmsg` and `recvmmsg` are denied regardless of socket family: an unfiltered
+Unix peer could otherwise transfer an INET socket with `SCM_RIGHTS` after the
+startup descriptor cleanup. Every startup checks both calls return `EPERM`.
+Ordinary `read`/`recvfrom` remain available for PostgreSQL's Unix protocol but
+cannot receive ancillary file descriptors. This defense is intrinsic even
+though production must still exclude unfiltered Unix peers and proxy sockets.
+[Unix descriptor passing](https://man7.org/linux/man-pages/man7/unix.7.html).
 
 The kernel permits a non-root process with `no_new_privs` to add seccomp filters.
 They survive fork/exec and cannot be weakened by adding a later permissive
@@ -65,6 +73,16 @@ or refused connections do not pass. It checks io_uring denial, fork/exec
 inheritance, an attempted permissive second filter, x32/i386 rejection, inherited-fd
 closure and socket/anonymous-stdio rejection. The controlled servers must receive no
 additional traffic from filtered tests.
+
+A separate real Unix broker offers both unconnected and preconnected INET
+descriptors after the receiver has executed its launcher and connected to the
+broker. Unfiltered `recvmsg`/`recvmmsg` controls must import the offered socket
+and send a byte to a local TCP listener. Filtered calls must return `EPERM`
+without adding descriptors; `read`/`recvfrom` must receive the ordinary byte
+without importing its attached descriptor. The broker must confirm delivery,
+and filtered cases must send no traffic through the offered socket. These
+synthetic tests deliberately introduce the otherwise prohibited Unix peer;
+they do not relax the production mount or sidecar contract.
 
 A real PostgreSQL init/dump/drop/restore round trip must succeed over Unix
 sockets. Harmless SQL `COPY ... FROM PROGRAM` and psql shell children execute the

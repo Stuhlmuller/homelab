@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Build and test the exact Linux image with real networking enabled; never publish."""
+import array
 import json
 import os
 from pathlib import Path
 import platform
+import select
 import shutil
+import socket
 import socketserver
 import subprocess
 import tempfile
@@ -30,6 +33,62 @@ class UDP(socketserver.BaseRequestHandler):
         data, connection = self.request
         self.server.received += 1
         connection.sendto(data, self.client_address)
+
+
+def rights_case(common, tag, scratch, method, expected, state):
+    """A real unfiltered Unix peer offers an INET FD after receiver startup."""
+    path = scratch / "broker.sock"
+    errors = []
+    delivered = []
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as broker, \
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener, \
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM) as donor:
+        broker.bind(str(path))
+        path.chmod(0o666)  # The synthetic container client runs as UID65534.
+        broker.listen(1)
+        broker.settimeout(10)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        listener.settimeout(5)
+        if state == "connected":
+            donor.connect(listener.getsockname())
+
+        def offer():
+            try:
+                connection, _ = broker.accept()
+                with connection:
+                    connection.settimeout(5)
+                    assert connection.recv(1) == b"R", "receiver did not finish startup"
+                    rights = array.array("i", [donor.fileno()])
+                    assert connection.sendmsg([b"x"], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, rights)]) == 1
+                    delivered.append(True)
+            except Exception as error:
+                errors.append(error)
+
+        thread = threading.Thread(target=offer, daemon=True)
+        thread.start()
+        try:
+            container = [*common, "--mount", f"type=bind,src={path},dst=/tests/broker.sock,readonly"]
+            receiver = ["rights-receiver", method, expected, state, str(listener.getsockname()[1])]
+            if expected == "allow":
+                run(*container, "--entrypoint", "/tests/probe", tag, *receiver)
+            else:
+                run(*container, tag, "/tests/probe", *receiver)
+            thread.join(10)
+            assert not thread.is_alive() and not errors and delivered == [True], "broker delivery failed"
+            if expected == "allow" or state == "connected":
+                peer, _ = listener.accept()
+                with peer:
+                    if expected == "allow":
+                        peer.settimeout(5)
+                        assert peer.recv(1) == b"n", "imported positive-control socket was unusable"
+                    else:
+                        assert not select.select([peer], [], [], 0)[0], "filtered receiver used offered INET socket"
+            else:
+                assert not select.select([listener], [], [], 0)[0], "filtered receiver connected offered INET socket"
+        finally:
+            thread.join(10)
+            path.unlink(missing_ok=True)
 
 
 def main():
@@ -79,6 +138,12 @@ def main():
                         run(*common, tag, "/tests/probe", mode)
                     for mode in ("inherited-fd", "socket-stdio", "anonymous-stdio"):
                         run(*common, "--entrypoint", "/tests/probe", tag, mode, LAUNCHER)
+                    for state in ("unconnected", "connected"):
+                        for method in ("recvmsg", "recvmmsg"):
+                            rights_case(common, tag, scratch, method, "allow", state)
+                            rights_case(common, tag, scratch, method, "deny", state)
+                        for method in ("read", "recvfrom"):
+                            rights_case(common, tag, scratch, method, "discard", state)
                     sql_test = ROOT / "scripts/ci/restore-egress/postgres.sh"
                     run(*common, "--mount", f"type=bind,src={sql_test},dst=/tests/postgres.sh,readonly",
                         tag, "/bin/sh", "/tests/postgres.sh")
@@ -99,7 +164,7 @@ def main():
                 assert failed.returncode == 1, failed.stderr
                 assert message in failed.stderr
                 assert "UNSAFE_COMMAND_EXECUTED" not in failed.stdout
-            print("Linux image gates passed: real connectivity control, inherited EPERM, Unix restore, fail-closed exec")
+            print("Linux image gates passed: real connectivity, inherited EPERM, broker FD denial, Unix restore, fail-closed exec")
         finally:
             subprocess.run(["docker", "image", "rm", tag], check=False, capture_output=True, timeout=60)
 
