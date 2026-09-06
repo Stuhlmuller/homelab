@@ -100,8 +100,8 @@ Native provider recheck cleared the saved block; a separate public
 The next heartbeat reached Codex but failed with `thread not loaded` for its
 retained main-session binding. The per-agent Codex home is rebuilt on Pod
 replacement; that retained binding did not recover transparently in this run.
-The one-shot `scripts/openclaw-recover-heartbeat-20260906.py` uses the public
-session-reset lifecycle for this exact failed session. At 19:03 UTC it cleared
+A one-shot public session-reset recovery ran for this failed session.
+At 19:03 UTC it cleared
 active model context and the native binding while verifying all 244 original
 canonical transcript events remained unchanged. Workspace memory is preserved.
 At 19:08:43 UTC the next isolated verification completed on
@@ -112,11 +112,17 @@ state with `database is locked`; the successful retry ran without concurrent
 OpenClaw diagnostic CLI commands. This establishes recovery, not resolution
 of the underlying intermittent SQLite contention.
 
-Both recovery regression suites and the assistant preservation/scheduler suite
+The recovery regression suites and the assistant preservation/scheduler suite
 passed locally. The initial PR revision also passed GitHub static policy and
 security checks plus the Terragrunt gate; later revision checks must be checked
 on the PR. Local full Nix validation was unavailable because the sandbox denied
 its cache lock, and the existing config checker lacked local `yq`.
+
+Review identified a race between the one-shot reset preflight and the public
+mutation: the API accepts no expected session identity/generation. The already
+completed reset helper and its tests were removed before merge. Any future
+reset recovery must use atomic conditional identity checks or explicit session
+quiescence; prior successful execution does not make the helper safe to reuse.
 
 Follow-up: verify retained native bindings recover across Pod replacement
 before treating the Codex home as universally rebuildable. Do not make it

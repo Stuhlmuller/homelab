@@ -180,27 +180,15 @@ only upstream availability bookkeeping changes, and subsequent provider
 failures reinstate normal backoff. Remove the helper when upstream recovery
 covers the native Codex path.
 
-The September 6 incident also exposed a missing native thread after auth
-recovered. The one-shot helper below matches only that failed main session and
-observed thread error, calls public `sessions.reset`, and verifies every
-original transcript event remains byte-for-byte unchanged. Reset clears active
-model context and the broken harness binding; workspace memory is unaffected.
-It is not a general response to transient inference failures. Never broaden
-its recorded identity checks to reset another conversation. Run check mode
-first and review the diagnosed failure before recovery:
-
-```sh
-kubectl -n ai exec -i deploy/openclaw -c app -- \
-  python3 - --check < scripts/openclaw-recover-heartbeat-20260906.py
-kubectl -n ai exec -i deploy/openclaw -c app -- \
-  python3 - --recover < scripts/openclaw-recover-heartbeat-20260906.py
-```
-
-Then repeat the quiet heartbeat verification above. Prior history remains in
-the canonical transcript; do not restore the missing native binding. Repeated
-recovery refuses a session that is no longer failed or whose identity or
-244-event incident transcript changed. Run OpenClaw CLI diagnostics serially;
-the incident included SQLite contention during concurrent diagnostic traffic.
+The September 6 incident also required clearing a missing native thread's
+active context through the public session-reset lifecycle; all 244 original
+transcript events were verified unchanged. That completed one-shot helper is
+not shipped: the public reset API lacks an expected session generation, so a
+preflight check cannot prevent owner activity from racing the reset. Future
+recovery needs a conditional mutation API or an explicitly quiesced session.
+Do not reset a live conversation using only a previously observed session key.
+Run OpenClaw CLI diagnostics serially; the incident included SQLite contention
+during concurrent diagnostic traffic.
 
 ### Validation
 
