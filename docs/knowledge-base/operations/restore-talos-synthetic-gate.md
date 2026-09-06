@@ -38,14 +38,35 @@ It repeats those checks before the Kubernetes credential step and checks current
 the locked development shell with `nixpkgs#skopeo`; no ambient registry tool or
 login is assumed. A newer main commit requires a fresh reviewed dispatch.
 
-The pin's source must be an ancestor of current main. `Dockerfile`, launcher,
-Nix image derivation, probe, PostgreSQL fixture, `flake.nix` and `flake.lock`
-must match that source byte for byte, with no text decoding or line-ending
-normalization. This deliberately requires republication
-after even an unrelated flake change. The pin is the reviewed attestation that
-the cited protected publisher output matched the image; public run metadata and
-registry bytes do not independently prove approval or publisher provenance.
-See [[restore-image-anonymous-pull]] for that trust boundary.
+The pin's source must be an ancestor of current main. The runner compares tracked
+paths, modes, object types and blob IDs between that source and current HEAD in
+these scopes, including new and deleted files:
+
+- `images/postgres-restore-egress/`, excluding only its exact
+  `published-image.json` path so the initial pin can be added after publication.
+- Every `scripts/ci/restore-*` and `scripts/ci/octelium-restore-*` file or directory,
+  recursively, including build, export, publication and native-test dependencies.
+- Every `.github/workflows/restore-*` workflow.
+- The complete `clusters/homelab/apps/octelium-storage/` tree rendered by the
+  Octelium fixtures, including the inactive candidate.
+- `flake.nix` and `flake.lock`.
+
+Each scoped source must also be a regular nonsymlink working file with matching
+Git executable mode and raw blob bytes; no decoding or line-ending normalization
+is applied. Any scoped change requires republication, including an unrelated
+flake or storage-app change. General repository static/policy inputs are outside
+this image/native-source binding and remain separately checked by the workflow.
+New image/native dependencies must stay within these ownership scopes or extend
+the scope in the same PR; arbitrary future imports are not discovered automatically.
+The pin is the reviewed attestation that the cited protected publisher output
+matched the image; public run metadata and registry bytes do not independently
+prove approval or publisher provenance. See [[restore-image-anonymous-pull]].
+
+Future activation cannot simply embed a new image digest in the bound candidate:
+that changes the publication source and therefore the image's source label and
+digest again. A separate artifact/reference code path must resolve this
+self-reference before activation; excluding candidate inputs to bypass this
+source check is not a solution. The inactive candidate remains unchanged here.
 
 ## Fixed execution and placement contract
 
@@ -163,15 +184,20 @@ is broader than node metadata read; absent permission fails, never silently
 expands RBAC. GitHub metadata uses the workflow's contents-read token; no AWS,
 OIDC or registry write permission is requested.
 
-Offline tests compare real Git blobs and local files across LF, CRLF and lone-CR
-line endings, without creating fixture commits. They also cover admission drift,
-returned-UID cleanup, uncertain creates,
-replacement resources, strict image identity, stale capacity and dependency
-cleanup. Credential-free native CI additionally executes the exact fixture
+Offline tests use real Git trees/blobs to cover changed build harnesses, scoped
+additions/deletions, modes, symlinks, exact pin exclusion and all LF/CRLF/lone-CR
+comparisons without creating fixture commits. They also cover admission drift,
+returned-UID cleanup, uncertain creates, replacement resources, strict image
+identity, stale capacity and dependency cleanup. Credential-free native CI
+additionally executes the exact fixture
 script and fault helper inside **each** independently built and tested image
 before export, alongside all nine Octelium fixtures. Both attach streams have
 an aggregate byte bound and deadline. Docker keeps its established runtime
 profile and `128Mi` scratch tmpfs; this establishes generic Linux behavior,
 not Talos admission, CRI identity or disk-emptyDir compatibility. No pin is
-required for these native tests. Only a later successful protected run can
+required for these native tests. The publisher itself reruns the core boundary
+and nine Octelium cases; the additional Talos-script fixture runs in separate
+export-check CI. Source equality and publication metadata do not attest that
+extra execution: retain its separate native CI receipt for the publication SHA.
+Only a later successful protected run can
 establish the separate actual-Talos gate, followed by reviewed GitOps activation.

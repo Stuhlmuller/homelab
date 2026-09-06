@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import subprocess
 import sys
 import time
@@ -18,18 +19,19 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 DIRECTORY = ROOT / "scripts/ci/restore-talos"
-PIN = ROOT / "images/postgres-restore-egress/published-image.json"
+PIN_PATH = "images/postgres-restore-egress/published-image.json"
+PIN = ROOT / PIN_PATH
 REPO = "Stuhlmuller/homelab"
 WORKFLOW = f"{REPO}/.github/workflows/restore-talos-synthetic.yml@refs/heads/main"
 LAUNCHER = "/usr/local/bin/restore-no-network"
 GATE = "homelab.rst.io/restore-profile-reviewed"
 NAME_PREFIX = "restore-runtime-"
 PROFILE = json.loads((DIRECTORY / "profile.json").read_text())
-IMAGE_SOURCES = (
-    "images/postgres-restore-egress/Dockerfile", "images/postgres-restore-egress/launcher.c",
-    "images/postgres-restore-egress/default.nix", "scripts/ci/restore-egress/probe.c",
-    "scripts/ci/restore-egress/postgres.sh", "flake.nix", "flake.lock",
+IMAGE_SOURCE_PREFIXES = (
+    "images/postgres-restore-egress/", "scripts/ci/restore-", "scripts/ci/octelium-restore-",
+    ".github/workflows/restore-", "clusters/homelab/apps/octelium-storage/",
 )
+IMAGE_SOURCE_FILES = ("flake.nix", "flake.lock")
 
 
 def require(ok, message):
@@ -56,6 +58,26 @@ def anonymous_module():
     return module
 
 
+def source_inventory(revision):
+    raw = run("git", "ls-tree", "--full-tree", "-r", "-z", revision, text=False)
+    require(raw.endswith(b"\0"), "Published source inventory is empty or malformed")
+    inventory = {}
+    for record in raw[:-1].split(b"\0"):
+        details, path = record.split(b"\t", 1)
+        path = path.decode()
+        if path == PIN_PATH or not (path in IMAGE_SOURCE_FILES or path.startswith(IMAGE_SOURCE_PREFIXES) or
+                                    path + "/" in IMAGE_SOURCE_PREFIXES):
+            continue
+        mode, kind, blob = details.decode("ascii").split()
+        require(kind == "blob" and mode in ("100644", "100755") and
+                re.fullmatch(r"[0-9a-f]{40}", blob) is not None,
+                "Published source inventory contains a nonregular entry")
+        require(path not in inventory, "Published source inventory has duplicate paths")
+        inventory[path] = (mode, kind, blob)
+    require(inventory, "Published source inventory has no bound files")
+    return inventory
+
+
 def contract(expected):
     verifier = anonymous_module()
     pin = verifier.read_contract(root=ROOT)
@@ -63,9 +85,16 @@ def contract(expected):
     require(run("git", "rev-parse", "HEAD").strip() == expected, "Checkout differs from expected source")
     require(not run("git", "status", "--porcelain=v1", "--untracked-files=all"), "Reviewed checkout must be clean")
     run("git", "merge-base", "--is-ancestor", pin["source_commit"], expected)
-    for path in IMAGE_SOURCES:
-        previous = run("git", "show", f'{pin["source_commit"]}:{path}', text=False)
-        require(previous == (ROOT / path).read_bytes(), "Published image source or fixture ABI differs from current source")
+    inventory = source_inventory(pin["source_commit"])
+    require(inventory == source_inventory(expected), "Published source inventory differs from current source")
+    for path, (mode, _, blob) in inventory.items():
+        current = ROOT / path
+        metadata = current.lstat()
+        require(stat.S_ISREG(metadata.st_mode) and current.resolve() == ROOT.resolve() / path,
+                "Working source is not a regular nonsymlink file")
+        require(bool(metadata.st_mode & stat.S_IXUSR) == (mode == "100755"), "Working source executable mode changed")
+        previous = run("git", "cat-file", "blob", blob, text=False)
+        require(previous == current.read_bytes(), "Published image source or fixture ABI differs from current source")
     return pin, verifier
 
 
