@@ -1,11 +1,13 @@
 #define _GNU_SOURCE
 #include <arpa/inet.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/capability.h>
 #include <linux/filter.h>
 #include <linux/io_uring.h>
 #include <linux/seccomp.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +17,7 @@
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
+#include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -51,6 +54,12 @@ static void denied(void)
     errno = 0;
     require(syscall(SYS_io_uring_register, -1, 0, NULL, 0) == -1 && errno == EPERM,
             "io_uring register not denied");
+    errno = 0;
+    require(syscall(SYS_recvmsg, -1, NULL, 0) == -1 && errno == EPERM,
+            "recvmsg not denied");
+    errno = 0;
+    require(syscall(SYS_recvmmsg, -1, NULL, 0, 0, NULL) == -1 && errno == EPERM,
+            "recvmmsg not denied");
     require(prctl(PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0) == 1, "no_new_privs not inherited");
     int pair[2];
     char received = 0;
@@ -68,6 +77,99 @@ static void wait_success(pid_t child)
             WEXITSTATUS(status) == 0, "child did not succeed");
 }
 
+static int descriptor_count(void)
+{
+    DIR *directory = opendir("/proc/self/fd");
+    require(directory != NULL, "cannot inspect received descriptors");
+    int count = 0;
+    struct dirent *entry;
+    while ((entry = readdir(directory))) {
+        char *end;
+        long fd = strtol(entry->d_name, &end, 10);
+        if (end != entry->d_name && *end == '\0' && fd != dirfd(directory))
+            count++;
+    }
+    require(closedir(directory) == 0, "descriptor inspection close failed");
+    return count;
+}
+
+static void receive_rights(const char *method, const char *expected,
+                          const char *state, const char *port)
+{
+    int channel = socket(AF_UNIX, SOCK_STREAM, 0);
+    struct sockaddr_un address = {.sun_family = AF_UNIX, .sun_path = "/tests/broker.sock"};
+    require(channel >= 0 && connect(channel, (struct sockaddr *)&address, sizeof address) == 0,
+            "Unix broker connection failed");
+    /* This connection and readiness byte occur after launcher startup/exec. */
+    require(write(channel, "R", 1) == 1, "broker readiness failed");
+    struct pollfd pending = {.fd = channel, .events = POLLIN};
+    require(poll(&pending, 1, 5000) == 1 && (pending.revents & POLLIN),
+            "broker did not deliver a rights message");
+    int before = descriptor_count();
+    char data = 0;
+    struct iovec bytes = {.iov_base = &data, .iov_len = 1};
+    union {
+        struct cmsghdr alignment;
+        char bytes[CMSG_SPACE(sizeof(int))];
+    } control = {0};
+    struct msghdr message = {.msg_iov = &bytes, .msg_iovlen = 1,
+                            .msg_control = control.bytes, .msg_controllen = sizeof control.bytes};
+    ssize_t result;
+    errno = 0;
+    if (strcmp(method, "recvmsg") == 0) {
+        result = recvmsg(channel, &message, MSG_CMSG_CLOEXEC);
+    } else if (strcmp(method, "recvmmsg") == 0) {
+        struct mmsghdr batch = {.msg_hdr = message};
+        int received = recvmmsg(channel, &batch, 1, MSG_CMSG_CLOEXEC, NULL);
+        result = received == 1 ? (ssize_t)batch.msg_len : received;
+        message = batch.msg_hdr;
+    } else if (strcmp(method, "read") == 0) {
+        result = read(channel, &data, 1);
+    } else {
+        require(strcmp(method, "recvfrom") == 0, "unknown broker receive method");
+        result = recvfrom(channel, &data, 1, 0, NULL, NULL);
+    }
+    if (strcmp(expected, "deny") == 0) {
+        require(result == -1 && errno == EPERM, "ancillary receive was not denied");
+        require(descriptor_count() == before, "denied call imported a descriptor");
+    } else if (strcmp(expected, "discard") == 0) {
+        require(result == 1 && data == 'x', "ordinary Unix payload receive failed");
+        require(descriptor_count() == before, "ordinary receive imported a descriptor");
+    } else {
+        require(strcmp(expected, "allow") == 0 && result == 1 && data == 'x',
+                "positive ancillary receive failed");
+        struct cmsghdr *rights = CMSG_FIRSTHDR(&message);
+        require(rights && rights->cmsg_level == SOL_SOCKET && rights->cmsg_type == SCM_RIGHTS &&
+                rights->cmsg_len == CMSG_LEN(sizeof(int)) && !(message.msg_flags & MSG_CTRUNC),
+                "positive broker did not pass exactly one descriptor");
+        int imported;
+        memcpy(&imported, CMSG_DATA(rights), sizeof imported);
+        require(descriptor_count() == before + 1, "positive descriptor was not installed");
+        int family = 0;
+        socklen_t length = sizeof family;
+        require(getsockopt(imported, SOL_SOCKET, SO_DOMAIN, &family, &length) == 0 && family == AF_INET,
+                "positive broker did not pass an INET socket");
+        struct sockaddr_in endpoint = {.sin_family = AF_INET, .sin_addr.s_addr = htonl(INADDR_LOOPBACK)};
+        length = sizeof endpoint;
+        errno = 0;
+        int connected = getpeername(imported, (struct sockaddr *)&endpoint, &length);
+        if (strcmp(state, "unconnected") == 0) {
+            require(connected == -1 && errno == ENOTCONN, "donor socket was already connected");
+            endpoint.sin_family = AF_INET;
+            endpoint.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            endpoint.sin_port = htons((unsigned short)atoi(port));
+            require(connect(imported, (struct sockaddr *)&endpoint, sizeof endpoint) == 0,
+                    "imported socket could not connect");
+        } else {
+            require(strcmp(state, "connected") == 0 && connected == 0,
+                    "donor socket was not preconnected");
+        }
+        require(write(imported, "n", 1) == 1, "imported socket could not send data");
+        close(imported);
+    }
+    close(channel);
+}
+
 int main(int argc, char **argv)
 {
     require(argc >= 2, "mode required");
@@ -82,7 +184,10 @@ int main(int argc, char **argv)
     for (int i = 0; i < 2; i++)
         require(capabilities[i].effective == 0 && capabilities[i].permitted == 0 &&
                 capabilities[i].inheritable == 0, "capabilities were not dropped");
-    if (strcmp(argv[1], "denied") == 0) {
+    if (strcmp(argv[1], "rights-receiver") == 0) {
+        require(argc == 6, "broker receive method, expectation, state and port required");
+        receive_rights(argv[2], argv[3], argv[4], argv[5]);
+    } else if (strcmp(argv[1], "denied") == 0) {
         denied();
     } else if (strcmp(argv[1], "inherit") == 0) {
         denied();

@@ -46,6 +46,8 @@ static void install_filter(void)
 #endif
         /* io_uring can create/connect sockets without a socket syscall. */
         DENY(io_uring_setup), DENY(io_uring_enter), DENY(io_uring_register),
+        /* A Unix peer must not import network descriptors via SCM_RIGHTS. */
+        DENY(recvmsg), DENY(recvmmsg),
         DENY(ptrace), DENY(process_vm_readv), DENY(process_vm_writev),
         DENY(pidfd_getfd), DENY(bpf), DENY(setns), DENY(unshare),
         BPF_JUMP(BPF_JMP | BPF_JEQ | BPF_K, __NR_socket, 1, 0),
@@ -83,6 +85,12 @@ static void verify_filter(void)
     errno = 0;
     if (syscall(SYS_io_uring_setup, 1, &parameters) != -1 || errno != EPERM)
         fail("io_uring self-test failed");
+    errno = 0;
+    if (syscall(SYS_recvmsg, -1, NULL, 0) != -1 || errno != EPERM)
+        fail("recvmsg self-test failed");
+    errno = 0;
+    if (syscall(SYS_recvmmsg, -1, NULL, 0, 0, NULL) != -1 || errno != EPERM)
+        fail("recvmmsg self-test failed");
     int pair[2];
     char received = 0;
     if (socketpair(AF_UNIX, SOCK_STREAM, 0, pair))
