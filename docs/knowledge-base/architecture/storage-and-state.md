@@ -195,7 +195,9 @@ CI Kubernetes API tunnel. A daily CronJob writes PostgreSQL globals without
 password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
-migration checkpoint, not an off-NAS backup. The proposed restore drill declares
+migration checkpoint, not an off-NAS backup. The proposed restore drill lives in
+the separate `octelium-storage/restore-drill-candidate/` kustomization, excluded
+from the live application and additionally suspended. It declares
 a daily 04:45 UTC schedule after the backup's full late-start/runtime window and
 requires the newest complete PostgreSQL set to be from the current UTC day. It restores
 into disposable local scratch using the custom archive's database creation

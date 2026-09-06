@@ -97,15 +97,18 @@ source-superuser code, so a checksum alone cannot replace this boundary.
 The final-image harness also requires all nine existing
 `scripts/ci/octelium-restore-drill-test.py` cases. Its Docker backend keeps
 Python plus offline Kustomize rendering on the host; all PostgreSQL commands,
-the exact local `restore-drill.sh`, and restored-locale inspection run in the
+the exact local `octelium-storage/restore-drill-candidate/restore-drill.sh`, and
+restored-locale inspection run in the
 tested image under the launcher. `docker exec` does not inherit PID1's filter,
 so every exec names the launcher explicitly. The launcher uses `execv` without
 PATH lookup: the backend maps its declared tools to the pinned image's absolute
 PostgreSQL 14 and Debian utility paths. Unexpected fixture command failures
-include at most 512 stderr characters and omit stdout. Source PostgreSQL and each restore
-use separate disposable containers with the same shared runtime flags. Only
+include at most 512 stderr characters and omit stdout. Source PostgreSQL and
+each restore use separate disposable containers with the same runtime flags. Only
 synthetic backup files, the local restore script, and the synthetic probe are
-mounted; all mounts are read-only. Database scratch uses bounded tmpfs. Filtered
+bind-mounted as inputs; those binds are read-only. Database scratch uses bounded
+writable tmpfs. Owned container cleanup also removes the pinned base image's
+unused anonymous data volume; the fixture creates no named or shared volumes. Filtered
 `cat`/`tar` streams retrieve fixture results because Docker documents limitations
 copying tmpfs with `docker cp`. Host ingestion caps bytes, file count and elapsed
 time; extraction rejects traversal, links and special files before writing.
@@ -122,12 +125,22 @@ program child must retain the filter. Existing client-child/broker/fault probes
 remain required. Each restore container is removed after its case; source and
 uncertain container creations are cleaned up even on test failure.
 
+The live `octelium-storage` kustomization excludes the candidate CronJob, script
+ConfigMap, and declared NetworkPolicy. Their separate `restore-drill-candidate/`
+kustomization is rendered only for validation; the CronJob is suspended as a
+second hold. The ninth fixture proves the live graph has none of these resources
+and verifies the candidate's suspension and declared contracts. Activation
+requires a separate reviewed change after the image, launcher, and Talos gates.
+
 This fixture integration combines the reviewed publication and restore-drill
 drafts temporarily. It does not authorize applying their combined manifests:
 the real CronJob still requires explicit launcher wiring, a published digest,
 anonymous pull proof, and the Talos synthetic gate below. Filtered Octelium
 fixture execution remains unverified until native CI passes this combined
 source; local PostgreSQL or mocked backend tests cannot establish that result.
+Do not merge this combined branch. After prerequisites land, port the net fixture
+implementation delta against the updated parents; do not blindly cherry-pick
+combined integration commits.
 
 ## Integration and rollout gates
 

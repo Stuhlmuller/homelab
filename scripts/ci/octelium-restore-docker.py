@@ -100,28 +100,41 @@ class DockerFixtures:
         # Docker cp cannot reliably read tmpfs. Stream through a filtered exec,
         # bounding bytes and elapsed time before accepting anything on the host.
         process = subprocess.Popen(self.exec_command(container, *command),
-                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        output = bytearray()
+                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, errors = bytearray(), bytearray()
+        streams = [process.stdout, process.stderr]
         deadline = time.monotonic() + 90
         try:
-            while True:
+            while streams:
                 remaining = deadline - time.monotonic()
-                if remaining <= 0 or not select.select([process.stdout], [], [], remaining)[0]:
+                if remaining <= 0:
                     raise TimeoutError("Synthetic fixture output timed out")
-                chunk = os.read(process.stdout.fileno(), 65536)
-                if not chunk:
-                    break
-                output.extend(chunk)
-                if len(output) > limit:
-                    raise ValueError("Synthetic fixture output exceeds its bound")
+                readable = select.select(streams, [], [], remaining)[0]
+                if not readable:
+                    raise TimeoutError("Synthetic fixture output timed out")
+                for stream in readable:
+                    chunk = os.read(stream.fileno(), 65536)
+                    if not chunk:
+                        streams.remove(stream)
+                    elif stream is process.stderr:
+                        # Drain both pipes to avoid deadlock; retain only a prefix.
+                        errors.extend(chunk[:max(0, 512 - len(errors))])
+                    else:
+                        output.extend(chunk)
+                        if len(output) > limit:
+                            raise ValueError("Synthetic fixture output exceeds its bound")
             if process.wait(timeout=max(0.001, deadline - time.monotonic())):
                 raise RuntimeError("Synthetic fixture output command failed")
             return bytes(output)
+        except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
+            error.add_note(f"Synthetic fixture stderr (first 512 bytes): {errors.decode('utf-8', errors='replace')!r}")
+            raise
         finally:
             if process.poll() is None:
                 process.kill()
                 process.wait(timeout=5)
             process.stdout.close()
+            process.stderr.close()
 
     def start(self, root):
         self.root = Path(root)
@@ -170,7 +183,7 @@ class DockerFixtures:
 
     def finish_case(self):
         if self.restore is not None:
-            self.docker("docker", "rm", "--force", self.restore)
+            self.docker("docker", "rm", "--force", "--volumes", self.restore)
             self.containers.remove(self.restore)
             self.restore = None
             self.work = None
@@ -179,7 +192,7 @@ class DockerFixtures:
         failures = []
         for name in reversed(self.containers):
             try:
-                result = subprocess.run(["docker", "rm", "--force", name], text=True,
+                result = subprocess.run(["docker", "rm", "--force", "--volumes", name], text=True,
                                         capture_output=True, timeout=30, check=False)
             except (OSError, subprocess.TimeoutExpired):
                 failures.append(name)

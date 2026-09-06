@@ -85,7 +85,7 @@ class DockerContracts(unittest.TestCase):
         backups.mkdir()
         work.mkdir()
         (backups / "synthetic.dump").write_text("synthetic")
-        script = ROOT / "clusters/homelab/apps/octelium-storage/restore-drill.sh"
+        script = ROOT / "clusters/homelab/apps/octelium-storage/restore-drill-candidate/restore-drill.sh"
         result = subprocess.CompletedProcess([], 1, "", "expected synthetic failure")
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode="w"):
@@ -143,14 +143,25 @@ class DockerContracts(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.backend.read_binary("synthetic", 16, "cat", "/fixture")
 
+    def test_binary_failure_drains_and_bounds_stderr_without_stdout(self):
+        command = [sys.executable, "-c",
+                   "import os; os.write(2, b'x' * 200000); os.write(1, b'synthetic stdout'); raise SystemExit(1)"]
+        with patch.object(self.backend, "exec_command", return_value=command):
+            with self.assertRaisesRegex(RuntimeError, "output command failed") as failure:
+                self.backend.read_binary("synthetic", 1024, "cat", "/fixture")
+        note = failure.exception.__notes__[0]
+        self.assertIn("x" * 512, note)
+        self.assertLess(len(note), 600)
+        self.assertNotIn("synthetic stdout", note)
+
     def test_uncertain_container_start_is_owned_and_removed(self):
         failed = subprocess.CalledProcessError(1, ["docker", "run"])
         with patch.object(self.backend, "docker", side_effect=failed), \
                 patch.object(DOCKER.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as remove:
             with self.assertRaises(subprocess.CalledProcessError):
                 self.backend.start(self.root)
-        self.assertEqual(remove.call_args.args[0][:3], ["docker", "rm", "--force"])
-        self.assertRegex(remove.call_args.args[0][3], r"^octelium-fixture-[0-9a-f]{32}$")
+        self.assertEqual(remove.call_args.args[0][:4], ["docker", "rm", "--force", "--volumes"])
+        self.assertRegex(remove.call_args.args[0][4], r"^octelium-fixture-[0-9a-f]{32}$")
         self.assertEqual(self.backend.containers, [])
 
 

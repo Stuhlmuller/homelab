@@ -416,7 +416,7 @@ completion marker. This bounds the previously observed NFS session scan.
 
 ## Octelium PostgreSQL Restore Drill
 
-`scripts/ci/octelium-restore-drill-test.py` exercises the deployed shell entry
+`scripts/ci/octelium-restore-drill-test.py` exercises the candidate shell entry
 point against disposable PostgreSQL 14 fixtures using the pinned Nix toolchain.
 It requires actual globals/database restore, preserved backup source, private
 output, and failure on corrupt or stale newest archives, invalid checksum paths,
@@ -428,7 +428,11 @@ require only the read-only backup PVC plus bounded scratch, no credentials, and
 no additive NetworkPolicy allow selecting the drill. The full static gate runs
 this check; `postgresql_14` is a validation dependency in `flake.nix`.
 
-GitOps creates the daily `octelium-postgres-restore-drill` CronJob. Acceptance
+The live application excludes the resources in
+`clusters/homelab/apps/octelium-storage/restore-drill-candidate/`. The render
+fixture asserts that exclusion and the candidate CronJob's secondary suspension.
+Only a separate reviewed activation after image/launcher and Talos runtime proof
+may add it to GitOps and lift suspension. Post-activation acceptance
 requires its scheduled Job success and `lastSuccessfulTime`, plus the shared
 30-hour staleness alert. Static fixtures alone do not prove live restoration.
 See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
