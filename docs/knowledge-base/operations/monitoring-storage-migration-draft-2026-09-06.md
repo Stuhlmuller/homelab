@@ -39,6 +39,11 @@ read-only Talos inventory found no spare independent data device. The small
 worker cannot satisfy Prometheus memory requirements. This is a hardware gate,
 not permission to move persistent data onto unverified storage.
 
+A September 6 read-only scan of 4,201 Acer kernel-log lines found no matching
+hardware-error signals, and the etcd inspection found no errors. These limited
+observations do not test memory or disk integrity, explain the prior corruption,
+or clear the hardware gate.
+
 ## Why A New Claim Name Is Required
 
 Changing only `storageClassName` cannot move an already-bound PVC. Pinned
@@ -63,7 +68,38 @@ Sources: [pinned StatefulSet updater](https://github.com/prometheus-operator/pro
 
 Run Prometheus and Alertmanager migrations separately. Each numbered phase
 requires a distinct reviewed revision and observed live gate; Argo sync waves
-alone are not evidence that the prior writer stopped.
+and Kubernetes Pod absence alone do not prove that the prior writer stopped.
+
+The fence must cover **every node that may still host a writer**, including
+evicted Pods and previous copy/restore Jobs. Record their Pod/container IDs,
+claim/PV identities, node IDs, and boot IDs before scale-down. An unknown prior
+consumer or missing node evidence blocks the migration. The September 2
+[[architecture/cluster-topology#Current Worker Recovery|worker incident]] shows
+why: eviction started replacement PVC workloads while the old worker could
+still reach NFS; it later resumed on its unchanged boot and reconciled old Pods.
+
+For each possible writer node, require current authenticated Talos evidence
+that the node and container runtime are healthy, and node-side inspection that
+the relevant containers/processes have exited and their writable data mounts
+are absent. Inspect runtime and mount state even when Kubernetes no longer lists
+the Pod. If that evidence is unavailable, require a confirmed shutdown held in
+effect, or a confirmed reset with a changed boot ID followed by the same healthy
+node-side process/mount checks. A held shutdown proves execution has stopped.
+Any later return must be controlled: confirm a new boot and those absence checks
+before admitting that node as an unfenced consumer again.
+Unreachability, a reboot request, Pod eviction/deletion, or a kubelet restart is
+not a fence. Any required node recovery must have its own reviewed repository
+code path; this design authorizes none.
+
+Keep replicas zero and recovery fences in effect until the successor is ready.
+Repository-owned orchestration must recheck this evidence immediately before
+each checkpoint, restore, production startup, and rollback transition; a stale
+completion marker cannot substitute for the checks. Losing node health or
+changing a node boot/consumer identity invalidates the fence: abort active
+checkpoint/restore work without publishing success and stop further transitions.
+Do not start a successor while any possible old writer is unaccounted for.
+The node-evidence collector and transition enforcement remain
+implementation gates, not functionality already supplied by this draft.
 
 1. **Prepare without changing active storage.** Add retained target PV/PVCs,
    checkpoint/verification storage, and bounded migration/restore Jobs through
@@ -77,12 +113,14 @@ alone are not evidence that the prior writer stopped.
 2. **Fence one writer.** Commit that CR's `replicas: 0`, keeping `paused: false`.
    Pause would prevent the operator from processing the fence. Observe the
    exact CR generation, StatefulSet desired/actual zero, no owned Pods including
-   terminating Pods, and no other writable mounts of either data claim. Preserve
-   the existing 600-second Prometheus and 120-second Alertmanager shutdown grace.
-   The checkpoint Job must independently reject a missing fence before writing.
-3. **Checkpoint and prove restore.** Mount the old claim read-only. Create a
-   dated immutable archive of its complete cold directory, including Prometheus
-   WAL/head data and Alertmanager silences/notification log. Publish checksums
+   terminating Pods, and the node-level process/mount fence above for both data
+   claims. Preserve the existing 600-second Prometheus and 120-second
+   Alertmanager shutdown grace. The checkpoint gate must independently reject
+   missing or invalidated node evidence before reading the cold source.
+3. **Checkpoint and prove restore.** Revalidate the node fence, then mount the
+   old claim read-only. Create a dated immutable archive of its complete cold
+   directory, including Prometheus WAL/head data and Alertmanager
+   silences/notification log. Publish checksums
    atomically and verify the source inventory remains unchanged. Restore the
    archive into separate disposable scratch and boot the exact application
    version with no external network, scrape targets, rules, remote writes, or
@@ -90,18 +128,23 @@ alone are not evidence that the prior writer stopped.
    query/time-range invariants or silence-state invariants, and clean shutdown.
    Do not call a checksum-only copy a restore proof. Preserve the source and
    archive if any check fails; the production writer stays fenced.
-4. **Prepare new storage while still fenced.** Commit the new claim-template
-   name, storage class, verified node affinity, and startup guard; keep replicas
-   zero. Let the operator recreate the empty StatefulSet and verify its PVC
+4. **Prepare new storage while still fenced.** Revalidate the node fence.
+   Commit the new claim-template name, storage class, verified node affinity,
+   and startup guard; keep replicas zero. Let the operator recreate the empty
+   StatefulSet and verify its PVC
    references. A separately gated Job restores the verified checkpoint into an
    empty staging directory on the target, normalizes ownership to `1000:2000`,
    verifies content, and atomically publishes data plus a completion marker. It
    must never overwrite an existing target or report completion while a writer
    is active. The runtime init guard refuses startup without the matching
-   verified marker; only the migration Job can publish it.
-5. **Start and verify one writer.** After the restore Job has completed and no
-   copy writer remains, commit replicas one. Confirm the sole Pod mounts the
-   new claim on the verified node, startup replay succeeds, historical data and
+   verified marker and current node-fence gate; only the migration Job can
+   publish the marker. The fence check must still run at actual startup, after
+   Argo and scheduler delays.
+5. **Start and verify one writer.** After the restore Job has completed,
+   revalidate the node fence for the former production and copy/restore writers,
+   including their node-side process and writable-mount absence, then commit
+   replicas one. Confirm the sole Pod mounts the new claim on the verified node,
+   startup replay succeeds, historical data and
    current ingestion survive, and no unsupported-filesystem warning returns.
    For Alertmanager, verify retained silences/notification state and the existing
    Grafana/Prometheus routing. Notification delivery testing needs its normal
@@ -144,12 +187,17 @@ this migration cannot claim HA or node-loss tolerance.
 
 ## Rollback And Remaining Decisions
 
-Before any new writes, fence the replacement and return the CR to the retained
-original template only after verifying its checkpoint identity. Once local
-writes begin, the old NFS copy is stale. Fence the local writer, take and prove
-another complete checkpoint, restore into a **new retained rollback claim**,
-and change the template name again while replicas remain zero. Start only after
-the same content and single-writer gates pass. Preserve both prior copies.
+Before any new writes, fence the replacement using the same node-level evidence
+and return the CR to the retained original template only after verifying its
+checkpoint identity. Once local writes begin, the old NFS copy is stale. Fence
+the local writer at its node, take and prove another complete checkpoint,
+restore into a **new retained rollback claim**, and change the template name
+again while replicas remain zero. Revalidate the node fence before each of those
+transitions and before startup; API absence alone never authorizes rollback.
+If the local node is unreachable and its state cannot be read safely, stop:
+neither starting from stale NFS nor assuming a cold checkpoint preserves the
+required history. Start only after the same content and node-level single-writer
+gates pass. Preserve both prior copies.
 Returning to NFS is an emergency rollback with its original reliability risk,
 not completion of the storage repair.
 
