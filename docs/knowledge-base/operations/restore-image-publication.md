@@ -7,9 +7,10 @@ Related: [[restore-egress-boundary]], [[../architecture/gitops-flow]],
 
 This follow-up adds a manual publisher for the exact tested amd64 restore image.
 It changes no live workload, registry visibility, GitHub environment or cloud
-configuration. Publication has not been executed. The extended native schema2
-reproducibility test also remains pending until this follow-up's Linux CI runs.
-Parent PR #978's Docker result is not evidence that this publisher has run.
+configuration. Native schema2 reproducibility passed on 2026-09-06; the exact
+code and run receipt appear below. Publication, public pull, and exact
+Talos/containerd runtime compatibility remain unverified. Neither this result
+nor parent PR #978's Docker result proves that the publisher has run.
 
 The existing `homelab-production` environment is reused. Read-only inspection on
 2026-09-06 verified required reviewer approval and a `main` deployment-branch
@@ -102,9 +103,31 @@ export explicitly sets `rewrite-timestamp=true` alongside `SOURCE_DATE_EPOCH=1`:
 the build argument alone does not normalize file timestamps inside layers.
 Run `34012857646` caught that difference in the new launcher layer while both
 runtime tests and exact schema2 config checks passed. [BuildKit reproducibility][repro].
-The job
-has no publishing permission or credentials. These gates must pass on the
+The job has no publishing permission or credentials. These gates must pass on the
 final combined source, including the parent's SCM_RIGHTS denial fix.
+
+### Native receipt — 2026-09-06 UTC
+
+[Run 34013570151](https://github.com/Stuhlmuller/homelab/actions/runs/34013570151)
+passed for PR head `d55dac155949fd38146deb1c427a5f21df4610d0`. Checkout tested
+GitHub’s synthetic merge `eb23ecbfc4aeee9fb3f66b166260e30c8d80c144`, combining
+that head with parent `6a413930ae501037333d81ab3dbdfd9acde110d2`.
+
+Two fresh pinned BuildKit builders, each with layer caching disabled, completed
+all runtime tests and independently exported matching schema2 content:
+
+- Config/image ID: `sha256:0f3a7504ff8f2dea9485d85735fdf3ea3295bcd08ab6fc7e274829eeb876861a`.
+- Manifest: `sha256:90975d74b45d59235bfbc4304dddab02de4879caa8ef7a5a3b114dbbaafc98be`.
+
+Both runs passed real network positive controls, inherited network denial,
+SCM_RIGHTS broker cases, descriptor rejection, Unix-socket PostgreSQL restore,
+SQL subprocess isolation, and fail-closed launcher probes under Docker’s default
+seccomp profile. Builder cleanup completed before runtime tests.
+
+This receipt is a documentation-only follow-up; the unchanged code proof belongs
+to the head and synthetic merge above. These are local test-image digests, not
+published registry references. Publication, anonymous/public pull, and the exact
+Talos/containerd synthetic runtime gate remain unverified. No real backup was read.
 
 Before publication, cancelling the dispatch leaves GHCR unchanged. After a
 successful or uncertain push, do not delete/rewrite existing source tags or
