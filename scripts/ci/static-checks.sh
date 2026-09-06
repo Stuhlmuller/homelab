@@ -1173,6 +1173,10 @@ if [[ -n "$tag_only_images" ]]; then
 fi
 echo "::endgroup::"
 
+echo "::group::Gluetun CPU capture"
+python3 scripts/ci/gluetun-cpu-profile-check.py
+echo "::endgroup::"
+
 echo "::group::OpenClaw Discord plugin"
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py

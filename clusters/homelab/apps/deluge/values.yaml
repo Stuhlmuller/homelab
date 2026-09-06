@@ -1,5 +1,15 @@
 serviceAccount:
   deluge: {}
+configMaps:
+  gluetun-profiling:
+    includeInChecksum: true
+    includeChecksumInControllers:
+      - deluge
+    data:
+      # Temporary diagnostic: set off through GitOps after the bounded capture.
+      pprof_enabled: "on"
+      # The image default is :6060; never enable profiling without this override.
+      pprof_http_server_address: "127.0.0.1:6060"
 controllers:
   deluge:
     serviceAccount:
@@ -445,6 +455,18 @@ service:
       metrics:
         port: 9797
 persistence:
+  gluetun-profiling:
+    type: configMap
+    identifier: gluetun-profiling
+    advancedMounts:
+      deluge:
+        gluetun:
+          - path: /gluetun/pprof_enabled
+            subPath: pprof_enabled
+            readOnly: true
+          - path: /gluetun/pprof_http_server_address
+            subPath: pprof_http_server_address
+            readOnly: true
   config:
     enabled: true
     type: persistentVolumeClaim
