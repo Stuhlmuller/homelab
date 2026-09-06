@@ -316,6 +316,17 @@ login from AWS SSM:
 | `/homelab/openclaw/grafana/username` | `GRAFANA_USERNAME` |
 | `/homelab/openclaw/grafana/password` | `GRAFANA_PASSWORD` |
 
+For in-cluster monitoring, use `http://grafana.monitoring.svc.cluster.local`
+with this dedicated login. Grafana's Istio policy permits the OpenClaw service
+account; Grafana still authenticates and authorizes API requests. The public
+Cloudflare endpoint may reject non-browser clients with error 1010. Use the
+Grafana datasource proxy for Prometheus queries instead of direct Prometheus
+access. Do not print Basic-auth headers or credential values.
+
+OpenClaw has no Kubernetes service-account token or default kubeconfig. Bare
+`kubectl` can contact its local proxy on port 8080 and return misleading results;
+use Grafana monitoring unless a separate authorized kubeconfig is configured.
+
 After replacing those placeholders, bump
 `homelab.rst.io/openclaw-grafana-login-ssm-version` in `values.yaml` to the
 latest SSM parameter version so Argo CD rolls the pod and reloads the
