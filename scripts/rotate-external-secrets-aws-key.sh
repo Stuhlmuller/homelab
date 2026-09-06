@@ -503,7 +503,10 @@ jq -e '
     .Effect == "Deny" and
     (.Action | wildcard) and
     (.Resource | wildcard) and
-    .Condition == {"Null": {"aws:TokenIssueTime": "false"}})
+    .Condition == {
+      "Null": {"aws:TokenIssueTime": "false"},
+      "Bool": {"aws:ViaAWSService": "false"}
+    })
 ' "$tmp_dir/boundary-policy-version.json" >/dev/null
 
 "${aws_cli[@]}" iam list-access-keys \

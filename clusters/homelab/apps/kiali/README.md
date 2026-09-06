@@ -43,12 +43,38 @@ The monitoring AuthorizationPolicies allow the Kiali service account to query
 Prometheus and Grafana, and allow Prometheus plus the Octelium service-proxy path
 to reach Kiali. Kiali has no persistent storage requirement.
 
+## Configuration and connections
+
+Use **Select all** in the namespace selector. **Istio Config** lists declared
+resources and validation findings; **Traffic Graph** shows observed connections.
+Choose a 10-minute window and enable idle edges when inspecting quiet workloads.
+Ambient ztunnel traffic is TCP/L4; HTTP request details require a waypoint or
+sidecar. Workloads outside Istio are not a complete network inventory in Kiali.
+
+Prometheus owns `istio-podmonitors.yaml`, which scrapes ztunnel, Envoy (gateways,
+waypoints and sidecars), and Istiod. The monitors carry `release: prometheus`
+to match the Prometheus PodMonitor selector. Metrics retain the existing 15-day
+retention and use the existing Prometheus volume; monitor storage growth after
+rollout because mesh telemetry adds series.
+
+Kiali 2.26.0 permanently substitutes a no-op metrics client when its startup
+Prometheus health check fails. The readiness init container waits for Prometheus
+through Kiali's own network identity before starting the server. This requires
+the operator's additional-container and security-context override flags; the
+reviewed container retains a read-only filesystem, no capabilities, and an
+explicit non-root UID. No new cluster permissions or secret access are added.
+An unavailable Prometheus keeps new Kiali pods in initialization rather than
+silently serving a metrics-disabled UI. Inspect `wait-for-prometheus` logs if
+initialization stalls. A failure between the readiness check and server startup
+is still possible; the live check below detects that case.
+
 ## Validation
 
 After Argo CD syncs the application:
 
 ```sh
 argocd app get kiali
+python3 scripts/kiali-check.py
 kubectl -n monitoring get kiali kiali
 kubectl -n monitoring get deploy,svc kiali
 kubectl -n istio-system get service istio-ingressgateway \
@@ -67,3 +93,8 @@ balancer class, no Tailscale proxy remains for that Service, and the
 If this `ClusterIP` path breaks Octelium routing, revert the Istio gateway
 Service change and sync Istio. Do not restore direct Tailscale exposure until
 that path has its own authentication policy.
+
+For telemetry rollback, revert the Kiali values and Prometheus monitor changes
+in git and let Argo CD reconcile both apps. Historical metrics remain until
+normal retention expires. A green Argo CD status alone does not prove traffic
+visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.

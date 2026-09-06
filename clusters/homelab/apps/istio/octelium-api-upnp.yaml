@@ -9,6 +9,8 @@ metadata:
     app.kubernetes.io/name: octelium-api-upnp
     app.kubernetes.io/part-of: octelium
 spec:
+  # Retired: the API uses outbound Cloudflare Tunnel transport.
+  suspend: true
   schedule: "*/5 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120

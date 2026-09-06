@@ -15,10 +15,16 @@ Secrets. External Secrets itself uses a Kubernetes Secret created through the
 after placeholder SSM parameters exist and real credential values are injected
 outside git.
 
-The SSM SecureString key is managed by `IaC/live/aws-ssm-parameters` in
-`us-west-2` under `alias/homelab-opentofu`. It is distinct from the
-OpenTofu remote-state key with the same alias in `us-east-1`; production apply
-roles need identity-based KMS permissions for both keys.
+SSM SecureStrings now use AWS-managed `alias/aws/ssm` in `us-west-2`, selected
+by `runtime_kms_key_id` in `IaC/root.hcl`. The OpenTofu client-side state key
+remains `alias/homelab-opentofu` in `us-east-1`. The September migration
+archives old SSM versions under AWS-managed S3 encryption before retiring
+the former west-region customer key; see the audit below for rollout status.
+
+The [[operations/kms-cost-audit-2026-09-05]] inventories three customer-managed
+keys and 16 AWS-managed keys. The third customer key, `tofu-encryption-key`,
+is a legacy retirement candidate, not safe to delete without checking retained
+ciphertext. Account KMS costs were $3.05 in August 2026.
 
 ## AWS SSM Pattern
 
@@ -38,6 +44,25 @@ roles need identity-based KMS permissions for both keys.
   aggregate limit is 5,120 characters; the existing fixed-size inline policy
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
+
+The operator-owned External Secrets permissions boundary denies direct
+temporary-session requests using `aws:TokenIssueTime` only when
+`aws:ViaAWSService` is false. SSM must still forward the caller's authorization
+to KMS for SecureString decryption; excluding this AWS service hop from the
+deny does not grant any new action or resource. Exact reader policy ARNs and
+the existing boundary Allow statements still apply. On 2026-08-30, the broader
+deny caused `cordium-agent-auth` refreshes to fail at `kms:Decrypt`. The
+administrator applied the reviewed single-update plan from
+`IaC/operator/github-actions-role-policy`; Cordium's scheduled refresh succeeded
+at `2026-08-30T16:56:48Z`. The native policy regression checks all four direct
+and forwarded request contexts, retaining direct temporary-credential denial.
+Only Cordium refreshes periodically (every five minutes); the other 23 live
+ExternalSecrets use `OnChange`. Their existing Ready conditions and the global
+store's Ready status do not prove that a new decryption works under the current
+boundary. After repair, verify a controlled repository-driven refresh before
+rotating dependent credentials.
+See [AWS forward access sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html)
+and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-viaawsservice).
 
 ## Identity Notes
 
@@ -59,7 +84,11 @@ roles need identity-based KMS permissions for both keys.
   policy, until a separate reviewed secret-retirement change. See
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
-  `IaC/live/azuread-applications/grafana`.
+  `IaC/live/azuread-applications/grafana`. Grafana and Octelium passwords expire
+  one year after creation, but their current resources have no rotation trigger;
+  an unchanged apply does not rotate them. Coordinate a reviewed
+  `rotate_when_changed` revision with the Grafana `OnChange` ExternalSecret and
+  the Octelium native-secret sync before either expiry.
 - Alertmanager owns notification delivery credentials for Grafana-managed
   alerts. The Prometheus app materializes the
   `alertmanager-discord-webhook` ExternalSecret in `monitoring`, sourced from
@@ -93,7 +122,8 @@ roles need identity-based KMS permissions for both keys.
 - The retired GitHub Actions runner no longer consumes an SSM registration
   token. `/homelab/github-actions-runner/registration-token` remains declared
   and adoptable only as an OpenTofu state tombstone because the production
-  policy rejects SSM parameter deletion. Remove it only with a reviewed
+  policy rejects SSM parameter deletion. It is excluded from the External
+  Secrets reader IAM policy. Remove it only with a reviewed
   repository-owned state and secret-retirement workflow.
 - Dispatcharr's dedicated PostgreSQL password is generated at
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
@@ -134,14 +164,16 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
   The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected `octelium-cloudflare-origin-port.yml` workflow uses the
-  `homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN`
-  only for zone read, Zone Settings read, Origin Rules edit, and Config Settings
-  write while reconciling the exact API hostname's destination port and Full
-  (strict) TLS/HTTP2 origin transport; the token value never enters git or
-  workflow output. The former
+  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
+  existing production AWS role for SSM reads and the `homelab-production`
+  secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` for removal of retired origin/TLS
+  rules (zone read, Origin Rules edit, Config Settings write). DNS reconciliation
+  uses the SSM-backed DNS token. Native TLS gRPC uses the separate Tunnel TCP
+  carrier; no UPnP or WAN address is required. The token values never enter git
+  or workflow output. The former
   `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
-  consumer and remains only until secret retirement is reviewed separately.
+  consumer, is excluded from the External Secrets reader IAM policy, and
+  remains only until secret retirement is reviewed separately.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -161,7 +193,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
   CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
   it must not grant the bearer access to other public Services. The User owns
-  matching 30-day clientless-session and access-token lifetimes. Rotate it every 21 days with
+  matching 30-day clientless-session and access-token lifetimes. Rotate it every
+  21 days with
   `scripts/octelium-ci-credential.sh`; the helper deletes the dedicated User's
   Sessions first so Octelium cannot retain an older Session expiry, then retries
   GitHub environment writes until both store the replacement token.
@@ -170,6 +203,19 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
   affects CI, operator, and Cordium Kubernetes access, so validate both Services
   after rotation.
+- Focused reconciliation of `homelab-private-kubernetes-access` and
+  `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
+  and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
+  limited to one authentication, expires after 30 minutes, auto-deletes on
+  login, and copies a highest-priority, fail-closed six-method Policy/Service
+  API policy into a 15-minute client Session. Its helper-only template is kept
+  outside the general Octelium catalog with an already-expired timestamp; only
+  the lifecycle helper replaces that timestamp and applies it. The
+  protected `homelab-production` secret
+  `OCTELIUM_CATALOG_AUTH_TOKEN` exists only between provisioning and the
+  mandatory revoke step. Octelium v0.35 cannot scope these methods by object
+  name; the fixed helper, reviewed hashes, exact `main` SHA, and production
+  approval provide that boundary. See `docs/ci-cd.md`.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by
@@ -192,8 +238,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `homelab-ssm-parameter-readers` group. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
   with an operator-owned boundary that allows only homelab SSM reads and
-  runtime-secret KMS decrypt/describe access. The boundary denies temporary STS
-  credentials, and the reader policy excludes the two parameters that hold
+  runtime-secret KMS decrypt/describe access. The boundary denies direct
+  temporary STS requests while preserving SSM's AWS-managed KMS calls, and the
+  reader policy excludes the two parameters that hold
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [[../operations/continuous-improvement]].
@@ -207,6 +254,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
+  is the only Deluge VPN parameter readable by External Secrets; the six
+  retired split-profile parameters remain non-readable state tombstones. It
   refreshes on ExternalSecret changes; after replacing the SSM profile value,
   bump `homelab.rst.io/wireguard-profile-ssm-version` on both the
   ExternalSecret and Deluge pod template so the Secret is rerendered and
@@ -260,3 +309,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - `IaC/live/aws-ssm-parameters`
 - `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`
 - `clusters/homelab/apps/external-secrets`
+
+The refreshed broad-App containment contract preserves OpenClaw's current
+assistant bundle, coordinator, public checksum-pinned native Codex install, and
+subscription OAuth. Authenticated GitHub writes pause without a scoped identity;
+no PAT fallback is declared. PR #969's container contexts remain a separate,
+compatible hardening change. Private-key revocation still lacks a repository-owned
+protected App-management path; track that gap under #859 before declaring the
+previously exposed key retired. See the OpenClaw README's rollout gates.

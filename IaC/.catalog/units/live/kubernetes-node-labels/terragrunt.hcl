@@ -19,8 +19,8 @@ inputs = {
       "octelium.com/node-mode-controlplane" = ""
       "octelium.com/node-mode-cordium"      = ""
     }
-    zimaboard-2 = {
-      "octelium.com/node-mode-dataplane" = ""
-    }
+    # Keep label ownership while removing dataplane eligibility: 1.28 GiB
+    # allocatable cannot hold the measured 2.7 GiB retained Octelium fleet.
+    zimaboard-2 = {}
   }
 }

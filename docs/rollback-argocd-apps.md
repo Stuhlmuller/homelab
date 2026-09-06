@@ -93,7 +93,9 @@ App should stop evaluating pull requests.
 Kiali is stateless. Remove the Kiali custom resource before removing the
 operator chart so the operator can clean up its managed server resources.
 
-## Break-Glass
+## Emergency Recovery
 
-Direct live mutation is break-glass only. Any live rollback action must be
-backfilled into this repository before the incident is considered closed.
+Keep rollback code-first during incidents: revert or correct repository-owned
+desired state, validate it, then apply through the documented Terragrunt or
+GitOps path. Do not mutate live resources and backfill afterward. Add and review
+a missing recovery code path before using it.

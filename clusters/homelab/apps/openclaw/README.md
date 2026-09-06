@@ -1,9 +1,160 @@
 # OpenClaw
 
+## Remaining 2026.8.2 state migration
+
+The session SQLite import alone does not migrate workspace setup state.
+After the coordinator ownership repair, the gateway rejected the retained
+`openclaw-workspace-state.json` and requested `openclaw doctor --fix`.
+Bootstrap now runs the pinned doctor's noninteractive repair once after
+configuring plugins and secrets, with workspace suggestions disabled. It
+keeps the existing external supervisor/service-repair policy and does not use
+`--force` or `--allow-exec`. Because generic repair can rewrite unrelated skill
+policy, bootstrap snapshots the reviewed config privately and restores it
+atomically after doctor, even on failure. An interrupted repair restores that
+snapshot before the next bootstrap applies configuration. Only doctor state
+migrations persist; configuration remains owned by the reviewed bootstrap.
+The repair has a ten-minute deadline and a 30-second kill grace period because
+an earlier generic doctor run stalled scanning NFS transcripts. Timeout
+restores configuration, retains diagnostics, and leaves completion unset.
+
+Existing state requires the verified pre-2026.8.2 archive before this step.
+Doctor performs its upstream legacy-state migrations and startup readiness
+checks, including workspace setup/attestations and any other detected legacy
+stores. The session inventory is checked again afterward, and configuration
+must validate before the separate `.doctor-state-migrated-to-2026.8.2` marker
+is written. The original session-import marker is preserved. Failures block
+the gateway and retain private `doctor-state-reports/latest.log` plus one
+previous report; their contents must not be posted in this public repository.
+
+The pinned CLI passed synthetic workspace migration and a repeat run. Local
+bootstrap tests prove failed backup, doctor, session preservation, or config
+validation cannot create the completion marker. Live gateway and Discord
+readiness remain rollout gates. A manifest rollback cannot undo migrated
+state; recovery requires the verified archive and its matching prior version,
+following the existing offline restore procedure. Do not delete the archive
+or archived legacy sources during the recovery soak.
+
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Runtime config and agent state persist on the `openclaw` PVC
 under `/data/openclaw`.
+
+## Claw's assistant configuration
+
+`assistant/` owns Claw's homelab personality, operating agreement, tool notes,
+heartbeat checklist, model configuration, and scheduled work. The default is
+`openai/gpt-6-astra` through the existing Codex OAuth harness, with medium
+reasoning and no silent model fallback. `astra` is the selection alias. See
+the [official model definition](https://developers.openai.com/api/docs/models/gpt-6-astra).
+Account access must be verified with an actual turn; configuration validation
+alone does not prove Astra entitlement.
+
+The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
+official ChatGPT endpoint. This deployment uses its retained subscription OAuth
+profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
+catalog but select API-key authentication because Astra is newer than its
+default dual-route model list. The empty authored model list leaves discovery
+to Codex; it does not manufacture runtime availability.
+
+The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
+architecture's SHA-256, and exposes `/toolbox/codex/codex` to the existing
+OpenClaw Codex plugin. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
+added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
+OpenClaw is pinned to `2026.9.1`, which includes hidden models when discovering
+the Codex catalog. This matters because Astra's initial catalog entry is hidden
+from the interactive picker. Bootstrap takes a verified offline
+`pre-2026.9.1` archive before touching runtime state; older migration markers
+remain intact. The explicit app-server command preserves the existing OAuth
+account and
+per-agent runtime home. Roll back the pin and command together through GitOps;
+the bundled version cannot satisfy the Astra requirement. The official Codex
+plugin is installed and checked at the exact gateway version during bootstrap.
+
+The behavior is conversational and evidence-driven: remember corrections,
+follow through on requested work, keep unchanged checks silent, and report
+what was actually validated or deployed. Existing owner authorization for
+homelab branch/PR/CI/merge work remains in force; branch policy and protected
+deployment approval still apply. Proactive improvement is bounded to one open
+PR and an eight-minute daily work window.
+
+All schedules use `America/Los_Angeles` and deliver to the existing allowlisted
+owner's Discord DM:
+
+| Job | Schedule | Behavior |
+| --- | --- | --- |
+| Morning brief | Daily 09:00 | Health, changes, blockers, next step |
+| Health watch | :17/:47, 08:00-21:59 | New incidents or recovery |
+| Daily improvement | Daily 14:30 | One verified improvement or PR |
+| Heartbeat | Hourly, 08:00-22:00 | Follow up on tracked work |
+
+The fixed-name ConfigMap mounts only in bootstrap and the app. Its content
+digest in the Pod template triggers replacement when the bundle changes.
+Bootstrap adds managed sections to SOUL.md, AGENTS.md, and TOOLS.md and
+replaces the old heartbeat checklist so its legacy polling does not duplicate
+the new jobs. It preserves IDENTITY.md, USER.md, MEMORY.md, daily notes,
+existing tool additions, credentials, and unrelated config. It extends any
+restricted model policy to allow Astra. The first pre-change files and config
+are retained privately under `/data/openclaw/assistant-backups/v1`; this is a
+same-volume rollback checkpoint, not an independent backup.
+
+The app's postStart hook registers three jobs through the public automation
+CLI with stable declaration keys. Retries converge in place; they preserve
+job history and an owner's disabled state. After registering replacements, it
+disables the two observed overlapping
+legacy jobs (Grafana auto-triage and the daily improvement loop) only when both
+ID and name match `retired-jobs.json`. Their history remains; security audits,
+memory dreaming, and research routines are preserved. It does not edit
+scheduler SQLite tables or adopt/delete unrelated jobs. An absent or ambiguous
+owner defers
+scheduling rather than guessing a recipient. This keeps a fresh gateway usable
+before Discord setup. Bounded API retries also leave chat available on failure.
+`/data/openclaw/assistant-reconciliation.json` records `deferred`, `pending`,
+`failed`, or `ready` without credentials or recipient IDs. Verify `ready` in
+addition to Pod readiness. After correcting a deferred/failed setup through
+the declared configuration path, retry the reviewed reconciler:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- \
+  python3 /etc/openclaw-assistant/reconcile.py
+```
+
+Existing alert hooks remain enabled.
+See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
+[heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
+
+Before rollout, run the static gate and render app-template 4.4.0 plus this
+Kustomize directory. The focused `scripts/ci/openclaw-assistant-check.py`
+exercises preservation, repeatability, ambiguous routing, symlink rejection,
+stable declarations, and the Pod content digest. After editing `assistant/`,
+recompute the SHA-256 over sorted file names followed by a NUL byte and their
+contents, and update `homelab.rst.io/openclaw-assistant-sha256` in values.yaml.
+
+After the PR is merged and Argo syncs, verify:
+
+```sh
+kubectl -n ai rollout status deployment/openclaw --timeout=15m
+kubectl -n ai exec deploy/openclaw -c app -- openclaw config validate
+kubectl -n ai exec deploy/openclaw -c app -- openclaw models status --json
+kubectl -n ai exec deploy/openclaw -c app -- openclaw automations list --all --json
+```
+
+Confirm one instance of each managed declaration, the intended Discord route,
+and successful execution/delivery in automation run history. Send an owner
+Discord message and verify the actual session model is Astra and the reply is
+natural. Existing sessions with explicit model overrides must be inspected and
+changed through an owner-authorized session/model operation; do not rewrite
+session databases. Check monitoring/GitHub access using bounded read-only
+queries; report missing access instead of claiming the tools work.
+
+To pause a managed job, use `openclaw automations disable <job-id>`; its paused
+state survives reconciliation. To retire or rename jobs, include explicit
+removal of their declaration IDs in a reviewed maintenance change. Removing
+the ConfigMap alone does not remove persisted jobs. Roll back through a PR
+that restores the previous model and managed content and disables/removes
+the three declarations through the public CLI, then re-enable the two retired
+jobs if returning to the old behavior. Keep personal memory and
+session history; use the private originals only for a reviewed offline
+workspace/config restore when needed.
 
 ## Resource Profile
 
@@ -106,11 +257,11 @@ connect to the gateway and relay a successful HTTP response.
 
 The app container also owns startup and liveness probes. Startup allows up to
 two minutes for the gateway to load persisted state and plugins. After startup,
-three consecutive failed liveness checks restart only the app container when
-the gateway stops answering HTTP through the proxy. Readiness removes the pod
-from the Service before that recovery threshold is reached. A TCP-only check is
-not sufficient here because the proxy listener can accept a connection even
-when its upstream gateway is unavailable.
+36 consecutive failed liveness checks restart only the app container after
+about six minutes without an HTTP response through the proxy. Readiness removes
+the pod from the Service after two failures. A TCP-only check is not sufficient
+here because the proxy listener can accept a connection even when its upstream
+gateway is unavailable.
 
 Use the event timestamps to distinguish expected startup failures from a live
 stall, then verify the gateway itself:
@@ -190,7 +341,13 @@ OpenClaw rejects SecretRef objects for `hooks.token`, so bootstrap expands
 `GRAFANA_ALERT_HOOK_TOKEN` from the mounted Secret at pod startup, JSON-encodes
 the actual runtime value, and writes that plain string to the PVC-backed
 OpenClaw config. This keeps the token out of git while satisfying OpenClaw's
-hook-token policy.
+hook-token policy. If an older config contains the authored
+`${GRAFANA_ALERT_HOOK_TOKEN}` reference, bootstrap removes that reference
+before setting the literal value. OpenClaw 2026.8.2 otherwise restores the
+reference during config writes, leaving the gateway without its bootstrap-only
+environment variable. The removal and replacement happen during init, before
+the gateway runs; a failure prevents startup rather than exposing an
+unauthenticated hook.
 
 After rotating the hook token, bump
 `homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD
@@ -210,6 +367,32 @@ minimum permissions, its private key is rotated, and OpenClaw has a validated
 sandbox or equivalent isolation boundary. Restoration must add a static denial
 test for unrelated repositories and protected GitHub control surfaces.
 
+This containment refresh preserves the current assistant bundle, local identity
+coordinator, and native Codex runtime. Codex 0.153.2 is downloaded from a public,
+checksum-pinned release, and its exact OpenClaw plugin is installed from npm;
+neither installation needs this GitHub App key. Existing subscription OAuth
+stays on the PVC. Authenticated GitHub writes and PR publication pause until a
+separately reviewed scoped identity is available; do not substitute a PAT.
+
+The independent container-hardening change in PR #969 can land before or after
+this containment change. Preserve its security contexts when integrating both;
+this PR does not duplicate or replace that unmerged hardening.
+
+Rollout requires a protected Terragrunt plan/apply removing only the three SSM
+reader grants, plus Argo reconciliation of the ExternalSecrets and Deployment.
+Verify the private-key Secret owner reference before rollout, then confirm the
+retired ExternalSecret/Secret and App key names in `openclaw-secrets` are absent,
+the remaining ExternalSecret is healthy, and gateway, Discord, and Codex work.
+Inspect names and references only; never print secret values. Parameters stay in
+SSM; the workload and External Secrets reader must no longer consume them.
+
+Removing these mounts does not revoke copies or previously issued tokens. No
+repository-owned path currently rotates/deletes this App registration's private
+key or verifies its prior key is revoked. Add that protected management path in
+`github-iac` under #859 before claiming credential retirement complete. Do not
+perform an ad hoc GitHub settings change or restore the old key from backups.
+The sandbox requirement in #782 remains independent.
+
 ## ChatGPT Pro And Codex
 
 Do not store ChatGPT passwords, browser cookies, or OpenAI API keys in this
@@ -218,7 +401,7 @@ billing, but OpenAI Codex can sign in with a ChatGPT plan and store local
 credentials on the OpenClaw PVC.
 
 The pod startup bootstrap enables the bundled `codex` plugin and sets the
-default agent model to `openai/gpt-5.5` with model-scoped
+default agent model to `openai/gpt-6-astra` with model-scoped
 `agentRuntime.id: "codex"`. OpenClaw 2026.6.10 routes canonical `openai/gpt-*`
 agent refs through the Codex app-server harness when that runtime policy is
 selected, so the PVC-backed Codex OAuth profile supplies the ChatGPT Pro auth
@@ -226,12 +409,37 @@ without storing an API key in SSM or git. The older `openai-codex/gpt-*` and
 `codex/gpt-*` refs are compatibility routes, not the desired bootstrap default
 for this deployment.
 
+Keep OpenClaw at `2026.8.2` or newer while the Codex plugin is enabled.
+`2026.7.1` can leave timed-out native hook relay processes orphaned until the
+container reaches its memory limit; upstream
+[PR #109446](https://github.com/openclaw/openclaw/pull/109446) fixes relay PID
+ownership on Linux. The bootstrap keeps the effective concurrency at four
+instead of adopting `2026.8.2`'s higher default.
+
+The `2026.7.1` to `2026.8.2` rollout is fail-closed. The `Recreate` deployment
+stops the gateway, then bootstrap writes a complete owner-only archive and
+SHA-256 checksum under `/data/openclaw-backups` before invoking any `2026.8.2`
+OpenClaw command. It verifies the tar stream and checksum before running the
+targeted session SQLite migration and starting the new gateway. The archive
+includes credentials, private transcripts, and the workspace. It stays on the
+same QNAP-backed volume and is a migration checkpoint, not an independent NAS
+backup. Reinstallable npm cache and external-plugin directories are excluded.
+OpenClaw also preserves its migration originals and manifests; do not run
+`openclaw update cleanup` before the 24-hour soak closes.
+
+An image-only rollback below `2026.8.2` is unsafe after the session SQLite
+migration and also restores the hook-relay leak. If rollback is required, use a
+reviewed init-container maintenance change to replace `/data/openclaw` from the
+verified pre-upgrade archive while the gateway is stopped; an overlay extraction
+is not a restore. Validate the recovered state before reverting the image. This
+discards post-upgrade state, so prefer repairing `2026.8.2` when possible.
+
 The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
 after the synced pod restarts if those views still show an enable-plugin prompt.
 
 Startup bootstrap pins `agents.defaults.sandbox.mode` to `off`. OpenClaw
-[2026.7.1 supports Docker, SSH, and OpenShell sandbox backends](https://github.com/openclaw/openclaw/blob/v2026.7.1/docs/gateway/sandboxing.md).
+[2026.8.2 supports Docker, SSH, and OpenShell sandbox backends](https://github.com/openclaw/openclaw/blob/v2026.8.2/docs/gateway/sandboxing.md).
 This Talos pod has no Docker daemon, while the repository declares neither a
 dedicated SSH target and trust material nor an OpenShell account/runtime.
 Enabling `non-main` without a working backend makes Discord, group, and spawned
@@ -245,14 +453,43 @@ deliberately not mounted. If a sandbox backend is added later, document and
 validate it before changing this setting.
 Do not mount a host container-runtime socket into this workload.
 
-During startup, the bootstrap installs the missing official external Discord
-plugin before validating persisted config, then applies desired state. This is
-the only recovery step before validation. It does not run automatic doctor
-repairs: doctor scans session history on the NFS-backed PVC, so accumulated
-orphan transcripts can block the pod before the gateway starts. Run migrations
-as explicit, reviewed maintenance when an upgrade requires them. Bootstrap also
-pins `gateway.mode` to `local`, which is required for the container-managed
-gateway process.
+After the verified offline backup, bootstrap migrates the four observed retired
+config keys (`meta.lastTouchedAt`, `commands.ownerDisplay`,
+`hooks.maxBodyBytes`, and `plugins.bundledDiscovery`) before invoking OpenClaw.
+It preserves model metadata and copies a legacy model restriction into
+`agents.defaults.modelPolicy.allow` only when no explicit policy exists.
+The owner-only config replacement is atomic and leaves unrelated settings,
+credentials, skill policy, and session files untouched. The retired hook body
+limit is no longer written; OpenClaw 2026.8.2 enforces its built-in 256 KiB limit.
+
+Bootstrap then installs the missing official external Discord plugin before
+validating persisted config and applying desired state. An exact
+installed version is reused; a missing or mismatched package gets four bounded
+registry attempts so a transient reset cannot leave every restart dependent on
+a fresh successful download. The versioned bootstrap runs the targeted session
+SQLite inspect, dry-run, import, and post-import inspection once after its verified
+backup. Reports are retained with owner-only permissions under
+`/data/openclaw/session-sqlite-reports`, keeping only the latest and previous
+report for each mode; logs contain totals instead of thousands
+of transcript paths. The report gate accepts only the observed
+`transcript_missing` warning for `agent:main:healthcheck-20260813` on agent
+`main`. OpenClaw 2026.8.2 preserves that entry's metadata during import but
+returns exit code 1 for any warning. Every other issue, malformed report, or
+unexplained nonzero exit remains fatal. The original archive and any retained
+legacy/trajectory files remain available; no replacement transcript is invented.
+Before import, bootstrap saves every legacy session key and session ID in a
+private inventory that survives retries. After inspection, a read-only SQLite
+query verifies each identity still exists before writing the completion marker.
+Missing or changed identities stop bootstrap even if doctor reports no issues.
+
+The later doctor state gate restores the reviewed configuration so generic
+repair cannot persist unrelated skill-policy changes. Gateway startup owns
+its documented deterministic config migrations once startup is reached;
+plugin installation itself rejects unmigrated config. Session identity
+preservation remains mandatory after every migration step. Bootstrap also pins
+`gateway.mode` to `local`, which is
+required for the container-managed gateway process. External-supervisor mode
+makes Kubernetes the only lifecycle and image-update authority.
 
 Run the interactive login after connecting through Octelium and exporting the
 kubeconfig generated by `octelium config kubernetes-api.homelab`:
@@ -287,3 +524,31 @@ OpenClaw home. Its native threads, SQLite indexes, caches, and diagnostics are
 rebuildable and had grown large enough to stall app-server startup and gateway
 turns over NFS. The volume is capped at `2Gi`, and pod replacement clears it.
 OpenClaw auth, sessions, workspace, and application state remain on the PVC.
+
+## Local identity coordinator
+
+OpenClaw 2026.8.2 requires its coordinator directory to belong to the runtime
+UID and have mode `0700`. The QNAP share reports UID/GID `65534` for persistent
+state, while the image runs as UID `1000`; the gateway otherwise refuses
+startup with `device identity coordinator directory belongs to another user`.
+
+Mount a shared 16 MiB `emptyDir` only at
+`/data/openclaw/tmp/openclaw-1000` in bootstrap and the gateway. The existing
+root toolbox init sets this local volume to `1000:1000`, mode `0700`, before
+OpenClaw runs. Upstream ownership and locking checks remain enabled. Device
+identity, configuration, session SQLite databases, and backups stay on the
+retained PVC; the old NAS lock directory is hidden, not removed.
+
+This relies on the existing single-replica `Recreate` controller. All writers
+must run in this Pod and share its coordinator mount. Do not run a second
+Pod or external doctor process against the same PVC: separate local lock
+volumes would not coordinate those writers. Stop the gateway through a
+reviewed declarative maintenance change before any external state repair.
+Revisit this storage design before introducing multiple replicas.
+
+Validate the render and the full static gate before rollout. After Argo sync,
+require the mounted directory to report UID/GID `1000:1000` and mode `0700`,
+then verify gateway readiness, the Discord channel, and the migration marker.
+Rollback removes the local mount through a reviewed PR; persistent data and
+backup files remain, but the known NAS ownership failure would return unless
+an alternative ownership-compatible storage path is deployed first.

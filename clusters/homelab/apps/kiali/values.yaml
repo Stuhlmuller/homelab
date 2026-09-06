@@ -8,8 +8,10 @@ onlyViewOnlyMode: true
 allowAdHocKialiNamespace: false
 allowAdHocKialiImage: false
 allowAdHocOSSMConsoleImage: false
-allowAdHocContainers: false
-allowSecurityContextOverride: false
+# Required for the reviewed readiness init container and its numeric non-root UID.
+# The operator otherwise replaces its securityContext, dropping runAsUser.
+allowAdHocContainers: true
+allowSecurityContextOverride: true
 
 cr:
   create: true
@@ -25,6 +27,35 @@ cr:
       cluster_wide_access: true
       service_type: ClusterIP
       view_only_mode: true
+      additional_pod_init_containers_yaml:
+        - name: wait-for-prometheus
+          image: curlimages/curl:8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              until curl --fail --silent --show-error --max-time 10 \
+                http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready; do
+                sleep 5
+              done
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 32Mi
+          securityContext:
+            runAsUser: 100
+            runAsGroup: 101
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
       resources:
         requests:
           cpu: 25m

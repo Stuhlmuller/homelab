@@ -33,13 +33,19 @@ variable "external_secrets_user_name" {
   }
 }
 
+variable "additional_kms_key_aliases" {
+  description = "Exact additional runtime keys allowed during a ciphertext migration."
+  type        = set(string)
+  default     = []
+}
+
 variable "kms_key_id" {
   description = "Alias of the regional KMS key used to encrypt homelab SSM parameters."
   type        = string
 
   validation {
     condition     = startswith(var.kms_key_id, "alias/")
-    error_message = "kms_key_id must be a KMS alias so the boundary follows the operator-managed runtime-secret key."
+    error_message = "kms_key_id must be a KMS alias so the boundary follows the configured runtime-secret key."
   }
 }
 

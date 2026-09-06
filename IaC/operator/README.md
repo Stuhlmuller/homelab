@@ -25,10 +25,12 @@ The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and applies an operator-owned
 permissions boundary. The boundary caps the user's effective permissions at
 `GetParameter`/`GetParameters` under `/homelab/*` and decrypt/describe access
-to the regional runtime-secret KMS key. An explicit deny blocks requests made
-with temporary STS credentials, preventing a copied long-term key from minting
-a session that survives rotation. Group policy changes therefore cannot turn
-the reader credential into unrelated AWS access.
+to the regional runtime-secret KMS key. An explicit deny blocks direct requests
+made with temporary STS credentials, preventing a copied long-term key from
+minting a session that survives rotation. AWS forward access sessions are exempt
+from that deny so SSM can decrypt SecureStrings through KMS; the existing SSM
+and exact KMS-key allow rules still constrain access. Group policy changes
+therefore cannot turn the reader credential into unrelated AWS access.
 
 Use an AWS administrator profile only as the credential selector. Before
 changing trust, create and protect `github-iac-plan` and
@@ -49,7 +51,7 @@ operator_profile="<administrator-profile>"
 aws sso login --profile "$operator_profile"
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-terragrunt --log-disable validate -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
 ```
 
@@ -205,11 +207,39 @@ user require an un-targeted operator plan. Import
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
 
+After backend-disabled initialization, run the offline boundary regression with
+`terragrunt --log-disable run --no-auto-init -- test -no-color`. It evaluates
+the provider-generated policy with synthetic credentials and a plan only;
+Terragrunt backend auto-initialization must stay disabled for this check.
+
 After the full operator apply succeeds, rerun the protected `Terragrunt Apply`
 workflow. Its short-lived OIDC role can then create, version, tag, attach, and
 delete only the declared SSM reader policy family.
+
+After a boundary correction, verify `kubectl -n octelium get externalsecret
+cordium-agent-auth -o yaml` reports `Ready=True` and a new refresh time within
+five minutes. Cordium polls SSM periodically; unchanged `OnChange` secrets can
+retain older success statuses without exercising current KMS permissions.
 
 Do not destroy this unit while `IaC/live/aws-ssm-parameters` still manages that
 policy family or the cluster uses the External Secrets IAM user. The user has
 `prevent_destroy`; removing the bootstrap grant or boundary first would prevent
 safe reconciliation or restore the broader direct-policy risk.
+
+## State bucket request costs
+
+`state-bucket-encryption` adopts the existing state bucket's encryption
+configuration and enables S3 Bucket Keys. It preserves the default KMS key,
+explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
+See [KMS audit and rollout](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md)
+for the focused plan/apply path, verification, and declarative rollback.
+
+## Legacy KMS key retirement
+
+`legacy-kms-retirement` owns only the adopted legacy key and its alias. Its
+final desired state schedules deletion with a 30-day window. The active
+east-region OpenTofu key is outside this unit. Dependency audit and archive
+verification are complete. The explicitly approved retirement was applied on
+September 5, 2026; deletion is scheduled for October 5. Keep
+`retirement_requested = true` so re-applies preserve retirement. See the
+[KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).

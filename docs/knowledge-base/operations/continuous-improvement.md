@@ -62,6 +62,32 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
+The [[audit-2026-09-04]] records the current audit, OpenClaw config-migration
+repair, and newly confirmed NOFX access-boundary failure. The
+[[audit-2026-09-02]] records the preceding repository fixes, read-only live
+inspection, validation, and remaining blockers. The broader
+[[audit-2026-08-30]] records prior live repairs and remediation PRs. Public API
+port mapping, image debt, and independent restore proof remain open; older
+observations below retain their original dates.
+
+- **Status:** fixed
+- **Area:** Talos / `zimaboard-2` recovery
+- **Evidence:** On 2026-09-02, the reviewed degraded-recovery gates passed:
+  the other three nodes were Ready, the dataplane label was absent, no Pod on
+  the worker mounted a PVC, and every Octelium Pod there was terminating.
+  Authenticated Talos access showed kubelet health failing for about 171 hours
+  with CRI and PLEG timeouts. The bounded reboot stalled at phase 1/10,
+  `stopAllPods`, while gracefully stopping kubelet; uptime remained 85.7 days
+  after the client timed out, proving the node did not restart. A subsequent
+  power-cycle reset uptime and restored healthy kubelet, CRI, and containerd.
+- **Risk:** Talos v1.11 has no force reboot mode; its `powercycle` mode skips
+  kexec but still performs the same graceful teardown. The 1.28 GiB worker
+  remains too small for the Octelium dataplane fleet.
+- **Validation:** All four nodes, every non-terminal cluster Pod, and all five
+  Pods bound to `zimaboard-2` became Ready. The worker retained no Octelium
+  dataplane label. Do not restore that label; use the separately tracked
+  dedicated replacement capacity.
+
 - **Status:** partially fixed
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
@@ -140,7 +166,7 @@ organization-policy blocker is tracked below.
   `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
   hostnames, so use an explicit advanced wildcard.
 
-- **Status:** mitigated in desired state; blocked by router authority and rollout
+- **Status:** superseded by outbound Tunnel transport; rollout verification pending
 - **Area:** Octelium / public gRPC transport
 - **Evidence:** On 2026-08-28 the public API completed Cloudflare TLS and HTTP/2
   but returned no gRPC response, while direct NodePort `10.1.0.200:30443`
@@ -149,15 +175,19 @@ organization-policy blocker is tracked below.
   Desired state moves the existing miniupnpc reconciler to Ready `zimaboard-0`,
   pins the end-to-end gRPC request to a public `1.1.1.1` answer, and alerts when
   the last successful renewal is stale or absent. Live IGD discovery still
-  reports no usable UPnP gateway.
-- **Risk:** Without a persistent WAN TCP/8443 mapping, the public CLI, VPN, and
-  admin path remains unavailable while browser and app tunnel traffic stays
-  healthy.
-- **Next step:** Xfinity account authority must enable UPnP or provide a
-  reviewed static TCP/8443 forward to `10.1.0.200:30443`. Then sync the Istio
-  app, require a recent CronJob success, reconcile public DNS, and verify public
-  `grpc-status: 16` plus an authenticated CLI call. Track worker recovery
-  separately in [[architecture/cluster-topology]].
+  reports no usable UPnP gateway. Read-only checks on 2026-09-02 confirmed the
+  public API still times out while the direct LAN origin returns HTTP/2 and
+  unauthenticated `grpc-status: 16`; the latest lease Jobs still fail.
+- **Risk:** The old WAN path remains unavailable. September 5 operator
+  clarification selects Cloudflare Tunnel; the replacement separates browser
+  gRPC-Web from native TLS gRPC over a TCP carrier. Do not retire private
+  fallback access until authenticated CLI, console, Cordium, and Talos gates
+  pass. Long-lived TCP-carrier reconnect behavior remains unverified.
+- **Next step:** Sync the reviewed Tunnel routes, run the protected
+  `octelium-public-tunnel.yml` DNS/rule reconciliation, then pass
+  `scripts/octelium-tunnel-check.py` and authenticated execution tests.
+  The UPnP job and lease alert are suspended in desired state. Historical
+  router observations above no longer prescribe the current rollout.
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation
@@ -206,12 +236,16 @@ organization-policy blocker is tracked below.
   CRD and Secret informer sync. The dated
   `scripts/recover-kubernetes-storage-20260825.sh` recovery snapshots etcd,
   removes only those corrupt records, and reschedules OpenClaw away from
-  `acer`; desired state keeps it excluded.
+  `acer`; desired state keeps it excluded. On 2026-09-02, the current
+  control-plane configuration restored authenticated Talos access without a
+  reset. A consistent 61,505,568-byte etcd snapshot at revision `36011142` was
+  copied off `acer` before the reviewed Octelium Talos DNS SAN was applied and
+  verified without a reboot.
 - **Risk:** Other image layers or etcd records may be damaged, and the single
   control-plane node remains a cluster-wide failure domain.
-- **Next step:** renew authenticated Talos access, take an off-node etcd
-  snapshot, then test or replace `acer` memory and system storage before
-  allowing workloads to schedule there again.
+- **Next step:** Test or replace `acer` memory and system storage before
+  allowing workloads to schedule there again. Keep current Talos credentials
+  and recurring etcd backups outside the public repository.
 
 - **Status:** mitigated; local database storage still required
 - **Area:** Octelium / access recovery
@@ -291,9 +325,9 @@ organization-policy blocker is tracked below.
   `isConnected: true`; the test session then shut down cleanly.
 - **Risk:** Public client availability still depends on the leased UPnP mapping,
   the two exact-host Cloudflare rules, and normal certificate renewal.
-- **Next step:** Follow the current router and worker recovery finding above.
-  Keep the protected reconciliation workflow as the edge-path diagnostic; this
-  historical success no longer proves current public availability.
+- **Next step:** Follow the outbound Tunnel replacement finding above. This
+  historical WAN success no longer proves current public availability; the
+  origin-port apply workflow is retired.
 
 - **Status:** fixed; direct availability alert retained
 - **Area:** observability / kube-state-metrics
@@ -568,7 +602,7 @@ organization-policy blocker is tracked below.
   the public end-to-end gate. The durable path remains a correctly sized third
   dataplane worker; the `acer` fallback is incident-only.
 
-- **Status:** open
+- **Status:** mitigation staged; root-cause diagnosis open
 - **Area:** agent runtime / storage
 - **Evidence:** Before OpenClaw was stopped on 2026-07-13, `acer` sustained about
   3,850 NFSv3 reads per second and 206 Mbit/s of receive traffic. Process-level
@@ -586,17 +620,25 @@ organization-policy blocker is tracked below.
   proxy so kubelet no longer depends on container exec, while probe success
   still requires the loopback gateway to return an HTTP response. A TCP probe
   of the proxy listener was rejected because it could succeed before the proxy
-  discovered that the upstream gateway was unavailable.
+  discovered that the upstream gateway was unavailable. Read-only inspection
+  on 2026-09-02 confirmed an active restart loop, not historical counters: the
+  Pod reached 279 app restarts and 180 liveness-triggered kills, while readiness
+  had timed out more than 3,000 times. A bounded comparison found `/`,
+  `/healthz`, and `/readyz` timing out together; the app used 1.13 CPU cores and
+  647 MiB, below its 1.5-core and 4 GiB limits. Previous-container logs showed
+  Kubernetes send SIGTERM during recovered main-session work and OpenClaw exit
+  cleanly. Desired state now preserves the ten-second readiness window but
+  extends liveness from three to 36 ten-second failures, bounding an actual
+  restart at about six minutes instead of repeatedly killing recoverable work.
 - **Risk:** hot OpenClaw gateway state, memory indexing, or workspace scanning
   on the QNAP-backed PVC can amplify storage pressure and obscure independent
   network faults.
-- **Next step:** after fixing the router/switch uplink, reproduce the OpenClaw
-  load in a controlled window and identify which gateway state path is being
-  scanned. Keep durable agent state on the PVC, but move any rebuildable hot
-  index, cache, or watcher-heavy state to pod-local storage through reviewed
-  GitOps desired state if the read storm returns. Correlate any future liveness
-  restart with the gateway log, NFS counters, and the active memory job before
-  changing storage behavior.
+- **Next step:** roll out the liveness change through GitOps and require 24
+  hours without a restart increase. If the app stays unready for the full
+  six-minute window or restarts again, capture the recovered session, gateway
+  log, NFS counters, and CPU profile before changing the threshold further.
+  Keep durable agent state on the PVC, but move any rebuildable hot index,
+  cache, or watcher-heavy state to pod-local storage if the read storm returns.
 
 - **Status:** open
 - **Area:** agent runtime / Codex diagnostics
@@ -634,7 +676,11 @@ organization-policy blocker is tracked below.
 - **Evidence:** The first 2026-08-13 rollout stalled in `bootstrap-config`
   before the app container started. Automatic `openclaw doctor --fix` found
   5,344 orphan transcripts and remained blocked scanning the NFS-backed session
-  directory. Repository bootstrap now validates config without running doctor.
+  directory. The original repair removed doctor from ordinary bootstrap. The
+  reviewed 2026.8.2 recovery adds a one-time state migration after the targeted
+  session import, with a ten-minute deadline and 30-second kill grace period.
+  It restores reviewed configuration and fails closed without a completion
+  marker on timeout; no unbounded generic scan is permitted.
 - **Risk:** future OpenClaw upgrades that require config migration will fail
   validation instead of repairing persisted state automatically.
 - **Validation:** the replacement pod completed both init containers and became

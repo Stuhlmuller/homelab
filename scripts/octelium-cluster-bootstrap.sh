@@ -118,7 +118,7 @@ require_label() {
   local node="$1"
   local label="$2"
   if ! "${kubectl_cmd[@]}" get node -l "$label" -o name | grep -Fxq "node/${node}"; then
-    echo "error: node ${node} is missing required label ${label}" >&2
+    echo "error: node ${node} does not match required label selector ${label}" >&2
     exit 1
   fi
 }
@@ -212,7 +212,7 @@ echo "Checking Octelium bootstrap prerequisites..."
 "${kubectl_cmd[@]}" -n octelium-storage wait --for=condition=Ready pod -l app.kubernetes.io/name=octelium-redis --timeout="${wait_timeout}"
 require_label zimaboard-0 octelium.com/node-mode-dataplane
 require_label zimaboard-1 octelium.com/node-mode-controlplane
-require_label zimaboard-2 octelium.com/node-mode-dataplane
+require_label zimaboard-2 '!octelium.com/node-mode-dataplane'
 ensure_octelium_namespace_labels
 
 postgres_password="$(jsonpath_secret POSTGRES_PASSWORD)"

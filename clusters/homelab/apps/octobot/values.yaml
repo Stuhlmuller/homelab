@@ -6,6 +6,7 @@ controllers:
       identifier: octobot
     strategy: Recreate
     pod:
+      automountServiceAccountToken: false
       annotations:
         homelab.rst.io/trading-mode: "ui-configured"
         homelab.rst.io/live-trading-autostart: "false"

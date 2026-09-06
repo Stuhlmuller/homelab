@@ -7,6 +7,15 @@ Tags: #operations #validation
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
 
+Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
+`IaC/live`, including removals from the explicit stack. Catalog templates and
+`IaC/operator` are never retired by the workflow. Every saved destroy plan must
+pass the same Conftest policy as ordinary plans before production applies it;
+protected resource deletion cannot bypass policy through unit removal.
+Synthetic retirement units reuse the canonical Kubernetes and Helm connection
+configuration. Encrypted-state retirement remains gated on the decoder work in
+[PR #837](https://github.com/Stuhlmuller/homelab/pull/837).
+
 For most repo changes, start with:
 
 ```sh
@@ -23,7 +32,7 @@ and an administrator-authenticated plan before apply:
 ```sh
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
-terragrunt --log-disable validate -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable import \
@@ -48,6 +57,8 @@ that directory.
 
 The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
+Keep `--no-auto-init` on the backend-free validation and test commands;
+otherwise Terragrunt can initialize the real S3 backend before running them.
 
 ## GitHub Workflow Checks
 
@@ -71,6 +82,11 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+
+The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
+included in that closed credentialed-workflow inventory. It uses only the
+existing production AWS role and Cloudflare rule-removal secret, with private
+API output withheld. Validate its full definition before updating the hash.
 
 The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
@@ -161,27 +177,37 @@ kubectl -n octelium get events --field-selector reason=FailedCreatePodSandBox
 After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
 checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
 PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
-The `octelium-cluster` app must render only the Istio front-door route and its
-HTTP/2 upstream `DestinationRule` in `istio-system`; it must not create the
+The `octelium-cluster` app renders the Istio front-door route, its HTTP/2
+upstream `DestinationRule`, and the scoped console login-return `EnvoyFilter`
+in `istio-system`; it must not create the
 `octelium` namespace because Octelium genesis owns that namespace during
 bootstrap. The bootstrap wrapper applies the required privileged Pod Security
 labels to the namespace after `octops` creates it.
+
+The filter rewrites only the exact unauthorized browser login redirect for
+`console.stinkyboi.com`. Validate its rendered Lua with the static gate and
+the public browser probe in `scripts/octelium-e2e-check.sh`, then verify
+authenticated page rendering and audit queries. Revalidate Envoy compatibility
+when upgrading Istio. Automated pruning is disabled for this app: rollback
+must commit an empty `spec.configPatches` list and adjust the filter test gate,
+as described in `clusters/homelab/apps/octelium-cluster/README.md`; deleting
+the file alone leaves the live filter installed.
 
 Before declaring Octelium-backed app UI access healthy, the replacement path
 must pass:
 
 ```sh
-kubectl -n istio-system get cronjob octelium-api-upnp \
-  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
+nix develop --command python3 scripts/octelium-tunnel-check.py
 scripts/octelium-e2e-check.sh
 ```
 
-The gRPC check resolves the API host through `1.1.1.1` and pins curl to that
-public address, so an Octelium split-DNS answer cannot hide a broken WAN edge.
-It accepts only the expected unauthenticated response: HTTP `200` with
-`grpc-status: 16`; generic HTTP responses fail the gate.
-Do not treat the repository-side target change as recovery until the CronJob
-has a recent success and the public probe passes.
+The transport probe resolves the browser API through `1.1.1.1` and validates
+its gRPC-Web status-16 trailer. It separately starts a temporary TCP carrier
+and requires verified origin TLS, HTTP/2, and native gRPC status 16. Generic
+HTTP responses and local listener readiness do not pass. The catalog checks
+still require authenticated `octeliumctl` with a configured native transport
+or the existing private route. Also verify authenticated console rendering,
+audit queries, and real Cordium execution/reconnects before declaring recovery.
 
 Before treating Tailscale as unnecessary for Kubernetes access, validate both
 human paths from outside the homelab. On the operator workstation, run
@@ -219,6 +245,16 @@ in-progress apply. GitHub's native environment/concurrency queue cannot enforce
 an automatic approval SLA; strict expiry needs an externally hosted GitHub App
 deployment-protection rule with a durable lease. Until then, dispatch only when
 a reviewer is ready to approve.
+
+The focused Octelium private Kubernetes workflow has the same exact-`main`,
+current-head, production-approval, serialized-run, private-log, static, and
+Conftest gates. Its fixed helper extracts exactly
+`Policy/homelab-private-kubernetes-access` and
+`Service/kubernetes-api.homelab`, never prunes, and requires a second apply to
+report no changes. The lifecycle helper installs cleanup before creating its
+30-minute, one-authentication Credential, binds its watch to the unique run it
+dispatches, and verifies Credential, Session, and GitHub-secret revocation on
+exit. See `docs/ci-cd.md`.
 
 The gate checks the Octelium control plane, IdentityProvider `entra`, private
 `kubernetes-api.homelab` Service, synced
@@ -328,8 +364,9 @@ Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
 Azure credential gate compares AzureAD unit sources and stack blocks plus the
-shared root inputs they consume; unrelated stack changes do not require Azure
-credentials.
+normalized shared root source they consume. It ignores only the
+forbidden legacy root plan-output directive; every other root source change
+fails closed. Unrelated stack changes do not require Azure credentials.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
@@ -363,3 +400,29 @@ with the risk. Desired state must be represented in the repo before applying it.
 
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
+
+## OpenClaw doctor state gate
+
+The static gate permits one exact noninteractive pinned doctor repair after
+backup verification. Bootstrap tests require configuration restoration on
+success and failure, plus session preservation and config validation before
+the separate completion marker. A private config snapshot also repairs an
+interrupted doctor before the next bootstrap applies desired configuration;
+generic doctor changes must not persist unrelated skill-policy rewrites.
+
+The one-time doctor process has a ten-minute timeout and 30-second kill grace
+period. Timeout is tested as a failed migration, with config restored and no
+completion marker. This bounds the previously observed NFS session scan.
+
+## OpenClaw broad GitHub credential containment
+
+The static gate preserves exact Application/Kustomization, ExternalSecret,
+container environment, and storage contracts while accommodating the current
+assistant bundle and coordinator. `scripts/ci/openclaw-credential-check.py`
+exercises those same jq policies against reintroduced App environment keys,
+Secret references/mounts, extra ExternalSecrets, altered SSM source paths, and
+restored IAM reader grants. The exact app-template 4.4.0 render must contain no
+App credential surface while preserving Codex startup and current volumes.
+Live Secret absence, remaining credentials/readiness, and protected IAM apply
+remain rollout gates. App private-key revocation requires the missing protected
+management path tracked in #859; removing mounts alone does not revoke a key.

@@ -25,7 +25,8 @@ EOF
 
 inputs = {
   aws_region     = local.aws_region
-  create_kms_key = true
+  create_kms_key = false
+  kms_key_id     = local.root_config.locals.runtime_kms_key_id
   parameter_reader_iam_user_names = [
     "external-secrets_aws-ssm-auth",
   ]
@@ -109,6 +110,7 @@ inputs = {
     "/homelab/github-actions-runner/registration-token" = {
       description   = "Retired GitHub Actions runner token retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/tailscale/oauth-client-id" = {
       description   = "Tailscale Kubernetes operator OAuth client ID."
@@ -133,6 +135,7 @@ inputs = {
     "/homelab/octelium/cloudflare-zone-settings-token" = {
       description   = "Legacy Cloudflare zone-settings token placeholder with no runtime consumer; retained pending separate retirement review."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/octelium/postgres-password" = {
       description = "Octelium Cluster PostgreSQL password."
@@ -186,6 +189,7 @@ inputs = {
     "/homelab/deluge/vpn/wireguard-private-key" = {
       description   = "Deluge AirVPN WireGuard private key."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-config" = {
       description   = "Deluge AirVPN WireGuard wg0.conf profile."
@@ -194,22 +198,27 @@ inputs = {
     "/homelab/deluge/vpn/wireguard-preshared-key" = {
       description   = "Deluge AirVPN WireGuard pre-shared key."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-public-key" = {
       description   = "Deluge AirVPN WireGuard peer public key from the selected profile."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-addresses" = {
       description   = "Deluge AirVPN WireGuard interface address CIDR."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-endpoint-ip" = {
       description   = "Deluge AirVPN WireGuard endpoint IP from the selected profile."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/deluge/vpn/wireguard-endpoint-port" = {
       description   = "Deluge AirVPN WireGuard endpoint port from the selected profile."
       initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/media-postgres/app-password" = {
       description = "Shared PostgreSQL password for Sonarr, Radarr, and Prowlarr."

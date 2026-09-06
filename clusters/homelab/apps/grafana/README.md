@@ -132,9 +132,9 @@ The provisioned rules cover:
 
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
-- Octelium API UPnP renewal older than 15 minutes for another 5 minutes, or a
-  missing last-success metric. This warns before the 24-hour router lease
-  expires.
+- The former Octelium API UPnP lease rule is retained but paused; outbound
+  Cloudflare Tunnel replaced the router lease. Verify API transport with
+  `scripts/octelium-tunnel-check.py`.
 - Kube-state-metrics unavailable for 5 minutes. This alert owns telemetry
   failures that would otherwise make the Kubernetes node rules return no data.
 - Expected homelab hardware node inventory missing for 5 minutes. The current
@@ -150,8 +150,9 @@ The provisioned rules cover:
 - Kubernetes pod containers stuck in `CrashLoopBackOff` for 5 minutes.
 - Repository-owned PostgreSQL readiness probes missing or no longer succeeding
   for approximately 5 minutes.
-- Deluge, Radarr, Sonarr, or media PostgreSQL backups older than 30 hours,
-  including an established CronJob with no recorded success.
+- Deluge, Radarr, Sonarr, media PostgreSQL, or Octelium PostgreSQL backups
+  older than 30 hours, including an established CronJob with no recorded success.
+  The rule retains UID `homelab-media-backup-stale` to update existing provisioning.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
   minutes.
 - Deluge VPN or daemon health missing or failing for 5 minutes, using the

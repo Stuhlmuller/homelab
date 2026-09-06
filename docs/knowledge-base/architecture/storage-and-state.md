@@ -1,5 +1,15 @@
 # Storage And State
 
+The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
+the existing S3 state bucket's encryption configuration, enabling S3 Bucket
+Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
+[[operations/kms-cost-audit-2026-09-05]] for evidence, rollout, and rollback.
+
+The same bucket holds confidential AWS-managed-encryption recovery archives
+for 128 SSM versions and 60 legacy homelab state versions under
+`IaC/homelab/migrations/`. Preserve these when retiring old KMS keys. Archive
+objects contain secret material and must never be copied into this public repo.
+
 Tags: #architecture #storage #stateful
 
 ## Durable Storage
@@ -41,7 +51,11 @@ retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
 the former NFS data claim remains retained for verified nightly logical backups
 at 03:00 `America/Los_Angeles` with 14-day retention. The local volume removes
 QNAP latency from the live database but couples recovery to the single
-control-plane node and its system disk.
+control-plane node and its system disk. GitOps explicitly declares the retained
+`data-media-postgres-0` claim with `Prune=false,Delete=false`; the inactive
+legacy StatefulSet keeps its compatible claim template for rollback. A clean
+bootstrap therefore creates the backup target even while that StatefulSet stays
+at zero replicas.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
@@ -62,6 +76,34 @@ ready, but they must not be treated as production-ready until:
 4. Backup and restore expectations are documented in `docs/storage-nfs.md`.
 
 ## Open Audit Findings
+
+- **Status:** config recovery verified; session-warning fix staged
+- **Area:** OpenClaw upgrade / config and session migration
+- **Evidence:** On 2026-09-04, OpenClaw 2026.8.2 bootstrap repeatedly rejected
+  four retired config keys before Discord installation and session migration.
+  `clusters/homelab/apps/openclaw/values.yaml` now migrates those keys after
+  the verified offline backup and preserves legacy model restrictions explicitly.
+  It also stops writing retired `hooks.maxBodyBytes`. PR #953 rolled out on
+  September 5: both archive verification passes succeeded, retired keys were
+  absent, the model policy was present, and Discord 2026.8.2 installed.
+  Session dry-run then stopped on one missing healthcheck transcript: 19 of 20
+  entries validated, with 1,089 events. Upstream treats `transcript_missing` as
+  an import warning and preserves metadata, but its CLI returns exit 1 for all
+  issues. Bootstrap now accepts only that exact known agent/session warning,
+  retains private JSON reports, and rejects all other issues. No live index
+  entries or transcripts were manually altered.
+- **Validation:** A synthetic legacy config failed under the exact 2026.8.2
+  CLI before migration and passed afterward. The actual bootstrap migration
+  has preservation, idempotence, and invalid-input checks in
+  `scripts/ci/openclaw-config-check.py`. The same check exercises the session
+  report gate against unexpected warnings, failure exits, mismatched reports,
+  and malformed JSON. An exact 2026.8.2 CLI fixture returned exit 1 for
+  dry-run and import with a missing transcript, preserved both session metadata
+  entries, and passed post-import inspection. Full static validation, 280
+  rendered policy checks, shell syntax, and server-side diff passed.
+- **Next step:** Roll out through GitOps, require successful bootstrap and
+  session migration, then verify gateway and Discord readiness. Preserve the
+  pre-upgrade archive and migration originals until the 24-hour soak passes.
 
 - **Status:** open
 - **Area:** storage / backup and retained data
@@ -96,6 +138,11 @@ turns over NFS. The volume is capped at `2Gi` to protect node storage. See
 [[workloads/inventory]] for ownership and dependency notes.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
+Multica PostgreSQL now follows the recovered NFS database probe pattern:
+30-minute startup and liveness windows, SQL-query readiness, and 120-second
+shutdown grace. Its image, credentials, scheduling, and PVC are unchanged.
+This prevents short liveness windows from interrupting recovery; it does not
+resolve the underlying NFS reliability or backup risks.
 The latest rscstore recovery preserves the unreplayable 2026-08-26 DuckDB WAL
 by renaming it on the retained PVC before starting from the last valid
 checkpoint. A new completion marker leaves the earlier 2026-08-21 recovery
@@ -149,6 +196,9 @@ password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup; restore validation remains open.
+Grafana's shared backup-staleness rule includes this CronJob alongside the four
+media backup jobs: warn after 30 hours without success, including an established
+job that has never succeeded. The legacy rule UID is preserved during expansion.
 
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
@@ -219,3 +269,26 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`
+
+## OpenClaw identity coordinator ownership
+
+September 5 read-only inspection found QNAP-backed OpenClaw paths reported as
+UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
+coordinator ownership check blocked gateway startup after session migration
+completed successfully. The repository mounts a shared local `emptyDir` at
+`/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
+Only coordinator locks move off NFS; identity/configuration/session databases
+and the verified pre-upgrade backup remain on the PVC. This requires one
+`Recreate` Pod and all writers using its shared mount. Never start an external
+writer against that PVC with a separate coordinator. See the OpenClaw README
+for verification and rollback limits; live recovery remains pending rollout.
+
+### OpenClaw remaining legacy-state upgrade
+
+The 2026.8.2 session import does not migrate workspace setup/attestation state.
+A separate bootstrap doctor gate verifies the existing pre-upgrade archive,
+runs pinned upstream noninteractive repairs, rechecks imported session
+identities, and validates configuration before writing its own completion
+marker. Private doctor reports retain latest plus previous. State restoration
+requires the archive and compatible software, not merely a manifest revert.
+See the OpenClaw README; gateway readiness is still a live acceptance gate.

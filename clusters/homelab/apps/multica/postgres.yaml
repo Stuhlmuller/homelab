@@ -39,6 +39,7 @@ spec:
         app.kubernetes.io/component: postgres
     spec:
       automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
       securityContext:
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
@@ -70,16 +71,26 @@ spec:
           ports:
             - name: postgres
               containerPort: 5432
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "multica", "-d", "multica"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
           readinessProbe:
             exec:
-              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
-            initialDelaySeconds: 5
-            periodSeconds: 5
+              command: ["psql", "-U", "multica", "-d", "multica", "-Atqc", "SELECT 1"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           livenessProbe:
             exec:
-              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""]
+              command: ["psql", "-U", "multica", "-d", "multica", "-Atqc", "SELECT 1"]
             initialDelaySeconds: 30
-            periodSeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 60
           resources:
             requests:
               cpu: 100m

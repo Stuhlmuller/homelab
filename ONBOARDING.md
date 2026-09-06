@@ -238,9 +238,14 @@ talosctl -n TEMP_IP get addresses --insecure
 ```
 
 Confirm the selected install disk is the intended internal disk and not the USB
-installer. Then apply the control-plane config:
+installer. Validate, then apply the control-plane config:
 
 ```sh
+talosctl validate \
+  --config .talos/controlplane.yaml \
+  --mode metal \
+  --strict
+
 talosctl apply-config --insecure \
   -n TEMP_IP \
   --file .talos/controlplane.yaml
@@ -395,8 +400,8 @@ Quick recovery summary:
   not commit tokens or kubeconfigs.
 - Partial install: capture read-only state, fix or revert repository code, and
   reapply the reviewed state.
-- Break-glass live changes are incomplete until the final state is backfilled
-  into this repository.
+- Emergency recovery follows the same code-first rule: commit and validate
+  desired state before applying through the declared recovery path.
 
 ## Argo CD Application Onboarding
 
