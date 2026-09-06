@@ -15,7 +15,7 @@ an unenforced NetworkPolicy: this cluster's Flannel does not enforce it.
 
 The launcher installs its own filter before executing the restore script or
 reading backups. It allows only `AF_UNIX` socket creation, closes inherited
-nonstandard descriptors, rejects socket-backed standard descriptors, and denies
+nonstandard descriptors, accepts only regular-file/FIFO/`/dev/null` standard descriptors, and denies
 io_uring, tracing, descriptor stealing and namespace-switching calls. It rejects
 foreign syscall architectures and x86 x32 calls. Every startup must prove denied
 IP sockets return `EPERM` and Unix communication works; inability to install or
@@ -63,7 +63,7 @@ creation is also a required positive control. Filtered probes require `EPERM`
 for IPv4/IPv6, packet, netlink and vsock sockets/socketpairs; transport timeouts
 or refused connections do not pass. It checks io_uring denial, fork/exec
 inheritance, an attempted permissive second filter, x32/i386 rejection, inherited-fd
-closure and socket-stdio rejection. The controlled servers must receive no
+closure and socket/anonymous-stdio rejection. The controlled servers must receive no
 additional traffic from filtered tests.
 
 A real PostgreSQL init/dump/drop/restore round trip must succeed over Unix

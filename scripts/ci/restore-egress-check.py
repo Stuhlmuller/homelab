@@ -77,7 +77,7 @@ def main():
                     assert (tcp.received, udp.received) == (1, 1)
                     for mode in ("denied", "inherit", "relax", "alternate-abi"):
                         run(*common, tag, "/tests/probe", mode)
-                    for mode in ("inherited-fd", "socket-stdio"):
+                    for mode in ("inherited-fd", "socket-stdio", "anonymous-stdio"):
                         run(*common, "--entrypoint", "/tests/probe", tag, mode, LAUNCHER)
                     sql_test = ROOT / "scripts/ci/restore-egress/postgres.sh"
                     run(*common, "--mount", f"type=bind,src={sql_test},dst=/tests/postgres.sh,readonly",

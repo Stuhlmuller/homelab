@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/eventfd.h>
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
@@ -128,10 +129,17 @@ int main(int argc, char **argv)
         errno = 0;
         require(fcntl(9, F_GETFD) == -1 && errno == EBADF, "inherited descriptor survived");
         denied();
-    } else if (strcmp(argv[1], "socket-stdio") == 0) {
+    } else if (strcmp(argv[1], "socket-stdio") == 0 || strcmp(argv[1], "anonymous-stdio") == 0) {
         require(argc == 3, "launcher path required");
         int pair[2];
-        require(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "socketpair setup failed");
+        if (strcmp(argv[1], "socket-stdio") == 0) {
+            require(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "socketpair setup failed");
+        } else {
+            /* eventfd exercises anonymous-inode rejection without depending on
+             * RuntimeDefault permitting unfiltered io_uring creation. */
+            pair[0] = eventfd(0, EFD_CLOEXEC);
+            require(pair[0] >= 0, "anonymous descriptor setup failed");
+        }
         pid_t child = fork();
         require(child != -1, "fork failed");
         if (child == 0) {
@@ -141,7 +149,7 @@ int main(int argc, char **argv)
         }
         int status = 0;
         require(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
-                WEXITSTATUS(status) == 1, "socket stdio was not rejected");
+                WEXITSTATUS(status) == 1, "unsupported stdio was not rejected");
     } else if (strcmp(argv[1], "positive") == 0) {
         require(argc == 5, "numeric gateway and TCP/UDP ports required");
         for (int i = 0; i < 2; i++) {

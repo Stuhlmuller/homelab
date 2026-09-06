@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/sysmacros.h>
 #include <unistd.h>
 
 #if defined(__x86_64__) && !defined(__ILP32__)
@@ -98,12 +99,14 @@ int main(int argc, char **argv)
 {
     if (argc < 2 || argv[1][0] != '/')
         fail("an absolute command is required");
-    /* Runtime stdio must be pipes/files, never preconnected network sockets. */
+    /* Reject sockets and anonymous descriptors (including inherited io_uring).
+     * Runtime stdio may be a regular file, FIFO, or Linux /dev/null only. */
     for (int fd = 0; fd <= 2; fd++) {
         struct stat status;
         if (fstat(fd, &status) == 0) {
-            if (S_ISSOCK(status.st_mode))
-                fail("socket-backed standard descriptor rejected");
+            if (!S_ISREG(status.st_mode) && !S_ISFIFO(status.st_mode) &&
+                !(S_ISCHR(status.st_mode) && major(status.st_rdev) == 1 && minor(status.st_rdev) == 3))
+                fail("unsupported standard descriptor rejected");
         } else if (errno != EBADF) {
             fail("cannot inspect standard descriptors");
         }
