@@ -68,6 +68,15 @@ the exact matching official Codex plugin, retaining the native binary override.
 A verified offline `pre-2026.9.1` archive precedes the new runtime commands.
 Actual post-upgrade inference still needs testing.
 
+The upgraded Pod reached 2/2 Running with no restarts, verified Codex 0.153.2,
+and reconciled the scheduler. The next real Astra turn passed model discovery
+but failed with `No route-compatible authentication source is configured`.
+The OAuth profile remained configured; source inspection showed Astra absent
+from the default dual-route list. The follow-up explicitly selects the official
+ChatGPT subscription adapter. Executing the pinned runtime's route resolver
+with this configuration confirms one subscription route compatible with Codex.
+Live inference remains the acceptance gate.
+
 Still required: successful Astra inference, confirmed Discord delivery, and a
 successful bounded health check using real homelab tools after the runtime fix.
 
