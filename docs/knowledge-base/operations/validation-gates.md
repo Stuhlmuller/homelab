@@ -350,14 +350,19 @@ kubectl -n argocd get application istio -o json |
 ```
 
 Query the existing Prometheus service through the Kubernetes API. This helper
-uses the operator's kubeconfig and does not expose Prometheus publicly:
+uses the operator's kubeconfig and does not expose Prometheus publicly. Capture
+one UTC endpoint for every query and the later log check; keep
+`ambient_window_end` available until all checks finish:
 
 ```sh
+ambient_window_end="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 (
 set -euo pipefail
+test -n "$ambient_window_end"
 ambient_promql() {
   kubectl get --raw "/api/v1/namespaces/monitoring/services/http:prometheus-kube-prometheus-prometheus:9090/proxy/api/v1/query?$(
-    python3 -c 'import sys, urllib.parse; print(urllib.parse.urlencode({"query": sys.argv[1]}))' "$1"
+    python3 -c 'import sys, urllib.parse; print(urllib.parse.urlencode({"query": sys.argv[1], "time": sys.argv[2]}))' \
+      "$1" "$ambient_window_end"
   )" | jq -e 'if .status != "success" then error("Prometheus query failed") else .data.result end'
 }
 ambient_ds_uids="$(kubectl -n istio-system get ds istio-cni-node ztunnel -o json | jq -ce '
@@ -512,16 +517,27 @@ file chain covering the observation window on every node. Missing older files
 leave the log gate unverified even if current readiness is healthy.
 
 Search the collected, uncompressed logs for readiness failures and the observed
-IPv6 bind/route signatures, restricting any matches to the 24-hour window:
+IPv6 bind/route signatures using the same captured endpoint:
 
 ```sh
-rg -n -i 'readiness.*(500|fail)|500.*readiness|\[::1\]:15053|::/0|ipv6.*(fail|error)' "$ambient_logs"
+python3 scripts/istio-ambient-log-check.py \
+  --window-end "$ambient_window_end" "$ambient_logs"
 ```
 
-No in-window matches are permitted. `rg` exit `1` means no matches; exit `2`
-means inspection failed. Older matching errors are historical evidence, not a
-current failure. Record the observation window and aggregate verdicts; never
-commit raw logs or substitute a shorter window for this recovery gate.
+Exit `0` means no in-window signatures; `1` means a matching failure; `2` means
+invalid or incomplete input. The helper checks `(end - 24h, end]`, matching
+Prometheus range boundaries, with nanosecond precision. It accepts UTC `Z`
+timestamps from `kubectl logs --timestamps` and complete CRI `F` records from
+Talos. Malformed timestamps, partial CRI `P` records, unreadable/empty files,
+compressed files, symlinks, nested directories, and an empty inventory fail
+closed. Keep only the uncompressed log files in this private directory.
+
+Older and future signatures are excluded; every input record must still parse.
+Output contains only the window and aggregate counts, never raw log messages.
+This signature check does not establish Pod identity or retained rotation
+coverage: the preceding gates remain required. Record the observation window
+and aggregate verdicts; never commit raw logs or substitute a shorter window
+for this recovery gate.
 
 ## Policy Bot Checks
 
