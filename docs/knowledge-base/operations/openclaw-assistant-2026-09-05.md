@@ -104,7 +104,19 @@ The one-shot `scripts/openclaw-recover-heartbeat-20260906.py` uses the public
 session-reset lifecycle for this exact failed session. At 19:03 UTC it cleared
 active model context and the native binding while verifying all 244 original
 canonical transcript events remained unchanged. Workspace memory is preserved.
-Heartbeat inference/tool verification remains required after this reset.
+At 19:08:43 UTC the next isolated verification completed on
+`openai/gpt-6-astra`, with run status `completed` and outcome `mute`.
+Canonical transcript records show successful `bash` and `heartbeat_respond`
+tool results. The preceding attempt had reached tools but failed saving plugin
+state with `database is locked`; the successful retry ran without concurrent
+OpenClaw diagnostic CLI commands. This establishes recovery, not resolution
+of the underlying intermittent SQLite contention.
+
+Both recovery regression suites and the assistant preservation/scheduler suite
+passed locally. The initial PR revision also passed GitHub static policy and
+security checks plus the Terragrunt gate; later revision checks must be checked
+on the PR. Local full Nix validation was unavailable because the sandbox denied
+its cache lock, and the existing config checker lacked local `yq`.
 
 Follow-up: verify retained native bindings recover across Pod replacement
 before treating the Codex home as universally rebuildable. Do not make it

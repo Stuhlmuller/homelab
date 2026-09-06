@@ -198,7 +198,9 @@ kubectl -n ai exec -i deploy/openclaw -c app -- \
 
 Then repeat the quiet heartbeat verification above. Prior history remains in
 the canonical transcript; do not restore the missing native binding. Repeated
-recovery refuses a session that is no longer failed or whose identity changed.
+recovery refuses a session that is no longer failed or whose identity or
+244-event incident transcript changed. Run OpenClaw CLI diagnostics serially;
+the incident included SQLite contention during concurrent diagnostic traffic.
 
 ### Validation
 
