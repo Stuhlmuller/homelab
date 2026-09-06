@@ -2,6 +2,7 @@
 """Fixed synthetic Talos gate; no image override, real data, or local credential fallback."""
 import argparse
 import base64
+from copy import deepcopy
 from datetime import datetime, timezone
 from decimal import Decimal
 import hashlib
@@ -109,9 +110,9 @@ def manifest(pin, name):
     }
     metadata = {"labels": {"app.kubernetes.io/name": "restore-runtime-validation"},
                 "annotations": {"sidecar.istio.io/inject": "false", "ambient.istio.io/redirection": "disabled"}}
-    return {"apiVersion": "batch/v1", "kind": "Job",
-            "metadata": {"name": name, "namespace": PROFILE["namespace"], **metadata},
-            "spec": {**PROFILE["job"], "template": {"metadata": metadata, "spec": pod}}}
+    return deepcopy({"apiVersion": "batch/v1", "kind": "Job",
+                     "metadata": {"name": name, "namespace": PROFILE["namespace"], **deepcopy(metadata)},
+                     "spec": {**PROFILE["job"], "template": {"metadata": metadata, "spec": pod}}})
 
 
 def configmap(name, job_uid, files):
@@ -152,9 +153,38 @@ def identity(obj, name):
     return metadata["uid"]
 
 
+def validate_metadata(metadata, pin, name, job_uid, kind, gated=False):
+    local = manifest(pin, name)
+    wanted = local["metadata"] if kind == "job" else local["spec"]["template"]["metadata"]
+    labels = metadata.get("labels", {})
+    require(isinstance(labels, dict), "Admitted labels are malformed")
+    for key, value in wanted["labels"].items():
+        require(labels.get(key) == value, "Admitted committed labels changed")
+    generated = {} if kind == "job" else {
+        "controller-uid": job_uid, "job-name": name,
+        "batch.kubernetes.io/controller-uid": job_uid, "batch.kubernetes.io/job-name": name}
+    require(labels == {**wanted["labels"], **generated}, "Admitted metadata has changed controller or policy labels")
+    require(metadata.get("annotations") == wanted["annotations"], "Admitted annotations changed")
+    if kind == "template":
+        require(set(metadata) <= {"labels", "annotations", "creationTimestamp"} and
+                metadata.get("creationTimestamp") is None, "Admitted template metadata changed")
+        return
+    allowed = {"name", "namespace", "uid", "resourceVersion", "creationTimestamp", "deletionTimestamp",
+               "generation", "managedFields", "labels", "annotations"}
+    if kind == "pod":
+        allowed.update(("generateName", "ownerReferences", "finalizers"))
+        require(metadata.get("generateName", name + "-") == name + "-", "Pod generated name changed")
+        expected_finalizers = ["batch.kubernetes.io/job-tracking"]
+        allowed_finalizers = [expected_finalizers] if gated else [[], expected_finalizers]
+        require(metadata.get("finalizers", []) in allowed_finalizers,
+                "Pod has an unexpected finalizer")
+    require(set(metadata) <= allowed, "Admitted resource metadata changed")
+
+
 def validate_job(job, pin, name):
     job_uid = identity(job, name)
     require(not job["metadata"].get("deletionTimestamp"), "Job is deleting")
+    validate_metadata(job["metadata"], pin, name, job_uid, "job")
     spec = job["spec"]
     for key, value in PROFILE["job"].items():
         require(spec.get(key) == value, "Admitted Job execution bound changed")
@@ -164,6 +194,7 @@ def validate_job(job, pin, name):
         require(key in PROFILE["job"] or key == "template" or (key in defaults and value == defaults[key]),
                 "Admitted Job controller behavior changed")
     validate_spec(spec["template"]["spec"], pin, name, gated=True)
+    validate_metadata(spec["template"].get("metadata", {}), pin, name, job_uid, "template")
     return job_uid
 
 
@@ -175,6 +206,7 @@ def validate_pod(pod, pin, name, job_uid, gated, image_status=False):
     require(metadata.get("namespace") == PROFILE["namespace"], "Pod namespace changed")
     require(re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", metadata.get("uid", "")) is not None,
             "Pod UID is absent or invalid")
+    validate_metadata(metadata, pin, name, job_uid, "pod", gated=gated)
     validate_spec(spec, pin, name, gated)
     if gated:
         require(pod.get("status", {}).get("phase") in (None, "Pending") and

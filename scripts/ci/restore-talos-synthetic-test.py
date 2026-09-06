@@ -21,16 +21,24 @@ JOB_UID, CM_UID, POD_UID, OTHER_UID = (str(uuid.UUID(int=value)) for value in ra
 FILES = {"probe": b"synthetic probe", "fault": b"synthetic fault", "talos.sh": b"synthetic shell"}
 
 
-def job():
-    value = M.manifest(PIN, NAME)
+def admitted_job(value):
     value["metadata"]["uid"] = JOB_UID
+    value["spec"]["template"]["metadata"]["labels"].update({
+        "controller-uid": JOB_UID, "job-name": NAME,
+        "batch.kubernetes.io/controller-uid": JOB_UID, "batch.kubernetes.io/job-name": NAME})
     return value
+
+
+def job():
+    return admitted_job(M.manifest(PIN, NAME))
 
 
 def pod(value=None):
     value = value or job()
     return {"metadata": {"name": NAME + "-pod", "namespace": M.PROFILE["namespace"],
-                         "uid": POD_UID, "resourceVersion": "123", "ownerReferences": [
+                         **deepcopy(value["spec"]["template"]["metadata"]),
+                         "uid": POD_UID, "resourceVersion": "123", "finalizers": ["batch.kubernetes.io/job-tracking"],
+                         "ownerReferences": [
                              {"apiVersion": "batch/v1", "kind": "Job", "name": NAME, "uid": JOB_UID,
                               "controller": True, "blockOwnerDeletion": True}]},
             "spec": deepcopy(value["spec"]["template"]["spec"])}
@@ -72,6 +80,7 @@ class Client:
         value = deepcopy(obj)
         value["metadata"]["uid"] = JOB_UID if obj["kind"] == "Job" else CM_UID
         if obj["kind"] == "Job":
+            admitted_job(value)
             if self.mutate_job:
                 self.mutate_job(value)
             self.job = value
@@ -93,6 +102,8 @@ class Client:
         values = [deepcopy(self.pod)] if self.pod else []
         if self.mode == "extra-pod" and values:
             values.append(deepcopy(values[0]))
+        if self.mode == "metadata-gated" and values:
+            values[0]["metadata"]["labels"]["istio.io/dataplane-mode"] = "ambient"
         return values
 
     def release(self, value):
@@ -110,6 +121,8 @@ class Client:
             self.pod["metadata"]["uid"] = OTHER_UID
         if self.mode == "config-imageID":
             self.pod["status"]["containerStatuses"][0]["imageID"] = "sha256:" + "c" * 64
+        if self.mode == "metadata-release":
+            self.pod["metadata"]["labels"]["istio.io/dataplane-mode"] = "ambient"
 
     def delete_uid(self, kind, name, uid):
         self.deleted.append((kind, uid))
@@ -191,6 +204,37 @@ class Tests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     M.validate_pod(changed, PIN, NAME, JOB_UID, gated=True)
 
+    def test_admitted_policy_metadata_must_match_local_contract(self):
+        for mutation in (lambda metadata: metadata["labels"].update({"istio.io/dataplane-mode": "ambient"}),
+                         lambda metadata: metadata["annotations"].update({"sidecar.istio.io/inject": "true"}),
+                         lambda metadata: metadata["annotations"].update({"unexpected.example/config": "different"}),
+                         lambda metadata: metadata["labels"].update({"controller-uid": OTHER_UID})):
+            changed = job()
+            mutation(changed["spec"]["template"]["metadata"])
+            with self.assertRaises(RuntimeError):
+                M.validate_job(changed, PIN, NAME)
+            with self.assertRaises(RuntimeError):
+                M.validate_pod(pod(changed), PIN, NAME, JOB_UID, gated=True)
+        changed = pod()
+        changed["metadata"]["finalizers"] = ["unexpected.example/retain"]
+        with self.assertRaises(RuntimeError):
+            M.validate_pod(changed, PIN, NAME, JOB_UID, gated=True)
+
+    def test_exact_controller_metadata_is_accepted_before_and_after_release(self):
+        value = job()
+        generated = {"controller-uid": JOB_UID, "job-name": NAME,
+                     "batch.kubernetes.io/controller-uid": JOB_UID, "batch.kubernetes.io/job-name": NAME}
+        value["spec"]["template"]["metadata"]["labels"].update(generated)
+        value["spec"]["template"]["metadata"]["creationTimestamp"] = None
+        M.validate_job(value, PIN, NAME)
+        current = pod(value)
+        current["metadata"].update(generateName=NAME + "-", finalizers=["batch.kubernetes.io/job-tracking"])
+        M.validate_pod(current, PIN, NAME, JOB_UID, gated=True)
+        current["spec"].pop("schedulingGates")
+        current["spec"]["nodeName"] = M.PROFILE["node"]
+        current["metadata"].pop("finalizers")
+        M.validate_pod(current, PIN, NAME, JOB_UID, gated=False)
+
     def test_imageID_requires_exact_repository_manifest_reference(self):
         value = pod()
         value["spec"]["nodeName"] = M.PROFILE["node"]
@@ -242,12 +286,14 @@ class Tests(unittest.TestCase):
             self.assertFalse(client.released)
 
     def test_lifecycle_drift_fails_and_cleans_owned_resources(self):
-        for mode in ("stale-release", "mutated-release", "extra-pod", "replaced-pod", "config-imageID"):
+        for mode in ("stale-release", "mutated-release", "metadata-gated", "metadata-release", "extra-pod", "replaced-pod", "config-imageID"):
             with self.subTest(mode=mode):
                 client = Client(mode=mode)
                 with self.assertRaises(RuntimeError):
                     self.execute(client)
                 self.assertEqual(client.deleted, [("jobs", JOB_UID), ("configmaps", CM_UID)])
+                if mode == "metadata-gated":
+                    self.assertFalse(client.released)
 
     def test_uncertain_create_404_does_not_claim_cleanup(self):
         client = Client()
