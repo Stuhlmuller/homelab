@@ -105,6 +105,11 @@ application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
 
+[[codeql-analysis-retirement]] owns the exact legacy-main configuration
+retirement scope, read-only preview, protected execution and fresh-comparison
+acceptance. The maintenance workflow does not change the active CodeQL job;
+historical deletion requires separate approval of the exact scope digest.
+
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
 

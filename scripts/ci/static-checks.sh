@@ -7,6 +7,7 @@ source "${script_dir}/terragrunt-filter-base.sh"
 terragrunt_generate_stack
 
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 scripts/ci/codeql-retire-legacy-actions-test.py
 
 echo "::group::Octelium console login redirect"
 (
@@ -774,6 +775,8 @@ jq -en '
 ' >/dev/null
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
+    '.github/workflows/codeql-retire-legacy-actions.yml:preview' \
+    '.github/workflows/codeql-retire-legacy-actions.yml:retire' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
@@ -806,6 +809,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/codeql-retire-legacy-actions.yml 0d0694d9af3be525ea6e7fb33e1d090161208111ef5293b4624c0f2791f0a7c4
 .github/workflows/codeql.yml 054c9f0d5c7305fe445b849942924088ee49ca660a3f5f2931ba650b7da471be
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
@@ -822,6 +826,8 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/codeql-retire-legacy-actions.yml:preview' \
+  '.github/workflows/codeql-retire-legacy-actions.yml:retire' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \

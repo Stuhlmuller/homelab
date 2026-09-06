@@ -1,0 +1,152 @@
+name: CodeQL Legacy Actions Retirement
+
+# checkov:skip=CKV_GHA_7: inputs pin reviewed main and exact committed scope; history loss additionally requires protected environment approval.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed main commit
+        required: true
+        type: string
+      approved_scope_sha256:
+        description: Reviewed scope digest; required only for retirement
+        required: false
+        default: ""
+        type: string
+      confirm_history_loss:
+        description: Request deletion of the exact legacy main history after production approval
+        required: false
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: codeql-legacy-actions-retirement
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: read
+    timeout-minutes: 20
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          ACTUAL_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REPOSITORY}" = "Stuhlmuller/homelab"
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          [[ "${EXPECTED_SHA}" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Check Out Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install Locked Toolchain
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate Retirement Code And Repository Policies
+        run: |
+          nix develop --command bash scripts/ci/static-checks.sh
+          nix develop --command bash scripts/ci/conftest-policies.sh
+
+      - name: Preview Exact Legacy Scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          APPROVED_SCOPE_SHA256: ${{ inputs.approved_scope_sha256 }}
+          CONFIRM_HISTORY_LOSS: ${{ inputs.confirm_history_loss }}
+        run: |
+          set -euo pipefail
+          umask 077
+          current_main_sha="$(gh api --hostname github.com repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+          test "${EXPECTED_SHA}" = "${current_main_sha}"
+          nix develop --command python3 scripts/ci/codeql-retire-legacy-actions.py \
+            preview --output "${RUNNER_TEMP}/codeql-retirement-preview.json"
+          if [[ "${CONFIRM_HISTORY_LOSS}" == "true" ]]; then
+            [[ "${APPROVED_SCOPE_SHA256}" =~ ^[0-9a-f]{64}$ ]]
+            test "${APPROVED_SCOPE_SHA256}" = "$(jq -r .scope_sha256 "${RUNNER_TEMP}/codeql-retirement-preview.json")"
+          fi
+
+      - name: Retain Safe Preview Receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-retirement-preview
+          path: ${{ runner.temp }}/codeql-retirement-preview.json
+          if-no-files-found: error
+          retention-days: 30
+
+  retire:
+    needs: preview
+    if: inputs.confirm_history_loss == true
+    runs-on: ubuntu-24.04
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 40
+    steps:
+      - name: Verify Dispatch Commit
+        timeout-minutes: 1
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          ACTUAL_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REPOSITORY}" = "Stuhlmuller/homelab"
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          [[ "${EXPECTED_SHA}" =~ ^[0-9a-f]{40}$ ]]
+
+      - name: Check Out Repository
+        timeout-minutes: 2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install Locked Toolchain
+        timeout-minutes: 5
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Retire Only Approved Main Analyses
+        timeout-minutes: 25
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          APPROVED_SCOPE_SHA256: ${{ inputs.approved_scope_sha256 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          nix develop --command python3 scripts/ci/codeql-retire-legacy-actions.py \
+            execute --expected-main-sha "${EXPECTED_SHA}" \
+            --approved-scope-sha256 "${APPROVED_SCOPE_SHA256}" \
+            --confirm-history-loss \
+            --receipt "${RUNNER_TEMP}/codeql-retirement-receipt.json"
+
+      - name: Retain Safe Execution Receipt
+        timeout-minutes: 5
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-retirement-execution
+          path: ${{ runner.temp }}/codeql-retirement-receipt.json
+          if-no-files-found: warn
+          retention-days: 30
