@@ -28,8 +28,11 @@ Application with one source: the unchanged `restore-drill-candidate`
 kustomization on `main`. Kustomize overrides the image with the exact pinned
 repository digest and explicitly prepends `/usr/local/bin/restore-no-network`
 to the CronJob command; Kubernetes' explicit command otherwise bypasses the
-image ENTRYPOINT. The override also keeps `suspend: true`. Production PostgreSQL
-is outside this Application's source. The existing `homelab` AppProject permits
+image ENTRYPOINT. The override keeps `suspend: true` and selects Linux/amd64
+nodes, matching the only platform accepted by the publication pin. It does not
+establish compatibility on every matching node; exact Talos runtime and release
+placement still need their separate checks. Production PostgreSQL is outside
+this Application's source. The existing `homelab` AppProject permits
 the destination; `homelab-workloads` currently excludes `octelium-storage`.
 [Argo Kustomize overrides and patches](https://argo-cd.readthedocs.io/en/stable/user-guide/kustomize/).
 

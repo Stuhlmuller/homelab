@@ -165,13 +165,16 @@ class Tests(unittest.TestCase):
         self.assertIs(type(expected["spec"]["syncPolicy"]["retry"]["limit"]), int)
         self.assertIs(type(expected["spec"]["syncPolicy"]["retry"]["backoff"]["factor"]), int)
 
-    def test_real_kustomize_changes_only_image_and_launcher_and_keeps_suspended(self):
+    def test_real_kustomize_binds_image_launcher_and_platform_and_keeps_suspended(self):
         original = objects(ROOT / M.CANDIDATE)
         target = self.copied_candidate()
         self.apply_reference(target)
         actual = objects(target)
         expected = deepcopy(original)
         job = next(obj for obj in expected if obj["kind"] == "CronJob")
+        pod = job["spec"]["jobTemplate"]["spec"]["template"]["spec"]
+        self.assertNotIn("nodeSelector", pod)
+        pod["nodeSelector"] = {"kubernetes.io/os": "linux", "kubernetes.io/arch": "amd64"}
         container, = job["spec"]["jobTemplate"]["spec"]["template"]["spec"]["containers"]
         self.assertEqual(container["image"].split(":")[0], "postgres")
         container["image"] = PIN["image"]

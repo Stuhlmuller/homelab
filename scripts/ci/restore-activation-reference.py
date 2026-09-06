@@ -30,6 +30,8 @@ def application(pin):
         {"op": "test", "path": "/spec/suspend", "value": True},
         {"op": "test", "path": "/spec/jobTemplate/spec/template/spec/containers/0/name", "value": "restore-drill"},
         {"op": "replace", "path": "/spec/suspend", "value": True},
+        {"op": "add", "path": "/spec/jobTemplate/spec/template/spec/nodeSelector", "value": {
+            "kubernetes.io/os": "linux", "kubernetes.io/arch": "amd64"}},
         {"op": "replace", "path": "/spec/jobTemplate/spec/template/spec/containers/0/command", "value": [
             LAUNCHER, "/bin/sh", "/scripts/restore-drill.sh", "/backup/logical-backups", "/work"]},
     ]

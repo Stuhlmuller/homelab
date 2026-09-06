@@ -448,7 +448,7 @@ See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
 rollback, and the limits of this PostgreSQL-only drill.
 
 The static gate also runs `scripts/ci/restore-activation-reference-test.py`:
-actual Kustomize image/launcher/suspension rendering, unrelated-resource
+actual Kustomize image/launcher/platform/suspension rendering, unrelated-resource
 preservation, and dormant Terragrunt template failure/render fixtures. See
 [[restore-activation-reference]] for the publication-reference boundary. These
 tests neither require a real image pin nor establish live runtime proof.
