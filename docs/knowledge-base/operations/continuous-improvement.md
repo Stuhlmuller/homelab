@@ -343,6 +343,16 @@ observations below retain their original dates.
   The dedicated five-minute group bounds scan frequency; the 15-minute firing
   hold begins after detection at a group evaluation.
   Suspension alone does not establish recovery, including the retired UPnP path.
+- **Bounded validation:** On September 7, the refreshed branch passed 36
+  promtool cases and 18,872 rendered policy checks. Local chart comparison
+  preserved all other fields across 79 objects, including the current memory
+  requests and 15-day retention. Read-only Prometheus queries used a five-second
+  server timeout: owner selection passed in 0.04 seconds; the first history
+  query returned HTTP 422 without a retained error body, so its cause is
+  unclassified. One repeat at the same evaluation time passed in 2.78 seconds.
+  The final expression, with recording rules inlined and never installed,
+  passed in 3.93 seconds and retained three UPnP failures. These bounded reads
+  do not establish sustained rule-evaluation cost; verify that after rollout.
 - **Next step:** After Argo CD reconciliation, verify one healthy replacement
   rule, recovered backup alerts cleared, and later or unrecovered failures still
   present. Keep retained Jobs and independent backup-staleness alerts. See
