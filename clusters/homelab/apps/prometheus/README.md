@@ -50,6 +50,9 @@ Current Job creation excludes older incarnations with reused names. A unique
 controller owner, CronJob creation no later than the Job, and zero active Job
 Pods are also required before suppression. Joins include namespace, and
 duplicate scrape targets are deduplicated.
+The failure signal also uses only namespace and Job name, so overlapping
+scrape targets cannot duplicate alerts or reset a pending firing hold when
+kube-state-metrics is replaced.
 
 Missing ownership, activity, creation, success, or historical evidence keeps
 the failure eligible for alerting. Coarse sampling, lost history, or a success

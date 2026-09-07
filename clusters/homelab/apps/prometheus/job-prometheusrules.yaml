@@ -53,7 +53,9 @@ spec:
             )
         - alert: KubeJobFailed
           expr: |
-            kube_job_failed{job="kube-state-metrics",condition="true"} > 0
+            max by (namespace, job_name) (
+              kube_job_failed{job="kube-state-metrics",condition="true"} > 0
+            )
             unless on (namespace, job_name)
             (
               (

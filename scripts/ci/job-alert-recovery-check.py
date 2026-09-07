@@ -153,6 +153,21 @@ duplicated += [
 ]
 case("duplicate scrape targets do not create many-to-many joins", duplicated)
 
+unrecovered_duplicates = fixture(success=None)
+unrecovered_duplicates += [
+    {"series": item["series"].replace("{", '{instance="second",', 1), "values": item["values"]}
+    for item in list(unrecovered_duplicates)
+]
+case("duplicate unrecovered failures keep one stable alert", unrecovered_duplicates, OLD)
+
+turnover = fixture(success=None, failure=None)
+turnover += [
+    series("kube_job_failed", "0x4 1x9 stale _x44", namespace="apps", job_name="backup-old", condition="true", instance="old", pod="ksm-old"),
+    series("kube_job_failed", "_x14 1x44", namespace="apps", job_name="backup-old", condition="true", instance="new", pod="ksm-new"),
+]
+case("scrape target turnover does not shorten the firing hold", turnover, at="19m")
+case("scrape target turnover preserves a pending firing hold", turnover, OLD, at="20m")
+
 with tempfile.TemporaryDirectory(prefix="homelab-job-rules-") as directory:
     rule_file = Path(directory) / "rules.json"
     rule_file.write_text(json.dumps(spec))
