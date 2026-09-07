@@ -36,8 +36,8 @@ or archived legacy sources during the recovery soak.
 
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
-service address. Runtime config and agent state persist on the `openclaw` PVC
-under `/data/openclaw`.
+service address. Configuration and workspace remain on the `openclaw` NAS PVC.
+Authoritative SQLite state and native threads use `openclaw-runtime-local`.
 
 ## Claw's assistant configuration
 
@@ -64,10 +64,10 @@ architecture's SHA-256 for both the CLI and its code-mode host, and exposes
 OpenClaw Codex plugin. The sibling `codex-code-mode-host` executable is required
 for native tool execution; text-only inference does not test its presence. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
 added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
-OpenClaw is pinned to `2026.9.1`, which includes hidden models when discovering
+OpenClaw is pinned to `2026.9.2`, which includes hidden models when discovering
 the Codex catalog. This matters because Astra's initial catalog entry is hidden
 from the interactive picker. Bootstrap takes a verified offline
-`pre-2026.9.1` archive before touching runtime state; older migration markers
+`pre-2026.9.2` archive before touching runtime state; older migration markers
 remain intact. The explicit app-server command preserves the existing OAuth
 account and
 per-agent runtime home. Roll back the pin and command together through GitOps;
@@ -585,11 +585,67 @@ kubectl -n ai exec deploy/openclaw -c app -- \
 Those OAuth credentials persist on the `/data/openclaw` volume and should not be
 copied into SSM. If the PVC is replaced, repeat the interactive Codex login.
 
-The per-agent Codex app-server home is an `emptyDir`, not part of the NFS-backed
-OpenClaw home. Its native threads, SQLite indexes, caches, and diagnostics are
-rebuildable and had grown large enough to stall app-server startup and gateway
-turns over NFS. The volume is capped at `2Gi`, and pod replacement clears it.
-OpenClaw auth, sessions, workspace, and application state remain on the PVC.
+## Durable runtime state and recovery
+
+OpenClaw `2026.9.2` moves native thread preparation inside its guarded resume
+recovery. In `2026.9.1`, a `thread/read` failure could escape before that recovery
+and leave every heartbeat retry referring to the same unloaded thread. The
+stable release also fences binding changes against current session ownership.
+See the [release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.2).
+
+`runtime-storage.yaml` declares a retained 5 GiB local PV at
+`/var/lib/openclaw-runtime` on `zimaboard-1`. This is Talos EPHEMERAL partition
+storage, survives Pod replacement, and is lost if that node's disk is wiped.
+The hostPath capacity is a scheduling declaration, not a filesystem quota.
+Monitor node free space. The Deployment is pinned to that node with one replica
+and `Recreate`; automatic failover to another node is intentionally unavailable.
+
+The init-only `runtime-storage.py migrate` copies the stopped NAS `state/` and
+`agents/main/agent/` directories into one staging directory, compares every regular file checksum,
+checks authoritative SQLite integrity and foreign keys, then publishes both
+with one directory rename. A marker prevents subsequent starts from recopying
+stale NAS data. Unexpected existing destinations, corrupt databases, and
+insufficient free space fail closed. The NAS source remains untouched. The root
+toolbox init initializes only the volume root; migration runs as UID 1000.
+
+The new mounts at `/data/openclaw/state` and `/data/openclaw/agents/main/agent` let OpenClaw
+select WAL on a local filesystem. Its network-filesystem policy keeps NFS in
+rollback-journal mode, where long readers can block write commits. The native
+Codex home now persists under the same local agent tree. The old hidden NAS
+`codex-home` cache is excluded from first migration because the active version
+was an `emptyDir`. First-cutover stale bindings use the upstream guarded recovery
+and canonical OpenClaw continuity; no session reset or transcript deletion is
+performed. Workspace, identity/configuration files, and existing archives remain
+on the original NAS claim. The pre-upgrade archive explicitly includes the two
+local mount roots despite `tar --one-file-system`.
+
+`runtime-backup.yaml` takes daily online SQLite snapshots at 04:25 Pacific using
+SQLite's backup API, verifies them, records hashes, and retains seven completed
+snapshots on the NAS at `/data/openclaw-runtime-snapshots`. Source databases mount
+read-only; committed WAL data is included. These are authoritative database
+snapshots, not full-machine backups: workspace/configuration already live on the
+NAS, and native Codex indexes can be rebuilt from canonical history. Snapshot
+artifacts contain credentials and private history; keep their permissions private.
+
+After sync, verify migration logs, WAL mode for both authoritative databases,
+repeated main-session turns and heartbeats, the real owner Discord round trip,
+and one online backup through the same repository helper:
+
+```sh
+kubectl -n ai logs deploy/openclaw -c 01-runtime-storage
+kubectl -n ai exec deploy/openclaw -c app -- \
+  python3 /etc/openclaw-assistant/runtime-storage.py backup
+kubectl -n ai exec deploy/openclaw -c app -- openclaw channels status --json
+```
+
+Rollback is a reviewed GitOps storage/restore change, never an image-only revert:
+after local writes start, the old NAS databases are stale. Quiesce the Deployment
+through repository code, verify the latest snapshot hashes and SQLite integrity,
+restore into a new stopped target with compatible software, and repoint the
+mounts through GitOps. Do not overwrite a live database or prune either retained
+claim. If the local node is lost, the database recovery point is the latest
+successful daily snapshot; fresh native threads reconstruct available canonical
+context. The original pre-upgrade archive remains the downgrade recovery source.
 
 ## Local identity coordinator
 
