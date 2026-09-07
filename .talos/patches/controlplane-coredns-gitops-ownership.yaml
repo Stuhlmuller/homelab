@@ -1,0 +1,5 @@
+# Apply only after platform-dns owns all six CoreDNS resources and DNS checks pass.
+# Do not include this patch in initial cluster bootstrap; see the platform DNS runbook.
+cluster:
+  coreDNS:
+    disabled: true

@@ -42,6 +42,9 @@ sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
 It also rewrites in-cluster `octelium-api.stinkyboi.com` lookups to the
 dedicated Istio gateway Service, so Cordium and other cluster clients do not
 depend on the router's WAN mapping.
+It now declares all six CoreDNS resources and pins the running image content,
+with a controlled rolling replacement. The Talos bootstrap handoff remains a
+separate, gated step; see [[operations/coredns-gitops-ownership]].
 
 `platform-crossplane` installs Crossplane core `2.3.3` from the upstream stable
 Helm repository with default chart values. It intentionally does not install
