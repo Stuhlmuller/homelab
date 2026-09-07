@@ -238,3 +238,9 @@ moves the StorageClass/PV into the existing platform-storage application and kee
 only the PVC in OpenClaw. Project permissions remain unchanged. Kubernetes API
 dry runs do not validate Argo AppProject permissions; static validation now also
 checks that OpenClaw's rendered manifests contain no StorageClass or PV.
+
+The migration also fails closed if local state is missing after the retained
+pre-2026.9.2 backup marker exists. Bootstrap writes that marker before the new
+Gateway starts. This prevents a replaced/lost node disk from silently importing
+stale NAS databases; recovery requires an explicitly reviewed snapshot restore.
+The regression test covers both missing-local refusal and valid-local restart.
