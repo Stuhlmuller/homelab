@@ -232,6 +232,18 @@ controllers:
               (
                 umask 077
                 mkdir -p "$backup_root"
+                # A Pod replacement may interrupt tar before its checksum is written.
+                # Preserve the unpublished archive, then rebuild from the stopped state.
+                if [ ! -e "$backup_dir" ] && [ -d "$backup_staging" ] &&
+                  [ ! -L "$backup_staging" ] && ! verify_backup_dir "$backup_staging"; then
+                  interrupted="$backup_root/$backup_name.interrupted-$(date -u +%Y%m%dT%H%M%SZ)"
+                  if [ -e "$interrupted" ]; then
+                    echo "Interrupted backup preservation target already exists" >&2
+                    exit 1
+                  fi
+                  mv "$backup_staging" "$interrupted"
+                  echo "Preserved interrupted OpenClaw backup; rebuilding offline archive"
+                fi
                 if [ -e "$backup_dir" ]; then
                   if [ -e "$backup_staging" ]; then
                     echo "OpenClaw backup staging still exists; preserve both paths for review" >&2

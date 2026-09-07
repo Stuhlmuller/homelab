@@ -244,3 +244,12 @@ pre-2026.9.2 backup marker exists. Bootstrap writes that marker before the new
 Gateway starts. This prevents a replaced/lost node disk from silently importing
 stale NAS databases; recovery requires an explicitly reviewed snapshot restore.
 The regression test covers both missing-local refusal and valid-local restart.
+
+### Interrupted pre-upgrade backup recovery
+
+A second GitOps rollout on 2026-09-06 interrupted the unpublished 2026.9.2
+backup after verified database migration. Bootstrap now preserves an incomplete
+staging archive under a timestamped `interrupted-*` directory and rebuilds it
+from the stopped state. Published backups remain immutable and fail closed on
+corruption. The local migration marker prevents stale NAS reimport during retry.
+Retained interrupted archives can be reviewed later; startup does not delete them.
