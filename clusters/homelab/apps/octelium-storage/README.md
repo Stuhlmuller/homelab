@@ -142,12 +142,22 @@ kubectl -n octelium-storage get cronjob octelium-postgres-restore-drill \
   -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
 kubectl -n octelium-storage get jobs \
   -l app.kubernetes.io/name=octelium-postgres-restore-drill
-kubectl -n octelium-storage logs job/<scheduled-restore-drill-job>
+kubectl -n octelium-storage get job <scheduled-restore-drill-job> \
+  -o jsonpath='{.status.conditions}{"\n"}'
 ```
 
-Success emits only `Octelium PostgreSQL restore drill passed`. Failure identifies
-a fixed stage; private details remain in `/work/restore-drill/details.log` only
-until Job cleanup. Inspect them privately if needed; never copy them into public
+Completion is reported by the Job's exit status and conditions. The restore
+process permanently redirects standard streams to private scratch before archive
+processing; successful and failed restores both leave container logs empty.
+Do not save console descriptors for a summary or add a shell supervisor that
+retains them: archive-triggered client and server programs could inherit or reopen
+those handles through `/proc`. Run the script directly as the container entry
+point (or through an `exec`-only isolation launcher), with its own PID namespace.
+Do not enable `hostPID` or `shareProcessNamespace`.
+
+The result, failure stage, and private details remain in
+`/work/restore-drill/details.log` only until Job cleanup. Inspect them privately
+if needed; never copy them into public
 CI logs, issues, or PRs. Fix archive format/schema changes in code, and increase
 scratch limits only after checking node capacity. No live success is claimed
 until a scheduled Job completes.
