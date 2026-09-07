@@ -63,8 +63,9 @@ GitHub plan/apply workflows **do not traverse `IaC/operator`**: green generic CI
 is not a live plan or deployment receipt for this bucket.
 
 Use the existing administrator session through the default AWS credential
-chain. Desired-state values come only from committed HCL; do not export profile
-or infrastructure overrides for this workflow. If the default session is not
+chain. Desired-state values come from the committed catalog and destination
+JSON; do not export profile or infrastructure overrides for this workflow.
+If the default session is not
 the intended administrator, stop and select the normal local authenticated
 context before continuing. The AWS provider also rejects any account other than
 the declared owner. From the same unit directory:
