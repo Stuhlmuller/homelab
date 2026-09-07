@@ -23,7 +23,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "fadf2e1023321b6d556772660073e2b799a2d6ef15294f4bc7fd2acbe4401159"
+        homelab.rst.io/openclaw-assistant-sha256: "af43d6b23c22e3faaaec8e4f4af62e471844b9a3d770e9844e7841fd9c32014a"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"

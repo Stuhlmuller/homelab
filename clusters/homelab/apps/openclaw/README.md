@@ -587,6 +587,13 @@ copied into SSM. If the PVC is replaced, repeat the interactive Codex login.
 
 ## Durable runtime state and recovery
 
+Heartbeat uses the same bounded 600-second budget as the agent. The scheduler's
+heartbeat watchdog includes waiting for existing replies/background jobs and
+its 60-second idle retry grace, not only model execution. A 120-second budget
+produced a failed receipt after about 80 seconds of scheduling delay plus a
+43-second successful agent turn. Keep this queue-inclusive budget when tuning
+heartbeats; do not mistake a completed native turn for a successful cron receipt.
+
 OpenClaw `2026.9.2` moves native thread preparation inside its guarded resume
 recovery. In `2026.9.1`, a `thread/read` failure could escape before that recovery
 and leave every heartbeat retry referring to the same unloaded thread. The
