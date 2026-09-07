@@ -1177,6 +1177,9 @@ echo "::group::OpenClaw Discord plugin"
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
 python3 scripts/ci/openclaw-runtime-storage-check.py
+# homelab-workloads deliberately has no cluster-scoped resource permissions.
+kustomize build clusters/homelab/apps/openclaw | yq eval-all -e \
+  '[select(.kind == "PersistentVolume" or .kind == "StorageClass")] | length == 0' - >/dev/null
 node --experimental-vm-modules scripts/ci/openclaw-subscription-recovery-check.mjs
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"

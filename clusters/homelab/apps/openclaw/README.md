@@ -593,7 +593,9 @@ and leave every heartbeat retry referring to the same unloaded thread. The
 stable release also fences binding changes against current session ownership.
 See the [release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.2).
 
-`runtime-storage.yaml` declares a retained 5 GiB local PV at
+The platform-storage application declares the retained 5 GiB local PV in
+`clusters/homelab/platform/storage/openclaw-runtime.yaml`; this application
+declares only its namespaced claim in `runtime-storage.yaml`. The PV resides at
 `/var/lib/openclaw-runtime` on `zimaboard-1`. This is Talos EPHEMERAL partition
 storage, survives Pod replacement, and is lost if that node's disk is wiped.
 The hostPath capacity is a scheduling declaration, not a filesystem quota.
