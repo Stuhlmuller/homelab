@@ -253,3 +253,17 @@ staging archive under a timestamped `interrupted-*` directory and rebuilds it
 from the stopped state. Published backups remain immutable and fail closed on
 corruption. The local migration marker prevents stale NAS reimport during retry.
 Retained interrupted archives can be reviewed later; startup does not delete them.
+
+### Talos direct mounts and verified runtime identity
+
+The 2026.9.2 rollout exposed Talos kubelet mount-namespace behavior: the full
+PV contained verified UID-1000 databases, while `subPath` resolved empty root-owned
+directories in kubelet's overlay. No gateway started against those empty mounts.
+Direct child PVs now mount the same host directories without `subPath`; parent
+and child views must identify the same database inodes before any CLI starts.
+The existing full archive is supplemented by a separately retained verified
+`pre-2026.9.2-runtime` SQLite checkpoint because the incorrect subpath mounts
+hid the databases during archive creation. Restore both artifacts together.
+Source: [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/)
+and live mountinfo, database absence, and UID checks. Parent and child PVs share
+one retained directory tree on zimaboard-1; daily snapshot retention is unchanged.

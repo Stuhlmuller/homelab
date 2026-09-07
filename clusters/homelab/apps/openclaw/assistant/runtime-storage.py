@@ -123,6 +123,18 @@ def migrate(source, target):
         raise
 
 
+
+def verify_mounts(runtime, mounted):
+    # Full-root and direct child mounts must identify the same authoritative files.
+    for relative in ('state/openclaw.sqlite', 'agents/main/agent/openclaw-agent.sqlite'):
+        source, target = runtime / relative, mounted / relative
+        if not source.is_file() or not target.is_file() or not source.samefile(target):
+            raise RuntimeError(f'Runtime mount mismatch: {relative}; refusing empty replacement state')
+        if target.parent.stat().st_uid != os.getuid():
+            raise RuntimeError(f'Runtime directory is not owned by the process: {relative}')
+    print('Verified runtime mounts identify the canonical databases', flush=True)
+
+
 def backup(runtime, destination):
     runtime, destination = runtime.resolve(), destination.resolve()
     if not (runtime / '.nfs-migration.json').is_file():
@@ -169,9 +181,13 @@ def backup(runtime, destination):
 if __name__ == '__main__':
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=['migrate', 'backup'])
+    parser.add_argument('operation', choices=['migrate', 'backup', 'verify-mounts', 'checkpoint'])
     args = parser.parse_args()
     if args.operation == 'migrate':
         migrate(Path('/legacy/openclaw'), Path('/runtime-volume'))
+    elif args.operation == 'verify-mounts':
+        verify_mounts(Path('/runtime-volume/runtime'), Path('/data/openclaw'))
+    elif args.operation == 'checkpoint':
+        backup(Path('/runtime-volume/runtime'), Path('/data/openclaw-backups/pre-2026.9.2-runtime'))
     else:
         backup(Path('/runtime-volume/runtime'), Path('/data/openclaw-runtime-snapshots'))

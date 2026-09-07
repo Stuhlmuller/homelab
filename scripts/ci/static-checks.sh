@@ -1245,6 +1245,10 @@ yq -e '
   .controllers.openclaw.strategy == "Recreate" and
   .controllers.openclaw.pod.nodeSelector."kubernetes.io/hostname" == "zimaboard-1" and
   .persistence."runtime-state".existingClaim == "openclaw-runtime-local" and
+  .persistence."runtime-database".existingClaim == "openclaw-runtime-state-local" and
+  .persistence."runtime-agent".existingClaim == "openclaw-runtime-agent-local" and
+  ([.persistence."runtime-database".advancedMounts.openclaw[][] | has("subPath")] | any == false) and
+  ([.persistence."runtime-agent".advancedMounts.openclaw[][] | has("subPath")] | any == false) and
   .persistence."codex-runtime" == null and
   .controllers.openclaw.initContainers."01-runtime-storage".dependsOn == "00-operator-toolbox" and
   .controllers.openclaw.initContainers."01-runtime-storage".securityContext.runAsNonRoot == true and
