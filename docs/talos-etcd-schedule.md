@@ -147,9 +147,12 @@ runtime remain available for offline verification.
 For an update or rollback, run `install` from another reviewed main commit
 containing these scripts with the same runtime and backup root. The installer
 replaces the loaded program only while the backup lock is free. To change the
-root, uninstall and choose a fresh runtime; uninstall preserves the old runtime's
-installation record. Never use unreviewed local policy edits
-as a workaround; change the committed policy and reinstall reviewed code.
+backup root or committed launchd label, uninstall the old schedule and choose a
+fresh runtime; uninstall preserves the old runtime's installation record.
+Updates verify the prior installed release and reject a different label before
+reconfiguring either service, keeping the old schedule intact. Never use
+unreviewed local policy edits as a workaround; change the committed policy and
+reinstall reviewed code.
 
 ## Validation And Sources
 
@@ -165,6 +168,8 @@ manual-copy preservation, exact source validation, and installation/removal.
 Handoff fixtures inject failures after settings/plist writes and partial
 bootstrap, verify rollback and explicit rollback failure, preserve an active
 backup, and run a waiting worker through its successful initial post-lock attempt.
+Label-change fixtures preserve the old service and settings and require a fresh
+runtime after uninstall.
 They do not execute a real LaunchAgent, prove wake behavior on this Mac or
 validate real etcd restores. Installation and the first scheduled snapshot
 still require private live receipts.

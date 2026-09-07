@@ -19,6 +19,8 @@ copies. Its installer copies exact reviewed main code to a private durable
 operator runtime; a separate `scheduled` child protects all manual backups.
 Service updates preserve prior files and loaded state for rollback. The launchd
 child waits up to 60 seconds for handoff; an active backup blocks reconfiguration.
+Changing the committed launchd label requires uninstall and a fresh runtime;
+updates reject renames before touching the old service or installed release.
 Pruning starts only after a new verified durable backup and success receipt,
 and all candidates pass verification. Installation/first-run evidence is still
 required. The Mac must be available and its user logged in; offsite storage,

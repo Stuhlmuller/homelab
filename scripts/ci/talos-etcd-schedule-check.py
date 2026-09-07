@@ -403,6 +403,41 @@ class ScheduleTests(unittest.TestCase):
             self.addCleanup(context.stop)
         return args, runtime, plist, service
 
+    def test_label_change_preserves_old_service_and_requires_fresh_runtime(self):
+        args, runtime, plist, service = self.installer_harness()
+        schedule.install(args)
+        old_settings, old_plist = (runtime / "installation.json").read_bytes(), plist.read_bytes()
+        args.revision = "b" * 40
+        checkout = self.root / "renamed-policy-checkout"
+        (checkout / "config").mkdir(parents=True)
+        changed_policy = {**self.policy, "launchd_label": "org.homelab.etcd-backup-renamed"}
+        policy_bytes = (json.dumps(changed_policy) + "\n").encode()
+        (checkout / "config" / Path(schedule.POLICY_SOURCE).name).write_bytes(policy_bytes)
+        files = {Path(name).name: (script.parent.parent / name).read_bytes() for name in schedule.SOURCES}
+        files[Path(schedule.POLICY_SOURCE).name] = policy_bytes
+        renamed_plist = plist.with_name(changed_policy["launchd_label"] + ".plist")
+        for loaded in (True, False):
+            with self.subTest(old_service_loaded=loaded):
+                if not loaded:
+                    # Uninstall deliberately keeps the old release/record. The
+                    # operator must choose a fresh runtime for a renamed label.
+                    with patch.object(schedule.sys, "argv", [str(script), "uninstall", "--runtime-directory", str(runtime)]), patch("builtins.print"):
+                        self.assertEqual(schedule.main(), 0)
+                service["events"].clear()
+                with patch.object(schedule, "HERE", checkout), patch.object(schedule, "reviewed_sources", return_value=files):
+                    with self.assertRaisesRegex(ValueError, "fresh runtime.*launchd label"):
+                        schedule.install(args)
+                self.assertEqual(service["loaded"], loaded)
+                self.assertEqual(service["events"], [])
+                self.assertEqual((runtime / "installation.json").read_bytes(), old_settings)
+                self.assertFalse((runtime / "releases" / args.revision).exists())
+                self.assertFalse(renamed_plist.exists())
+                if loaded:
+                    self.assertEqual(plist.read_bytes(), old_plist)
+                else:
+                    self.assertFalse(plist.exists())
+        self.assertEqual(schedule.installed(runtime)[1]["launchd_label"], self.policy["launchd_label"])
+
     def test_update_write_failures_restore_exact_prior_files_and_loaded_service(self):
         args, runtime, plist, service = self.installer_harness()
         schedule.install(args)

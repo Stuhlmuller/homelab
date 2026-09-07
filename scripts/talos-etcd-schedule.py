@@ -363,8 +363,12 @@ def install(args):
             raise ValueError("this launchd label belongs to another runtime; uninstall it first")
     with schedule_lock(directory):
         previous = runtime / "installation.json"
-        if previous.exists() and json.loads(previous.read_text())["backup_root"] != str(root):
-            raise ValueError("uninstall the old schedule and use a fresh runtime before changing its backup root")
+        if previous.exists():
+            previous_settings, previous_policy, _ = installed(runtime)
+            if previous_settings["backup_root"] != str(root):
+                raise ValueError("uninstall the old schedule and use a fresh runtime before changing its backup root")
+            if previous_policy["launchd_label"] != policy["launchd_label"]:
+                raise ValueError("uninstall the old schedule and use a fresh runtime before changing its launchd label")
         release.mkdir(mode=0o700, parents=True, exist_ok=True)
         for name, data in files.items():
             path = release / name
