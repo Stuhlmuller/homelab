@@ -26,6 +26,18 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
 
+The static gate runs `scripts/ci/job-alert-recovery-check.py` with the Nix-pinned
+promtool against the actual Job recovery rules. Its synthetic histories cover
+failure/success ordering, false/unknown condition gauges and transitions to true,
+overlap, later failed runs, namespace isolation,
+missing metrics, conflicting owners, duplicate recovered and unrecovered
+scrapes, target turnover during a pending alert, recreated names, and
+the existing 15-minute firing hold after five-minute group detection. The check
+also requires the custom rule's
+Kustomize registration, the chart-default replacement switch, and matching
+15-day retention. Live rollout must leave one healthy `KubeJobFailed` rule;
+see `clusters/homelab/apps/prometheus/README.md` for verification and rollback.
+
 Operator-owned AWS bootstrap units require a focused backend-free validation
 and an administrator-authenticated plan before apply:
 
