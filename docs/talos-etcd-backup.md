@@ -38,6 +38,9 @@ authenticated connectivity to `10.1.0.199`. The homelab's Homebrew client at
 the Nix development shell supplies `v1.13.2`. Use the explicit Homebrew path
 for this cluster so entering a Nix shell cannot select a different client.
 Other operators should substitute their matching client's absolute path.
+`--talosctl` is required and must name an existing executable file by absolute
+path. Missing, relative, or non-executable clients fail before any Talos call;
+the command never selects a client through `PATH`.
 The output metadata format was checked against Talos `v1.11.3`; a changed
 format fails verification instead of publishing a backup without metadata.
 
@@ -102,7 +105,8 @@ python3 scripts/ci/talos-etcd-backup-check.py
 It exercises repeated backups, private permissions, corruption and truncation,
 changed copies, absent metadata, client failures, timeouts, directory sync
 ordering and failures, explicit client selection, and destination rejection
-before Talos access. The fixture is not a real etcd database;
+before Talos access, including missing or invalid client arguments.
+The fixture is not a real etcd database;
 `talosctl` performs the actual database metadata check during a live backup.
 
 - [Talos 1.11 backup guidance](https://docs.siderolabs.com/talos/v1.11/build-and-extend-talos/cluster-operations-and-maintenance/disaster-recovery#backup)

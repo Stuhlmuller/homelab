@@ -10,7 +10,9 @@ off-node directory, Talos metadata validation, embedded SHA-256 verification,
 and an offline manifest check. It preserves existing backups and contains no
 restore or cluster mutation path. Success requires file and directory syncs;
 the homelab invocation explicitly selects Homebrew Talos `v1.11.3` because the
-Nix shell currently supplies `v1.13.2`. Recurrence, backup-age alerting, offsite
+Nix shell currently supplies `v1.13.2`. The CLI requires an absolute executable
+client path and rejects missing or invalid clients before Talos access.
+Recurrence, backup-age alerting, offsite
 storage, retention enforcement, and a restore drill remain open work.
 
 Live validation on 2026-09-07 UTC saved a private off-node snapshot with Talos

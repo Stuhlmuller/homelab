@@ -92,7 +92,13 @@ def sync_directory(path):
         os.close(fd)
 
 
-def backup(destination, talosconfig, talosctl="talosctl"):
+def backup(destination, talosconfig, talosctl):
+    talosctl = Path(talosctl)
+    if not talosctl.is_absolute():
+        raise ValueError("talosctl must be an absolute executable path")
+    talosctl = talosctl.resolve(strict=True)
+    if not talosctl.is_file() or not os.access(talosctl, os.X_OK):
+        raise ValueError("talosctl must be an executable file")
     destination = private_directory(destination)
     talosconfig = talosconfig.resolve(strict=True)
     if not talosconfig.is_file():
@@ -104,7 +110,7 @@ def backup(destination, talosconfig, talosctl="talosctl"):
         # Explicit config, endpoint and single node prevent ambient CLI defaults
         # from choosing another cluster. Only the snapshot RPC is requested.
         result = subprocess.run(
-            [talosctl, "--talosconfig", str(talosconfig),
+            [str(talosctl), "--talosconfig", str(talosconfig),
              "--endpoints", CONTROL_PLANE, "--nodes", CONTROL_PLANE,
              "etcd", "snapshot", str(pending / SNAPSHOT)],
             capture_output=True, text=True, timeout=300, check=True,
@@ -151,8 +157,8 @@ def main():
                       help="existing mode-0700 directory outside all Git checkouts")
     save.add_argument("--talosconfig", type=Path, required=True,
                       help="explicit path to the current private Talos client config")
-    save.add_argument("--talosctl", default="talosctl",
-                      help="Talos client executable; use an explicit version-matched path")
+    save.add_argument("--talosctl", type=Path, required=True,
+                      help="absolute path to an executable version-matched Talos client")
     check = commands.add_parser("verify", help="recheck a completed backup offline")
     check.add_argument("--directory", type=Path, required=True)
     args = parser.parse_args()
