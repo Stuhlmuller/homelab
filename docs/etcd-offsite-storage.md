@@ -72,7 +72,7 @@ set -euo pipefail
 umask 077
 aws sts get-caller-identity --output json |
   jq -e '.Account == "716182248480"'
-backup_plan_dir="$(mktemp -d /private/tmp/homelab-etcd-bucket-plan.XXXXXX)"
+backup_plan_dir="$(mktemp -d /tmp/homelab-etcd-bucket-plan.XXXXXX)"
 chmod 0700 "$backup_plan_dir"
 terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
   --disable-bucket-update --backend-bootstrap=false -- \
