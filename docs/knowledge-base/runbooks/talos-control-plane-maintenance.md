@@ -17,6 +17,8 @@ checks plus load/wake catchup, a 24-hour verified-success gate, a 36-hour offlin
 freshness threshold and 28-day retention with at least seven valid scheduled
 copies. Its installer copies exact reviewed main code to a private durable
 operator runtime; a separate `scheduled` child protects all manual backups.
+Service updates preserve prior files and loaded state for rollback. The launchd
+child waits up to 60 seconds for handoff; an active backup blocks reconfiguration.
 Pruning starts only after a new verified durable backup and success receipt,
 and all candidates pass verification. Installation/first-run evidence is still
 required. The Mac must be available and its user logged in; offsite storage,

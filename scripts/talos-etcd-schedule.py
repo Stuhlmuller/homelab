@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 
 
 HERE = Path(__file__).resolve().parent
@@ -24,6 +25,7 @@ spec.loader.exec_module(backup)
 SNAPSHOT_NAME = re.compile(r"etcd-\d{8}T\d{6}Z-[a-z0-9_]+")
 SUCCESS = "latest-success.json"
 LOCK = ".schedule.lock"
+LAUNCHD_LOCK_WAIT_SECONDS = 60
 POLICY_SOURCE = "scripts/config/talos-etcd-backup-schedule.json"
 SOURCES = ("scripts/talos-etcd-backup.py", "scripts/talos-etcd-schedule.py", POLICY_SOURCE)
 
@@ -90,13 +92,18 @@ def record_success(directory, completed, record):
 
 
 @contextmanager
-def schedule_lock(directory, shared=False):
+def schedule_lock(directory, shared=False, wait_seconds=0):
     # Installer creates the persistent lock; never unlink it while installed.
     with (directory / LOCK).open("rb") as stream:
-        try:
-            fcntl.flock(stream, (fcntl.LOCK_SH if shared else fcntl.LOCK_EX) | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise ValueError("scheduled backup is running; retry after it finishes") from None
+        deadline = time.monotonic() + wait_seconds
+        while True:
+            try:
+                fcntl.flock(stream, (fcntl.LOCK_SH if shared else fcntl.LOCK_EX) | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise ValueError("scheduled backup lock is busy; retry after the running operation finishes") from None
+                time.sleep(min(0.1, max(0, deadline - time.monotonic())))
         yield
 
 
@@ -162,12 +169,12 @@ def prune(directory, policy, now):
     return removed
 
 
-def run_schedule(directory, policy, talosconfig, talosctl, now=None):
-    now = now or datetime.now(timezone.utc)
+def run_schedule(directory, policy, talosconfig, talosctl, now=None, wait_seconds=0):
     if directory.is_symlink():
         raise ValueError("the scheduled child must not be a symlink")
     directory = backup.private_directory(directory)
-    with schedule_lock(directory):
+    with schedule_lock(directory, wait_seconds=wait_seconds):
+        now = now or datetime.now(timezone.utc)
         inspection_warning = None
         try:
             status = latest_status(directory, policy, now)
@@ -242,7 +249,7 @@ def render_plist(settings, policy):
     release = runtime / "releases" / settings["revision"]
     return {"Label": policy["launchd_label"],
             "ProgramArguments": [settings["python"], str(release / "talos-etcd-schedule.py"),
-                                 "run", "--runtime-directory", str(runtime)],
+                                 "run", "--runtime-directory", str(runtime), "--launchd"],
             "StartCalendarInterval": {"Minute": policy["minute"]}, "RunAtLoad": True,
             "Umask": 63, "ProcessType": "Background", "LowPriorityIO": True,
             "StandardOutPath": str(runtime / "schedule.log"),
@@ -257,6 +264,62 @@ def stop_loaded(policy):
     target = service_target(policy)
     if command(["/bin/launchctl", "print", target], check=False).returncode == 0:
         command(["/bin/launchctl", "bootout", target])
+
+
+def replace_service(runtime, plist_path, settings, plist_bytes, policy):
+    """Called with the backup lock held; restore previous state on failed handoff."""
+    settings_path = runtime / "installation.json"
+    old_settings = settings_path.read_bytes() if settings_path.exists() else None
+    old_plist = plist_path.read_bytes() if plist_path.exists() else None
+    was_loaded = command(["/bin/launchctl", "print", service_target(policy)], check=False).returncode == 0
+    if was_loaded and (old_settings is None or old_plist is None):
+        raise ValueError("loaded schedule has no restorable local configuration; stop before reconfiguration")
+    # Retain exact previous bytes even if rollback itself encounters a disk or
+    # launchctl failure. These files contain only local paths and public config.
+    rollback = Path(tempfile.mkdtemp(prefix=".install-rollback-", dir=runtime))
+    for name, contents in (("installation.json", old_settings), ("agent.plist", old_plist)):
+        if contents is not None:
+            write_file(rollback / name, contents)
+    write_json(rollback / "state.json", {"was_loaded": was_loaded,
+               "had_settings": old_settings is not None, "had_plist": old_plist is not None})
+    backup.sync_directory(runtime)
+    domain = f"gui/{os.getuid()}"
+    try:
+        if was_loaded:
+            command(["/bin/launchctl", "bootout", service_target(policy)])
+        write_json(settings_path, settings)
+        write_file(plist_path, plist_bytes)
+        command(["/bin/launchctl", "bootstrap", domain, plist_path])
+    except (OSError, ValueError, subprocess.SubprocessError) as failure:
+        errors = []
+        try:
+            # bootstrap may have registered/started the new child before
+            # returning failure. Stop it while the installer still owns the
+            # lock, so it cannot snapshot using half-restored configuration.
+            stop_loaded(policy)
+        except (OSError, subprocess.SubprocessError) as error:
+            raise ValueError("installation failed and rollback failed: cannot stop the partially loaded "
+                             f"service ({type(error).__name__}); previous configuration is retained at "
+                             f"{rollback}; check local service state before retrying") from failure
+        for path, contents in ((settings_path, old_settings), (plist_path, old_plist)):
+            try:
+                if contents is None:
+                    path.unlink(missing_ok=True)
+                    backup.sync_directory(path.parent)
+                else:
+                    write_file(path, contents)
+            except OSError as error:
+                errors.append(type(error).__name__)
+        if was_loaded and not errors:
+            try:
+                command(["/bin/launchctl", "bootstrap", domain, plist_path])
+            except (OSError, subprocess.SubprocessError) as error:
+                errors.append(type(error).__name__)
+        if errors:
+            raise ValueError(f"installation failed and rollback failed ({', '.join(errors)}); "
+                             f"previous configuration is retained at {rollback}; check local service state") from failure
+        state = "previous loaded schedule" if was_loaded else "previous unloaded state"
+        raise ValueError(f"installation failed; {state} restored; previous configuration retained at {rollback}") from failure
 
 
 def install(args):
@@ -292,12 +355,16 @@ def install(args):
     if plist_path.exists():
         previous_plist = plistlib.loads(plist_path.read_bytes())
         previous_args = previous_plist.get("ProgramArguments", [])
-        if previous_args[-2:] != ["--runtime-directory", str(runtime)]:
+        try:
+            previous_runtime = previous_args[previous_args.index("--runtime-directory") + 1]
+        except (ValueError, IndexError):
+            previous_runtime = None
+        if previous_runtime != str(runtime) or previous_plist.get("Label") != policy["launchd_label"]:
             raise ValueError("this launchd label belongs to another runtime; uninstall it first")
     with schedule_lock(directory):
         previous = runtime / "installation.json"
         if previous.exists() and json.loads(previous.read_text())["backup_root"] != str(root):
-            raise ValueError("uninstall the old schedule before changing its backup root")
+            raise ValueError("uninstall the old schedule and use a fresh runtime before changing its backup root")
         release.mkdir(mode=0o700, parents=True, exist_ok=True)
         for name, data in files.items():
             path = release / name
@@ -312,11 +379,8 @@ def install(args):
         staged_plist = runtime / "validated.plist"
         write_file(staged_plist, plist_bytes)
         command(["/usr/bin/plutil", "-lint", staged_plist])
-        stop_loaded(policy)
-        write_json(runtime / "installation.json", settings)
         plist_path.parent.mkdir(parents=True, exist_ok=True)
-        write_file(plist_path, plist_bytes)
-    command(["/bin/launchctl", "bootstrap", f"gui/{os.getuid()}", plist_path])
+        replace_service(runtime, plist_path, settings, plist_bytes, policy)
     return {"action": "installed", "runtime_directory": str(runtime),
             "revision": args.revision, "script": str(release / "talos-etcd-schedule.py"),
             "note": "RunAtLoad starts the first age-gated attempt; use status to verify it."}
@@ -353,6 +417,9 @@ def main():
     for name in ("run", "status", "uninstall"):
         sub = commands.add_parser(name)
         sub.add_argument("--runtime-directory", type=Path, required=True)
+        if name == "run":
+            sub.add_argument("--launchd", action="store_true",
+                             help="wait up to 60 seconds for an installer-held lock")
     args = parser.parse_args()
     try:
         if args.command == "install":
@@ -360,7 +427,8 @@ def main():
         else:
             settings, policy, directory = installed(args.runtime_directory)
             if args.command == "run":
-                result = run_schedule(directory, policy, Path(settings["talosconfig"]), settings["talosctl"])
+                result = run_schedule(directory, policy, Path(settings["talosconfig"]), settings["talosctl"],
+                                      wait_seconds=LAUNCHD_LOCK_WAIT_SECONDS if args.launchd else 0)
             elif args.command == "status":
                 with schedule_lock(directory, shared=True):
                     result = latest_status(directory, policy, datetime.now(timezone.utc))

@@ -72,6 +72,14 @@ Python sources, and validates the rendered plist with `plutil` before loading
 `~/Library/LaunchAgents/org.homelab.etcd-backup.plist`. The loaded program uses
 only the durable runtime, with no checkout or temporary-path dependency.
 
+Before replacing a service, installation saves the previous settings, plist and
+loaded state in a private `.install-rollback-*` directory under the runtime.
+It holds the backup lock through configuration writes and `launchctl bootstrap`.
+If the handoff fails, it stops any partly loaded new service before restoring
+the previous files and loaded state. A first-install failure restores absence.
+Rollback failure is an explicit error with the saved configuration path; it
+never reports a working installation. Those small rollback records are retained.
+
 Installation's `RunAtLoad` starts an age-gated attempt. Successful installation
 is not proof of a successful snapshot. Use the durable script path printed by
 the installer to check the result after that attempt finishes:
@@ -91,9 +99,14 @@ corrupt. Runtime source drift also fails the command before backup execution.
 
 ## Failure, Retention And Uninstall
 
-Every invocation holds the same nonblocking file lock in the scheduled child.
-Overlapping runs, installation and uninstallation stop before disrupting a
-running backup. Client failures and timeouts preserve previous copies and the
+Every invocation uses the same file lock in the scheduled child. The committed
+LaunchAgent invokes `run --launchd`, which waits at most 60 seconds for the
+installer to release the lock; its `bootstrap` command has a 30-second timeout.
+This allows the initial child to finish the age-gated attempt after handoff
+instead of exiting while installation still holds the lock. A wait timeout
+changes no backups and retries at the next calendar invocation. Operator runs,
+status, installation and uninstallation remain nonblocking and stop before
+disrupting a running backup. Client failures and timeouts preserve previous copies and the
 last success receipt. A published directory without a matching success receipt
 is `unconfirmed`, so it cannot suppress the next attempt. Check authenticated
 Talos reachability, client paths, disk space and private permissions if a run
@@ -133,8 +146,9 @@ runtime remain available for offline verification.
 
 For an update or rollback, run `install` from another reviewed main commit
 containing these scripts with the same runtime and backup root. The installer
-replaces the loaded program only while the backup lock is free. Uninstall
-before deliberately changing the root. Never use unreviewed local policy edits
+replaces the loaded program only while the backup lock is free. To change the
+root, uninstall and choose a fresh runtime; uninstall preserves the old runtime's
+installation record. Never use unreviewed local policy edits
 as a workaround; change the committed policy and reinstall reviewed code.
 
 ## Validation And Sources
@@ -148,6 +162,9 @@ These checks use synthetic snapshots and mocked local services. They exercise
 age gating, offline status, missing/corrupt data, network and timeout failures,
 publication failure, sleep catchup semantics, lock contention, retention,
 manual-copy preservation, exact source validation, and installation/removal.
+Handoff fixtures inject failures after settings/plist writes and partial
+bootstrap, verify rollback and explicit rollback failure, preserve an active
+backup, and run a waiting worker through its successful initial post-lock attempt.
 They do not execute a real LaunchAgent, prove wake behavior on this Mac or
 validate real etcd restores. Installation and the first scheduled snapshot
 still require private live receipts.
