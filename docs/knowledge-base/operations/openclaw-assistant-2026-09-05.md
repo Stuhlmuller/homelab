@@ -196,3 +196,37 @@ Grafana datasource proxies. Most homelab rules are Grafana-managed and publish
 to Alertmanager, so an empty Prometheus ALERTS result cannot establish that no
 alerts are firing. Managed instructions now require both sources and explicitly
 report partial visibility if either fails.
+
+
+## Durable reply and heartbeat repair, September 6 Pacific
+
+The owner Discord round trip was confirmed directly through Discord at 01:20 UTC
+September 7: an owner-originated `reply test 323` received the bot response
+`test 323` approximately 18 seconds later. Outbound-only testing had been
+insufficient to establish this. Earlier hourly heartbeat receipts still showed
+repeated `thread not loaded` failures; a separate quiet test reproduced a SQLite
+plugin-state write failure, and a serial retry succeeded.
+
+The deployed 2026.9.1 Codex adapter performs `prepareCodexThreadResume` outside
+`resumeExistingCodexThread`'s recovery boundary. Stable 2026.9.2 supplies it as
+`prepareResume` inside that boundary and adds session ownership fencing. Upgrade
+the gateway and both external plugins together. Keep Astra and the verified
+native code-mode host; do not reset sessions or bypass owner checks.
+
+The SQLite runtime explicitly selects rollback journaling on NFS and WAL on
+local filesystems. Move only `state/` and `agents/main/agent/` to a retained local PV on
+`zimaboard-1`, preserving the NAS source and verifying the offline copy before
+startup. Native Codex state now survives Pod replacement. The old NAS native
+cache is excluded because it was hidden by the previous emptyDir. Workspace, archived transcripts, and
+configuration remain on NFS; daily online SQLite backups preserve committed WAL
+and keep seven NAS recovery points. See the app README for cutover, verification,
+and rollback. Node-disk loss requires snapshot restore and can lose writes since
+the last successful snapshot.
+
+Migration/backup regression tests cover history preservation including embedded
+NULs, live committed WAL, corruption rejection, retries without stale recopy,
+and preservation of an unmarked existing target. Helm/Kustomize rendering and
+Kubernetes server-side dry runs passed. `nix run .#validate` is absent in this
+checkout; `nix develop -c bash scripts/ci/static-checks.sh` passed instead.
+Deployment and repeated runtime acceptance remain required before marking this
+repair complete.

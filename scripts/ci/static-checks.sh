@@ -1176,6 +1176,7 @@ echo "::endgroup::"
 echo "::group::OpenClaw Discord plugin"
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
+python3 scripts/ci/openclaw-runtime-storage-check.py
 node --experimental-vm-modules scripts/ci/openclaw-subscription-recovery-check.mjs
 openclaw_values="clusters/homelab/apps/openclaw/values.yaml"
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
@@ -1233,12 +1234,17 @@ if ! awk '
   exit 1
 fi
 yq -e '
-  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
-  .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "00-operator-toolbox" and
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
+  .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "01-runtime-storage" and
   .controllers.openclaw.initContainers."00-operator-toolbox" != null and
-  .controllers.openclaw.containers.app.image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
-  .controllers.openclaw.containers.proxy.image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
+  .controllers.openclaw.containers.app.image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
   .controllers.openclaw.strategy == "Recreate" and
+  .controllers.openclaw.pod.nodeSelector."kubernetes.io/hostname" == "zimaboard-1" and
+  .persistence."runtime-state".existingClaim == "openclaw-runtime-local" and
+  .persistence."codex-runtime" == null and
+  .controllers.openclaw.initContainers."01-runtime-storage".dependsOn == "00-operator-toolbox" and
+  .controllers.openclaw.initContainers."01-runtime-storage".securityContext.runAsNonRoot == true and
   .controllers.openclaw.containers.app.probes.liveness.spec.failureThreshold == 36 and
   .controllers.openclaw.containers.app.probes.liveness.spec.periodSeconds == 10 and
   .controllers.openclaw.containers.app.probes.liveness.spec.timeoutSeconds == 3 and
