@@ -602,6 +602,21 @@ The hostPath capacity is a scheduling declaration, not a filesystem quota.
 Monitor node free space. The Deployment is pinned to that node with one replica
 and `Recreate`; automatic failover to another node is intentionally unavailable.
 
+Talos runs kubelet in a container. An arbitrary host path used with `subPath`
+can resolve inside kubelet's overlay instead of the CRI host filesystem. The
+application therefore uses direct child PVs for `runtime/state` and
+`runtime/agents/main/agent`; the parent PV remains the migration/backup view.
+These three retained PVs describe the same underlying directory tree, not three
+independent disks. Bootstrap requires identical database device/inode identities
+through parent and child mounts before starting any OpenClaw CLI.
+
+The retained `pre-2026.9.2-runtime` database checkpoint supplements the full
+pre-upgrade archive. The first full archive was produced while the incorrect
+subpath mounts hid the databases; restore this checkpoint together with that
+archive. The checkpoint uses SQLite backup, hash, and integrity verification
+before its completion marker, and is separate from daily snapshot retention.
+See [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/).
+
 The init-only `runtime-storage.py migrate` copies the stopped NAS `state/` and
 `agents/main/agent/` directories into one staging directory, compares every regular file checksum,
 checks authoritative SQLite integrity and foreign keys, then publishes both

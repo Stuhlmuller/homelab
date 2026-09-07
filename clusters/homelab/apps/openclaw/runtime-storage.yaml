@@ -19,3 +19,47 @@ spec:
   storageClassName: openclaw-runtime-local
   volumeMode: Filesystem
   volumeName: openclaw-runtime-local
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openclaw-runtime-state-local
+  namespace: ai
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: openclaw-runtime-local
+  volumeMode: Filesystem
+  volumeName: openclaw-runtime-state-local
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openclaw-runtime-agent-local
+  namespace: ai
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+  storageClassName: openclaw-runtime-local
+  volumeMode: Filesystem
+  volumeName: openclaw-runtime-agent-local

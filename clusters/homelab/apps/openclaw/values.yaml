@@ -23,7 +23,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "22cf5d5bd4ddfa6a87eedad849cef7aed6200abfa59594691994ea520d53b471"
+        homelab.rst.io/openclaw-assistant-sha256: "fadf2e1023321b6d556772660073e2b799a2d6ef15294f4bc7fd2acbe4401159"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -194,6 +194,13 @@ controllers:
           - -ec
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            # Verify the exact mounted files before any CLI can create fresh state.
+            python3 /etc/openclaw-assistant/runtime-storage.py verify-mounts
+            runtime_checkpoint="$OPENCLAW_STATE_DIR/.runtime-checkpoint-for-2026.9.2"
+            if [ ! -s "$runtime_checkpoint" ]; then
+              python3 /etc/openclaw-assistant/runtime-storage.py checkpoint
+              printf 'verified canonical database checkpoint\n' > "$runtime_checkpoint"
+            fi
             doctor_marker="$OPENCLAW_STATE_DIR/.doctor-state-migrated-to-2026.8.2"
             doctor_reports="$OPENCLAW_STATE_DIR/doctor-state-reports"
             doctor_config_snapshot="$doctor_reports/config-before.json"
@@ -909,17 +916,31 @@ persistence:
         01-runtime-storage:
           - path: /runtime-volume
         bootstrap-config:
-          - path: /data/openclaw/state
-            subPath: runtime/state
-          - path: /data/openclaw/agents/main/agent
-            subPath: runtime/agents/main/agent
+          - path: /runtime-volume
+            readOnly: true
         app:
           - path: /runtime-volume
             readOnly: true
+  runtime-database:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: openclaw-runtime-state-local
+    advancedMounts:
+      openclaw:
+        bootstrap-config:
           - path: /data/openclaw/state
-            subPath: runtime/state
+        app:
+          - path: /data/openclaw/state
+  runtime-agent:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: openclaw-runtime-agent-local
+    advancedMounts:
+      openclaw:
+        bootstrap-config:
           - path: /data/openclaw/agents/main/agent
-            subPath: runtime/agents/main/agent
+        app:
+          - path: /data/openclaw/agents/main/agent
   operator-toolbox:
     enabled: true
     type: emptyDir
