@@ -12,6 +12,18 @@ objects contain secret material and must never be copied into this public repo.
 
 Tags: #architecture #storage #stateful
 
+## Control-Plane Recovery State
+
+The single control-plane node `acer` owns the Kubernetes etcd database.
+The [routine backup command](../../talos-etcd-backup.md) saves a new private
+off-node snapshot and verifies metadata, the embedded SHA-256 checksum, and a
+full-file manifest digest. Operators choose an existing durable mode-0700
+directory outside Git; the command retains every completed backup.
+It has no schedule, offsite copy, age alert, or automatic retention policy.
+Those remain reliability gaps alongside an isolated restore drill and
+control-plane redundancy. PVC data and private Talos recovery material need
+separate backups; an etcd snapshot alone cannot recover either.
+
 ## Durable Storage
 
 Kubernetes persistent storage is backed by a QNAP NFS export.
