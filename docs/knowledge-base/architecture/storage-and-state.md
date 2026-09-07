@@ -42,6 +42,12 @@ Unmounted claims are outside that metric inventory. Grafana's current PVC rule
 state remains unverified because its admin API returned HTTP 401, although the
 unchanged alert query returned real data below its threshold.
 
+The dedicated [[operations/etcd-offsite-storage|etcd offsite storage]] operator
+unit declares a private, versioned S3 bucket with independently owned retention.
+Its offline CI checks do not deploy it or prove a backup exists; focused operator
+planning, publication, retrieval verification, and restore evidence remain
+separate gates.
+
 ## Durable Storage
 
 Kubernetes persistent storage is backed by a QNAP NFS export.
