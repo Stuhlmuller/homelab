@@ -1,10 +1,69 @@
 # Kubernetes 1.34.11 Maintenance, 2026-09-07
 
-Status: prepared for review; not executed. Upgrade Kubernetes `1.34.1` to
-`1.34.11` on `acer`, `zimaboard-0`, `zimaboard-1`, and `zimaboard-2` to restore
-the missing PVC metrics collector. Talos remains `1.11.3`. This runbook requires
-the separately reviewed [CoreDNS handoff](knowledge-base/operations/coredns-gitops-ownership.md)
-to be complete and verified before the Kubernetes command is authorized.
+Status: Kubernetes `1.34.1` to `1.34.11` upgrade completed on all four nodes.
+Core health, DNS, and PVC metrics passed verification; direct Grafana alert-state
+verification remains pending. Talos remains `1.11.3`.
+
+## Execution Record
+
+The [CoreDNS handoff](knowledge-base/operations/coredns-gitops-ownership.md)
+completed before the upgrade: the no-reboot Talos patch applied at 05:21:39 UTC,
+and the post-handoff DNS gates passed at 05:23 UTC. All six resources remained
+Argo-owned, both updated DNS replicas were Ready, the Corefile and Service
+addresses were preserved, and both Talos DNS manifest IDs were absent.
+
+Preflight confirmed the latest scheduled media PostgreSQL, Octelium PostgreSQL,
+Deluge, Radarr, and Sonarr backups completed with their committed validators.
+Their published artifacts remained present on the retained NFS claims, with no
+active backup or migration Jobs. This combined publisher-time validation with
+current file metadata; it was not a fresh artifact rehash or restore drill.
+OpenClaw recovery and its fresh backup completed separately. A new verified
+off-node etcd snapshot was taken after the DNS handoff before execution.
+
+The initial API update waited several minutes and produced temporary kubelet
+status-read errors. The original upgrade continued without intervention.
+The [CLI wait](https://github.com/siderolabs/talos/blob/v1.11.3/pkg/cluster/kubernetes/talos_managed.go#L486-L574)
+checks the Kubernetes mirror Pod's `talos.dev/config-version` annotation and
+readiness; Talos's separate status collector can lag that replacement. The
+initial replacement delay's cause was not isolated.
+
+The ordered command ran from 05:25:54 to 05:35:37 UTC and exited successfully.
+Postflight at 05:36 UTC verified all four nodes Ready on `v1.34.11`, all seven
+control-plane/proxy Pods Ready on target images, and each actual machine config
+matching its strictly validated target. Talos services and etcd were healthy,
+the canonical issuer was unchanged, all active Pods were Ready, all 42 Argo
+Applications were Healthy/Synced, and all 50 PVCs were Bound. All four boot IDs
+matched preflight at 05:42 UTC, confirming no node reboots.
+
+Postflight found maintenance-time exits in seven current containers. Six latest
+previous logs identify API discovery, authentication-config lookup, or
+leader-election failures.
+Kube-state-metrics has a liveness-restart event matching its last exit; its
+endpoint failure's underlying cause was not established. None of these last
+termination states was `OOMKilled`. All seven recovered, and the 05:36 to 05:38
+comparison found no new restarts or Pod identity changes and all active Pods
+Ready. This does not classify every older restart.
+
+At 05:36:50 UTC, the DNS acceptance gate confirmed the same two DNS Pods, zero
+container restarts, unchanged Corefile/Service/RBAC, all six tracked resources,
+correct public/internal lookups, and absent Talos DNS manifests. Readiness
+conditions were reasserted during kubelet restarts; this is recovered readiness,
+not evidence of uninterrupted readiness throughout maintenance.
+
+Direct kubelet inspection confirmed restored volume statistics for all 28
+expected mounted node/PVC pairs, covering 30 Pod bindings. At 05:39:41 UTC, Prometheus
+had fresh samples for those same 28 pairs, all 34 scrape targets up, and no
+inventory drift. The unchanged PVC alert expression returned `31.8029%`, below
+its `85%` threshold. These checks cover mounted supported volumes, not every
+Bound or unmounted claim. Temporary local verification tunnels were closed.
+
+The existing Grafana admin API returned HTTP 401, so direct current rule-state
+verification remains pending. Prometheus query results and stale NoData log
+entries do not prove the Grafana rule is Normal. Alert delivery was not tested.
+
+A post-upgrade off-node etcd snapshot passed offline verification at 05:45:19 UTC;
+the pre-maintenance copies were retained.
+The procedure below records the reviewed maintenance gates and command.
 
 ## Desired Versions And Offline Validation
 

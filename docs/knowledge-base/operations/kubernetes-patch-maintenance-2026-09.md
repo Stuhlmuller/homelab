@@ -2,20 +2,21 @@
 
 Tags: #operations #kubernetes #talos #monitoring
 
-Status: candidate selected; upgrade not executed. Resolve bootstrap DNS
-ownership and finish the active OpenClaw recovery before scheduling maintenance.
+Status: upgrade completed on 2026-09-07. All four nodes run Kubernetes
+`1.34.11` on unchanged Talos `1.11.3`; core health, DNS, and PVC metrics passed.
+Direct Grafana alert-state verification remains pending.
 
 The [dated maintenance runbook](../../kubernetes-1.34.11-maintenance-2026-09-07.md)
 and [control-plane target patch](../../../.talos/patches/kubernetes-1.34.11.yaml)
-prepare the exact `1.34.1` to `1.34.11` change. The control-plane patch declares
+record the exact `1.34.1` to `1.34.11` change. The control-plane patch declares
 all five images; the [worker patch](../../../.talos/patches/worker-kubernetes-1.34.11.yaml)
 changes only kubelet, matching the CLI's worker config update. Patches are for
 bootstrap and offline renders; only the gated Talos upgrade command owns live sequencing.
-The DNS ownership handoff and a fresh verified off-node backup remain required.
+The dated runbook records completed prerequisites and the execution outcome.
 
-## Missing Volume Metrics
+## Volume Metrics Recovery
 
-Authenticated inspection on 2026-09-07 found all four nodes running Kubernetes
+Pre-upgrade inspection on 2026-09-07 found all four nodes running Kubernetes
 `v1.34.1` on Talos `v1.11.3`. Each kubelet omitted
 `kubelet_volume_stats_*` from `/metrics`, despite mounted-volume statistics in
 `/stats/summary`. This matches the upstream
@@ -23,7 +24,7 @@ Authenticated inspection on 2026-09-07 found all four nodes running Kubernetes
 The [fix](https://github.com/kubernetes/kubernetes/pull/133890) is present from
 `v1.34.2`; choose a maintained patch rather than that first fixed release.
 
-The candidate is `1.34.11`, listed by the
+The selected release is `1.34.11`, listed by the
 [Kubernetes release page](https://kubernetes.io/releases/#release-history)
 and published as a non-prerelease
 [GitHub release](https://github.com/kubernetes/kubernetes/releases/tag/v1.34.11).
@@ -32,6 +33,15 @@ includes Kubernetes 1.34. The local Talos 1.11.3 planner also accepted that
 combination for each node. Compatibility is not evidence that the old Talos
 minor has current community support; Talos lifecycle maintenance remains
 separate. No Kubernetes minor or Talos version change is included here.
+
+The ordered upgrade completed at 05:35:37 UTC without node reboots. Direct
+kubelet checks confirmed statistics for all 28 expected mounted node/PVC pairs
+across 30 Pod bindings. Prometheus subsequently covered the same 28 pairs with fresh samples
+and all 34 scrape targets up. The PVC alert query returned `31.8029%`, below
+the `85%` threshold. Grafana's admin API returned HTTP 401, so its current rule
+state and notification delivery remain unverified; query data alone does not
+prove the rule is Normal. See the dated runbook for recovery and acceptance
+scope, including transient controller restarts.
 
 ## Talos 1.11.3 Dry-Run Side Effects
 
@@ -68,13 +78,15 @@ significant settings: the prior node-local resolver failed external lookups.
 
 The source is
 [`clusters/homelab/platform/dns/coredns-configmap.yaml`](../../../clusters/homelab/platform/dns/coredns-configmap.yaml).
-Argo CD owns this ConfigMap while Talos still generates its bootstrap version.
-Do not rely on Argo CD eventually undoing an upgrade's DNS overwrite. Complete
-the [[operations/coredns-gitops-ownership|gated CoreDNS ownership handoff]] first:
-adopt all six resources through Argo CD, verify the controlled image-pin rollout
-and DNS behavior, then separately apply the validated Talos disable patch.
-Initial bootstrap retains Talos DNS until adoption is ready. The repository
-declaration alone does not complete this handoff.
+Before maintenance, Argo CD owned this ConfigMap while Talos still generated
+its bootstrap version. The
+[[operations/coredns-gitops-ownership|gated CoreDNS ownership handoff]] completed
+on September 7: Argo adopted all six resources, the controlled image-pin rollout
+and DNS checks passed, then the validated Talos disable patch applied without
+a reboot. The post-handoff gate confirmed the two Talos DNS manifest IDs were
+absent while the Kubernetes resources and intended DNS behavior remained.
+Initial bootstrap still retains Talos DNS until adoption is ready; merging the
+declaration alone does not complete that handoff.
 
 ## Before Any Upgrade
 
