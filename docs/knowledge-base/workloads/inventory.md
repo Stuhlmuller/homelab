@@ -117,7 +117,10 @@ change; storage migration and restore verification remain separate work.
 
 OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved
-personal memory. See [[application-notes#OpenClaw]].
+personal memory. Monitoring depends on Grafana: the OpenClaw mesh identity
+can reach the internal Grafana service, where its dedicated login authorizes
+datasource queries. No default Kubernetes context is provided.
+See [[application-notes#OpenClaw]].
 
 ## GitOps Project Boundary
 
