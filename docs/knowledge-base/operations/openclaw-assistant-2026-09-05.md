@@ -267,3 +267,14 @@ hid the databases during archive creation. Restore both artifacts together.
 Source: [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/)
 and live mountinfo, database absence, and UID checks. Parent and child PVs share
 one retained directory tree on zimaboard-1; daily snapshot retention is unchanged.
+
+### Heartbeat watchdog includes scheduling delay
+
+Live repeated-run acceptance on 2026-09-06 exposed a separate false timeout:
+the second forced heartbeat spent about 80 seconds before its agent run, then
+completed the native turn in 43 seconds. Its 120-second cron watchdog expired
+four seconds before the quiet completion. Deployed 2026.9.2 source starts the
+watchdog when requesting a heartbeat; busy-reply deferrals use a 60-second grace.
+Heartbeat now shares the existing bounded 600-second agent budget. Verification
+must check cron `completionStatus: succeeded`, successful tool receipts, and
+zero consecutive errors after repeated runs, including admission delays.
