@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Exercise the actual cutover and online backup against real SQLite databases."""
 import importlib.util
-import json
 import sqlite3
 import tempfile
 from pathlib import Path
