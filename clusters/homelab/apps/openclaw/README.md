@@ -621,7 +621,7 @@ was an `emptyDir`. First-cutover stale bindings use the upstream guarded recover
 and canonical OpenClaw continuity; no session reset or transcript deletion is
 performed. Workspace, identity/configuration files, and existing archives remain
 on the original NAS claim. The pre-upgrade archive explicitly includes the two
-local mount roots despite `tar --one-file-system`.
+local mount roots despite `tar --one-file-system`. If a rollout interrupts archive creation, bootstrap preserves the unpublished partial directory with an `interrupted-<UTC timestamp>` suffix and rebuilds from the still-stopped state. A corrupt published backup still blocks startup; it is never replaced automatically.
 
 `runtime-backup.yaml` takes daily online SQLite snapshots at 04:25 Pacific using
 SQLite's backup API, verifies them, records hashes, and retains seven completed
