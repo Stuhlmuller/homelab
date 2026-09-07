@@ -206,7 +206,12 @@ the bootstrap cluster's C locale does not replace the source locale. It
 checks resource identities, encrypted-resource key references, and index validity.
 It mounts only the backup claim read-only, injects no production credentials or
 live Kubernetes Secrets, and has a 30-minute deadline. The backup itself contains
-sensitive material. A Unix-only PostgreSQL listener does not block outbound
+sensitive material. Restore processes discard the original container log handles
+before archive processing; exit status reports completion, while stage and
+database diagnostics stay in disposable scratch. The direct entry point and
+private PID namespace must not acquire a console-bearing wrapper or peer that
+archive-triggered programs could reach through `/proc`.
+A Unix-only PostgreSQL listener does not block outbound
 traffic or other processes, and the current Flannel deployment does not enforce
 the declared NetworkPolicies; see [[runbooks/runtime-isolation]]. **Activation
 requires a reviewed, enforced no-network boundary for all restore processes and

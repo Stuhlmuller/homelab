@@ -92,6 +92,8 @@ class RestoreDrillTest(unittest.TestCase):
             # The real globals-restore psql/server path must also contain SQL
             # program children. This inert probe requires actual syscall EPERM.
             globals_sql += """
+\\! /bin/sh /tests/restore-console-probe.sh client
+COPY (SELECT 1) TO PROGRAM '/bin/sh /tests/restore-console-probe.sh server';
 CREATE TEMP TABLE fixture_program_child (value INTEGER);
 COPY fixture_program_child FROM PROGRAM '/tests/probe denied && printf "1\\n"';
 DO $fixture$ BEGIN
@@ -104,10 +106,13 @@ DROP TABLE fixture_program_child;
         (target / "globals.sql").write_text(globals_sql)
         run("pg_dump", "-h", str(self.socket), "-U", "octelium", "--format=custom",
             "--file", str(target / "octelium.dump"), "octelium")
+        self.write_checksums(target)
+        return target
+
+    def write_checksums(self, target):
         checksum_lines = [f"{hashlib.sha256((target / name).read_bytes()).hexdigest()}  {name}\n"
                           for name in ("globals.sql", "octelium.dump")]
         (target / "SHA256SUMS").write_text("".join(checksum_lines))
-        return target
 
     def drill(self):
         if BACKEND is not None:
@@ -119,8 +124,8 @@ DROP TABLE fixture_program_child;
     def assert_failure(self, result, stage):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, "")
-        self.assertIn(f"failed at {stage};", result.stderr)
-        self.assertNotIn("fixture-", result.stderr)
+        self.assertEqual(result.stderr, "")
+        self.assertIn(f"failed at {stage};", (self.work / "restore-drill/details.log").read_text())
         self.assertFalse((self.work / "restore-drill/pgdata/postmaster.pid").exists())
 
     def test_actual_restore_preserves_source_and_withholds_private_output(self):
@@ -131,11 +136,55 @@ DROP TABLE fixture_program_child;
         result = self.drill()
         self.assertEqual(result.returncode, 0, result.stderr + "\n" +
                          (self.work / "restore-drill/details.log").read_text())
-        self.assertEqual(result.stdout, "Octelium PostgreSQL restore drill passed\n")
+        self.assertEqual(result.stdout, "")
         self.assertEqual(result.stderr, "")
+        self.assertIn("Octelium PostgreSQL restore drill passed\n",
+                      (self.work / "restore-drill/details.log").read_text())
         self.assertEqual(before, {p.name: p.read_bytes() for p in target.iterdir()})
         self.assertEqual((self.work / "restore-drill/details.log").stat().st_mode & 0o777, 0o600)
         self.assertFalse((self.work / "restore-drill/pgdata/postmaster.pid").exists())
+
+    def test_globals_shell_cannot_write_inherited_console_descriptors(self):
+        target = self.backup()
+        marker = "fixture-private-client-output"
+        # A real globals file may execute a shell. Update the checksum so this
+        # reaches psql, not merely the corrupt-archive rejection path.
+        with (target / "globals.sql").open("a") as stream:
+            stream.write(
+                "\\! printf '%s\\n' " + marker + "; "
+                "printf '%s\\n' " + marker + " >&2; "
+                "(printf '%s\\n' " + marker + " >&3) 2>/dev/null; "
+                "(printf '%s\\n' " + marker + " >&4) 2>/dev/null; "
+                "printf executed > client-shell-executed\n")
+        self.write_checksums(target)
+        result = self.drill()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn(marker, result.stdout + result.stderr)
+        self.assertEqual(result.stdout + result.stderr, "")
+        private = self.work / "restore-drill"
+        self.assertEqual((private / "backup/client-shell-executed").read_text(), "executed")
+        self.assertIn(marker, (private / "details.log").read_text())
+
+
+    def test_globals_server_program_cannot_write_inherited_console_descriptors(self):
+        target = self.backup()
+        marker = "fixture-private-server-output"
+        with (target / "globals.sql").open("a") as stream:
+            stream.write(
+                "COPY (SELECT 1) TO PROGRAM 'cat >/dev/null; "
+                "printf " + marker + "; printf " + marker + " >&2; "
+                "(printf " + marker + " >&3) 2>/dev/null; "
+                "(printf " + marker + " >&4) 2>/dev/null; "
+                "printf executed > server-program-executed';\n")
+        self.write_checksums(target)
+        result = self.drill()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn(marker, result.stdout + result.stderr)
+        self.assertEqual(result.stdout + result.stderr, "")
+        private = self.work / "restore-drill"
+        self.assertEqual((private / "pgdata/server-program-executed").read_text(), "executed")
+        self.assertIn(marker, (private / "postgres.log").read_text())
+
 
     def test_custom_archive_restores_database_locale_encoding_and_owner(self):
         target = self.backup()  # Same pg_dump --format=custom without --create as production.
@@ -223,6 +272,8 @@ DROP TABLE fixture_program_child;
         self.assertGreaterEqual(drill_start, latest_backup_finish + 15 * 60)
         pod = job["spec"]["jobTemplate"]["spec"]["template"]["spec"]
         self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertFalse(pod.get("hostPID", False))
+        self.assertFalse(pod.get("shareProcessNamespace", False))
         self.assertNotIn("initContainers", pod)
         self.assertEqual(len(pod["containers"]), 1)
         volumes = {v["name"]: v for v in pod["volumes"]}
@@ -231,6 +282,8 @@ DROP TABLE fixture_program_child;
                          {"claimName": "octelium-postgres-backup", "readOnly": True})
         self.assertEqual(volumes["scratch"]["emptyDir"], {"sizeLimit": "2Gi"})
         container = pod["containers"][0]
+        self.assertEqual(container["command"], ["/bin/sh", "/scripts/restore-drill.sh",
+                                                "/backup/logical-backups", "/work"])
         self.assertNotIn("env", container)
         self.assertNotIn("envFrom", container)
         self.assertTrue(next(m for m in container["volumeMounts"] if m["name"] == "backup")["readOnly"])

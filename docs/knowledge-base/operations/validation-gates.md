@@ -419,7 +419,13 @@ completion marker. This bounds the previously observed NFS session scan.
 `scripts/ci/octelium-restore-drill-test.py` exercises the candidate shell entry
 point against disposable PostgreSQL 14 fixtures using the pinned Nix toolchain.
 It requires actual globals/database restore, preserved backup source, private
-output, and failure on corrupt or stale newest archives, invalid checksum paths,
+output, and actual globals-triggered shell and PostgreSQL `COPY TO PROGRAM`
+regressions that cannot write synthetic private markers through inherited log
+descriptors. Both programs must execute, and all normal output must stay in
+scratch. Success and failure both require empty public streams; Job exit status
+is the completion signal. The render guard rejects a console-bearing entry-point
+wrapper or a shared/host PID namespace. It also requires failure on corrupt or
+stale newest archives, invalid checksum paths,
 empty required tables, missing encrypted-resource keys, and previous-day-only
 backups. A current invalid set fails even when a valid previous-day set exists.
 Rendered timing guards include the backup's late-start and execution deadlines

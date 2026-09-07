@@ -2,6 +2,7 @@
 """Host orchestration for synthetic fixtures; never mount production data or sockets."""
 import importlib.util
 import io
+import json
 import os
 from pathlib import Path
 import re
@@ -18,6 +19,8 @@ IMAGE_COMMANDS = {name: f"/usr/lib/postgresql/14/bin/{name}" for name in PG_COMM
 IMAGE_COMMANDS.update({name: f"/usr/bin/{name}" for name in ("mkdir", "cat", "tar")})
 IMAGE_COMMANDS["/bin/sh"] = "/bin/sh"
 MAX_ARCHIVE = 256 * 1024 * 1024
+CONSOLE_MARKER = "OCTELIUM_SYNTHETIC_PRIVATE_CONSOLE_CANARY"
+CONSOLE_PROBE = ROOT / "scripts/ci/restore-egress/console-probe.sh"
 MAX_FILES = 128 * 1024 * 1024  # Same bound as the synthetic container tmpfs.
 
 
@@ -37,6 +40,26 @@ def extract_fixture(raw, destination):
                 raise ValueError("Synthetic output archive violates its file contract")
             members.append(member)
         archive.extractall(destination, members=members, filter="data")
+
+
+def check_console(result, logs):
+    if any(CONSOLE_MARKER in output for output in (result.stdout, result.stderr, logs.stdout, logs.stderr)):
+        raise RuntimeError("Synthetic private console marker escaped")
+
+
+def check_probe_receipts(work, success):
+    for mode in ("client", "server"):
+        path = work / f"console-probe-{mode}.executed"
+        if not path.exists():
+            if success:
+                raise RuntimeError("Native console probe did not execute")
+            continue
+        if (path.is_symlink() or not path.is_file() or path.stat().st_size > 16
+                or path.stat().st_mode & 0o777 != 0o600):
+            raise RuntimeError("Invalid private console probe receipt")
+        text = path.read_text()
+        if not re.fullmatch(r"[0-9]+\n", text) or not 10 <= int(text) <= 165:
+            raise RuntimeError("Incomplete console ancestor probe")
 
 
 def load_boundary():
@@ -75,7 +98,12 @@ class DockerFixtures:
         for mount in mounts:
             command.extend(("--mount", mount))
         # ENTRYPOINT is the launcher; no shell or PG process starts unfiltered.
-        self.docker(*command, self.image_id, "/bin/sh", "-c", "while :; do sleep 30; done")
+        self.docker(*command, self.image_id, "/bin/sh", "-c", "exec </dev/null >/dev/null 2>&1; while :; do sleep 30; done")
+        inspected = self.docker("docker", "inspect", "--format", "{{json .HostConfig.PidMode}}", name)
+        if json.loads(inspected.stdout) != "":
+            raise RuntimeError("Synthetic fixture requires a private PID namespace")
+        self.execute(name, "/bin/sh", "-ec",
+                     'for fd in 0 1 2; do test "$(readlink /proc/1/fd/$fd)" = /dev/null; done')
         return name
 
     def exec_command(self, container, *command):
@@ -173,12 +201,24 @@ class DockerFixtures:
         self.restore = self.start_container((
             f"type=bind,src={backups},dst=/backup,readonly",
             f"type=bind,src={script},dst=/tests/restore-drill.sh,readonly",
+            f"type=bind,src={CONSOLE_PROBE},dst=/tests/restore-console-probe.sh,readonly",
         ))
+        # This same-UID pipe is deliberately forwarded to captured stdout. The
+        # command after the probe prevents shell exec optimization removing its ancestor.
+        positive = self.execute(self.restore, "/bin/sh", "-ec",
+                                '( /bin/sh /tests/restore-console-probe.sh client; printf "positive-done\\n"; ) | cat; '
+                                'test -s /work/console-probe-client.executed; '
+                                'rm /work/console-probe-client.executed; test ! -e /work/console-probe-client.executed')
+        if CONSOLE_MARKER not in positive.stdout or "positive-done" not in positive.stdout:
+            raise RuntimeError("Native procfd positive control did not expose the canary")
         result = self.execute(self.restore, "/bin/sh", "/tests/restore-drill.sh", "/backup", "/work", check=False)
+        logs = self.docker("docker", "logs", self.restore)
+        check_console(result, logs)
         # Keep the filtered fixture container alive for locale inspection. tmpfs
         # disappears with its container; copy only synthetic results for assertions.
         raw = self.read_binary(self.restore, MAX_ARCHIVE, "tar", "-C", "/work", "-cf", "-", ".")
         extract_fixture(raw, work)
+        check_probe_receipts(work, result.returncode == 0)
         return result
 
     def finish_case(self):
