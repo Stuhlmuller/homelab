@@ -185,8 +185,9 @@ the registry access or Talos synthetic-runtime gates above.
 The filtered Docker fixture's PID1 permanently redirects stdin/stdout/stderr to
 `/dev/null` before its hold loop; an inspected private PID namespace is mandatory.
 Synthetic globals invoke a read-only procfd probe through both psql shell and
-PostgreSQL program children. It inspects ancestor and PID1 FDs0–4, appending a fixed canary only to
-pipes, `/dev/null`, or the known private logs. Other regular data files are skipped.
+PostgreSQL program children. It inspects shell-ancestor and PID1 FDs1–4, appending a fixed canary only to
+pipes, `/dev/null`, or the known private logs. Other regular data files and PostgreSQL ancestors
+are skipped: PostgreSQL internal notification pipes are not console descriptors.
 A same-UID pipe forwarded to captured output must first expose the canary; its
 private witness is deleted before the actual restore. Both private execution receipts are mandatory on successful restores;
 all exec and container log streams must exclude the canary. This checks the

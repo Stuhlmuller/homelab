@@ -2,6 +2,7 @@
 """Offline failures/routing contracts; native image CI supplies execution proof."""
 import importlib.util
 import io
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -161,6 +162,35 @@ class DockerContracts(unittest.TestCase):
         path.chmod(0o644)
         with self.assertRaisesRegex(RuntimeError, "Invalid private"):
             DOCKER.check_probe_receipts(self.root, True)
+
+    def test_probe_skips_postgres_ancestors_but_checks_shell_ancestors(self):
+        # An inert procfs-shaped tree tests the real shell selection logic. Linux
+        # CI still supplies actual procfd permissions and pipe behavior.
+        proc, work = self.root / "proc", self.root / "work"
+        work.mkdir()
+        private = work / "restore-drill"
+        private.mkdir()
+        log = private / "details.log"
+        for pid in (os.getpid(), 1):
+            node = proc / str(pid)
+            (node / "fd").mkdir(parents=True)
+            (node / "comm").write_text("sh\n")
+            (node / "status").write_text("PPid:\t1\n" if pid != 1 else "PPid:\t0\n")
+            for fd in (1, 2, 3, 4):
+                (node / "fd" / str(fd)).symlink_to("/dev/null")
+        parent = proc / str(os.getpid())
+        (parent / "fd/1").unlink()
+        (parent / "fd/1").symlink_to(log)
+        script = self.root / "probe.sh"
+        script.write_text(DOCKER.CONSOLE_PROBE.read_text().replace("/proc/", str(proc) + "/")
+                          .replace("/work/", str(work) + "/"))
+        for process in ("postgres", "sh"):
+            (parent / "comm").write_text(process + "\n")
+            log.write_text("original\n")
+            subprocess.run(["sh", str(script), "client"], check=True, capture_output=True, timeout=5)
+            self.assertEqual(DOCKER.CONSOLE_MARKER in log.read_text(), process == "sh")
+            receipt = work / "console-probe-client.executed"
+            self.assertGreaterEqual(int(receipt.read_text()), 8)
 
     def test_archive_rejects_traversal_links_devices_and_oversized_files(self):
         for kind in ("traversal", "symlink", "hardlink", "device", "size"):
