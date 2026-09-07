@@ -4,7 +4,8 @@ Review completed background work and explicitly recorded follow-ups. Surface
 only a meaningful new outcome, a decision the owner needs to make, or a newly
 blocked promise. Do not infer old tasks from conversation history.
 
-Read memory/homelab-status.json and today's note before notifying. Deduplicate
+Read memory/homelab-status.json, memory/assistant-tasks.md, and today's note
+before notifying; missing optional notes mean no recorded tasks. Deduplicate
 against successful previous notifications and the morning briefing. Do not
 launch a second investigation while one is already tracked. The scheduled
 health watch owns polling and the improvement job owns maintenance.
