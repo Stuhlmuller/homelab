@@ -132,7 +132,8 @@ Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
 `octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
 NOFX SQLite state, and OctoBot. OpenClaw keeps configuration and workspace on
 its retained NAS claim, but its global state, per-agent SQLite databases, and
-native Codex home use `openclaw-runtime-local` on `zimaboard-1`. This permits
+native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The platform-storage application owns its StorageClass and PV;
+the namespaced OpenClaw application owns its PVC. This permits
 local WAL and preserves native bindings across Pod replacement. A one-time
 verified offline copy retains the NAS source. Daily SQLite online backups keep
 seven database snapshots on the NAS. The local hostPath survives Pod replacement

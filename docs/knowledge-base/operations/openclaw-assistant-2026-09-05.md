@@ -230,3 +230,11 @@ Kubernetes server-side dry runs passed. `nix run .#validate` is absent in this
 checkout; `nix develop -c bash scripts/ci/static-checks.sh` passed instead.
 Deployment and repeated runtime acceptance remain required before marking this
 repair complete.
+
+
+Argo CD rejected PR 993's initial storage placement before changing the live Pod:
+`homelab-workloads` intentionally disallows cluster-scoped resources. The follow-up
+moves the StorageClass/PV into the existing platform-storage application and keeps
+only the PVC in OpenClaw. Project permissions remain unchanged. Kubernetes API
+dry runs do not validate Argo AppProject permissions; static validation now also
+checks that OpenClaw's rendered manifests contain no StorageClass or PV.
