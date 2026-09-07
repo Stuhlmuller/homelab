@@ -61,11 +61,12 @@ significant settings: the prior node-local resolver failed external lookups.
 The source is
 [`clusters/homelab/platform/dns/coredns-configmap.yaml`](../../../clusters/homelab/platform/dns/coredns-configmap.yaml).
 Argo CD owns this ConfigMap while Talos still generates its bootstrap version.
-Do not rely on Argo CD eventually undoing an upgrade's DNS overwrite. First
-choose and implement an ownership path that preserves initial bootstrap and
-the configured DNS policy throughout maintenance. A wholesale DNS ownership
-transfer must also account for the Deployment, Service, service account, RBAC,
-and recovery when Argo CD is unavailable.
+Do not rely on Argo CD eventually undoing an upgrade's DNS overwrite. Complete
+the [[operations/coredns-gitops-ownership|gated CoreDNS ownership handoff]] first:
+adopt all six resources through Argo CD, verify the controlled image-pin rollout
+and DNS behavior, then separately apply the validated Talos disable patch.
+Initial bootstrap retains Talos DNS until adoption is ready. The repository
+declaration alone does not complete this handoff.
 
 ## Before Any Upgrade
 

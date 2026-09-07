@@ -2740,7 +2740,7 @@ unit "argocd_apps_platform_dns" {
           },
           {
             name  = "prune"
-            value = "disabled because this app adopts the bootstrap CoreDNS ConfigMap"
+            value = "disabled because this app adopts all six bootstrap CoreDNS resources"
           }
         ]
       }

@@ -2,7 +2,7 @@
 
 Tags: #operations #monitoring #capacity
 
-Status: desired-state correction; rollout and observation pending.
+Status: rollout and initial acceptance passed; 24-hour observation pending.
 
 Sources: `clusters/homelab/apps/prometheus/values.yaml`,
 `clusters/homelab/apps/grafana/values.yaml`.
@@ -51,3 +51,14 @@ Remeasure working sets after 24 hours and after any retention or scrape-volume
 change. Reverting the values restores the prior reservations through GitOps;
 it does not repair a real capacity deficit. The separate monitoring storage
 migration proposal remains unchanged.
+
+On 2026-09-07 at 03:34 UTC, both monitoring Applications were `Healthy` and
+`Synced` at `05b9942f`. All five workloads were Ready with zero restarts on their
+replacement Pods, and admitted requests matched the values above. Grafana and
+Alertmanager ran on `acer`; Prometheus, its operator, and kube-state-metrics ran
+on `zimaboard-1`. A 03:41 UTC query through the local Prometheus endpoint found
+34 of 34 scrape targets up and all four nodes Ready.
+
+This initial acceptance supplies current placement evidence for the CoreDNS
+surge-capacity preflight; it does not complete the 24-hour working-set and
+eviction observation. Recheck current headroom before the DNS rollout.
