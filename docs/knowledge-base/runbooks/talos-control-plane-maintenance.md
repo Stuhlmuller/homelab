@@ -12,8 +12,15 @@ restore or cluster mutation path. Success requires file and directory syncs;
 the homelab invocation explicitly selects Homebrew Talos `v1.11.3` because the
 Nix shell currently supplies `v1.13.2`. The CLI requires an absolute executable
 client path and rejects missing or invalid clients before Talos access.
-Recurrence, backup-age alerting, offsite
-storage, retention enforcement, and a restore drill remain open work.
+The [macOS schedule](../../talos-etcd-schedule.md) declares hourly calendar
+checks plus load/wake catchup, a 24-hour verified-success gate, a 36-hour offline
+freshness threshold and 28-day retention with at least seven valid scheduled
+copies. Its installer copies exact reviewed main code to a private durable
+operator runtime; a separate `scheduled` child protects all manual backups.
+Pruning starts only after a new verified durable backup and success receipt,
+and all candidates pass verification. Installation/first-run evidence is still
+required. The Mac must be available and its user logged in; offsite storage,
+remote age-alert delivery and an isolated restore drill remain open work.
 
 Live validation on 2026-09-07 UTC saved a private off-node snapshot with Talos
 `v1.11.3`; embedded and full-file checksum checks passed. No restore or offsite

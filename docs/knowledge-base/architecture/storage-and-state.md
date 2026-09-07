@@ -19,9 +19,14 @@ The [routine backup command](../../talos-etcd-backup.md) saves a new private
 off-node snapshot and verifies metadata, the embedded SHA-256 checksum, and a
 full-file manifest digest. Operators choose an existing durable mode-0700
 directory outside Git; the command retains every completed backup.
-It has no schedule, offsite copy, age alert, or automatic retention policy.
-Those remain reliability gaps alongside an isolated restore drill and
-control-plane redundancy. PVC data and private Talos recovery material need
+The separate [macOS scheduler](../../talos-etcd-schedule.md) declares roughly
+daily snapshots, hourly retries/load/wake catchup, offline 36-hour freshness
+checks and 28-day retention with a seven-valid-copy minimum. It reserves a
+private `scheduled` child, preserving all manual siblings; failed backup or
+verification prevents pruning. Exact reviewed code is installed to a durable
+operator runtime, with live installation and first-run receipts still required.
+The Mac's availability, an offsite copy, remote alert delivery, an isolated
+restore drill and control-plane redundancy remain gaps. PVC data and private Talos recovery material need
 separate backups; an etcd snapshot alone cannot recover either.
 
 The 2026-09-07 [[operations/kubernetes-patch-maintenance-2026-09|maintenance]]
