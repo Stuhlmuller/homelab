@@ -256,6 +256,15 @@ done
 )
 echo "::endgroup::"
 
+echo "::group::Etcd offsite bucket offline guards"
+(
+  cd IaC/operator/etcd-backup-storage
+  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+echo "::endgroup::"
+
 echo "::group::Octelium bootstrap node containment"
 (
   # Run the actual prerequisites against mocked API responses, without cluster access.
