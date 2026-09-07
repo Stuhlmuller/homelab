@@ -44,6 +44,13 @@ with tempfile.TemporaryDirectory() as tmp:
             ('private canonical history\x00preserved',), ('committed live WAL row',)]
     assert (archive.stat().st_mode & 0o777) == 0o700
     live.close()
+    (source / '.backup-verified-for-2026.9.2').write_text('verified')
+    module.migrate(source, target)
+    try:
+        module.migrate(source, root / 'lost-local-disk')
+        raise AssertionError('stale NAS source restored after cutover')
+    except RuntimeError:
+        assert not (root / 'lost-local-disk/runtime').exists()
     # A partial publication must never overwrite an existing runtime.
     damaged = root / 'damaged'
     (damaged / 'runtime').mkdir(parents=True)

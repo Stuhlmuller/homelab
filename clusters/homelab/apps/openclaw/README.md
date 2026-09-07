@@ -606,7 +606,9 @@ The init-only `runtime-storage.py migrate` copies the stopped NAS `state/` and
 `agents/main/agent/` directories into one staging directory, compares every regular file checksum,
 checks authoritative SQLite integrity and foreign keys, then publishes both
 with one directory rename. A marker prevents subsequent starts from recopying
-stale NAS data. Unexpected existing destinations, corrupt databases, and
+stale NAS data. The retained pre-2026.9.2 backup marker also prevents an empty
+local disk from silently reimporting the old source after cutover; that case
+requires verified snapshot restoration. Unexpected existing destinations, corrupt databases, and
 insufficient free space fail closed. The NAS source remains untouched. The root
 toolbox init initializes only the volume root; migration runs as UID 1000.
 

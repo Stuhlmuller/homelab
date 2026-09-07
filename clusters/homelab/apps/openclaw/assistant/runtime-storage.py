@@ -70,6 +70,10 @@ def migrate(source, target):
             verify_database(db)
         print('Verified existing local runtime; source not recopied', flush=True)
         return
+    # Bootstrap writes this retained NAS marker before starting the new Gateway.
+    # After that point, an empty local disk needs restore, never the stale source.
+    if (source / '.backup-verified-for-2026.9.2').exists():
+        raise RuntimeError('Local runtime missing after cutover; restore a verified snapshot, not stale NAS state')
     staging = target / '.runtime-migration.partial'
     if staging.exists():
         shutil.rmtree(staging)  # Only this helper-owned unpublished staging tree.
