@@ -5,9 +5,19 @@ nodeExporter:
 kube-state-metrics:
   podAnnotations:
     homelab.rst.io/recovery-revision: "2026-08-21"
+  resources:
+    requests:
+      memory: 128Mi
 prometheusOperator:
   podAnnotations:
     homelab.rst.io/recovery-revision: "2026-08-21"
+  resources:
+    requests:
+      memory: 128Mi
+  prometheusConfigReloader:
+    resources:
+      requests:
+        memory: 32Mi
 defaultRules:
   rules:
     kubeControllerManager: false
@@ -24,6 +34,9 @@ kubeScheduler:
   enabled: false
 prometheus:
   prometheusSpec:
+    resources:
+      requests:
+        memory: 1536Mi
     retention: 15d
     ruleSelectorNilUsesHelmValues: false
     ruleSelector: {}

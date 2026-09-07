@@ -130,6 +130,10 @@ reconciles the cluster-scoped `automation` Namespace.
 
 ## Worker Resource Contracts
 
+- Prometheus, Grafana, Prometheus Operator, kube-state-metrics, and config
+  reloaders declare memory requests from the retained September 2026 usage
+  sample. See [[../operations/monitoring-resource-requests]] for sizing,
+  scheduling headroom, and the remaining failover-capacity deficit.
 - OpenClaw requests `1` CPU and `2Gi` memory for the app and caps it at
   `1500m` and `4Gi`; its init containers have matching CPU limits, and required
   affinity keeps the workload off Octelium dataplane nodes.
