@@ -74,17 +74,17 @@ aws sts get-caller-identity --output json |
   jq -e '.Account == "716182248480"'
 backup_plan_dir="$(mktemp -d /tmp/homelab-etcd-bucket-plan.XXXXXX)"
 chmod 0700 "$backup_plan_dir"
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --disable-bucket-update --backend-bootstrap=false -- \
   init -reconfigure -lockfile=readonly -no-color
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --disable-bucket-update --backend-bootstrap=false -- \
   plan -input=false -lock-timeout=5m \
   -out="$backup_plan_dir/etcd-bucket.tfplan" -no-color
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --no-auto-init -- show -json "$backup_plan_dir/etcd-bucket.tfplan" \
   >"$backup_plan_dir/etcd-bucket.json"
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --no-auto-init -- show -no-color "$backup_plan_dir/etcd-bucket.tfplan"
 ```
 
@@ -109,12 +109,12 @@ After the focused saved plan has passed review, apply those exact bytes from the
 same unit and shell:
 
 ```sh
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --disable-bucket-update --backend-bootstrap=false -- \
   apply -input=false -lock-timeout=5m -no-color "$backup_plan_dir/etcd-bucket.tfplan"
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --no-auto-init -- output -json
-terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --disable-bucket-update --backend-bootstrap=false -- \
   plan -input=false -lock-timeout=5m -detailed-exitcode -no-color
 ```
