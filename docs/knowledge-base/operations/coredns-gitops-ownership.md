@@ -1,8 +1,9 @@
 # CoreDNS GitOps Ownership
 
 `platform-dns` declares all six CoreDNS resources while preserving the existing
-DNS behavior and pinning the running image content. This prepares a handoff from Talos bootstrap;
-the declaration alone does not complete it. Source and DNS checks are in the
+DNS behavior and pinning the running image content. This prepares a handoff from
+Talos bootstrap; the declaration alone does not complete it. Source and DNS
+checks are in the
 [platform DNS runbook](../../../clusters/homelab/platform/dns/README.md).
 
 ## Why The Handoff Is Required
@@ -36,19 +37,34 @@ The upgrade processes both objects rather than merging their desired content.
    Check that all six actual resources carry their exact Argo tracking IDs:
 
    ```sh
-   kubectl -n argocd get application platform-dns -o json |
-     jq -e '.status.health.status == "Healthy" and .status.sync.status == "Synced"'
+   set -euo pipefail
+   dns_destination_namespace="$(
+     kubectl -n argocd get application platform-dns -o json |
+       jq -er 'select(.status.health.status == "Healthy" and
+         .status.sync.status == "Synced" and
+         .spec.destination.namespace == "kube-system") |
+         .spec.destination.namespace'
+   )"
    kubectl -n kube-system get \
      serviceaccount/coredns clusterrole/system:coredns \
      clusterrolebinding/system:coredns configmap/coredns \
      deployment/coredns service/kube-dns -o json |
-     jq -e '
+     jq --arg destinationNamespace "$dns_destination_namespace" -e '
        .items | length == 6 and all(.[];
-         (.apiVersion | split("/") | if length == 1 then "" else .[0] end) as $group |
+         (.apiVersion | split("/") |
+           if length == 1 then "" else .[0] end) as $group |
+         (.metadata.namespace // "") as $namespace |
          .metadata.annotations["argocd.argoproj.io/tracking-id"] ==
          ("platform-dns:" + $group + "/" + .kind + ":" +
-          (.metadata.namespace // "") + "/" + .metadata.name))'
+          (if $namespace == "" then $destinationNamespace else $namespace end) +
+          "/" + .metadata.name))'
    ```
+
+   Argo CD `v3.4.2` uses the Application destination namespace in tracking IDs
+   when an object's namespace is absent or empty, as shown in its
+   [tracking implementation](https://github.com/argoproj/argo-cd/blob/v3.4.2/util/argo/resource_tracking.go#L105-L120).
+   The ClusterRole and ClusterRoleBinding remain cluster-scoped; their tracking
+   annotations contain `kube-system` without adding a resource namespace.
 
    Also inspect the Application's recorded revision and resource inventory;
    health alone does not prove adoption. Watch the rollout and require at least

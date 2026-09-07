@@ -5,6 +5,14 @@ Tags: #operations #kubernetes #talos #monitoring
 Status: candidate selected; upgrade not executed. Resolve bootstrap DNS
 ownership and finish the active OpenClaw recovery before scheduling maintenance.
 
+The [dated maintenance runbook](../../kubernetes-1.34.11-maintenance-2026-09-07.md)
+and [control-plane target patch](../../../.talos/patches/kubernetes-1.34.11.yaml)
+prepare the exact `1.34.1` to `1.34.11` change. The control-plane patch declares
+all five images; the [worker patch](../../../.talos/patches/worker-kubernetes-1.34.11.yaml)
+changes only kubelet, matching the CLI's worker config update. Patches are for
+bootstrap and offline renders; only the gated Talos upgrade command owns live sequencing.
+The DNS ownership handoff and a fresh verified off-node backup remain required.
+
 ## Missing Volume Metrics
 
 Authenticated inspection on 2026-09-07 found all four nodes running Kubernetes
