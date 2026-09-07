@@ -3,14 +3,16 @@
 `IaC/operator/etcd-backup-storage` declares a dedicated S3 bucket for verified
 etcd snapshots. It uses the existing AWS account and shared encrypted state
 backend, while owning its bucket independently of the backend bucket's objects
-and lifecycle rules. This change declares storage only: no snapshot publisher,
-schedule, unattended AWS identity, restore drill, or completed offsite copy is
-implied by a successful bucket apply.
+and lifecycle rules. The unit declares storage only. The separate
+[manual publisher/retriever](etcd-offsite-publication.md) copies verified
+snapshots; a schedule, unattended AWS identity, restore drill, or completed
+offsite copy is not implied by a successful bucket apply.
 
 ## Ownership And Retention
 
-These are this homelab's public deployment values; other deployments must change
-the committed catalog inputs and provider guard together.
+These are this homelab's public deployment values. Other deployments must change
+the [committed destination](../IaC/config/etcd-backup-storage.json), consumed by
+both the catalog inputs/provider guard and manual publisher.
 
 | Setting | Declared value |
 | --- | --- |
@@ -61,8 +63,9 @@ GitHub plan/apply workflows **do not traverse `IaC/operator`**: green generic CI
 is not a live plan or deployment receipt for this bucket.
 
 Use the existing administrator session through the default AWS credential
-chain. Desired-state values come only from committed HCL; do not export profile
-or infrastructure overrides for this workflow. If the default session is not
+chain. Desired-state values come from the committed catalog and destination
+JSON; do not export profile or infrastructure overrides for this workflow.
+If the default session is not
 the intended administrator, stop and select the normal local authenticated
 context before continuing. The AWS provider also rejects any account other than
 the declared owner. From the same unit directory:
@@ -126,11 +129,12 @@ incomplete-upload lifecycle rule using read-only AWS metadata calls with
 Retain the private plan and verification receipt in the operator's durable
 maintenance directory. Do not treat creation alone as backup readiness.
 
-The next operator workflow must publish an already verified local snapshot and
-manifest, then retrieve the immutable object versions and repeat offline
-verification. Keep local copies until that succeeds. No uploader or unattended
-credential contract is introduced here; offsite freshness and restore readiness
-remain unverified until those steps are implemented and exercised.
+The [manual publisher/retriever](etcd-offsite-publication.md) publishes an
+already verified local snapshot and manifest, then retrieves their immutable
+object versions and repeats offline verification. Keep local copies and the
+private version receipt. The bucket unit does not run this workflow or supply
+unattended credentials; offsite freshness and restore readiness remain separate
+gates requiring execution evidence.
 
 Rollback is a reviewed forward correction to bucket configuration. Do not
 destroy the bucket, suspend versioning, or add expiration to undo this unit.

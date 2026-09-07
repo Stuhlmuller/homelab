@@ -259,6 +259,7 @@ done
 echo "::endgroup::"
 
 echo "::group::Etcd offsite bucket offline guards"
+python3 scripts/ci/etcd-offsite-backup-check.py
 (
   cd IaC/operator/etcd-backup-storage
   terragrunt --log-disable init -backend=false -lockfile=readonly -no-color

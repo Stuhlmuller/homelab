@@ -20,9 +20,10 @@ Generic CI performs offline validation but does not live-plan or apply operator
 units. An existing administrator session must review and apply a focused saved
 plan. Module tests reject an unexpected account, region, and bucket-name suffix.
 
-This storage declaration does not establish an offsite backup: publication,
-version-specific retrieval with offline verification, unattended credentials,
-freshness monitoring, retention objectives, and an isolated restore drill
-remain separate work. Record an actual apply and verified copy before marking
-either ready. See [[architecture/storage-and-state]] and
+This storage declaration does not establish an offsite backup. The separate
+[[operations/etcd-offsite-publication|manual publisher/retriever]] provides a
+reviewed copy path; actual publication, unattended credentials, freshness
+monitoring, and retention objectives remain separate work. Record an actual
+apply and verified copy before marking either ready. See
+[[architecture/storage-and-state]] and
 [[operations/kubernetes-patch-maintenance-2026-09]] for local recovery evidence.
