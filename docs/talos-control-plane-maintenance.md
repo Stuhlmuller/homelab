@@ -8,6 +8,10 @@ Do not use this runbook to make ad hoc live changes. First express desired
 state in this repository, validate the rendered Talos machine config, then
 apply that reviewed config through the documented Talos path.
 
+Before maintenance, save a fresh private off-node etcd snapshot with the
+[routine backup command](talos-etcd-backup.md). Its integrity check does not
+replace a restore drill or persistent-volume backups.
+
 ## Current Audit Findings
 
 The parent audit reported:

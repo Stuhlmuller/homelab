@@ -4,6 +4,19 @@ Tags: #runbook #talos #maintenance
 
 Canonical runbook: [`docs/talos-control-plane-maintenance.md`](../../talos-control-plane-maintenance.md)
 
+The [routine etcd backup runbook](../../talos-etcd-backup.md) owns
+`scripts/talos-etcd-backup.py`: authenticated snapshot download to a private
+off-node directory, Talos metadata validation, embedded SHA-256 verification,
+and an offline manifest check. It preserves existing backups and contains no
+restore or cluster mutation path. Success requires file and directory syncs;
+the homelab invocation explicitly selects Homebrew Talos `v1.11.3` because the
+Nix shell currently supplies `v1.13.2`. Recurrence, backup-age alerting, offsite
+storage, retention enforcement, and a restore drill remain open work.
+
+Live validation on 2026-09-07 UTC saved a private off-node snapshot with Talos
+`v1.11.3`; embedded and full-file checksum checks passed. No restore or offsite
+verification was performed.
+
 Render and validate Talos configuration before applying it. Use
 `talosctl validate --mode metal --strict`, authenticated access after bootstrap,
 and repository-owned patches for control-plane changes.
