@@ -4,6 +4,13 @@ This overlay manages only the CoreDNS `ConfigMap` in `kube-system`. CoreDNS is
 installed by the cluster bootstrap path, but this repository owns the resolver
 policy so in-cluster controllers do not inherit an unstable node-local upstream.
 
+Talos still generates a default CoreDNS ConfigMap during Kubernetes upgrades.
+The September 2026 upgrade plan would overwrite this policy, including the
+internal Octelium route. Resolve that ownership collision before upgrading;
+see the [maintenance findings](../../../../docs/knowledge-base/operations/kubernetes-patch-maintenance-2026-09.md).
+Do not depend on a later Argo CD reconciliation to repair a temporary DNS
+regression during control-plane maintenance.
+
 External lookups are forwarded to Cloudflare's standard resolvers: `1.1.1.1`
 and `1.0.0.1`. These resolvers intentionally do not apply Cloudflare Family
 category filtering. On 2026-07-19, the Family resolvers returned `0.0.0.0` and

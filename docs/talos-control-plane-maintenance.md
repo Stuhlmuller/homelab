@@ -974,6 +974,13 @@ Restore redundancy only after a dedicated replacement passes the capacity and
 Use this checklist before changing Talos or Kubernetes versions. The observed
 baseline from the parent audit is Talos `v1.11.3` and Kubernetes `v1.34.1`.
 
+The [September 2026 maintenance findings](knowledge-base/operations/kubernetes-patch-maintenance-2026-09.md)
+record the `1.34.11` candidate for restoring missing PVC metrics and an open
+CoreDNS ownership conflict. Do not execute an upgrade until that conflict is
+resolved. Talos `1.11.3` `upgrade-k8s --dry-run` still pulls images and submits a
+nominally unchanged kube-proxy machine configuration; it is not a read-only
+preflight, even with image pre-pulling disabled.
+
 1. Refresh official release information:
 
    ```sh
