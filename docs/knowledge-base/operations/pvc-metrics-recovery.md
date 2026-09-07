@@ -1,5 +1,14 @@
 # PVC Metrics Recovery
 
+Status after the 2026-09-07
+[[operations/kubernetes-patch-maintenance-2026-09|Kubernetes 1.34.11 maintenance]]:
+kubelet and Prometheus checks confirmed all 28 expected mounted node/PVC pairs
+across 30 Pod bindings, with all 34 scrape targets up. The unchanged PVC query
+returned `31.8029%`, below its `85%` threshold. Grafana's admin API returned HTTP
+401, leaving its current rule state and notification delivery unverified.
+
+## Original Finding
+
 The September 6, 2026 storage audit found no `kubelet_volume_stats_*` samples
 in Prometheus over 24 hours. All four live Kubernetes `v1.34.1` kubelets also
 omitted these metrics from `/metrics`, although `/stats/summary` reported
@@ -11,7 +20,8 @@ This matches upstream [Kubernetes issue #133847](https://github.com/kubernetes/k
 an early metrics registration prevents the volume collector from registering.
 The [fix](https://github.com/kubernetes/kubernetes/pull/133890) is present in
 [the `v1.34.2` collector initialization](https://github.com/kubernetes/kubernetes/blob/v1.34.2/pkg/kubelet/kubelet.go#L1634-L1638).
-Choose a currently compatible `1.34.z` patch through the
+The September 7 upgrade selected `1.34.11`. For future upgrades, choose a
+currently compatible `1.34.z` patch through the
 [declared upgrade workflow](../../talos-control-plane-maintenance.md#talos-and-kubernetes-upgrade-checklist),
 with its preflight and backup gates; `1.34.2` identifies verified fixed source,
 not the target for a new upgrade.

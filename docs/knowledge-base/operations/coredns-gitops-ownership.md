@@ -1,9 +1,9 @@
 # CoreDNS GitOps Ownership
 
-`platform-dns` declares all six CoreDNS resources while preserving the existing
-DNS behavior and pinning the running image content. This prepares a handoff from
-Talos bootstrap; the declaration alone does not complete it. Source and DNS
-checks are in the
+The Talos-to-Argo ownership handoff completed on 2026-09-07. `platform-dns`
+owns all six CoreDNS resources while preserving DNS behavior and pinning the
+running image content. New clusters still require the ordered takeover below;
+the declaration alone does not complete it. Source and DNS checks are in the
 [platform DNS runbook](../../../clusters/homelab/platform/dns/README.md).
 
 ## Why The Handoff Is Required
@@ -12,8 +12,8 @@ Talos `v1.11.3 upgrade-k8s` reconciles every bootstrap manifest after upgrading
 Kubernetes. Its built-in CoreDNS ConfigMap differs from the repository's
 Corefile: it removes the internal Octelium rewrite and replaces the explicit
 Cloudflare resolvers with `/etc/resolv.conf`. Waiting for Argo self-healing would
-permit a DNS interruption. The upgrade must wait until this ownership conflict
-is removed.
+permit a DNS interruption. Any cluster with both owners must complete this
+handoff before upgrading. The homelab completed it on September 7.
 
 An inline ConfigMap cannot override the built-in manifest before reconciliation.
 Talos gives [inline manifests priority `99`](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/control_plane.go#L406-L410),
@@ -128,11 +128,21 @@ specifications, including the complete Pod template, Service IPs, selectors,
 ports, and RBAC. Local rendering does not prove the live ownership handoff or
 DNS and upgrade acceptance gates.
 
-On 2026-09-07, Talos `v1.11.3` strict metal validation passed for a private
-candidate rendered from the current control-plane configuration. The semantic
-comparison confirmed that only `cluster.coreDNS.disabled` changed from its
-absent/default-false value to `true`. The candidate was not applied; this check
-does not complete the ownership or DNS acceptance gates.
+On 2026-09-07, Talos `v1.11.3` strict metal validation and semantic comparison
+confirmed the only configuration change was `cluster.coreDNS.disabled: true`.
+After the approved six-resource adoption and DNS rollout passed, the candidate
+applied in `no-reboot` mode at 05:21:39 UTC. The 05:23 UTC post-handoff gate
+confirmed the disabled setting and absence of `11-core-dns` and
+`11-core-dns-svc`. All six resource identities and tracking IDs remained intact,
+both updated DNS replicas stayed Ready, and the Corefile, Service addresses,
+RBAC, and public/internal lookups passed. This completed the DNS prerequisite
+for the [Kubernetes maintenance](../../kubernetes-1.34.11-maintenance-2026-09-07.md).
+
+The 05:36:50 UTC post-upgrade gate again passed for all six resources, unchanged
+DNS policy, and public/internal lookups. Both DNS Pods retained their identities
+with zero container restarts and were Ready. Kubelet restarts reasserted their
+readiness conditions; these checks do not prove continuous readiness during the
+upgrade. Talos DNS ownership remained disabled with both manifest IDs absent.
 
 Related: [[architecture/gitops-flow]], [[workloads/inventory]],
 [[operations/validation-gates]].

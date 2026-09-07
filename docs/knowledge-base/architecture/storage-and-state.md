@@ -24,6 +24,19 @@ Those remain reliability gaps alongside an isolated restore drill and
 control-plane redundancy. PVC data and private Talos recovery material need
 separate backups; an etcd snapshot alone cannot recover either.
 
+The 2026-09-07 [[operations/kubernetes-patch-maintenance-2026-09|maintenance]]
+used a fresh verified off-node snapshot after the DNS handoff. All five
+scheduled media/Octelium backups had completed their latest due run, and their
+published artifacts remained present on retained NFS claims. Publisher-time
+validation plus current file metadata does not constitute a fresh rehash or
+restore drill.
+
+After Kubernetes `1.34.11`, direct kubelet and Prometheus checks covered all 28
+expected mounted node/PVC pairs across 30 Pod bindings; all 50 claims were Bound.
+Unmounted claims are outside that metric inventory. Grafana's current PVC rule
+state remains unverified because its admin API returned HTTP 401, although the
+unchanged alert query returned real data below its threshold.
+
 ## Durable Storage
 
 Kubernetes persistent storage is backed by a QNAP NFS export.
