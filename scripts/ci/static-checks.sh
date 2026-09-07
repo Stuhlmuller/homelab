@@ -9,6 +9,7 @@ terragrunt_generate_stack
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
+python3 scripts/ci/etcd-offline-restore-check-test.py
 
 echo "::group::CronJob failure alert recovery"
 python3 scripts/ci/job-alert-recovery-check.py
