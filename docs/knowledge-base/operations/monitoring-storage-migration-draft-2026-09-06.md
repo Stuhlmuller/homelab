@@ -10,11 +10,22 @@ replacement to bypass a failed migration.
 `IaC/terragrunt.stack.hcl` pins kube-prometheus-stack `85.2.0`.
 `clusters/homelab/apps/prometheus/values.yaml` retains Prometheus history for
 `15d` on a `50Gi` NFS claim and Alertmanager state on a `10Gi` NFS claim.
-Read-only inspection confirmed Operator `v0.90.1`, Prometheus
+The September 7 post-upgrade capture confirmed Operator `v0.90.1`, Prometheus
 `v3.11.3-distroless`, Alertmanager `v0.32.1`, and Alertmanager retention `120h`.
-Each has one replica; both currently run on `acer`. Keep these versions,
+Each has one replica; at 05:36 UTC Prometheus was Ready on `zimaboard-1` and
+Alertmanager was Ready on `acer`. These are current consumers, not selected
+migration targets; re-inventory all possible writers before fencing. Keep these versions,
 resource names, Services, authentication, scrape selectors, and notification
 routing unchanged during the storage move.
+
+The same maintenance completed Kubernetes `1.34.11` on all four nodes while
+retaining Talos `1.11.3`, after the verified CoreDNS ownership handoff.
+Direct kubelet and Prometheus checks confirmed restored coverage of all 28 expected
+mounted node/PVC pairs across 30 Pod bindings; all 34 scrape targets were up.
+The PVC query returned real data below its threshold, but Grafana's admin API
+returned HTTP 401, leaving current rule state and notification delivery unverified.
+See [[operations/kubernetes-patch-maintenance-2026-09]] for the dated outcome.
+This restores telemetry; it does not migrate NFS data or prove its restore path.
 
 The operator owns both StatefulSets through their respective CRs. Existing
 PVCs have no owner references; both StatefulSets specify `Retain` for scale-down
@@ -30,19 +41,24 @@ usage, so they must not be interpreted as either application's directory size.
 Use Prometheus's own TSDB size metrics and an offline directory inventory for
 copy sizing. The requested PVC capacities are not hard quotas on NFS or hostPath.
 
-Only `acer` currently has sufficient local disk headroom for the unchanged
-`50Gi`/`10Gi` budgets and verification copies. Its `/var` filesystem is XFS on
+The September 6 inventory found only `acer` with enough local disk headroom for
+the unchanged `50Gi`/`10Gi` budgets and verification copies. Its `/var` filesystem is XFS on
 the existing system disk. However, its bit-flip/image/etcd corruption incident
 remains unresolved: see [[continuous-improvement]], Acer storage-integrity
 finding. Existing worker disks are approximately 32 GB system eMMC devices;
-read-only Talos inventory found no spare independent data device. The small
-worker cannot satisfy Prometheus memory requirements. This is a hardware gate,
-not permission to move persistent data onto unverified storage.
+read-only Talos inventory found no spare independent data device. Refresh disk
+capacity and device inventory before selecting storage. `zimaboard-2` cannot
+fit the deployed `1536Mi` Prometheus request in its 1.28 GiB allocatable memory.
+Prometheus placement on `zimaboard-1` does not create local disk headroom there.
+This remains a hardware gate before moving data onto unverified storage.
 
 A September 6 read-only scan of 4,201 Acer kernel-log lines found no matching
 hardware-error signals, and the etcd inspection found no errors. These limited
 observations do not test memory or disk integrity, explain the prior corruption,
-or clear the hardware gate.
+or clear the hardware gate. September 7 post-upgrade etcd health and verified
+off-node snapshots likewise do not prove monitoring-data recovery or validate
+the proposed target hardware. Application checkpoint/restore proof and an
+independent backup destination remain open.
 
 ## Why A New Claim Name Is Required
 
@@ -74,7 +90,7 @@ The fence must cover **every node that may still host a writer**, including
 evicted Pods and previous copy/restore Jobs. Record their Pod/container IDs,
 claim/PV identities, node IDs, and boot IDs before scale-down. An unknown prior
 consumer or missing node evidence blocks the migration. The September 2
-[[architecture/cluster-topology#Current Worker Recovery|worker incident]] shows
+[[architecture/cluster-topology|worker incident]] shows
 why: eviction started replacement PVC workloads while the old worker could
 still reach NFS; it later resumed on its unchanged boot and reconciled old Pods.
 
@@ -164,10 +180,13 @@ See [upstream storage guidance](https://prometheus.io/docs/prometheus/latest/sto
 
 ## Resource And Capacity Gates
 
-Prometheus currently has no requests or limits; observed steady state is roughly
-`80m` CPU and `1Gi` working memory. Initial **test budgets**, not validated final
-limits, are Prometheus `250m` CPU / `1536Mi` memory requests, Alertmanager `25m`
-CPU / existing `200Mi` memory request, and a serial verification Job with
+Current main and the September 7 live capture agree on a Prometheus `1536Mi`
+memory request, with no CPU request or CPU/memory limits. Alertmanager retains
+its `200Mi` memory request. The September 6 steady-state sample of roughly
+`80m` CPU and `1Gi` working memory is historical, not a replay/compaction budget.
+Initial **test budgets**, not approved runtime changes, add Prometheus `250m`
+CPU and Alertmanager `25m` CPU requests while retaining their deployed memory
+requests. A serial verification Job starts with
 `250m` CPU / `1536Mi` requests and `1` CPU / `3Gi` limits. A streaming copy Job
 can start with `100m` CPU / `128Mi` requests and `1` CPU / `512Mi` limits.
 Measure compaction and cold WAL replay peaks before approving runtime limits;
@@ -180,10 +199,22 @@ filesystem free space directly: static hostPath capacity requests neither
 reserve nor cap bytes. A future size cap must leave compaction/WAL headroom and
 must not shorten the promised history; halt for capacity if both cannot fit.
 
-Current node-loss memory headroom is already insufficient; see
-[[audit-2026-09-04]]. Node-local volumes also prevent automatic rescheduling onto
-another node. Explicitly document recovery time and measured spare resources;
-this migration cannot claim HA or node-loss tolerance.
+The September 7 06:14 UTC capacity audit confirmed the earlier
+[[audit-2026-09-04|node-loss headroom finding]] after the monitoring request changes.
+Reconstructing the live alert formula from Kubernetes objects found about
+`5.86Gi` of regular-container requests above remaining RAM after losing `acer`;
+including init-sidecar and scheduling overhead raises the deficit to `5.99Gi`.
+This is request arithmetic, not a fresh Prometheus sample, full scheduling
+simulation, or hardware purchase specification; growth and recovery reserves
+require additional capacity.
+
+Losing `acer` first removes the sole API/control plane and scheduler. The
+deficits describe eventual rescheduling after control-plane recovery, not
+automatic failover. Node/PV affinity and local data impose separate recovery
+constraints even when aggregate RAM fits. Rebalancing Pods does not add RAM,
+a control plane, or copied data. Explicitly document recovery time, accepted
+storage placement, and measured spare resources; this migration cannot claim
+HA or node-loss tolerance.
 
 ## Rollback And Remaining Decisions
 

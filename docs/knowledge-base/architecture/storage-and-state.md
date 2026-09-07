@@ -313,6 +313,9 @@ See the OpenClaw README; gateway readiness is still a live acceptance gate.
 
 [[../operations/monitoring-storage-migration-draft-2026-09-06]] records the
 pinned operator's new-claim migration path, separate writer fences, restore
-proof, capacity reservations, and rollback. Healthy target hardware remains
+proof, capacity reservations, and rollback. Its September 7 refresh records
+deployed memory requests, current consumers, restored PVC telemetry, and the
+remaining capacity/control-plane recovery gaps. Those observations do not
+establish a monitoring-data restore proof. Healthy target hardware remains
 unselected; the draft does not authorize use of Acer's unverified storage or
 reduction of existing retention.
