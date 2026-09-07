@@ -69,17 +69,31 @@ the declared owner. From the same unit directory:
 
 ```sh
 set -euo pipefail
+umask 077
 aws sts get-caller-identity --output json |
   jq -e '.Account == "716182248480"'
-terragrunt --log-disable init -reconfigure -lockfile=readonly -no-color
 backup_plan_dir="$(mktemp -d /private/tmp/homelab-etcd-bucket-plan.XXXXXX)"
 chmod 0700 "$backup_plan_dir"
-terragrunt --log-disable plan -input=false -lock-timeout=5m \
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --disable-bucket-update --backend-bootstrap=false -- \
+  init -reconfigure -lockfile=readonly -no-color
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --disable-bucket-update --backend-bootstrap=false -- \
+  plan -input=false -lock-timeout=5m \
   -out="$backup_plan_dir/etcd-bucket.tfplan" -no-color
-terragrunt --log-disable show -json "$backup_plan_dir/etcd-bucket.tfplan" \
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --no-auto-init -- show -json "$backup_plan_dir/etcd-bucket.tfplan" \
   >"$backup_plan_dir/etcd-bucket.json"
-terragrunt --log-disable show -no-color "$backup_plan_dir/etcd-bucket.tfplan"
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --no-auto-init -- show -no-color "$backup_plan_dir/etcd-bucket.tfplan"
 ```
+
+The explicit backend flags prevent Terragrunt from creating or updating the
+shared state bucket. Do not opt into backend bootstrapping for this unit; its
+backend already exists under separate ownership.
+The private download directory also keeps generated backend metadata outside
+the checkout; the repository artifact gate rejects local state files even in
+ignored Terragrunt caches. Use this same directory for every live command.
 
 Keep plan files private and outside Git. Review the saved plan before applying
 it. Initial deployment should create exactly seven managed S3 resources in the
@@ -95,11 +109,14 @@ After the focused saved plan has passed review, apply those exact bytes from the
 same unit and shell:
 
 ```sh
-terragrunt --log-disable apply -input=false -lock-timeout=5m -no-color \
-  "$backup_plan_dir/etcd-bucket.tfplan"
-terragrunt --log-disable output -json
-terragrunt --log-disable plan -input=false -lock-timeout=5m \
-  -detailed-exitcode -no-color
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --disable-bucket-update --backend-bootstrap=false -- \
+  apply -input=false -lock-timeout=5m -no-color "$backup_plan_dir/etcd-bucket.tfplan"
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --no-auto-init -- output -json
+terragrunt --log-disable --download-dir "$backup_plan_dir/cache" run \
+  --disable-bucket-update --backend-bootstrap=false -- \
+  plan -input=false -lock-timeout=5m -detailed-exitcode -no-color
 ```
 
 The final plan must exit zero with no changes. Verify the bucket's location,
