@@ -56,9 +56,9 @@ found two independent problems:
   The [configuration patch helper](https://github.com/siderolabs/talos/blob/v1.11.3/pkg/cluster/kubernetes/patch.go)
   consequently submits the serialized, nominally unchanged machine config.
 
-The September 7 plan encountered both paths before these source-level findings
-were available. It completed successfully. Fresh checks afterward confirmed all
-four Kubernetes versions remained `v1.34.1`, the intended live CoreDNS Corefile
+The September 7 pre-upgrade plan encountered both paths before these source-level
+findings were available. It completed successfully. Checks immediately afterward
+confirmed all four Kubernetes versions remained `v1.34.1`, the intended live CoreDNS Corefile
 remained intact, and the existing backup schedules had no new failures. Image
 downloads consume node disk space even when component upgrades are skipped.
 Do not repeat this command as a health check or claim its output proves no
@@ -91,18 +91,18 @@ declaration alone does not complete that handoff.
 ## Before Any Upgrade
 
 Use the [canonical maintenance workflow](../../talos-control-plane-maintenance.md#talos-and-kubernetes-upgrade-checklist)
-after the DNS collision is fixed and reviewed. Commit the selected component
-versions and bootstrap configuration before executing the ordered upgrade.
+for future upgrades, rechecking the completed DNS handoff. Commit the selected
+component versions and bootstrap configuration before executing the ordered upgrade.
 Require healthy nodes, Talos services, etcd, storage and workloads, a current
 verified off-node etcd snapshot, current application backups, and a maintenance
-window for the single control-plane cluster. Finish OpenClaw's current
-migration before restarting kubelets or changing control-plane components.
+window for the single control-plane cluster. Require any active workload backup
+or migration to finish before restarting kubelets or control-plane components.
 
-The September 7 verified off-node etcd snapshot is a recovery point, not a
-restore drill, PVC backup, or control-plane redundancy. Refresh it immediately
-before the eventual maintenance. A failed upgrade requires a reviewed recovery
-decision; an automatic component downgrade or etcd restore is not the rollback
-for this note.
+The September 7 verified off-node etcd snapshots are retained recovery points,
+not a restore drill, PVC backup, or control-plane redundancy. Take a fresh
+snapshot immediately before each future maintenance window. A failed upgrade
+requires a reviewed recovery decision; an automatic component downgrade or etcd
+restore is not the rollback for this note.
 
 After upgrading, require every node and control-plane component to report the
 selected version, all required services to recover, the canonical issuer and

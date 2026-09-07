@@ -12,8 +12,8 @@ Talos `v1.11.3 upgrade-k8s` reconciles every bootstrap manifest after upgrading
 Kubernetes. Its built-in CoreDNS ConfigMap differs from the repository's
 Corefile: it removes the internal Octelium rewrite and replaces the explicit
 Cloudflare resolvers with `/etc/resolv.conf`. Waiting for Argo self-healing would
-permit a DNS interruption. The upgrade must wait until this ownership conflict
-is removed.
+permit a DNS interruption. Any cluster with both owners must complete this
+handoff before upgrading. The homelab completed it on September 7.
 
 An inline ConfigMap cannot override the built-in manifest before reconciliation.
 Talos gives [inline manifests priority `99`](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/control_plane.go#L406-L410),

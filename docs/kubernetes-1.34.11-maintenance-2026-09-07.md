@@ -112,12 +112,12 @@ all images together bypasses component ordering. Fresh bootstrap still follows
 the [DNS bootstrap contract](knowledge-base/operations/coredns-gitops-ownership.md#bootstrap-and-rollback),
 which retains Talos DNS until GitOps adoption is ready.
 
-Private validation on 2026-09-07 used the actual Talos `v1.11.3` client and
-current configs from all four nodes. Every role-specific target passed strict
-metal validation. The control-plane comparison contained only the five image
+Pre-upgrade private validation on 2026-09-07 used the actual Talos `v1.11.3` client
+and the then-current configs from all four nodes. Every role-specific target
+passed strict metal validation. The control-plane comparison contained only the five image
 changes after locally modeling the required DNS-disabled state; each worker
 changed only kubelet, with Talos also omitting the existing empty
-`machine.registries` map during serialization. Current images were unsuffixed
+`machine.registries` map during serialization. The pre-upgrade images were unsuffixed
 `v1.34.1`. These were private local renders; the DNS handoff and Kubernetes
 upgrade were not executed by this validation.
 

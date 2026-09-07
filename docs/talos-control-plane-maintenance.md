@@ -1,7 +1,7 @@
 # Talos Control-Plane Maintenance
 
 This runbook owns repository-backed control-plane maintenance for Talos and
-Kubernetes. It covers the current service-account issuer drift and the upgrade
+Kubernetes. It covers service-account issuer maintenance and the upgrade
 checklist for Talos and Kubernetes patch releases.
 
 Do not use this runbook to make ad hoc live changes. First express desired
@@ -14,18 +14,29 @@ replace a restore drill or persistent-volume backups.
 
 ## Current Audit Findings
 
-The parent audit reported:
+Verified after the 2026-09-07 Kubernetes maintenance:
 
-- Live Kubernetes OIDC discovery issuer:
+- All four nodes are Ready on Kubernetes `v1.34.11` and Talos `v1.11.3`.
+- The canonical Kubernetes API and service-account issuer are
+  `https://10.1.0.199:6443`.
+- The CoreDNS ownership handoff completed before the upgrade, and mounted PVC
+  metrics returned. Direct Grafana alert-state verification remains pending.
+
+See the [execution record](kubernetes-1.34.11-maintenance-2026-09-07.md#execution-record)
+for acceptance scope and remaining verification limits.
+
+The earlier parent audit reported the following pre-repair state:
+
+- Kubernetes OIDC discovery issuer at that audit:
   `https://10.1.0.216:6443`.
 - Canonical Kubernetes API endpoint:
   `https://10.1.0.199:6443`.
-- Live node versions: Kubernetes `v1.34.1` and Talos `v1.11.3`.
+- Node versions at that audit: Kubernetes `v1.34.1` and Talos `v1.11.3`.
 
-Treat `10.1.0.216` as stale. It may still appear in live service-account issuer
-discovery until the control-plane machine config is corrected and applied.
+Treat `10.1.0.216` as stale. The corrected issuer was preserved through the
+September 7 upgrade; the findings below remain historical context.
 
-Security refresh on 2026-05-25:
+Historical security refresh on 2026-05-25:
 
 - Kubernetes `v1.34.1` is still on a supported upstream minor, but upstream
   `1.34` has newer patch releases. Plan a Kubernetes patch upgrade after
@@ -971,13 +982,14 @@ Restore redundancy only after a dedicated replacement passes the capacity and
 
 ## Talos And Kubernetes Upgrade Checklist
 
-Use this checklist before changing Talos or Kubernetes versions. The observed
-baseline from the parent audit is Talos `v1.11.3` and Kubernetes `v1.34.1`.
+Use this checklist before changing Talos or Kubernetes versions. The verified
+2026-09-07 baseline is Talos `v1.11.3` and Kubernetes `v1.34.11` on all four nodes.
 
 The [September 2026 maintenance findings](knowledge-base/operations/kubernetes-patch-maintenance-2026-09.md)
-record the `1.34.11` candidate for restoring missing PVC metrics and an open
-CoreDNS ownership conflict. Do not execute an upgrade until that conflict is
-resolved. Talos `1.11.3` `upgrade-k8s --dry-run` still pulls images and submits a
+record the completed `1.34.11` upgrade, restored mounted PVC metrics, and the
+CoreDNS ownership handoff that preceded execution. Recheck DNS ownership and
+all maintenance gates before any future upgrade. Talos `1.11.3`
+`upgrade-k8s --dry-run` still pulls images and submits a
 nominally unchanged kube-proxy machine configuration; it is not a read-only
 preflight, even with image pre-pulling disabled.
 
