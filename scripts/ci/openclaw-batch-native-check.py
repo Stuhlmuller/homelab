@@ -160,8 +160,9 @@ def image_reference():
                                check=True, capture_output=True, timeout=30).stdout
     if committed != path.read_bytes():
         raise RuntimeError("Native proof requires the committed OpenClaw values")
-    result = subprocess.run(["yq", "-o=json", '.controllers.openclaw | '
-                             '{"app": .containers.app.image, "bootstrap": .initContainers."bootstrap-config".image}', str(path)],
+    query = ('.controllers.openclaw | '
+             '{"app": .containers.app.image, "bootstrap": .initContainers."bootstrap-config".image}')
+    result = subprocess.run(["yq", "-o=json", query, str(path)],
                             check=True, capture_output=True, timeout=30)
     images = json.loads(result.stdout)
     image = images["app"]
