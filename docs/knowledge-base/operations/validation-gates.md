@@ -426,3 +426,8 @@ App credential surface while preserving Codex startup and current volumes.
 Live Secret absence, remaining credentials/readiness, and protected IAM apply
 remain rollout gates. App private-key revocation requires the missing protected
 management path tracked in #859; removing mounts alone does not revoke a key.
+
+The evaluator uses an explicit failure guard that remains active under
+`python -O`. Focused subprocess tests run the actual evaluator with real jq
+under both normal and optimized Python, rejecting incorrect acceptance and
+rejection outcomes while preserving valid results.

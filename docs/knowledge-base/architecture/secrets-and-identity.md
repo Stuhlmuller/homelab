@@ -311,8 +311,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - `clusters/homelab/apps/external-secrets`
 
 The refreshed broad-App containment contract preserves OpenClaw's current
-assistant bundle, coordinator, public checksum-pinned native Codex install, and
-subscription OAuth. Authenticated GitHub writes pause without a scoped identity;
+assistant bundle, coordinator, Node.js tool host, public checksum-pinned native
+Codex install, subscription OAuth and authenticated Grafana monitoring.
+Authenticated GitHub writes pause without a scoped identity;
 no PAT fallback is declared. PR #969's container contexts remain a separate,
 compatible hardening change. Private-key revocation still lacks a repository-owned
 protected App-management path; track that gap under #859 before declaring the

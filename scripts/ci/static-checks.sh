@@ -1179,6 +1179,7 @@ openclaw_values="$openclaw_dir/values.yaml"
 openclaw_external_secret="$openclaw_dir/externalsecret.yaml"
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
+node --experimental-vm-modules scripts/ci/openclaw-subscription-recovery-check.mjs
 rg -Fq '"npm:@openclaw/discord@${openclaw_version}"' "$openclaw_values"
 rg -Fq -- '--pin --force --accept-capabilities' "$openclaw_values"
 rg -Fq 'openclaw plugins enable discord --accept-capabilities' "$openclaw_values"
@@ -1518,6 +1519,7 @@ if rg -q 'GITHUB_APP_|github-app/(id|installation-id|private-key)|openclaw-githu
   exit 1
 fi
 python3 scripts/ci/openclaw-credential-check.py
+python3 scripts/ci/openclaw-credential-check-test.py
 yq -e '
   .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84" and
   .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "00-operator-toolbox" and

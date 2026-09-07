@@ -21,7 +21,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "cac085684da92080dfbd3b79ad40ba6a821ba3c7c797bc8ff9953d6a3a67f6a8"
+        homelab.rst.io/openclaw-assistant-sha256: "b720f5ba8a8b0bcd394b7483bf4eaad8539a4fac4d3d6d0e77b65fa25ae76283"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -90,8 +90,8 @@ controllers:
             /toolbox/profile/bin/pre-commit --version
             # Astra requires Codex 0.153.1+; use a verified release asset.
             case "$(uname -m)" in
-              x86_64) codex_arch=x86_64; codex_sha=e8cd1160071f725d2a10cab81073dd6818fc8b096372125d27ef6e66fdf0979e ;;
-              aarch64) codex_arch=aarch64; codex_sha=878693f9b370320ea21793f99ea1f5687b7d9aa1f2c733de693d9ec0baa4e62a ;;
+              x86_64) codex_arch=x86_64; codex_sha=e8cd1160071f725d2a10cab81073dd6818fc8b096372125d27ef6e66fdf0979e; codex_host_sha=177a4507b9cc7f97f113ac034697b39f6a71a876a8bd508ff6d7f52f342ebe4a ;;
+              aarch64) codex_arch=aarch64; codex_sha=878693f9b370320ea21793f99ea1f5687b7d9aa1f2c733de693d9ec0baa4e62a; codex_host_sha=70fe485e6919a038b75f70be71aa5782a19a5f36ee85597301e90bd1c9bcbf07 ;;
               *) echo "Unsupported Codex architecture" >&2; exit 1 ;;
             esac
             mkdir -p /toolbox/codex
@@ -103,6 +103,14 @@ controllers:
             mv "/toolbox/codex/codex-${codex_arch}-unknown-linux-musl" /toolbox/codex/codex
             chmod 755 /toolbox/codex/codex
             /toolbox/codex/codex --version
+            # Code-mode tool calls launch this sibling executable by absolute path.
+            /toolbox/profile/bin/curl --fail --location --retry 3 --max-time 180 \
+              "https://github.com/openai/codex/releases/download/rust-v0.153.2/codex-code-mode-host-${codex_arch}-unknown-linux-musl.tar.gz" \
+              --output /tmp/codex-code-mode-host.tar.gz
+            printf '%s  /tmp/codex-code-mode-host.tar.gz\n' "$codex_host_sha" | /toolbox/profile/bin/sha256sum --check --strict
+            /toolbox/profile/bin/tar -xzf /tmp/codex-code-mode-host.tar.gz -C /toolbox/codex
+            mv "/toolbox/codex/codex-code-mode-host-${codex_arch}-unknown-linux-musl" /toolbox/codex/codex-code-mode-host
+            chmod 755 /toolbox/codex/codex-code-mode-host
         resources:
           requests:
             cpu: 1

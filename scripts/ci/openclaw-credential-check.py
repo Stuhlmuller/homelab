@@ -27,7 +27,8 @@ def verify(expression, document, accepted):
     global count
     result = subprocess.run(["jq", "-e", expression], input=json.dumps(document),
                             capture_output=True, text=True, timeout=30)
-    assert (result.returncode == 0) is accepted, "Credential policy regression"
+    if (result.returncode == 0) is not accepted:
+        raise RuntimeError("Credential policy regression")
     count += 1
 
 
