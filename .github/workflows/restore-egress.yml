@@ -9,6 +9,10 @@ on:
       - flake.nix
       - flake.lock
       - .github/workflows/restore-egress.yml
+      - .github/workflows/restore-image-publish.yml
+      - scripts/ci/restore-image-publish.py
+      - scripts/ci/restore-image-publish-test.py
+      - scripts/ci/restore-image-export-check.py
   push:
     branches: [main]
     paths:
@@ -18,6 +22,10 @@ on:
       - flake.nix
       - flake.lock
       - .github/workflows/restore-egress.yml
+      - .github/workflows/restore-image-publish.yml
+      - scripts/ci/restore-image-publish.py
+      - scripts/ci/restore-image-publish-test.py
+      - scripts/ci/restore-image-export-check.py
 permissions:
   contents: read
 jobs:
@@ -32,4 +40,6 @@ jobs:
       - name: Install locked Nix toolchain
         uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
       - name: Build local image and prove inherited network denial
-        run: python3 scripts/ci/restore-egress-check.py
+        run: >-
+          nix shell --inputs-from . nixpkgs#skopeo --command
+          python3 scripts/ci/restore-image-export-check.py

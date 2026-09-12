@@ -1,0 +1,76 @@
+---
+name: Publish restore image
+# checkov:skip=CKV_GHA_7: expected_sha only pins reviewed main; image destination and commands are fixed in code.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit reviewed for image publication
+        required: true
+        type: string
+run-name: Publish restore image @ ${{ inputs.expected_sha }}
+permissions: {}
+concurrency:
+  group: restore-image-publication
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      image_digest: ${{ steps.prepare.outputs.image_digest }}
+    steps:
+      - name: Verify dispatch commit
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Nix
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Static and policy gates
+        run: |
+          nix develop --command bash scripts/ci/static-checks.sh
+          nix develop --command bash scripts/ci/conftest-policies.sh
+      - name: Prepare exact tested digest
+        id: prepare
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          nix shell --inputs-from . nixpkgs#skopeo --command
+          python3 scripts/ci/restore-image-publish.py --expected-sha "${EXPECTED_SHA}"
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Nix
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Rebuild, test, publish and verify
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EXPECTED_IMAGE_DIGEST: ${{ needs.prepare.outputs.image_digest }}
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          nix shell --inputs-from . nixpkgs#skopeo --command
+          python3 scripts/ci/restore-image-publish.py --expected-sha "${EXPECTED_SHA}"
+          --publish --expected-digest "${EXPECTED_IMAGE_DIGEST}"

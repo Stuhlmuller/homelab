@@ -125,3 +125,7 @@ source-superuser code, so a checksum alone cannot replace this boundary.
 If the filter cannot load on the deployed RuntimeDefault/kernel, the Job must
 fail and the stale-backup alert must remain actionable. Rollback suspends/removes
 the drill through GitOps; never remove the launcher just to make it green.
+
+[[restore-image-publication]] describes the separate, unexecuted protected
+publication path and its source/digest/readback requirements. It does not remove
+the registry access or Talos synthetic-runtime gates above.

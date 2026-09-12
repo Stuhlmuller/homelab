@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Build and test the exact Linux image with real networking enabled; never publish."""
 import array
+from contextlib import contextmanager
+from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
 import platform
+import re
 import select
 import shutil
 import socket
@@ -12,6 +15,7 @@ import socketserver
 import subprocess
 import tempfile
 import threading
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 LAUNCHER = "/usr/local/bin/restore-no-network"
@@ -91,9 +95,47 @@ def rights_case(common, tag, scratch, method, expected, state):
             path.unlink(missing_ok=True)
 
 
-def main():
+def build_image(context, scratch, tag, source):
+    """Rewrite layers before loading/testing, using only this invocation's builder."""
+    builder = "restore-image-" + uuid.uuid4().hex
+    created = False
+    metadata = scratch / "build-metadata.json"
+    archive = scratch / "image.tar"
+    try:
+        run("docker", "buildx", "create", "--name", builder, "--driver", "docker-container",
+            "--driver-opt", "image=moby/buildkit:v0.33.0@sha256:6c2fa84a6b61ccd72899dde4239f8d5717f05f9a8ca6f3cad185fb1a95a94de3")
+        created = True
+        run("docker", "buildx", "build", "--builder", builder, "--no-cache", "--platform", "linux/amd64",
+            "--build-arg", "SOURCE_DATE_EPOCH=1", "--provenance=false",
+            "--output", f"type=docker,dest={archive},rewrite-timestamp=true,oci-mediatypes=false",
+            "--label", f"org.opencontainers.image.revision={source}",
+            "--label", "org.opencontainers.image.source=https://github.com/Stuhlmuller/homelab",
+            "--metadata-file", str(metadata), "--tag", tag, str(context))
+        # Buildx's manifest digest is not the Docker config/image ID.
+        image_id = json.loads(metadata.read_text())["containerimage.config.digest"]
+        if not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
+            raise RuntimeError("Build did not return an immutable config ID")
+        run("docker", "load", "--input", str(archive))
+        return image_id
+    finally:
+        if created:
+            run("docker", "buildx", "rm", "--force", builder)
+
+
+@dataclass(frozen=True)
+class TestedImage:
+    tag: str
+    image_id: str
+    source_sha: str
+
+
+@contextmanager
+def verified_image():
     if platform.system() != "Linux" or platform.machine() != "x86_64":
         raise SystemExit("Required image tests need native x86_64 Linux and Docker; not verified on this host")
+    source = run("git", "rev-parse", "HEAD", cwd=ROOT, capture_output=True).stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", source):
+        raise RuntimeError("Invalid source commit")
     run("docker", "info", stdout=subprocess.DEVNULL)
     built = run("nix", "build", ".#restore-egress-tools", "--no-link", "--print-out-paths",
                 cwd=ROOT, capture_output=True).stdout.strip()
@@ -109,8 +151,14 @@ def main():
         os.utime(context / "restore-no-network", (1, 1))
         tag = f"homelab-restore-egress-test:{os.getpid()}"
         try:
-            run("docker", "build", "--platform", "linux/amd64", "--build-arg",
-                "SOURCE_DATE_EPOCH=1", "--tag", tag, str(context))
+            image_id = build_image(context, scratch, tag, source)
+            info = json.loads(run("docker", "image", "inspect", image_id, capture_output=True).stdout)[0]
+            labels = info["Config"]["Labels"]
+            if (info["Id"] != image_id
+                    or info["Architecture"] != "amd64" or info["Os"] != "linux"
+                    or labels.get("org.opencontainers.image.revision") != source
+                    or labels.get("org.opencontainers.image.source") != "https://github.com/Stuhlmuller/homelab"):
+                raise RuntimeError("Tested image/source binding failed")
             probe = scratch / "probe"
             shutil.copy2(tools / "restore-network-probe", probe)
             # Docker bind mounts must be traversable by UID65534.
@@ -131,22 +179,22 @@ def main():
                     threading.Thread(target=server.serve_forever, daemon=True).start()
                 try:
                     # Positive control uses only synthetic probes, no backup data.
-                    run(*common, "--entrypoint", "/tests/probe", tag, "positive", gateway,
+                    run(*common, "--entrypoint", "/tests/probe", image_id, "positive", gateway,
                         str(tcp.server_address[1]), str(udp.server_address[1]))
                     assert (tcp.received, udp.received) == (1, 1)
                     for mode in ("denied", "inherit", "relax", "alternate-abi"):
-                        run(*common, tag, "/tests/probe", mode)
+                        run(*common, image_id, "/tests/probe", mode)
                     for mode in ("inherited-fd", "socket-stdio", "anonymous-stdio"):
-                        run(*common, "--entrypoint", "/tests/probe", tag, mode, LAUNCHER)
+                        run(*common, "--entrypoint", "/tests/probe", image_id, mode, LAUNCHER)
                     for state in ("unconnected", "connected"):
                         for method in ("recvmsg", "recvmmsg"):
-                            rights_case(common, tag, scratch, method, "allow", state)
-                            rights_case(common, tag, scratch, method, "deny", state)
+                            rights_case(common, image_id, scratch, method, "allow", state)
+                            rights_case(common, image_id, scratch, method, "deny", state)
                         for method in ("read", "recvfrom"):
-                            rights_case(common, tag, scratch, method, "discard", state)
+                            rights_case(common, image_id, scratch, method, "discard", state)
                     sql_test = ROOT / "scripts/ci/restore-egress/postgres.sh"
                     run(*common, "--mount", f"type=bind,src={sql_test},dst=/tests/postgres.sh,readonly",
-                        tag, "/bin/sh", "/tests/postgres.sh")
+                        image_id, "/bin/sh", "/tests/postgres.sh")
                     assert (tcp.received, udp.received) == (1, 1), "filtered tests sent network data"
                 finally:
                     tcp.shutdown()
@@ -158,16 +206,18 @@ def main():
                 fault.write_text(json.dumps({"defaultAction": "SCMP_ACT_ALLOW", "syscalls": [
                     {"names": [denied_call], "action": "SCMP_ACT_ERRNO", "errnoRet": 1}
                 ]}))
-                failed = subprocess.run([*common, "--security-opt", f"seccomp={fault}", tag,
+                failed = subprocess.run([*common, "--security-opt", f"seccomp={fault}", image_id,
                                          "/bin/echo", "UNSAFE_COMMAND_EXECUTED"], text=True,
                                         capture_output=True, timeout=60, check=False)
                 assert failed.returncode == 1, failed.stderr
                 assert message in failed.stderr
                 assert "UNSAFE_COMMAND_EXECUTED" not in failed.stdout
             print("Linux image gates passed: real connectivity, inherited EPERM, broker FD denial, Unix restore, fail-closed exec")
+            yield TestedImage(tag, image_id, source)
         finally:
             subprocess.run(["docker", "image", "rm", tag], check=False, capture_output=True, timeout=60)
 
 
 if __name__ == "__main__":
-    main()
+    with verified_image():
+        pass
