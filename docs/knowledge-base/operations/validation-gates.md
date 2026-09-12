@@ -439,9 +439,14 @@ and exact-dispatch guard. Local lifecycle tests are part of the static gate;
 live execution, cleanup, denied identity/method cases, and audit correlation
 remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).
 
+Cordium work shares a deadline captured before Nix setup and reserves three
+minutes for verified deletion and wrapper cleanup. Startup/check limits are
+five/20 minutes; API calls cannot consume the cleanup reserve. Lifecycle tests
+exercise timeout cleanup and exhausted setup without creating a workspace.
 Cordium cleanup polls bounded inventory until asynchronous deletion completes.
 Its fixed retirement helper requires the workflow and CI catalog definitions
-to be removed first, deletes only the three dedicated CI identity resources,
+to be removed on clean, exact reviewed local/remote main first, deletes only
+the three dedicated CI identity resources,
 and verifies absence. Tests reject remaining declarations, network errors,
 and incomplete deletion. Ordinary catalog apply does not prune these objects.
 
@@ -457,6 +462,9 @@ native reads; wrong identities, duplicate definitions, reported apply errors,
 and post-apply specification drift fail closed. Use the bounded
 [CI catalog command](../../cordium-ci.md#fixed-native-catalog-reconciliation)
 for rollout; broad catalog application is not required.
+Operator commands use `python3 -I`; the documented caller checks clean reviewed
+main before evaluating Nix or repository Python. A copied-checkout regression
+proves an untracked `scripts/json.py` cannot run before these helper guards.
 
 Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
 format as well as raw gRPC stderr errors. Already-absent resources are skipped;

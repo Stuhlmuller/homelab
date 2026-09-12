@@ -4,6 +4,9 @@ set -euo pipefail
 # This transport changes only the ephemeral GitHub runner's host resolution.
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
+[[ $# -eq 1 && "$1" =~ ^[0-9]+$ ]]
+execution_deadline="$1"
+(( $(date +%s) < execution_deadline - 180 ))
 scratch="$(mktemp -d "${RUNNER_TEMP}/cordium-ci.XXXXXX")"
 chmod 700 "$scratch"
 carrier_pid=""
@@ -70,4 +73,5 @@ done
 timeout 60 octelium --homedir "$scratch/login" login --domain stinkyboi.com \
   --assertion github-actions >"$scratch/login.log" 2>&1
 logged_in=true
-python3 scripts/cordium-check.py --checkout "$GITHUB_SHA" --homedir "$scratch/login"
+python3 -I scripts/cordium-check.py --checkout "$GITHUB_SHA" --homedir "$scratch/login" \
+  --deadline "$execution_deadline"

@@ -6,9 +6,10 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
-python3 scripts/ci/cordium-check-test.py
-python3 scripts/ci/cordium-ci-retire-test.py
-python3 scripts/ci/cordium-ci-reconcile-test.py
+python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-ci-retire-test.py
+python3 -I scripts/ci/cordium-ci-reconcile-test.py
+python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/talos-etcd-backup-check.py
@@ -829,7 +830,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml fbddc9b43ee22c61e0917a629714e29385ed0def844b4a0a02b0769dc5991fa1
+.github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
 .github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139

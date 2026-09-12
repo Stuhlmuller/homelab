@@ -45,6 +45,16 @@ Remote failure remains a failed job. Cleanup deletes only the workspace named
 by a successful create response and polls for up to one minute to verify its
 absence afterward, accommodating asynchronous controller deletion.
 
+The 50-minute GitHub job bounds its preparation steps to 11 minutes total
+and its execution step to 38 minutes. Execution captures a 36-minute deadline
+before entering Nix, so environment and transport setup consume the same
+budget as workspace work. Startup is capped at five minutes, the repository
+gate at 20 minutes, and every API call at the remaining work budget. Work stops
+three minutes before that captured deadline: two minutes remain for deletion
+and absence verification, then one for logout and transport cleanup. An
+expired setup budget fails before creating a workspace. The execution step
+also leaves two minutes beyond the captured deadline before forced termination.
+
 Cordium's cluster configuration limits every user to four stored workspaces
 and one active workspace. These limits also affect interactive users; they
 bound concurrent pressure on the small worker. The workflow additionally
@@ -94,25 +104,40 @@ first and use an existing private operator session. Preview current presence
 and exact declared-spec equality without applying anything:
 
 ```sh
-nix develop --command python3 scripts/cordium-ci-reconcile.py
+nix develop --command python3 -I scripts/cordium-ci-reconcile.py
 ```
 
 Use `--homedir /PRIVATE/OPERATOR_LOGIN` only to select an existing login.
 An authenticated `NotFound` response means the fixed resource is absent;
 transport, authorization, or malformed-response errors fail the preview.
 The output contains only resource names and status booleans, not credentials
-or live resource bodies.
+or live resource bodies. Use an already trusted checkout for the preview:
+Python isolation prevents local module shadowing, but cannot validate a flake
+before `nix develop` evaluates it.
 
 After review, merge, repository validation, and checkout of the exact current
 main commit, run:
 
 ```sh
-nix develop --command python3 scripts/cordium-ci-reconcile.py \
-  --execute --expected-sha FULL_REVIEWED_MAIN_SHA
+(
+set -euo pipefail
+reviewed_main_sha=FULL_REVIEWED_MAIN_SHA
+checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+checkout_sha="$(git rev-parse HEAD)"
+remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+test -z "$checkout_status"
+test "$checkout_sha" = "$reviewed_main_sha"
+test "$remote_main_sha" = "$reviewed_main_sha"
+nix develop --command python3 -I scripts/cordium-ci-reconcile.py \
+  --execute --expected-sha "$reviewed_main_sha"
+)
 ```
 
 The command rejects a dirty checkout or differing local, expected, and remote
-main commits before inspecting the catalog or opening transport. It selects
+main commits before inspecting the catalog or opening transport. The caller's
+subshell performs those checks before evaluating Nix or repository Python;
+the helper repeats them before native operations. All three operator helpers
+require `python3 -I` before importing other modules. The reconciler selects
 exactly `homelab-cordium-ci-execution` (Policy), `homelab-cordium-ci-oidc`
 (IdentityProvider), and `homelab-cordium-ci` (User). It applies the restrictive
 policy first, then the provider, then the workload User. Each native apply
@@ -137,17 +162,32 @@ disposable workspaces through the Cordium lifecycle before retiring its owner.
 Existing required repository checks remain independent.
 
 In a reviewed retirement commit, remove `cordium-check.yml` and the three CI
-catalog definitions, but retain `scripts/cordium-ci-retire.py`. Normal catalog
+catalog definitions, but retain `scripts/cordium-ci-retire.py` and its shared
+`scripts/octelium-nofx-reconcile.py` guard. Normal catalog
 reapplication does not prune absent native resources. Using an operator admin
 session, run the fixed retirement path from that commit:
 
 ```sh
-python3 scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN
-python3 scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN --execute
+python3 -I scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN
+(
+set -euo pipefail
+reviewed_main_sha=FULL_REVIEWED_RETIREMENT_SHA
+checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+checkout_sha="$(git rev-parse HEAD)"
+remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+test -z "$checkout_status"
+test "$checkout_sha" = "$reviewed_main_sha"
+test "$remote_main_sha" = "$reviewed_main_sha"
+python3 -I scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN \
+  --execute --expected-sha "$reviewed_main_sha"
+)
 ```
 
-The helper refuses retirement while the workflow or CI catalog definitions
-remain. It removes only `homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
+The helper refuses execution from a dirty checkout or when local, expected,
+and remote main commits differ, before reading the catalog or deleting anything.
+It also refuses retirement while the workflow or CI catalog definitions remain.
+Unmerged or local-only removals cannot authorize retirement. It removes only
+`homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
 `homelab-cordium-ci-execution`, in that order, and verifies each is absent.
 Authentication/network errors are failures, not evidence of absence. Repeating
 it skips already-absent objects. Keep the helper until retirement is verified.

@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 """Retire only the dedicated Cordium CI identity after its catalog removal."""
+import sys
+if __name__ == "__main__" and not sys.flags.isolated:
+    raise SystemExit("Run with python3 -I")
+
 import argparse
+import importlib.util
 import json
 import pathlib
 import re
 import subprocess
-import sys
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+spec = importlib.util.spec_from_file_location("native", ROOT / "scripts/octelium-nofx-reconcile.py")
+native = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(native)
 
 TARGETS = (
     ("IdentityProvider", "homelab-cordium-ci-oidc"),
@@ -18,16 +27,19 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--homedir", required=True, help="Private operator admin login directory")
     parser.add_argument("--execute", action="store_true", help="Delete and verify the three fixed resources")
+    parser.add_argument("--expected-sha", help="Exact reviewed main retirement commit required for execution")
     args = parser.parse_args()
-    root = pathlib.Path(__file__).resolve().parent.parent
+    if args.execute:
+        native.verify_reviewed_main(args.expected_sha)
+        native.run("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/cordium-ci-retire.py")
     catalog = subprocess.run(
-        ["yq", "ea", "-o=json", "-I=0", "[.]", str(root / "docs/examples/octelium/homelab-services.yaml")],
+        ["yq", "ea", "-o=json", "-I=0", "[.]", str(ROOT / "docs/examples/octelium/homelab-services.yaml")],
         capture_output=True, text=True, check=True, timeout=15,
     )
     records = json.loads(catalog.stdout)
     if any((item.get("kind"), item.get("metadata", {}).get("name")) in TARGETS for item in records):
         raise RuntimeError("Remove the CI catalog definitions in the reviewed retirement commit first")
-    if (root / ".github/workflows/cordium-check.yml").exists():
+    if (ROOT / ".github/workflows/cordium-check.yml").exists():
         raise RuntimeError("Remove the dispatch workflow before retiring its identity")
     client = ["octeliumctl", "--homedir", str(pathlib.Path(args.homedir).resolve()),
               "--domain", "stinkyboi.com"]

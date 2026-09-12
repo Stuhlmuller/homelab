@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Run the repository gate in an owned, disposable Cordium workspace."""
+import sys
+if __name__ == "__main__" and not sys.flags.isolated:
+    raise SystemExit("Run with python3 -I")
+
 import argparse
 import json
 import pathlib
 import re
 import signal
 import subprocess
-import sys
 import time
 
 
@@ -14,6 +17,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkout", required=True, help="Exact reviewed 40-character commit SHA")
     parser.add_argument("--homedir", required=True, help="Private Octelium login directory")
+    parser.add_argument("--deadline", required=True, type=int,
+                        help="Enclosing CI execution deadline as UTC epoch seconds")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.checkout):
         parser.error("--checkout must be a full lowercase commit SHA")
@@ -23,9 +28,15 @@ def main():
     workspace = None
     creation_attempted = False
     result = 1
+    # The workflow captures this deadline before Nix and transport setup.
+    # Reserve two minutes for deletion/verification and one for wrapper logout.
+    work_deadline = time.monotonic() + args.deadline - time.time() - 180
 
-    def call(*command, timeout=60, capture=False):
-        return subprocess.run(client + list(command), timeout=timeout,
+    def call(*command, timeout=60, capture=False, deadline=None):
+        seconds_left = (work_deadline if deadline is None else deadline) - time.monotonic()
+        if seconds_left <= 0:
+            raise TimeoutError("Cordium execution budget exhausted; preserving cleanup time")
+        return subprocess.run(client + list(command), timeout=min(timeout, seconds_left),
                               capture_output=capture, text=True, check=True)
 
     def interrupted(signum, _frame):
@@ -46,24 +57,24 @@ def main():
         workspace = candidate
         print(f"Cordium workspace: {workspace}; checkout: {args.checkout}", flush=True)
         call("start", workspace)
-        deadline = time.monotonic() + 600
+        deadline = min(work_deadline, time.monotonic() + 300)
         while time.monotonic() < deadline:
             state = json.loads(call("get", "workspace", workspace, "--out", "json",
-                                    capture=True).stdout)["status"]["state"]
+                                    capture=True, deadline=deadline).stdout)["status"]["state"]
             if state == "RUNNING":
                 break
             if state in ("STOPPED", "FAILED"):
                 raise RuntimeError(f"Workspace did not start: {state}")
-            time.sleep(5)
+            time.sleep(min(5, max(0, deadline - time.monotonic())))
         else:
-            raise TimeoutError("Workspace was not ready within ten minutes")
+            raise TimeoutError("Workspace was not ready within the five-minute startup budget")
         actual = call("exec", workspace, "--no-stdin", "--workdir", "/workspace/repo", "--",
                       "git", "rev-parse", "HEAD", capture=True).stdout.strip()
         if actual != args.checkout:
             raise RuntimeError("Remote checkout does not match the reviewed commit")
         call("exec", workspace, "--no-stdin", "--root", "--workdir", "/workspace/repo", "--",
              "nix", "--extra-experimental-features", "nix-command flakes", "develop",
-             "--command", "bash", "scripts/ci/static-checks.sh", timeout=1800)
+             "--command", "bash", "scripts/ci/static-checks.sh", timeout=1200)
         result = 0
     except subprocess.CalledProcessError as error:
         result = error.returncode if error.returncode > 0 else 1
@@ -73,19 +84,20 @@ def main():
     finally:
         if workspace:
             try:
-                call("delete", "workspace", workspace)
-                deadline = time.monotonic() + 60
+                cleanup_deadline = time.monotonic() + 120
+                call("delete", "workspace", workspace, deadline=cleanup_deadline)
+                deadline = min(cleanup_deadline, time.monotonic() + 60)
                 while True:
                     seconds_left = deadline - time.monotonic()
                     if seconds_left <= 0:
                         raise RuntimeError("Deleted workspace is still listed after one minute")
                     remaining = json.loads(call("get", "workspace", "--out", "json",
-                                                capture=True, timeout=min(15, seconds_left)).stdout)
+                                                capture=True, timeout=15, deadline=deadline).stdout)
                     if not any(item["metadata"]["name"] == workspace for item in remaining.get("items", [])):
                         break
                     time.sleep(min(2, max(0, deadline - time.monotonic())))
                 print(f"Verified deletion of disposable workspace: {workspace}", flush=True)
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError, RuntimeError) as error:
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError, RuntimeError, TimeoutError) as error:
                 print(f"Cleanup failed for {workspace}: {error}", file=sys.stderr)
                 result = result or 1
         elif creation_attempted:

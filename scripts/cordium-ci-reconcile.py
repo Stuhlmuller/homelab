@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """Inspect or reconcile only the three repository-owned Cordium CI identities."""
+import sys
+if __name__ == "__main__" and not sys.flags.isolated:
+    raise SystemExit("Run with python3 -I")
+
 import argparse
 import importlib.util
 import json
