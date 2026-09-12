@@ -439,14 +439,20 @@ and exact-dispatch guard. Local lifecycle tests are part of the static gate;
 live execution, cleanup, denied identity/method cases, and audit correlation
 remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).
 
-The current workflow has only a positive exact-SHA execution path. Wrong-ref
-dispatch skips before authentication; it cannot prove server-side denial.
-Repository-owned live probes for wrong-workflow/ref assertions, a forbidden
-Cordium method, and deliberate remote-command failure are still missing.
-Add a reviewed bounded acceptance path using real GitHub OIDC contexts;
-local mocked failures and a passing positive run do not close those gates.
-Audit records must be correlated through the existing authenticated console;
-there is no workflow audit-record assertion or export helper.
+Fixed acceptance modes add exact-SHA exit-42 cleanup, read-only ListSpace
+denial, and genuine wrong-ref/workflow assertion cases. Workspace execution
+stays main-only; the two login cases cannot invoke Cordium. A matching server
+error must occupy all stdout, with its matching raw Cobra error and known
+usage on stderr. Transport failures and mixed output do not count as denial.
+The intentional failure stays failed in CI and emits a notice only after
+exit 42 and verified workspace deletion. Local regressions cover these bounds.
+See the [fixed case matrix](../../cordium-ci.md#fixed-acceptance-cases).
+
+Wrong-ref Unauthenticated also covers provider/key errors. A fresh successful
+allowed-main control and correlated private audit records remain required;
+there is no workflow audit-record assertion or export helper. The pinned
+logout attempts remote revocation but hides RPC failures, so unexpected login
+success always fails acceptance and requires private session inspection.
 
 Cordium work shares a deadline captured before Nix setup and reserves three
 minutes for verified deletion and wrapper cleanup. Startup/check limits are

@@ -1,0 +1,64 @@
+name: Cordium Wrong-Workflow Login Denial
+
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed main and cannot alter commands.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed main commit for this fixed login-only denial case
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: homelab-cordium-check
+  cancel-in-progress: false
+
+jobs:
+  deny:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Dispatch Commit
+        timeout-minutes: 1
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        timeout-minutes: 2
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        timeout-minutes: 5
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+
+      - name: Install Pinned Client
+        timeout-minutes: 3
+        run: scripts/ci/install-octelium-client.sh
+
+      - name: Observe Wrong-Workflow Rejection
+        timeout-minutes: 8
+        run: |
+          execution_deadline=$(( $(date +%s) + 7 * 60 ))
+          private_log="$(mktemp "${RUNNER_TEMP}/cordium-denial.XXXXXX")"
+          chmod 600 "$private_log"
+          trap 'rm -f -- "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/cordium-ci.sh "$execution_deadline" deny-workflow >"$private_log" 2>&1; then
+            echo "::error::Expected wrong-workflow rejection was not established; private output withheld."
+            exit 1
+          fi
+          echo "Observed the expected server rejection; correlate the authenticated audit record."

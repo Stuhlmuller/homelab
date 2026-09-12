@@ -7,6 +7,7 @@ source "${script_dir}/terragrunt-filter-base.sh"
 terragrunt_generate_stack
 
 python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-ci-acceptance-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
@@ -799,6 +800,7 @@ expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/cordium-login-denial.yml:deny' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
@@ -830,7 +832,8 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
+.github/workflows/cordium-check.yml 3f9c9f1a6a53e91cc0a2a1740e82e2e5a8309e371b6636635242b6355cfd590a
+.github/workflows/cordium-login-denial.yml c1f86f5c218661938000b441dec9ba3dbb38e1fa292486a67d4b6dfbe71e1111
 .github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
@@ -848,6 +851,7 @@ echo "::endgroup::"
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
+  '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \

@@ -18,7 +18,7 @@ SHA = "a" * 40
 
 
 class Lifecycle(unittest.TestCase):
-    def exercise(self, *, remote_exit=0, wrong_sha=False, cleanup_fails=False, leftover=False, create_name="abc", preexisting=False, delayed=False, near_deadline=False, expired=False):
+    def exercise(self, *, remote_exit=0, wrong_sha=False, cleanup_fails=False, leftover=False, create_name="abc", preexisting=False, delayed=False, near_deadline=False, expired=False, mode="checks"):
         commands = []
         timeouts = []
         clock = [0.0]
@@ -55,15 +55,36 @@ class Lifecycle(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0, output, "")
 
         previous = signal.getsignal(signal.SIGTERM)
+        output = io.StringIO()
         try:
             def sleep(seconds):
                 clock[0] += seconds
-            with patch.object(sys, "argv", ["cordium-check.py", "--checkout", SHA, "--homedir", "/tmp/test-login", "--deadline", str(1700000000 + (120 if expired else 36 * 60))]), patch.object(runner.subprocess, "run", side_effect=run), patch.object(runner.time, "time", return_value=1700000000), patch.object(runner.time, "monotonic", side_effect=lambda: clock[0]), patch.object(runner.time, "sleep", side_effect=sleep), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            with patch.object(sys, "argv", ["cordium-check.py", "--checkout", SHA, "--homedir", "/tmp/test-login", "--deadline", str(1700000000 + (120 if expired else 36 * 60)), "--mode", mode]), patch.object(runner.subprocess, "run", side_effect=run), patch.object(runner.time, "time", return_value=1700000000), patch.object(runner.time, "monotonic", side_effect=lambda: clock[0]), patch.object(runner.time, "sleep", side_effect=sleep), contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
                 result = runner.main()
         finally:
             signal.signal(signal.SIGTERM, previous)
         self.timeouts = timeouts
+        self.output = output.getvalue()
         return result, commands
+
+    def test_fixed_failure_runs_only_after_sha_verification_and_reports_cleanup(self):
+        result, commands = self.exercise(mode="force-failure", remote_exit=42)
+        self.assertEqual(result, 42)
+        expected = ["exec", "abc", "--no-stdin", "--workdir", "/workspace/repo", "--",
+                    "/bin/sh", "-c", "exit 42"]
+        verification = next(i for i, command in enumerate(commands) if "rev-parse" in command)
+        self.assertGreater(commands.index(expected), verification)
+        self.assertFalse(any("nix" in command for command in commands))
+        self.assertIn("Expected remote exit 42 and disposable workspace deletion verified.", self.output)
+
+    def test_failure_evidence_requires_exact_exit_and_successful_cleanup(self):
+        for options in ({"remote_exit": 0}, {"remote_exit": 1}, {"remote_exit": 42, "cleanup_fails": True},
+                        {"remote_exit": 42, "leftover": True}, {"remote_exit": 42, "wrong_sha": True}):
+            result, commands = self.exercise(mode="force-failure", **options)
+            self.assertNotEqual(result, 0)
+            self.assertNotIn("Expected remote exit 42 and disposable workspace deletion verified.", self.output)
+            if options.get("wrong_sha"):
+                self.assertFalse(any("/bin/sh" in command for command in commands))
 
     def test_remote_failure_is_preserved_and_cleaned(self):
         result, commands = self.exercise(remote_exit=42)

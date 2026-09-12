@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-HELPERS = ("cordium-check.py", "cordium-ci-reconcile.py", "cordium-ci-retire.py")
+HELPERS = ("cordium-check.py", "cordium-ci-reconcile.py", "cordium-ci-retire.py", "cordium-ci-acceptance.py")
 
 
 class Isolation(unittest.TestCase):
