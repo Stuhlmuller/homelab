@@ -9,12 +9,15 @@ application restore has been verified for this code yet.
   original state keys, images and claims retain ownership.
   Preparation and capture require ready original containers with zero restarts
   and matching complete rendered/live Application specs before any stop.
+  Generated units must byte-match the guarded catalog at both boundaries.
 - Fixed stop/cold/capture/resume profiles are merged before the outage. The
   catalog guard blocks ordinary reconciliation while maintenance is active;
   the supported execution model is one serial operator with merges paused.
 - Reader Pods run as the current source UIDs, mount sources read-only, and
   stream directly off NAS. No new PVC, source permission change, credential
   path, recurring schedule, automatic upload, pruning or restore is added.
+  Readers have a one-hour deadline covering the cumulative command window plus
+  local validation allowance; slow local I/O is not absolutely time-bounded.
 - Clean container exit, PG shutdown state, live writer/node/claim identity,
   bounded observations, full archive reads, checksums and fsync precede receipt
   publication. Failures enter the existing-owner database-then-app resume path.

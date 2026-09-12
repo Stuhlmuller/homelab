@@ -84,12 +84,28 @@ owner before maintenance. Normalization is limited to known default source
 paths, absent/empty destination name and namespace annotations, and integer
 types for retry limit/backoff factor. Chart values, namespace, sync policy and
 ignored differences must otherwise match exactly.
+Both original generated `terragrunt.hcl` files must also match the committed
+catalog template byte-for-byte at preparation and capture. This verifies the
+ordinary-plan maintenance guard itself; matching rendered specs alone cannot
+detect a pre-guard generated unit. Missing or edited files require fresh stack
+generation before an outage.
 No snapshot, pod, or phase change occurs during preparation.
 
 Keep free space comfortably above the combined source size. The September 7
 metadata estimate was about 217 MiB; that estimate can become stale. Streaming
 also stops at the 128 MiB local reserve. Each archive has a 300-second remote
-command limit; the reader Pods have a 900-second lifetime. These bounds limit
+command limit and a 320-second client deadline plus one second to reap it.
+Both reader Pods have a 3600-second deadline and sleep for 3590 seconds.
+Their last required live use is the second archive stream: the budget includes
+900 seconds of remaining provider apply, 240 for reconciliation, 120 for reader
+readiness, 50 for the first fence, two 321-second streams and up to 90 seconds
+of synchronous Kubernetes predicate overrun, totaling 2042 seconds. This leaves
+more than 15 minutes for the first archive's local validation/hash and other
+local I/O. Local validation has no hard deadline, so this is a conservative
+allowance, not a guarantee that arbitrarily slow storage can finish. The fixture
+checks rendered Pod lifetimes against the helper's actual command bounds.
+Later reader-removal plans and applies need readers absent at completion, not
+still running; they do not extend the required live-reader window. These bounds limit
 failed capture work, not the total outage: GitOps reconciliation, workload
 drain, provider calls and NFS stalls can take longer. There is no established
 recovery-time objective yet.

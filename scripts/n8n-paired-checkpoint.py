@@ -26,6 +26,12 @@ etcd_backup = importlib.util.module_from_spec(_backup_spec)
 _backup_spec.loader.exec_module(etcd_backup)
 CLAIMS = {"n8n": "n8n", "n8n-postgres": "data-n8n-postgres-0"}
 READERS = {"n8n-checkpoint-n8n", "n8n-checkpoint-postgres"}
+COMMAND_TIMEOUT = 30
+TERRAGRUNT_TIMEOUT = 900
+RECONCILE_TIMEOUT = 240
+READER_READY_TIMEOUT = 120
+FIRST_FENCE_TIMEOUT = 50
+STREAM_TIMEOUT = 320
 # Include all IaC so shared includes, catalog units and module inputs cannot
 # change underneath the prepared Application manifests when returning to main.
 UNPIN_SOURCES = ("IaC", "clusters/homelab/apps/n8n", "clusters/homelab/apps/n8n-postgres",
@@ -71,7 +77,7 @@ def terminate_command(process):
 
 
 def run(command, **kwargs):
-    timeout = kwargs.pop("timeout", 30)
+    timeout = kwargs.pop("timeout", COMMAND_TIMEOUT)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                text=True, start_new_session=True, **kwargs)
     try:
@@ -182,6 +188,15 @@ def require_application_bases(live, bases):
     for app in phase.APPS:
         if normalized(live[app]["spec"]) != normalized(bases[app]["spec"]):
             raise ValueError(f"{app} rendered Application differs from live spec; reconcile ordinary desired state before preparation")
+
+
+def require_generated_units():
+    """Generated units are verbatim catalog copies, including the mandatory guard."""
+    template = (ROOT / "IaC/.catalog/units/live/argocd-app/terragrunt.hcl").read_bytes()
+    for app in phase.APPS:
+        unit = ROOT / "IaC/live/argocd-apps" / app / "terragrunt.hcl"
+        if not unit.is_file() or unit.read_bytes() != template:
+            raise ValueError(f"{app} generated unit differs from guarded catalog; regenerate the current stack before checkpoint")
 
 
 def ready_without_restarts(pod):
@@ -321,7 +336,7 @@ class PodExitWatch:
         self.process.stderr.close()
 
 
-def terragrunt(unit, *args, timeout=900):
+def terragrunt(unit, *args, timeout=TERRAGRUNT_TIMEOUT):
     return run(["terragrunt", "--log-disable", "run", "--disable-bucket-update",
                 "--backend-bootstrap=false", "--", *args], cwd=unit, timeout=timeout)
 
@@ -356,7 +371,7 @@ def apply_phase(directory, session, app, target, expected_main_revision=None):
         "before": {name: phase.markers(item) for name, item in live.items()}})
     output = terragrunt(unit, "apply", "-input=false", "-no-color", "-lock-timeout=30s", str(plan))
     (attempt / "apply.log").write_text(output)
-    wait_for(lambda: application_synced(app, desired, expected_main_revision or session["revision"]), 240, f"{app} {target} reconciliation")
+    wait_for(lambda: application_synced(app, desired, expected_main_revision or session["revision"]), RECONCILE_TIMEOUT, f"{app} {target} reconciliation")
 
 
 def application_synced(app, desired, revision):
@@ -431,7 +446,7 @@ def stream_archive(directory, kind, assert_fence=None):
                                     "n8n-checkpoint-" + kind, "-c", "reader", "--", "timeout", "300",
                                     "/bin/bash", "/capture/read.sh", kind], stdout=stream, stderr=errors)
         try:
-            deadline = time.monotonic() + 320
+            deadline = time.monotonic() + STREAM_TIMEOUT
             while process.poll() is None and time.monotonic() < deadline:
                 if assert_fence:
                     assert_fence()
@@ -505,6 +520,7 @@ def prepare(parent, talosconfig, talosctl):
     revision = run(["git", "rev-parse", "HEAD"], cwd=ROOT).strip()
     if run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip() != revision:
         raise ValueError("prepare from freshly fetched current main")
+    require_generated_units()
     bases = {}
     for app in phase.APPS:
         bases[app] = json.loads(run(["terragrunt", "--log-disable", "render", "--json", "--write=false"],
@@ -637,6 +653,7 @@ def unpin(directory, session):
 
 
 def capture(directory, session):
+    require_generated_units()
     watches, observer = [], None
     safe_to_resume = True
     live = phase.load_live()
@@ -667,9 +684,9 @@ def capture(directory, session):
             write_json(directory / (app + "-shutdown.json"), watch.terminal)
         apply_phase(directory, session, "n8n-postgres", "capture")
         wait_for(lambda: all(any(p["metadata"]["name"] == name and p.get("status", {}).get("phase") == "Running"
-                                for p in source_pods()) for name in READERS), 120, "readers")
+                                for p in source_pods()) for name in READERS), READER_READY_TIMEOUT, "readers")
         observer = CaptureFence(session)
-        wait_for(lambda: observer.observations > 0 or observer.error is not None, 50, "first fence")
+        wait_for(lambda: observer.observations > 0 or observer.error is not None, FIRST_FENCE_TIMEOUT, "first fence")
         observer.require_valid()
         archives = {}
         for kind in ("n8n", "postgres"):

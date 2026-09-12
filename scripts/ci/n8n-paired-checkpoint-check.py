@@ -56,6 +56,56 @@ def writer_pods():
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_prepare_and_capture_reject_old_or_modified_generated_guard(self):
+        template_path = Path("IaC/.catalog/units/live/argocd-app/terragrunt.hcl")
+        template = (ROOT / template_path).read_text()
+
+        def run(command, **_kwargs):
+            if command[0] == "terragrunt":
+                self.fail("old generated units must be rejected before rendering")
+            if command[:3] == ["kubectl", "config", "current-context"]:
+                return "admin@homelab"
+            if command[0] == "kubectl":
+                return "https://10.1.0.199:6443"
+            return "" if command[1] == "diff" else REVISION
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / template_path).parent.mkdir(parents=True)
+            (root / template_path).write_text(template)
+            units = {}
+            for app in phase.APPS:
+                unit = root / "IaC/live/argocd-apps" / app / "terragrunt.hcl"
+                unit.parent.mkdir(parents=True)
+                unit.write_text(template)
+                units[app] = unit
+            with patch.object(checkpoint, "ROOT", root), \
+                    patch.object(checkpoint, "private_destination", return_value=root), \
+                    patch.object(checkpoint, "run", side_effect=run), \
+                    patch.object(phase, "load_live") as live_read, \
+                    patch.object(checkpoint, "apply_phase") as apply, \
+                    patch.object(checkpoint, "resume") as resume:
+                checkpoint.require_generated_units()
+                for unit in units.values():
+                    for old in (template.replace('"plan", "apply", "destroy", "import", "refresh"', '"plan"'),
+                                template[:template.index('  before_hook "n8n_checkpoint_guard"')] + "}\n",
+                                None):
+                        if old is None:
+                            unit.unlink()
+                        else:
+                            unit.write_text(old)
+                        for command in ("prepare", "capture"):
+                            with self.subTest(unit=unit.parent.name, old=old is None, command=command), \
+                                    self.assertRaisesRegex(ValueError, "regenerate the current stack"):
+                                if command == "prepare":
+                                    checkpoint.prepare(root, Path("/unused/config"), Path("/unused/talosctl"))
+                                else:
+                                    checkpoint.capture(root, {})
+                        unit.write_text(template)
+                live_read.assert_not_called()
+                apply.assert_not_called()
+                resume.assert_not_called()
+
     def test_prepare_requires_zero_restarts_and_matching_application_bases(self):
         bases = {app: base(app) for app in phase.APPS}
 
@@ -204,6 +254,24 @@ class CheckpointTests(unittest.TestCase):
         for pod in pods:
             self.assertRegex(pod, r"(?m)^  namespace: automation$")
             self.assertEqual(re.findall(r"^      name: (n8n-checkpoint-reader\S*)", pod, re.MULTILINE), [expected])
+
+    def test_rendered_reader_lifetime_covers_last_required_reader_use(self):
+        rendered = subprocess.run(["kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/n8n-postgres-capture")],
+                                  check=True, capture_output=True, text=True).stdout
+        # Readers can start at the beginning of provider apply. Three serial
+        # kubectl calls cover sync/readiness predicate overshoot; local first
+        # archive verification gets a 15-minute allowance, not a hard deadline.
+        needed = (checkpoint.TERRAGRUNT_TIMEOUT + checkpoint.RECONCILE_TIMEOUT + checkpoint.READER_READY_TIMEOUT
+                  + checkpoint.FIRST_FENCE_TIMEOUT + 2 * (checkpoint.STREAM_TIMEOUT + 1)
+                  + 3 * checkpoint.COMMAND_TIMEOUT + 15 * 60)
+        pods = [doc for doc in rendered.split("\n---\n") if "\nkind: Pod\n" in doc]
+        self.assertEqual(len(pods), 2)
+        for pod in pods:
+            active = int(re.search(r"^  activeDeadlineSeconds: (\d+)$", pod, re.MULTILINE)[1])
+            sleep = int(re.search(r"^    - sleep (\d+)$", pod, re.MULTILINE)[1])
+            self.assertGreaterEqual(sleep, needed)
+            self.assertGreater(active, sleep)
+            self.assertLessEqual(active, 3600, "keep abandoned readers bounded to one hour")
 
     def test_private_destination_rejects_temporary_storage_and_any_checkout(self):
         with tempfile.TemporaryDirectory() as directory:

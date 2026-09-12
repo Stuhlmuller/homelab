@@ -10,7 +10,7 @@ metadata:
     checkov.io/skip2: CKV_K8S_40=The read-only n8n reader preserves existing application UID 1000; source ownership must not be changed for capture.
 spec:
   automountServiceAccountToken: false
-  activeDeadlineSeconds: 900
+  activeDeadlineSeconds: 3600
   terminationGracePeriodSeconds: 5
   restartPolicy: Never
   securityContext:
@@ -26,7 +26,7 @@ spec:
       command:
         - /bin/sh
         - -ec
-        - sleep 890
+        - sleep 3590
       resources:
         requests:
           cpu: 10m
@@ -86,7 +86,7 @@ metadata:
     checkov.io/skip1: CKV2_K8S_6=Reader Pods have no service or listeners and mount only their one source read-only.
 spec:
   automountServiceAccountToken: false
-  activeDeadlineSeconds: 900
+  activeDeadlineSeconds: 3600
   terminationGracePeriodSeconds: 5
   restartPolicy: Never
   securityContext:
@@ -102,7 +102,7 @@ spec:
       command:
         - /bin/sh
         - -ec
-        - sleep 890
+        - sleep 3590
       resources:
         requests:
           cpu: 10m
