@@ -55,7 +55,86 @@ def writer_pods():
             for app, claim in checkpoint.CLAIMS.items()]
 
 
+def ready_writer(app, _session):
+    return writer_pods()[phase.APPS.index(app)]
+
+
 class CheckpointTests(unittest.TestCase):
+    def test_post_stop_postgres_restart_does_not_block_app_recovery(self):
+        originals = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS},
+                   "writers": {app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, originals)}}
+        current = live()
+        current["n8n"].update(phase.profile(base("n8n"), "stopped", SESSION, REVISION))
+        pg = copy.deepcopy(originals[1])
+        pg["status"]["containerStatuses"][0]["restartCount"] = 1
+        pods, applied = [pg], []
+
+        def apply(_directory, _session, app, target, **_kwargs):
+            applied.append((app, target))
+            current[app].update(phase.profile(base(app), target, SESSION, REVISION))
+            current[app]["status"]["sync"]["comparedTo"] = copy.deepcopy(current[app]["spec"])
+            if app == "n8n" and target == "recovered":
+                pod = copy.deepcopy(originals[0])
+                pod["metadata"]["name"] = "n8n-recovered"
+                pod["status"]["containerStatuses"][0]["restartCount"] = 2
+                pods.append(pod)
+
+        def wait(predicate, _seconds, label):
+            if not predicate():
+                raise TimeoutError(label)
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "source_pods", return_value=pods), \
+                patch.object(checkpoint, "kube", side_effect=lambda *args: current[args[2]]), \
+                patch.object(checkpoint, "apply_phase", side_effect=apply), \
+                patch.object(checkpoint, "fence"), \
+                patch.object(checkpoint, "wait_for", side_effect=wait), \
+                patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")) as command:
+            root = Path(directory)
+            checkpoint.resume(root, session)
+            self.assertEqual(applied, [("n8n-postgres", "recovered"), ("n8n", "recovered")])
+            command.side_effect = ["", "", REVISION]
+            checkpoint.unpin(root, session)
+            command.side_effect = AssertionError("normal retry must not fetch GitHub")
+            checkpoint.unpin(root, session)
+            self.assertEqual(applied, [("n8n-postgres", "recovered"), ("n8n", "recovered"),
+                                       ("n8n-postgres", "normal"), ("n8n", "normal")])
+            receipts = list(root.glob("resumed-*.json")) + list(root.glob("unpinned-*.json"))
+            self.assertEqual(len(receipts), 3)
+            for receipt in receipts:
+                counts = json.loads(receipt.read_text())["observed_restarts"]
+                self.assertEqual(counts["n8n-postgres"], {"pod": "n8n-postgres-old", "containers": {"app": 1}})
+                self.assertEqual(counts["n8n"], {"pod": "n8n-recovered", "containers": {"app": 2}})
+
+    def test_recovery_still_requires_complete_readiness_and_original_images(self):
+        original = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS},
+                   "writers": {app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, original)}}
+        current = live()
+        for app in phase.APPS:
+            for fault in ("unready", "missing-status", "incomplete-status", "image-drift"):
+                pods = copy.deepcopy(original)
+                expected = copy.deepcopy(session)
+                pod = pods[phase.APPS.index(app)]
+                if fault == "unready":
+                    pod["status"]["containerStatuses"][0]["ready"] = False
+                elif fault == "missing-status":
+                    pod["status"]["containerStatuses"] = []
+                elif fault == "incomplete-status":
+                    pod["spec"]["containers"].append({"name": "sidecar", "image": "pinned"})
+                    expected["writers"][app]["images"]["sidecar"] = "pinned"
+                else:
+                    pod["spec"]["containers"][0]["image"] = "changed"
+                with self.subTest(app=app, fault=fault), \
+                        patch.object(phase, "load_live", return_value=current), \
+                        patch.object(checkpoint, "source_pods", return_value=pods), \
+                        patch.object(checkpoint, "kube", side_effect=lambda *args: current[args[2]]):
+                    self.assertFalse(checkpoint.ready(app, expected))
+                    with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                        checkpoint.require_service_complete(expected, REVISION)
+
     def test_prepare_and_capture_reject_old_or_modified_generated_guard(self):
         template_path = Path("IaC/.catalog/units/live/argocd-app/terragrunt.hcl")
         template = (ROOT / template_path).read_text()
@@ -333,7 +412,7 @@ class CheckpointTests(unittest.TestCase):
     def test_unpin_fetch_failure_leaves_recovered_service_untouched(self):
         current = {app: phase.profile(base(app), "recovered", SESSION, REVISION) for app in phase.APPS}
         with patch.object(phase, "load_live", return_value=current), \
-                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                 patch.object(checkpoint, "run", side_effect=subprocess.CalledProcessError(1, ["git", "fetch"])), \
                 patch.object(checkpoint, "apply_phase") as apply:
             with self.assertRaises(subprocess.CalledProcessError):
@@ -372,7 +451,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(checkpoint, "fence", side_effect=lambda *_args, **_kwargs: events.append("fence")), \
                 patch.object(checkpoint, "talos_fence"), \
                 patch.object(checkpoint, "apply_phase", side_effect=apply), \
-                patch.object(checkpoint, "require_service_complete"), \
+                patch.object(checkpoint, "require_service_complete", return_value={}), \
                 patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")):
             checkpoint.resume(Path(directory), {"id": SESSION, "revision": REVISION,
                               "writers": {app: {"name": app + "-old"} for app in phase.APPS}})
@@ -382,7 +461,7 @@ class CheckpointTests(unittest.TestCase):
     def test_unpin_changed_sources_do_not_reconcile_main(self):
         current = {app: phase.profile(base(app), "recovered", SESSION, REVISION) for app in phase.APPS}
         with patch.object(phase, "load_live", return_value=current), \
-                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                 patch.object(checkpoint, "run", side_effect=["", subprocess.CalledProcessError(1, ["git", "diff"])]), \
                 patch.object(checkpoint, "apply_phase") as apply:
             with self.assertRaises(subprocess.CalledProcessError):
@@ -424,7 +503,7 @@ class CheckpointTests(unittest.TestCase):
 
                     with patch.object(checkpoint, "ROOT", root), \
                             patch.object(phase, "load_live", return_value=current), \
-                            patch.object(checkpoint, "ready", return_value=True), \
+                            patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                             patch.object(checkpoint, "run", side_effect=run), \
                             patch.object(checkpoint, "apply_phase") as apply, \
                             patch.object(checkpoint, "write_json") as receipt:
@@ -448,9 +527,9 @@ class CheckpointTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(phase, "load_live", return_value=current), \
-                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                 patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
-                patch.object(checkpoint, "require_service_complete"), \
+                patch.object(checkpoint, "require_service_complete", return_value={}), \
                 patch.object(checkpoint, "apply_phase", side_effect=apply):
             checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
         self.assertEqual(calls, [("n8n", "normal", "c" * 40)])
@@ -459,7 +538,7 @@ class CheckpointTests(unittest.TestCase):
         current = live()
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(phase, "load_live", return_value=current), \
-                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                 patch.object(checkpoint, "kube", side_effect=lambda *args: current[args[2]]), \
                 patch.object(checkpoint, "run", side_effect=AssertionError("completed unpin needs no GitHub")), \
                 patch.object(checkpoint, "apply_phase") as apply:
@@ -486,7 +565,7 @@ class CheckpointTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(phase, "load_live", return_value=current), \
-                patch.object(checkpoint, "ready", return_value=True) as ready, \
+                patch.object(checkpoint, "ready_pod", side_effect=ready_writer) as ready, \
                 patch.object(checkpoint, "application_synced", return_value=True) as synced, \
                 patch.object(checkpoint, "apply_phase", side_effect=apply) as applied, \
                 patch.object(checkpoint, "wait_for", side_effect=wait), \
@@ -499,11 +578,11 @@ class CheckpointTests(unittest.TestCase):
             applied.reset_mock()
             command.side_effect = AssertionError("normal retry must not fetch GitHub")
             for unready in phase.APPS:
-                ready.side_effect = lambda app, _session, unready=unready: app != unready
+                ready.side_effect = lambda app, _session, unready=unready: ready_writer(app, _session) if app != unready else None
                 with self.assertRaisesRegex(ValueError, "ready and reconciled"):
                     checkpoint.unpin(root, session)
                 self.assertEqual(list(root.glob("unpinned-*.json")), [])
-            ready.side_effect = None
+            ready.side_effect = ready_writer
             synced.return_value = False
             with self.assertRaisesRegex(ValueError, "ready and reconciled"):
                 checkpoint.unpin(root, session)
@@ -518,7 +597,7 @@ class CheckpointTests(unittest.TestCase):
         for target in ("normal", "recovered"):
             current = {app: phase.profile(base(app), target, SESSION, REVISION) for app in phase.APPS}
             with patch.object(phase, "load_live", return_value=current), \
-                    patch.object(checkpoint, "ready", return_value=True), \
+                    patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                     patch.object(checkpoint, "application_synced", return_value=False), \
                     patch.object(checkpoint, "write_json") as receipt, \
                     patch.object(checkpoint, "apply_phase") as applied:
@@ -549,7 +628,7 @@ class CheckpointTests(unittest.TestCase):
                         raise TimeoutError("last spec applied before reconciliation completed")
 
                 with patch.object(phase, "load_live", return_value=current), \
-                        patch.object(checkpoint, "ready", return_value=True), \
+                        patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                         patch.object(checkpoint, "kube", side_effect=lambda *args, current=current: current[args[2]]), \
                         patch.object(checkpoint, "apply_phase", side_effect=apply) as applied, \
                         patch.object(checkpoint, "run", side_effect=["", "", fetched_revision]) as command:
@@ -585,7 +664,7 @@ class CheckpointTests(unittest.TestCase):
             current = live()
             current["n8n"] = phase.profile(base("n8n"), "recovered", SESSION, REVISION)
             with patch.object(phase, "load_live", return_value=current), \
-                    patch.object(checkpoint, "ready", return_value=True), \
+                    patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
                     patch.object(checkpoint, "run", side_effect=["", "", "d" * 40]), \
                     patch.object(checkpoint, "apply_phase") as applied:
                 with self.assertRaisesRegex(ValueError, "main changed after unpin started"):
@@ -611,7 +690,7 @@ class CheckpointTests(unittest.TestCase):
         for target in ({"session": "d" * 32, "revision": REVISION}, {"session": SESSION, "revision": "main"}, []):
             with tempfile.TemporaryDirectory() as directory, \
                     patch.object(phase, "load_live", return_value=live()), \
-                    patch.object(checkpoint, "require_service_complete") as complete, \
+                    patch.object(checkpoint, "require_service_complete", return_value={}) as complete, \
                     patch.object(checkpoint, "apply_phase") as applied:
                 root = Path(directory)
                 checkpoint.write_json(root / "unpin-target.json", target)
@@ -789,7 +868,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(checkpoint, "apply_phase", side_effect=apply), \
                 patch.object(checkpoint, "PodExitWatch", side_effect=watch), \
                 patch.object(checkpoint, "CaptureFence", return_value=observer), \
-                patch.object(checkpoint, "require_service_complete"), \
+                patch.object(checkpoint, "require_service_complete", return_value={}), \
                 patch.object(checkpoint, "wait_for"), patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")), \
                 patch.object(checkpoint, "stream_archive", side_effect=ValueError("reader failure")):
             with self.assertRaisesRegex(ValueError, "reader failure"):

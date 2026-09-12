@@ -199,12 +199,16 @@ def require_generated_units():
             raise ValueError(f"{app} generated unit differs from guarded catalog; regenerate the current stack before checkpoint")
 
 
-def ready_without_restarts(pod):
+def containers_ready(pod):
     containers = pod.get("spec", {}).get("containers", [])
     statuses = pod.get("status", {}).get("containerStatuses", [])
     return (bool(containers) and len(statuses) == len(containers)
             and {item["name"] for item in containers} == {item["name"] for item in statuses}
-            and all(item.get("ready") and item.get("restartCount") == 0 for item in statuses))
+            and all(item.get("ready") for item in statuses))
+
+
+def ready_without_restarts(pod):
+    return containers_ready(pod) and all(item.get("restartCount") == 0 for item in pod["status"]["containerStatuses"])
 
 
 def check_nodes(expected, current):
@@ -405,14 +409,20 @@ def absent(name):
     return all(p["metadata"]["name"] != name for p in source_pods())
 
 
-def ready(app, session):
+def ready_pod(app, session):
     candidates = [p for p in source_pods() if p["metadata"]["name"].startswith(app + "-")
                   and p["metadata"]["name"] not in READERS]
     if app == "n8n":
         candidates = [p for p in candidates if not p["metadata"]["name"].startswith("n8n-postgres-")]
-    return (len(candidates) == 1
+    if (len(candidates) == 1
             and {c["name"]: c["image"] for c in candidates[0]["spec"]["containers"]} == session["writers"][app]["images"]
-            and ready_without_restarts(candidates[0]))
+            and containers_ready(candidates[0])):
+        return candidates[0]
+    return None
+
+
+def ready(app, session):
+    return ready_pod(app, session) is not None
 
 
 def verify_archive(path, kind):
@@ -578,14 +588,19 @@ def require_service_complete(session, normal_revision, normal_only=False):
     """A phase marker alone never proves that its workloads have recovered."""
     live = phase.load_live()
     require_session(live, session)
+    restarts = {}
     for app in phase.APPS:
         target = phase.markers(live[app])[phase.PHASE]
         if target not in (("normal",) if normal_only else ("normal", "recovered")):
             raise ValueError("service has not reached its completed phase")
         desired = phase.profile(session["bases"][app], target, session["id"], session["revision"])
         revision = session["revision"] if target == "recovered" else normal_revision
-        if not ready(app, session) or not application_synced(app, desired, revision):
+        pod = ready_pod(app, session)
+        if pod is None or not application_synced(app, desired, revision):
             raise ValueError("both original workloads must be ready and reconciled before completion")
+        restarts[app] = {"pod": pod["metadata"]["name"], "containers": {
+            item["name"]: item.get("restartCount") for item in pod["status"]["containerStatuses"]}}
+    return restarts
 
 
 def resume(directory, session):
@@ -613,9 +628,10 @@ def resume(directory, session):
         fence(session, [session["writers"]["n8n"]], check_survivors=False)
         apply_phase(directory, session, "n8n", "recovered")
     wait_for(lambda: ready("n8n", session), 300, "n8n database-aware readiness")
-    require_service_complete(session, normal_revision(directory, session))
+    restarts = require_service_complete(session, normal_revision(directory, session))
     write_json(directory / ("resumed-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
-               "revision": session["revision"], "next_step": "unpin after reachable main source verification"})
+               "revision": session["revision"], "observed_restarts": restarts,
+               "next_step": "unpin after reachable main source verification"})
 
 
 def unpin(directory, session):
@@ -624,9 +640,9 @@ def unpin(directory, session):
     require_session(live, session)
     if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
         target_revision = normal_revision(directory, session)
-        require_service_complete(session, target_revision, normal_only=True)
+        restarts = require_service_complete(session, target_revision, normal_only=True)
         write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
-                   "already_normal": True, "main_revision": target_revision})
+                   "already_normal": True, "main_revision": target_revision, "observed_restarts": restarts})
         return
     if any(phase.markers(item)[phase.PHASE] not in ("normal", "recovered") for item in live.values()):
         raise ValueError("resume service before unpinning")
@@ -647,9 +663,9 @@ def unpin(directory, session):
         if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":
             apply_phase(directory, session, app, "normal", expected_main_revision=main_revision)
             wait_for(lambda app=app: ready(app, session), 300, app + " readiness after unpin")
-    require_service_complete(session, normal_only=True, normal_revision=main_revision)
+    restarts = require_service_complete(session, normal_only=True, normal_revision=main_revision)
     write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
-               "main_revision": main_revision})
+               "main_revision": main_revision, "observed_restarts": restarts})
 
 
 def capture(directory, session):

@@ -29,6 +29,9 @@ application restore has been verified for this code yet.
   recovery starts; failed cleanup blocks automatic resume.
 - Resume and unpin receipts require both original workloads ready and their
   Applications reconciled, including retries whose markers already read normal.
+  Recovery requires prepared images and complete current container readiness;
+  historical restart counts are recorded with their Pod names, not required to
+  be zero. Preflight and capture still require zero restarts before the outage.
   Completion binds to the durable unpin target (or prepared main before unpin)
   and Argo's compared sources/destination, so old pinned sync status is rejected.
   Partial unpin retries refuse a changed main target; retain the session record.

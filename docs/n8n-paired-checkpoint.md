@@ -76,9 +76,11 @@ Argo's compared sources/destination matching their current specs; capture
 checks this again before the first stop. A pending chart rollout whose old Pods
 remain ready cannot establish the original image baseline for maintenance.
 Both original Pods must have every regular container ready with zero restarts,
-at preparation and immediately before capture. Historical restarts are refused
-because recovery also requires restart-free original workloads. Preparation and
-capture compare each rendered base against the complete live Application spec;
+at preparation and immediately before capture. This establishes a clean
+starting state; recovery instead requires current readiness and the prepared
+images, with observed cumulative restart counts recorded in its receipt.
+Preparation and capture compare each rendered base against the complete live
+Application spec;
 unapplied or stale generated settings must be reconciled through the ordinary
 owner before maintenance. Normalization is limited to known default source
 paths, absent/empty destination name and namespace annotations, and integer
@@ -162,9 +164,12 @@ python3 scripts/n8n-paired-checkpoint.py resume \
 ```
 
 Resume retains all candidate archives and original claims. It verifies the
-original images, PostgreSQL SQL readiness, n8n database-aware readiness and
-zero new restarts. It does not fetch GitHub: both Applications retain the
-prepared SHA and maintenance markers after service returns. This also applies
+prepared images, PostgreSQL SQL readiness and n8n database-aware readiness.
+Cumulative restart counts do not block service recovery;
+resume and both unpin receipt paths record each observed Pod and its container
+restart counts from the same readiness check. It does not fetch GitHub: both
+Applications retain the prepared SHA and maintenance markers after service
+returns. This also applies
 after a successful capture. Verify both public n8n entry paths and scheduled
 automation behavior separately after return to service.
 
