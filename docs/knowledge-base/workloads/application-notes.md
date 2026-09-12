@@ -55,126 +55,27 @@ follow-up requiring its existing authentication contract to be checked.
 
 Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
 `https://dispatcharr.stinkyboi.com` through the Octelium app access plane. Its
-`data` PVC stores file-backed runtime data and operator-configured IPTV sources,
-while database state lives in the dedicated `dispatcharr-postgres` StatefulSet
-and PVC. Do not switch it to upstream all-in-one mode on `nfs-default`: that
-image recursively changes ownership below `/data/db`, which conflicts with the
+`data` PVC stores uploads and file-backed runtime data; accounts, including the
+first administrator, and database configuration live in the dedicated
+`dispatcharr-postgres` StatefulSet and PVC. Do not switch it to upstream
+all-in-one mode on `nfs-default`: that image recursively changes ownership
+below `/data/db`, which conflicts with the
 QNAP export's squashed UID behavior. The web container uses upstream
 `PUID`/`PGID` `65534` so nginx and Django match the export's anonymous owner.
-The 2026-08-27 rollout then produced a ready three-container web Pod and ready
-PostgreSQL StatefulSet; internal HTTP returned `200` while the protected
-hostname returned `503`. September 5 revalidation found internal HTTP `200`,
-converged GitOps state, and an Octelium `401` denial at the public hostname.
-September 6 browser verification reached the Octelium login redirect.
-Authenticated Dispatcharr UI access remains unverified; complete that check
-before declaring application access recovered. See
-[[../operations/audit-2026-09-04]] and [[../operations/continuous-improvement]].
-Provider credentials, playlist URLs, and guide source secrets stay outside git.
+The 2026-08-27 rollout produced ready web/database workloads while the protected
+hostname returned `503`. On September 6, Octelium Entra login reached
+Dispatcharr `0.29.0` on pinned image `df768adc…`; its first-run UI refused setup
+for the forwarded public client IP. An authenticated Kubernetes port-forward
+bound to `127.0.0.1` returned `superuser_exists: false` and `setup_allowed: true`
+from the read-only setup endpoint. No POST or account creation was performed
+during that inspection.
 
-Generated or adopted upstream resources must still have one declared owner.
-Keep package capture and bootstrap commands in the workload README, and keep
-steady-state resources under Argo CD wherever the upstream lifecycle permits.
-
-## OpenClaw
-
-[[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
-remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
-
-Claw's reviewed assistant bundle lives in
-`clusters/homelab/apps/openclaw/assistant/`: Astra via Codex OAuth, managed
-personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
-09:00 briefing, twice-hourly daytime health watch, and one bounded daily
-improvement session. Stable automation declaration keys preserve history and
-operator pauses. After registering replacements, ID/name-checked reconciliation
-disables the legacy ten-minute auto-triage and daily improvement jobs, preserving
-history and unrelated security, memory, and research routines.
-The existing allowlisted owner supplies the Discord DM route;
-ambiguous routing defers scheduling without breaking gateway startup. Verify
-`assistant-reconciliation.json` reports `ready` as well as Pod readiness.
-Bootstrap retains original files privately and
-preserves personal memory. The Pod annotation hashes the full bundle so GitOps
-changes take effect on restart. See the app README for validation and rollback;
-configured Astra is not proof of account access until a real turn succeeds.
-
-OpenClaw persists runtime state on the `openclaw` PVC under `/data/openclaw`.
-The `operator-toolbox` init container installs the operator command set with
-Nix, then shares both `/toolbox/profile` and `/nix` with the app and bootstrap
-containers. Keep the copied Nix database and shared store as a matched unit:
-copying only the profile runtime closure while copying the full database leaves
-missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
-the homelab flake.
-
-On 2026-09-02, five orphaned `openclaw-hooks` processes consumed about `2.04Gi`
-before the `2026.7.1` app reached its `4Gi` limit and was OOM-killed. This
-matches [upstream OpenClaw issue #109421](https://github.com/openclaw/openclaw/issues/109421):
-a timed-out Codex native hook lost ownership of its detached relay child.
-Desired state now pins the first current
-stable release containing the Linux fix, `2026.8.2`; keep the `4Gi` limit and
-require 24 hours without another app restart or orphaned relay before closing
-the incident. Its `Recreate` bootstrap creates a verified, owner-only migration
-archive on the same NFS volume, runs the targeted session SQLite inspect,
-dry-run, import, and post-import inspection, keeps Kubernetes as the external
-supervisor, and pins concurrency at the prior effective value of four. Generic
-doctor repair is intentionally excluded because it can rewrite unrelated skill
-policy. Gateway startup owns deterministic config migrations, not persisted
-session or cron route repair. A pre-rollout count-only inspection found 20
-entries in one session store with no legacy Codex route field and no cron JSON
-store, so this upgrade needs no separate route mutation. The checkpoint is not
-independent protection from NAS failure; retain OpenClaw's migration originals
-until the soak closes.
-
-## Zimaboard-0 Resource Envelope
-
-A seven-day Prometheus review on 2026-08-26 found that scheduling requests did
-not describe the work pinned to `zimaboard-0`. Deluge's `port-config` helper
-used about `905m` CPU at p95 while retrying a console-output false negative
-every two seconds, and `daemon-metrics` used about `296m` because every scrape
-spawned `deluge-console`. The Deluge app itself measured `437m` CPU and `213Mi`
-memory at p95. Prowlarr, Radarr, and Sonarr stayed below `24m` CPU p95 but each
-needed roughly `134-171Mi` memory. OpenClaw measured about `995m` CPU and
-`1.8Gi` memory at p95. Multiple app pod series exceeded `4Gi`, maxima approached
-`6Gi`, and three containers terminated as OOMKilled.
-
-Desired state now bounds every long-running container. Deluge verifies typed
-`core.conf` values, backs failed startup reconciliation off to 60 seconds,
-rechecks every five minutes, and refreshes cached health metrics once per
-minute. OpenClaw caps init and app CPU bursts and cannot schedule on an Octelium
-dataplane node. Its `4Gi` app limit deliberately trades an app OOM for worker
-health after a 2026-08-28 rise to `5.36Gi` immediately preceded loss of the
-8 GiB worker. The three Servarr apps have explicit requests and limits.
-Re-measure after 48 hours of healthy runtime before raising a limit or relaxing
-affinity.
-
-Use [[inventory]] as the current cross-workload summary and read the named
-source README before changing an application.
-
-## Prometheus
-
-Prometheus owns the durable notification path from in-cluster alert rules to
-Alertmanager, Discord, and OpenClaw. It selects repo-owned `ServiceMonitor`
-objects and repo-owned `PrometheusRule` objects in the `monitoring` namespace
-without requiring Helm release labels, so cross-workload alert coverage can
-live beside the responsible application manifests.
-
-Argo CD application health and sync alerting has a Prometheus-native safety
-net in `clusters/homelab/apps/prometheus/argocd-prometheusrules.yaml`. Keep
-that rule file aligned with the Grafana-managed Argo CD alerts, but do not
-depend on Grafana rule evaluation for the only Argo CD notification path. After
-rollout, validate that the `argocd-application-health` `PrometheusRule` is
-present and that Prometheus is receiving `argocd_app_info`.
-
-[[../operations/monitoring-resource-requests]] records the September 2026
-memory measurements, explicit monitoring reservations, scheduling-fit model,
-and required post-rollout checks. These requests protect scheduler accounting;
-the cluster's remaining failover-capacity deficit remains open.
-
-## Sonarr
-
-Sonarr runs behind Octelium with `AuthenticationMethod=External` and
-`AuthenticationRequired=DisabledForLocalAddresses`. Its startup path mirrors the
-Radarr auth recovery pattern: active config is on `sonarr-config-local` on
-`zimaboard-0`; init containers normalize the local `config.xml`, remove legacy
-auth tags, and pass matching `SONARR__AUTH__*` environment settings while the
-linuxserver default config init script stays disabled. The validated one-time
-NFS migration resources are removed. Keep the legacy NFS claim as the nightly
-archive and rollback target; only the backup CronJob mounts it.
+The user confirmed Dispatcharr was never configured. Read-only PostgreSQL
+inspection found no accounts/admins, channels or streams, and only the default
+custom M3U seed without a configured provider URL, file,
+username or password, consistent with first-run state. Preserve both existing
+data and PostgreSQL claims during setup. Transport and Octelium authentication
+are verified; first-admin/provider setup and functional acceptance remain open.
+Follow the loopback-only human setup procedure in
+`clusters/homelab/apps/dispatcharr/README.md`; do not broaden
+public setup access or create an administrator through a shell command.
