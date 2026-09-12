@@ -311,3 +311,15 @@ The supported operator recovery restores service but does not change that
 upstream admission behavior. Review a future upstream fix against this
 blocked-profile reproduction before retiring the helper; do not implement
 unconditional block clearing or automatic credit redemption.
+
+### Optional daily note caused a visible Bash failure, September 11 Pacific
+
+The 01:39 UTC normal heartbeat completed with `no_change`, but its canonical
+Bash tool receipt had `isError: true`: a combined `cat` included the absent
+`memory/2026-09-11.md`. Earlier recovery checks only read HEARTBEAT.md, so a
+successful heartbeat summary did not prove the full checklist's tools passed.
+Managed HEARTBEAT.md now requires checking optional status/daily-note existence
+before reading, preserves real read errors, and forbids creating empty notes
+just to satisfy the check. Its content digest triggers normal GitOps bootstrap.
+Acceptance requires a full ordinary heartbeat with the optional note absent,
+zero failed tool receipts, and a successful terminal heartbeat outcome.
