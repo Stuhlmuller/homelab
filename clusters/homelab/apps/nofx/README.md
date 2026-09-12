@@ -16,3 +16,9 @@ The backend stores its SQLite database and logs on the `nofx-data` NFS PVC at
 
 Rollout depends on External Secrets, Istio ambient, Octelium,
 `octelium-public`, and the `nfs-default` storage class.
+
+## Native access policy reconciliation
+
+Argo CD does not apply the native Octelium Service catalog. Use the fixed
+[NOFX reconciliation path](../../../../docs/octelium-nofx-reconciliation.md)
+after review to enforce the committed non-anonymous human-access policy.

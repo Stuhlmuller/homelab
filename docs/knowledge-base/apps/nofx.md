@@ -2,11 +2,11 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-04
+updated: 2026-09-06
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
-`https://nofx.stinkyboi.com`. Its Octelium Service requires
+`https://nofx.stinkyboi.com`. Its declared Octelium Service requires
 `homelab-human-web-access` before forwarding to NOFX's own login. The GitOps
 source is `clusters/homelab/apps/nofx`. Octelium passes NOFX's application
 `Authorization` header because NOFX sends its session JWT there. The
@@ -43,19 +43,27 @@ policy, and no authorization-header mode. Kubernetes and tunnel routes matched
 git. Desired state now explicitly declares `isAnonymous: false`; the existing
 policy and `authorizationMode: PASS` remain required.
 
-After authenticated Octelium admin transport works, reconcile only this Service
-from the reviewed repository root; do not edit the resource database:
+Use the [fixed NOFX operator path](../../octelium-nofx-reconciliation.md) after
+its review and merge. It verifies the pinned native client, starts the scoped
+Tunnel transport, and defaults to read-only inspection:
 
 ```sh
-set -o pipefail
-yq ea 'select(.kind == "Service" and .metadata.name == "nofx")' \
-  docs/examples/octelium/homelab-services.yaml |
-  octeliumctl apply --domain stinkyboi.com --include Service -
+nix develop --command python3 -I scripts/octelium-nofx-reconcile.py
 ```
 
-Repeat the command and require `No applied changes in Cluster Core resources`.
-Then require unauthenticated `/` and `/api/health` to return HTTP 401 with the
-Octelium unauthorized header, and verify authenticated NOFX login still works.
+The runbook checks the clean, exact reviewed commit before entering Nix.
+Execution uses the same helper with `--execute --expected-sha` and the full
+reviewed main commit, as documented in that runbook. It requires matching local
+and remote main, a clean checkout including untracked files, and passing
+validation; it applies only NOFX twice and verifies convergence and its access
+policy. Do not substitute a raw catalog pipe or edit the resource database.
+Then require unauthenticated `/` and `/api/health` to receive an Octelium denial
+or login redirect, verify authorized NOFX login, and correlate the audit event.
 Argo CD syncing the Kubernetes app does not reconcile the native Octelium
 catalog. Rollback must retain the authentication policy and header passthrough;
 do not restore anonymous access.
+
+The native helper requires isolated Python before importing modules, restores
+an authenticated missing `nofx.default` during guarded execution, and verifies
+both human policy enforcement and `Authorization` passthrough after applying.
+Use the [fixed reconciliation runbook](../../octelium-nofx-reconciliation.md).
