@@ -1,5 +1,9 @@
 # Manual Etcd Offsite Publication
 
+For recurring attempts using this publisher and an existing AWS/SSO profile,
+see [Scheduled Etcd Offsite Attempts](etcd-offsite-schedule.md). The manual
+commands below remain unchanged.
+
 `scripts/etcd-offsite-backup.py` publishes one already verified local snapshot
 and manifest, then downloads their exact S3 versions and repeats offline
 checksum verification. It uses the

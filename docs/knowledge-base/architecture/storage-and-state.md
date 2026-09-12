@@ -62,7 +62,11 @@ metadata and local checksum checks passed with the source preserved. One
 earlier manual post-upgrade snapshot passed
 [[operations/etcd-offline-restore-validation|offline database restoration]].
 These are distinct snapshots and checks; neither proves control-plane or PVC
-recovery, and no unattended offsite schedule is deployed.
+recovery. The separate [offsite attempt scheduler](../../etcd-offsite-schedule.md)
+now has a reviewed-code installation path, private resumable attempts and
+source-age status, but no installed schedule or real recurring execution has
+been verified. It uses existing expiring AWS SSO sessions; remote alerting and
+indefinite unattended identity remain unresolved.
 
 ## Durable Storage
 
