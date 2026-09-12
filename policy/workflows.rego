@@ -301,10 +301,18 @@ private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
 	count(lines) == 5
 	lines[0] == "then"
-	safe_withheld_echo(lines[1])
+	safe_failure_notice(lines[1])
 	lines[2] == "exit 1"
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
+}
+
+safe_failure_notice(line) if {
+	safe_withheld_echo(line)
+}
+
+safe_failure_notice(line) if {
+	line == `python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log"`
 }
 
 safe_withheld_echo(line) if {

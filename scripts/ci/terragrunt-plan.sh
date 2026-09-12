@@ -135,20 +135,25 @@ plan_deleted_terragrunt_units() {
   done
 }
 
+echo "homelab-plan-stage: filter"
 prepare_terragrunt_filter_base
+echo "homelab-plan-stage: stack-generation"
 terragrunt_generate_stack
 clear_plan_artifacts IaC/bootstrap IaC/live/argocd-apps IaC/live/azuread-applications
 
+echo "homelab-plan-stage: bootstrap-plan"
 echo "::group::Argo CD bootstrap plan"
 (
   cd IaC/bootstrap/argocd
   terragrunt plan -lock=false -out plan.out -no-color
 )
 echo "::endgroup::"
+echo "homelab-plan-stage: bootstrap-json"
 render_plan_json_if_present "IaC/bootstrap/argocd" || true
 
 echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans because it manages KMS, IAM, and secret declarations that require the protected production apply role."
 
+echo "homelab-plan-stage: application-plans"
 echo "::group::Argo CD Application registration plan"
 (
   cd IaC/live/argocd-apps
@@ -156,6 +161,7 @@ echo "::group::Argo CD Application registration plan"
 )
 echo "::endgroup::"
 
+echo "homelab-plan-stage: application-json"
 while IFS= read -r unit_file; do
   unit_dir="$(dirname "$unit_file")"
   if plan_out_present "$unit_dir"; then
@@ -163,6 +169,7 @@ while IFS= read -r unit_file; do
   fi
 done < <(find IaC/live/argocd-apps -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
 
+echo "homelab-plan-stage: deleted-units"
 deleted_plan_units=()
 while IFS= read -r deleted_unit_dir; do
   deleted_plan_units+=("$deleted_unit_dir")
@@ -170,6 +177,7 @@ done < <(terragrunt_deleted_unit_paths)
 
 plan_deleted_terragrunt_units "${deleted_plan_units[@]}"
 
+echo "homelab-plan-stage: azure-plan"
 echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
@@ -177,6 +185,7 @@ if azuread_credentials_available; then
     terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*' true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
   )
 
+  echo "homelab-plan-stage: azure-json"
   while IFS= read -r unit_file; do
     unit_dir="$(dirname "$unit_file")"
     if plan_out_present "$unit_dir"; then
@@ -188,6 +197,7 @@ else
 fi
 echo "::endgroup::"
 
+echo "homelab-plan-stage: policy"
 validate_terraform_plan_policies
 
 echo "IaC/live/kubernetes-secrets is intentionally excluded from PR plans because it reads decrypted SSM parameters."

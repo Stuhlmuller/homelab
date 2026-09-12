@@ -368,6 +368,15 @@ then runs `scripts/ci/conftest-policies.sh` for static YAML policy checks. Plan
 details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
 
+Live-plan failures publish only the last fixed stage entered, through
+`scripts/ci/terragrunt-plan-diagnostics.py`. It streams the private log and
+accepts exact markers for kubeconfig/API readiness, filter and stack
+generation, bootstrap/Application plans and JSON conversion, deleted units,
+Azure plans/JSON, and policy checks. Before the first marker the label is
+`nix-setup`; unreadable logs report `unavailable`. Raw output, paths and errors
+remain withheld, and the existing trap deletes the private log. A stage label
+locates progress; it does not establish a root cause or retry a failed plan.
+
 CI plan and apply scripts call `terragrunt stack generate` before filtering
 units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
 changes, the scripts plan or apply the matching generated unit groups instead
