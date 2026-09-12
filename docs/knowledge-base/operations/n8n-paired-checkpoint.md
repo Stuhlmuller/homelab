@@ -30,6 +30,9 @@ application restore has been verified for this code yet.
   stop remaining descendants after parent exit, before fsync and validation.
 - Both declared reader Pods must be Running with complete container readiness
   before the capture fence or archive streams start; the wait remains bounded.
+- Preparation and capture use the repository's GNU `stat` to refuse known
+  RAM-backed or unidentified destination filesystems before maintenance. This
+  capture-adequacy check is separate from resume/unpin requirements.
 - Resume and unpin receipts require both original workloads ready and their
   Applications reconciled, including retries whose markers already read normal.
   Recovery requires prepared images and complete current container readiness;

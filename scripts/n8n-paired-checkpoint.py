@@ -51,6 +51,19 @@ def private_destination(path):
     return path
 
 
+def require_capture_filesystem(path):
+    """Reject RAM-backed or unidentified storage before preparing a new pair."""
+    try:
+        filesystem = run(["stat", "--file-system", "--format=%T", "--", str(path)]).strip().lower()
+    except (OSError, subprocess.SubprocessError) as error:
+        raise ValueError("cannot identify destination filesystem; use the repository Nix environment") from error
+    if (not re.fullmatch(r"[a-z][a-z0-9/+_.-]*", filesystem)
+            or filesystem.startswith("unknown") or filesystem == "unavailable"):
+        raise ValueError("unknown destination filesystem; use the repository Nix environment")
+    if filesystem in {"tmpfs", "ramfs", "devtmpfs", "hugetlbfs", "rootfs"}:
+        raise ValueError("destination filesystem is RAM-backed; use durable private storage")
+
+
 class CommandCleanupError(RuntimeError):
     """A command group could not be reaped; do not start recovery mutations."""
 
@@ -525,6 +538,7 @@ class CaptureFence:
 def prepare(parent, talosconfig, talosctl):
     os.umask(0o077)
     parent = private_destination(parent.expanduser())
+    require_capture_filesystem(parent)
     context = run(["kubectl", "config", "current-context"]).strip()
     server = run(["kubectl", "config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}"]).strip()
     if server != "https://10.1.0.199:6443":
@@ -674,6 +688,7 @@ def unpin(directory, session):
 
 
 def capture(directory, session):
+    require_capture_filesystem(directory)
     require_generated_units()
     watches, observer = [], None
     safe_to_resume = True

@@ -59,14 +59,19 @@ the session is active; recovery profiles are bound to its exact revision.
 
 ```sh
 nix develop --command bash scripts/ci/static-checks.sh
-python3 scripts/n8n-paired-checkpoint.py prepare \
+nix develop --command python3 scripts/n8n-paired-checkpoint.py prepare \
   --destination /Users/OPERATOR/.local/share/homelab/n8n-checkpoints \
   --talosconfig /Users/OPERATOR/.talos/config \
   --talosctl /opt/homebrew/bin/talosctl
 ```
 
 Create the destination beforehand with mode 0700 on durable private storage
-outside every Git checkout. Temporary/cache directories are rejected. Paths shown are
+outside every Git checkout. Temporary/cache directories are rejected. Preparation
+and capture use GNU `stat` from the repository Nix environment to reject known
+RAM-backed filesystems and unidentified or unavailable filesystem types before
+any maintenance begins. This metadata check does not prove physical-media
+reliability. Resume and unpin do not require this capture-adequacy probe.
+Use the Nix commands below consistently for the declared operator tools. Paths shown are
 operator examples; the Talos binary must match the current cluster's 1.11.3
 client. Preparation performs metadata-only inspection, requires healthy
 original writer identities, unchanged node boot IDs, Bound Retain NFS claims,
@@ -118,7 +123,7 @@ recovery-time objective yet.
 After independent review of the prepared source and normal-unit plans, execute:
 
 ```sh
-python3 scripts/n8n-paired-checkpoint.py capture \
+nix develop --command python3 scripts/n8n-paired-checkpoint.py capture \
   --session-directory /absolute/private/n8n-pair-SESSION
 ```
 
@@ -163,7 +168,7 @@ than creating another possible writer. Preserve the session and use the same
 reviewed code after healthy source fencing is available:
 
 ```sh
-python3 scripts/n8n-paired-checkpoint.py resume \
+nix develop --command python3 scripts/n8n-paired-checkpoint.py resume \
   --session-directory /absolute/private/n8n-pair-SESSION
 ```
 
@@ -180,7 +185,7 @@ automation behavior separately after return to service.
 Once GitHub is reachable, return to normal reconciliation:
 
 ```sh
-python3 scripts/n8n-paired-checkpoint.py unpin \
+nix develop --command python3 scripts/n8n-paired-checkpoint.py unpin \
   --session-directory /absolute/private/n8n-pair-SESSION
 ```
 

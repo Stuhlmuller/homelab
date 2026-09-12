@@ -136,6 +136,7 @@ class CheckpointTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "ready and reconciled"):
                         checkpoint.require_service_complete(expected, REVISION)
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_prepare_and_capture_reject_old_or_modified_generated_guard(self):
         template_path = Path("IaC/.catalog/units/live/argocd-app/terragrunt.hcl")
         template = (ROOT / template_path).read_text()
@@ -186,6 +187,7 @@ class CheckpointTests(unittest.TestCase):
                 apply.assert_not_called()
                 resume.assert_not_called()
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_prepare_requires_zero_restarts_and_matching_application_bases(self):
         bases = {app: base(app) for app in phase.APPS}
 
@@ -216,6 +218,7 @@ class CheckpointTests(unittest.TestCase):
                 nodes.assert_not_called()
                 write.assert_not_called()
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_capture_rejects_restart_since_prepare_before_first_stop(self):
         pods = writer_pods()
         session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS},
@@ -270,6 +273,7 @@ class CheckpointTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "rendered Application differs"):
             checkpoint.require_application_bases(current, bases)
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_capture_rechecks_base_spec_before_first_stop(self):
         current = live()
         current["n8n"]["spec"]["syncPolicy"] = {"automated": {"prune": False}}
@@ -283,6 +287,7 @@ class CheckpointTests(unittest.TestCase):
             apply.assert_not_called()
             resume.assert_not_called()
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_preflight_rejects_pending_chart_rollout_with_stale_synced_status(self):
         current = live()
         bases = {app: base(app) for app in phase.APPS}
@@ -301,6 +306,7 @@ class CheckpointTests(unittest.TestCase):
             apply.assert_not_called()
             resume.assert_not_called()
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_capture_rechecks_prepared_revision_health_and_sync_before_outage(self):
         for state in ("OutOfSync", "Degraded", "changed-revision"):
             current = live()
@@ -362,6 +368,63 @@ class CheckpointTests(unittest.TestCase):
             (path / ".git").mkdir()
             with self.assertRaisesRegex(ValueError, "outside Git checkouts"):
                 checkpoint.private_destination(path)
+
+    def test_capture_filesystem_rejects_ram_and_unknown_types_before_outage(self):
+        destination = Path("/home/operator/checkpoints")
+        for result in ("tmpfs", "ramfs", "devtmpfs", "hugetlbfs", "rootfs", "", "unknown", "UNKNOWN (0x1234)", "unavailable"):
+            for command in ("prepare", "capture"):
+                with self.subTest(result=result, command=command), \
+                        patch.object(checkpoint, "private_destination", return_value=destination), \
+                        patch.object(checkpoint, "run", return_value=result) as probe, \
+                        patch.object(phase, "load_live") as live_read, \
+                        patch.object(checkpoint, "apply_phase") as apply, \
+                        patch.object(checkpoint, "resume") as resume, \
+                        patch.object(checkpoint, "write_json") as write:
+                    with self.assertRaisesRegex(ValueError, "filesystem"):
+                        if command == "prepare":
+                            checkpoint.prepare(destination, Path("/unused/config"), Path("/unused/talosctl"))
+                        else:
+                            checkpoint.capture(destination, {})
+                    probe.assert_called_once_with(["stat", "--file-system", "--format=%T", "--", str(destination)])
+                    live_read.assert_not_called()
+                    apply.assert_not_called()
+                    resume.assert_not_called()
+                    write.assert_not_called()
+
+    def test_capture_filesystem_accepts_persistent_types_and_refuses_failed_probe(self):
+        destination = Path("/home/operator/checkpoints")
+        for result in ("apfs\n", "ext2/ext3\n", "ext4\n"):
+            with self.subTest(result=result), patch.object(checkpoint, "run", return_value=result):
+                checkpoint.require_capture_filesystem(destination)
+        for failure in (FileNotFoundError("stat"), subprocess.CalledProcessError(1, ["stat"]),
+                        subprocess.TimeoutExpired(["stat"], 30)):
+            for command in ("prepare", "capture"):
+                with self.subTest(failure=type(failure).__name__, command=command), \
+                        patch.object(checkpoint, "private_destination", return_value=destination), \
+                        patch.object(checkpoint, "run", side_effect=failure), \
+                        patch.object(phase, "load_live") as live_read, \
+                        patch.object(checkpoint, "apply_phase") as apply:
+                    with self.assertRaisesRegex(ValueError, "repository Nix environment"):
+                        if command == "prepare":
+                            checkpoint.prepare(destination, Path("/unused/config"), Path("/unused/talosctl"))
+                        else:
+                            checkpoint.capture(destination, {})
+                    live_read.assert_not_called()
+                    apply.assert_not_called()
+
+    def test_filesystem_capture_adequacy_does_not_block_service_recovery(self):
+        session = {"id": SESSION, "revision": REVISION}
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(checkpoint, "require_capture_filesystem", side_effect=AssertionError("recovery must not probe storage")), \
+                patch.object(checkpoint, "run", side_effect=AssertionError("recovery must not require GNU stat")), \
+                patch.object(phase, "load_live", return_value=live()), \
+                patch.object(checkpoint, "ready_pod", side_effect=ready_writer), \
+                patch.object(checkpoint, "require_service_complete", return_value={}):
+            root = Path(directory)
+            checkpoint.resume(root, session)
+            checkpoint.unpin(root, session)
+            self.assertEqual(len(list(root.glob("resumed-*.json"))), 1)
+            self.assertEqual(len(list(root.glob("unpinned-*.json"))), 1)
 
     def test_profile_preserves_baseline_and_restore(self):
         original = base("n8n")
@@ -775,6 +838,7 @@ class CheckpointTests(unittest.TestCase):
             time.sleep(1.1)
             self.assertFalse(marker.exists(), "a child wrote after interrupted command cleanup returned")
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_failed_command_reaping_prevents_automatic_resume(self):
         pods = writer_pods()
         session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
@@ -876,6 +940,7 @@ class CheckpointTests(unittest.TestCase):
                 for process in processes:
                     checkpoint.terminate_command(process)
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_failed_stream_cleanup_prevents_acceptance_and_automatic_resume(self):
         pods = writer_pods()
         session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
@@ -961,6 +1026,7 @@ class CheckpointTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 phase.check_guard(base("n8n"), "plan", arguments, live())
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_capture_error_removes_readers_then_resumes_database_before_app(self):
         current = live()
         calls = []
@@ -995,6 +1061,7 @@ class CheckpointTests(unittest.TestCase):
                                 ("n8n-postgres", "capture"), ("n8n-postgres", "recovery-cold"),
                                 ("n8n-postgres", "recovered"), ("n8n", "recovered")])
 
+    @patch.object(checkpoint, "require_capture_filesystem", new=lambda _path: None)
     def test_capture_waits_for_both_complete_reader_readiness_observations(self):
         originals = writer_pods()
         session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
