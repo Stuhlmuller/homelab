@@ -99,8 +99,17 @@ They cover independent repeated outputs, exact offline commands, archive and
 snapshot corruption, private destinations, mismatched versions/metadata,
 source changes, client failures/timeouts, diagnostic suppression, and failed
 publication. Synthetic fixture success is not evidence of a real restore.
-Real snapshot restore validation is pending; record its fixed metadata and
-receipt privately after execution through the reviewed helper.
+
+On 2026-09-07, the merged helper from
+[PR #1007](https://github.com/Stuhlmuller/homelab/pull/1007) completed one real
+offline restore with the pinned etcd `3.6.5` macOS ARM64 tool in 2.68 seconds.
+The post-upgrade snapshot parsed and restored with revision `37730997` and
+`2919` MVCC keys preserved. Source snapshot and manifest SHA-256 values were
+unchanged; the tool provenance, fixed metadata, and receipt are retained
+privately outside Git. No etcd server or network listener started. This closes
+the parsing/restoration gap for that snapshot; control-plane startup,
+watch recovery, application/PVC recovery, and restored-tree power-loss
+durability remain untested.
 
 The upstream [etcd 3.6 recovery guide](https://etcd.io/docs/v3.6/op-guide/recovery/)
 documents snapshot status, restore-time integrity validation, and changed

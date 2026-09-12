@@ -134,7 +134,7 @@ See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 If heartbeat reports `agent-runner-failure` and gateway logs say the Astra
 auth profile is temporarily unavailable, inspect `openclaw models status
 --json`. A saved subscription block can outlive a provider usage reset:
-the native Codex path in 2026.9.1 may reject auth before reaching OpenClaw's
+the native Codex path in 2026.9.1 and 2026.9.2 may reject auth before reaching OpenClaw's
 normal background usage recheck. A valid OAuth expiry alone does not clear it.
 
 Run the repository helper from this checkout:
@@ -154,7 +154,7 @@ the transaction and verifies unchanged credentials and block generation;
 provider denial, active authentication failures, and probe throttling retain
 the block. It never spends a usage-reset credit, replaces credentials, edits
 SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
-profile and the reviewed 2026.9.1 runtime; re-review its internal imports before
+profile and the reviewed 2026.9.1 or 2026.9.2 runtime; re-review its internal imports before
 an upgrade. If it fails, inspect provider availability and auth diagnostics;
 do not erase the block or repeatedly force probes.
 

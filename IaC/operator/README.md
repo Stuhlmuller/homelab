@@ -1,14 +1,25 @@
 # Operator-owned infrastructure
 
-`IaC/operator` contains declarative prerequisites that a protected automation
-identity must not be allowed to change for itself. These units use the shared
-remote state and repository modules, but the GitHub plan/apply workflows do not
-traverse this directory.
+`IaC/operator` contains declarative prerequisites that require focused operator
+review, including automation identity permissions and recovery storage. These
+units use the shared remote state and repository modules, but the GitHub
+plan/apply workflows do not traverse this directory.
 
 Run an operator unit only with a reviewed administrator session, after its
 format, validation, and plan checks pass. This separation prevents a compromised
 workflow from widening the permissions of its own AWS role while keeping the
 bootstrap policy reproducible and reviewable.
+
+## Etcd Offsite Backup Storage
+
+`etcd-backup-storage` owns a dedicated private, versioned S3 bucket in
+`us-east-1` using the existing account and AWS-managed S3 encryption key. Its
+only lifecycle cleanup removes incomplete multipart uploads after seven days;
+completed backup versions have no automatic expiration. No CI permissions
+change. Follow the [focused saved-plan workflow](../../docs/etcd-offsite-storage.md)
+with an existing administrator session. Generic CI validates this unit offline
+but does not live-plan or apply it. Bucket creation does not publish snapshots
+or prove offsite recovery; those verification steps remain separate.
 
 ## GitHub Actions apply-role policy
 

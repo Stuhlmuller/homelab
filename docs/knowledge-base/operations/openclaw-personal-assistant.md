@@ -26,3 +26,7 @@ See [[workloads/inventory]] and [[operations/openclaw-assistant-2026-09-05]].
 Validation: assistant installer/scheduler preservation and idempotence checks,
 Kustomize rendering, and the full `nix develop --command bash scripts/ci/static-checks.sh`
 gate passed locally. Live rollout and account acceptance remain pending.
+
+September 11 integration retains the newer heartbeat rule: check each optional
+status, task, and daily-note path before reading; preserve real read failures.
+The rollout digest includes that rule and the current runtime-storage bundle.

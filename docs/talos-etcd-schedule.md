@@ -171,8 +171,30 @@ backup, and run a waiting worker through its successful initial post-lock attemp
 Label-change fixtures preserve the old service and settings and require a fresh
 runtime after uninstall.
 They do not execute a real LaunchAgent, prove wake behavior on this Mac or
-validate real etcd restores. Installation and the first scheduled snapshot
-still require private live receipts.
+validate real etcd restores.
+
+On 2026-09-07, the merged implementation from
+[PR #1006](https://github.com/Stuhlmuller/homelab/pull/1006) was installed once.
+Installed source hashes, revision, loaded program and plist matched the merged
+code. Its first automatic `RunAtLoad` snapshot completed at `17:17:10 UTC`;
+offline status reported `fresh`, the success receipt matched, and launchd's
+last exit code was zero. All four existing manual backups were unchanged and
+passed offline checksum verification again. No backups were pruned, and the
+error log was empty. Private installation and acceptance receipts retain the
+evidence. Later hourly checks, wake catchup and offsite publication were not
+tested by this first-run acceptance.
+
+A read-only follow-up on 2026-09-12 found five scheduled successes dated
+September 7–11 and a loaded, `fresh` LaunchAgent. The latest snapshot completed
+on September 11 at `21:21:55 UTC`. All five snapshots passed full-file and
+embedded checksum verification, and installed source hashes were unchanged.
+Success intervals ranged from about 24 hours to 26 hours 54 minutes, below
+the 36-hour stale threshold; 97 checks
+skipped a fresh backup and no copies were pruned. Two untimestamped generic
+client/local-service failures were followed by automatic scheduled recovery.
+The retained diagnostics do not identify their cause or prove which runs
+coincided with wake events. This demonstrates recurring recovery points over
+that period, not uninterrupted execution or an always-on backup service.
 
 - [Apple: scheduling timed jobs](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)
 - [Apple launchd.plist manual: calendar intervals, wake coalescing and RunAtLoad](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchd.plist.5)
