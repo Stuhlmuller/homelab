@@ -17,10 +17,10 @@ what to read, what facts matter, and what must be updated with future changes.
 4. [[storage-nfs]] before any stateful workload is treated as ready.
 5. [[secrets-aws-ssm]] before any ExternalSecret or runtime credential contract
    is added.
-6. [[octelium]] before changing private access, an app route, or the Octelium
-   service catalog.
-7. [[tailnet-ingress]] before changing the temporary Talos/LAN fallback or a
-   public callback route.
+6. [[octelium]] before changing private Kubernetes or Talos access, an app
+   route, or the Octelium service catalog.
+7. [[tailnet-ingress]] before changing the Tailscale exit-node VPN or a public
+   callback route.
 8. [[validation]] before any live mutation or rollout.
 
 ## Operations

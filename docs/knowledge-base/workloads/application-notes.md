@@ -22,9 +22,10 @@ delegates login to the application. AFFiNE public signup remains disabled.
 NOFX requires Octelium human browser authentication before its own login.
 Reviewed callback hosts use the public Octelium tunnel with explicit path
 restrictions.
-Tailscale is secondary LAN and egress infrastructure, not the primary app
-access plane. `cloudflared` loads its mounted hostname map only at pod startup,
-so every `octelium-public/configmap.yaml` routing change must also advance the
+Tailscale is exit-node-only internet egress infrastructure, not an app,
+Kubernetes, Talos, or LAN access plane. `cloudflared` loads its mounted hostname
+map only at pod startup, so every `octelium-public/configmap.yaml` routing change
+must also advance the
 Deployment's `homelab.rst.io/cloudflared-config-revision` annotation. Without
 that rollout trigger, a new public hostname reaches the tunnel but falls through
 to the edge HTTP 404.

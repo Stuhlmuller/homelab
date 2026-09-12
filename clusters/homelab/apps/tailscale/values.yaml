@@ -2,5 +2,12 @@ operatorConfig:
   hostname: homelab-tailscale-operator
   defaultTags:
     - tag:k8s-operator
+  extraEnv: []
+ingressClass:
+  name: tailscale
+  enabled: false
 proxyConfig:
   defaultTags: tag:k8s
+apiServerProxyConfig:
+  allowImpersonation: "false"
+  mode: "false"
