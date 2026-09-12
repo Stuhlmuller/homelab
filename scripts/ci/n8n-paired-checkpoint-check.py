@@ -15,6 +15,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,20 +24,48 @@ checkpoint = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(checkpoint)
 phase = checkpoint.phase
 SESSION = "a" * 32
+REVISION = "b" * 40
 
 
 def base(app):
     return {"metadata": {"name": app, "annotations": {phase.PHASE: "normal", phase.SESSION: ""}},
-            "spec": {"sources": ([{"helm": {"valueFiles": ["original"]}}, {"ref": "values"},
-                                  {"path": "clusters/homelab/apps/n8n"}] if app == "n8n" else
-                                 [{"path": "clusters/homelab/apps/n8n-postgres"}])}}
+            "spec": {"sources": ([{"repoURL": "https://charts.example", "chart": "app-template",
+                                  "targetRevision": "4.4.0", "path": ".",
+                                  "helm": {"valueFiles": ["original"]}},
+                                 {"repoURL": phase.REPO, "targetRevision": "main", "ref": "values", "path": "."},
+                                 {"repoURL": phase.REPO, "targetRevision": "main", "path": "clusters/homelab/apps/n8n"}]
+                                if app == "n8n" else [{"repoURL": phase.REPO, "targetRevision": "main",
+                                                       "path": "clusters/homelab/apps/n8n-postgres"}])}}
 
 
 def live():
-    return {app: base(app) for app in phase.APPS}
+    result = {app: base(app) for app in phase.APPS}
+    for item in result.values():
+        item["status"] = {"health": {"status": "Healthy"}, "sync": {"status": "Synced", "revisions": [
+            REVISION if source["repoURL"] == phase.REPO else source["targetRevision"] for source in item["spec"]["sources"]]}}
+    return result
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_capture_rechecks_prepared_revision_health_and_sync_before_outage(self):
+        for state in ("OutOfSync", "Degraded", "changed-revision"):
+            current = live()
+            if state == "OutOfSync":
+                current["n8n"]["status"]["sync"]["status"] = state
+            elif state == "Degraded":
+                current["n8n"]["status"]["health"]["status"] = state
+            else:
+                current["n8n"]["status"]["sync"]["revisions"][-1] = "c" * 40
+            with patch.object(phase, "load_live", return_value=current), \
+                    patch.object(checkpoint, "apply_phase") as apply, \
+                    patch.object(checkpoint, "PodExitWatch") as watch, \
+                    patch.object(checkpoint, "resume") as resume:
+                with self.assertRaisesRegex(ValueError, "Healthy and Synced on prepared main"):
+                    checkpoint.capture(Path("/unused"), {"revision": REVISION})
+                apply.assert_not_called()
+                watch.assert_not_called()
+                resume.assert_not_called()
+
     def test_rendered_reader_configmap_references_match_namespace_and_hash(self):
         rendered = subprocess.run(["kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/n8n-postgres-capture")],
                                   check=True, capture_output=True, text=True).stdout
@@ -67,6 +96,195 @@ class CheckpointTests(unittest.TestCase):
         self.assertEqual(original, base("n8n"))
         self.assertEqual(transformed["spec"]["sources"][0]["helm"]["valuesObject"]["controllers"]["n8n"]["replicas"], 0)
         self.assertEqual(phase.profile(original, "normal", SESSION), original)
+
+    def test_recovery_profiles_pin_all_git_sources_and_keep_markers(self):
+        for app, target in (("n8n", "recovered"), ("n8n-postgres", "recovery-cold"), ("n8n-postgres", "recovered")):
+            desired = phase.profile(base(app), target, SESSION, REVISION)
+            self.assertEqual(phase.markers(desired), {phase.PHASE: target, phase.SESSION: SESSION})
+            for source in desired["spec"]["sources"]:
+                self.assertEqual(source["targetRevision"], REVISION if source["repoURL"] == phase.REPO else "4.4.0")
+            if app == "n8n" or target == "recovered":
+                self.assertEqual(desired["spec"]["sources"][-1]["path"], "clusters/homelab/apps/" + app)
+        with self.assertRaises(ValueError):
+            phase.profile(base("n8n"), "recovered", SESSION, "main")
+
+    def test_recovery_guard_rejects_a_different_checkout_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "profile.json"
+            desired = phase.profile(base("n8n"), "recovered", SESSION, REVISION)
+            path.write_text(json.dumps({"manifest": desired}))
+            Path(str(path) + ".profile.json").write_text(json.dumps({"phase": "recovered", "session": SESSION, "revision": REVISION}))
+            current = {app: phase.profile(base(app), "stopped" if app == "n8n" else "recovered", SESSION, REVISION) for app in phase.APPS}
+            with self.assertRaisesRegex(ValueError, "bound to the prepared"):
+                phase.check_guard(base("n8n"), "plan", ["plan", "-var-file=" + str(path)], current, "c" * 40)
+            phase.check_guard(base("n8n"), "plan", ["plan", "-var-file=" + str(path)], current, REVISION)
+
+    def test_synced_accepts_only_documented_default_source_path_normalization(self):
+        desired = phase.profile(base("n8n"), "stopped", SESSION)
+        actual = copy.deepcopy(desired)
+        actual["spec"]["sources"][0].pop("path")
+        actual["spec"]["sources"][1]["path"] = ""
+        actual["status"] = {"sync": {"status": "Synced", "revisions": ["4.4.0", REVISION, REVISION]}}
+        with patch.object(checkpoint, "kube", return_value=actual):
+            self.assertTrue(checkpoint.application_synced("n8n", desired, REVISION))
+            actual["spec"]["sources"][0]["path"] = "unexpected-chart-path"
+            self.assertFalse(checkpoint.application_synced("n8n", desired, REVISION))
+            actual["spec"]["sources"][0].pop("path")
+            actual["spec"]["sources"][2]["targetRevision"] = "different"
+            self.assertFalse(checkpoint.application_synced("n8n", desired, REVISION))
+            actual["spec"]["sources"][2]["targetRevision"] = "main"
+            actual["spec"]["sources"][0]["helm"]["valuesObject"]["controllers"]["n8n"]["replicas"] = 1
+            self.assertFalse(checkpoint.application_synced("n8n", desired, REVISION))
+        self.assertEqual(desired["spec"]["sources"][0]["path"], ".")
+
+    def test_unpin_fetch_failure_leaves_recovered_service_untouched(self):
+        current = {app: phase.profile(base(app), "recovered", SESSION, REVISION) for app in phase.APPS}
+        with patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "run", side_effect=subprocess.CalledProcessError(1, ["git", "fetch"])), \
+                patch.object(checkpoint, "apply_phase") as apply:
+            with self.assertRaises(subprocess.CalledProcessError):
+                checkpoint.unpin(Path("/unused"), {"id": SESSION, "revision": REVISION})
+            apply.assert_not_called()
+        self.assertTrue(all(phase.markers(item)[phase.PHASE] == "recovered" for item in current.values()))
+
+    def test_resume_rejects_unknown_or_impossible_phase_pairs_before_success(self):
+        for app_phase, pg_phase in (("unexpected", "normal"), ("normal", "capture"), ("recovered", "cold")):
+            current = live()
+            for app, target in zip(phase.APPS, (app_phase, pg_phase)):
+                current[app]["metadata"]["annotations"].update({phase.PHASE: target, phase.SESSION: SESSION})
+            with patch.object(phase, "load_live", return_value=current), \
+                    patch.object(checkpoint, "ready") as ready, \
+                    patch.object(checkpoint, "write_json") as receipt, \
+                    patch.object(checkpoint, "apply_phase") as apply:
+                with self.assertRaisesRegex(ValueError, "unsupported checkpoint phase pair"):
+                    checkpoint.resume(Path("/unused"), {"id": SESSION})
+                ready.assert_not_called()
+                receipt.assert_not_called()
+                apply.assert_not_called()
+
+    def test_resume_retry_waits_for_readers_before_fencing_and_restart(self):
+        current = {app: phase.profile(base(app), "stopped" if app == "n8n" else "recovery-cold", SESSION, REVISION)
+                   for app in phase.APPS}
+        events = []
+
+        def apply(_directory, _session, app, target):
+            events.append((app, target))
+            phase.validate_transition(app, phase.profile(base(app), target, SESSION, REVISION), current, SESSION)
+            current[app] = phase.profile(base(app), target, SESSION, REVISION)
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "wait_for", side_effect=lambda _predicate, _seconds, label: events.append(label)), \
+                patch.object(checkpoint, "fence", side_effect=lambda *_args, **_kwargs: events.append("fence")), \
+                patch.object(checkpoint, "talos_fence"), \
+                patch.object(checkpoint, "apply_phase", side_effect=apply), \
+                patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")):
+            checkpoint.resume(Path(directory), {"id": SESSION, "revision": REVISION,
+                              "writers": {app: {"name": app + "-old"} for app in phase.APPS}})
+        self.assertEqual(events[:4], ["reader removal", "old writer removal", "fence", ("n8n-postgres", "recovered")])
+        self.assertLess(events.index(("n8n-postgres", "recovered")), events.index(("n8n", "recovered")))
+
+    def test_unpin_changed_sources_do_not_reconcile_main(self):
+        current = {app: phase.profile(base(app), "recovered", SESSION, REVISION) for app in phase.APPS}
+        with patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "run", side_effect=["", subprocess.CalledProcessError(1, ["git", "diff"])]), \
+                patch.object(checkpoint, "apply_phase") as apply:
+            with self.assertRaises(subprocess.CalledProcessError):
+                checkpoint.unpin(Path("/unused"), {"id": SESSION, "revision": REVISION})
+            apply.assert_not_called()
+
+    def test_unpin_retry_finishes_only_remaining_application(self):
+        current = live()
+        current["n8n"] = phase.profile(base("n8n"), "recovered", SESSION, REVISION)
+        calls = []
+
+        def apply(_directory, _session, app, target, **kwargs):
+            calls.append((app, target, kwargs["expected_main_revision"]))
+            phase.validate_transition(app, base(app), current, SESSION)
+            current[app] = base(app)
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
+                patch.object(checkpoint, "apply_phase", side_effect=apply):
+            checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
+        self.assertEqual(calls, [("n8n", "normal", "c" * 40)])
+
+    def test_completed_unpin_is_idempotent_without_network(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=live()), \
+                patch.object(checkpoint, "run", side_effect=AssertionError("completed unpin needs no GitHub")), \
+                patch.object(checkpoint, "apply_phase") as apply:
+            checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
+            apply.assert_not_called()
+            self.assertTrue(json.loads(next(Path(directory).glob("unpinned-*.json")).read_text())["already_normal"])
+
+    def test_command_timeout_stops_child_and_grandchild_before_return(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker, ready = Path(directory) / "late-write", Path(directory) / "ready"
+            grandchild = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                          f"pathlib.Path({str(ready)!r}).write_text('ready'); time.sleep(1); "
+                          f"pathlib.Path({str(marker)!r}).write_text('late')")
+            child = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{grandchild!r}]); time.sleep(10)"
+            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(10)"
+            with self.assertRaises(subprocess.TimeoutExpired):
+                checkpoint.run([sys.executable, "-c", parent], timeout=0.4)
+            self.assertTrue(ready.exists(), "fixture must spawn the actual grandchild before timeout")
+            time.sleep(1.1)
+            self.assertFalse(marker.exists(), "a descendant wrote after command cancellation")
+
+    def test_keyboard_interrupt_stops_owned_process_group(self):
+        with tempfile.TemporaryDirectory() as directory:
+            marker, ready = Path(directory) / "late-write", Path(directory) / "ready"
+            child = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                     f"pathlib.Path({str(ready)!r}).write_text('ready'); time.sleep(1); "
+                     f"pathlib.Path({str(marker)!r}).write_text('late')")
+            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(10)"
+            real_popen = subprocess.Popen
+
+            def start(command, **kwargs):
+                process = real_popen(command, **kwargs)
+                interrupted = False
+
+                def communicate(**options):
+                    nonlocal interrupted
+                    if not interrupted:
+                        interrupted = True
+                        deadline = time.monotonic() + 3
+                        while not ready.exists() and time.monotonic() < deadline:
+                            time.sleep(0.01)
+                        self.assertTrue(ready.exists())
+                        raise KeyboardInterrupt
+                    return process.communicate(**options)
+
+                return SimpleNamespace(pid=process.pid, wait=process.wait, stdout=process.stdout,
+                                       stderr=process.stderr, communicate=communicate)
+
+            with patch.object(checkpoint.subprocess, "Popen", side_effect=start), self.assertRaises(KeyboardInterrupt):
+                checkpoint.run([sys.executable, "-c", parent])
+            time.sleep(1.1)
+            self.assertFalse(marker.exists(), "a child wrote after interrupted command cleanup returned")
+
+    def test_failed_command_reaping_prevents_automatic_resume(self):
+        pods = [{"metadata": {"name": app + "-old", "uid": app, "resourceVersion": "1"},
+                 "spec": {"nodeName": "worker", "volumes": [], "containers": [{"name": "app", "image": "pinned"}]},
+                 "status": {"containerStatuses": [{"name": "app", "containerID": app}]}}
+                for app in phase.APPS]
+        session = {"id": SESSION, "revision": REVISION, "writers": {
+            app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, pods)}}
+        watch = MagicMock(observed=True, error=None)
+        with patch.object(phase, "load_live", return_value=live()), \
+                patch.object(checkpoint, "source_pods", return_value=pods), \
+                patch.object(checkpoint, "fence"), \
+                patch.object(checkpoint, "PodExitWatch", return_value=watch), \
+                patch.object(checkpoint, "apply_phase", side_effect=checkpoint.CommandCleanupError("fixture")), \
+                patch.object(checkpoint, "resume") as resume:
+            with self.assertRaises(checkpoint.CommandCleanupError):
+                checkpoint.capture(Path("/unused"), session)
+            resume.assert_not_called()
 
     def test_unknown_profile_and_arbitrary_session_fail(self):
         for target, session in [("delete", SESSION), ("stopped", "../escape")]:
@@ -132,12 +350,12 @@ class CheckpointTests(unittest.TestCase):
             pods.append({"metadata": {"name": app + "-old", "uid": app, "resourceVersion": "1"},
                          "spec": {"nodeName": "worker", "volumes": [], "containers": [{"name": "app", "image": "pinned"}]},
                          "status": {"containerStatuses": [{"name": "app", "containerID": app}]}})
-        session = {"id": SESSION, "revision": "revision", "writers": {
+        session = {"id": SESSION, "revision": REVISION, "writers": {
             app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, pods)}}
 
         def apply(_directory, _session, app, target, **_kwargs):
             calls.append((app, target))
-            current[app] = phase.profile(base(app), target, SESSION)
+            current[app] = phase.profile(base(app), target, SESSION, REVISION)
 
         def watch(writer):
             result = MagicMock(writer=writer, observed=True, error=None)
@@ -152,14 +370,14 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(checkpoint, "apply_phase", side_effect=apply), \
                 patch.object(checkpoint, "PodExitWatch", side_effect=watch), \
                 patch.object(checkpoint, "CaptureFence", return_value=observer), \
-                patch.object(checkpoint, "wait_for"), patch.object(checkpoint, "run", return_value=""), \
+                patch.object(checkpoint, "wait_for"), patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")), \
                 patch.object(checkpoint, "stream_archive", side_effect=ValueError("reader failure")):
             with self.assertRaisesRegex(ValueError, "reader failure"):
                 checkpoint.capture(Path(directory), session)
             self.assertFalse((Path(directory) / "paired-capture.json").exists())
         self.assertEqual(calls, [("n8n", "stopped"), ("n8n-postgres", "cold"),
-                                ("n8n-postgres", "capture"), ("n8n-postgres", "cold"),
-                                ("n8n-postgres", "normal"), ("n8n", "normal")])
+                                ("n8n-postgres", "capture"), ("n8n-postgres", "recovery-cold"),
+                                ("n8n-postgres", "recovered"), ("n8n", "recovered")])
 
     def test_modified_saved_plan_fails(self):
         with tempfile.TemporaryDirectory() as directory:

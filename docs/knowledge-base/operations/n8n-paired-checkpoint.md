@@ -16,8 +16,14 @@ application restore has been verified for this code yet.
 - Clean container exit, PG shutdown state, live writer/node/claim identity,
   bounded observations, full archive reads, checksums and fsync precede receipt
   publication. Failures enter the existing-owner database-then-app resume path.
-- A failed or interrupted session must be resumed, then replaced by a fresh
-  session for a new capture. Never equate candidate files with an accepted pair.
+- Resume uses a documented temporary pin to the prepared commit SHA without an
+  operator GitHub fetch. Service retains its maintenance markers until separate
+  `unpin` verifies reachable, unchanged n8n sources and restores `main`.
+- Timed-out or interrupted commands terminate their owned process groups before
+  recovery starts; failed cleanup blocks automatic resume.
+- A failed or interrupted session must be resumed and unpinned, then replaced
+  by a fresh session for a new capture. Never equate candidate files with an
+  accepted pair.
 
 Sources: `scripts/n8n-paired-checkpoint.py`,
 `scripts/n8n-checkpoint-phase.py`, the `n8n-maintenance`,

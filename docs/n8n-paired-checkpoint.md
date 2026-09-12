@@ -24,19 +24,26 @@ changes finish. There is no alternate state owner or imperative scaling.
 | Stop app | Helm replicas 0; existing routes return 503 | Original StatefulSet at 1 |
 | Cold | App remains stopped | Cold overlay sets replicas 0 |
 | Capture | App remains stopped | Cold overlay plus two read-only reader Pods |
-| Remove readers | App remains stopped | Cold overlay; Argo prunes readers |
-| Resume database | App remains stopped | Original StatefulSet at 1; wait SQL readiness |
-| Resume app | Original values and routes | Original StatefulSet at 1 |
+| Remove readers | App remains stopped | `recovery-cold`: cold overlay at prepared SHA; Argo prunes readers |
+| Resume database | App remains stopped | `recovered`: original StatefulSet at prepared SHA; wait SQL readiness |
+| Resume app | `recovered`: original values and routes at prepared SHA | Original StatefulSet at prepared SHA |
+| Unpin | Original values and routes on `main` | Original StatefulSet on `main` |
 
-All remote source revisions remain `main`. Run this maintenance serially and
-pause merges affecting the homelab until it finishes. The operator requires
-both Applications to report the prepared main revision; a revision change
-invalidates capture. The ordinary catalog hook refuses n8n plan/apply/destroy
-while either Application carries an active maintenance marker. The serial
+Normal and capture profiles use `main`. Recovery explicitly pins this
+repository's Git sources to the full prepared commit SHA; this temporary
+recovery exception preserves the reviewed images, values and overlays without
+an operator-side GitHub fetch. Helm chart versions remain unchanged. Argo CD
+still needs its existing cached sources or repository access to reconcile.
+
+Run this maintenance serially and pause merges affecting the homelab until it
+finishes. Both Applications must report the prepared main revision during
+capture; a revision change invalidates it. The ordinary catalog hook refuses
+n8n plan/apply/destroy while either Application carries an active maintenance
+marker, including while service is recovered at the pinned SHA. The serial
 runner's permit binds exact saved-plan bytes, the fixed profile and observed
-previous markers. Resume first verifies that current main has unchanged n8n
-source directories, allowing unrelated merges without adopting an unreviewed
-image or storage change. Existing backend locks still serialize each unit's apply.
+previous markers. A separate `unpin` step fetches current main and verifies
+unchanged n8n source directories before restoring `main` and clearing markers.
+Existing backend locks still serialize each unit's apply.
 This is an operator workflow, not a distributed lock service: old checkouts or
 an independent actor bypassing the documented path are outside its contract.
 
@@ -46,7 +53,8 @@ Merge the reviewed code, pass required checks and the local gate, fetch current
 main into a clean isolated checkout, generate the stack, and make existing AWS
 SSO and Kubernetes access usable before starting. Do not run this from an
 unmerged feature branch. Keep the same checkout and private session directory
-available through resume.
+available through resume and unpin. Do not advance the prepared checkout while
+the session is active; recovery profiles are bound to its exact revision.
 
 ```sh
 nix develop --command bash scripts/ci/static-checks.sh
@@ -62,6 +70,8 @@ operator examples; the Talos binary must match the current cluster's 1.11.3
 client. Preparation performs metadata-only inspection, requires healthy
 original writer identities, unchanged node boot IDs, Bound Retain NFS claims,
 and at least 1 GiB free locally. It prints a unique mode 0700 session directory.
+Both Applications must be Healthy and Synced at the prepared revision;
+capture checks this again before the first stop.
 No snapshot, pod, or phase change occurs during preparation.
 
 Keep free space comfortably above the combined source size. The September 7
@@ -108,9 +118,14 @@ succeed, readers disappear, and the final source fence passes. An archive or
 partial directory without that receipt is not an accepted pair.
 
 Normal command failures and interrupts enter the same database-then-app resume
-path. Reader removal must finish before database restart. If nodes cannot be
-reached or writer state remains uncertain, automatic resume stops rather than
-creating another possible writer. Preserve the session and use the same
+path. Timed-out or interrupted operator commands run in owned process groups:
+the runner sends TERM, waits up to two seconds, then sends KILL to surviving
+group members and allows two seconds to reap the command. Recovery starts only
+after cleanup succeeds. A cleanup failure reports the group ID and blocks
+automatic recovery; establish that the earlier command has stopped before
+retrying. Reader removal must finish before database restart. If nodes cannot
+be reached or writer state remains uncertain, automatic resume stops rather
+than creating another possible writer. Preserve the session and use the same
 reviewed code after healthy source fencing is available:
 
 ```sh
@@ -120,10 +135,28 @@ python3 scripts/n8n-paired-checkpoint.py resume \
 
 Resume retains all candidate archives and original claims. It verifies the
 original images, PostgreSQL SQL readiness, n8n database-aware readiness and
-zero new restarts. Failed captures are not retried in place: resume, prepare a
-new session and retain the failed evidence. Verify both public n8n entry paths
-and scheduled automation behavior separately after return to service. No
-archive is automatically restored, overwritten, uploaded or pruned.
+zero new restarts. It does not fetch GitHub: both Applications retain the
+prepared SHA and maintenance markers after service returns. This also applies
+after a successful capture. Verify both public n8n entry paths and scheduled
+automation behavior separately after return to service.
+
+Once GitHub is reachable, return to normal reconciliation:
+
+```sh
+python3 scripts/n8n-paired-checkpoint.py unpin \
+  --session-directory /absolute/private/n8n-pair-SESSION
+```
+
+Unpin first requires healthy original workloads, fetches current main and
+checks the five n8n source/maintenance directories against the prepared commit.
+It returns PostgreSQL, then n8n, to `main` through fresh original-unit plans.
+If the fetch fails or those sources changed, service stays running at the
+prepared SHA; review and resolve the source difference before retrying. A
+partial unpin resumes with the remaining Application; an already-normal retry
+records completion without another network request. Do not start another
+capture until both markers are normal. Failed captures are not retried in
+place: resume, unpin, prepare a new session and retain the failed evidence.
+No archive is automatically restored, overwritten, uploaded or pruned.
 
 ## Source And Limits
 

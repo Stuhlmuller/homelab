@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare, capture and resume a manual cold n8n pair through existing Terragrunt units."""
+"""Capture a cold n8n pair, resume pinned service and unpin through existing units."""
 import argparse
 import datetime
 import importlib.util
@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import tarfile
 import tempfile
@@ -36,9 +37,47 @@ def private_destination(path):
     return path
 
 
+class CommandCleanupError(RuntimeError):
+    """A command group could not be reaped; do not start recovery mutations."""
+
+
+def terminate_command(process):
+    """Stop the owned process group, including providers, before recovery can run."""
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    try:
+        process.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        pass
+    finally:
+        # A parent may exit while a child ignores TERM or has closed its pipes.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    process.communicate(timeout=2)
+
+
 def run(command, **kwargs):
-    return subprocess.run(command, check=True, capture_output=True, text=True,
-                          timeout=kwargs.pop("timeout", 30), **kwargs).stdout
+    timeout = kwargs.pop("timeout", 30)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               text=True, start_new_session=True, **kwargs)
+    try:
+        output, error = process.communicate(timeout=timeout)
+        if process.returncode:
+            raise subprocess.CalledProcessError(process.returncode, command, output, error)
+        return output
+    except BaseException:
+        try:
+            terminate_command(process)
+        except BaseException as cleanup_failure:
+            raise CommandCleanupError(f"command group {process.pid} cleanup failed; recovery was not started") from cleanup_failure
+        raise
+    finally:
+        process.stdout.close()
+        process.stderr.close()
 
 
 def kube(*args):
@@ -96,6 +135,15 @@ def expected_revision(application, revision):
     return len(revisions) == len(sources) and all(
         revisions[i] == revision for i, source in enumerate(sources)
         if source["repoURL"] == "https://github.com/Stuhlmuller/homelab.git")
+
+
+def require_capture_ready(live, revision):
+    if any(phase.markers(item)[phase.PHASE] != "normal" for item in live.values()):
+        raise ValueError("existing maintenance must be resumed and unpinned first")
+    if any(not expected_revision(item, revision)
+           or item.get("status", {}).get("health", {}).get("status") != "Healthy"
+           or item.get("status", {}).get("sync", {}).get("status") != "Synced" for item in live.values()):
+        raise ValueError("both Applications must be Healthy and Synced on prepared main")
 
 
 def check_nodes(expected, current):
@@ -242,15 +290,15 @@ def validate_plan(plan, desired):
         raise ValueError("phase plan differs from the closed repository profile")
 
 
-def apply_phase(directory, session, app, target, resuming=False):
+def apply_phase(directory, session, app, target, expected_main_revision=None):
     """Always plan against current original state; never reuse a previous phase plan."""
     live = phase.load_live()
-    desired = phase.profile(session["bases"][app], target, session["id"])
+    desired = phase.profile(session["bases"][app], target, session["id"], session["revision"])
     phase.validate_transition(app, desired, live, session["id"])
     attempt = Path(tempfile.mkdtemp(prefix=f"{app}-{target}-", dir=directory))
     var_file, plan = attempt / "profile.tfvars.json", attempt / "phase.plan"
     write_json(var_file, {"manifest": desired})
-    write_json(Path(str(var_file) + ".profile.json"), {"session": session["id"], "phase": target})
+    write_json(Path(str(var_file) + ".profile.json"), {"session": session["id"], "phase": target, "revision": session["revision"]})
     unit = ROOT / "IaC/live/argocd-apps" / app
     output = terragrunt(unit, "plan", "-input=false", "-no-color", "-lock-timeout=30s",
                        "-var-file=" + str(var_file), "-out=" + str(plan))
@@ -262,14 +310,14 @@ def apply_phase(directory, session, app, target, resuming=False):
         "before": {name: phase.markers(item) for name, item in live.items()}})
     output = terragrunt(unit, "apply", "-input=false", "-no-color", "-lock-timeout=30s", str(plan))
     (attempt / "apply.log").write_text(output)
-    wait_for(lambda: application_synced(app, desired, None if resuming else session["revision"]), 240, f"{app} {target} reconciliation")
+    wait_for(lambda: application_synced(app, desired, expected_main_revision or session["revision"]), 240, f"{app} {target} reconciliation")
 
 
 def application_synced(app, desired, revision):
     obj = kube("get", "application", app, "-n", "argocd")
     return ((revision is None or expected_revision(obj, revision)) and phase.markers(obj) == phase.markers(desired)
             and obj.get("status", {}).get("sync", {}).get("status") == "Synced"
-            and obj["spec"]["sources"] == desired["spec"]["sources"])
+            and phase.normalized_sources(obj["spec"]["sources"]) == phase.normalized_sources(desired["spec"]["sources"]))
 
 
 def wait_for(predicate, seconds, label):
@@ -407,10 +455,7 @@ def prepare(parent, talosconfig, talosctl):
         bases[app] = json.loads(run(["terragrunt", "--log-disable", "render", "--json", "--write=false"],
                                    cwd=ROOT / "IaC/live/argocd-apps" / app, timeout=60))["inputs"]["manifest"]
     live = phase.load_live()
-    if any(phase.markers(x)[phase.PHASE] != "normal" for x in live.values()):
-        raise ValueError("existing maintenance must be resumed first")
-    if any(not expected_revision(x, revision) or x.get("status", {}).get("health", {}).get("status") != "Healthy" for x in live.values()):
-        raise ValueError("both Applications must be healthy on prepared main")
+    require_capture_ready(live, revision)
     pods, writers = source_pods(), {}
     for app, claim in CLAIMS.items():
         candidates = [p for p in pods if any(v.get("persistentVolumeClaim", {}).get("claimName") == claim for v in p["spec"]["volumes"])]
@@ -432,37 +477,78 @@ def prepare(parent, talosconfig, talosctl):
     print(directory)
 
 
+def require_session(live, session):
+    if any(phase.markers(item)[phase.PHASE] != "normal" and phase.markers(item)[phase.SESSION] != session["id"]
+           for item in live.values()):
+        raise ValueError("another checkpoint session is active")
+    observed = tuple(phase.markers(live[app])[phase.PHASE] for app in phase.APPS)
+    supported = {("normal", "normal"), ("stopped", "normal"), ("stopped", "cold"),
+                 ("stopped", "capture"), ("stopped", "recovery-cold"), ("stopped", "recovered"),
+                 ("recovered", "recovered"), ("recovered", "normal")}
+    if observed not in supported:
+        raise ValueError("unsupported checkpoint phase pair: " + repr(observed))
+
+
 def resume(directory, session):
+    """Return service at the already-reviewed revision without a GitHub fetch."""
+    live = phase.load_live()
+    require_session(live, session)
+    app_phase = phase.markers(live["n8n"])[phase.PHASE]
+    pg_phase = phase.markers(live["n8n-postgres"])[phase.PHASE]
+    if pg_phase == "capture":
+        apply_phase(directory, session, "n8n-postgres", "recovery-cold")
+        pg_phase = "recovery-cold"
+    if pg_phase in ("cold", "recovery-cold"):
+        wait_for(lambda: all(absent(name) for name in READERS), 120, "reader removal")
+        wait_for(lambda: all(absent(x["name"]) for x in session["writers"].values()), 150, "old writer removal")
+        fence(session, list(session["writers"].values()))
+        talos_fence(session, [{"name": name} for name in READERS])
+        apply_phase(directory, session, "n8n-postgres", "recovered")
+    elif pg_phase == "normal" and app_phase == "stopped":
+        # App-only stop failures still pin the original, running database first.
+        apply_phase(directory, session, "n8n-postgres", "recovered")
+    wait_for(lambda: ready("n8n-postgres", session), 300, "PostgreSQL SQL readiness")
+    live = phase.load_live()
+    if phase.markers(live["n8n"])[phase.PHASE] == "stopped":
+        wait_for(lambda: absent(session["writers"]["n8n"]["name"]), 150, "old n8n writer removal")
+        fence(session, [session["writers"]["n8n"]], check_survivors=False)
+        apply_phase(directory, session, "n8n", "recovered")
+    wait_for(lambda: ready("n8n", session), 300, "n8n database-aware readiness")
+    write_json(directory / ("resumed-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+               "revision": session["revision"], "next_step": "unpin after reachable main source verification"})
+
+
+def unpin(directory, session):
+    """After service recovery, verify main before removing temporary SHA pins."""
+    live = phase.load_live()
+    require_session(live, session)
+    if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
+        write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+                   "already_normal": True})
+        return
+    if any(phase.markers(item)[phase.PHASE] not in ("normal", "recovered") for item in live.values()):
+        raise ValueError("resume service before unpinning")
+    if any(not ready(app, session) for app in phase.APPS):
+        raise ValueError("both original workloads must be ready before unpinning")
     run(["git", "fetch", "origin", "main"], cwd=ROOT, timeout=60)
     run(["git", "diff", "--exit-code", session["revision"], "origin/main", "--",
          "clusters/homelab/apps/n8n", "clusters/homelab/apps/n8n-postgres",
          "clusters/homelab/apps/n8n-maintenance", "clusters/homelab/apps/n8n-postgres-cold",
          "clusters/homelab/apps/n8n-postgres-capture"], cwd=ROOT)
-    live = phase.load_live()
-    pg_phase = phase.markers(live["n8n-postgres"])[phase.PHASE]
-    if pg_phase == "capture":
-        apply_phase(directory, session, "n8n-postgres", "cold", resuming=True)
-        wait_for(lambda: all(absent(name) for name in READERS), 120, "reader removal")
-        pg_phase = "cold"
-    if pg_phase == "cold":
-        wait_for(lambda: all(absent(x["name"]) for x in session["writers"].values()), 150, "old writer removal")
-        fence(session, list(session["writers"].values()))
-        talos_fence(session, [{"name": name} for name in READERS])
-        apply_phase(directory, session, "n8n-postgres", "normal", resuming=True)
-    wait_for(lambda: ready("n8n-postgres", session), 300, "PostgreSQL SQL readiness")
-    live = phase.load_live()
-    if phase.markers(live["n8n"])[phase.PHASE] == "stopped":
-        fence(session, [session["writers"]["n8n"]], check_survivors=False)
-        apply_phase(directory, session, "n8n", "normal", resuming=True)
-    wait_for(lambda: ready("n8n", session), 300, "n8n database-aware readiness")
-    write_json(directory / ("resumed-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"]})
+    main_revision = run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip()
+    for app in reversed(phase.APPS):
+        if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":
+            apply_phase(directory, session, app, "normal", expected_main_revision=main_revision)
+            wait_for(lambda app=app: ready(app, session), 300, app + " readiness after unpin")
+    write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+               "main_revision": main_revision})
 
 
 def capture(directory, session):
     watches, observer = [], None
+    safe_to_resume = True
     live = phase.load_live()
-    if any(phase.markers(x)[phase.PHASE] != "normal" for x in live.values()):
-        raise ValueError("capture requires both Applications in normal phase")
+    require_capture_ready(live, session["revision"])
     current = {p["metadata"]["name"]: p for p in source_pods()}
     for writer in session["writers"].values():
         pod = current.get(writer["name"])
@@ -503,6 +589,9 @@ def capture(directory, session):
         write_json(directory / "paired-capture.json", {"session": session["id"], "at": now(),
                    "revision": session["revision"], "archives": archives,
                    "proof": "cold pair captured; application restore unverified"})
+    except CommandCleanupError:
+        safe_to_resume = False
+        raise
     finally:
         if observer:
             observer.stop.set()
@@ -511,7 +600,8 @@ def capture(directory, session):
             for watch in watches:
                 watch.close()
         finally:
-            resume(directory, session)
+            if safe_to_resume:
+                resume(directory, session)
 
 
 def main():
@@ -521,7 +611,7 @@ def main():
     prep.add_argument("--destination", type=Path, required=True)
     prep.add_argument("--talosconfig", type=Path, required=True)
     prep.add_argument("--talosctl", type=Path, required=True)
-    for command in ("capture", "resume"):
+    for command in ("capture", "resume", "unpin"):
         child = sub.add_parser(command)
         child.add_argument("--session-directory", type=Path, required=True)
     args = parser.parse_args()
@@ -541,8 +631,10 @@ def main():
         if any(directory.glob("*-shutdown.json")) or (directory / "paired-capture.json").exists():
             raise ValueError("session already started; resume it and prepare a new capture")
         capture(directory, session)
-    else:
+    elif args.command == "resume":
         resume(directory, session)
+    else:
+        unpin(directory, session)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,10 @@ from pathlib import Path
 PHASE = "homelab.rst.io/n8n-checkpoint-phase"
 SESSION = "homelab.rst.io/n8n-checkpoint-session"
 APPS = ("n8n", "n8n-postgres")
-PROFILES = {"n8n": ("normal", "stopped"), "n8n-postgres": ("normal", "cold", "capture")}
+REPO = "https://github.com/Stuhlmuller/homelab.git"
+PINNED = {"recovery-cold", "recovered"}
+PROFILES = {"n8n": ("normal", "stopped", "recovered"),
+            "n8n-postgres": ("normal", "cold", "capture", "recovery-cold", "recovered")}
 
 
 def digest(path):
@@ -22,7 +25,7 @@ def digest(path):
     return h.hexdigest()
 
 
-def profile(base, phase, session):
+def profile(base, phase, session, revision=None):
     app = base["metadata"]["name"]
     if phase not in PROFILES[app] or not re.fullmatch(r"[a-f0-9]{32}", session):
         raise ValueError("unknown profile or invalid session ID")
@@ -35,9 +38,27 @@ def profile(base, phase, session):
             raise ValueError("review new n8n Helm overrides before maintenance")
         sources[0]["helm"]["valuesObject"] = {"controllers": {"n8n": {"replicas": 0}}}
         sources[2]["path"] = "clusters/homelab/apps/n8n-maintenance"
-    if app == "n8n-postgres" and phase != "normal":
-        sources[0]["path"] = f"clusters/homelab/apps/n8n-postgres-{phase}"
+    if app == "n8n-postgres" and phase in ("cold", "capture", "recovery-cold"):
+        suffix = "cold" if phase == "recovery-cold" else phase
+        sources[0]["path"] = f"clusters/homelab/apps/n8n-postgres-{suffix}"
+    if phase in PINNED:
+        if not revision or not re.fullmatch(r"[a-f0-9]{40}", revision):
+            raise ValueError("recovery requires the full prepared repository revision")
+        for source in sources:
+            if source.get("repoURL") == REPO:
+                source["targetRevision"] = revision
     return value
+
+
+def normalized_sources(sources):
+    """Only chart/ref/directory default paths are computed by the owner module."""
+    result = copy.deepcopy(sources)
+    if len(result) > 1:
+        for source in result:
+            if source.get("path") in (None, "", ".") and any(
+                    source.get(key) is not None for key in ("chart", "ref", "directory")):
+                source.pop("path", None)
+    return result
 
 
 def markers(application):
@@ -52,15 +73,21 @@ def validate_transition(app, desired, live, session):
         mark = markers(item)
         if mark[PHASE] != "normal" and mark[SESSION] != session:
             raise ValueError("another maintenance session is active")
-    transitions = {"n8n": {"normal": {"stopped"}, "stopped": {"normal"}},
-                  "n8n-postgres": {"normal": {"cold"}, "cold": {"capture", "normal"},
-                                   "capture": {"cold"}}}
+    transitions = {
+        "n8n": {"normal": {"stopped"}, "stopped": {"recovered"}, "recovered": {"normal"}},
+        "n8n-postgres": {"normal": {"cold", "recovered"}, "cold": {"capture", "recovered"},
+                         "capture": {"cold", "recovery-cold"}, "recovery-cold": {"recovered"},
+                         "recovered": {"normal"}},
+    }
     if target not in transitions[app].get(current, set()):
         raise ValueError(f"unsupported phase transition: {app} {current} -> {target}")
-    if app == "n8n-postgres" and markers(live["n8n"])[PHASE] != "stopped":
-        raise ValueError("n8n must remain stopped for database maintenance")
-    if app == "n8n" and target == "normal" and markers(live["n8n-postgres"])[PHASE] != "normal":
-        raise ValueError("resume PostgreSQL before n8n")
+    peer = markers(live["n8n" if app == "n8n-postgres" else "n8n-postgres"])[PHASE]
+    if app == "n8n-postgres" and peer != ("recovered" if target == "normal" else "stopped"):
+        raise ValueError("database phases require stopped n8n; unpin requires recovered n8n")
+    if app == "n8n" and target == "recovered" and peer != "recovered":
+        raise ValueError("recover PostgreSQL at the prepared revision before n8n")
+    if app == "n8n" and target == "normal" and peer != "normal":
+        raise ValueError("unpin PostgreSQL before n8n")
 
 
 def load_live():
@@ -71,7 +98,7 @@ def load_live():
     return {name: found.get(name, {}) for name in APPS}
 
 
-def check_guard(base, command, arguments, live):
+def check_guard(base, command, arguments, live, bound_revision=None):
     """Read-only guard. The saved-plan permit binds exact bytes and prior markers."""
     app = base["metadata"]["name"]
     if any(arg.startswith("-") and arg.lstrip("-").startswith("var") and not arg.startswith("-var-file=") for arg in arguments):
@@ -103,7 +130,9 @@ def check_guard(base, command, arguments, live):
     path = Path(var_files[0])
     data = json.loads(path.read_text())
     note = json.loads(Path(str(path) + ".profile.json").read_text())
-    if data != {"manifest": profile(base, note["phase"], note["session"])}:
+    if note["phase"] in PINNED and note.get("revision") != bound_revision:
+        raise ValueError("recovery profile is not bound to the prepared checkout revision")
+    if data != {"manifest": profile(base, note["phase"], note["session"], note.get("revision"))}:
         raise ValueError("profile differs from current repository desired state")
     if any(arg.startswith("-var=") or arg == "-var" for arg in arguments):
         raise ValueError("additional desired-state overrides are prohibited")
@@ -120,7 +149,9 @@ def main():
     base = json.loads(args.manifest_json)
     if base.get("metadata", {}).get("name") not in APPS:
         return
-    check_guard(base, args.command, json.loads(args.arguments_json), load_live())
+    revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=Path(__file__).resolve().parents[1],
+                              check=True, capture_output=True, text=True, timeout=10).stdout.strip()
+    check_guard(base, args.command, json.loads(args.arguments_json), load_live(), bound_revision=revision)
 
 
 if __name__ == "__main__":
