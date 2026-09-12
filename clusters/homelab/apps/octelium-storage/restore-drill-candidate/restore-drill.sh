@@ -6,7 +6,17 @@ umask 0077
 backup_root="$1"
 work="$2/restore-drill"
 mkdir "$work"
-exec 3>&1 4>&2
+# Permanently discard the container's standard streams before reading archives.
+# A globals file or restored server can execute arbitrary programs. Saving log
+# handles for a public summary would expose them to those descendants, including
+# through /proc ancestor FDs. The direct container entry point has no wrapper
+# holding another copy; Job exit status is the public completion signal.
+exec </dev/null >"$work/details.log" 2>&1
+# Kubelet termination messages are another public output channel. The immutable
+# image's root-owned /root is not searchable by the restore UID; fail before any
+# backup read if the runtime makes that parent or message writable/accessible.
+test ! -x /root
+test ! -w /root/restore-termination-log
 stage="backup-selection"
 postgres_started=false
 cleanup() {
@@ -16,15 +26,14 @@ cleanup() {
     pg_ctl --pgdata="$work/pgdata" --mode=immediate --wait --timeout=30 stop >/dev/null 2>&1 || result=1
   fi
   if [ "$result" -eq 0 ]; then
-    printf '%s\n' 'Octelium PostgreSQL restore drill passed' >&3
+    printf '%s\n' 'Octelium PostgreSQL restore drill passed'
   else
-    printf 'Octelium PostgreSQL restore drill failed at %s; private diagnostics remain in disposable scratch\n' "$stage" >&4
+    printf 'Octelium PostgreSQL restore drill failed at %s; private diagnostics remain in disposable scratch\n' "$stage" >&2
   fi
   exit "$result"
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
-exec >"$work/details.log" 2>&1
 
 # Completed backup directories are published by atomic rename. Never fall back
 # to an older set when the newest set is stale, malformed, or corrupt.

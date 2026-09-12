@@ -64,6 +64,7 @@
             openssh
             pre-commit
             postgresql_14
+            prometheus.cli
             ripgrep
             shellcheck
             shfmt

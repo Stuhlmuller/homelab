@@ -128,6 +128,7 @@ def manifest(pin, name):
         "securityContext": {"runAsUser": 65534, "runAsGroup": 65534, "fsGroup": 65534,
                             "runAsNonRoot": True, "seccompProfile": {"type": "RuntimeDefault"}},
         "containers": [{"name": "synthetic", "image": pin["image"], "imagePullPolicy": "Always",
+                        "terminationMessagePath": "/root/restore-termination-log", "terminationMessagePolicy": "File",
                         "command": [LAUNCHER, "/bin/sh", "/tests/talos.sh"], "workingDir": "/work",
                         "resources": PROFILE["resources"],
                         "securityContext": {"allowPrivilegeEscalation": False, "readOnlyRootFilesystem": True,
@@ -169,9 +170,8 @@ def validate_spec(spec, pin, name, gated):
     container, wanted = spec["containers"][0], expected["containers"][0]
     for key, value in wanted.items():
         require(container.get(key) == value, "Admitted container profile changed")
-    allowed_defaults = {"terminationMessagePath": "/dev/termination-log", "terminationMessagePolicy": "File"}
     for key, value in container.items():
-        require(key in wanted or (key in allowed_defaults and value == allowed_defaults[key]), "Admitted container has extra execution configuration")
+        require(key in wanted, "Admitted container has extra execution configuration")
 
 
 def identity(obj, name):
@@ -454,7 +454,9 @@ def execute(pin, files, expected, client):
             if conditions.get("Complete") == "True":
                 require(current_job["status"].get("succeeded") == 1, "Job completion count is invalid")
                 validate_pod(pod, pin, name, job_uid, gated=False, image_status=True)
-                require(statuses[0].get("state", {}).get("terminated", {}).get("exitCode") == 0, "Container did not terminate successfully")
+                terminated = statuses[0].get("state", {}).get("terminated", {})
+                require(terminated.get("exitCode") == 0, "Container did not terminate successfully")
+                require(not terminated.get("message", ""), "Synthetic termination message is not empty")
                 break
             time.sleep(2)
         output = client.call("-n", PROFILE["namespace"], "logs", pod["metadata"]["name"], "-c", "synthetic", "--limit-bytes=65536")

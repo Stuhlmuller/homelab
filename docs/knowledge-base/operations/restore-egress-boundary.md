@@ -99,7 +99,7 @@ production backups or contact production services. Restoring dumps can execute
 source-superuser code, so a checksum alone cannot replace this boundary.
 [PostgreSQL restore warning](https://www.postgresql.org/docs/14/app-pgrestore.html).
 
-The final-image harness also requires all nine existing
+The final-image harness also requires all eleven
 `scripts/ci/octelium-restore-drill-test.py` cases. Its Docker backend keeps
 Python plus offline Kustomize rendering on the host; all PostgreSQL commands,
 the exact local `octelium-storage/restore-drill-candidate/restore-drill.sh`, and
@@ -184,3 +184,26 @@ the drill through GitOps; never remove the launcher just to make it green.
 [[restore-image-publication]] describes the separate, unexecuted protected
 publication path and its source/digest/readback requirements. It does not remove
 the registry access or Talos synthetic-runtime gates above.
+
+## Native console privacy regression
+
+The filtered Docker fixture's PID1 permanently redirects stdin/stdout/stderr to
+`/dev/null` before its hold loop; an inspected private PID namespace is mandatory.
+Synthetic globals invoke a read-only procfd probe through both psql shell and
+PostgreSQL program children. It inspects shell-ancestor and PID1 FDs1–4, appending a fixed canary only to
+pipes, `/dev/null`, or the known private logs. Other regular data files and PostgreSQL ancestors
+are skipped: PostgreSQL internal notification pipes are not console descriptors.
+A same-UID pipe forwarded to captured output must first expose the canary; its
+private witness is deleted before the actual restore. Both private execution receipts are mandatory on successful restores;
+all exec and container log streams must exclude the canary. This checks the
+portable drill's console-discard fix without retaining a public ancestor handle.
+The updated Linux regression is pending CI; offline contracts are not runtime
+proof. Talos's existing synthetic receipt script retains public descriptors and
+continues to prove network isolation only, until a separate privacy case lands.
+
+The native procfd canary probes shell stdout/stderr, PID1 stdout/stderr, and
+saved descriptors 3/4 only on the known restore entry script. PostgreSQL program
+children inherit protocol and death-watch pipes, including in their shells;
+writing arbitrary child fd3/4 falsely crashes the synthetic database. The offline
+fixture reproduces that pipe write and requires it remain untouched. The canary
+reads parent identity from procfs, avoiding shell-dependent inherited PPID values.

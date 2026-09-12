@@ -115,6 +115,8 @@ class Client:
         self.pod["status"] = {"containerStatuses": [{"name": "synthetic", "imageID": PIN["image"],
                               "restartCount": 0, "state": {"terminated": {"exitCode": 0}}}]}
         self.job["status"] = {"succeeded": 1, "conditions": [{"type": "Complete", "status": "True"}]}
+        if self.mode == "termination-message":
+            self.pod["status"]["containerStatuses"][0]["state"]["terminated"]["message"] = "synthetic private output"
         if self.mode == "mutated-release":
             self.pod["spec"]["containers"][0]["command"] = ["/bin/true"]
         if self.mode == "replaced-pod":
@@ -434,6 +436,12 @@ class Tests(unittest.TestCase):
         value["status"] = {"phase": "Running", "containerStatuses": [{"name": "synthetic"}]}
         with self.assertRaisesRegex(RuntimeError, "startup evidence"):
             M.validate_pod(value, PIN, NAME, JOB_UID, gated=True)
+
+    def test_termination_message_output_invalidates_success_and_is_cleaned(self):
+        client = Client(mode="termination-message")
+        with self.assertRaisesRegex(RuntimeError, "termination message"):
+            self.execute(client)
+        self.assertEqual(client.deleted, [("jobs", JOB_UID), ("configmaps", CM_UID)])
 
     def test_success_and_uncertain_response_use_one_owned_create(self):
         for mode in (None, "uncertain-job", "uncertain-cm"):

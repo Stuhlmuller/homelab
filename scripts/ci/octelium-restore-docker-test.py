@@ -2,6 +2,7 @@
 """Offline failures/routing contracts; native image CI supplies execution proof."""
 import importlib.util
 import io
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -90,9 +91,11 @@ class DockerContracts(unittest.TestCase):
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode="w"):
             pass
-        with patch.object(self.backend, "docker") as docker, \
+        with patch.object(self.backend, "docker", return_value=subprocess.CompletedProcess([], 0, '""', "")) as docker, \
                 patch.object(self.backend, "read_binary", return_value=stream.getvalue()) as read, \
-                patch.object(self.backend, "execute", return_value=result) as execute:
+                patch.object(self.backend, "execute", side_effect=[result,
+                    subprocess.CompletedProcess([], 0, DOCKER.CONSOLE_MARKER + "positive-done", ""),
+                    result]) as execute:
             self.assertIs(self.backend.drill(backups, work, script), result)
         command = docker.call_args_list[0].args
         self.assertIn(f"type=bind,src={backups},dst=/backup,readonly", command)
@@ -103,7 +106,102 @@ class DockerContracts(unittest.TestCase):
                          ("/bin/sh", "/tests/restore-drill.sh", "/backup", "/work"))
         self.assertFalse(execute.call_args.kwargs["check"])
         self.assertEqual(read.call_args.args[2:], ("tar", "-C", "/work", "-cf", "-", "."))
-        self.assertEqual(len(docker.call_args_list), 1)
+        self.assertEqual(len(docker.call_args_list), 3)
+        self.assertIn("exec </dev/null >/dev/null 2>&1", command[-1])
+        self.assertEqual(docker.call_args_list[-1].args, ("docker", "logs", self.backend.restore))
+
+    def test_pid1_null_descriptors_are_verified_in_running_container(self):
+        with patch.object(self.backend, "docker", return_value=subprocess.CompletedProcess([], 0, '\"\"', "")), \
+                patch.object(self.backend, "execute") as execute:
+            name = self.backend.start_container()
+        self.assertEqual(execute.call_args.args, (name, "/bin/sh", "-ec",
+                         'for fd in 0 1 2; do test "$(readlink /proc/1/fd/$fd)" = /dev/null; done'))
+
+    def test_procfd_positive_control_must_observe_canary_before_drill(self):
+        backups, work = self.root / "backups", self.root / "work"
+        backups.mkdir()
+        work.mkdir()
+        result = subprocess.CompletedProcess([], 0, "positive-done", "")
+        with patch.object(self.backend, "start_container", return_value="synthetic"), \
+                patch.object(self.backend, "execute", return_value=result) as execute:
+            with self.assertRaisesRegex(RuntimeError, "positive control"):
+                self.backend.drill(backups, work, self.root / "script")
+        self.assertEqual(execute.call_count, 1)
+        self.assertIn("rm /work/console-probe-client.executed", execute.call_args.args[-1])
+
+    def test_host_or_shared_pid_namespace_is_rejected(self):
+        for mode in ('host', 'container:foreign'):
+            with self.subTest(mode=mode), patch.object(self.backend, "docker", side_effect=[
+                    subprocess.CompletedProcess([], 0, "started", ""),
+                    subprocess.CompletedProcess([], 0, '"' + mode + '"', "")]):
+                with self.assertRaisesRegex(RuntimeError, "private PID namespace"):
+                    self.backend.start_container()
+
+    def test_all_public_streams_reject_private_canary(self):
+        for channel in range(4):
+            streams = ["", "", "", ""]
+            streams[channel] = DOCKER.CONSOLE_MARKER
+            result = subprocess.CompletedProcess([], 0, *streams[:2])
+            logs = subprocess.CompletedProcess([], 0, *streams[2:])
+            with self.subTest(channel=channel), self.assertRaisesRegex(RuntimeError, "marker escaped"):
+                DOCKER.check_console(result, logs)
+
+    def test_success_requires_both_private_native_execution_receipts(self):
+        DOCKER.check_probe_receipts(self.root, False)
+        with self.assertRaisesRegex(RuntimeError, "did not execute"):
+            DOCKER.check_probe_receipts(self.root, True)
+        for mode in ("client", "server"):
+            path = self.root / f"console-probe-{mode}.executed"
+            path.write_text("15\n")
+            path.chmod(0o600)
+        DOCKER.check_probe_receipts(self.root, True)
+        path.write_text("3\n")
+        with self.assertRaisesRegex(RuntimeError, "Incomplete"):
+            DOCKER.check_probe_receipts(self.root, False)
+        path.write_text("15\n")
+        path.chmod(0o644)
+        with self.assertRaisesRegex(RuntimeError, "Invalid private"):
+            DOCKER.check_probe_receipts(self.root, True)
+
+    def test_probe_skips_postgres_ancestors_but_checks_shell_ancestors(self):
+        # An inert procfs-shaped tree tests the real shell selection logic. Linux
+        # CI still supplies actual procfd permissions and pipe behavior.
+        proc, work = self.root / "proc", self.root / "work"
+        work.mkdir()
+        private = work / "restore-drill"
+        private.mkdir()
+        log = private / "details.log"
+        for pid in (os.getpid(), 1):
+            node = proc / str(pid)
+            (node / "fd").mkdir(parents=True)
+            (node / "comm").write_text("sh\n")
+            (node / "cmdline").write_bytes(b"/bin/sh\0-e\0fixture\0")
+            (node / "status").write_text("PPid:\t1\n" if pid != 1 else "PPid:\t0\n")
+            for fd in (1, 2, 3, 4):
+                (node / "fd" / str(fd)).symlink_to("/dev/null")
+        # SQL-spawned shells inherit PostgreSQL death-watch pipes above stderr.
+        # A procfs-shaped symlink allows the real write-selection code to prove
+        # that those pipe descriptors stay untouched without a live database.
+        danger = proc / str(os.getpid()) / "fd" / "pipe:[synthetic-death-watch]"
+        danger.write_text("original\n")
+        (proc / str(os.getpid()) / "fd/3").unlink()
+        (proc / str(os.getpid()) / "fd/3").symlink_to(danger.name)
+        parent = proc / str(os.getpid())
+        (parent / "fd/1").unlink()
+        (parent / "fd/1").symlink_to(log)
+        script = self.root / "probe.sh"
+        script.write_text(DOCKER.CONSOLE_PROBE.read_text()
+                          .replace('pid=$(awk \'/^PPid:/ {print $2}\' "/proc/$$/status")', f"pid={os.getpid()}")
+                          .replace("/proc/", str(proc) + "/")
+                          .replace("/work/", str(work) + "/"))
+        for process in ("postgres", "sh"):
+            (parent / "comm").write_text(process + "\n")
+            log.write_text("original\n")
+            subprocess.run(["sh", str(script), "client"], check=True, capture_output=True, timeout=5)
+            self.assertEqual(DOCKER.CONSOLE_MARKER in log.read_text(), process == "sh")
+            receipt = work / "console-probe-client.executed"
+            self.assertGreaterEqual(int(receipt.read_text()), 4)
+            self.assertEqual(danger.read_text(), "original\n")
 
     def test_archive_rejects_traversal_links_devices_and_oversized_files(self):
         for kind in ("traversal", "symlink", "hardlink", "device", "size"):

@@ -6,7 +6,7 @@
     "operatingSystem": "linux",
     "osImage": "Talos (v1.11.3)",
     "kernelVersion": "6.12.52-talos",
-    "kubeletVersion": "v1.34.1",
+    "kubeletVersion": "v1.34.11",
     "containerRuntimeVersion": "containerd://2.1.4"
   },
   "capacity": {

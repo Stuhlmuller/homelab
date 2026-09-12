@@ -1,0 +1,115 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openclaw-runtime-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: openclaw-runtime-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 5Gi
+  claimRef:
+    name: openclaw-runtime-local
+    namespace: ai
+  hostPath:
+    # One static volume avoids a cluster-wide provisioner; move this to a Talos
+    # UserVolume if node-local recovery or growth demands it.
+    path: /var/lib/openclaw-runtime
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-1
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openclaw-runtime-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: openclaw-runtime-state-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  claimRef:
+    name: openclaw-runtime-state-local
+    namespace: ai
+  hostPath:
+    # Direct hostPath mounts avoid kubelet-namespace subPath resolution on Talos.
+    path: /var/lib/openclaw-runtime/runtime/state
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-1
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openclaw-runtime-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: openclaw-runtime-agent-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 3Gi
+  claimRef:
+    name: openclaw-runtime-agent-local
+    namespace: ai
+  hostPath:
+    # Direct hostPath mounts avoid kubelet-namespace subPath resolution on Talos.
+    path: /var/lib/openclaw-runtime/runtime/agents/main/agent
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-1
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: openclaw-runtime-local
+  volumeMode: Filesystem

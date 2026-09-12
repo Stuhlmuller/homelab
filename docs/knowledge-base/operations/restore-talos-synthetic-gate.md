@@ -201,3 +201,10 @@ export-check CI. Source equality and publication metadata do not attest that
 extra execution: retain its separate native CI receipt for the publication SHA.
 Only a later successful protected run can
 establish the separate actual-Talos gate, followed by reviewed GitOps activation.
+
+The September 12 source refresh matches the worker's read-only observed kubelet
+`v1.34.11`; Talos `v1.11.3`, kernel `6.12.52-talos` and containerd `2.1.4` remain
+unchanged. The synthetic Job now mirrors the candidate's termination message
+under root-only `/root`, proves writes fail, and rejects a nonempty terminated
+message even when the exit code is zero. No synthetic Job has run for this
+revision; native Docker and actual Talos execution remain separate gates.
