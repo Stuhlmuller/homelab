@@ -1,0 +1,239 @@
+# Monitoring Storage Migration Draft
+
+Status: design only; healthy storage placement and restore gates remain open.
+No node or new storage device is selected, and no rollout is authorized by this
+note. Preserve existing history and retention; do not initialize an empty
+replacement to bypass a failed migration.
+
+## Current Contract And Evidence
+
+`IaC/terragrunt.stack.hcl` pins kube-prometheus-stack `85.2.0`.
+`clusters/homelab/apps/prometheus/values.yaml` retains Prometheus history for
+`15d` on a `50Gi` NFS claim and Alertmanager state on a `10Gi` NFS claim.
+The September 7 post-upgrade capture confirmed Operator `v0.90.1`, Prometheus
+`v3.11.3-distroless`, Alertmanager `v0.32.1`, and Alertmanager retention `120h`.
+Each has one replica; at 05:36 UTC Prometheus was Ready on `zimaboard-1` and
+Alertmanager was Ready on `acer`. These are current consumers, not selected
+migration targets; re-inventory all possible writers before fencing. Keep these versions,
+resource names, Services, authentication, scrape selectors, and notification
+routing unchanged during the storage move.
+
+The same maintenance completed Kubernetes `1.34.11` on all four nodes while
+retaining Talos `1.11.3`, after the verified CoreDNS ownership handoff.
+Direct kubelet and Prometheus checks confirmed restored coverage of all 28 expected
+mounted node/PVC pairs across 30 Pod bindings; all 34 scrape targets were up.
+The PVC query returned real data below its threshold, but Grafana's admin API
+returned HTTP 401, leaving current rule state and notification delivery unverified.
+See [[operations/kubernetes-patch-maintenance-2026-09]] for the dated outcome.
+This restores telemetry; it does not migrate NFS data or prove its restore path.
+
+The operator owns both StatefulSets through their respective CRs. Existing
+PVCs have no owner references; both StatefulSets specify `Retain` for scale-down
+and deletion. The old claims must stay retained and explicitly protected from
+Argo pruning. Mount layouts are `prometheus-db` at `/prometheus` and
+`alertmanager-db` at `/alertmanager`; preserve those subdirectories. Runtime
+ownership is UID `1000`, GID/fsGroup `2000`.
+
+Read-only September 6 measurements put Prometheus blocks, WAL, and head chunks
+at approximately `8GiB` combined; Alertmanager's directory is approximately
+`8KiB`. The NFS kubelet volume metrics report the shared export's filesystem
+usage, so they must not be interpreted as either application's directory size.
+Use Prometheus's own TSDB size metrics and an offline directory inventory for
+copy sizing. The requested PVC capacities are not hard quotas on NFS or hostPath.
+
+The September 6 inventory found only `acer` with enough local disk headroom for
+the unchanged `50Gi`/`10Gi` budgets and verification copies. Its `/var` filesystem is XFS on
+the existing system disk. However, its bit-flip/image/etcd corruption incident
+remains unresolved: see [[continuous-improvement]], Acer storage-integrity
+finding. Existing worker disks are approximately 32 GB system eMMC devices;
+read-only Talos inventory found no spare independent data device. Refresh disk
+capacity and device inventory before selecting storage. `zimaboard-2` cannot
+fit the deployed `1536Mi` Prometheus request in its 1.28 GiB allocatable memory.
+Prometheus placement on `zimaboard-1` does not create local disk headroom there.
+This remains a hardware gate before moving data onto unverified storage.
+
+A September 6 read-only scan of 4,201 Acer kernel-log lines found no matching
+hardware-error signals, and the etcd inspection found no errors. These limited
+observations do not test memory or disk integrity, explain the prior corruption,
+or clear the hardware gate. September 7 post-upgrade etcd health and verified
+off-node snapshots likewise do not prove monitoring-data recovery or validate
+the proposed target hardware. Application checkpoint/restore proof and an
+independent backup destination remain open.
+
+## Why A New Claim Name Is Required
+
+Changing only `storageClassName` cannot move an already-bound PVC. Pinned
+Operator `v0.90.1` responds to immutable StatefulSet update errors by deleting
+that StatefulSet with foreground propagation, then recreating it. Both the
+Prometheus and Alertmanager controllers use this shared updater. This is
+controller reconciliation of committed desired state; no operator-issued
+StatefulSet deletion is required.
+
+A new `storage.volumeClaimTemplate.metadata.name` also changes the mounted
+claim name in both pinned controllers. Use new names such as `prometheus-local`
+and `alertmanager-local`, with separately declared retained PV/PVCs whose names
+match `<template-name>-<existing-statefulset-name>-0`. Never rebind or overwrite
+the old PVC. The chart renders storage, zero replicas, init containers, and
+retention policy directly from its values.
+
+Sources: [pinned StatefulSet updater](https://github.com/prometheus-operator/prometheus-operator/blob/v0.90.1/pkg/k8s/statefulset.go#L63-L94),
+[Prometheus claim naming](https://github.com/prometheus-operator/prometheus-operator/blob/v0.90.1/pkg/prometheus/common.go#L333-L340),
+[Alertmanager storage](https://github.com/prometheus-operator/prometheus-operator/blob/v0.90.1/pkg/alertmanager/statefulset.go).
+
+## Proposed GitOps Sequence
+
+Run Prometheus and Alertmanager migrations separately. Each numbered phase
+requires a distinct reviewed revision and observed live gate; Argo sync waves
+and Kubernetes Pod absence alone do not prove that the prior writer stopped.
+
+The fence must cover **every node that may still host a writer**, including
+evicted Pods and previous copy/restore Jobs. Record their Pod/container IDs,
+claim/PV identities, node IDs, and boot IDs before scale-down. An unknown prior
+consumer or missing node evidence blocks the migration. The September 2
+[[architecture/cluster-topology|worker incident]] shows
+why: eviction started replacement PVC workloads while the old worker could
+still reach NFS; it later resumed on its unchanged boot and reconciled old Pods.
+
+For each possible writer node, require current authenticated Talos evidence
+that the node and container runtime are healthy, and node-side inspection that
+the relevant containers/processes have exited and their writable data mounts
+are absent. Inspect runtime and mount state even when Kubernetes no longer lists
+the Pod. If that evidence is unavailable, require a confirmed shutdown held in
+effect, or a confirmed reset with a changed boot ID followed by the same healthy
+node-side process/mount checks. A held shutdown proves execution has stopped.
+Any later return must be controlled: confirm a new boot and those absence checks
+before admitting that node as an unfenced consumer again.
+Unreachability, a reboot request, Pod eviction/deletion, or a kubelet restart is
+not a fence. Any required node recovery must have its own reviewed repository
+code path; this design authorizes none.
+
+Keep replicas zero and recovery fences in effect until the successor is ready.
+Repository-owned orchestration must recheck this evidence immediately before
+each checkpoint, restore, production startup, and rollback transition; a stale
+completion marker cannot substitute for the checks. Losing node health or
+changing a node boot/consumer identity invalidates the fence: abort active
+checkpoint/restore work without publishing success and stop further transitions.
+Do not start a successor while any possible old writer is unaccounted for.
+The node-evidence collector and transition enforcement remain
+implementation gates, not functionality already supplied by this draft.
+
+1. **Prepare without changing active storage.** Add retained target PV/PVCs,
+   checkpoint/verification storage, and bounded migration/restore Jobs through
+   the Prometheus Application's repository Kustomize source. Use the existing
+   `media-postgres/local-storage.yaml` static local pattern only after the target
+   hardware is accepted. A dedicated block device needs its own declared Talos
+   provisioning path; do not repartition the control-plane disk implicitly.
+   Preserve old and new claims with `Prune=false,Delete=false` and explicit
+   StatefulSet `Retain` policies. Verify binding, ownership, capacity, and a
+   repository-owned write/recreate smoke test on the new target.
+2. **Fence one writer.** Commit that CR's `replicas: 0`, keeping `paused: false`.
+   Pause would prevent the operator from processing the fence. Observe the
+   exact CR generation, StatefulSet desired/actual zero, no owned Pods including
+   terminating Pods, and the node-level process/mount fence above for both data
+   claims. Preserve the existing 600-second Prometheus and 120-second
+   Alertmanager shutdown grace. The checkpoint gate must independently reject
+   missing or invalidated node evidence before reading the cold source.
+3. **Checkpoint and prove restore.** Revalidate the node fence, then mount the
+   old claim read-only. Create a dated immutable archive of its complete cold
+   directory, including Prometheus WAL/head data and Alertmanager
+   silences/notification log. Publish checksums
+   atomically and verify the source inventory remains unchanged. Restore the
+   archive into separate disposable scratch and boot the exact application
+   version with no external network, scrape targets, rules, remote writes, or
+   notification receivers. Verify successful WAL/state replay, historical
+   query/time-range invariants or silence-state invariants, and clean shutdown.
+   Do not call a checksum-only copy a restore proof. Preserve the source and
+   archive if any check fails; the production writer stays fenced.
+4. **Prepare new storage while still fenced.** Revalidate the node fence.
+   Commit the new claim-template name, storage class, verified node affinity,
+   and startup guard; keep replicas zero. Let the operator recreate the empty
+   StatefulSet and verify its PVC
+   references. A separately gated Job restores the verified checkpoint into an
+   empty staging directory on the target, normalizes ownership to `1000:2000`,
+   verifies content, and atomically publishes data plus a completion marker. It
+   must never overwrite an existing target or report completion while a writer
+   is active. The runtime init guard refuses startup without the matching
+   verified marker and current node-fence gate; only the migration Job can
+   publish the marker. The fence check must still run at actual startup, after
+   Argo and scheduler delays.
+5. **Start and verify one writer.** After the restore Job has completed,
+   revalidate the node fence for the former production and copy/restore writers,
+   including their node-side process and writable-mount absence, then commit
+   replicas one. Confirm the sole Pod mounts the new claim on the verified node,
+   startup replay succeeds, historical data and
+   current ingestion survive, and no unsupported-filesystem warning returns.
+   For Alertmanager, verify retained silences/notification state and the existing
+   Grafana/Prometheus routing. Notification delivery testing needs its normal
+   explicit authorization. Start the second workload's sequence only afterward.
+6. **Soak and restore normal bootstrap.** Keep original claims, checkpoints,
+   and rollback data through the documented soak and a successful new backup
+   and restore cycle. Remove incident-only Jobs and startup guards in a later
+   reviewed cleanup revision so a fresh cluster retains the documented one-apply
+   bootstrap. Do not delete historical PVs as part of that cleanup.
+
+Prometheus recommends snapshots for recurring live backups and warns that
+omitting WAL/head data loses recent samples. The cold checkpoint above avoids
+an inconsistent live directory copy. A declared recurring snapshot/copy path,
+its restricted API authority, and independent target remain design gates;
+never silently replace them with copying a live TSDB directory.
+See [upstream storage guidance](https://prometheus.io/docs/prometheus/latest/storage/).
+
+## Resource And Capacity Gates
+
+Current main and the September 7 live capture agree on a Prometheus `1536Mi`
+memory request, with no CPU request or CPU/memory limits. Alertmanager retains
+its `200Mi` memory request. The September 6 steady-state sample of roughly
+`80m` CPU and `1Gi` working memory is historical, not a replay/compaction budget.
+Initial **test budgets**, not approved runtime changes, add Prometheus `250m`
+CPU and Alertmanager `25m` CPU requests while retaining their deployed memory
+requests. A serial verification Job starts with
+`250m` CPU / `1536Mi` requests and `1` CPU / `3Gi` limits. A streaming copy Job
+can start with `100m` CPU / `128Mi` requests and `1` CPU / `512Mi` limits.
+Measure compaction and cold WAL replay peaks before approving runtime limits;
+do not impose a low CPU ceiling from the steady-state sample.
+
+Keep `15d` and `120h` retention and the `50Gi`/`10Gi` capacity contracts. Budget
+those capacities plus two additional measured dataset copies for checkpoint and
+isolated restore, while retaining the node's normal disk reserve. Validate
+filesystem free space directly: static hostPath capacity requests neither
+reserve nor cap bytes. A future size cap must leave compaction/WAL headroom and
+must not shorten the promised history; halt for capacity if both cannot fit.
+
+The September 7 06:14 UTC capacity audit confirmed the earlier
+[[audit-2026-09-04|node-loss headroom finding]] after the monitoring request changes.
+Reconstructing the live alert formula from Kubernetes objects found about
+`5.86Gi` of regular-container requests above remaining RAM after losing `acer`;
+including init-sidecar and scheduling overhead raises the deficit to `5.99Gi`.
+This is request arithmetic, not a fresh Prometheus sample, full scheduling
+simulation, or hardware purchase specification; growth and recovery reserves
+require additional capacity.
+
+Losing `acer` first removes the sole API/control plane and scheduler. The
+deficits describe eventual rescheduling after control-plane recovery, not
+automatic failover. Node/PV affinity and local data impose separate recovery
+constraints even when aggregate RAM fits. Rebalancing Pods does not add RAM,
+a control plane, or copied data. Explicitly document recovery time, accepted
+storage placement, and measured spare resources; this migration cannot claim
+HA or node-loss tolerance.
+
+## Rollback And Remaining Decisions
+
+Before any new writes, fence the replacement using the same node-level evidence
+and return the CR to the retained original template only after verifying its
+checkpoint identity. Once local writes begin, the old NFS copy is stale. Fence
+the local writer at its node, take and prove another complete checkpoint,
+restore into a **new retained rollback claim**, and change the template name
+again while replicas remain zero. Revalidate the node fence before each of those
+transitions and before startup; API absence alone never authorizes rollback.
+If the local node is unreachable and its state cannot be read safely, stop:
+neither starting from stale NFS nor assuming a cold checkpoint preserves the
+required history. Start only after the same content and node-level single-writer
+gates pass. Preserve both prior copies.
+Returning to NFS is an emergency rollback with its original reliability risk,
+not completion of the storage repair.
+
+Required decisions: tested healthy storage hardware/placement; accepted
+maintenance interruption and rollback RPO/RTO; a capacity/reservation budget
+validated under replay/compaction; independent backup destination and recurring
+backup authority; exact private restore invariants. Until those gates pass,
+keep this plan a draft and current persistent data untouched.
