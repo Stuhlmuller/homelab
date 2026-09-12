@@ -28,6 +28,8 @@ application restore has been verified for this code yet.
 - Timed-out or interrupted commands terminate their owned process groups before
   recovery starts; failed cleanup blocks automatic resume. Archive streams also
   stop remaining descendants after parent exit, before fsync and validation.
+- Both declared reader Pods must be Running with complete container readiness
+  before the capture fence or archive streams start; the wait remains bounded.
 - Resume and unpin receipts require both original workloads ready and their
   Applications reconciled, including retries whose markers already read normal.
   Recovery requires prepared images and complete current container readiness;

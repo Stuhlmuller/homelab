@@ -99,6 +99,8 @@ also stops at the 128 MiB local reserve. Each archive has a 300-second remote
 command limit and a 320-second client deadline, one second for completion,
 and up to four seconds for owned-process cleanup.
 Both reader Pods have a 3600-second deadline and sleep for 3590 seconds.
+Capture waits up to 120 seconds for both Pods to be Running with complete
+regular-container Ready statuses, including the mounted-source/script probes.
 Their last required live use is the second archive stream: the budget includes
 900 seconds of remaining provider apply, 240 for reconciliation, 120 for reader
 readiness, 50 for the first fence, two 325-second streams and up to 90 seconds

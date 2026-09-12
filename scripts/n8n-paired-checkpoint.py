@@ -705,6 +705,7 @@ def capture(directory, session):
             write_json(directory / (app + "-shutdown.json"), watch.terminal)
         apply_phase(directory, session, "n8n-postgres", "capture")
         wait_for(lambda: all(any(p["metadata"]["name"] == name and p.get("status", {}).get("phase") == "Running"
+                                and containers_ready(p)
                                 for p in source_pods()) for name in READERS), READER_READY_TIMEOUT, "readers")
         observer = CaptureFence(session)
         wait_for(lambda: observer.observations > 0 or observer.error is not None, FIRST_FENCE_TIMEOUT, "first fence")

@@ -995,6 +995,63 @@ class CheckpointTests(unittest.TestCase):
                                 ("n8n-postgres", "capture"), ("n8n-postgres", "recovery-cold"),
                                 ("n8n-postgres", "recovered"), ("n8n", "recovered")])
 
+    def test_capture_waits_for_both_complete_reader_readiness_observations(self):
+        originals = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
+            app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, originals)}}
+        readers = [{"metadata": {"name": name}, "spec": {"containers": [{"name": "reader"}]},
+                    "status": {"phase": "Running", "containerStatuses": [{"name": "reader", "ready": False}]}}
+                   for name in sorted(checkpoint.READERS)]
+        current, ready = originals, False
+        watch = MagicMock(observed=True, error=None, terminal={"app": {"exitCode": 0}})
+
+        def apply(_directory, _session, _app, target, **_kwargs):
+            nonlocal current
+            if target == "capture":
+                current = readers
+
+        def wait(predicate, seconds, label):
+            nonlocal ready
+            if label != "readers":
+                return
+            self.assertEqual(seconds, checkpoint.READER_READY_TIMEOUT)
+            self.assertFalse(predicate(), "Running alone must not start capture")
+            readers[0]["status"]["containerStatuses"][0]["ready"] = True
+            self.assertFalse(predicate(), "both readers must be ready")
+            readers[1]["status"]["containerStatuses"] = []
+            self.assertFalse(predicate(), "missing statuses must not start capture")
+            readers[1]["status"]["containerStatuses"] = [{"name": "reader", "ready": True}]
+            readers[1]["spec"]["containers"].append({"name": "sidecar"})
+            self.assertFalse(predicate(), "incomplete statuses must not start capture")
+            readers[1]["spec"]["containers"].pop()
+            readers[1]["status"]["phase"] = "Pending"
+            self.assertFalse(predicate(), "container status cannot replace Running phase")
+            readers[1]["status"]["phase"] = "Running"
+            self.assertTrue(predicate())
+            ready = True
+
+        def observer(_session):
+            self.assertTrue(ready, "capture fence must start only after reader readiness")
+            return MagicMock(observations=1, error=None)
+
+        def stream(*_args, **_kwargs):
+            self.assertTrue(ready, "archive exec must wait for both readers")
+            raise ValueError("fixture reached first ready stream")
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=live()), \
+                patch.object(checkpoint, "source_pods", side_effect=lambda: current), \
+                patch.object(checkpoint, "fence"), \
+                patch.object(checkpoint, "PodExitWatch", return_value=watch), \
+                patch.object(checkpoint, "apply_phase", side_effect=apply), \
+                patch.object(checkpoint, "wait_for", side_effect=wait), \
+                patch.object(checkpoint, "CaptureFence", side_effect=observer), \
+                patch.object(checkpoint, "stream_archive", side_effect=stream), \
+                patch.object(checkpoint, "resume") as resume:
+            with self.assertRaisesRegex(ValueError, "fixture reached first ready stream"):
+                checkpoint.capture(Path(directory), session)
+            resume.assert_called_once()
+
     def test_modified_saved_plan_fails(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "phase.plan"
