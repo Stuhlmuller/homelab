@@ -262,12 +262,26 @@ class CheckpointTests(unittest.TestCase):
             checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
         self.assertEqual(calls, [("n8n", "normal", "c" * 40)])
 
-    def test_completed_unpin_is_idempotent_without_network(self):
+    def test_normal_unpin_retry_rejects_old_synced_revision(self):
+        current = live()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}}
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "kube", side_effect=lambda *args: current[args[2]]), \
+                patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
+                patch.object(checkpoint, "apply_phase") as apply:
+            with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                checkpoint.unpin(Path(directory), session)
+            apply.assert_not_called()
+            self.assertEqual(list(Path(directory).glob("unpinned-*.json")), [])
+
+    def test_completed_unpin_revalidates_main_without_apply(self):
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(phase, "load_live", return_value=live()), \
                 patch.object(checkpoint, "ready", return_value=True), \
                 patch.object(checkpoint, "application_synced", return_value=True), \
-                patch.object(checkpoint, "run", side_effect=AssertionError("completed unpin needs no GitHub")), \
+                patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
                 patch.object(checkpoint, "apply_phase") as apply:
             checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION,
                              "bases": {app: base(app) for app in phase.APPS}})
@@ -298,10 +312,12 @@ class CheckpointTests(unittest.TestCase):
             self.assertTrue(all(phase.markers(item)[phase.PHASE] == "normal" for item in current.values()))
             self.assertEqual(list(root.glob("unpinned-*.json")), [])
             applied.reset_mock()
-            command.side_effect = AssertionError("normal retry must not fetch GitHub")
+            def verified_main(args, **_kwargs):
+                return "c" * 40 if args[1] == "rev-parse" else ""
+            command.side_effect = verified_main
             for unready in phase.APPS:
                 ready.side_effect = lambda app, _session, unready=unready: app != unready
-                with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                with self.assertRaisesRegex(ValueError, "ready"):
                     checkpoint.unpin(root, session)
                 self.assertEqual(list(root.glob("unpinned-*.json")), [])
             ready.side_effect = None
@@ -336,7 +352,22 @@ class CheckpointTests(unittest.TestCase):
                           f"pathlib.Path({str(marker)!r}).write_text('late')")
             child = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{grandchild!r}]); time.sleep(10)"
             parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(10)"
-            with self.assertRaises(subprocess.TimeoutExpired):
+            real_popen = subprocess.Popen
+
+            def start(command, **kwargs):
+                process = real_popen(command, **kwargs)
+                deadline = time.monotonic() + 5
+                while not ready.exists() and time.monotonic() < deadline:
+                    time.sleep(0.01)
+                if not ready.exists():
+                    checkpoint.terminate_command(process)
+                    self.fail("fixture did not start its grandchild")
+                return process
+
+            # Start the timeout after the actual grandchild exists; slow process
+            # startup under concurrent CI load is not cancellation evidence.
+            with patch.object(checkpoint.subprocess, "Popen", side_effect=start), \
+                    self.assertRaises(subprocess.TimeoutExpired):
                 checkpoint.run([sys.executable, "-c", parent], timeout=0.4)
             self.assertTrue(ready.exists(), "fixture must spawn the actual grandchild before timeout")
             time.sleep(1.1)

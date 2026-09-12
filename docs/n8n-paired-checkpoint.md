@@ -158,7 +158,8 @@ If the fetch fails or those sources changed, service stays running at the
 prepared SHA; review and resolve the source difference before retrying. A
 partial unpin resumes with the remaining Application; an already-normal retry
 records completion only after both original workloads are ready and both
-Applications have reconciled, without another GitHub request. Resume and the
+Applications have reconciled at freshly fetched and source-verified `main`.
+A stale `Synced` status from the prior pin cannot complete a retry. Resume and the
 final unpin step also recheck both workloads before writing completion receipts.
 Do not start another
 capture until both markers are normal. Failed captures are not retried in

@@ -546,11 +546,6 @@ def unpin(directory, session):
     """After service recovery, verify main before removing temporary SHA pins."""
     live = phase.load_live()
     require_session(live, session)
-    if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
-        require_service_complete(session, normal_only=True)
-        write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
-                   "already_normal": True})
-        return
     if any(phase.markers(item)[phase.PHASE] not in ("normal", "recovered") for item in live.values()):
         raise ValueError("resume service before unpinning")
     if any(not ready(app, session) for app in phase.APPS):
@@ -558,6 +553,11 @@ def unpin(directory, session):
     run(["git", "fetch", "origin", "main"], cwd=ROOT, timeout=60)
     run(["git", "diff", "--exit-code", session["revision"], "origin/main", "--", *UNPIN_SOURCES], cwd=ROOT)
     main_revision = run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip()
+    if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
+        require_service_complete(session, normal_only=True, normal_revision=main_revision)
+        write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+                   "already_normal": True, "main_revision": main_revision})
+        return
     for app in reversed(phase.APPS):
         if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":
             apply_phase(directory, session, app, "normal", expected_main_revision=main_revision)
