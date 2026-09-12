@@ -44,3 +44,23 @@ After two identical failed attempts, stop repeating the command. Switch to a
 different evidence source or record the blocker. Never disable a security check
 or increase resources merely to silence an error. Cap investigation scope so
 Discord remains responsive on this shared 4 GiB workload.
+
+
+## Google Calendar and Marketplace
+
+The toolbox includes gog from the pinned gogcli Nix package. The bundled gog
+skill is enabled; read its installed instructions and `gog --help` before use.
+Use Calendar-only OAuth, explicit `--account` selection, and JSON output where
+supported. Check auth availability without printing token material. Installation
+is not authentication. Calendar access stays blocked until the owner completes
+OAuth and a bounded event read succeeds. Do not request Gmail/Drive access for
+calendar management. Do not use process environment variables as desired-state
+configuration; credential setup must use the repository's secret workflow.
+
+Use OpenClaw's browser tool for Marketplace only after an authenticated private
+profile is configured and verified. Web search/fetch cannot send Marketplace
+messages. There is no configured browser backend in the current deployment;
+report this blocker instead of attempting shell-based cookie extraction or
+installing an unreviewed plugin. Keep browser control private and retain normal
+login/security checks. Account setup and any new browser service belong in
+repository-owned configuration before deployment.

@@ -27,7 +27,8 @@ reconcile = module("reconcile")
 fixture = {
     "agents": {"defaults": {"models": {"openai/gpt-5.5": {}},
                             "modelPolicy": {"allow": ["openai/gpt-5.5"]}}},
-    "skills": {"allowBundled": ["existing-skill"]},
+    "skills": {"allowBundled": ["existing-skill"],
+               "entries": {"existing-skill": {"enabled": False}, "gog": {"enabled": False}}},
     "channels": {"discord": {"enabled": True, "allowFrom": ["123456789012345678"],
                              "token": {"source": "env", "provider": "default", "id": "TOKEN"}}},
 }
@@ -43,7 +44,9 @@ with tempfile.TemporaryDirectory() as directory:
     memory.write_text("Private memory must survive.\n")
     bootstrap.install(BUNDLE, root, config)
     result = json.loads(config.read_text())
-    assert result["skills"] == fixture["skills"]
+    assert result["skills"]["allowBundled"] == ["existing-skill", "gog"]
+    assert result["skills"]["entries"]["existing-skill"] == {"enabled": False}
+    assert result["skills"]["entries"]["gog"] == {"enabled": True}
     assert result["channels"] == fixture["channels"]
     assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
         "openai/gpt-5.5", "openai/gpt-6-astra"]
