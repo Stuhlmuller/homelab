@@ -7,7 +7,7 @@ locals {
   app_url     = "https://stinkyboi.com"
   portal_url  = "https://portal.stinkyboi.com"
   aws_region  = local.root_config.locals.aws_region
-  kms_key_id  = local.root_config.locals.kms_key_id
+  kms_key_id  = local.root_config.locals.runtime_kms_key_id
   tags = {
     for key, value in local.root_config.locals.default_tags :
     key => tostring(value)

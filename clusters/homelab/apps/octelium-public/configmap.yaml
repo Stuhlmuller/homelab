@@ -17,6 +17,13 @@ data:
       tlsTimeout: 10s
       http2Origin: true
     ingress:
+      - hostname: octelium-api.stinkyboi.com
+        service: https://octelium-api-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: octelium-api.stinkyboi.com
+          httpHostHeader: octelium-api.stinkyboi.com
+      - hostname: octelium-transport.stinkyboi.com
+        service: tcp://octelium-api-ingressgateway.istio-system.svc.cluster.local:443
       - hostname: stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:

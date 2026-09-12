@@ -1,0 +1,48 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: octelium-console-login-return
+  namespace: istio-system
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.lua
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+            inlineCode: |
+              local namespace = "homelab.console-login-return"
+
+              function envoy_on_request(handle)
+                local is_console = handle:headers():get(":authority") == "console.stinkyboi.com"
+                handle:streamInfo():dynamicMetadata():set(namespace, "is_console", is_console)
+              end
+
+              function envoy_on_response(handle)
+                local metadata = handle:streamInfo():dynamicMetadata():get(namespace)
+                local headers = handle:headers()
+                if not metadata or not metadata.is_console
+                    or headers:get(":status") ~= "303"
+                    or headers:get("x-octelium-unauthorized") ~= "true" then
+                  return
+                end
+                local old = "https://stinkyboi.com/login?redirect=https%3A%2F%2Fconsole.octelium.stinkyboi.com%2F"
+                local new = "https://stinkyboi.com/login?redirect=https%3A%2F%2Fconsole.stinkyboi.com%2F"
+                local location = headers:get("location")
+                if location and location:sub(1, #old) == old then
+                  headers:replace("location", new .. location:sub(#old + 1))
+                end
+              end

@@ -47,11 +47,13 @@
             kubernetes-helm
             kubectl
             kustomize
+            lua5_1
             miniupnpc
             nixVersions.latest
             opentofu
             openssh
             pre-commit
+            prometheus.cli
             ripgrep
             shellcheck
             shfmt

@@ -96,6 +96,22 @@ spec:
 ---
 kind: Policy
 metadata:
+  name: homelab-private-talos-access
+spec:
+  rules:
+    - name: operator-client
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.spec.type == "HUMAN"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.metadata.name == "talos-api.homelab"
+            - match: ctx.service.spec.mode == "TCP"
+            - match: ctx.user.metadata.name == "homelab-owner"
+---
+kind: Policy
+metadata:
   name: homelab-cordium-user-access
 spec:
   rules:
@@ -457,6 +473,22 @@ spec:
 ---
 kind: Service
 metadata:
+  name: talos-api.homelab
+spec:
+  displayName: Homelab Talos API
+  isPublic: false
+  isTLS: false
+  mode: TCP
+  port: 50000
+  authorization:
+    policies:
+      - homelab-private-talos-access
+  config:
+    upstream:
+      url: tcp://10.1.0.199:50000
+---
+kind: Service
+metadata:
   name: litellm
 spec:
   displayName: LiteLLM
@@ -548,6 +580,7 @@ metadata:
 spec:
   displayName: NOFX
   isPublic: true
+  isAnonymous: false
   mode: WEB
   port: 80
   authorization:

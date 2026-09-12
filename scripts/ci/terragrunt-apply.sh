@@ -26,35 +26,6 @@ azuread_credentials_available() {
   [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_CLIENT_SECRET:-}" && -n "${ARM_TENANT_ID:-}" ]]
 }
 
-azuread_stack_changed() {
-  local base_sha="${APPLY_BASE_SHA:-}"
-  local head_sha="${APPLY_HEAD_SHA:-${GITHUB_SHA:-HEAD}}"
-
-  if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
-    return 0
-  fi
-
-  if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
-    return 0
-  fi
-
-  if ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
-    return 0
-  fi
-
-  if ! git diff --quiet "$base_sha" "$head_sha" -- \
-    IaC/live/azuread-applications \
-    IaC/.catalog/units/live/azuread-applications \
-    IaC/root.hcl; then
-    return 0
-  fi
-
-  ! diff -q \
-    <(terragrunt_stack_units_at_ref "$base_sha" 'live/azuread-applications/') \
-    <(terragrunt_stack_units_at_ref "$head_sha" 'live/azuread-applications/') \
-    >/dev/null
-}
-
 destroy_deleted_terragrunt_units() {
   local deleted_units=()
   local snapshot_dir
@@ -208,7 +179,7 @@ if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   exit 0
 fi
 
-if ! azuread_credentials_available && azuread_stack_changed; then
+if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
   echo "Set AZUREAD_CLIENT_ID, AZUREAD_CLIENT_SECRET, and AZUREAD_TENANT_ID on homelab-production." >&2
   exit 1
@@ -261,7 +232,7 @@ if azuread_credentials_available; then
     cd IaC/live/azuread-applications
     terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*')" --non-interactive --parallelism 1 --source-update -- apply -no-color -auto-approve
   )
-elif azuread_stack_changed; then
+elif terragrunt_azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
   echo "Set AZUREAD_CLIENT_ID, AZUREAD_CLIENT_SECRET, and AZUREAD_TENANT_ID on homelab-production." >&2
   exit 1

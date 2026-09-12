@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: policy-bot
-          image: palantirtechnologies/policy-bot:1.41.1@sha256:1babe4d474db1ed7184146fbd2d332138c30121b2f860451347d9dbb825f5a20
+          image: palantirtechnologies/policy-bot:1.41.2@sha256:a35545fe6ac75e2429352e6f8d4baa92ce16d4e524b10a3711031c2ff79841a5
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

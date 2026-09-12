@@ -31,15 +31,17 @@ cleanup() {
 trap cleanup EXIT
 
 install -m 0700 -d "$ctl_home"
-yq ea 'select((.kind == "Policy" and .metadata.name == "homelab-private-kubernetes-access") or (.kind == "Service" and .metadata.name == "kubernetes-api.homelab"))' \
+yq ea 'select((.kind == "Policy" and (.metadata.name == "homelab-private-kubernetes-access" or .metadata.name == "homelab-private-talos-access")) or (.kind == "Service" and (.metadata.name == "kubernetes-api.homelab" or .metadata.name == "talos-api.homelab")))' \
   "$catalog" >"$target_catalog"
 chmod 0600 "$target_catalog"
 yq ea -o=json -I=0 '[.]' "$target_catalog" |
   jq -e '
-    length == 2 and
+    length == 4 and
     (map({kind, name: .metadata.name}) | sort_by(.kind, .name)) == [
       {"kind": "Policy", "name": "homelab-private-kubernetes-access"},
-      {"kind": "Service", "name": "kubernetes-api.homelab"}
+      {"kind": "Policy", "name": "homelab-private-talos-access"},
+      {"kind": "Service", "name": "kubernetes-api.homelab"},
+      {"kind": "Service", "name": "talos-api.homelab"}
     ]
   ' >/dev/null
 
@@ -83,4 +85,4 @@ grep -Fq 'No applied changes in Cluster Core resources' <<<"$second_apply" || {
   exit 1
 }
 
-echo "Private Kubernetes Policy and Service match the reviewed catalog."
+echo "Private Kubernetes and Talos Policies and Services match the reviewed catalog."

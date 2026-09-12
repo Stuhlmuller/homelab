@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istio-ztunnel
+  namespace: monitoring
+  labels:
+    release: prometheus
+    app.kubernetes.io/part-of: istio
+spec:
+  namespaceSelector:
+    matchNames: [istio-system]
+  selector:
+    matchLabels:
+      app: ztunnel
+  podMetricsEndpoints:
+    - port: ztunnel-stats
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istio-envoy
+  namespace: monitoring
+  labels:
+    release: prometheus
+    app.kubernetes.io/part-of: istio
+spec:
+  namespaceSelector:
+    any: true
+  # Gateways, waypoints and sidecars expose this named port. Other pods
+  # have no matching port and are dropped by Prometheus Operator discovery.
+  selector: {}
+  podMetricsEndpoints:
+    - port: http-envoy-prom
+      path: /stats/prometheus
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: istiod
+  namespace: monitoring
+  labels:
+    release: prometheus
+    app.kubernetes.io/part-of: istio
+spec:
+  namespaceSelector:
+    matchNames: [istio-system]
+  selector:
+    matchLabels:
+      app: istiod
+  podMetricsEndpoints:
+    - port: http-monitoring
+      path: /metrics
+      interval: 30s
