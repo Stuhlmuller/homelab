@@ -1,0 +1,4 @@
+- op: add
+  path: /cluster/apiServer/certSANs
+  value:
+    - 10.1.0.199

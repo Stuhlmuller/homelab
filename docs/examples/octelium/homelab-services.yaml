@@ -580,6 +580,7 @@ metadata:
 spec:
   displayName: NOFX
   isPublic: true
+  isAnonymous: false
   mode: WEB
   port: 80
   authorization:

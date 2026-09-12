@@ -27,6 +27,16 @@ bootstrap permissions that the GitHub OIDC role must never change for itself;
 an administrator still uses reviewed Terragrunt/OpenTofu desired state and the
 shared remote backend to apply those units.
 
+It also owns state-bucket encryption configuration through
+`state-bucket-encryption`, keeping backend administration outside workload
+CI. See [[operations/kms-cost-audit-2026-09-05]] for the adopted configuration,
+validation evidence, and rollback.
+
+`IaC/operator/legacy-kms-retirement` adopts and retires only the historical
+west-region state key after recovery archives and cross-project dependency
+checks pass. It does not change the retained active OpenTofu key. The exact
+deletion approval and rollout status live in the same KMS audit note.
+
 Octelium recovery has one transport exception, not a desired-state exception:
 a trusted LAN operator may apply the reviewed `kubernetes-node-labels`
 Terragrunt unit through the canonical private API and shared remote backend when
@@ -45,7 +55,8 @@ isolated under `clusters/homelab/apps/cordium-bootstrap`, so creation starts a
 fresh 15-minute Argo CD operation instead of spending the parent's timeout
 budget. Its foreground resources finalizer cascades all tracked bootstrap
 resources when the parent declaratively removes the child.
-The child uses Kustomize autodetection and omits empty source options because
+The child and every Terragrunt-owned Kustomize source use autodetection and omit
+empty source options because
 [Argo CD v3.4.2 normalizes them to absent fields](https://github.com/argoproj/argo-cd/blob/0dc6b1b57dd5bb925d5b03c3d09419ab9fb4225e/util/argo/argo.go).
 Declaring `kustomize: {}` therefore leaves the parent OutOfSync after normalization.
 Cordium's privileged genesis ServiceAccount, ClusterRole, and binding are

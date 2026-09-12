@@ -1,3 +1,4 @@
-machine:
-  certSANs:
+- op: add
+  path: /machine/certSANs
+  value:
     - talos-api.homelab.local.stinkyboi.com

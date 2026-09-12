@@ -15,10 +15,16 @@ Secrets. External Secrets itself uses a Kubernetes Secret created through the
 after placeholder SSM parameters exist and real credential values are injected
 outside git.
 
-The SSM SecureString key is managed by `IaC/live/aws-ssm-parameters` in
-`us-west-2` under `alias/homelab-opentofu`. It is distinct from the
-OpenTofu remote-state key with the same alias in `us-east-1`; production apply
-roles need identity-based KMS permissions for both keys.
+SSM SecureStrings now use AWS-managed `alias/aws/ssm` in `us-west-2`, selected
+by `runtime_kms_key_id` in `IaC/root.hcl`. The OpenTofu client-side state key
+remains `alias/homelab-opentofu` in `us-east-1`. The September migration
+archives old SSM versions under AWS-managed S3 encryption before retiring
+the former west-region customer key; see the audit below for rollout status.
+
+The [[operations/kms-cost-audit-2026-09-05]] inventories three customer-managed
+keys and 16 AWS-managed keys. The third customer key, `tofu-encryption-key`,
+is a legacy retirement candidate, not safe to delete without checking retained
+ciphertext. Account KMS costs were $3.05 in August 2026.
 
 ## AWS SSM Pattern
 
@@ -78,7 +84,11 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   policy, until a separate reviewed secret-retirement change. See
   [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
 - Grafana Microsoft Entra SSO is managed through
-  `IaC/live/azuread-applications/grafana`.
+  `IaC/live/azuread-applications/grafana`. Grafana and Octelium passwords expire
+  one year after creation, but their current resources have no rotation trigger;
+  an unchanged apply does not rotate them. Coordinate a reviewed
+  `rotate_when_changed` revision with the Grafana `OnChange` ExternalSecret and
+  the Octelium native-secret sync before either expiry.
 - Alertmanager owns notification delivery credentials for Grafana-managed
   alerts. The Prometheus app materializes the
   `alertmanager-discord-webhook` ExternalSecret in `monitoring`, sourced from
@@ -154,12 +164,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
   The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected `octelium-cloudflare-origin-port.yml` workflow uses the
-  `homelab-production` environment secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN`
-  only for zone read, Zone Settings read, Origin Rules edit, and Config Settings
-  write while reconciling the exact API hostname's destination port and Full
-  (strict) TLS/HTTP2 origin transport; the token value never enters git or
-  workflow output. The former
+  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
+  existing production AWS role for SSM reads and the `homelab-production`
+  secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` for removal of retired origin/TLS
+  rules (zone read, Origin Rules edit, Config Settings write). DNS reconciliation
+  uses the SSM-backed DNS token. Native TLS gRPC uses the separate Tunnel TCP
+  carrier; no UPnP or WAN address is required. The token values never enter git
+  or workflow output. The former
   `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
   consumer, is excluded from the External Secrets reader IAM policy, and
   remains only until secret retirement is reviewed separately.
@@ -243,6 +254,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
+  is the only Deluge VPN parameter readable by External Secrets; the six
+  retired split-profile parameters remain non-readable state tombstones. It
   refreshes on ExternalSecret changes; after replacing the SSM profile value,
   bump `homelab.rst.io/wireguard-profile-ssm-version` on both the
   ExternalSecret and Deluge pod template so the Secret is rerendered and

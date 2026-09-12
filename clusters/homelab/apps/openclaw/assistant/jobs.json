@@ -1,0 +1,23 @@
+[
+  {
+    "key": "homelab-morning-brief",
+    "name": "Homelab morning brief",
+    "schedule": "0 9 * * *",
+    "timeoutSeconds": 240,
+    "message": "Give the owner a concise morning homelab briefing in their Discord DM. Read the managed operating agreement, yesterday/today memory, and tracked follow-ups. Make bounded read-only checks of current alerts, Argo health, and relevant PR/CI progress using working authorized tools. Lead with what matters today: changes since the last briefing, anything broken or blocked, and one concrete next step. Aim for 100-180 words; fewer if little changed. If all available checks are healthy, one relaxed sentence is enough. If a source is unavailable, label that gap rather than inventing health. Do not repeat unchanged warnings in detail. Record the observation and briefing time in private memory. Your final answer is delivered automatically; do not also call the message tool."
+  },
+  {
+    "key": "homelab-health-watch",
+    "name": "Homelab daytime health watch",
+    "schedule": "17,47 8-21 * * *",
+    "timeoutSeconds": 180,
+    "message": "Perform a bounded homelab health check, following AGENTS.md and TOOLS.md. Read memory/homelab-status.json first. Query current firing alerts and tracked incident/rollout state using existing authorized access; narrow further inspection to a new change. Do not scan the whole workspace or run CI. Compare stable incident fingerprints, not volatile timestamps. Notify only a new actionable failure, significant escalation, verified recovery, completed requested rollout, or newly broken monitoring access. Unchanged warnings and healthy results must return exactly NO_REPLY. Preserve the last successful observation if a source fails and report access failure only once until it changes. Record state and next action privately. Investigate read-only; desired-state repairs require a validated repository PR. Final text is automatically delivered to the owner, so do not send a second message."
+  },
+  {
+    "key": "homelab-daily-improvement",
+    "name": "Homelab daily improvement",
+    "schedule": "30 14 * * *",
+    "timeoutSeconds": 600,
+    "message": "Spend at most eight minutes making one useful homelab or assistant improvement. Read recent corrections, memory/improvements.md, the repository knowledge base, existing PRs, and active task records. Prefer finishing or verifying current work over starting more. Choose an evidence-backed small reliability, documentation, tooling, or recurring-friction fix. Improve private notes directly; repository changes need a codex/ branch, signed conventional commit, relevant validation, knowledge-base update, and a reviewable PR. Keep at most one proactive improvement PR open; check its CI and feedback first. Follow the owner's existing authorization to merge homelab fixes only after CI, review comments, and branch policy allow. Never bypass protected deployment approval, mutate live resources manually, broaden credentials, install unreviewed plugins, or edit managed instructions outside git. Record evidence, outcome, and next verification. Notify the owner only for a completed useful improvement, a ready PR with validation, or a specific decision needed. If there is no meaningful result, return exactly NO_REPLY. Do not invent busywork. Final text is delivered automatically; do not also call the message tool."
+  }
+]

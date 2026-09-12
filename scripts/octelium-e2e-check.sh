@@ -399,49 +399,11 @@ for HOST in "${CONTROL_HOSTS[@]}"; do
   esac
 done
 
-API_PUBLIC_IPV4="$(
-  dig +short @1.1.1.1 "${API_HOST}" A 2>/dev/null |
-    awk '/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ {print; exit}' || true
-)"
-if [ -z "${API_PUBLIC_IPV4}" ]; then
-  fail "${API_HOST} has no public IPv4 answer"
-  GRPC_READY=0
+if python3 "$(dirname "$0")/octelium-tunnel-check.py" --domain "${DOMAIN}"; then
+  pass "public browser API and native TCP tunnel reached Octelium"
 else
-  GRPC_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/octelium-grpc-headers.XXXXXX")"
-  GRPC_TRAILERS_HEADER="$(printf '%s%s: trailers' t e)"
-  GRPC_RESULT="$(
-    curl -sS \
-      --http2 \
-      --resolve "${API_HOST}:443:${API_PUBLIC_IPV4}" \
-      -H "content-type: application/grpc" \
-      -H "${GRPC_TRAILERS_HEADER}" \
-      --data-binary '' \
-      --max-time 15 \
-      -o /dev/null \
-      -D "${GRPC_HEADER_FILE}" \
-      -w '%{http_code} %{http_version}' \
-      "https://${API_HOST}/octelium.api.main.user.v1.MainService/GetStatus" || true
-  )"
-  GRPC_HTTP_CODE="${GRPC_RESULT%% *}"
-  GRPC_HTTP_VERSION="${GRPC_RESULT#* }"
-  GRPC_SERVER="$(awk 'tolower($1) == "server:" {print tolower($2)}' "${GRPC_HEADER_FILE}" | tr -d '\r' | tail -1)"
-  GRPC_STATUS="$(
-    awk 'tolower($0) ~ /^grpc-status:[[:space:]]*/ {
-      sub(/^[^:]*:[[:space:]]*/, "")
-      sub(/\r$/, "")
-      print
-    }' "${GRPC_HEADER_FILE}" | tail -1
-  )"
-  rm -f "${GRPC_HEADER_FILE}"
-  if [ "${GRPC_HTTP_CODE}" = "200" ] &&
-    [ "${GRPC_HTTP_VERSION}" = "2" ] &&
-    [ "${GRPC_STATUS}" = "16" ] &&
-    [ "${GRPC_SERVER}" = "cloudflare" ]; then
-    pass "https://${API_HOST} returned the expected Cloudflare HTTP/2 unauthenticated gRPC response (HTTP 200, grpc-status 16)"
-  else
-    fail "https://${API_HOST} public gRPC probe via ${API_PUBLIC_IPV4} returned HTTP ${GRPC_HTTP_CODE:-missing} over ${GRPC_HTTP_VERSION:-missing}, grpc-status ${GRPC_STATUS:-missing}, server ${GRPC_SERVER:-missing}; expected Cloudflare HTTP/2, HTTP 200, and grpc-status 16"
-    GRPC_READY=0
-  fi
+  fail "Cloudflare Tunnel API transport verification failed"
+  GRPC_READY=0
 fi
 
 note "Checking Octelium service catalog"
@@ -658,22 +620,34 @@ while read -r HOST; do
       pass "https://${HOST} resolves publicly for clientless access"
     fi
 
+    CURL_REQUEST=(-I)
+    if [ "${HOST}" = "console.stinkyboi.com" ]; then
+      # Octelium returns a bare 401 to curl but a login redirect to browsers.
+      CURL_REQUEST=(-H 'Accept: text/html' -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36')
+    fi
     CURL_OUT="$(
-      curl -sS -I --max-time 20 -o "${HEADER_FILE}" -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
+      curl -sS "${CURL_REQUEST[@]}" --max-time 20 -D "${HEADER_FILE}" -o /dev/null -w '%{http_code} %{remote_ip}' "https://${HOST}${TEST_PATH}" 2>"${CURL_ERR}" || true
     )"
     HTTP_CODE="${CURL_OUT%% *}"
     REMOTE_IP="${CURL_OUT#* }"
     SERVER="$(awk 'tolower($1) == "server:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
     LOCATION="$(awk 'tolower($1) == "location:" {print $2}' "${HEADER_FILE}" | tr -d '\r' | tail -1)"
 
-    if [ "${HOST}" = "console.stinkyboi.com" ] && printf '%s' "${LOCATION}" | grep -F "console.octelium.stinkyboi.com" >/dev/null 2>&1; then
-      fail "https://${HOST}${TEST_PATH} redirected to unsupported nested console hostname: ${LOCATION}"
+    if [ "${HOST}" = "console.stinkyboi.com" ]; then
+      case "${HTTP_CODE} ${LOCATION}" in
+        '303 https://stinkyboi.com/login?redirect=https%3A%2F%2Fconsole.stinkyboi.com%2F'*)
+          pass "https://${HOST}${TEST_PATH} returns browsers to the public console after login"
+          ;;
+        *)
+          fail "https://${HOST}${TEST_PATH} did not return the expected console login redirect (HTTP ${HTTP_CODE}, Location: ${LOCATION:-missing})"
+          ;;
+      esac
       rm -f "${HEADER_FILE}" "${CURL_ERR}"
       continue
     fi
 
     case "${HTTP_CODE}" in
-      200|204|301|302|307|308|401|403|405)
+      200|204|301|302|303|307|308|401|403|405)
         pass "https://${HOST}${TEST_PATH} responded through the public access path with HTTP ${HTTP_CODE}"
         ;;
       404)

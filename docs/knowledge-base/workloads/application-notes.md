@@ -35,6 +35,23 @@ workload README and [[../architecture/storage-and-state]]. Secret values stay
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [[../architecture/secrets-and-identity]].
 
+## Kiali mesh visibility
+
+The 2026-09-05 read-only probes found cluster-wide namespace and Istio config
+listing working, but zero graph connections and no `istio_*` Prometheus series.
+Kiali's API reported a startup Prometheus reachability failure retained in
+memory, even though its CR enabled Prometheus. Upstream v2.26.0
+`cmd/server.go` installs a permanent no-op client in that case.
+
+`clusters/homelab/apps/kiali/values.yaml` waits for Prometheus readiness before
+Kiali starts. `clusters/homelab/apps/prometheus/istio-podmonitors.yaml` owns
+ztunnel L4, Envoy and Istiod scrape discovery. See the Kiali README for the
+operator security flags, rollback and UI namespace selection. Validate rollout
+with `python3 scripts/kiali-check.py`; Argo CD health alone is insufficient.
+Live recovery remains unverified until the GitOps change rolls out. Grafana's
+frontend-settings endpoint also returned 401; dashboard integration is a separate
+follow-up requiring its existing authentication contract to be checked.
+
 ## Dispatcharr
 
 Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
@@ -56,6 +73,25 @@ steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
 ## OpenClaw
 
+[[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
+remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
+
+Claw's reviewed assistant bundle lives in
+`clusters/homelab/apps/openclaw/assistant/`: Astra via Codex OAuth, managed
+personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
+09:00 briefing, twice-hourly daytime health watch, and one bounded daily
+improvement session. Stable automation declaration keys preserve history and
+operator pauses. After registering replacements, ID/name-checked reconciliation
+disables the legacy ten-minute auto-triage and daily improvement jobs, preserving
+history and unrelated security, memory, and research routines.
+The existing allowlisted owner supplies the Discord DM route;
+ambiguous routing defers scheduling without breaking gateway startup. Verify
+`assistant-reconciliation.json` reports `ready` as well as Pod readiness.
+Bootstrap retains original files privately and
+preserves personal memory. The Pod annotation hashes the full bundle so GitOps
+changes take effect on restart. See the app README for validation and rollback;
+configured Astra is not proof of account access until a real turn succeeds.
+
 OpenClaw persists runtime state on the `openclaw` PVC under `/data/openclaw`.
 The `operator-toolbox` init container installs the operator command set with
 Nix, then shares both `/toolbox/profile` and `/nix` with the app and bootstrap
@@ -63,6 +99,25 @@ containers. Keep the copied Nix database and shared store as a matched unit:
 copying only the profile runtime closure while copying the full database leaves
 missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
 the homelab flake.
+
+On 2026-09-02, five orphaned `openclaw-hooks` processes consumed about `2.04Gi`
+before the `2026.7.1` app reached its `4Gi` limit and was OOM-killed. This
+matches [upstream OpenClaw issue #109421](https://github.com/openclaw/openclaw/issues/109421):
+a timed-out Codex native hook lost ownership of its detached relay child.
+Desired state now pins the first current
+stable release containing the Linux fix, `2026.8.2`; keep the `4Gi` limit and
+require 24 hours without another app restart or orphaned relay before closing
+the incident. Its `Recreate` bootstrap creates a verified, owner-only migration
+archive on the same NFS volume, runs the targeted session SQLite inspect,
+dry-run, import, and post-import inspection, keeps Kubernetes as the external
+supervisor, and pins concurrency at the prior effective value of four. Generic
+doctor repair is intentionally excluded because it can rewrite unrelated skill
+policy. Gateway startup owns deterministic config migrations, not persisted
+session or cron route repair. A pre-rollout count-only inspection found 20
+entries in one session store with no legacy Codex route field and no cron JSON
+store, so this upgrade needs no separate route mutation. The checkpoint is not
+independent protection from NAS failure; retain OpenClaw's migration originals
+until the soak closes.
 
 ## Zimaboard-0 Resource Envelope
 
@@ -103,6 +158,11 @@ that rule file aligned with the Grafana-managed Argo CD alerts, but do not
 depend on Grafana rule evaluation for the only Argo CD notification path. After
 rollout, validate that the `argocd-application-health` `PrometheusRule` is
 present and that Prometheus is receiving `argocd_app_info`.
+
+[[../operations/monitoring-resource-requests]] records the September 2026
+memory measurements, explicit monitoring reservations, scheduling-fit model,
+and required post-rollout checks. These requests protect scheduler accounting;
+the cluster's remaining failover-capacity deficit remains open.
 
 ## Sonarr
 

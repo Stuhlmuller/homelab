@@ -1,14 +1,25 @@
 # Operator-owned infrastructure
 
-`IaC/operator` contains declarative prerequisites that a protected automation
-identity must not be allowed to change for itself. These units use the shared
-remote state and repository modules, but the GitHub plan/apply workflows do not
-traverse this directory.
+`IaC/operator` contains declarative prerequisites that require focused operator
+review, including automation identity permissions and recovery storage. These
+units use the shared remote state and repository modules, but the GitHub
+plan/apply workflows do not traverse this directory.
 
 Run an operator unit only with a reviewed administrator session, after its
 format, validation, and plan checks pass. This separation prevents a compromised
 workflow from widening the permissions of its own AWS role while keeping the
 bootstrap policy reproducible and reviewable.
+
+## Etcd Offsite Backup Storage
+
+`etcd-backup-storage` owns a dedicated private, versioned S3 bucket in
+`us-east-1` using the existing account and AWS-managed S3 encryption key. Its
+only lifecycle cleanup removes incomplete multipart uploads after seven days;
+completed backup versions have no automatic expiration. No CI permissions
+change. Follow the [focused saved-plan workflow](../../docs/etcd-offsite-storage.md)
+with an existing administrator session. Generic CI validates this unit offline
+but does not live-plan or apply it. Bucket creation does not publish snapshots
+or prove offsite recovery; those verification steps remain separate.
 
 ## GitHub Actions apply-role policy
 
@@ -225,3 +236,21 @@ Do not destroy this unit while `IaC/live/aws-ssm-parameters` still manages that
 policy family or the cluster uses the External Secrets IAM user. The user has
 `prevent_destroy`; removing the bootstrap grant or boundary first would prevent
 safe reconciliation or restore the broader direct-policy risk.
+
+## State bucket request costs
+
+`state-bucket-encryption` adopts the existing state bucket's encryption
+configuration and enables S3 Bucket Keys. It preserves the default KMS key,
+explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
+See [KMS audit and rollout](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md)
+for the focused plan/apply path, verification, and declarative rollback.
+
+## Legacy KMS key retirement
+
+`legacy-kms-retirement` owns only the adopted legacy key and its alias. Its
+final desired state schedules deletion with a 30-day window. The active
+east-region OpenTofu key is outside this unit. Dependency audit and archive
+verification are complete. The explicitly approved retirement was applied on
+September 5, 2026; deletion is scheduled for October 5. Keep
+`retirement_requested = true` so re-applies preserve retirement. See the
+[KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).

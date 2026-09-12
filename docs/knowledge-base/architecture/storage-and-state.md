@@ -1,6 +1,72 @@
 # Storage And State
 
+The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
+the existing S3 state bucket's encryption configuration, enabling S3 Bucket
+Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
+[[operations/kms-cost-audit-2026-09-05]] for evidence, rollout, and rollback.
+
+The same bucket holds confidential AWS-managed-encryption recovery archives
+for 128 SSM versions and 60 legacy homelab state versions under
+`IaC/homelab/migrations/`. Preserve these when retiring old KMS keys. Archive
+objects contain secret material and must never be copied into this public repo.
+
 Tags: #architecture #storage #stateful
+
+## Control-Plane Recovery State
+
+The single control-plane node `acer` owns the Kubernetes etcd database.
+The [routine backup command](../../talos-etcd-backup.md) saves a new private
+off-node snapshot and verifies metadata, the embedded SHA-256 checksum, and a
+full-file manifest digest. Operators choose an existing durable mode-0700
+directory outside Git; the command retains every completed backup.
+The separate [macOS scheduler](../../talos-etcd-schedule.md) declares roughly
+daily snapshots, hourly retries/load/wake catchup, offline 36-hour freshness
+checks and 28-day retention with a seven-valid-copy minimum. It reserves a
+private `scheduled` child, preserving all manual siblings; failed backup or
+verification prevents pruning. Exact reviewed code is installed to a durable
+operator runtime. On 2026-09-07, installed sources and the loaded plist matched
+the merged revision, and the first automatic `RunAtLoad` snapshot passed
+offline checksum/freshness checks. All four manual backups were preserved and
+reverified; no copies were pruned. A 2026-09-12 read-only follow-up found five
+scheduled successes dated September 7–11, with the latest snapshot `fresh` and
+the LaunchAgent loaded. The longest success interval was 26 hours 54 minutes;
+two logged failures recovered on later scheduled attempts. See the schedule
+runbook for this scoped recurrence evidence and its remaining wake/availability
+limits. Private receipts retain both observations.
+The Mac's availability, unattended offsite freshness, remote alert delivery,
+an isolated control-plane recovery drill and control-plane redundancy remain
+gaps. PVC data and private Talos recovery material need separate backups; an
+etcd snapshot alone cannot recover either.
+
+The 2026-09-07 [[operations/kubernetes-patch-maintenance-2026-09|maintenance]]
+used a fresh verified off-node snapshot after the DNS handoff. All five
+scheduled media/Octelium backups had completed their latest due run, and their
+published artifacts remained present on retained NFS claims. Publisher-time
+validation plus current file metadata does not constitute a fresh rehash or
+restore drill.
+
+After Kubernetes `1.34.11`, direct kubelet and Prometheus checks covered all 28
+expected mounted node/PVC pairs across 30 Pod bindings; all 50 claims were Bound.
+Unmounted claims are outside that metric inventory. Grafana's current PVC rule
+state remains unverified because its admin API returned HTTP 401, although the
+unchanged alert query returned real data below its threshold.
+
+The dedicated [[operations/etcd-offsite-storage|etcd offsite storage]] operator
+unit declares a private, versioned S3 bucket with independently owned retention.
+Its reviewed saved plan applied on 2026-09-07 with seven additions and no
+changes or destruction; bucket metadata checks and provider refresh/no-drift
+validation passed. The separate
+[[operations/etcd-offsite-publication|manual publisher]] then copied the first
+scheduled snapshot and retrieved its exact S3 versions; independent remote
+metadata and local checksum checks passed with the source preserved. One
+earlier manual post-upgrade snapshot passed
+[[operations/etcd-offline-restore-validation|offline database restoration]].
+These are distinct snapshots and checks; neither proves control-plane or PVC
+recovery. The separate [offsite attempt scheduler](../../etcd-offsite-schedule.md)
+now has a reviewed-code installation path, private resumable attempts and
+source-age status, but no installed schedule or real recurring execution has
+been verified. It uses existing expiring AWS SSO sessions; remote alerting and
+indefinite unattended identity remain unresolved.
 
 ## Durable Storage
 
@@ -41,7 +107,11 @@ retained static `hostPath` PV at `/var/lib/media-postgres`, pinned to `acer`;
 the former NFS data claim remains retained for verified nightly logical backups
 at 03:00 `America/Los_Angeles` with 14-day retention. The local volume removes
 QNAP latency from the live database but couples recovery to the single
-control-plane node and its system disk.
+control-plane node and its system disk. GitOps explicitly declares the retained
+`data-media-postgres-0` claim with `Prune=false,Delete=false`; the inactive
+legacy StatefulSet keeps its compatible claim template for rollback. A clean
+bootstrap therefore creates the backup target even while that StatefulSet stays
+at zero replicas.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
@@ -62,6 +132,34 @@ ready, but they must not be treated as production-ready until:
 4. Backup and restore expectations are documented in `docs/storage-nfs.md`.
 
 ## Open Audit Findings
+
+- **Status:** config recovery verified; session-warning fix staged
+- **Area:** OpenClaw upgrade / config and session migration
+- **Evidence:** On 2026-09-04, OpenClaw 2026.8.2 bootstrap repeatedly rejected
+  four retired config keys before Discord installation and session migration.
+  `clusters/homelab/apps/openclaw/values.yaml` now migrates those keys after
+  the verified offline backup and preserves legacy model restrictions explicitly.
+  It also stops writing retired `hooks.maxBodyBytes`. PR #953 rolled out on
+  September 5: both archive verification passes succeeded, retired keys were
+  absent, the model policy was present, and Discord 2026.8.2 installed.
+  Session dry-run then stopped on one missing healthcheck transcript: 19 of 20
+  entries validated, with 1,089 events. Upstream treats `transcript_missing` as
+  an import warning and preserves metadata, but its CLI returns exit 1 for all
+  issues. Bootstrap now accepts only that exact known agent/session warning,
+  retains private JSON reports, and rejects all other issues. No live index
+  entries or transcripts were manually altered.
+- **Validation:** A synthetic legacy config failed under the exact 2026.8.2
+  CLI before migration and passed afterward. The actual bootstrap migration
+  has preservation, idempotence, and invalid-input checks in
+  `scripts/ci/openclaw-config-check.py`. The same check exercises the session
+  report gate against unexpected warnings, failure exits, mismatched reports,
+  and malformed JSON. An exact 2026.8.2 CLI fixture returned exit 1 for
+  dry-run and import with a missing transcript, preserved both session metadata
+  entries, and passed post-import inspection. Full static validation, 280
+  rendered policy checks, shell syntax, and server-side diff passed.
+- **Next step:** Roll out through GitOps, require successful bootstrap and
+  session migration, then verify gateway and Discord readiness. Preserve the
+  pre-upgrade archive and migration originals until the 24-hour soak passes.
 
 - **Status:** open
 - **Area:** storage / backup and retained data
@@ -88,12 +186,16 @@ with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
 backend upload PVCs, n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium
 Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
 `octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
-NOFX SQLite state, and OctoBot. OpenClaw keeps auth, sessions, workspace, and
-application state on its PVC, but mounts its rebuildable per-agent Codex
-app-server home from a
-pod-local `emptyDir` so native thread backfills and diagnostics cannot stall
-turns over NFS. The volume is capped at `2Gi` to protect node storage. See
-[[workloads/inventory]] for ownership and dependency notes.
+NOFX SQLite state, and OctoBot. OpenClaw keeps configuration and workspace on
+its retained NAS claim, but its global state, per-agent SQLite databases, and
+native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The platform-storage application owns its StorageClass and PV;
+the namespaced OpenClaw application owns its PVC. This permits
+local WAL and preserves native bindings across Pod replacement. A one-time
+verified offline copy retains the NAS source. Daily SQLite online backups keep
+seven database snapshots on the NAS. The local hostPath survives Pod replacement
+but not node-disk loss; there is no automatic node failover and recovery can lose
+writes since the last backup. Native caches are reconstructed on disaster restore.
+See the OpenClaw app README and [[operations/openclaw-assistant-2026-09-05]].
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
 Multica PostgreSQL now follows the recovered NFS database probe pattern:
@@ -154,6 +256,9 @@ password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
 migration checkpoint, not an off-NAS backup; restore validation remains open.
+Grafana's shared backup-staleness rule includes this CronJob alongside the four
+media backup jobs: warn after 30 hours without success, including an established
+job that has never succeeded. The legacy rule UID is preserved during expansion.
 
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
@@ -224,3 +329,26 @@ failures so stale catalog state cannot trigger a silent redownload.
 - `clusters/homelab/apps/radarr/media-storage.yaml`
 - `clusters/homelab/apps/sonarr/media-storage.yaml`
 - `IaC/live/argocd-apps/platform-storage`
+
+## OpenClaw identity coordinator ownership
+
+September 5 read-only inspection found QNAP-backed OpenClaw paths reported as
+UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
+coordinator ownership check blocked gateway startup after session migration
+completed successfully. The repository mounts a shared local `emptyDir` at
+`/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
+Only coordinator locks move off NFS; identity/configuration files and the verified pre-upgrade backup remain on the
+NAS PVC; the later runtime migration below moves session/state databases local. This requires one
+`Recreate` Pod and all writers using its shared mount. Never start an external
+writer against that PVC with a separate coordinator. See the OpenClaw README
+for verification and rollback limits; live recovery remains pending rollout.
+
+### OpenClaw remaining legacy-state upgrade
+
+The 2026.8.2 session import does not migrate workspace setup/attestation state.
+A separate bootstrap doctor gate verifies the existing pre-upgrade archive,
+runs pinned upstream noninteractive repairs, rechecks imported session
+identities, and validates configuration before writing its own completion
+marker. Private doctor reports retain latest plus previous. State restoration
+requires the archive and compatible software, not merely a manifest revert.
+See the OpenClaw README; gateway readiness is still a live acceptance gate.

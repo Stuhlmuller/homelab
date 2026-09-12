@@ -48,7 +48,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: require-real-password
-          image: redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952
+          image: redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
           imagePullPolicy: Always
           command:
             - /bin/sh
@@ -77,7 +77,7 @@ spec:
               readOnly: true
       containers:
         - name: redis
-          image: redis:7.4.2-alpine@sha256:02419de7eddf55aa5bcf49efb74e88fa8d931b4d77c07eff8a6b2144472b6952
+          image: redis:7.4.11-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
           imagePullPolicy: Always
           command:
             - redis-server
