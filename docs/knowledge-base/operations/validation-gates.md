@@ -438,3 +438,13 @@ generic doctor changes must not persist unrelated skill-policy rewrites.
 The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
+
+Configuration batches have two complementary gates. The static shell fixtures
+check bootstrap ordering, independent optional credentials, preservation, repeat
+runs, failure stops, and private temporary-file cleanup. `OpenClaw native config`
+runs `scripts/ci/openclaw-batch-native-check.py` on Linux amd64 using the exact
+committed image digest. Synthetic config cases verify typed assignments,
+SecretRefs, duplicate-path ordering, one write per batch, dry-run behavior,
+failure atomicity, and the legacy hook-token unset sequence. The container has
+no network or credentials and starts no gateway. This proves vendor semantics,
+not production startup speed; see [[openclaw-bootstrap-batching]].
