@@ -116,6 +116,10 @@ buildless `actions` analysis job because this repository has no compiled
 application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
+The CodeQL action v4.38.0 pin (`b96794f015dfd88f77b49b1c93e0fa7110f94c63`)
+is recorded in the exact normalized workflow security hash. Updating action
+revisions requires reviewing that workflow and refreshing its hash alongside
+the pin; the credentialed-job inventory and permission checks still apply.
 
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
@@ -490,14 +494,23 @@ Source: pinned upstream
 [cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
 and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
 
+## OpenClaw container privilege gate
+
+The app, bootstrap, and proxy declare UID/GID 1000, non-root execution, no
+privilege escalation, and an empty capability set. Pod seccomp is explicitly
+`RuntimeDefault`. The root Nix toolbox init remains a documented exception;
+server-side Restricted warnings for that init are expected and must not be
+misreported as full Pod compliance. See the OpenClaw README's container
+privilege boundary for post-rollout process and functionality checks.
+
 ## NOFX catalog gate
 
-The fixed NOFX reconciliation command defaults to read-only inspection and
-requires exact local/remote reviewed main and a clean checkout, including staged
-and untracked files, before parsing the catalog or opening transport. This also
-guards the Nix dependency files and local Python modules. Tests reject wrong
-resource identities, missing or mismatched pinned CLI builds, reported native
-apply errors, missing convergence, and remaining anonymous access. Live
-acceptance requires an unauthenticated denial,
+The fixed NOFX reconciliation command defaults to read-only inspection.
+Execution requires exact local/remote reviewed main and a clean checkout,
+including staged and untracked files, before parsing the catalog or opening
+transport. This guards the Nix dependency files and local Python modules.
+Tests reject wrong resource identities, missing or mismatched pinned CLI builds,
+reported native apply errors, missing convergence, and remaining anonymous
+access. Live acceptance requires an unauthenticated denial,
 authorized human access, and audit correlation after the reviewed apply.
 See [the operator path](../../octelium-nofx-reconciliation.md).
