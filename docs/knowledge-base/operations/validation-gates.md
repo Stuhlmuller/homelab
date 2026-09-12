@@ -446,6 +446,10 @@ with status trailers in headers. Live browser and native TCP-carrier probes
 passed after PR 957; malformed bodies and spoofed status headers still fail.
 [Protocol reference](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md).
 
+Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
+format as well as raw gRPC stderr errors. Already-absent resources are skipped;
+other native failures remain errors.
+
 ## OpenClaw doctor state gate
 
 The static gate permits one exact noninteractive pinned doctor repair after
@@ -459,6 +463,32 @@ The one-time doctor process has a ten-minute timeout and 30-second kill grace
 period. Timeout is tested as a failed migration, with config restored and no
 completion marker. This bounds the previously observed NFS session scan.
 
-Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
-format as well as raw gRPC stderr errors. Already-absent resources are skipped;
-other native failures remain errors.
+### Post-start session lifecycle
+
+The pre-import identity inventory is a migration gate, not an immutable runtime
+inventory. OpenClaw 2026.8.2 replaces legacy managed Memory Dreaming Promotion
+jobs with declaration-keyed jobs; removing the old job also removes its base
+cron session. A later exact-key comparison can therefore report an intentional
+missing legacy entry after the migration itself passed.
+
+Before classifying an absent entry as data loss, check its job ownership, the
+replacement declaration, retained migration reports, and backup. Do not relax
+the bootstrap preservation gate or recreate retired sessions manually. Keep
+gateway readiness, channel authentication, and backup retention as separate
+acceptance checks.
+
+Source: pinned upstream
+[managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
+[cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
+and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
+
+## NOFX catalog gate
+
+The fixed NOFX reconciliation command defaults to read-only inspection and
+requires exact local/remote reviewed main and a clean checkout, including staged
+and untracked files, before parsing the catalog or opening transport. This also
+guards the Nix dependency files and local Python modules. Tests reject wrong
+resource identities, missing or mismatched pinned CLI builds, reported native apply errors, missing convergence, and
+remaining anonymous access. Live acceptance requires an unauthenticated denial,
+authorized human access, and audit correlation after the reviewed apply.
+See [the operator path](../../octelium-nofx-reconciliation.md).

@@ -314,3 +314,11 @@ separate workload identity with bounded sessions and workspace lifecycle/exec
 permissions; bootstrap management credentials are not shared. A catch-all
 post-authentication denial and priority -4 method denial close upstream
 default allowances. See [the contract and pending live gates](../../cordium-ci.md).
+## NOFX native reconciliation boundary
+
+NOFX anonymous-access removal is applied by the fixed repository operator
+command, independently from Kubernetes Argo CD. It requires an exact reviewed
+main commit, selects only `nofx.default`, proves a second apply is empty, and
+verifies the human-access policy. Existing operator credentials stay private;
+the temporary native transport changes no saved host or client settings.
+See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
