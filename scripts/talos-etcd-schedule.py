@@ -228,6 +228,25 @@ def command(arguments, check=True):
                           text=True, timeout=30, check=check)
 
 
+def command_failure(error, action):
+    """Describe a failed command without forwarding arguments or client output."""
+    operation = "local-command"
+    arguments = error.cmd if isinstance(error.cmd, (list, tuple)) else []
+    if action == "run":
+        operation = "talos-etcd-snapshot"
+    elif arguments and Path(arguments[0]).name == "launchctl":
+        if len(arguments) > 1 and arguments[1] in ("print", "bootstrap", "bootout"):
+            operation = "launchctl-" + arguments[1]
+    result = {"action": action, "status": "failed", "operation": operation,
+              "checked_at": datetime.now(timezone.utc).isoformat(),
+              "prior_backups": "retained"}
+    if isinstance(error, subprocess.TimeoutExpired):
+        result.update(failure="timeout", timeout_seconds=error.timeout)
+    else:
+        result.update(failure="exit", exit_code=error.returncode)
+    return result
+
+
 def reviewed_sources(revision):
     root = HERE.parent
     if not re.fullmatch(r"[0-9a-f]{40}", revision):
@@ -438,7 +457,7 @@ def main():
                     result = latest_status(directory, policy, datetime.now(timezone.utc))
                 if sys.platform == "darwin":
                     result["launchd_loaded"] = command(["/bin/launchctl", "print", service_target(policy)], check=False).returncode == 0
-                print(json.dumps(result, indent=2))
+                print(json.dumps({**result, "checked_at": datetime.now(timezone.utc).isoformat()}, indent=2))
                 return 0 if result["status"] == "fresh" else 1
             else:
                 if sys.platform != "darwin":
@@ -448,12 +467,12 @@ def main():
                     plist_path = Path.home() / "Library" / "LaunchAgents" / (policy["launchd_label"] + ".plist")
                     plist_path.unlink(missing_ok=True)
                 result = {"action": "uninstalled", "backups_and_runtime": "preserved"}
-        print(json.dumps(result, indent=2))
+        print(json.dumps({**result, "checked_at": datetime.now(timezone.utc).isoformat()}, indent=2))
         return 0
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        print("Schedule failed: client or local service command failed; prior backups retained.", file=sys.stderr)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        print(json.dumps(command_failure(error, args.command), indent=2), file=sys.stderr)
     except (OSError, ValueError, KeyError, TypeError) as error:
-        print(f"Schedule failed: {error}", file=sys.stderr)
+        print(f"{datetime.now(timezone.utc).isoformat()} Schedule failed: {error}", file=sys.stderr)
     return 1
 
 
