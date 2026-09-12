@@ -356,3 +356,36 @@ openclaw() { touch "$fixture_root/cli-called"; }
         assert not (root / "cli-called").exists()
         assert not pathlib.Path((root / "created").read_text()).exists()
 print("OpenClaw batch input: malformed, wrong-shape, and oversized inputs rejected before CLI; cleaned")
+
+# Exercise the complete backup gate with a genuinely truncated archive.
+backup_gate = bootstrap[bootstrap.index('backup_root='):bootstrap.index('mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"')]
+with tempfile.TemporaryDirectory() as directory:
+    root = pathlib.Path(directory)
+    state = root / "openclaw"
+    (state / "state").mkdir(parents=True)
+    (state / "agents/main/agent").mkdir(parents=True)
+    (state / "state/history").write_text("canonical history")
+    backups = root / "openclaw-backups"
+    staging = backups / ".pre-2026.9.2.partial"
+    staging.mkdir(parents=True)
+    partial = b"truncated gzip fixture"
+    (staging / "openclaw.tar.gz").write_bytes(partial)
+    gate = backup_gate.replace("backup_root=/data/openclaw-backups", 'backup_root="$fixture/openclaw-backups"')
+    gate = gate.replace("-C /data", '-C "$fixture"').replace("df -Pk /data", 'df -Pk "$fixture"')
+    harness = 'fixture="$1"\nOPENCLAW_STATE_DIR="$1/openclaw"\nhad_existing_state=true\n'
+    def run_backup():
+        return subprocess.run(["sh", "-ec", harness + gate, "fixture", directory], capture_output=True)
+    result = run_backup()
+    assert result.returncode == 0, result.stderr
+    preserved = list(backups.glob("pre-2026.9.2.interrupted-*"))
+    assert len(preserved) == 1
+    assert (preserved[0] / "openclaw.tar.gz").read_bytes() == partial
+    published = backups / "pre-2026.9.2/openclaw.tar.gz"
+    archive_bytes = published.read_bytes()
+    assert run_backup().returncode == 0
+    assert published.read_bytes() == archive_bytes
+    (state / ".backup-verified-for-2026.9.2").unlink()
+    published.write_bytes(b"corrupt published backup")
+    assert run_backup().returncode != 0
+    assert published.read_bytes() == b"corrupt published backup"
+print("OpenClaw backup gate: interrupted archive preserved, rebuild verified, corrupt published archive rejected")

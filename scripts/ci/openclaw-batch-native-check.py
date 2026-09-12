@@ -13,7 +13,7 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 VALUES = Path("clusters/homelab/apps/openclaw/values.yaml")
-VERSION = "2026.9.1"
+VERSION = "2026.9.2"
 
 # Every credential-like value below is invented fixture data. No operator state,
 # package installation, plugins, gateway, or network service is used by the test.
@@ -26,7 +26,7 @@ import { pathToFileURL } from "node:url";
 
 let stage = "image-version";
 try {
-  assert.equal(JSON.parse(fs.readFileSync("/app/package.json", "utf8")).version, "2026.9.1", "unexpected vendor version");
+  assert.equal(JSON.parse(fs.readFileSync("/app/package.json", "utf8")).version, "2026.9.2", "unexpected vendor version");
   const files = fs.readdirSync("/app/dist").filter(name => /^io\.audit-.*\.js$/.test(name));
   assert.equal(files.length, 1, "ambiguous vendor config audit module");
   const audit = await import(pathToFileURL(path.join("/app/dist", files[0])).href);
@@ -143,7 +143,7 @@ try {
   assert.equal(hookValue.hooks.allowRequestSessionKey, false);
   assert.equal(successfulWrites(hook).length, 2, "unset and batch did not each write once");
   cases.push(stage);
-  console.log(JSON.stringify({ vendor: "OpenClaw 2026.9.1", passed: cases.length, cases, successfulWrites: { batch: 1, sequential: 2 } }));
+  console.log(JSON.stringify({ vendor: "OpenClaw 2026.9.2", passed: cases.length, cases, successfulWrites: { batch: 1, sequential: 2 } }));
 } catch (error) {
   // All inputs are synthetic, but never dump configs, audit rows or vendor output.
   console.error(`OpenClaw native batch fixture failed at ${stage}: ${String(error.message).split("\n")[0].slice(0, 240)}`);
@@ -169,7 +169,7 @@ def image_reference():
     if (image != images["bootstrap"] or set(image) != {"repository", "tag"}
             or image["repository"] != "ghcr.io/openclaw/openclaw"
             or not re.fullmatch(re.escape(VERSION) + r"@sha256:[0-9a-f]{64}", image["tag"])):
-        raise RuntimeError("Expected matching digest-pinned OpenClaw 2026.9.1 app/bootstrap images")
+        raise RuntimeError("Expected matching digest-pinned OpenClaw 2026.9.2 app/bootstrap images")
     return image["repository"] + ":" + image["tag"]
 
 

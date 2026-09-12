@@ -202,3 +202,130 @@ Grafana datasource proxies. Most homelab rules are Grafana-managed and publish
 to Alertmanager, so an empty Prometheus ALERTS result cannot establish that no
 alerts are firing. Managed instructions now require both sources and explicitly
 report partial visibility if either fails.
+
+
+## Durable reply and heartbeat repair, September 6 Pacific
+
+The owner Discord round trip was confirmed directly through Discord at 01:20 UTC
+September 7: an owner-originated `reply test 323` received the bot response
+`test 323` approximately 18 seconds later. Outbound-only testing had been
+insufficient to establish this. Earlier hourly heartbeat receipts still showed
+repeated `thread not loaded` failures; a separate quiet test reproduced a SQLite
+plugin-state write failure, and a serial retry succeeded.
+
+The deployed 2026.9.1 Codex adapter performs `prepareCodexThreadResume` outside
+`resumeExistingCodexThread`'s recovery boundary. Stable 2026.9.2 supplies it as
+`prepareResume` inside that boundary and adds session ownership fencing. Upgrade
+the gateway and both external plugins together. Keep Astra and the verified
+native code-mode host; do not reset sessions or bypass owner checks.
+
+The SQLite runtime explicitly selects rollback journaling on NFS and WAL on
+local filesystems. Move only `state/` and `agents/main/agent/` to a retained local PV on
+`zimaboard-1`, preserving the NAS source and verifying the offline copy before
+startup. Native Codex state now survives Pod replacement. The old NAS native
+cache is excluded because it was hidden by the previous emptyDir. Workspace, archived transcripts, and
+configuration remain on NFS; daily online SQLite backups preserve committed WAL
+and keep seven NAS recovery points. See the app README for cutover, verification,
+and rollback. Node-disk loss requires snapshot restore and can lose writes since
+the last successful snapshot.
+
+Migration/backup regression tests cover history preservation including embedded
+NULs, live committed WAL, corruption rejection, retries without stale recopy,
+and preservation of an unmarked existing target. Helm/Kustomize rendering and
+Kubernetes server-side dry runs passed. `nix run .#validate` is absent in this
+checkout; `nix develop -c bash scripts/ci/static-checks.sh` passed instead.
+Deployment and repeated runtime acceptance remain required before marking this
+repair complete.
+
+
+Argo CD rejected PR 993's initial storage placement before changing the live Pod:
+`homelab-workloads` intentionally disallows cluster-scoped resources. The follow-up
+moves the StorageClass/PV into the existing platform-storage application and keeps
+only the PVC in OpenClaw. Project permissions remain unchanged. Kubernetes API
+dry runs do not validate Argo AppProject permissions; static validation now also
+checks that OpenClaw's rendered manifests contain no StorageClass or PV.
+
+The migration also fails closed if local state is missing after the retained
+pre-2026.9.2 backup marker exists. Bootstrap writes that marker before the new
+Gateway starts. This prevents a replaced/lost node disk from silently importing
+stale NAS databases; recovery requires an explicitly reviewed snapshot restore.
+The regression test covers both missing-local refusal and valid-local restart.
+
+### Interrupted pre-upgrade backup recovery
+
+A second GitOps rollout on 2026-09-06 interrupted the unpublished 2026.9.2
+backup after verified database migration. Bootstrap now preserves an incomplete
+staging archive under a timestamped `interrupted-*` directory and rebuilds it
+from the stopped state. Published backups remain immutable and fail closed on
+corruption. The local migration marker prevents stale NAS reimport during retry.
+Retained interrupted archives can be reviewed later; startup does not delete them.
+
+### Talos direct mounts and verified runtime identity
+
+The 2026.9.2 rollout exposed Talos kubelet mount-namespace behavior: the full
+PV contained verified UID-1000 databases, while `subPath` resolved empty root-owned
+directories in kubelet's overlay. No gateway started against those empty mounts.
+Direct child PVs now mount the same host directories without `subPath`; parent
+and child views must identify the same database inodes before any CLI starts.
+The existing full archive is supplemented by a separately retained verified
+`pre-2026.9.2-runtime` SQLite checkpoint because the incorrect subpath mounts
+hid the databases during archive creation. Restore both artifacts together.
+Source: [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/)
+and live mountinfo, database absence, and UID checks. Parent and child PVs share
+one retained directory tree on zimaboard-1; daily snapshot retention is unchanged.
+
+### Heartbeat watchdog includes scheduling delay
+
+Live repeated-run acceptance on 2026-09-06 exposed a separate false timeout:
+the second forced heartbeat spent about 80 seconds before its agent run, then
+completed the native turn in 43 seconds. Its 120-second cron watchdog expired
+four seconds before the quiet completion. Deployed 2026.9.2 source starts the
+watchdog when requesting a heartbeat; busy-reply deferrals use a 60-second grace.
+Heartbeat now shares the existing bounded 600-second agent budget. Verification
+must check cron `completionStatus: succeeded`, successful tool receipts, and
+zero consecutive errors after repeated runs, including admission delays.
+
+### Stale subscription block recurrence, September 11 Pacific
+
+OpenClaw 2026.9.2 reproduced the Discord `agent-runner-failure` heartbeat
+receipt on September 12 at 00:39 UTC. The Pod was 2/2 Ready with zero restarts.
+Read-only auth inspection found an unexpired OAuth credential and a saved
+`wham` / `subscription_limit` block whose last probe was September 7; hourly
+attempts rejected auth before inference. The repository recovery helper's
+check mode reproduced `FAIL: Astra OAuth profile is blocked before inference`.
+
+The helper now explicitly supports reviewed 2026.9.2 module exports alongside
+2026.9.1. Its upstream recheck retains provider denial, probe throttling, and
+atomic credential/block-generation guards. At 01:04 UTC the native recheck
+cleared the stale block and public `secrets.reload` refreshed gateway auth.
+No credential replacement, usage-reset credit, session reset, or Pod restart
+was needed. At 01:05:07 UTC a quiet heartbeat completed in 37 seconds with
+`status: ok-token`, `indicatorType: ok`, and the Discord route marked silent;
+its receipt confirmed reading `HEARTBEAT.md`. This verifies heartbeat execution
+without sending an unsolicited owner message. A second quiet heartbeat at
+01:06:38 UTC also returned `ok-token` in 26 seconds.
+
+Validation: recovery tests first failed against 2026.9.2, then passed with
+both reviewed versions, unknown-version rejection, provider denial, snapshot
+reload failure, and idempotent recovery. The full
+`nix develop -c bash scripts/ci/static-checks.sh` gate passed.
+`nix run .#validate` is not defined in this checkout.
+
+Remaining reliability finding: native Codex auth admission can still strand
+an existing subscription block without another usage probe in 2026.9.2.
+The supported operator recovery restores service but does not change that
+upstream admission behavior. Review a future upstream fix against this
+blocked-profile reproduction before retiring the helper; do not implement
+unconditional block clearing or automatic credit redemption.
+
+### Optional daily note caused a visible Bash failure, September 11 Pacific
+
+The 01:39 UTC normal heartbeat completed with `no_change`, but its canonical
+Bash tool receipt had `isError: true`: a combined `cat` included the absent
+`memory/2026-09-11.md`. Earlier recovery checks only read HEARTBEAT.md, so a
+successful heartbeat summary did not prove the full checklist's tools passed.
+Managed HEARTBEAT.md now requires checking optional status/daily-note existence
+before reading, preserves real read errors, and forbids creating empty notes
+just to satisfy the check. Its content digest triggers normal GitOps bootstrap.
+Acceptance requires a full ordinary heartbeat with the optional note absent,
+zero failed tool receipts, and a successful terminal heartbeat outcome.

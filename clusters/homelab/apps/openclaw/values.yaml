@@ -9,6 +9,8 @@ controllers:
     strategy: Recreate
     pod:
       automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -21,7 +23,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "286f9ab62290570fa21a7335df8a2c1cff70598cb44820697175e9a4f5c5d060"
+        homelab.rst.io/openclaw-assistant-sha256: "af0cf57601370fa294268e60316d091b576e31fb97a9c373cf0b04ee696c5c93"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -112,6 +114,9 @@ controllers:
             /toolbox/profile/bin/tar -xzf /tmp/codex-code-mode-host.tar.gz -C /toolbox/codex
             mv "/toolbox/codex/codex-code-mode-host-${codex_arch}-unknown-linux-musl" /toolbox/codex/codex-code-mode-host
             chmod 755 /toolbox/codex/codex-code-mode-host
+            # Initialize only the hostPath root; migration itself runs as UID 1000.
+            chown 1000:1000 /openclaw-runtime-volume
+            chmod 700 /openclaw-runtime-volume
         resources:
           requests:
             cpu: 1
@@ -119,15 +124,38 @@ controllers:
           limits:
             cpu: 1500m
             memory: 3Gi
+      01-runtime-storage:
+        dependsOn: 00-operator-toolbox
+        image:
+          repository: ghcr.io/openclaw/openclaw
+          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop: [ALL]
+        command: [python3, /etc/openclaw-assistant/runtime-storage.py, migrate]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
       bootstrap-config:
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
           runAsNonRoot: true
-        dependsOn: 00-operator-toolbox
+        dependsOn: 01-runtime-storage
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
+          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
         resources:
           requests:
             cpu: 500m
@@ -166,6 +194,13 @@ controllers:
           - -ec
           - |
             : "${OPENCLAW_GATEWAY_TOKEN:?OPENCLAW_GATEWAY_TOKEN must be provided by openclaw-secrets APP_SECRET}"
+            # Verify the exact mounted files before any CLI can create fresh state.
+            python3 /etc/openclaw-assistant/runtime-storage.py verify-mounts
+            runtime_checkpoint="$OPENCLAW_STATE_DIR/.runtime-checkpoint-for-2026.9.2"
+            if [ ! -s "$runtime_checkpoint" ]; then
+              python3 /etc/openclaw-assistant/runtime-storage.py checkpoint
+              printf 'verified canonical database checkpoint\n' > "$runtime_checkpoint"
+            fi
             doctor_marker="$OPENCLAW_STATE_DIR/.doctor-state-migrated-to-2026.8.2"
             doctor_reports="$OPENCLAW_STATE_DIR/doctor-state-reports"
             doctor_config_snapshot="$doctor_reports/config-before.json"
@@ -185,8 +220,8 @@ controllers:
               had_existing_state=true
             fi
             backup_root=/data/openclaw-backups
-            backup_name=pre-2026.9.1
-            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.1"
+            backup_name=pre-2026.9.2
+            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.2"
             backup_dir="$backup_root/$backup_name"
             backup_staging="$backup_root/.$backup_name.partial"
             backup_archive=openclaw.tar.gz
@@ -200,10 +235,22 @@ controllers:
                 (cd "$1" && sha256sum -c "$backup_checksum")
             }
             if "$had_existing_state" && [ ! -s "$backup_marker" ]; then
-              echo "Creating or verifying offline pre-2026.9.1 OpenClaw backup"
+              echo "Creating or verifying offline pre-2026.9.2 OpenClaw backup"
               (
                 umask 077
                 mkdir -p "$backup_root"
+                # A Pod replacement may interrupt tar before its checksum is written.
+                # Preserve the unpublished archive, then rebuild from the stopped state.
+                if [ ! -e "$backup_dir" ] && [ -d "$backup_staging" ] &&
+                  [ ! -L "$backup_staging" ] && ! verify_backup_dir "$backup_staging"; then
+                  interrupted="$backup_root/$backup_name.interrupted-$(date -u +%Y%m%dT%H%M%SZ)"
+                  if [ -e "$interrupted" ]; then
+                    echo "Interrupted backup preservation target already exists" >&2
+                    exit 1
+                  fi
+                  mv "$backup_staging" "$interrupted"
+                  echo "Preserved interrupted OpenClaw backup; rebuilding offline archive"
+                fi
                 if [ -e "$backup_dir" ]; then
                   if [ -e "$backup_staging" ]; then
                     echo "OpenClaw backup staging still exists; preserve both paths for review" >&2
@@ -220,7 +267,7 @@ controllers:
                   fi
                   mv "$backup_staging" "$backup_dir"
                 else
-                  state_kib="$(du -skx "$OPENCLAW_STATE_DIR" | awk '{print $1}')"
+                  state_kib="$(du -skx "$OPENCLAW_STATE_DIR" "$OPENCLAW_STATE_DIR/state" "$OPENCLAW_STATE_DIR/agents/main/agent" | awk '{sum += $1} END {print sum}')"
                   available_kib="$(df -Pk /data | awk 'NR == 2 {print $4}')"
                   required_kib=$((state_kib * 2 + 2097152))
                   if [ "$available_kib" -lt "$required_kib" ]; then
@@ -232,7 +279,7 @@ controllers:
                     --exclude=openclaw/npm \
                     --exclude=openclaw/extensions \
                     -C /data \
-                    -czf "$backup_staging/$backup_archive" openclaw
+                    -czf "$backup_staging/$backup_archive" openclaw openclaw/state openclaw/agents/main/agent
                   tar -tzf "$backup_staging/$backup_archive" >/dev/null
                   (
                     cd "$backup_staging" || exit 1
@@ -242,7 +289,7 @@ controllers:
                   mv "$backup_staging" "$backup_dir"
                 fi
                 verify_backup_dir "$backup_dir"
-                printf 'verified pre-2026.9.1 archive\n' > "$backup_marker"
+                printf 'verified pre-2026.9.2 archive\n' > "$backup_marker"
               )
             fi
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
@@ -626,7 +673,7 @@ controllers:
           runAsNonRoot: true
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
+          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -717,7 +764,7 @@ controllers:
       proxy:
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.1@sha256:6afe42854c87471188b9c4f8dce6bbc14005a48d8e1592846548b32508754f84"
+          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
         command:
           - python3
           - -u
@@ -811,6 +858,9 @@ persistence:
     name: openclaw-assistant
     advancedMounts:
       openclaw:
+        01-runtime-storage:
+          - path: /etc/openclaw-assistant
+            readOnly: true
         bootstrap-config:
           - path: /etc/openclaw-assistant
             readOnly: true
@@ -824,6 +874,9 @@ persistence:
     accessMode: ReadWriteOnce
     advancedMounts:
       openclaw:
+        01-runtime-storage:
+          - path: /legacy
+            readOnly: true
         app:
           - path: /data
         bootstrap-config:
@@ -858,14 +911,42 @@ persistence:
           - path: /data/openclaw/extensions
         bootstrap-config:
           - path: /data/openclaw/extensions
-  codex-runtime:
+  runtime-state:
     enabled: true
-    type: emptyDir
-    sizeLimit: 2Gi
+    type: persistentVolumeClaim
+    existingClaim: openclaw-runtime-local
     advancedMounts:
       openclaw:
+        00-operator-toolbox:
+          - path: /openclaw-runtime-volume
+        01-runtime-storage:
+          - path: /runtime-volume
+        bootstrap-config:
+          - path: /runtime-volume
+            readOnly: true
         app:
-          - path: /data/openclaw/agents/main/agent/codex-home
+          - path: /runtime-volume
+            readOnly: true
+  runtime-database:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: openclaw-runtime-state-local
+    advancedMounts:
+      openclaw:
+        bootstrap-config:
+          - path: /data/openclaw/state
+        app:
+          - path: /data/openclaw/state
+  runtime-agent:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: openclaw-runtime-agent-local
+    advancedMounts:
+      openclaw:
+        bootstrap-config:
+          - path: /data/openclaw/agents/main/agent
+        app:
+          - path: /data/openclaw/agents/main/agent
   operator-toolbox:
     enabled: true
     type: emptyDir

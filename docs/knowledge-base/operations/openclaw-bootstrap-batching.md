@@ -24,11 +24,11 @@ A chart or rendering integration change needs separate review.
 
 ## Supported configuration batches
 
-Pinned OpenClaw 2026.9.1 provides `config set --batch-file`: ordered typed
+Pinned OpenClaw 2026.9.2 provides `config set --batch-file`: ordered typed
 assignments against the existing config, final schema validation, and one
 config persistence operation per batch. See the
-[pinned CLI documentation](https://github.com/openclaw/openclaw/blob/v2026.9.1/docs/cli/config.md)
-and [implementation](https://github.com/openclaw/openclaw/blob/v2026.9.1/src/cli/config-cli-runner.ts).
+[pinned CLI documentation](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/cli/config.md)
+and [implementation](https://github.com/openclaw/openclaw/blob/v2026.9.2/src/cli/config-cli-runner.ts).
 
 Bootstrap groups the existing 16 assignments into six batches when both
 optional credentials are populated. Without either credential, it uses three.
@@ -62,3 +62,8 @@ Do not manually restart or modify the Pod to shorten the measurement.
 
 Sources: `clusters/homelab/apps/openclaw/values.yaml`, the app README, and the
 two configuration validation scripts under `scripts/ci/`.
+
+September 11 integration preserves the current 2026.9.2 image, retained local
+runtime storage, interrupted-backup recovery, and doctor ordering. The native
+fixture now requires that exact deployed image version; its new CI run must
+pass before merge. Historical 2026.9.1 evidence does not validate this upgrade.
