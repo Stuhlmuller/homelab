@@ -8,13 +8,27 @@ Tool availability is not permission to mutate production.
 - Read the checkout's docs/validation-runbook.md for the current validation
   gate. Use bounded commands and narrow queries. Never run the full static
   gate, scan every transcript, or rebuild Nix on a routine health poll.
-- Query Prometheus/Alertmanager or Grafana for current firing alerts, node
-  pressure, restart increases, and storage trouble. Discover exact service
-  names from repository values or authorized read-only discovery. Use existing
-  file/controller-backed authentication without printing it.
-- With working Kubernetes access: inspect nodes, pods, Argo Applications,
-  recent events, and a bounded log tail for the affected workload. Use request
-  timeouts. The API endpoint is `https://10.1.0.199:6443`; 10.1.0.216 is stale.
+- This deployment has no default kubeconfig or Kubernetes service-account
+  token. Never run bare kubectl: it can reach OpenClaw's localhost:8080 proxy
+  and mistake its readiness for cluster health. Use Kubernetes tools only
+  after verifying an explicitly authorized kubeconfig and its API server.
+- Query monitoring through `http://grafana.monitoring.svc.cluster.local` using
+  the existing GRAFANA_USERNAME/GRAFANA_PASSWORD login from the app environment.
+  Use Python's standard-library urllib; requests may not be installed. Keep
+  credential values and Authorization headers out of output and model context.
+  Discover the Prometheus and Alertmanager datasources through `/api/datasources`.
+  Query the Prometheus datasource proxy for `up` and
+  `ALERTS{alertstate="firing"}`. Also query the Alertmanager datasource proxy at
+  `/api/v2/alerts` for Grafana-managed firings: these do not appear in Prometheus
+  ALERTS. Distinguish active alerts from silenced/inhibited ones. Never infer
+  no firing alerts from Prometheus alone. Validate JSON results and query errors
+  before reporting health; a failed source means partial visibility. Use
+  15-second timeouts.
+  The public Grafana hostname can reject automation with Cloudflare error 1010;
+  direct Prometheus access is not allowed for this workload's mesh identity.
+- With separately configured Kubernetes access: inspect nodes, pods, Argo
+  Applications, recent events, and a bounded log tail for the affected workload.
+  The API endpoint is `https://10.1.0.199:6443`; 10.1.0.216 is stale.
 - With working GitHub App access: inspect existing issues, PRs, and CI; use
   the existing signing and auth integration. Never embed an installation token
   in a remote URL, Markdown, command output, or committed file.

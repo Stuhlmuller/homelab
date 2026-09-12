@@ -2,6 +2,12 @@
 # Synthetic fixtures only; Kubernetes command must explicitly enter the launcher.
 set -eu
 umask 077
+# Prove the candidate's kubelet message channel is inaccessible to this UID.
+test ! -x /root
+test ! -w /root/restore-termination-log
+if (printf '%s\n' 'SYNTHETIC_TERMINATION_CANARY' > /root/restore-termination-log) 2>/dev/null; then
+  exit 1
+fi
 awk '$5 == "/" {root++; if ($6 !~ /(^|,)ro(,|$)/) exit 1} END {if (root != 1) exit 1}' /proc/self/mountinfo
 awk '
   /^Uid:/ {if ($2 != 65534 || $3 != 65534 || $4 != 65534 || $5 != 65534) exit 1; uid=1}

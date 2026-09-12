@@ -12,6 +12,62 @@ objects contain secret material and must never be copied into this public repo.
 
 Tags: #architecture #storage #stateful
 
+## Control-Plane Recovery State
+
+The single control-plane node `acer` owns the Kubernetes etcd database.
+The [routine backup command](../../talos-etcd-backup.md) saves a new private
+off-node snapshot and verifies metadata, the embedded SHA-256 checksum, and a
+full-file manifest digest. Operators choose an existing durable mode-0700
+directory outside Git; the command retains every completed backup.
+The separate [macOS scheduler](../../talos-etcd-schedule.md) declares roughly
+daily snapshots, hourly retries/load/wake catchup, offline 36-hour freshness
+checks and 28-day retention with a seven-valid-copy minimum. It reserves a
+private `scheduled` child, preserving all manual siblings; failed backup or
+verification prevents pruning. Exact reviewed code is installed to a durable
+operator runtime. On 2026-09-07, installed sources and the loaded plist matched
+the merged revision, and the first automatic `RunAtLoad` snapshot passed
+offline checksum/freshness checks. All four manual backups were preserved and
+reverified; no copies were pruned. A 2026-09-12 read-only follow-up found five
+scheduled successes dated September 7–11, with the latest snapshot `fresh` and
+the LaunchAgent loaded. The longest success interval was 26 hours 54 minutes;
+two logged failures recovered on later scheduled attempts. See the schedule
+runbook for this scoped recurrence evidence and its remaining wake/availability
+limits. Private receipts retain both observations.
+The Mac's availability, unattended offsite freshness, remote alert delivery,
+an isolated control-plane recovery drill and control-plane redundancy remain
+gaps. PVC data and private Talos recovery material need separate backups; an
+etcd snapshot alone cannot recover either.
+
+The 2026-09-07 [[operations/kubernetes-patch-maintenance-2026-09|maintenance]]
+used a fresh verified off-node snapshot after the DNS handoff. All five
+scheduled media/Octelium backups had completed their latest due run, and their
+published artifacts remained present on retained NFS claims. Publisher-time
+validation plus current file metadata does not constitute a fresh rehash or
+restore drill.
+
+After Kubernetes `1.34.11`, direct kubelet and Prometheus checks covered all 28
+expected mounted node/PVC pairs across 30 Pod bindings; all 50 claims were Bound.
+Unmounted claims are outside that metric inventory. Grafana's current PVC rule
+state remains unverified because its admin API returned HTTP 401, although the
+unchanged alert query returned real data below its threshold.
+
+The dedicated [[operations/etcd-offsite-storage|etcd offsite storage]] operator
+unit declares a private, versioned S3 bucket with independently owned retention.
+Its reviewed saved plan applied on 2026-09-07 with seven additions and no
+changes or destruction; bucket metadata checks and provider refresh/no-drift
+validation passed. The separate
+[[operations/etcd-offsite-publication|manual publisher]] then copied the first
+scheduled snapshot and retrieved its exact S3 versions; independent remote
+metadata and local checksum checks passed with the source preserved. One
+earlier manual post-upgrade snapshot passed
+[[operations/etcd-offline-restore-validation|offline database restoration]].
+These are distinct snapshots and checks; neither proves control-plane or PVC
+recovery. The separate [offsite attempt scheduler](../../etcd-offsite-schedule.md)
+now has a reviewed-code installation path, private resumable attempts and
+source-age status, but no installed schedule or real recurring execution has
+been verified. It uses existing expiring AWS SSO sessions; remote alerting and
+indefinite unattended identity remain unresolved.
+
 ## Durable Storage
 
 Kubernetes persistent storage is backed by a QNAP NFS export.
@@ -130,12 +186,16 @@ with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
 backend upload PVCs, n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium
 Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
 `octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
-NOFX SQLite state, and OctoBot. OpenClaw keeps auth, sessions, workspace, and
-application state on its PVC, but mounts its rebuildable per-agent Codex
-app-server home from a
-pod-local `emptyDir` so native thread backfills and diagnostics cannot stall
-turns over NFS. The volume is capped at `2Gi` to protect node storage. See
-[[workloads/inventory]] for ownership and dependency notes.
+NOFX SQLite state, and OctoBot. OpenClaw keeps configuration and workspace on
+its retained NAS claim, but its global state, per-agent SQLite databases, and
+native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The platform-storage application owns its StorageClass and PV;
+the namespaced OpenClaw application owns its PVC. This permits
+local WAL and preserves native bindings across Pod replacement. A one-time
+verified offline copy retains the NAS source. Daily SQLite online backups keep
+seven database snapshots on the NAS. The local hostPath survives Pod replacement
+but not node-disk loss; there is no automatic node failover and recovery can lose
+writes since the last backup. Native caches are reconstructed on disaster restore.
+See the OpenClaw app README and [[operations/openclaw-assistant-2026-09-05]].
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
 Multica PostgreSQL now follows the recovered NFS database probe pattern:
@@ -206,7 +266,12 @@ the bootstrap cluster's C locale does not replace the source locale. It
 checks resource identities, encrypted-resource key references, and index validity.
 It mounts only the backup claim read-only, injects no production credentials or
 live Kubernetes Secrets, and has a 30-minute deadline. The backup itself contains
-sensitive material. A Unix-only PostgreSQL listener does not block outbound
+sensitive material. Restore processes discard the original container log handles
+before archive processing; exit status reports completion, while stage and
+database diagnostics stay in disposable scratch. The direct entry point and
+private PID namespace must not acquire a console-bearing wrapper or peer that
+archive-triggered programs could reach through `/proc`.
+A Unix-only PostgreSQL listener does not block outbound
 traffic or other processes, and the current Flannel deployment does not enforce
 the declared NetworkPolicies; see [[runbooks/runtime-isolation]]. **Activation
 requires a reviewed, enforced no-network boundary for all restore processes and
@@ -299,8 +364,8 @@ UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
 coordinator ownership check blocked gateway startup after session migration
 completed successfully. The repository mounts a shared local `emptyDir` at
 `/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
-Only coordinator locks move off NFS; identity/configuration/session databases
-and the verified pre-upgrade backup remain on the PVC. This requires one
+Only coordinator locks move off NFS; identity/configuration files and the verified pre-upgrade backup remain on the
+NAS PVC; the later runtime migration below moves session/state databases local. This requires one
 `Recreate` Pod and all writers using its shared mount. Never start an external
 writer against that PVC with a separate coordinator. See the OpenClaw README
 for verification and rollback limits; live recovery remains pending rollout.
@@ -314,3 +379,12 @@ identities, and validates configuration before writing its own completion
 marker. Private doctor reports retain latest plus previous. State restoration
 requires the archive and compatible software, not merely a manifest revert.
 See the OpenClaw README; gateway readiness is still a live acceptance gate.
+
+The inactive Octelium restore candidate places its kubelet termination message
+under the image's root-only `/root` directory and refuses backup reads if that
+parent is searchable or the message writable by the restore UID. The root
+filesystem is read-only and all capabilities remain dropped. Kubernetes mounts
+termination messages writable even with a read-only root filesystem; changing
+the message filename alone does not close that output channel. Synthetic Talos
+activation proof must verify the inaccessible parent and an empty terminated
+message under the exact published image. See the [kubelet mount implementation](https://github.com/kubernetes/kubernetes/blob/v1.34.1/pkg/kubelet/kuberuntime/kuberuntime_container.go#L454-L483).
