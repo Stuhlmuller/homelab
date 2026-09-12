@@ -47,7 +47,130 @@ def live():
     return result
 
 
+def writer_pods():
+    return [{"metadata": {"name": app + "-old", "uid": app, "resourceVersion": "1"},
+             "spec": {"nodeName": "worker", "volumes": [{"name": "data", "persistentVolumeClaim": {"claimName": claim}}],
+                      "containers": [{"name": "app", "image": "pinned"}]},
+             "status": {"containerStatuses": [{"name": "app", "containerID": app, "ready": True, "restartCount": 0}]}}
+            for app, claim in checkpoint.CLAIMS.items()]
+
+
 class CheckpointTests(unittest.TestCase):
+    def test_prepare_requires_zero_restarts_and_matching_application_bases(self):
+        bases = {app: base(app) for app in phase.APPS}
+
+        def run(command, **kwargs):
+            if command[0] == "terragrunt":
+                return json.dumps({"inputs": {"manifest": bases[kwargs["cwd"].name]}})
+            if command[:3] == ["kubectl", "config", "current-context"]:
+                return "admin@homelab"
+            if command[0] == "kubectl":
+                return "https://10.1.0.199:6443"
+            return "" if command[1] == "diff" else REVISION
+
+        for fault in ("n8n", "n8n-postgres", "stale-base"):
+            pods = writer_pods()
+            if fault == "stale-base":
+                bases["n8n-postgres"]["spec"]["syncPolicy"] = {"automated": {"prune": False}}
+            else:
+                next(pod for pod in pods if pod["metadata"]["uid"] == fault)["status"]["containerStatuses"][0]["restartCount"] = 1
+            with tempfile.TemporaryDirectory() as directory, \
+                    patch.object(checkpoint, "private_destination", return_value=Path(directory)), \
+                    patch.object(checkpoint, "run", side_effect=run), \
+                    patch.object(phase, "load_live", return_value=live()), \
+                    patch.object(checkpoint, "source_pods", return_value=pods), \
+                    patch.object(checkpoint, "node_metadata") as nodes, \
+                    patch.object(checkpoint, "write_json") as write:
+                with self.assertRaisesRegex(ValueError, "rendered Application differs" if fault == "stale-base" else "zero restarts"):
+                    checkpoint.prepare(Path(directory), Path("/unused/config"), Path("/unused/talosctl"))
+                nodes.assert_not_called()
+                write.assert_not_called()
+
+    def test_capture_rejects_restart_since_prepare_before_first_stop(self):
+        pods = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS},
+                   "writers": {app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, pods)}}
+        for pod in pods:
+            pod["status"]["containerStatuses"][0]["restartCount"] = 1
+            with patch.object(phase, "load_live", return_value=live()), \
+                    patch.object(checkpoint, "source_pods", return_value=pods), \
+                    patch.object(checkpoint, "fence") as fence, \
+                    patch.object(checkpoint, "apply_phase") as apply, \
+                    patch.object(checkpoint, "resume") as resume:
+                with self.assertRaisesRegex(ValueError, "zero restarts"):
+                    checkpoint.capture(Path("/unused"), session)
+                fence.assert_not_called()
+                apply.assert_not_called()
+                resume.assert_not_called()
+            pod["status"]["containerStatuses"][0]["restartCount"] = 0
+
+    def test_application_bases_reject_meaningful_spec_drift(self):
+        bases = {app: base(app) for app in phase.APPS}
+        for app, path, value in (("n8n", ("sources", 0, "targetRevision"), "5.0.0"),
+                                 ("n8n", ("sources", 2, "path"), "clusters/other"),
+                                 ("n8n", ("sources", 0, "helm", "valueFiles"), ["other"]),
+                                 ("n8n", ("destination", "namespace"), "other"),
+                                 ("n8n-postgres", ("syncPolicy",), {"automated": {"prune": False}}),
+                                 ("n8n-postgres", ("ignoreDifferences",), [{"kind": "StatefulSet"}])):
+            with self.subTest(app=app, path=path):
+                current = live()
+                target = current[app]["spec"]
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = value
+                with self.assertRaisesRegex(ValueError, "rendered Application differs"):
+                    checkpoint.require_application_bases(current, bases)
+
+    def test_application_bases_accept_only_known_module_defaults(self):
+        current = live()
+        current["n8n"]["spec"]["sources"][0].pop("path")
+        current["n8n"]["spec"]["sources"][1]["path"] = ""
+        current["n8n"]["spec"]["destination"]["name"] = ""
+        bases = {app: base(app) for app in phase.APPS}
+        bases["n8n-postgres"]["spec"]["syncPolicy"] = {"retry": {"limit": "5", "backoff": {"factor": "2"}},
+                                                       "managedNamespaceMetadata": {"annotations": {}, "labels": {"owner": "original"}}}
+        current["n8n-postgres"]["spec"]["syncPolicy"] = {"retry": {"limit": 5, "backoff": {"factor": 2}},
+                                                        "managedNamespaceMetadata": {"labels": {"owner": "original"}}}
+        checkpoint.require_application_bases(current, bases)
+        current["n8n-postgres"]["spec"]["syncPolicy"]["retry"]["limit"] = 6
+        with self.assertRaisesRegex(ValueError, "rendered Application differs"):
+            checkpoint.require_application_bases(current, bases)
+        current["n8n-postgres"]["spec"]["syncPolicy"]["retry"]["limit"] = 5
+        current["n8n"]["spec"]["destination"]["name"] = "different-cluster"
+        with self.assertRaisesRegex(ValueError, "rendered Application differs"):
+            checkpoint.require_application_bases(current, bases)
+
+    def test_capture_rechecks_base_spec_before_first_stop(self):
+        current = live()
+        current["n8n"]["spec"]["syncPolicy"] = {"automated": {"prune": False}}
+        with patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "source_pods") as pods, \
+                patch.object(checkpoint, "apply_phase") as apply, \
+                patch.object(checkpoint, "resume") as resume:
+            with self.assertRaisesRegex(ValueError, "rendered Application differs"):
+                checkpoint.capture(Path("/unused"), {"revision": REVISION, "bases": {app: base(app) for app in phase.APPS}})
+            pods.assert_not_called()
+            apply.assert_not_called()
+            resume.assert_not_called()
+
+    def test_preflight_rejects_pending_chart_rollout_with_stale_synced_status(self):
+        current = live()
+        bases = {app: base(app) for app in phase.APPS}
+        current["n8n"]["spec"]["sources"][0]["targetRevision"] = "4.5.0"
+        bases["n8n"]["spec"]["sources"][0]["targetRevision"] = "4.5.0"
+        checkpoint.require_application_bases(current, bases)
+        with self.assertRaisesRegex(ValueError, "Healthy and Synced on prepared main"):
+            checkpoint.require_capture_ready(current, REVISION)
+        with patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "source_pods") as pods, \
+                patch.object(checkpoint, "apply_phase") as apply, \
+                patch.object(checkpoint, "resume") as resume:
+            with self.assertRaisesRegex(ValueError, "Healthy and Synced on prepared main"):
+                checkpoint.capture(Path("/unused"), {"revision": REVISION, "bases": bases})
+            pods.assert_not_called()
+            apply.assert_not_called()
+            resume.assert_not_called()
+
     def test_capture_rechecks_prepared_revision_health_and_sync_before_outage(self):
         for state in ("OutOfSync", "Degraded", "changed-revision"):
             current = live()
@@ -407,6 +530,9 @@ class CheckpointTests(unittest.TestCase):
         current = live()["n8n"]
         with patch.object(checkpoint, "kube", return_value=current):
             self.assertTrue(checkpoint.application_synced("n8n", base("n8n"), REVISION))
+            current["spec"]["destination"]["name"] = ""
+            current["status"]["sync"]["comparedTo"]["destination"]["name"] = ""
+            self.assertTrue(checkpoint.application_synced("n8n", base("n8n"), REVISION))
             current["status"]["sync"]["comparedTo"]["sources"] = phase.profile(base("n8n"), "recovered", SESSION, REVISION)["spec"]["sources"]
             self.assertFalse(checkpoint.application_synced("n8n", base("n8n"), REVISION))
             current["status"]["sync"]["comparedTo"]["sources"] = copy.deepcopy(current["spec"]["sources"])
@@ -430,24 +556,48 @@ class CheckpointTests(unittest.TestCase):
     def test_command_timeout_stops_child_and_grandchild_before_return(self):
         with tempfile.TemporaryDirectory() as directory:
             marker, ready = Path(directory) / "late-write", Path(directory) / "ready"
+            release = Path(directory) / "allow-late-write"
             grandchild = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
-                          f"pathlib.Path({str(ready)!r}).write_text('ready'); time.sleep(1); "
+                          f"pathlib.Path({str(ready)!r}).write_text('ready')\n"
+                          f"while not pathlib.Path({str(release)!r}).exists(): time.sleep(.01)\n"
                           f"pathlib.Path({str(marker)!r}).write_text('late')")
-            child = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{grandchild!r}]); time.sleep(10)"
-            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(10)"
-            with self.assertRaises(subprocess.TimeoutExpired):
+            child = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{grandchild!r}]); time.sleep(30)"
+            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(30)"
+            real_popen = subprocess.Popen
+
+            def start(command, **kwargs):
+                process = real_popen(command, **kwargs)
+                original_communicate = process.communicate
+                started = False
+
+                def communicate(**options):
+                    nonlocal started
+                    if not started:
+                        started = True
+                        deadline = time.monotonic() + 10
+                        while not ready.exists() and time.monotonic() < deadline:
+                            time.sleep(.01)
+                        self.assertTrue(ready.exists(), "fixture must start its actual grandchild before timing cancellation")
+                    return original_communicate(**options)
+
+                process.communicate = communicate
+                return process
+
+            with patch.object(checkpoint.subprocess, "Popen", side_effect=start), self.assertRaises(subprocess.TimeoutExpired):
                 checkpoint.run([sys.executable, "-c", parent], timeout=0.4)
-            self.assertTrue(ready.exists(), "fixture must spawn the actual grandchild before timeout")
+            release.write_text("parent cancellation returned")
             time.sleep(1.1)
             self.assertFalse(marker.exists(), "a descendant wrote after command cancellation")
 
     def test_keyboard_interrupt_stops_owned_process_group(self):
         with tempfile.TemporaryDirectory() as directory:
             marker, ready = Path(directory) / "late-write", Path(directory) / "ready"
+            release = Path(directory) / "allow-late-write"
             child = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
-                     f"pathlib.Path({str(ready)!r}).write_text('ready'); time.sleep(1); "
+                     f"pathlib.Path({str(ready)!r}).write_text('ready')\n"
+                     f"while not pathlib.Path({str(release)!r}).exists(): time.sleep(.01)\n"
                      f"pathlib.Path({str(marker)!r}).write_text('late')")
-            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(10)"
+            parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(30)"
             real_popen = subprocess.Popen
 
             def start(command, **kwargs):
@@ -458,7 +608,7 @@ class CheckpointTests(unittest.TestCase):
                     nonlocal interrupted
                     if not interrupted:
                         interrupted = True
-                        deadline = time.monotonic() + 3
+                        deadline = time.monotonic() + 10
                         while not ready.exists() and time.monotonic() < deadline:
                             time.sleep(0.01)
                         self.assertTrue(ready.exists())
@@ -470,15 +620,13 @@ class CheckpointTests(unittest.TestCase):
 
             with patch.object(checkpoint.subprocess, "Popen", side_effect=start), self.assertRaises(KeyboardInterrupt):
                 checkpoint.run([sys.executable, "-c", parent])
+            release.write_text("parent cancellation returned")
             time.sleep(1.1)
             self.assertFalse(marker.exists(), "a child wrote after interrupted command cleanup returned")
 
     def test_failed_command_reaping_prevents_automatic_resume(self):
-        pods = [{"metadata": {"name": app + "-old", "uid": app, "resourceVersion": "1"},
-                 "spec": {"nodeName": "worker", "volumes": [], "containers": [{"name": "app", "image": "pinned"}]},
-                 "status": {"containerStatuses": [{"name": "app", "containerID": app}]}}
-                for app in phase.APPS]
-        session = {"id": SESSION, "revision": REVISION, "writers": {
+        pods = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
             app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, pods)}}
         watch = MagicMock(observed=True, error=None)
         with patch.object(phase, "load_live", return_value=live()), \
@@ -550,12 +698,8 @@ class CheckpointTests(unittest.TestCase):
     def test_capture_error_removes_readers_then_resumes_database_before_app(self):
         current = live()
         calls = []
-        pods = []
-        for app in phase.APPS:
-            pods.append({"metadata": {"name": app + "-old", "uid": app, "resourceVersion": "1"},
-                         "spec": {"nodeName": "worker", "volumes": [], "containers": [{"name": "app", "image": "pinned"}]},
-                         "status": {"containerStatuses": [{"name": "app", "containerID": app}]}})
-        session = {"id": SESSION, "revision": REVISION, "writers": {
+        pods = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
             app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, pods)}}
 
         def apply(_directory, _session, app, target, **_kwargs):

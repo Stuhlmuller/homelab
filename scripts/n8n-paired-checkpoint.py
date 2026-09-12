@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Capture a cold n8n pair, resume pinned service and unpin through existing units."""
 import argparse
+import copy
 import datetime
 import importlib.util
 import json
@@ -149,10 +150,46 @@ def expected_revision(application, revision):
 def require_capture_ready(live, revision):
     if any(phase.markers(item)[phase.PHASE] != "normal" for item in live.values()):
         raise ValueError("existing maintenance must be resumed and unpinned first")
-    if any(not expected_revision(item, revision)
+    if any(not reconciled_profile(item, item, revision)
            or item.get("status", {}).get("health", {}).get("status") != "Healthy"
-           or item.get("status", {}).get("sync", {}).get("status") != "Synced" for item in live.values()):
+           for item in live.values()):
         raise ValueError("both Applications must be Healthy and Synced on prepared main")
+
+
+def normalized_destination(destination):
+    value = copy.deepcopy(destination)
+    if value.get("name") in (None, ""):
+        value.pop("name", None)
+    return value
+
+
+def require_application_bases(live, bases):
+    """Refuse unrelated Application drift before any maintenance profile is used."""
+    def normalized(spec):
+        value = copy.deepcopy(spec)
+        value["sources"] = phase.normalized_sources(value["sources"])
+        value["destination"] = normalized_destination(value["destination"])
+        policy = value.get("syncPolicy", {})
+        retry = policy.get("retry", {})
+        for parent, key in ((retry, "limit"), (retry.get("backoff", {}), "factor")):
+            if isinstance(parent.get(key), str) and re.fullmatch(r"-?(0|[1-9][0-9]*)", parent[key]):
+                parent[key] = int(parent[key])
+        metadata = policy.get("managedNamespaceMetadata", {})
+        if metadata.get("annotations") == {}:
+            metadata.pop("annotations")
+        return value
+
+    for app in phase.APPS:
+        if normalized(live[app]["spec"]) != normalized(bases[app]["spec"]):
+            raise ValueError(f"{app} rendered Application differs from live spec; reconcile ordinary desired state before preparation")
+
+
+def ready_without_restarts(pod):
+    containers = pod.get("spec", {}).get("containers", [])
+    statuses = pod.get("status", {}).get("containerStatuses", [])
+    return (bool(containers) and len(statuses) == len(containers)
+            and {item["name"] for item in containers} == {item["name"] for item in statuses}
+            and all(item.get("ready") and item.get("restartCount") == 0 for item in statuses))
 
 
 def check_nodes(expected, current):
@@ -323,16 +360,21 @@ def apply_phase(directory, session, app, target, expected_main_revision=None):
 
 
 def application_synced(app, desired, revision):
-    obj = kube("get", "application", app, "-n", "argocd")
+    return reconciled_profile(kube("get", "application", app, "-n", "argocd"), desired, revision)
+
+
+def reconciled_profile(obj, desired, revision):
+    """A ready old Pod and stale Synced status do not prove a new spec was applied."""
     sync = obj.get("status", {}).get("sync", {})
     compared = sync.get("comparedTo", {})
     sources = phase.normalized_sources(desired["spec"]["sources"])
-    destination = desired["spec"]["destination"]
+    destination = normalized_destination(desired["spec"]["destination"])
     return (expected_revision(obj, revision) and phase.markers(obj) == phase.markers(desired)
             and sync.get("status") == "Synced"
             and phase.normalized_sources(obj["spec"]["sources"]) == sources
             and phase.normalized_sources(compared.get("sources", [])) == sources
-            and obj["spec"].get("destination") == destination == compared.get("destination"))
+            and normalized_destination(obj["spec"].get("destination", {})) == destination
+            == normalized_destination(compared.get("destination", {})))
 
 
 def wait_for(predicate, seconds, label):
@@ -355,9 +397,7 @@ def ready(app, session):
         candidates = [p for p in candidates if not p["metadata"]["name"].startswith("n8n-postgres-")]
     return (len(candidates) == 1
             and {c["name"]: c["image"] for c in candidates[0]["spec"]["containers"]} == session["writers"][app]["images"]
-            and all(s.get("ready") and s.get("restartCount", 0) == 0
-                    for s in candidates[0].get("status", {}).get("containerStatuses", []))
-            and bool(candidates[0].get("status", {}).get("containerStatuses")))
+            and ready_without_restarts(candidates[0]))
 
 
 def verify_archive(path, kind):
@@ -471,11 +511,12 @@ def prepare(parent, talosconfig, talosctl):
                                    cwd=ROOT / "IaC/live/argocd-apps" / app, timeout=60))["inputs"]["manifest"]
     live = phase.load_live()
     require_capture_ready(live, revision)
+    require_application_bases(live, bases)
     pods, writers = source_pods(), {}
     for app, claim in CLAIMS.items():
         candidates = [p for p in pods if any(v.get("persistentVolumeClaim", {}).get("claimName") == claim for v in p["spec"]["volumes"])]
-        if len(candidates) != 1 or not all(s.get("ready") for s in candidates[0]["status"]["containerStatuses"]):
-            raise ValueError("exactly one healthy original writer required for each claim")
+        if len(candidates) != 1 or not ready_without_restarts(candidates[0]):
+            raise ValueError("exactly one healthy original writer with zero restarts required for each claim")
         writers[app] = pod_identity(candidates[0])
     nodes = node_metadata()
     check_nodes(nodes, nodes)
@@ -600,9 +641,12 @@ def capture(directory, session):
     safe_to_resume = True
     live = phase.load_live()
     require_capture_ready(live, session["revision"])
+    require_application_bases(live, session["bases"])
     current = {p["metadata"]["name"]: p for p in source_pods()}
     for writer in session["writers"].values():
         pod = current.get(writer["name"])
+        if pod and not ready_without_restarts(pod):
+            raise ValueError("original writers must remain ready with zero restarts before capture")
         if not pod or pod_identity(pod)["uid"] != writer["uid"] or pod_identity(pod)["containers"] != writer["containers"] or pod_identity(pod)["mounts"] != writer["mounts"]:
             raise ValueError("prepared writer identity changed; prepare again")
     fence(session, [])

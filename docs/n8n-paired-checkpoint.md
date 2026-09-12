@@ -71,8 +71,19 @@ operator examples; the Talos binary must match the current cluster's 1.11.3
 client. Preparation performs metadata-only inspection, requires healthy
 original writer identities, unchanged node boot IDs, Bound Retain NFS claims,
 and at least 1 GiB free locally. It prints a unique mode 0700 session directory.
-Both Applications must be Healthy and Synced at the prepared revision;
-capture checks this again before the first stop.
+Both Applications must be Healthy and Synced at the prepared revision, with
+Argo's compared sources/destination matching their current specs; capture
+checks this again before the first stop. A pending chart rollout whose old Pods
+remain ready cannot establish the original image baseline for maintenance.
+Both original Pods must have every regular container ready with zero restarts,
+at preparation and immediately before capture. Historical restarts are refused
+because recovery also requires restart-free original workloads. Preparation and
+capture compare each rendered base against the complete live Application spec;
+unapplied or stale generated settings must be reconciled through the ordinary
+owner before maintenance. Normalization is limited to known default source
+paths, absent/empty destination name and namespace annotations, and integer
+types for retry limit/backoff factor. Chart values, namespace, sync policy and
+ignored differences must otherwise match exactly.
 No snapshot, pod, or phase change occurs during preparation.
 
 Keep free space comfortably above the combined source size. The September 7

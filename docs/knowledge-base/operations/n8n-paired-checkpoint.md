@@ -7,6 +7,8 @@ application restore has been verified for this code yet.
 
 - Existing n8n and n8n-postgres Applications, generated Terragrunt units,
   original state keys, images and claims retain ownership.
+  Preparation and capture require ready original containers with zero restarts
+  and matching complete rendered/live Application specs before any stop.
 - Fixed stop/cold/capture/resume profiles are merged before the outage. The
   catalog guard blocks ordinary reconciliation while maintenance is active;
   the supported execution model is one serial operator with merges paused.
