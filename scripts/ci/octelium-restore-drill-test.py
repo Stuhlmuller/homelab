@@ -250,6 +250,8 @@ class RestoreDrillTest(unittest.TestCase):
         container = pod["containers"][0]
         self.assertEqual(container["command"], ["/bin/sh", "/scripts/restore-drill.sh",
                                                 "/backup/logical-backups", "/work"])
+        self.assertEqual(container["terminationMessagePath"], "/root/restore-termination-log")
+        self.assertEqual(container["terminationMessagePolicy"], "File")
         self.assertNotIn("env", container)
         self.assertNotIn("envFrom", container)
         self.assertTrue(next(m for m in container["volumeMounts"] if m["name"] == "backup")["readOnly"])

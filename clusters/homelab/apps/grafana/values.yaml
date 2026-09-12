@@ -4,6 +4,9 @@ admin:
   passwordKey: password
 deploymentStrategy:
   type: Recreate
+resources:
+  requests:
+    memory: 768Mi
 automountServiceAccountToken: false
 annotations:
   argocd.argoproj.io/sync-options: Replace=true
@@ -933,7 +936,7 @@ alerting:
               managed_by: grafana-provisioning
               app: deluge
           - uid: homelab-pvc-space-low
-            title: Homelab PVC space low
+            title: Homelab PVC space low or metrics unavailable
             condition: C
             data:
               - refId: A
@@ -998,12 +1001,13 @@ alerting:
                   type: threshold
             dashboardUid: homelab-overview
             panelId: 4
-            noDataState: OK
+            noDataState: Alerting
             execErrState: Alerting
             for: 15m
             annotations:
-              summary: At least one homelab PVC is above 85 percent used.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/storage-nfs.md
+              summary: PVC filesystem usage exceeds 85 percent, or capacity metrics are unavailable.
+              description: Missing metrics do not prove disk exhaustion. Check the PVC usage query and kubelet metrics before diagnosing capacity. NFS subdirectory claims report their shared backing filesystem, not individual claim quotas. See the storage metrics runbook for the Kubernetes 1.34.1 collector regression and post-upgrade checks.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/operations/pvc-metrics-recovery.md
             labels:
               severity: critical
               managed_by: grafana-provisioning

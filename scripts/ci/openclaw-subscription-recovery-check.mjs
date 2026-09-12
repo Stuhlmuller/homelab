@@ -25,7 +25,7 @@ async function run(options = {}) {
     } },
   });
   const modules = {
-    "node:fs/promises": { readFile: async () => JSON.stringify({ version: options.version ?? "2026.9.1" }) },
+    "node:fs/promises": { readFile: async () => JSON.stringify({ version: options.version ?? "2026.9.2" }) },
     "node:timers/promises": { setTimeout: async (ms) => {
       now += ms;
       if (probes && options.available) blocked = false;
@@ -39,6 +39,9 @@ async function run(options = {}) {
       return { stdout: '{"ok":true}' };
     } },
     "node:util": { promisify: (fn) => fn },
+    "/app/dist/store-F1B2duCT.js": { d: loadStore },
+    "/app/dist/usage-state-CAKmPrwS.js": { o: (store) => store.blocked },
+    "/app/dist/usage-_yfLJGtN.js": { s: () => { probes++; } },
     "/app/dist/store-CZzbMlii.js": { m: loadStore },
     "/app/dist/usage-state-C0QBjJnZ.js": { o: (store) => store.blocked },
     "/app/dist/usage-CWqpxTil.js": { s: () => { probes++; } },
@@ -60,12 +63,17 @@ async function run(options = {}) {
   return { probes, reloads, output, error, code: process.exitCode ?? 0 };
 }
 
-for (const options of [{ version: "2026.9.2" }, { ambiguous: true }, { source: "codex_rate_limits" }]) {
+for (const options of [{ version: "2026.9.3" }, { ambiguous: true }, { source: "codex_rate_limits" }]) {
   const result = await run(options);
   assert.ok(result.error);
   assert.equal(result.probes, 0);
   assert.equal(result.reloads, 0);
 }
+const legacy = await run({ version: "2026.9.1", available: true });
+assert.equal(legacy.error, undefined);
+assert.equal(legacy.code, 0);
+assert.equal(legacy.probes, 1);
+assert.equal(legacy.reloads, 1);
 const check = await run({ mode: "--check" });
 assert.equal(check.code, 1);
 assert.equal(check.probes + check.reloads, 0);

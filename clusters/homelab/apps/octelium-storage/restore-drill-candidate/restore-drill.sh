@@ -12,6 +12,11 @@ mkdir "$work"
 # through /proc ancestor FDs. The direct container entry point has no wrapper
 # holding another copy; Job exit status is the public completion signal.
 exec </dev/null >"$work/details.log" 2>&1
+# Kubelet termination messages are another public output channel. The immutable
+# image's root-owned /root is not searchable by the restore UID; fail before any
+# backup read if the runtime makes that parent or message writable/accessible.
+test ! -x /root
+test ! -w /root/restore-termination-log
 stage="backup-selection"
 postgres_started=false
 cleanup() {
