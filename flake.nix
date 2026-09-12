@@ -18,6 +18,13 @@
       forEachSystem = nixpkgs.lib.genAttrs systems;
     in
     {
+      packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        { restore-egress-tools = import ./images/postgres-restore-egress { inherit pkgs; }; }
+      );
       devShells = forEachSystem (
         system:
         let
