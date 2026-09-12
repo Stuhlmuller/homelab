@@ -1,0 +1,6 @@
+# Worker bootstrap and offline config-render target only. The ordered upgrade
+# changes only the kubelet image in worker machine configs; kube-proxy Pods
+# receive the cluster image through the control-plane-managed DaemonSet.
+machine:
+  kubelet:
+    image: ghcr.io/siderolabs/kubelet:v1.34.11
