@@ -324,6 +324,250 @@ exit code when any check fails. Keep expected-negative probes inside guarded
 conditionals and avoid empty-array expansion under `set -u`, so macOS Bash 3.2
 does not exit before the failure summary.
 
+## Istio Ambient Recovery
+
+Use these read-only checks after node recovery or an ambient configuration
+rollout. All must pass before closing the readiness finding; connector access
+alone is insufficient. Keep raw logs outside git.
+
+Require every node Ready and both DaemonSets fully updated, observed, and
+available on every node, with no misscheduled instances:
+
+```sh
+(
+set -euo pipefail
+kubectl get nodes -o json | jq -e '
+  (.items | length) > 0 and
+  all(.items[]; any(.status.conditions[]; .type == "Ready" and .status == "True"))'
+ambient_node_count="$(kubectl get nodes -o json | jq '.items | length')"
+kubectl -n istio-system get ds istio-cni-node ztunnel -o json |
+  jq -e --argjson n "$ambient_node_count" '
+    (.items | length) == 2 and all(.items[];
+      .status.observedGeneration == .metadata.generation and
+      .status.desiredNumberScheduled == $n and
+      .status.updatedNumberScheduled == $n and
+      .status.numberReady == $n and .status.numberAvailable == $n and
+      .status.numberMisscheduled == 0)'
+)
+```
+
+Check the live CNI ConfigMap, the rolled CNI Pods' configuration references,
+every ztunnel Pod's IPv6 setting, active connector enrollment, and Argo state:
+
+```sh
+(
+set -euo pipefail
+kubectl -n istio-system get cm istio-cni-config -o json |
+  jq -e '.data.AMBIENT_IPV6 == "false"'
+kubectl -n istio-system get pods -l k8s-app=istio-cni-node -o json |
+  jq -e '(.items | length) > 0 and all(.items[];
+    .metadata.annotations["homelab.rst.io/ambient-ip-family"] == "ipv4" and
+    any(.spec.containers[] | select(.name == "install-cni") | .envFrom[]?;
+      .configMapRef.name == "istio-cni-config"))'
+kubectl -n istio-system get pods -l app=ztunnel -o json |
+  jq -e '(.items | length) > 0 and all(.items[];
+    any(.spec.containers[] | select(.name == "istio-proxy") | .env[]?;
+      .name == "IPV6_ENABLED" and .value == "false"))'
+kubectl -n octelium-client get pods -l app.kubernetes.io/instance=octelium-client -o json |
+  jq -e '[.items[] | select(.status.phase != "Succeeded" and .status.phase != "Failed")] as $pods |
+    ($pods | length) > 0 and all($pods[];
+      .metadata.annotations["ambient.istio.io/redirection"] == "enabled" and
+      any(.status.conditions[]; .type == "Ready" and .status == "True"))'
+kubectl -n argocd get application istio -o json |
+  jq -e '.status.sync.status == "Synced" and .status.health.status == "Healthy"'
+)
+```
+
+Query the existing Prometheus service through the Kubernetes API. This helper
+uses the operator's kubeconfig and does not expose Prometheus publicly. Capture
+one UTC endpoint for every query and the later log check; keep
+`ambient_window_end` available until all checks finish:
+
+```sh
+ambient_window_end="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+(
+set -euo pipefail
+test -n "$ambient_window_end"
+ambient_promql() {
+  kubectl get --raw "/api/v1/namespaces/monitoring/services/http:prometheus-kube-prometheus-prometheus:9090/proxy/api/v1/query?$(
+    python3 -c 'import sys, urllib.parse; print(urllib.parse.urlencode({"query": sys.argv[1], "time": sys.argv[2]}))' \
+      "$1" "$ambient_window_end"
+  )" | jq -e 'if .status != "success" then error("Prometheus query failed") else .data.result end'
+}
+ambient_ds_uids="$(kubectl -n istio-system get ds istio-cni-node ztunnel -o json | jq -ce '
+  def text: type == "string" and length > 0;
+  if (.items | type) == "array" and (.items | length) == 2 and
+     ([.items[].metadata.name] | sort) == ["istio-cni-node", "ztunnel"] and
+     all(.items[]; .kind == "DaemonSet" and .metadata.namespace == "istio-system" and
+       .metadata.deletionTimestamp == null and (.metadata.uid | text)) and
+     ([.items[].metadata.uid] | unique | length) == 2
+  then [.items[].metadata.uid] | sort else error("Invalid ambient DaemonSet inventory") end')"
+ambient_pods="$(kubectl -n istio-system get pods -o json | jq -ce --argjson owners "$ambient_ds_uids" '
+  def text: type == "string" and length > 0;
+  if (.items | type) != "array" then error("Invalid Pod inventory") else .items end |
+  [.[] | select(.metadata.deletionTimestamp == null and
+      .status.phase != "Failed" and .status.phase != "Succeeded") |
+    .status.phase as $phase | (.metadata.ownerReferences // []) as $refs |
+    if .kind == "Pod" and .metadata.namespace == "istio-system" and
+       (.metadata.name | text) and (.metadata.uid | text) and
+       (["Pending", "Running", "Unknown"] | index($phase)) != null and
+       ($refs | type) == "array" and all($refs[];
+         (.kind | text) and (.name | text) and (.uid | text))
+    then . else error("Malformed live Pod identity or owner") end |
+    [$refs[] | select(.uid as $uid | $owners | index($uid))] as $matching |
+    select(($matching | length) > 0) |
+    [$refs[] | select(.controller == true)] as $controllers |
+    if ($matching | length) == 1 and $controllers == $matching and
+       $matching[0].kind == "DaemonSet"
+    then [.metadata.namespace, .metadata.name, .metadata.uid, $matching[0].uid]
+    else error("Ambiguous ambient Pod controller") end] as $pods |
+  if ($pods | length) > 0 and ([$pods[][3]] | sort | unique) == $owners and
+     ([$pods[] | .[0:2]] | unique | length) == ($pods | length) and
+     ([$pods[][2]] | unique | length) == ($pods | length)
+  then [$pods[] | .[0:3]] | sort else error("Missing or duplicate ambient Pods") end')"
+ambient_promql 'min_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])' |
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing, replaced or unhealthy readiness series") end'
+ambient_promql 'count_over_time(kube_pod_status_ready{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",condition="true"}[24h])' |
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete readiness history") end'
+ambient_promql 'sum by (namespace, pod, pod_uid) (increase(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h]))' |
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.pod_uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 0)
+    then . else error("Missing probe history or observed probe failures") end'
+ambient_promql 'count_over_time(prober_probe_total{namespace="istio-system",pod=~"(ztunnel|istio-cni-node)-.*",probe_type="Readiness",result="failed"}[24h])' |
+  jq -e --argjson expected "$ambient_pods" '
+    if ([.[] | [.metric.namespace, .metric.pod, .metric.pod_uid]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete probe history") end'
+ambient_nodes="$(kubectl get nodes -o json | jq -ce '
+  [.items[] | [.metadata.name,
+    (([.status.addresses[] | select(.type == "InternalIP" and (.address | contains(":") | not)) | .address][0]) + ":10250")]] |
+  sort | unique | if length > 0 then . else error("No expected kubelet targets") end')"
+ambient_ksm_selector="$(kubectl -n monitoring get service prometheus-kube-state-metrics -o json |
+  jq -er '.spec.selector | to_entries | map("\(.key)=\(.value)") | join(",") | select(length > 0)')"
+ambient_ksm="$(kubectl -n monitoring get pods -l "$ambient_ksm_selector" -o json | jq -ce '
+  [.items[] | select(.metadata.deletionTimestamp == null and
+    .status.phase != "Failed" and .status.phase != "Succeeded") |
+    [.metadata.name, (.status.podIP + ":8080")]] |
+  sort | unique | if length > 0 then . else error("No expected kube-state-metrics targets") end')"
+ambient_promql 'min_over_time(up{job="kube-state-metrics"}[24h])' |
+  jq -e --argjson expected "$ambient_ksm" '
+    if ([.[] | [.metric.pod, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing, replaced or unhealthy kube-state-metrics targets") end'
+ambient_promql 'count_over_time(up{job="kube-state-metrics"}[24h])' |
+  jq -e --argjson expected "$ambient_ksm" '
+    if ([.[] | [.metric.pod, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete kube-state-metrics history") end'
+ambient_promql 'min_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])' |
+  jq -e --argjson expected "$ambient_nodes" '
+    if ([.[] | [.metric.node, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) == 1)
+    then . else error("Missing, replaced or unhealthy kubelet probe targets") end'
+ambient_promql 'count_over_time(up{job="kubelet",metrics_path="/metrics/probes"}[24h])' |
+  jq -e --argjson expected "$ambient_nodes" '
+    if ([.[] | [.metric.node, .metric.instance]] | sort | unique) == $expected and
+       all(.[]; (.value[1] | tonumber) >= 2880)
+    then . else error("Missing or incomplete kubelet probe scrape history") end'
+)
+```
+
+The subshell stops at the first failed command without changing the caller's
+shell options. Each assertion must exit zero; empty results, bad values, and
+short observation windows fail. Require readiness minimum `1` and failed-probe
+increase `0` for every current CNI and ztunnel Pod. At the declared 30-second
+scrape cadence, each readiness and failed-probe counter series needs at least
+2,880 samples over 24 hours. Exporter `up` checks require the same coverage and
+match each live Pod/node and scrape address; the current IPv4 endpoints use
+ports 8080 and 10250. Every expected target must remain `up == 1`.
+All four readiness/probe assertions match namespace, Pod name and UID against
+current nonterminal, nondeleting Pods controlled by the live DaemonSet UIDs.
+Read-only inspection confirmed the readiness `uid` and prober `pod_uid` labels;
+the probe aggregation retains that identity. Invalid/empty inventory, missing
+series, gaps, counter absence, or a replacement with less than 24 hours
+of observation do not prove recovery. If scrape cadence or target identity
+changed, establish equivalent complete coverage before closing the finding;
+do not replace missing data with zero.
+
+Inspect all CNI and ztunnel logs for the same 24-hour window. Save current logs
+privately and print only their first/last timestamps when assessing retention:
+
+```sh
+ambient_logs="$(umask 077; mktemp -d)"
+(
+set -euo pipefail
+umask 077
+test -n "$ambient_logs"
+test -d "$ambient_logs"
+kubectl -n istio-system get pods -o json | jq -er '
+  [.items[] | select(any(.metadata.ownerReferences[]?;
+    .kind == "DaemonSet" and (.name == "istio-cni-node" or .name == "ztunnel"))) |
+    [.metadata.name, .spec.containers[0].name]] |
+  if length > 0 then .[] | @tsv else error("No ambient Pods to collect") end' |
+  while IFS="$(printf '\t')" read -r ambient_pod ambient_container; do
+    kubectl -n istio-system logs "$ambient_pod" -c "$ambient_container" --timestamps \
+      > "$ambient_logs/$ambient_pod.current.log"
+    test -s "$ambient_logs/$ambient_pod.current.log"
+  done
+for ambient_file in "$ambient_logs"/*.log; do
+  test -s "$ambient_file"
+  awk 'NR == 1 {print FILENAME, "first", $1} END {print FILENAME, "last", $1}' "$ambient_file"
+done
+)
+```
+
+The directory variable remains available to later commands. Any failed fetch,
+empty log or empty Pod inventory exits nonzero; discard that incomplete capture
+and rerun the block before assessing retention.
+
+`kubectl logs --since=24h` alone cannot establish that rotated records still
+cover the window. If any current log starts too recently, identify its Pod UID,
+node InternalIP, and container name with
+`kubectl -n istio-system get pod POD -o json` and
+`kubectl get node NODE -o json`. Use authenticated Talos access to list
+`/var/log/pods/istio-system_<pod>_<uid>/<container>/` on that node:
+
+```sh
+talosctl --endpoints 10.1.0.199 --nodes NODE_INTERNAL_IP ls POD_LOG_DIRECTORY
+talosctl --endpoints 10.1.0.199 --nodes NODE_INTERNAL_IP read ROTATED_LOG_PATH > "$ambient_logs/rotated.log"
+```
+
+Replace the uppercase placeholders with the observed values. Preserve distinct
+local filenames for each Pod/rotation; decompress `.gz` files before inspection.
+If a container restarted, include its previous logs. Require a complete retained
+file chain covering the observation window on every node. Missing older files
+leave the log gate unverified even if current readiness is healthy.
+
+Search the collected, uncompressed logs for readiness failures and the observed
+IPv6 bind/route signatures using the same captured endpoint:
+
+```sh
+python3 scripts/istio-ambient-log-check.py \
+  --window-end "$ambient_window_end" "$ambient_logs"
+```
+
+Exit `0` means no in-window signatures; `1` means a matching failure; `2` means
+invalid or incomplete input. The helper checks `(end - 24h, end]`, matching
+Prometheus range boundaries, with nanosecond precision. It accepts UTC `Z`
+timestamps from `kubectl logs --timestamps` and complete CRI `F` records from
+Talos. Malformed timestamps, partial CRI `P` records, unreadable/empty files,
+compressed files, symlinks, nested directories, and an empty inventory fail
+closed. Keep only the uncompressed log files in this private directory.
+
+Older and future signatures are excluded; every input record must still parse.
+Output contains only the window and aggregate counts, never raw log messages.
+This signature check does not establish Pod identity or retained rotation
+coverage: the preceding gates remain required. Record the observation window
+and aggregate verdicts; never commit raw logs or substitute a shorter window
+for this recovery gate.
+
 ## Policy Bot Checks
 
 Repository-local `.policy.yml` changes need Policy Bot validation, not just YAML
