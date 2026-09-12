@@ -21,10 +21,16 @@ backups, overwrites older backups, or prunes them. Interrupted processes may
 leave a hidden `.partial-etcd-*` directory; it is not a completed backup.
 Do not remove previous verified copies to make room for an unverified one.
 
-This command provides a manual off-node recovery point. Recurring execution,
-backup-age alerting, an encrypted offsite copy, retention enforcement, and an
-isolated restore drill remain unimplemented. Choose their owner and storage
-contract in a separate repository change. A snapshot does not provide
+This command provides a manual off-node recovery point. The separate
+[macOS schedule](talos-etcd-schedule.md) installs reviewed code for approximately
+daily backups, offline freshness checks and retention in a dedicated scheduled
+child; it leaves manual copies untouched. The
+[manual offsite publisher](etcd-offsite-publication.md) has copied and retrieved
+one scheduled snapshot with independent checksum verification. The
+[offline restore validator](etcd-offline-restore-validation.md) has restored a
+different manual snapshot without starting a server. Unattended offsite
+publication, remote backup-age alerts and a control-plane recovery drill remain
+open work. A snapshot does not provide
 control-plane high availability, back up PVC contents, or preserve the Talos
 machine configuration and original cluster secret material needed after a
 hardware loss; keep that existing private recovery material separately.

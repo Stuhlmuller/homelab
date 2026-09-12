@@ -12,12 +12,38 @@ restore or cluster mutation path. Success requires file and directory syncs;
 the homelab invocation explicitly selects Homebrew Talos `v1.11.3` because the
 Nix shell currently supplies `v1.13.2`. The CLI requires an absolute executable
 client path and rejects missing or invalid clients before Talos access.
-Recurrence, backup-age alerting, offsite
-storage, retention enforcement, and a restore drill remain open work.
+The [macOS schedule](../../talos-etcd-schedule.md) declares hourly calendar
+checks plus load/wake catchup, a 24-hour verified-success gate, a 36-hour offline
+freshness threshold and 28-day retention with at least seven valid scheduled
+copies. Its installer copies exact reviewed main code to a private durable
+operator runtime; a separate `scheduled` child protects all manual backups.
+Service updates preserve prior files and loaded state for rollback. The launchd
+child waits up to 60 seconds for handoff; an active backup blocks reconfiguration.
+Changing the committed launchd label requires uninstall and a fresh runtime;
+updates reject renames before touching the old service or installed release.
+Pruning starts only after a new verified durable backup and success receipt,
+and all candidates pass verification. Installation on 2026-09-07 matched the
+merged source and loaded plist; the first automatic `RunAtLoad` snapshot
+completed at `17:17:10 UTC`, passed offline checks and reported `fresh` with
+launchd exit zero. All four manual backups remained unchanged and reverified;
+no copies were pruned. Read-only follow-up on 2026-09-12 found five scheduled
+successes dated September 7–11, with the latest snapshot `fresh` and the agent
+loaded. The longest observed interval was 26 hours 54 minutes; two logged
+failures recovered automatically. Exact causes and wake behavior remain
+unverified; see the schedule runbook for the bounded recurrence evidence.
+The Mac must be available and its user logged in; unattended offsite
+publication, remote age-alert delivery and an isolated control-plane recovery
+drill remain open work.
 
-Live validation on 2026-09-07 UTC saved a private off-node snapshot with Talos
-`v1.11.3`; embedded and full-file checksum checks passed. No restore or offsite
-verification was performed.
+Live validation on 2026-09-07 UTC saved private off-node snapshots with Talos
+`v1.11.3`; embedded and full-file checksum checks passed. The separately
+[[operations/etcd-offline-restore-validation|validated offline restore]]
+preserved one post-upgrade snapshot's revision and MVCC key count. That
+database check did not start a control plane or verify an offsite copy.
+The first scheduled snapshot separately passed
+[[operations/etcd-offsite-publication|manual S3 publication and retrieval]]
+of exact versions with independent checksum checks. That downloaded copy has
+not undergone a database restore.
 
 Render and validate Talos configuration before applying it. Use
 `talosctl validate --mode metal --strict`, authenticated access after bootstrap,

@@ -2,7 +2,7 @@
 
 Tags: #operations #monitoring #capacity
 
-Status: rollout and initial acceptance passed; 24-hour observation pending.
+Status: rollout, initial acceptance, and sampled 24-hour follow-up passed.
 
 Sources: `clusters/homelab/apps/prometheus/values.yaml`,
 `clusters/homelab/apps/grafana/values.yaml`.
@@ -59,6 +59,29 @@ Alertmanager ran on `acer`; Prometheus, its operator, and kube-state-metrics ran
 on `zimaboard-1`. A 03:41 UTC query through the local Prometheus endpoint found
 34 of 34 scrape targets up and all four nodes Ready.
 
-This initial acceptance supplies current placement evidence for the CoreDNS
-surge-capacity preflight; it does not complete the 24-hour working-set and
-eviction observation. Recheck current headroom before the DNS rollout.
+The initial acceptance supplied placement evidence for the later CoreDNS
+surge-capacity preflight. A read-only follow-up on 2026-09-12 at 01:08 UTC
+completed the sampled 24-hour working-set observation:
+
+| Container | 24-hour mean / maximum (MiB) | Admitted memory request |
+| --- | --- | --- |
+| Prometheus | 763.7 / 1009.3 | 1536Mi |
+| Grafana | 288.2 / 290.8 | 768Mi |
+| Prometheus Operator | 33.3 / 36.9 | 128Mi |
+| kube-state-metrics | 38.3 / 43.5 | 128Mi |
+| Prometheus config reloader | 18.7 / 24.3 | 32Mi |
+| Alertmanager config reloader | 14.0 / 17.1 | 32Mi |
+
+All 34 current scrape targets were up. The observed 24-hour series showed no
+monitoring container restart, rule failure, or missed-evaluation increments,
+and no node-pressure samples. Active Pods were Ready; no Warning events or
+Evicted Pods remained in the current Kubernetes inventory. That inventory does
+not prove the absence of historical evictions.
+
+Container samples have gaps, with at least 4851 samples per observed series;
+all four current cAdvisor targets use a 10-second interval. These maxima are
+observed values, not hard bounds or proof of continuous collection. The
+September 7 monitoring Pod identities and admitted requests were unchanged.
+Keep the existing reservations; this observation does not resolve the
+largest-node-loss capacity deficit or monitoring storage recovery work.
+Queries and result receipts remain private.

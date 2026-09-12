@@ -19,10 +19,54 @@ The [routine backup command](../../talos-etcd-backup.md) saves a new private
 off-node snapshot and verifies metadata, the embedded SHA-256 checksum, and a
 full-file manifest digest. Operators choose an existing durable mode-0700
 directory outside Git; the command retains every completed backup.
-It has no schedule, offsite copy, age alert, or automatic retention policy.
-Those remain reliability gaps alongside an isolated restore drill and
-control-plane redundancy. PVC data and private Talos recovery material need
-separate backups; an etcd snapshot alone cannot recover either.
+The separate [macOS scheduler](../../talos-etcd-schedule.md) declares roughly
+daily snapshots, hourly retries/load/wake catchup, offline 36-hour freshness
+checks and 28-day retention with a seven-valid-copy minimum. It reserves a
+private `scheduled` child, preserving all manual siblings; failed backup or
+verification prevents pruning. Exact reviewed code is installed to a durable
+operator runtime. On 2026-09-07, installed sources and the loaded plist matched
+the merged revision, and the first automatic `RunAtLoad` snapshot passed
+offline checksum/freshness checks. All four manual backups were preserved and
+reverified; no copies were pruned. A 2026-09-12 read-only follow-up found five
+scheduled successes dated September 7–11, with the latest snapshot `fresh` and
+the LaunchAgent loaded. The longest success interval was 26 hours 54 minutes;
+two logged failures recovered on later scheduled attempts. See the schedule
+runbook for this scoped recurrence evidence and its remaining wake/availability
+limits. Private receipts retain both observations.
+The Mac's availability, unattended offsite freshness, remote alert delivery,
+an isolated control-plane recovery drill and control-plane redundancy remain
+gaps. PVC data and private Talos recovery material need separate backups; an
+etcd snapshot alone cannot recover either.
+
+The 2026-09-07 [[operations/kubernetes-patch-maintenance-2026-09|maintenance]]
+used a fresh verified off-node snapshot after the DNS handoff. All five
+scheduled media/Octelium backups had completed their latest due run, and their
+published artifacts remained present on retained NFS claims. Publisher-time
+validation plus current file metadata does not constitute a fresh rehash or
+restore drill.
+
+After Kubernetes `1.34.11`, direct kubelet and Prometheus checks covered all 28
+expected mounted node/PVC pairs across 30 Pod bindings; all 50 claims were Bound.
+Unmounted claims are outside that metric inventory. Grafana's current PVC rule
+state remains unverified because its admin API returned HTTP 401, although the
+unchanged alert query returned real data below its threshold.
+
+The dedicated [[operations/etcd-offsite-storage|etcd offsite storage]] operator
+unit declares a private, versioned S3 bucket with independently owned retention.
+Its reviewed saved plan applied on 2026-09-07 with seven additions and no
+changes or destruction; bucket metadata checks and provider refresh/no-drift
+validation passed. The separate
+[[operations/etcd-offsite-publication|manual publisher]] then copied the first
+scheduled snapshot and retrieved its exact S3 versions; independent remote
+metadata and local checksum checks passed with the source preserved. One
+earlier manual post-upgrade snapshot passed
+[[operations/etcd-offline-restore-validation|offline database restoration]].
+These are distinct snapshots and checks; neither proves control-plane or PVC
+recovery. The separate [offsite attempt scheduler](../../etcd-offsite-schedule.md)
+now has a reviewed-code installation path, private resumable attempts and
+source-age status, but no installed schedule or real recurring execution has
+been verified. It uses existing expiring AWS SSO sessions; remote alerting and
+indefinite unattended identity remain unresolved.
 
 ## Durable Storage
 
@@ -77,6 +121,11 @@ QNAP `/media` export for downloads, movies, and TV library data. Read-only
 `showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
 ## Stateful Workload Gate
+
+The existing QNAP is also an unproven iSCSI block-storage candidate for
+monitoring. See [[operations/qnap-monitoring-block-storage-research-2026-09-12]]
+for pinned driver compatibility, missing Talos/NAS prerequisites, and retained
+restore/fencing gates. No storage class or active workload has changed.
 
 Stateful workloads can be registered before they are considered operationally
 ready, but they must not be treated as production-ready until:

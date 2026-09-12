@@ -3467,3 +3467,9 @@ unit "operator_legacy_kms_retirement" {
   path                    = "operator/legacy-kms-retirement"
   no_dot_terragrunt_stack = true
 }
+
+unit "operator_etcd_backup_storage" {
+  source                  = "./.catalog/units/operator/etcd-backup-storage"
+  path                    = "operator/etcd-backup-storage"
+  no_dot_terragrunt_stack = true
+}
