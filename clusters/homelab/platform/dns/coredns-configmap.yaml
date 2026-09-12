@@ -8,6 +8,7 @@ metadata:
     app.kubernetes.io/name: coredns
     app.kubernetes.io/part-of: homelab
   annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     homelab.rst.io/managed-reason: "Use stable public resolvers and an internal Octelium API route."
 data:
   Corefile: |
