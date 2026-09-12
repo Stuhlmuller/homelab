@@ -122,9 +122,11 @@ main commit, run:
 (
 set -euo pipefail
 reviewed_main_sha=FULL_REVIEWED_MAIN_SHA
-checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+checkout_status="$(git status --porcelain=v1 --untracked-files=all \
+  --ignore-submodules=none)"
 checkout_sha="$(git rev-parse HEAD)"
-remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git \
+  refs/heads/main | cut -f1)"
 test -z "$checkout_status"
 test "$checkout_sha" = "$reviewed_main_sha"
 test "$remote_main_sha" = "$reviewed_main_sha"
@@ -172,9 +174,11 @@ python3 -I scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN
 (
 set -euo pipefail
 reviewed_main_sha=FULL_REVIEWED_RETIREMENT_SHA
-checkout_status="$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+checkout_status="$(git status --porcelain=v1 --untracked-files=all \
+  --ignore-submodules=none)"
 checkout_sha="$(git rev-parse HEAD)"
-remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git \
+  refs/heads/main | cut -f1)"
 test -z "$checkout_status"
 test "$checkout_sha" = "$reviewed_main_sha"
 test "$remote_main_sha" = "$reviewed_main_sha"
