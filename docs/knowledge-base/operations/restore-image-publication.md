@@ -54,6 +54,11 @@ investigation, not accepting a new digest at the approval boundary.
 [GHCR source labels and workflow tokens][ghcr], [Skopeo preserved digests][skopeo],
 [registry digest verification][registry].
 
+The separate [[restore-image-anonymous-pull]] gate consumes a later reviewed
+publication pin and checks public run metadata plus every anonymously retrieved
+image blob. No pin exists yet; successful metadata alone is not digest provenance
+or independent approval evidence.
+
 ## Dispatch and readback
 
 Only after this follow-up and its parent are reviewed, merged and their Linux
