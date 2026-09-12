@@ -116,6 +116,13 @@ fields remain declarative. Production logs can include Terragrunt's internal
 `tofu apply` subprocess even though the operator entrypoint remains the
 Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
 
+The unregistered [[../operations/restore-activation-reference]] template is a
+deliberate publication prerequisite. It derives a separate suspended restore
+Application from a committed image pin, preserving the bound candidate source
+and production storage Application. Its `.hcl.template` suffix keeps normal
+Terragrunt discovery from evaluating the deliberately absent pin. Registration
+and activation remain later reviewed IaC changes.
+
 Confirmed tainted Application state is repaired through the protected
 `Terragrunt Apply` dispatch with one exact `argocd_app` and
 `repair_argocd_app_state=true`. That path untaints only

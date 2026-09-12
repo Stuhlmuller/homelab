@@ -1,0 +1,27 @@
+# Dormant: no stack unit references this template. Normal HCL discovery must not
+# evaluate the deliberately absent publication pin. Later registration is a
+# separate reviewed release change; the generated Application remains suspended.
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+include "kubernetes_provider" {
+  path = find_in_parent_folders("kubernetes-provider.hcl")
+}
+
+terraform {
+  source = "../../../modules/argocd-application-kubernetes"
+}
+
+dependencies {
+  paths = ["../octelium-storage"]
+}
+
+inputs = {
+  manifest = jsondecode(run_cmd(
+    "--terragrunt-quiet",
+    "--terragrunt-no-cache",
+    "python3",
+    "${dirname(find_in_parent_folders("flake.nix"))}/scripts/ci/restore-activation-reference.py"
+  ))
+}
