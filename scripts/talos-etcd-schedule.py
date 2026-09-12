@@ -123,7 +123,7 @@ def latest_status(directory, policy, now):
     """Verify the newest selected artifact offline; never hide it behind an older one."""
     directories = completed_directories(directory)
     if not directories:
-        return {"status": "missing"}
+        return {"status": "missing", "checked_at": now.isoformat()}
     newest = [path for path in directories if path.name[:21] == directories[0].name[:21]]
     # Random suffixes are not chronological. Read completion times only for
     # the newest same-second group; a corrupt older group must not block the
@@ -132,7 +132,8 @@ def latest_status(directory, policy, now):
     record = backup.verify(latest)
     age = (now - created_at(record, now)).total_seconds() / 3600
     result = {"status": "fresh", "directory": str(latest), "age_hours": age,
-              "created_at": record["created_at"], "integrity": record["integrity"]}
+              "created_at": record["created_at"], "integrity": record["integrity"],
+              "checked_at": now.isoformat()}
     receipt = directory / SUCCESS
     if not receipt.exists():
         result["status"] = "unconfirmed"
@@ -457,7 +458,7 @@ def main():
                     result = latest_status(directory, policy, datetime.now(timezone.utc))
                 if sys.platform == "darwin":
                     result["launchd_loaded"] = command(["/bin/launchctl", "print", service_target(policy)], check=False).returncode == 0
-                print(json.dumps({**result, "checked_at": datetime.now(timezone.utc).isoformat()}, indent=2))
+                print(json.dumps(result, indent=2))
                 return 0 if result["status"] == "fresh" else 1
             else:
                 if sys.platform != "darwin":
@@ -467,7 +468,7 @@ def main():
                     plist_path = Path.home() / "Library" / "LaunchAgents" / (policy["launchd_label"] + ".plist")
                     plist_path.unlink(missing_ok=True)
                 result = {"action": "uninstalled", "backups_and_runtime": "preserved"}
-        print(json.dumps({**result, "checked_at": datetime.now(timezone.utc).isoformat()}, indent=2))
+        print(json.dumps({"checked_at": datetime.now(timezone.utc).isoformat(), **result}, indent=2))
         return 0
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         print(json.dumps(command_failure(error, args.command), indent=2), file=sys.stderr)

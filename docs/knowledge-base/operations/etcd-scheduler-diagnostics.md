@@ -2,6 +2,7 @@
 
 The [macOS etcd scheduler](../../talos-etcd-schedule.md) writes UTC observation
 times on successful runs, age-gated skips, offline status checks, and failures.
+Status timestamps use the same instant as the reported backup age and freshness.
 Failed snapshot commands report `talos-etcd-snapshot`, an exit code or timeout
 duration, and that prior backups were retained. Failed status and uninstall
 commands identify the fixed launchd `print` or `bootout` operation. Arguments and

@@ -220,6 +220,20 @@ class ScheduleTests(unittest.TestCase):
                     self.assertTrue(result["launchd_loaded"])
                 self.assertEqual(result["checked_at"], self.now.isoformat())
 
+    def test_status_age_and_checked_at_use_same_time_across_stale_boundary(self):
+        directory, record = self.save(age_days=1.5)
+        self.confirm(directory, record)
+        before = self.now - timedelta(seconds=1)
+        after = self.now + timedelta(seconds=1)
+        output = io.StringIO()
+        with patch.object(schedule.sys, "argv", [str(script), "status", "--runtime-directory", str(self.root)]), patch.object(schedule.sys, "platform", "darwin"), patch.object(schedule, "installed", return_value=({}, self.policy, self.scheduled)), patch.object(schedule, "command", return_value=subprocess.CompletedProcess([], 0)), patch.object(schedule, "datetime", wraps=datetime) as clock, redirect_stdout(output):
+            clock.now.side_effect = (before, after)
+            self.assertEqual(schedule.main(), 0)
+        result = json.loads(output.getvalue())
+        self.assertEqual(result["status"], "fresh")
+        self.assertEqual(result["checked_at"], before.isoformat())
+        self.assertEqual(result["age_hours"], 36 - 1 / 3600)
+
     def test_post_publish_sync_failure_retries_instead_of_trusting_new_directory(self):
         directory, record = self.save(age_days=2)
         self.confirm(directory, record)
