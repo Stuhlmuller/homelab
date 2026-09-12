@@ -179,6 +179,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(checkpoint, "fence", side_effect=lambda *_args, **_kwargs: events.append("fence")), \
                 patch.object(checkpoint, "talos_fence"), \
                 patch.object(checkpoint, "apply_phase", side_effect=apply), \
+                patch.object(checkpoint, "require_service_complete"), \
                 patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")):
             checkpoint.resume(Path(directory), {"id": SESSION, "revision": REVISION,
                               "writers": {app: {"name": app + "-old"} for app in phase.APPS}})
@@ -256,6 +257,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(phase, "load_live", return_value=current), \
                 patch.object(checkpoint, "ready", return_value=True), \
                 patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
+                patch.object(checkpoint, "require_service_complete"), \
                 patch.object(checkpoint, "apply_phase", side_effect=apply):
             checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
         self.assertEqual(calls, [("n8n", "normal", "c" * 40)])
@@ -263,11 +265,68 @@ class CheckpointTests(unittest.TestCase):
     def test_completed_unpin_is_idempotent_without_network(self):
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(phase, "load_live", return_value=live()), \
+                patch.object(checkpoint, "ready", return_value=True), \
+                patch.object(checkpoint, "application_synced", return_value=True), \
                 patch.object(checkpoint, "run", side_effect=AssertionError("completed unpin needs no GitHub")), \
                 patch.object(checkpoint, "apply_phase") as apply:
-            checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
+            checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION,
+                             "bases": {app: base(app) for app in phase.APPS}})
             apply.assert_not_called()
             self.assertTrue(json.loads(next(Path(directory).glob("unpinned-*.json")).read_text())["already_normal"])
+
+    def test_interrupted_final_unpin_rejects_unready_or_unreconciled_retry(self):
+        current = {app: phase.profile(base(app), "recovered", SESSION, REVISION) for app in phase.APPS}
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}}
+
+        def apply(_directory, _session, app, target, **_kwargs):
+            current[app] = phase.profile(base(app), target, SESSION, REVISION)
+
+        def wait(_predicate, _seconds, label):
+            if label == "n8n readiness after unpin":
+                raise TimeoutError("final apply completed; readiness wait interrupted")
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=current), \
+                patch.object(checkpoint, "ready", return_value=True) as ready, \
+                patch.object(checkpoint, "application_synced", return_value=True) as synced, \
+                patch.object(checkpoint, "apply_phase", side_effect=apply) as applied, \
+                patch.object(checkpoint, "wait_for", side_effect=wait), \
+                patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]) as command:
+            root = Path(directory)
+            with self.assertRaises(TimeoutError):
+                checkpoint.unpin(root, session)
+            self.assertTrue(all(phase.markers(item)[phase.PHASE] == "normal" for item in current.values()))
+            self.assertEqual(list(root.glob("unpinned-*.json")), [])
+            applied.reset_mock()
+            command.side_effect = AssertionError("normal retry must not fetch GitHub")
+            for unready in phase.APPS:
+                ready.side_effect = lambda app, _session, unready=unready: app != unready
+                with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                    checkpoint.unpin(root, session)
+                self.assertEqual(list(root.glob("unpinned-*.json")), [])
+            ready.side_effect = None
+            synced.return_value = False
+            with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                checkpoint.unpin(root, session)
+            self.assertEqual(list(root.glob("unpinned-*.json")), [])
+            synced.return_value = True
+            checkpoint.unpin(root, session)
+            applied.assert_not_called()
+            self.assertEqual(len(list(root.glob("unpinned-*.json"))), 1)
+
+    def test_resume_requires_reconciliation_before_its_completion_receipt(self):
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}}
+        for target in ("normal", "recovered"):
+            current = {app: phase.profile(base(app), target, SESSION, REVISION) for app in phase.APPS}
+            with patch.object(phase, "load_live", return_value=current), \
+                    patch.object(checkpoint, "ready", return_value=True), \
+                    patch.object(checkpoint, "application_synced", return_value=False), \
+                    patch.object(checkpoint, "write_json") as receipt, \
+                    patch.object(checkpoint, "apply_phase") as applied:
+                with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                    checkpoint.resume(Path("/unused"), session)
+                receipt.assert_not_called()
+                applied.assert_not_called()
 
     def test_command_timeout_stops_child_and_grandchild_before_return(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -417,6 +476,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(checkpoint, "apply_phase", side_effect=apply), \
                 patch.object(checkpoint, "PodExitWatch", side_effect=watch), \
                 patch.object(checkpoint, "CaptureFence", return_value=observer), \
+                patch.object(checkpoint, "require_service_complete"), \
                 patch.object(checkpoint, "wait_for"), patch.object(checkpoint, "run", side_effect=AssertionError("resume must not fetch GitHub")), \
                 patch.object(checkpoint, "stream_archive", side_effect=ValueError("reader failure")):
             with self.assertRaisesRegex(ValueError, "reader failure"):

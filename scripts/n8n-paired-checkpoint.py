@@ -498,6 +498,20 @@ def require_session(live, session):
         raise ValueError("unsupported checkpoint phase pair: " + repr(observed))
 
 
+def require_service_complete(session, normal_only=False, normal_revision=None):
+    """A phase marker alone never proves that its workloads have recovered."""
+    live = phase.load_live()
+    require_session(live, session)
+    for app in phase.APPS:
+        target = phase.markers(live[app])[phase.PHASE]
+        if target not in (("normal",) if normal_only else ("normal", "recovered")):
+            raise ValueError("service has not reached its completed phase")
+        desired = phase.profile(session["bases"][app], target, session["id"], session["revision"])
+        revision = session["revision"] if target == "recovered" else normal_revision
+        if not ready(app, session) or not application_synced(app, desired, revision):
+            raise ValueError("both original workloads must be ready and reconciled before completion")
+
+
 def resume(directory, session):
     """Return service at the already-reviewed revision without a GitHub fetch."""
     live = phase.load_live()
@@ -523,6 +537,7 @@ def resume(directory, session):
         fence(session, [session["writers"]["n8n"]], check_survivors=False)
         apply_phase(directory, session, "n8n", "recovered")
     wait_for(lambda: ready("n8n", session), 300, "n8n database-aware readiness")
+    require_service_complete(session)
     write_json(directory / ("resumed-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
                "revision": session["revision"], "next_step": "unpin after reachable main source verification"})
 
@@ -532,6 +547,7 @@ def unpin(directory, session):
     live = phase.load_live()
     require_session(live, session)
     if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
+        require_service_complete(session, normal_only=True)
         write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
                    "already_normal": True})
         return
@@ -546,6 +562,7 @@ def unpin(directory, session):
         if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":
             apply_phase(directory, session, app, "normal", expected_main_revision=main_revision)
             wait_for(lambda app=app: ready(app, session), 300, app + " readiness after unpin")
+    require_service_complete(session, normal_only=True, normal_revision=main_revision)
     write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
                "main_revision": main_revision})
 

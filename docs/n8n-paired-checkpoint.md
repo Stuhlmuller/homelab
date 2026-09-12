@@ -157,7 +157,10 @@ It returns PostgreSQL, then n8n, to `main` through fresh original-unit plans.
 If the fetch fails or those sources changed, service stays running at the
 prepared SHA; review and resolve the source difference before retrying. A
 partial unpin resumes with the remaining Application; an already-normal retry
-records completion without another network request. Do not start another
+records completion only after both original workloads are ready and both
+Applications have reconciled, without another GitHub request. Resume and the
+final unpin step also recheck both workloads before writing completion receipts.
+Do not start another
 capture until both markers are normal. Failed captures are not retried in
 place: resume, unpin, prepare a new session and retain the failed evidence.
 No archive is automatically restored, overwritten, uploaded or pruned.
