@@ -260,10 +260,34 @@ CI Kubernetes API tunnel. A daily CronJob writes PostgreSQL globals without
 password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
 atomic publication and retains 14 days. This is a logical recovery and
-migration checkpoint, not an off-NAS backup; restore validation remains open.
+migration checkpoint, not an off-NAS backup. The proposed restore drill lives in
+the separate `octelium-storage/restore-drill-candidate/` kustomization, excluded
+from the live application and additionally suspended. It declares
+a daily 04:45 UTC schedule after the backup's full late-start/runtime window and
+requires the newest complete PostgreSQL set to be from the current UTC day. It restores
+into disposable local scratch using the custom archive's database creation
+metadata, preserving encoding, collation, character classification, and owner;
+the bootstrap cluster's C locale does not replace the source locale. It
+checks resource identities, encrypted-resource key references, and index validity.
+It mounts only the backup claim read-only, injects no production credentials or
+live Kubernetes Secrets, and has a 30-minute deadline. The backup itself contains
+sensitive material. Restore processes discard the original container log handles
+before archive processing; exit status reports completion, while stage and
+database diagnostics stay in disposable scratch. The direct entry point and
+private PID namespace must not acquire a console-bearing wrapper or peer that
+archive-triggered programs could reach through `/proc`.
+A Unix-only PostgreSQL listener does not block outbound
+traffic or other processes, and the current Flannel deployment does not enforce
+the declared NetworkPolicies; see [[runbooks/runtime-isolation]]. **Activation
+requires a reviewed, enforced no-network boundary for all restore processes and
+children, with negative tests under the exact runtime profile before real backup
+material is loaded.** The application README defines that gate; manifest checks
+prove declarations only. Scheduled live success and production application
+recovery remain additional acceptance gates; Redis and Enterprise package-store
+recovery are outside this PostgreSQL drill.
 Grafana's shared backup-staleness rule includes this CronJob alongside the four
-media backup jobs: warn after 30 hours without success, including an established
-job that has never succeeded. The legacy rule UID is preserved during expansion.
+media backup jobs and the isolated PostgreSQL restore drill: warn after 30 hours
+without success, including an established job that has never succeeded. The legacy rule UID is preserved during expansion.
 
 Multica uses the standard `nfs-default` class for its dedicated pgvector
 PostgreSQL data and backend uploads. Treat those claims as a matched recovery
@@ -357,3 +381,12 @@ identities, and validates configuration before writing its own completion
 marker. Private doctor reports retain latest plus previous. State restoration
 requires the archive and compatible software, not merely a manifest revert.
 See the OpenClaw README; gateway readiness is still a live acceptance gate.
+
+The inactive Octelium restore candidate places its kubelet termination message
+under the image's root-only `/root` directory and refuses backup reads if that
+parent is searchable or the message writable by the restore UID. The root
+filesystem is read-only and all capabilities remain dropped. Kubernetes mounts
+termination messages writable even with a read-only root filesystem; changing
+the message filename alone does not close that output channel. Synthetic Talos
+activation proof must verify the inaccessible parent and an empty terminated
+message under the exact published image. See the [kubelet mount implementation](https://github.com/kubernetes/kubernetes/blob/v1.34.1/pkg/kubelet/kuberuntime/kuberuntime_container.go#L454-L483).
