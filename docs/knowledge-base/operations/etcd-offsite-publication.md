@@ -25,6 +25,11 @@ by snapshot SHA. Freshness stays bound to the exact published manifest
 `created_at`, including when a newer local capture has identical snapshot bytes.
 Exact-version retrieval must succeed before offsite status can become fresh.
 The scheduler never changes local backup cadence or deletes offsite copies.
+Its committed 4 GiB attempt budget and 8 GiB filesystem reserve include partial
+downloads and preflight the known next copy/retrieval bytes. Capacity blocks
+preserve prior verified state and require operator capacity maintenance, so
+retained offsite attempts cannot grow without a policy limit on the Mac's
+shared backup filesystem.
 Its [script](../../../scripts/etcd-offsite-schedule.py) and
 [policy](../../../scripts/config/etcd-offsite-schedule.json) are synthetic-tested;
 installation and real recurring execution remain unverified. Expired existing

@@ -7,6 +7,14 @@ attempts publication hourly at minute 27 and on login/load. It considers a
 verified offsite source stale at 36 hours. This code has synthetic validation;
 it has not been installed or exercised against AWS as a scheduled service.
 
+| Capacity policy | Value |
+| --- | --- |
+| Maximum retained attempt bytes | 4 GiB |
+| Minimum filesystem free space after the next copies | 8 GiB |
+
+These fixed repository values protect space for local snapshots on a shared
+filesystem. They are not command-line or environment overrides.
+
 ## Publication And Failure Semantics
 
 The scheduler reads the local schedule's confirmed newest snapshot under its
@@ -37,6 +45,22 @@ The scheduler does not replay all historical snapshots or automatically delete
 local attempts or S3 objects. Allow disk space for retained working copies,
 retrieval copies and failed partial downloads; the bucket's existing lifecycle
 policy remains separately owned.
+
+Before making a working copy, the scheduler budgets both that pair and its
+future retrieval. Before each AWS attempt, and again immediately before its
+retrieval, it budgets the retained pair's exact size plus 64 KiB for metadata.
+Accounting includes retained publications, successful and partial downloads,
+and directory allocation; compressed/sparse files count at least their logical
+size. Exceeding the attempt budget or filesystem reserve returns
+`action: failed` with `last_attempt.failure: capacity-blocked` and the measured
+capacity values. It does not start a new copy or AWS attempt when that preflight
+fails, and retains the prior verified source and local success receipt.
+
+A capacity block requires operator maintenance of the retained private data
+and filesystem. Review those recovery copies before arranging archival or
+changing the committed budget. No automatic pruning or deletion is provided.
+The reserve is checked at allocation boundaries, not enforced as a filesystem
+quota; other applications can still consume disk space between checks.
 
 ## Install A Reviewed Main Revision
 
@@ -129,6 +153,7 @@ python3 scripts/ci/etcd-offsite-schedule-check.py
 Fixtures cover lost upload responses, exact-version retrieval failures,
 interrupted preparation/success records, source deletion before resume, SHA
 and source-age deduplication, source/offsite lock separation, session failures,
-source-release validation and service rollback. All AWS/launchd calls use mocks
+capacity/reserve failures, retained partial-download growth, source-release
+validation and service rollback. All AWS/launchd calls use mocks
 and synthetic snapshots. These tests do not prove real recurring publication,
 SSO renewal, remote alerts, control-plane restoration, or PVC recovery.

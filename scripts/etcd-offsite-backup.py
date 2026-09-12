@@ -170,7 +170,7 @@ def load(directory, target, require_files=True):
     return directory, value
 
 
-def retrieve(publication, destination_path, aws):
+def retrieve(publication, destination_path, aws, before_download=None):
     publication, value = load(publication, aws.target, require_files=False)
     if value.get("status") not in ("published", "verified"):
         raise ValueError("publication is incomplete; resume it before retrieval")
@@ -180,6 +180,8 @@ def retrieve(publication, destination_path, aws):
     if output == publication or publication in output.parents:
         raise ValueError("retrieval output must be outside the publication copy")
     aws.check()
+    if before_download is not None:
+        before_download()
     pending = Path(tempfile.mkdtemp(prefix=".partial-retrieval-", dir=output))
     # Deliberately retain failed/partial downloads; never remove recovery data.
     for name in FILES:
@@ -236,7 +238,7 @@ def prepare(source, destination_path, target):
     return publication
 
 
-def finish(publication, destination_path, aws, source=None):
+def finish(publication, destination_path, aws, source=None, before_download=None):
     """Resume a retained pair; optionally also guard the manual caller's source."""
     publication, value = load(publication, aws.target)
     original = backup.verify(publication)
@@ -279,7 +281,7 @@ def finish(publication, destination_path, aws, source=None):
     load(publication, aws.target)
     value["status"] = "published"
     save(publication / RECEIPT, value)
-    downloaded = retrieve(publication, output, aws)
+    downloaded = retrieve(publication, output, aws, before_download=before_download)
     value["status"] = "verified"
     value["verified_at"] = datetime.now(timezone.utc).isoformat()
     value["retrieval_directory"] = str(downloaded)

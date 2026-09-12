@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 import plistlib
 import re
+import shutil
+import stat
 import subprocess
 import sys
 
@@ -27,6 +29,7 @@ def module(name, filename):
 local = module("local_schedule", "talos-etcd-schedule.py")
 offsite = module("offsite_backup", "etcd-offsite-backup.py")
 STATE = "attempt-state.json"
+WRITE_HEADROOM_BYTES = 65536
 POLICY = "scripts/config/etcd-offsite-schedule.json"
 DESTINATION = "IaC/config/etcd-backup-storage.json"
 SOURCES = ("scripts/etcd-offsite-schedule.py", "scripts/etcd-offsite-backup.py",
@@ -36,12 +39,42 @@ FAILURES = (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError
 
 def read_policy(path):
     value = json.loads(path.read_text())
-    if (set(value) != {"format", "launchd_label", "minute", "stale_after_hours"}
+    if (set(value) != {"format", "launchd_label", "minute", "stale_after_hours",
+                           "attempt_byte_budget", "minimum_free_bytes"}
             or value["format"] != 1 or value["launchd_label"] != "org.homelab.etcd-offsite"
             or type(value["minute"]) is not int or not 0 <= value["minute"] < 60
-            or type(value["stale_after_hours"]) is not int or value["stale_after_hours"] < 1):
+            or any(type(value[key]) is not int or value[key] < 1
+                   for key in ("stale_after_hours", "attempt_byte_budget", "minimum_free_bytes"))):
         raise ValueError("invalid committed offsite schedule policy")
     return value
+
+
+class CapacityBlocked(ValueError):
+    def __init__(self, capacity):
+        super().__init__("offsite attempt exceeds its byte budget or filesystem reserve")
+        self.capacity = capacity
+
+
+def require_capacity(runtime, policy, copy_bytes):
+    """Account for retained and partial data before allocating another pair."""
+    attempts = offsite.backup.private_directory(runtime / "attempts")
+    used = 0
+    for path in attempts.rglob("*"):
+        info = path.lstat()
+        if not (stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode)):
+            raise ValueError("unexpected entry in retained offsite attempts")
+        # Count logical size as well as allocation, including partial files and
+        # directory metadata. Sparse/compressed bytes do not evade the budget.
+        used += max(info.st_size, info.st_blocks * 512)
+    needed = copy_bytes + WRITE_HEADROOM_BYTES
+    capacity = {"attempt_bytes": used, "additional_bytes": needed,
+                "attempt_byte_budget": policy["attempt_byte_budget"],
+                "filesystem_free_bytes": shutil.disk_usage(attempts).free,
+                "minimum_free_bytes": policy["minimum_free_bytes"]}
+    if (used + needed > policy["attempt_byte_budget"]
+            or capacity["filesystem_free_bytes"] - needed < policy["minimum_free_bytes"]):
+        raise CapacityBlocked(capacity)
+    return capacity
 
 
 def read_state(runtime):
@@ -118,7 +151,7 @@ def status(runtime, policy, target, now):
     return result
 
 
-def select_publication(runtime, settings, target, now):
+def select_publication(runtime, settings, target, now, offsite_policy):
     _, policy, directory = local.installed(Path(settings["local_runtime_directory"]))
     # Only verification and a private copy share the source writer's lock.
     # Offsite AWS operations use the independent retained pair after release.
@@ -133,6 +166,8 @@ def select_publication(runtime, settings, target, now):
         offsite.backup.sync_directory(attempt.parent)
         publication = publication_for(runtime, sha, target)
         if publication is None:
+            pair_bytes = sum((Path(source["directory"]) / name).stat().st_size for name in offsite.FILES)
+            require_capacity(runtime, offsite_policy, 2 * pair_bytes)
             publication = offsite.prepare(Path(source["directory"]), attempt, target)
         return sha, publication
 
@@ -151,7 +186,7 @@ def run_schedule(runtime, settings, policy, aws, now=None, wait_seconds=0):
                 if publication is None:
                     raise ValueError("pending attempt is missing its retained publication")
             else:
-                sha, publication = select_publication(runtime, settings, aws.target, now)
+                sha, publication = select_publication(runtime, settings, aws.target, now, policy)
                 state["pending_sha"] = sha
             attempt = {"started_at": now.isoformat(), "source_sha": sha, "outcome": "running"}
             state["last_attempt"] = attempt
@@ -162,7 +197,12 @@ def run_schedule(runtime, settings, policy, aws, now=None, wait_seconds=0):
             _, value = offsite.load(publication, aws.target)
             action = "skipped" if value.get("status") == "verified" else "verified"
             if action == "verified":
-                offsite.finish(publication, publication.parent, aws)
+                pair_bytes = sum(item["digest"]["bytes"] for item in value["objects"].values())
+                require_capacity(runtime, policy, pair_bytes)
+                # Recheck after potentially slow uploads as well: other writers
+                # may have consumed the reserve before a retrieval starts.
+                offsite.finish(publication, publication.parent, aws,
+                               before_download=lambda: require_capacity(runtime, policy, pair_bytes))
             record = verified_record(publication, aws.target, now)
             previous = state["last_verified_sha"]
             if previous:
@@ -176,10 +216,13 @@ def run_schedule(runtime, settings, policy, aws, now=None, wait_seconds=0):
             local.write_json(runtime / STATE, state)
         except FAILURES as error:
             # Fixed classifications only: never emit AWS output or arguments.
-            failure = "timeout" if isinstance(error, subprocess.TimeoutExpired) else "operation-failed"
+            failure = ("capacity-blocked" if isinstance(error, CapacityBlocked) else
+                       "timeout" if isinstance(error, subprocess.TimeoutExpired) else "operation-failed")
             state["last_attempt"] = {"started_at": now.isoformat(), "outcome": "failed",
                                      "operation": operation, "failure": failure,
                                      "completed_at": datetime.now(timezone.utc).isoformat()}
+            if isinstance(error, CapacityBlocked):
+                state["last_attempt"]["capacity"] = error.capacity
             if state["pending_sha"]:
                 local.write_json(runtime / "attempts" / state["pending_sha"] / "attempt.json",
                                  state["last_attempt"])

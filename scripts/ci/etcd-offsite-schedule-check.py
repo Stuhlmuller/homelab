@@ -42,13 +42,18 @@ class ScheduleTests(fixture.PublicationFixture):
         self.snapshot = self.source / fixture.offsite.FILES[0]
         self.confirm(self.source, self.created)
         self.policy = {"format": 1, "launchd_label": "org.homelab.etcd-offsite",
-                       "minute": 27, "stale_after_hours": 36}
+                       "minute": 27, "stale_after_hours": 36,
+                       "attempt_byte_budget": 4 * 1024 ** 3, "minimum_free_bytes": 8 * 1024 ** 3}
         self.settings = {"runtime_directory": str(self.runtime),
                          "local_runtime_directory": str(self.root / "local-runtime")}
         context = patch.object(scheduler.local, "installed", return_value=(
             {}, {"stale_after_hours": 36}, self.scheduled))
         context.start()
         self.addCleanup(context.stop)
+        self.free_bytes = 64 * 1024 ** 3
+        disk = patch.object(fixture.offsite.shutil, "disk_usage", side_effect=lambda _: SimpleNamespace(free=self.free_bytes))
+        disk.start()
+        self.addCleanup(disk.stop)
 
     def confirm(self, path, created):
         manifest = path / "manifest.json"
@@ -84,7 +89,7 @@ class ScheduleTests(fixture.PublicationFixture):
         shutil.rmtree(self.source)  # Simulate later independent local retention.
         result = self.run_attempt()
         self.assertEqual(result["action"], "verified")
-        self.assertTrue(keys <= set(self.remote))
+        self.assertLessEqual(keys, set(self.remote))
         self.assertEqual(sum(op == "put-object" for op, _ in self.calls), 2)
 
     def test_partial_retrieval_does_not_claim_success_and_resumes(self):
@@ -231,6 +236,94 @@ class ScheduleTests(fixture.PublicationFixture):
             result = self.run_attempt(self.now + timedelta(hours=24))
         self.assertEqual(result["action"], "verified")
         self.assertEqual(result["source_created_at"], self.created.isoformat())
+
+    def test_reserve_blocks_initial_copy_and_retry_before_network(self):
+        pair_bytes = sum((self.source / name).stat().st_size for name in fixture.offsite.FILES)
+        original = {path.name: path.read_bytes() for path in self.source.iterdir()}
+        receipt = (self.scheduled / scheduler.local.SUCCESS).read_bytes()
+        self.free_bytes = self.policy["minimum_free_bytes"] + 2 * pair_bytes + 65536 - 1
+        result = self.run_attempt()
+        self.assertEqual(result["last_attempt"]["failure"], "capacity-blocked")
+        self.assertEqual(self.calls, [])
+        self.assertEqual(list(self.attempts.glob("*/publication-*")), [])
+        self.free_bytes = 64 * 1024 ** 3
+        self.lose_put_response = True
+        self.run_attempt()
+        calls = list(self.calls)
+        self.free_bytes = self.policy["minimum_free_bytes"] + pair_bytes + 65536 - 1
+        result = self.run_attempt()
+        self.assertEqual(result["last_attempt"]["failure"], "capacity-blocked")
+        self.assertEqual(self.calls, calls)
+        self.assertEqual({path.name: path.read_bytes() for path in self.source.iterdir()}, original)
+        self.assertEqual((self.scheduled / scheduler.local.SUCCESS).read_bytes(), receipt)
+
+    def test_repeated_partial_downloads_stop_at_attempt_budget(self):
+        def fail_after_download():
+            raise ValueError("simulated retrieval interruption")
+        self.after_get = fail_after_download
+        self.assertEqual(self.run_attempt()["action"], "failed")
+        used = sum(max(path.stat().st_size, path.stat().st_blocks * 512) for path in self.attempts.rglob("*"))
+        pair_bytes = sum((self.source / name).stat().st_size for name in fixture.offsite.FILES)
+        self.policy["attempt_byte_budget"] = used + pair_bytes + 65536 + 8192
+        for _ in range(20):
+            calls = list(self.calls)
+            result = self.run_attempt()
+            if result["last_attempt"]["failure"] == "capacity-blocked":
+                self.assertEqual(self.calls, calls)
+                break
+        else:
+            self.fail("repeated retained partial downloads never reached the capacity guard")
+        self.assertEqual(sum(op == "put-object" for op, _ in self.calls), 2)
+        self.assertEqual(result["status"], "missing")
+        self.assertEqual(fixture.offsite.backup.verify(self.source)["created_at"], self.created.isoformat())
+
+    def test_reserve_is_rechecked_after_upload_before_retrieval(self):
+        real_check = self.aws.check
+        def check():
+            result = real_check()
+            self.free_bytes = self.policy["minimum_free_bytes"]
+            return result
+        with patch.object(self.aws, "check", side_effect=check):
+            result = self.run_attempt()
+        self.assertEqual(result["last_attempt"]["failure"], "capacity-blocked")
+        self.assertEqual(sum(op == "put-object" for op, _ in self.calls), 2)
+        self.assertFalse(any(op == "get-object" for op, _ in self.calls))
+
+    def test_reserve_is_rechecked_after_retrieval_identity_check(self):
+        real_check = self.aws.check
+        checks = []
+        def check():
+            result = real_check()
+            checks.append(True)
+            if len(checks) == 2:
+                self.free_bytes = 0
+            return result
+        with patch.object(self.aws, "check", side_effect=check):
+            result = self.run_attempt()
+        self.assertEqual(result["action"], "failed")
+        self.assertEqual(result["last_attempt"]["failure"], "capacity-blocked")
+        self.assertFalse(any(op == "get-object" for op, _ in self.calls))
+        self.assertEqual(list(self.attempts.glob("*/.partial-retrieval-*")), [])
+
+    def test_capacity_failure_preserves_previous_verified_source(self):
+        self.run_attempt()
+        newer = self.scheduled / "etcd-20260913T090000Z-newer"
+        shutil.copytree(self.source, newer)
+        data = b"new synthetic snapshot".ljust(4096, b"\0")
+        import hashlib
+        (newer / "etcd.snapshot").write_bytes(data + hashlib.sha256(data).digest())
+        value = json.loads((newer / "manifest.json").read_text())
+        value["integrity"] = fixture.offsite.backup.snapshot_digest(newer / "etcd.snapshot")
+        fixture.offsite.save(newer / "manifest.json", value)
+        self.confirm(newer, self.now + timedelta(hours=21))
+        calls = list(self.calls)
+        self.free_bytes = 0
+        result = self.run_attempt(self.now + timedelta(hours=24))
+        self.assertEqual(result["action"], "failed")
+        self.assertEqual(result["last_attempt"]["failure"], "capacity-blocked")
+        self.assertEqual(result["source_created_at"], self.created.isoformat())
+        self.assertEqual(result["age_hours"], 27)
+        self.assertEqual(self.calls, calls)
 
 
 class InstallationTests(unittest.TestCase):
