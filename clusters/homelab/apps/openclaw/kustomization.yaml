@@ -2,6 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: ai
 resources:
+  - runtime-storage.yaml
+  - runtime-backup.yaml
   - externalsecret.yaml
   - networkpolicy.yaml
   - virtualservice.yaml
@@ -18,5 +20,6 @@ configMapGenerator:
       - assistant/bootstrap.py
       - assistant/reconcile.py
       - assistant/install-codex.py
+      - assistant/runtime-storage.py
 generatorOptions:
   disableNameSuffixHash: true

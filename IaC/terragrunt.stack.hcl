@@ -2740,7 +2740,7 @@ unit "argocd_apps_platform_dns" {
           },
           {
             name  = "prune"
-            value = "disabled because this app adopts the bootstrap CoreDNS ConfigMap"
+            value = "disabled because this app adopts all six bootstrap CoreDNS resources"
           }
         ]
       }
@@ -3465,5 +3465,11 @@ unit "operator_state_bucket_encryption" {
 unit "operator_legacy_kms_retirement" {
   source                  = "./.catalog/units/operator/legacy-kms-retirement"
   path                    = "operator/legacy-kms-retirement"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_etcd_backup_storage" {
+  source                  = "./.catalog/units/operator/etcd-backup-storage"
+  path                    = "operator/etcd-backup-storage"
   no_dot_terragrunt_stack = true
 }
