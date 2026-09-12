@@ -8,7 +8,9 @@ reconcile that native Service.
 `scripts/octelium-nofx-reconcile.py` is the fixed operator path for this change.
 It reads only NOFX by default, using an existing operator Octelium session.
 The Nix shell supplies the pinned Cloudflare client. Install Octelium CLI 0.35.0
-from the fixed release archives with committed SHA-256 checksums:
+from the fixed release archives with committed SHA-256 checksums. The installer
+uses `sha256sum` when available (including the Linux Nix shell), with `shasum`
+as the Darwin fallback; checksum failure prevents installation.
 
 ```sh
 bash scripts/install-octeliumctl.sh "$HOME/.local/bin"
@@ -18,8 +20,17 @@ Keep that directory on your normal PATH. Reconciliation rejects a missing client
 a different release, or a different source commit before opening the transport.
 
 ```sh
-nix develop --command python3 scripts/octelium-nofx-reconcile.py
+nix develop --command python3 -I scripts/octelium-nofx-reconcile.py
 ```
+
+Run previews from an already trusted checkout and shell. Isolated Python does
+not sandbox Nix evaluation; use the pre-Nix caller gate below for execution.
+
+Use `python3 -I` for both preview and execution. The entrypoint refuses ordinary
+Python invocation before importing other modules. Isolated mode excludes the
+script directory, current directory, user packages, and `PYTHONPATH` from
+module lookup, so an untracked `scripts/json.py` cannot execute before the
+clean-checkout guard. The guard still rejects untracked files during execution.
 
 The command starts a temporary unprivileged TCP carrier and a loopback CONNECT
 proxy restricted to the canonical API hostname. Only its child native-client
@@ -50,12 +61,25 @@ After this path is reviewed and merged, check out the exact reviewed main
 commit, pass the repository validation gate, and execute:
 
 ```sh
-nix develop --command python3 scripts/octelium-nofx-reconcile.py \
-  --execute --expected-sha FULL_REVIEWED_MAIN_SHA
+(
+  set -euo pipefail
+  reviewed_main_sha=FULL_REVIEWED_MAIN_SHA
+  checkout_changes="$(git status --porcelain=v1 \
+    --untracked-files=all --ignore-submodules=none)"
+  checkout_head="$(git rev-parse --verify HEAD)"
+  remote_head="$(git ls-remote \
+    https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+  test -z "$checkout_changes"
+  test "$checkout_head" = "$reviewed_main_sha"
+  test "$remote_head" = "$reviewed_main_sha"
+  nix develop --command python3 -I scripts/octelium-nofx-reconcile.py \
+    --execute --expected-sha "$reviewed_main_sha"
+)
 ```
 
-The command requires local HEAD and remote main to equal that commit and
-rejects any staged, unstaged, or untracked checkout changes before reading the
+The caller checks the clean, exact local/remote commit before entering Nix,
+so an unreviewed flake or shell hook cannot run ahead of that check. The Python
+helper then repeats the commit and cleanliness checks before reading the
 catalog or opening transport. Keep local scratch files outside the checkout.
 This includes dependency changes in `flake.nix`/`flake.lock` and untracked
 Python modules. It selects only Service `nofx`
@@ -63,7 +87,13 @@ from the committed catalog and explicitly names `nofx.default` during apply.
 It cannot apply Users, Policies, credentials, or another Service. It applies
 through the native catalog API twice, requires the second run to report no
 changes, and verifies anonymous access is disabled and the human policy is
-attached. Private native output is withheld on failures.
+attached, with `config.http.header.authorizationMode: PASS` retained for NOFX's
+session JWT. Missing or changed authorization passthrough fails verification.
+An authenticated `NotFound` reports an absent Service during preview and
+allows execution to recreate only `nofx.default` from its declaration.
+Authentication, authorization, and transport errors fail before any apply;
+a Service still absent after applying also fails. Private native output is
+withheld on failures.
 
 Then verify unauthenticated NOFX requests are rejected or redirected to login,
 authorized human access works, and the console records the access decision and

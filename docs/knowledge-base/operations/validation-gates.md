@@ -514,11 +514,18 @@ privilege boundary for post-rollout process and functionality checks.
 ## NOFX catalog gate
 
 The fixed NOFX reconciliation command defaults to read-only inspection.
-Execution requires exact local/remote reviewed main and a clean checkout,
-including staged and untracked files, before parsing the catalog or opening
-transport. This guards the Nix dependency files and local Python modules.
+The documented caller verifies exact local/remote reviewed main and a clean
+checkout before Nix evaluates `flake.nix` or `flake.lock`. The helper repeats
+that guard before parsing the catalog or opening transport; it cannot protect
+Nix code that a caller already evaluated. Staged and untracked files also fail
+execution.
 Tests reject wrong resource identities, missing or mismatched pinned CLI builds,
 reported native apply errors, missing convergence, and remaining anonymous
 access. Live acceptance requires an unauthenticated denial,
 authorized human access, and audit correlation after the reviewed apply.
+The operator entrypoint requires `python3 -I` before non-built-in imports.
+A copied-script fixture proves untracked `scripts/json.py` never executes.
+Tests also cover Linux `sha256sum`, Darwin `shasum`, failed-checksum rejection,
+missing-Service recreation without treating auth failures as absence, and
+live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
