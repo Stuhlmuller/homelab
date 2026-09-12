@@ -22,13 +22,28 @@ child waits up to 60 seconds for handoff; an active backup blocks reconfiguratio
 Changing the committed launchd label requires uninstall and a fresh runtime;
 updates reject renames before touching the old service or installed release.
 Pruning starts only after a new verified durable backup and success receipt,
-and all candidates pass verification. Installation/first-run evidence is still
-required. The Mac must be available and its user logged in; offsite storage,
-remote age-alert delivery and an isolated restore drill remain open work.
+and all candidates pass verification. Installation on 2026-09-07 matched the
+merged source and loaded plist; the first automatic `RunAtLoad` snapshot
+completed at `17:17:10 UTC`, passed offline checks and reported `fresh` with
+launchd exit zero. All four manual backups remained unchanged and reverified;
+no copies were pruned. Read-only follow-up on 2026-09-12 found five scheduled
+successes dated September 7–11, with the latest snapshot `fresh` and the agent
+loaded. The longest observed interval was 26 hours 54 minutes; two logged
+failures recovered automatically. Exact causes and wake behavior remain
+unverified; see the schedule runbook for the bounded recurrence evidence.
+The Mac must be available and its user logged in; unattended offsite
+publication, remote age-alert delivery and an isolated control-plane recovery
+drill remain open work.
 
-Live validation on 2026-09-07 UTC saved a private off-node snapshot with Talos
-`v1.11.3`; embedded and full-file checksum checks passed. No restore or offsite
-verification was performed.
+Live validation on 2026-09-07 UTC saved private off-node snapshots with Talos
+`v1.11.3`; embedded and full-file checksum checks passed. The separately
+[[operations/etcd-offline-restore-validation|validated offline restore]]
+preserved one post-upgrade snapshot's revision and MVCC key count. That
+database check did not start a control plane or verify an offsite copy.
+The first scheduled snapshot separately passed
+[[operations/etcd-offsite-publication|manual S3 publication and retrieval]]
+of exact versions with independent checksum checks. That downloaded copy has
+not undergone a database restore.
 
 Render and validate Talos configuration before applying it. Use
 `talosctl validate --mode metal --strict`, authenticated access after bootstrap,
