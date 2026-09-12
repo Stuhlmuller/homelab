@@ -439,6 +439,15 @@ and exact-dispatch guard. Local lifecycle tests are part of the static gate;
 live execution, cleanup, denied identity/method cases, and audit correlation
 remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).
 
+The current workflow has only a positive exact-SHA execution path. Wrong-ref
+dispatch skips before authentication; it cannot prove server-side denial.
+Repository-owned live probes for wrong-workflow/ref assertions, a forbidden
+Cordium method, and deliberate remote-command failure are still missing.
+Add a reviewed bounded acceptance path using real GitHub OIDC contexts;
+local mocked failures and a passing positive run do not close those gates.
+Audit records must be correlated through the existing authenticated console;
+there is no workflow audit-record assertion or export helper.
+
 Cordium work shares a deadline captured before Nix setup and reserves three
 minutes for verified deletion and wrapper cleanup. Startup/check limits are
 five/20 minutes; API calls cannot consume the cleanup reserve. Lifecycle tests

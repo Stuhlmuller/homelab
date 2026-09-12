@@ -96,6 +96,19 @@ remote exit status, cleanup failure, invalid creation names, and retained
 workspace rejection. They do not prove cluster policy enforcement, available
 capacity, remote Nix permissions, or live transport stability.
 
+The current workflow implements the positive exact-SHA gate and verified
+workspace deletion only. A wrong-ref dispatch skips the job before login,
+so it does not prove server-side assertion denial. There is no repository-owned
+live test mode yet for wrong-workflow/ref assertions, a forbidden Cordium
+method, or an intentionally failed remote command. Add a reviewed bounded
+acceptance path using real GitHub OIDC contexts before claiming those checks
+passed. Mocked lifecycle failures are local regression evidence only.
+
+Audit correlation currently requires a read-only inspection in the existing
+authenticated audit console; this workflow does not export or assert audit
+records. Successful CI alone therefore does not complete identity-boundary,
+failure-cleanup, or audit acceptance.
+
 ## Fixed native catalog reconciliation
 
 The operator path reuses the pinned CLI and verified TLS carrier from
