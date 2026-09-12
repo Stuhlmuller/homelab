@@ -1,0 +1,86 @@
+---
+name: Validate synthetic restore on Talos
+# checkov:skip=CKV_GHA_7: expected_sha pins current reviewed main; image, placement, fixture and commands are committed contracts.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit reviewed for synthetic runtime validation
+        required: true
+        type: string
+run-name: Synthetic Talos restore @ ${{ inputs.expected_sha }}
+permissions: {}
+concurrency:
+  group: restore-talos-synthetic
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Verify dispatch commit
+        env:
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require committed publication pin before credentialed steps
+        run: python3 scripts/ci/restore-image-anonymous-pull.py --check-contract
+      - name: Install Nix
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Static and policy gates
+        run: |
+          nix develop --command bash scripts/ci/static-checks.sh
+          nix develop --command bash scripts/ci/conftest-policies.sh
+      - name: Verify source, public publication metadata, anonymous bytes and fixtures
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          nix develop --command nix shell --inputs-from . nixpkgs#skopeo --command
+          python3 scripts/ci/restore-talos-synthetic.py
+          --expected-sha "${EXPECTED_SHA}"
+  validate:
+    if: github.ref == 'refs/heads/main'
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout reviewed source
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require committed publication pin before credentialed steps
+        run: python3 scripts/ci/restore-image-anonymous-pull.py --check-contract
+      - name: Install Nix
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Recheck prerequisites before Kubernetes credential injection
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          nix develop --command nix shell --inputs-from . nixpkgs#skopeo --command
+          python3 scripts/ci/restore-talos-synthetic.py
+          --expected-sha "${EXPECTED_SHA}"
+      - name: Run owned synthetic Job and verify cleanup
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+        run: >-
+          nix develop --command nix shell --inputs-from . nixpkgs#skopeo --command
+          python3 scripts/ci/restore-talos-synthetic.py
+          --expected-sha "${EXPECTED_SHA}" --run

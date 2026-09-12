@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location("publish", ROOT / "scripts/ci/restore-image-publish.py")
 PUBLISH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(PUBLISH)
+NATIVE_SPEC = importlib.util.spec_from_file_location("native_fixture", ROOT / "scripts/ci/restore-talos-native-check.py")
+NATIVE = importlib.util.module_from_spec(NATIVE_SPEC)
+NATIVE_SPEC.loader.exec_module(NATIVE)
 
 
 def main():
@@ -20,6 +23,7 @@ def main():
             # Cross a whole-second creation timestamp boundary between independent builds.
             time.sleep(2)
         with boundary.verified_image() as image, tempfile.TemporaryDirectory(prefix="restore-export-") as directory:
+            NATIVE.run_fixture(image.image_id, boundary)
             layout = Path(directory) / "image"
             PUBLISH.run("skopeo", "copy", "--format", "v2s2", "--dest-compress",
                         f"docker-daemon:{image.image_id}", f"dir:{layout}")

@@ -23,7 +23,10 @@
         let
           pkgs = import nixpkgs { inherit system; };
         in
-        { restore-egress-tools = import ./images/postgres-restore-egress { inherit pkgs; }; }
+        {
+          restore-egress-tools = import ./images/postgres-restore-egress { inherit pkgs; };
+          restore-talos-fault = import ./scripts/ci/restore-talos { inherit pkgs; };
+        }
       );
       devShells = forEachSystem (
         system:

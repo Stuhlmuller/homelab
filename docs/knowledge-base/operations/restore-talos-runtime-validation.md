@@ -1,7 +1,7 @@
 # Talos Restore Runtime Validation
 
 Related: [[restore-egress-boundary]], [[validation-gates]],
-[[../runbooks/runtime-isolation]].
+[[../runbooks/runtime-isolation]], [[restore-talos-synthetic-gate]].
 
 ## Read-only baseline: 2026-09-06 UTC
 
@@ -111,3 +111,8 @@ and process profile on its observed node; retain exact source/image/runtime
 identity and aggregate results. Complete that proof before the later reviewed
 GitOps activation. Failure keeps the real drill inactive; never remove the
 launcher or relax the runtime profile to obtain a passing result.
+
+[[restore-talos-synthetic-gate]] documents the repository-owned protected
+workflow, fixed worker/resource profile, immutable image-pin prerequisite,
+admission checks and exact-UID cleanup. Its publication pin is intentionally
+absent; implementing the workflow does not establish this runtime proof.
