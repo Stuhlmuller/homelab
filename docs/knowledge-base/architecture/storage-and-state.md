@@ -122,6 +122,11 @@ QNAP `/media` export for downloads, movies, and TV library data. Read-only
 
 ## Stateful Workload Gate
 
+The existing QNAP is also an unproven iSCSI block-storage candidate for
+monitoring. See [[operations/qnap-monitoring-block-storage-research-2026-09-12]]
+for pinned driver compatibility, missing Talos/NAS prerequisites, and retained
+restore/fencing gates. No storage class or active workload has changed.
+
 Stateful workloads can be registered before they are considered operationally
 ready, but they must not be treated as production-ready until:
 
