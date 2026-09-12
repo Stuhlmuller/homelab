@@ -446,6 +446,14 @@ with status trailers in headers. Live browser and native TCP-carrier probes
 passed after PR 957; malformed bodies and spoofed status headers still fail.
 [Protocol reference](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md).
 
+Cordium native CI installation tests verify read-only previews, fixed
+three-resource selection, policy-first ordering, exact-main guards, and
+repeated-apply convergence. Missing resources are distinguished from failed
+native reads; wrong identities, duplicate definitions, reported apply errors,
+and post-apply specification drift fail closed. Use the bounded
+[CI catalog command](../../cordium-ci.md#fixed-native-catalog-reconciliation)
+for rollout; broad catalog application is not required.
+
 Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
 format as well as raw gRPC stderr errors. Already-absent resources are skipped;
 other native failures remain errors.
@@ -488,7 +496,8 @@ The fixed NOFX reconciliation command defaults to read-only inspection and
 requires exact local/remote reviewed main and a clean checkout, including staged
 and untracked files, before parsing the catalog or opening transport. This also
 guards the Nix dependency files and local Python modules. Tests reject wrong
-resource identities, missing or mismatched pinned CLI builds, reported native apply errors, missing convergence, and
-remaining anonymous access. Live acceptance requires an unauthenticated denial,
+resource identities, missing or mismatched pinned CLI builds, reported native
+apply errors, missing convergence, and remaining anonymous access. Live
+acceptance requires an unauthenticated denial,
 authorized human access, and audit correlation after the reviewed apply.
 See [the operator path](../../octelium-nofx-reconciliation.md).

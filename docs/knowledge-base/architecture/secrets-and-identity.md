@@ -313,7 +313,15 @@ owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
 separate workload identity with bounded sessions and workspace lifecycle/exec
 permissions; bootstrap management credentials are not shared. A catch-all
 post-authentication denial and priority -4 method denial close upstream
-default allowances. See [the contract and pending live gates](../../cordium-ci.md).
+default allowances. The fixed `scripts/cordium-ci-reconcile.py` path previews
+only these three resources by default. Execution requires clean, exact reviewed
+main, applies Policy before IdentityProvider and User, proves repeated-apply
+convergence, and verifies the declared specifications. It never applies the
+full catalog or creates credentials. A 2026-09-12 authenticated read-only
+preview found all three resources absent; native installation and live OIDC
+acceptance remain pending. See
+[the contract and pending live gates](../../cordium-ci.md).
+
 ## NOFX native reconciliation boundary
 
 NOFX anonymous-access removal is applied by the fixed repository operator
