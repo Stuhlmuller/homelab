@@ -215,17 +215,24 @@ observations below retain their original dates.
   configuration that enables dependency graph and Dependabot alerts for
   `Stuhlmuller/homelab` while leaving Dependabot security updates disabled.
 
-- **Status:** internal workloads and GitOps fixed; public access pending
+- **Status:** transport and Octelium login verified; application setup pending
 - **Area:** Dispatcharr / NFS ownership and access
 - **Evidence:** The UID/GID correction produced a healthy three-container web
   Pod and ready PostgreSQL StatefulSet on 2026-08-27. Declaring the API-normalized
   PVC template type returned Argo CD to `Synced/Healthy`. An in-Pod HTTP check
-  returns `200` and the Service endpoint is ready, while the Octelium-protected
-  hostname still returns HTTP `503`.
-- **Risk:** The public UI remains unavailable despite healthy internal
-  workloads and converged GitOps state.
-- **Next step:** diagnose the repo-owned Octelium and Istio route, then verify
-  the protected hostname no longer returns `503`.
+  returned `200` while the protected hostname returned `503`. On September 6,
+  Entra login reached Dispatcharr `0.29.0`; first-run setup rejected the
+  forwarded public IP. A loopback-only authenticated port-forward allowed the
+  read-only setup check. PostgreSQL has no accounts/admins, channels or streams
+  and no configured provider beyond the default custom M3U seed. The user
+  confirmed the app was never configured. No account was created during these
+  checks.
+- **Risk:** The service is reachable but first-admin/provider setup and
+  functional use remain incomplete.
+- **Next step:** Complete human-owned first-admin setup through the documented
+  loopback tunnel, then verify protected account login and
+  provider/EPG/channel/playback behavior. Preserve both claims and the upstream
+  setup-IP restriction. See [[workloads/application-notes#Dispatcharr]].
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity
@@ -328,6 +335,38 @@ observations below retain their original dates.
 - **Next step:** Follow the outbound Tunnel replacement finding above. This
   historical WAN success no longer proves current public availability; the
   origin-port apply workflow is retired.
+
+- **Status:** fix staged; rollout verification pending
+- **Area:** observability / retained CronJob failure alerts
+- **Evidence:** The September 2026 audit found the default `KubeJobFailed`
+  expression still alerting for retained backup failures after later successful
+  runs. The repository replacement in
+  `clusters/homelab/apps/prometheus/job-prometheusrules.yaml` requires an actual
+  observed failure before a newer success of its unique CronJob controller.
+  Namespace and creation checks prevent unrelated owners or recreated names
+  from establishing recovery; missing metrics leave failures eligible.
+- **Risk:** Observation history is limited to the configured 15-day retention.
+  Missing or coarse history can preserve an alert until another successful run.
+  The dedicated five-minute group bounds scan frequency; the 15-minute firing
+  hold begins after detection at a group evaluation.
+  Suspension alone does not establish recovery, including the retired UPnP path.
+- **Bounded validation:** On September 7, the refreshed branch passed 39
+  promtool cases and 18,872 rendered policy checks. Local chart comparison
+  preserved all other fields across 79 objects, including the current memory
+  requests and 15-day retention. Read-only Prometheus queries used a five-second
+  server timeout: owner selection passed in 0.04 seconds; the first history
+  query returned HTTP 422 without a retained error body, so its cause is
+  unclassified. One repeat at the same evaluation time passed in 2.78 seconds.
+  The final expression, with recording rules inlined and never installed,
+  passed in 3.93 seconds and retained three UPnP failures. These bounded reads
+  preceded the final namespace/Job-name aggregation fix, whose duplicate and
+  target-turnover cases first failed against the old expression and then
+  passed. The history query and recovery joins are unchanged. These reads do
+  not establish sustained rule-evaluation cost; verify that after rollout.
+- **Next step:** After Argo CD reconciliation, verify one healthy replacement
+  rule, recovered backup alerts cleared, and later or unrecovered failures still
+  present. Keep retained Jobs and independent backup-staleness alerts. See
+  [[audit-2026-09-04]] and [[validation-gates]].
 
 - **Status:** fixed; direct availability alert retained
 - **Area:** observability / kube-state-metrics

@@ -71,3 +71,23 @@ with tempfile.TemporaryDirectory() as tmp:
         assert not (root / 'rejected/runtime').exists()
         assert (corrupt / 'state/openclaw.sqlite').read_bytes() == b'broken database'
 print('OpenClaw runtime migration and online WAL backup checks passed')
+
+with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    canonical = root / 'canonical'
+    wrong = root / 'wrong'
+    for relative in ('state/openclaw.sqlite', 'agents/main/agent/openclaw-agent.sqlite'):
+        target = canonical / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('canonical fixture')
+        target = wrong / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text('different mount fixture')
+    module.verify_mounts(canonical, canonical)
+    for mounted in (wrong, root / 'empty'):
+        try:
+            module.verify_mounts(canonical, mounted)
+            raise AssertionError('incorrect runtime mounts accepted')
+        except RuntimeError:
+            pass
+print('OpenClaw runtime mount guard: canonical identity required; empty and different mounts rejected')

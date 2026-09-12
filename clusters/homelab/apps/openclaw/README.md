@@ -134,7 +134,7 @@ See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 If heartbeat reports `agent-runner-failure` and gateway logs say the Astra
 auth profile is temporarily unavailable, inspect `openclaw models status
 --json`. A saved subscription block can outlive a provider usage reset:
-the native Codex path in 2026.9.1 may reject auth before reaching OpenClaw's
+the native Codex path in 2026.9.1 and 2026.9.2 may reject auth before reaching OpenClaw's
 normal background usage recheck. A valid OAuth expiry alone does not clear it.
 
 Run the repository helper from this checkout:
@@ -154,7 +154,7 @@ the transaction and verifies unchanged credentials and block generation;
 provider denial, active authentication failures, and probe throttling retain
 the block. It never spends a usage-reset credit, replaces credentials, edits
 SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
-profile and the reviewed 2026.9.1 runtime; re-review its internal imports before
+profile and the reviewed 2026.9.1 or 2026.9.2 runtime; re-review its internal imports before
 an upgrade. If it fails, inspect provider availability and auth diagnostics;
 do not erase the block or repeatedly force probes.
 
@@ -587,6 +587,13 @@ copied into SSM. If the PVC is replaced, repeat the interactive Codex login.
 
 ## Durable runtime state and recovery
 
+Heartbeat uses the same bounded 600-second budget as the agent. The scheduler's
+heartbeat watchdog includes waiting for existing replies/background jobs and
+its 60-second idle retry grace, not only model execution. A 120-second budget
+produced a failed receipt after about 80 seconds of scheduling delay plus a
+43-second successful agent turn. Keep this queue-inclusive budget when tuning
+heartbeats; do not mistake a completed native turn for a successful cron receipt.
+
 OpenClaw `2026.9.2` moves native thread preparation inside its guarded resume
 recovery. In `2026.9.1`, a `thread/read` failure could escape before that recovery
 and leave every heartbeat retry referring to the same unloaded thread. The
@@ -601,6 +608,21 @@ storage, survives Pod replacement, and is lost if that node's disk is wiped.
 The hostPath capacity is a scheduling declaration, not a filesystem quota.
 Monitor node free space. The Deployment is pinned to that node with one replica
 and `Recreate`; automatic failover to another node is intentionally unavailable.
+
+Talos runs kubelet in a container. An arbitrary host path used with `subPath`
+can resolve inside kubelet's overlay instead of the CRI host filesystem. The
+application therefore uses direct child PVs for `runtime/state` and
+`runtime/agents/main/agent`; the parent PV remains the migration/backup view.
+These three retained PVs describe the same underlying directory tree, not three
+independent disks. Bootstrap requires identical database device/inode identities
+through parent and child mounts before starting any OpenClaw CLI.
+
+The retained `pre-2026.9.2-runtime` database checkpoint supplements the full
+pre-upgrade archive. The first full archive was produced while the incorrect
+subpath mounts hid the databases; restore this checkpoint together with that
+archive. The checkpoint uses SQLite backup, hash, and integrity verification
+before its completion marker, and is separate from daily snapshot retention.
+See [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/).
 
 The init-only `runtime-storage.py migrate` copies the stopped NAS `state/` and
 `agents/main/agent/` directories into one staging directory, compares every regular file checksum,

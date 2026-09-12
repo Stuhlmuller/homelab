@@ -55,15 +55,30 @@ follow-up requiring its existing authentication contract to be checked.
 
 Dispatcharr runs in upstream modular mode in the `media` namespace and exposes
 `https://dispatcharr.stinkyboi.com` through the Octelium app access plane. Its
-`data` PVC stores file-backed runtime data and operator-configured IPTV sources,
-while database state lives in the dedicated `dispatcharr-postgres` StatefulSet
-and PVC. Do not switch it to upstream all-in-one mode on `nfs-default`: that
-image recursively changes ownership below `/data/db`, which conflicts with the
+`data` PVC stores uploads and file-backed runtime data; accounts, including the
+first administrator, and database configuration live in the dedicated
+`dispatcharr-postgres` StatefulSet and PVC. Do not switch it to upstream
+all-in-one mode on `nfs-default`: that image recursively changes ownership
+below `/data/db`, which conflicts with the
 QNAP export's squashed UID behavior. The web container uses upstream
 `PUID`/`PGID` `65534` so nginx and Django match the export's anonymous owner.
-The 2026-08-27 rollout then produced a ready three-container web Pod and ready
-PostgreSQL StatefulSet. Internal HTTP returns `200`, but the Octelium-protected
-hostname still returns `503`; public access validation remains open.
+The 2026-08-27 rollout produced ready web/database workloads while the protected
+hostname returned `503`. On September 6, Octelium Entra login reached
+Dispatcharr `0.29.0` on pinned image `df768adc…`; its first-run UI refused setup
+for the forwarded public client IP. An authenticated Kubernetes port-forward
+bound to `127.0.0.1` returned `superuser_exists: false` and `setup_allowed: true`
+from the read-only setup endpoint. No POST or account creation was performed
+during that inspection.
+
+The user confirmed Dispatcharr was never configured. Read-only PostgreSQL
+inspection found no accounts/admins, channels or streams, and only the default
+custom M3U seed without a configured provider URL, file,
+username or password, consistent with first-run state. Preserve both existing
+data and PostgreSQL claims during setup. Transport and Octelium authentication
+are verified; first-admin/provider setup and functional acceptance remain open.
+Follow the loopback-only human setup procedure in
+`clusters/homelab/apps/dispatcharr/README.md`; do not broaden
+public setup access or create an administrator through a shell command.
 Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
 Generated or adopted upstream resources must still have one declared owner.
@@ -157,6 +172,11 @@ that rule file aligned with the Grafana-managed Argo CD alerts, but do not
 depend on Grafana rule evaluation for the only Argo CD notification path. After
 rollout, validate that the `argocd-application-health` `PrometheusRule` is
 present and that Prometheus is receiving `argocd_app_info`.
+
+[[../operations/monitoring-resource-requests]] records the September 2026
+memory measurements, explicit monitoring reservations, scheduling-fit model,
+and required post-rollout checks. These requests protect scheduler accounting;
+the cluster's remaining failover-capacity deficit remains open.
 
 ## Sonarr
 
