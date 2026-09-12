@@ -9,6 +9,9 @@ controllers:
     strategy: Recreate
     pod:
       automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       nodeSelector:
         kubernetes.io/hostname: zimaboard-1
       affinity:
@@ -153,6 +156,9 @@ controllers:
           runAsUser: 1000
           runAsGroup: 1000
           runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         dependsOn: 01-runtime-storage
         image:
           repository: ghcr.io/openclaw/openclaw
@@ -666,6 +672,9 @@ controllers:
           runAsUser: 1000
           runAsGroup: 1000
           runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
@@ -757,6 +766,13 @@ controllers:
               periodSeconds: 10
               timeoutSeconds: 3
       proxy:
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
           tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
