@@ -26,6 +26,18 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
 
+The static gate runs `scripts/ci/job-alert-recovery-check.py` with the Nix-pinned
+promtool against the actual Job recovery rules. Its synthetic histories cover
+failure/success ordering, false/unknown condition gauges and transitions to true,
+overlap, later failed runs, namespace isolation,
+missing metrics, conflicting owners, duplicate recovered and unrecovered
+scrapes, target turnover during a pending alert, recreated names, and
+the existing 15-minute firing hold after five-minute group detection. The check
+also requires the custom rule's
+Kustomize registration, the chart-default replacement switch, and matching
+15-day retention. Live rollout must leave one healthy `KubeJobFailed` rule;
+see `clusters/homelab/apps/prometheus/README.md` for verification and rollback.
+
 Operator-owned AWS bootstrap units require a focused backend-free validation
 and an administrator-authenticated plan before apply:
 
@@ -216,7 +228,20 @@ scripts/octelium-e2e-check.sh
 ```
 
 The transport probe resolves the browser API through `1.1.1.1` and validates
-its gRPC-Web status-16 trailer. It separately starts a temporary TCP carrier
+its gRPC-Web status-16 trailer. A trailers-only response may carry that status
+in its headers with an empty body, as the
+[gRPC-Web protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md)
+permits. The September 12 audit reproduced this response from the healthy
+public endpoint; requiring a body trailer incorrectly failed the transport
+gate. Nonempty responses still require their final trailer frame, and the
+probe retains its HTTP/2, content-type, status and TLS checks.
+The probe parses the final HTTP response in curl's header dump, excluding
+informational and proxy CONNECT responses. It requires one actual content-type
+field with the expected media type; optional parameters are permitted.
+Duplicate status or content-type fields cannot satisfy the gate. Native gRPC
+may return status in its actual HTTP trailers, while a nonempty gRPC-Web body
+must carry its sole status in the final body trailer frame.
+It separately starts a temporary TCP carrier
 and requires verified origin TLS, HTTP/2, and native gRPC status 16. Generic
 HTTP responses and local listener readiness do not pass. The catalog checks
 still require authenticated `octeliumctl` with a configured native transport

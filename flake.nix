@@ -64,6 +64,7 @@
             opentofu
             openssh
             pre-commit
+            prometheus.cli
             ripgrep
             shellcheck
             shfmt
