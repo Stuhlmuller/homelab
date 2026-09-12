@@ -2,8 +2,10 @@
 """Exercise real scheduling/retention code with synthetic snapshots; no live calls."""
 
 from datetime import datetime, timedelta, timezone
+from contextlib import redirect_stderr, redirect_stdout
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import plistlib
@@ -169,6 +171,68 @@ class ScheduleTests(unittest.TestCase):
                 self.assertEqual((self.scheduled / schedule.SUCCESS).read_bytes(), receipt)
                 self.assertEqual(backup.verify(directory), record)
                 self.assertEqual(len(schedule.completed_directories(self.scheduled)), 1)
+
+    def test_failed_runs_report_time_operation_and_exit_without_client_output(self):
+        directory, record = self.save(age_days=2)
+        self.confirm(directory, record)
+        previous = (self.scheduled / schedule.SUCCESS).read_bytes()
+        settings = {"talosconfig": str(self.config), "talosctl": str(self.client)}
+        cases = (
+            (subprocess.CalledProcessError(7, ["talosctl", "sensitive-argument"],
+                                          output="private stdout", stderr="private stderr"),
+             {"failure": "exit", "exit_code": 7}),
+            (subprocess.TimeoutExpired(["talosctl", "sensitive-argument"], 300,
+                                       output=b"private stdout", stderr=b"private stderr"),
+             {"failure": "timeout", "timeout_seconds": 300}),
+        )
+        for failure, details in cases:
+            with self.subTest(failure=details["failure"]):
+                output, errors = io.StringIO(), io.StringIO()
+                with patch.object(schedule.sys, "argv", [str(script), "run", "--runtime-directory", str(self.root)]), patch.object(schedule, "installed", return_value=(settings, self.policy, self.scheduled)), patch.object(backup.subprocess, "run", side_effect=failure), patch.object(schedule, "datetime", wraps=datetime) as clock, redirect_stdout(output), redirect_stderr(errors):
+                    clock.now.return_value = self.now
+                    self.assertEqual(schedule.main(), 1)
+                self.assertEqual(output.getvalue(), "")
+                self.assertEqual(json.loads(errors.getvalue()), {
+                    "action": "run", "status": "failed", "operation": "talos-etcd-snapshot",
+                    "checked_at": self.now.isoformat(), "prior_backups": "retained", **details})
+                self.assertEqual((self.scheduled / schedule.SUCCESS).read_bytes(), previous)
+                self.assertEqual(backup.verify(directory), record)
+
+    def test_status_reports_observation_time_and_classifies_local_service_timeout(self):
+        directory, record = self.save()
+        self.confirm(directory, record)
+        settings = {"talosconfig": str(self.config), "talosctl": str(self.client)}
+        for failure in (None, subprocess.TimeoutExpired(["/bin/launchctl", "print", "private-domain"], 30)):
+            with self.subTest(timeout=failure is not None):
+                output, errors = io.StringIO(), io.StringIO()
+                with patch.object(schedule.sys, "argv", [str(script), "status", "--runtime-directory", str(self.root)]), patch.object(schedule.sys, "platform", "darwin"), patch.object(schedule, "installed", return_value=(settings, self.policy, self.scheduled)), patch.object(schedule, "command", return_value=subprocess.CompletedProcess([], 0), side_effect=failure), patch.object(schedule, "datetime", wraps=datetime) as clock, redirect_stdout(output), redirect_stderr(errors):
+                    clock.now.return_value = self.now
+                    self.assertEqual(schedule.main(), 1 if failure else 0)
+                if failure:
+                    self.assertEqual(output.getvalue(), "")
+                    result = json.loads(errors.getvalue())
+                    self.assertEqual(result["operation"], "launchctl-print")
+                    self.assertEqual(result["timeout_seconds"], 30)
+                else:
+                    self.assertEqual(errors.getvalue(), "")
+                    result = json.loads(output.getvalue())
+                    self.assertEqual(result["status"], "fresh")
+                    self.assertTrue(result["launchd_loaded"])
+                self.assertEqual(result["checked_at"], self.now.isoformat())
+
+    def test_status_age_and_checked_at_use_same_time_across_stale_boundary(self):
+        directory, record = self.save(age_days=1.5)
+        self.confirm(directory, record)
+        before = self.now - timedelta(seconds=1)
+        after = self.now + timedelta(seconds=1)
+        output = io.StringIO()
+        with patch.object(schedule.sys, "argv", [str(script), "status", "--runtime-directory", str(self.root)]), patch.object(schedule.sys, "platform", "darwin"), patch.object(schedule, "installed", return_value=({}, self.policy, self.scheduled)), patch.object(schedule, "command", return_value=subprocess.CompletedProcess([], 0)), patch.object(schedule, "datetime", wraps=datetime) as clock, redirect_stdout(output):
+            clock.now.side_effect = (before, after)
+            self.assertEqual(schedule.main(), 0)
+        result = json.loads(output.getvalue())
+        self.assertEqual(result["status"], "fresh")
+        self.assertEqual(result["checked_at"], before.isoformat())
+        self.assertEqual(result["age_hours"], 36 - 1 / 3600)
 
     def test_post_publish_sync_failure_retries_instead_of_trusting_new_directory(self):
         directory, record = self.save(age_days=2)
