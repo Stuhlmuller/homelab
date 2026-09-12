@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../n8n
+patches:
+  - target:
+      group: networking.istio.io
+      kind: VirtualService
+    patch: |-
+      - op: add
+        path: /spec/http/0/fault
+        value:
+          abort:
+            httpStatus: 503
+            percentage:
+              value: 100

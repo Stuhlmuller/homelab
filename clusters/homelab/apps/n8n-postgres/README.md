@@ -96,14 +96,9 @@ original PVC remained bound throughout recovery.
 
 ## Backup And Restore
 
-NFS snapshots protect the PostgreSQL volume, but application-ready restore
-requires logical dumps. Before upgrades or storage maintenance, dump the n8n
-database and keep it with the n8n PVC backup:
-
-```sh
-kubectl -n automation exec statefulset/n8n-postgres -- pg_dump -U postgres n8n
-```
-
-For a full restore, restore the PostgreSQL PVC or recreate the database from a
-logical dump, restore the n8n `/home/node/.n8n` PVC for the instance config and
-binary data, then re-sync n8n through Argo CD.
+The [manual paired checkpoint](../../../../docs/n8n-paired-checkpoint.md)
+captures the complete stopped PostgreSQL cluster and the stopped n8n instance
+PVC into one private off-NAS directory through their existing Applications.
+The inactive profiles and return-to-service path are reviewed before the outage.
+QNAP snapshot coverage and full application restore remain unverified; a raw
+`pg_dump` printed to a terminal is not a retained, verified paired backup.

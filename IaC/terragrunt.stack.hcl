@@ -1797,6 +1797,10 @@ unit "argocd_apps_n8n" {
       metadata = {
         name      = "n8n"
         namespace = "argocd"
+        annotations = {
+          "homelab.rst.io/n8n-checkpoint-phase"   = "normal"
+          "homelab.rst.io/n8n-checkpoint-session" = ""
+        }
         labels = {
           "app.kubernetes.io/managed-by" = "terragrunt"
           "app.kubernetes.io/part-of"    = "homelab"
@@ -1888,6 +1892,10 @@ unit "argocd_apps_n8n_postgres" {
       metadata = {
         name      = "n8n-postgres"
         namespace = "argocd"
+        annotations = {
+          "homelab.rst.io/n8n-checkpoint-phase"   = "normal"
+          "homelab.rst.io/n8n-checkpoint-session" = ""
+        }
         labels = {
           "app.kubernetes.io/managed-by" = "terragrunt"
           "app.kubernetes.io/part-of"    = "homelab"
