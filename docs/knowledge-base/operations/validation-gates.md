@@ -131,6 +131,171 @@ rg -n \
   docs/knowledge-base .agents/skills
 ```
 
+## Scanner Runtime Pin
+
+For #791, this follow-up replaces Trivy `0.69.3` proposed in PR #905 with a
+temporary package-only `0.74.0` override. The proposed older scanner is affected
+by [CVE-2026-55092](https://github.com/aquasecurity/trivy/security/advisories/GHSA-mcj4-mphf-j9ff),
+fixed in `0.71.1`; this is not evidence of an already-merged scanner job on
+`main`. The version, source hash, and vendor hash come from the
+[upstream nixpkgs recipe](https://github.com/NixOS/nixpkgs/blob/83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c/pkgs/by-name/tr/trivy/package.nix).
+The scanner-only builder also uses Go `1.26.7`, with its source hash from the
+[upstream Go recipe](https://github.com/NixOS/nixpkgs/blob/83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c/pkgs/development/compilers/go/1.26.nix).
+Go `1.26.3` meets Trivy's build requirement but lacks subsequent
+[standard-library security fixes](https://go.dev/doc/devel/release#go1.26.0).
+The native Go recipe and bootstrap remain unchanged; `flake.lock`, other
+tools, Checkov inclusion, and all four platforms remain unchanged.
+
+The #888 full-lock candidate at `83199d0d373dd3ac2b9a1996b1d0263f76ab7a4c`
+cannot replace this pin: its Checkov dependency `ecdsa-0.19.2` is blocked for
+`CVE-2024-23342`, and nixpkgs 26.11 drops Intel Mac support. Remove the override
+only when a reviewed full refresh supplies a patched scanner and passes the
+all-platform, static, Conftest, and pre-commit gates. Roll back the package
+change through a reviewed revert; do not substitute unpinned local binaries.
+
+Operator client skew is unchanged and tracked in #788. The documented cluster
+is Kubernetes `1.34.1` / Talos `1.11.3`, but the existing shell supplies
+kubectl `1.36.1` / talosctl `1.13.2`. This exceeds the supported
+[kubectl minor skew](https://kubernetes.io/releases/version-skew-policy/#kubectl)
+and does not match
+[Talosctl guidance](https://docs.siderolabs.com/talos/v1.11/getting-started/talosctl).
+No new live version check was performed. Correct clients together with the
+supported server baseline; this scanner change does not endorse live use.
+
+PR #905's wrapper isolation and #915 reference/argument validation are separate
+requirements. The runtime pin does not fix option injection or replace those
+controls. They are not an OS sandbox or a local credential boundary; other
+inherited Trivy settings and credential providers may still apply locally.
+
+The local Go `1.26.7` and Trivy `0.74.0` source builds passed on
+`aarch64-darwin`, after an initial disk-space failure and approved cleanup of
+disposable caches. All three source/vendor hashes were independently verified.
+All four no-build evaluations pass; native builds on the other three platforms
+were not run. Combined static, Conftest, scanner self-check, ShellCheck, scoped
+workflow lint, Markdown and pre-commit checks pass. The newly covered images
+still fail the vulnerability policy (#918, #919); BusyBox coverage is unknown
+(#920). Local code checks are not a successful hosted vulnerability gate.
+
+Issue #916 records a scanner-audit limitation: `govulncheck 1.7.0` rejects the
+`-X:jsonv2` suffix in Go build versions and can silently omit standard-library
+findings. Preserve each binary's original extraction and remove only that
+suffix in a separate diagnostic copy; never rewrite the binary or substitute
+a different compiler version. A fresh extraction from the Go `1.26.7` build
+removed all 13 standard-library matches found with Go `1.26.3`.
+These extracts lack `pkgSymbols`, so results have module/version precision,
+not proof of symbol presence or call reachability.
+
+The module-level [OpenPGP finding GO-2026-5932](https://pkg.go.dev/vuln/GO-2026-5932)
+is not an affected package in the exact Linux/amd64 import graph checked under
+issue #917. Offline dependency selection with the final source/vendor and Go `1.26.7`
+(`CGO_ENABLED=1`, `GOEXPERIMENT=jsonv2`, no extra tags) selected 3,082 packages,
+with zero unsafe OpenPGP or Rekor PKI imports and no incomplete packages/errors.
+Other `x/crypto` packages explain the module metadata match; the selected
+OpenPGP implementation is the maintained ProtonMail library. This is cross-target
+package analysis, not verification of a built Linux executable. Keep #917 open
+for that artifact check; no exception or vulnerability-free claim is made.
+
+## Runtime Image Inventory
+
+Issue #791's scanner uses native Terragrunt evaluation and Helm/Kustomize
+rendering, not only literal images in values files. The same current helper
+and toolchain inspect both revisions; historical scanner scripts are never
+executed. Current-source snapshots include non-ignored local edits and exclude
+ignored generated units/caches. Base snapshots come from the exact Git commit.
+Neither snapshot changes the operator's checkout or Git refs.
+
+```sh
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --self-check
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --list
+nix develop --command bash scripts/ci/image-vulnerability-scan.sh --list <base-commit-sha>
+```
+
+The self-check is offline. Listing may fetch public charts; it reports selected
+image references, not a successful vulnerability scan. Scan mode rejects
+selected unpinned references while still scanning selected immutable images.
+Unchanged images remain the weekly/full scan's responsibility. Malformed
+references, failed renders, missing values, and unsupported image-generation
+contracts fail before scanning; none become an empty successful inventory.
+
+Packaged chart bytes are checked against the current reviewed
+`helm-chart-archives.json` before extraction/rendering on either revision.
+See [[helm-chart-archive-locks]] for initial trust, exact archive scope, update
+commands, and the separate Argo provenance boundary.
+
+The renderer covers the bootstrap Helm release, evaluated Argo CD sources,
+and nested Applications discovered in local Kustomize output. It preserves
+values-file ordering, inline values/values-object precedence, parameters,
+release names, and namespaces. Unsupported source/options fail instead of
+silently approximating Argo CD. Native client-only rendering uses no cluster
+connection, provider initialization, state, or apply hook. Reviewed HCL and
+charts still need to be trusted: this is not an arbitrary-code sandbox.
+Temporary rendered output carries an inventory-only namespace annotation;
+never apply it or reuse it as a deployment manifest.
+
+Each chart source/version is fetched once per run and its reviewed archive
+hash is verified before the same bytes are reused for current/base comparison.
+These archive locks are not publisher signature or provenance verification;
+that separate work remains in #791.
+The offline Kubernetes capability baseline is `1.34.1`, unless the Application
+explicitly supplies a version. It is not a live cluster/API-discovery result.
+
+Typed extraction includes PodSpecs, installation/upgrade/deletion hooks,
+Prometheus and Alertmanager image fields, reloader and cert-manager solver
+arguments, Tailscale proxy configuration, and the local-path helper Pod template.
+Monitoring sidecar/init-container overrides, Thanos, PrometheusAgent and
+ThanosRuler require explicit review and currently fail closed. Istio
+gateway `auto` images must resolve through rendered injector/mesh settings;
+unknown overrides fail. Kiali's hidden server default is restricted to the
+source-verified `v2.26.0` operator/default-CR contract, which uses the operator
+Pod's version label. Typed additional container and init-container arrays are
+included when the operator explicitly allows them; malformed entries, duplicate
+names and unsupported primary-image overrides fail. This includes the committed
+`wait-for-prometheus` readiness init container. A new operator release or other
+customization needs its image contract reviewed, not an assumed default. See the
+upstream [Kiali supported-image mapping](https://github.com/kiali/kiali-operator/blob/v2.26.0/playbooks/kiali-default-supported-images.yml),
+[resolution logic](https://github.com/kiali/kiali-operator/blob/v2.26.0/roles/default/kiali-deploy/tasks/main.yml)
+and [container template](https://github.com/kiali/kiali-operator/blob/v2.26.0/roles/default/kiali-deploy/templates/kubernetes/deployment.yaml).
+
+The 2026-08-30 local regression rendered 29 Helm releases and expanded the
+inventory from 66 to 90 textual references: 24 unpinned additions, no removals.
+One existing BusyBox alias accounts for the difference from unique identities.
+An unchanged-base comparison selected nothing. Replaying draft #820's six
+Prometheus digest overrides selected all six, including the reloader argument;
+the old values-only extractor selected none. These are inventory checks, not
+successful vulnerability scans or rollout approval.
+
+This is repository-declared image coverage, not a live Pod census, proof of
+complete package/SBOM coverage, or a vulnerability exception. No runtime image
+pins or protected-job permissions change. Roll back through a reviewed revert;
+do not waive the pin or package-coverage checks to obtain a green result.
+
+## GitHub Commit Signature Verification
+
+[Issue #931](https://github.com/Stuhlmuller/homelab/issues/931) records a
+2026-08-30 signing-identity mismatch. Local `git verify-commit` succeeds, but
+GitHub returns `verified: false`, `reason: bad_email` for draft #930 and two
+sampled parent/peer drafts. The repository's configured no-reply committer
+address is absent from the registered signing key identities; the key itself
+is registered, signing-capable and has a verified email. Do not confuse local
+cryptographic validity with GitHub's identity verification or CI test results.
+
+For a proposed commit, replace `COMMIT_SHA` below with its exact SHA. The check
+must return `true` and exit 0; the sampled commits currently return `false`.
+
+```sh
+gh api repos/Stuhlmuller/homelab/commits/COMMIT_SHA \
+  --jq '.commit.verification | {verified,reason}' |
+  jq -e '.verified == true and .reason == "valid"'
+```
+
+[GitHub's documented reason](https://docs.github.com/en/rest/commits/commits#get-a-commit)
+and the registered-key metadata isolate the cause, so broad bisection or
+temporary instrumentation is unnecessary. Repair requires an owner-approved
+key/identity change. Preserve no-reply privacy; never silently publish another
+email, edit private/global signing state, disable signing, or rewrite stacked
+history. Verify a new commit through GitHub, then explicitly decide how to
+repair existing records. This does not waive #813/#815 or rollout approvals.
+
 ## Kubernetes Source Checks
 
 Use the renderer that matches the changed source:

@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "archives": [
+    {
+      "repository": "ghcr.io/adinhodovic/charts",
+      "chart": "compass",
+      "version": "0.6.0",
+      "sha256": "884bb89d548736f516f0f428fc204c5db873b6fd7cd8f7e34bb21ba02f0f466f"
+    },
+    {
+      "repository": "ghcr.io/berriai",
+      "chart": "litellm-helm",
+      "version": "0.1.832",
+      "sha256": "861407b286ef218a130f47d5069db11d892cef2e11f5c9d215f8e3e02e1ecf90"
+    },
+    {
+      "repository": "ghcr.io/multica-ai/charts",
+      "chart": "multica",
+      "version": "0.4.29",
+      "sha256": "e2d74f3cece74b1dd69dfb006f9f427af004a93faca5700c3e44a3e98f842cdd"
+    },
+    {
+      "repository": "https://argoproj.github.io/argo-helm",
+      "chart": "argo-cd",
+      "version": "9.5.15",
+      "sha256": "95502bea856e2e1e9bfbb7a5ab90d309970b4ffd098ff3dadb99188350768b9e"
+    },
+    {
+      "repository": "https://bjw-s-labs.github.io/helm-charts",
+      "chart": "app-template",
+      "version": "4.4.0",
+      "sha256": "0fd5a5fdbf95f32758c1cb18b2031dacba7eb6f553abcb5cd7c37b93c7a5bd0d"
+    },
+    {
+      "repository": "https://charts.crossplane.io/stable",
+      "chart": "crossplane",
+      "version": "2.3.3",
+      "sha256": "327cadea168633b9dcaa71da1852fb308d837dd3f9c8a53410c155257df206c8"
+    },
+    {
+      "repository": "https://charts.external-secrets.io",
+      "chart": "external-secrets",
+      "version": "2.0.1",
+      "sha256": "74fb945ad87037a2f48dd00a469903b4379d1b20d4c54949af092f50dc0bb2b5"
+    },
+    {
+      "repository": "https://charts.jetstack.io",
+      "chart": "cert-manager",
+      "version": "v1.20.3",
+      "sha256": "ef5d707f5afbb2c3ce9892f5ff3fca0dec6864db8830a1c454b3d4822c485843"
+    },
+    {
+      "repository": "https://grafana-community.github.io/helm-charts",
+      "chart": "grafana",
+      "version": "12.11.2",
+      "sha256": "6a0b0cbf6ee1746bb58dcbc0466f7ec40d04eae90cf92cb367eb7cc5824c1184"
+    },
+    {
+      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "chart": "base",
+      "version": "1.27.3",
+      "sha256": "4b3069a8f68224a385725fb9c64b47282ff62eefdd306229258000f6f04fceb6"
+    },
+    {
+      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "chart": "cni",
+      "version": "1.27.3",
+      "sha256": "fa60f8b5e80ee72c48ea72f2a0b63f9ed1b82fdffc57d1c59241bbbcba2b9f0a"
+    },
+    {
+      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "chart": "gateway",
+      "version": "1.27.3",
+      "sha256": "3f015a461362227ad8e70955129a0f4389d6dc545977b9088b15aa44d2bad78b"
+    },
+    {
+      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "chart": "istiod",
+      "version": "1.27.3",
+      "sha256": "560adf601edaf0682a8126a6c54eafc2636878bf452a113d83f50b78230a1174"
+    },
+    {
+      "repository": "https://istio-release.storage.googleapis.com/charts",
+      "chart": "ztunnel",
+      "version": "1.27.3",
+      "sha256": "6573f2645e87d5161ea5bc143c3ff9782dd392fd74b5f5e39326a05d81f174d1"
+    },
+    {
+      "repository": "https://kiali.org/helm-charts",
+      "chart": "kiali-operator",
+      "version": "2.26.0",
+      "sha256": "3941d6aab78cc9d19d08ec9c6b06efa2843eb6c9f4154c191a64c57797e353ce"
+    },
+    {
+      "repository": "https://kubernetes-sigs.github.io/descheduler",
+      "chart": "descheduler",
+      "version": "0.33.0",
+      "sha256": "1f32da32dedc6c066f197637e1fbd10546e9c6987322b88e71add1c9765c978f"
+    },
+    {
+      "repository": "https://kubernetes-sigs.github.io/metrics-server/",
+      "chart": "metrics-server",
+      "version": "3.13.1",
+      "sha256": "084e6edb680cf4e2acc30bd496568c53fdf663cbacf6e17876b25785c35b7a13"
+    },
+    {
+      "repository": "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/",
+      "chart": "nfs-subdir-external-provisioner",
+      "version": "4.0.18",
+      "sha256": "a842163c1f5eedc4893e1f685e4249b0ddd62533c3c941228ee6a096ac308f6f"
+    },
+    {
+      "repository": "https://pkgs.tailscale.com/helmcharts",
+      "chart": "tailscale-operator",
+      "version": "1.102.3",
+      "sha256": "c2440014df04fdf1b67b53daa4290d7b878584cf4702f9b1b50f51ba64499a6a"
+    },
+    {
+      "repository": "https://prometheus-community.github.io/helm-charts",
+      "chart": "kube-prometheus-stack",
+      "version": "85.2.0",
+      "sha256": "716733f473fcfd00380cb9317c004aeb7cc8a49be311d2c28dce9f900e124491"
+    }
+  ]
+}

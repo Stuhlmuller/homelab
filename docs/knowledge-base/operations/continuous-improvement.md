@@ -88,7 +88,7 @@ observations below retain their original dates.
   dataplane label. Do not restore that label; use the separately tracked
   dedicated replacement capacity.
 
-- **Status:** partially fixed
+- **Status:** partially fixed; continuous rendered-image scanning staged
 - **Area:** software supply chain / immutable artifacts
 - **Evidence:** The privileged Cordium local-path provisioner now resolves
   Rancher release `v0.0.36` to exact upstream commit
@@ -96,12 +96,93 @@ observations below retain their original dates.
   digest-pinned. cert-manager `v1.20.3` and all five of its runtime image
   digests are staged in one versioned Application input so the protected apply
   changes the chart, CRDs, RBAC, and binaries atomically. Issue `#791` tracks
-  the remaining chart/native image pins and continuous SBOM, vulnerability,
-  and signature checks.
-- **Risk:** Other tag-only generated images can still drift, and CI does not
-  yet identify actionable HIGH or CRITICAL image vulnerabilities.
-- **Next step:** Complete the remaining image inventory and add the smallest
-  continuous scan and exception-expiry gate under issue `#791`.
+  the remaining chart/native image pins and continuous SBOM and signature
+  checks. The required `validate` job now scans each exact digest-pinned image
+  whose occurrence count increases through Kubernetes YAML, Helm values, or
+  operator scripts with Trivy; its weekly run scans the complete extracted
+  inventory. Fixable HIGH and CRITICAL findings fail the job. Exceptions
+  scoped to a package PURL require an issue link and future expiry, after which
+  they fail closed. Trivy `0.69.3` in the unchanged Nix input is affected by
+  CVE-2026-55092; a temporary, fixed-hash package override supplies `0.74.0`
+  built with scanner-only Go `1.26.7` under `#916`. Module/version analysis of
+  the rebuilt binary removes 13 standard-library advisory matches; the
+  OpenPGP advisory's applicability remains under investigation in `#917`.
+  The full lock refresh remains blocked under `#888`; see
+  [[validation-gates#Scanner Runtime Pin|runtime pin evidence and removal gates]].
+  The wrapper retains its empty working directory and repository configuration
+  and named registry/database override restrictions as defense in depth.
+  The first `linux/amd64` baseline scanned 59 exact references: 54 had 75
+  CRITICAL and 2,053 HIGH unique vulnerability/package/fixed-version tuples.
+  Existing upgrade issues retain their scope; uncovered app groups are tracked
+  by issues `#895` through `#904`.
+  Extraction now includes separate image digests and scoped embedded Argo Helm
+  values. Explicit cert-manager and local-path repositories preserve their
+  pinned charts' rendered images. The inventory expands from 59 to 66 textual
+  references (65 image identities; BusyBox has two aliases), without changing
+  scanner isolation or occurrence counting. The 2026-08-30 uncredentialed
+  `linux/amd64` audit with the patched scanner found 21 fixable HIGH tuples in
+  local-path (#918), and 11-12 in each of the five cert-manager images (#919).
+  All six scans failed the vulnerability policy; no CRITICAL findings appeared.
+  BusyBox returned no package targets, so its successful exit is unknown coverage,
+  not a clean-image result (#920). These are package/version matches, not proof
+  of exploitability or the inaccessible cluster's current runtime state.
+  The #920 follow-up rejects missing, malformed, multi-object or inventory-free
+  Trivy JSON reports, including an exit-zero scan. Each image gets a fresh report;
+  recognized named/versioned OS or language packages are required. Native table
+  conversion retains findings, and scanner/converter failures stay failures.
+  The existing self-check covers positive inventories, invalid/absent reports,
+  stale-output prevention and both command failures without a registry scan.
+  Offline replay with the pinned native converter rejected the saved BusyBox
+  report, retained failures and advisory IDs for all six vulnerable reports,
+  and accepted a synthetic package-covered, zero-vulnerability control.
+  This rejects absent coverage; it does not establish complete image coverage or
+  supply the missing BusyBox inventory.
+  Follow-up candidate scans still fail: local-path `v0.0.37` and cert-manager's
+  `v1.21.1` controller each contain eight fixable HIGH Go findings; Alpine
+  `3.24.1` provides BusyBox package coverage but has two HIGH OpenSSL findings.
+  No runtime pin changed. See [[platform-image-vulnerability-followup]] for
+  controller evidence and [[busybox-image-coverage]] for the incomplete upstream
+  SBOM, helper compatibility constraints and remaining callers.
+  Exact Argo CD, Dex and Redis scans also fail, including the existing Argo CD
+  `v3.4.8` candidate. See [[argocd-image-inventory]] for bundled-helper findings,
+  the OpenSSL vendor-severity/platform qualification, and existing #788/#850
+  remediation scope. Their HCL/chart defaults still need #791 CI coverage.
+  [Issue #915](https://github.com/Stuhlmuller/homelab/issues/915) adds whole-scalar
+  reference validation, explicit extraction-error propagation, and `--` before
+  the image argument. Literal shell extraction retains registry ports, tagless
+  pins, and malformed suffixes for validation. Runnable negative cases and a
+  stubbed invocation protect those boundaries without running Trivy. This is not
+  an OS sandbox or local credential isolation; scans belong in the unprivileged
+  hosted gate without operator credentials.
+- **Risk:** The newly covered platform images require remediation; BusyBox remains
+  blocked until package-aware evidence is available under #920. At least the
+  [24 confirmed tag-only identities recorded in #791](https://github.com/Stuhlmuller/homelab/issues/791#issuecomment-5466003981)
+  remain outside this phase. Remaining implicit chart/operator images, SBOM,
+  and signature verification still require separate coverage.
+- **Next step:** Complete the chart-default image inventory, remediate the
+  weekly baseline findings, then add the smallest SBOM and signature gates
+  under issue `#791`.
+
+- **Status:** open; tracked by issue `#887`
+- **Area:** software supply chain / Helm updates
+- **Evidence:** Twenty-six external chart revisions are literal
+  `targetRevision` values in `IaC/terragrunt.stack.hcl`, and the bootstrap Argo
+  CD chart is pinned in its catalog unit. Renovate's native Helm manager scans
+  `Chart.yaml`; its Terragrunt manager extracts Terraform module sources only.
+- **Risk:** Reproducible chart pins silently age past security, compatibility,
+  and support releases because Dependency Dashboard cannot see them.
+- **Next step:** Add one Helm-datasource custom manager for the exact
+  Terragrunt pin syntax and prove it extracts every current chart.
+
+- **Status:** open; tracked by issue `#888`
+- **Area:** software supply chain / Nix toolchain
+- **Evidence:** `flake.lock` pins a May 2026 nixpkgs revision. Renovate supports
+  Nix flakes but disables that manager by default, and `renovate.json` does not
+  enable it.
+- **Risk:** CI and operator tools miss routine security and bug-fix refreshes
+  while remaining reproducibly stale.
+- **Next step:** Enable Renovate's native Nix manager and keep lock refreshes as
+  reviewed, fully validated pull requests.
 
 - **Status:** mitigation pending rollout and observation
 - **Area:** Istio ambient / ztunnel readiness
