@@ -1,0 +1,86 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: job-failure-recovery
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: job-failure-recovery
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  groups:
+    - name: homelab.jobs
+      # Bound the retained-history scan on the constrained Prometheus host.
+      interval: 5m
+      rules:
+        # Require one controller owner and reject a recreated CronJob whose
+        # creation is newer than the retained Job. Duplicate scrape targets
+        # are deduplicated without choosing between conflicting owners.
+        - record: homelab_job:current_cronjob_owner:info
+          expr: |
+            group by (namespace, job_name, owner_name) (
+              (
+                max by (namespace, job_name, owner_name) (
+                  kube_job_owner{job="kube-state-metrics",owner_kind="CronJob",owner_is_controller="true"} == 1
+                )
+                and on (namespace, job_name)
+                (
+                  count by (namespace, job_name) (
+                    group by (namespace, job_name, owner_name) (
+                      kube_job_owner{job="kube-state-metrics",owner_kind="CronJob",owner_is_controller="true"} == 1
+                    )
+                  ) == 1
+                )
+              )
+              * on (namespace, job_name) group_left
+                max by (namespace, job_name) (kube_job_created{job="kube-state-metrics"} > 0)
+              >= on (namespace, owner_name) group_left
+                label_replace(
+                  max by (namespace, cronjob) (kube_cronjob_created{job="kube-state-metrics"} > 0),
+                  "owner_name", "$1", "cronjob", "(.+)"
+                )
+            )
+        # A failure sample, not Job creation, proves failure preceded recovery.
+        # @ end() restricts history to current Job incarnations. The 15-day
+        # lookback matches retention; unavailable history cannot hide failures.
+        - record: homelab_job:failed_observed_timestamp:min
+          expr: |
+            min by (namespace, job_name) (
+              min_over_time((
+                timestamp(kube_job_failed{job="kube-state-metrics",condition="true"} > 0)
+                >= on (namespace, job_name) group_left
+                  max by (namespace, job_name) (kube_job_created{job="kube-state-metrics"} @ end() > 0)
+              )[15d:5m])
+            )
+        - alert: KubeJobFailed
+          expr: |
+            max by (namespace, job_name) (
+              kube_job_failed{job="kube-state-metrics",condition="true"} > 0
+            )
+            unless on (namespace, job_name)
+            (
+              (
+                homelab_job:failed_observed_timestamp:min
+                * on (namespace, job_name) group_left (owner_name)
+                  homelab_job:current_cronjob_owner:info
+                < on (namespace, owner_name) group_left
+                  label_replace(
+                    max by (namespace, cronjob) (
+                      kube_cronjob_status_last_successful_time{job="kube-state-metrics"} > 0
+                      and kube_cronjob_status_last_successful_time{job="kube-state-metrics"} <= time()
+                    ),
+                    "owner_name", "$1", "cronjob", "(.+)"
+                  )
+              )
+              and on (namespace, job_name)
+                max by (namespace, job_name) (kube_job_status_active{job="kube-state-metrics"}) == 0
+            )
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Job failed to complete.
+            description: >-
+              Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete.
+              No newer successful run of its owning CronJob has been proven after
+              the observed failure. Investigate the Job; preserve failure evidence.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/prometheus/README.md#job-failure-recovery

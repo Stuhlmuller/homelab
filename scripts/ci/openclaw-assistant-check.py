@@ -105,6 +105,21 @@ try:
 except RuntimeError:
     pass
 
+# Recovery must never turn an operator pause or a later outage into an enabled job.
+failed_health = {
+    "id": "health", "declarationKey": "homelab:assistant:v1:homelab-health-watch",
+    "enabled": False, "state": {"lastErrorReason": "auth", "autoDisabled": {
+        "reason": "consecutive-failures", "atMs": 1788650230917, "consecutiveErrors": 10}}}
+assert reconcile.recovering_ids([failed_health]) == ["health"]
+for changed in (
+    dict(failed_health, enabled=True),
+    dict(failed_health, declarationKey="unrelated"),
+    dict(failed_health, state={}),
+    dict(failed_health, state={"lastErrorReason": "auth", "autoDisabled": {
+        "reason": "consecutive-failures", "atMs": 1788650230918, "consecutiveErrors": 10}}),
+):
+    assert reconcile.recovering_ids([changed]) == []
+
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     reconcile.CONFIG = root / "config.json"
@@ -123,6 +138,12 @@ with tempfile.TemporaryDirectory() as directory:
         reconcile.reconcile()
         assert run.call_count == 4
     assert json.loads(reconcile.STATUS.read_text())["state"] == "ready"
+    with patch.object(reconcile.subprocess, "run") as run:
+        run.return_value.returncode = 0
+        run.return_value.stdout = json.dumps({"jobs": [failed_health]}).encode()
+        reconcile.reconcile()
+        assert ["openclaw", "automations", "enable", "health", "--timeout", "20000"] in [
+            call.args[0] for call in run.call_args_list]
     with patch.object(reconcile.subprocess, "run") as run, patch.object(reconcile.time, "sleep"):
         run.return_value.returncode = 1
         reconcile.reconcile()
