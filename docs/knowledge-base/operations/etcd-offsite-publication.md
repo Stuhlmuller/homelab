@@ -16,8 +16,22 @@ download repeats the existing offline verifier. Resume preserves partial
 objects and local copies and never overwrites different bytes. Receipt-only
 retrieval remains possible after local snapshot loss.
 
-This is manual offsite copy/retrieval support, not scheduled publication or
-new unattended credentials. Synthetic tests cover failure and recovery paths;
+The manual CLI remains available. The separate
+[offsite attempt scheduler](../../etcd-offsite-schedule.md) adds an hourly
+LaunchAgent using the same publisher and existing named AWS/SSO profile. It
+shares the local snapshot lock only while verifying and retaining a private
+pair, resumes that pair independently of later local retention, and deduplicates
+by snapshot SHA. Freshness stays bound to the exact published manifest
+`created_at`, including when a newer local capture has identical snapshot bytes.
+Exact-version retrieval must succeed before offsite status can become fresh.
+The scheduler never changes local backup cadence or deletes offsite copies.
+Its [script](../../../scripts/etcd-offsite-schedule.py) and
+[policy](../../../scripts/config/etcd-offsite-schedule.json) are synthetic-tested;
+installation and real recurring execution remain unverified. Expired existing
+SSO sessions require ordinary operator login; no new unattended identity is
+introduced. Private status/logs do not deliver remote alerts.
+
+Synthetic tests cover failure and recovery paths;
 one real publication and exact-version retrieval completed on 2026-09-07 at
 `17:55:16 UTC`, using the first scheduled snapshot. Independent checks confirmed
 both remote versions/checksums and matching original, working and downloaded
