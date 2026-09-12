@@ -357,3 +357,19 @@ identities, and validates configuration before writing its own completion
 marker. Private doctor reports retain latest plus previous. State restoration
 requires the archive and compatible software, not merely a manifest revert.
 See the OpenClaw README; gateway readiness is still a live acceptance gate.
+
+### Completed media-copy Job retirement
+
+September 12 read-only inspection confirmed `media-downloads-migration`,
+`media-movies-migration`, and `media-tv-migration` completed successfully in May
+2026. Their existing BusyBox Pod templates cannot be updated in place. The
+three media applications now own bounded directory-only Jobs; they
+retain all claims and never mount or copy from legacy source claims. Per-Job
+`Force=true,Replace=true` permits image upgrades without immutable Job updates. Argo CD prunes
+only the old completed Jobs and their dedicated NetworkPolicies. Existing
+media contents are untouched; directory permission setup is nonrecursive.
+
+Verify all three applications Synced/Healthy, old Job absence, unchanged bound
+claims and media access after rollout. Fresh bootstrap creates only the required
+directories. Rollback must not recreate the old copy Jobs against active data;
+use a reviewed fenced restore when historical data is actually needed.
