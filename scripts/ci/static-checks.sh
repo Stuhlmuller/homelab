@@ -12,6 +12,8 @@ python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 scripts/ci/terragrunt-plan-diagnostics-test.py
+python3 scripts/ci/n8n-paired-checkpoint-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
@@ -841,7 +843,7 @@ done <<'EOF'
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
-.github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
+.github/workflows/terragrunt-plan.yml 9dc39ce2adc62e43f706ef8870353da89686a95efe720e19b9900a9960b4bb17
 EOF
 echo "::endgroup::"
 

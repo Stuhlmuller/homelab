@@ -233,6 +233,13 @@ validation passed with zero pod restarts. The incident-only hook is now removed
 from desired state, while the explicit retained claim, 30-minute startup and
 liveness windows, and 120-second termination grace remain.
 
+The [manual n8n paired checkpoint](../../n8n-paired-checkpoint.md) keeps the
+application PVC and complete PostgreSQL cluster together in private off-NAS
+archives after observed clean shutdown. Inactive maintenance profiles use the
+original Terragrunt units and Argo owners; bounded read-only reader Pods need no
+new PVC. Runtime capture and full application restore remain unverified. See
+[[operations/n8n-paired-checkpoint]] for scope and return to service.
+
 `n8n-postgres` completed its fenced 2026-08-03 stale-lock recovery. The
 incident hook removed only `postmaster.pid`, wrote a durable marker, and
 restored one replica with zero PostgreSQL restarts. Live checks passed for SQL,

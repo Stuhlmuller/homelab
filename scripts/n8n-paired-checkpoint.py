@@ -1,0 +1,790 @@
+#!/usr/bin/env python3
+"""Capture a cold n8n pair, resume pinned service and unpin through existing units."""
+import argparse
+import copy
+import datetime
+import importlib.util
+import json
+import os
+import re
+import shutil
+import signal
+import subprocess
+import tarfile
+import tempfile
+import threading
+import time
+import uuid
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+_spec = importlib.util.spec_from_file_location("phase", ROOT / "scripts/n8n-checkpoint-phase.py")
+phase = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(phase)
+_backup_spec = importlib.util.spec_from_file_location("etcd_backup", ROOT / "scripts/talos-etcd-backup.py")
+etcd_backup = importlib.util.module_from_spec(_backup_spec)
+_backup_spec.loader.exec_module(etcd_backup)
+CLAIMS = {"n8n": "n8n", "n8n-postgres": "data-n8n-postgres-0"}
+READERS = {"n8n-checkpoint-n8n", "n8n-checkpoint-postgres"}
+COMMAND_TIMEOUT = 30
+COMMAND_CLEANUP_TIMEOUT = 2
+TERRAGRUNT_TIMEOUT = 900
+RECONCILE_TIMEOUT = 240
+READER_READY_TIMEOUT = 120
+FIRST_FENCE_TIMEOUT = 50
+STREAM_TIMEOUT = 320
+# Include all IaC so shared includes, catalog units and module inputs cannot
+# change underneath the prepared Application manifests when returning to main.
+UNPIN_SOURCES = ("IaC", "clusters/homelab/apps/n8n", "clusters/homelab/apps/n8n-postgres",
+                 "clusters/homelab/apps/n8n-maintenance", "clusters/homelab/apps/n8n-postgres-cold",
+                 "clusters/homelab/apps/n8n-postgres-capture", "scripts/n8n-checkpoint-phase.py",
+                 "scripts/n8n-paired-checkpoint.py")
+
+
+def private_destination(path):
+    path = etcd_backup.private_directory(path)
+    temporary_roots = (Path("/tmp"), Path("/var/tmp"), Path("/var/folders"), Path(tempfile.gettempdir()))
+    for temporary in temporary_roots:
+        temporary = temporary.resolve()
+        if path == temporary or temporary in path.parents:
+            raise ValueError("use durable storage outside temporary/cache directories")
+    return path
+
+
+def require_capture_filesystem(path):
+    """Reject RAM-backed or unidentified storage before preparing a new pair."""
+    try:
+        filesystem = run(["stat", "--file-system", "--format=%T", "--", str(path)]).strip().lower()
+    except (OSError, subprocess.SubprocessError) as error:
+        raise ValueError("cannot identify destination filesystem; use the repository Nix environment") from error
+    if (not re.fullmatch(r"[a-z][a-z0-9/+_.-]*", filesystem)
+            or filesystem.startswith("unknown") or filesystem == "unavailable"):
+        raise ValueError("unknown destination filesystem; use the repository Nix environment")
+    if filesystem in {"tmpfs", "ramfs", "devtmpfs", "hugetlbfs", "rootfs"}:
+        raise ValueError("destination filesystem is RAM-backed; use durable private storage")
+
+
+class CommandCleanupError(RuntimeError):
+    """A command group could not be reaped; do not start recovery mutations."""
+
+
+def terminate_command(process):
+    """Stop the owned process group, including providers, before recovery can run."""
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        # The group has already exited; continue with bounded parent reaping.
+        pass
+    try:
+        process.wait(timeout=COMMAND_CLEANUP_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # TERM did not finish in the grace period; finally escalates to KILL.
+        pass
+    finally:
+        # A parent may exit while a child ignores TERM or has closed its pipes.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            # No group remains to kill, but its parent still needs to be reaped.
+            pass
+    process.communicate(timeout=COMMAND_CLEANUP_TIMEOUT)
+
+
+def run(command, **kwargs):
+    timeout = kwargs.pop("timeout", COMMAND_TIMEOUT)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               text=True, start_new_session=True, **kwargs)
+    try:
+        output, error = process.communicate(timeout=timeout)
+        if process.returncode:
+            raise subprocess.CalledProcessError(process.returncode, command, output, error)
+        return output
+    except BaseException:
+        try:
+            terminate_command(process)
+        except BaseException as cleanup_failure:
+            raise CommandCleanupError(f"command group {process.pid} cleanup failed; recovery was not started") from cleanup_failure
+        raise
+    finally:
+        process.stdout.close()
+        process.stderr.close()
+
+
+def kube(*args):
+    return json.loads(run(["kubectl", "--request-timeout=20s", *args, "-o", "json"]))
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def write_json(path, value):
+    """Never replace a prior receipt; fsync both the file and containing directory."""
+    with path.open("x", encoding="utf-8") as stream:
+        json.dump(value, stream, indent=2)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    fsync_directory(path.parent)
+
+
+def fsync_directory(path):
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def node_metadata():
+    return {item["metadata"]["name"]: {
+        "boot_id": item["status"]["nodeInfo"]["bootID"],
+        "address": next(x["address"] for x in item["status"]["addresses"] if x["type"] == "InternalIP"),
+        "ready": any(c["type"] == "Ready" and c["status"] == "True" for c in item["status"]["conditions"]),
+    } for item in kube("get", "nodes")["items"]}
+
+
+def claim_metadata():
+    result = {}
+    for claim in CLAIMS.values():
+        pvc = kube("get", "pvc", claim, "-n", "automation")
+        if pvc.get("status", {}).get("phase") != "Bound":
+            raise ValueError("source claim is not Bound")
+        pv = kube("get", "pv", pvc["spec"]["volumeName"])
+        if pv["spec"].get("persistentVolumeReclaimPolicy") != "Retain" or "nfs" not in pv["spec"]:
+            raise ValueError("review changed source storage before checkpoint")
+        result[claim] = {"claim_uid": pvc["metadata"]["uid"], "volume": pvc["spec"]["volumeName"],
+                         "volume_uid": pv["metadata"]["uid"], "source": pv["spec"]["nfs"]}
+    return result
+
+
+def expected_revision(application, revision):
+    status = application.get("status", {}).get("sync", {})
+    revisions = status.get("revisions", [status.get("revision")])
+    sources = application["spec"]["sources"]
+    return len(revisions) == len(sources) and all(
+        revisions[i] == revision for i, source in enumerate(sources)
+        if source["repoURL"] == "https://github.com/Stuhlmuller/homelab.git")
+
+
+def require_capture_ready(live, revision):
+    if any(phase.markers(item)[phase.PHASE] != "normal" for item in live.values()):
+        raise ValueError("existing maintenance must be resumed and unpinned first")
+    if any(not reconciled_profile(item, item, revision)
+           or item.get("status", {}).get("health", {}).get("status") != "Healthy"
+           for item in live.values()):
+        raise ValueError("both Applications must be Healthy and Synced on prepared main")
+
+
+def normalized_destination(destination):
+    value = copy.deepcopy(destination)
+    if value.get("name") in (None, ""):
+        value.pop("name", None)
+    return value
+
+
+def require_application_bases(live, bases):
+    """Refuse unrelated Application drift before any maintenance profile is used."""
+    def normalized(spec):
+        value = copy.deepcopy(spec)
+        value["sources"] = phase.normalized_sources(value["sources"])
+        value["destination"] = normalized_destination(value["destination"])
+        policy = value.get("syncPolicy", {})
+        retry = policy.get("retry", {})
+        for parent, key in ((retry, "limit"), (retry.get("backoff", {}), "factor")):
+            if isinstance(parent.get(key), str) and re.fullmatch(r"-?(0|[1-9][0-9]*)", parent[key]):
+                parent[key] = int(parent[key])
+        metadata = policy.get("managedNamespaceMetadata", {})
+        if metadata.get("annotations") == {}:
+            metadata.pop("annotations")
+        return value
+
+    for app in phase.APPS:
+        if normalized(live[app]["spec"]) != normalized(bases[app]["spec"]):
+            raise ValueError(f"{app} rendered Application differs from live spec; reconcile ordinary desired state before preparation")
+
+
+def require_generated_units():
+    """Generated units are verbatim catalog copies, including the mandatory guard."""
+    template = (ROOT / "IaC/.catalog/units/live/argocd-app/terragrunt.hcl").read_bytes()
+    for app in phase.APPS:
+        unit = ROOT / "IaC/live/argocd-apps" / app / "terragrunt.hcl"
+        if not unit.is_file() or unit.read_bytes() != template:
+            raise ValueError(f"{app} generated unit differs from guarded catalog; regenerate the current stack before checkpoint")
+
+
+def containers_ready(pod):
+    containers = pod.get("spec", {}).get("containers", [])
+    statuses = pod.get("status", {}).get("containerStatuses", [])
+    return (bool(containers) and len(statuses) == len(containers)
+            and {item["name"] for item in containers} == {item["name"] for item in statuses}
+            and all(item.get("ready") for item in statuses))
+
+
+def ready_without_restarts(pod):
+    return containers_ready(pod) and all(item.get("restartCount") == 0 for item in pod["status"]["containerStatuses"])
+
+
+def check_nodes(expected, current):
+    if current != expected or not all(x["ready"] for x in current.values()):
+        raise ValueError("node identity/readiness changed; do not start another writer")
+
+
+def source_pods():
+    return [item for item in kube("get", "pods", "-n", "automation")["items"]
+            if any(v.get("persistentVolumeClaim", {}).get("claimName") in CLAIMS.values()
+                   for v in item["spec"].get("volumes", []))]
+
+
+def pod_identity(pod):
+    return {"name": pod["metadata"]["name"], "uid": pod["metadata"]["uid"],
+            "resource_version": pod["metadata"]["resourceVersion"],
+            "node": pod["spec"]["nodeName"],
+            "images": {c["name"]: c["image"] for c in pod["spec"]["containers"]},
+            "containers": {c["name"]: c["containerID"] for c in pod["status"]["containerStatuses"]},
+            "mounts": {v["name"]: {"claim": v["persistentVolumeClaim"], "mounts": [
+                {"container": c["name"], **mount} for c in pod["spec"]["containers"]
+                for mount in c.get("volumeMounts", []) if mount["name"] == v["name"]]}
+                for v in pod["spec"].get("volumes", []) if "persistentVolumeClaim" in v}}
+
+
+def check_talos_rows(output, nodes, stopped):
+    if not output.startswith("NODE"):
+        raise ValueError("unrecognized Talos container metadata")
+    rows = [row.split() for row in output.splitlines()[1:] if row.strip()]
+    if not {n["address"] for n in nodes.values()} <= {row[0] for row in rows}:
+        raise ValueError("Talos did not answer for every node")
+    for writer in stopped:
+        for row in rows:
+            if (any(word.startswith("automation/" + writer["name"] + ":") for word in row)
+                    and (row[-1] != "CONTAINER_EXITED" or row[-2] != "0")):
+                raise ValueError("prior source container still exists with a running task")
+
+
+def talos_fence(session, stopped):
+    output = run([session["talosctl"], "--talosconfig", session["talosconfig"], "--nodes",
+                  ",".join(n["address"] for n in session["nodes"].values()),
+                  "containers", "--kubernetes"], timeout=25)
+    check_talos_rows(output, session["nodes"], stopped)
+
+
+def fence(session, stopped, readers=False, check_survivors=True):
+    check_nodes(session["nodes"], node_metadata())
+    if claim_metadata() != session["claims"]:
+        raise ValueError("source claim or volume identity changed")
+    stopped_names = {item["name"] for item in stopped}
+    all_names = {item["name"] for item in session["writers"].values()}
+    for pod in source_pods():
+        name = pod["metadata"]["name"]
+        if readers and name in READERS:
+            spec = pod["spec"]
+            uid = 1000 if name.endswith("-n8n") else 65534
+            containers = spec["containers"]
+            if (spec["securityContext"].get("runAsUser") != uid or "fsGroup" in spec["securityContext"]
+                    or len(containers) != 1 or len(spec["volumes"]) != 2
+                    or len(containers[0]["volumeMounts"]) != 2
+                    or any(not mount.get("readOnly") for mount in containers[0]["volumeMounts"])
+                    or any(not v.get("persistentVolumeClaim", {}).get("readOnly", True) for v in spec["volumes"])):
+                raise ValueError("reader identity or read-only mounts changed")
+            continue
+        if name in stopped_names or name not in all_names:
+            raise ValueError("a source writer is present while its fence must hold")
+        if check_survivors:
+            original = next(item for item in session["writers"].values() if item["name"] == name)
+            current = pod_identity(pod)
+            if any(current[key] != original[key] for key in ("uid", "containers", "mounts")):
+                raise ValueError("remaining source writer changed before shutdown")
+    talos_fence(session, stopped)
+
+
+class PodExitWatch:
+    """Start before scaling; missing terminal status fails the graceful-stop gate."""
+    def __init__(self, writer):
+        self.writer, self.terminal, self.error, self.observed = writer, {}, None, False
+        self.process = subprocess.Popen([
+            "kubectl", "--request-timeout=0", "get", "pod", writer["name"], "-n", "automation",
+            "--watch", "--output-watch-events",
+            "-o", "json"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.thread = threading.Thread(target=self.consume, daemon=True)
+        self.thread.start()
+
+    def consume(self):
+        buffer, decoder = "", json.JSONDecoder()
+        try:
+            while True:
+                data = os.read(self.process.stdout.fileno(), 65536)
+                if not data:
+                    break
+                buffer += data.decode()
+                while buffer.strip():
+                    buffer = buffer.lstrip()
+                    try:
+                        event, end = decoder.raw_decode(buffer)
+                    except json.JSONDecodeError:
+                        break
+                    buffer = buffer[end:]
+                    pod = event["object"]
+                    if pod.get("metadata", {}).get("uid") != self.writer["uid"]:
+                        raise ValueError("pod watch identity changed or API watch expired")
+                    self.observed = True
+                    for status in pod.get("status", {}).get("containerStatuses", []):
+                        if status.get("containerID") != self.writer["containers"].get(status["name"]):
+                            raise ValueError("container identity changed during pod watch")
+                        terminal = status.get("state", {}).get("terminated")
+                        if terminal:
+                            if status.get("containerID") != self.writer["containers"].get(status["name"]):
+                                raise ValueError("container identity changed during shutdown")
+                            self.terminal[status["name"]] = terminal
+            if not self.terminal:
+                raise ValueError("pod watch ended without terminal status")
+        except Exception as exc:  # noqa: BLE001 - Every watcher failure must reject clean shutdown.
+            self.error = str(exc)
+
+    def require_clean(self):
+        if self.error or set(self.terminal) != set(self.writer["containers"]):
+            raise ValueError("normal shutdown was not observed for every original container")
+        if any(t["exitCode"] != 0 or t.get("signal", 0) != 0 for t in self.terminal.values()):
+            raise ValueError("source exited abnormally; capture cannot proceed")
+
+    def close(self):
+        self.process.terminate()
+        self.process.wait(timeout=10)
+        self.thread.join(timeout=10)
+        self.process.stdout.close()
+        self.process.stderr.close()
+
+
+def terragrunt(unit, *args, timeout=TERRAGRUNT_TIMEOUT):
+    return run(["terragrunt", "--log-disable", "run", "--disable-bucket-update",
+                "--backend-bootstrap=false", "--", *args], cwd=unit, timeout=timeout)
+
+
+def validate_plan(plan, desired):
+    changes = [change for change in plan.get("resource_changes", [])
+               if change["change"]["actions"] != ["no-op"]]
+    if len(changes) != 1 or changes[0]["address"] != "kubernetes_manifest.this":
+        raise ValueError("phase plan changes resources outside its existing Application")
+    change = changes[0]["change"]
+    if change["actions"] != ["update"] or change["after"]["manifest"] != desired:
+        raise ValueError("phase plan differs from the closed repository profile")
+
+
+def apply_phase(directory, session, app, target, expected_main_revision=None):
+    """Always plan against current original state; never reuse a previous phase plan."""
+    live = phase.load_live()
+    desired = phase.profile(session["bases"][app], target, session["id"], session["revision"])
+    phase.validate_transition(app, desired, live, session["id"])
+    attempt = Path(tempfile.mkdtemp(prefix=f"{app}-{target}-", dir=directory))
+    var_file, plan = attempt / "profile.tfvars.json", attempt / "phase.plan"
+    write_json(var_file, {"manifest": desired})
+    write_json(Path(str(var_file) + ".profile.json"), {"session": session["id"], "phase": target, "revision": session["revision"]})
+    unit = ROOT / "IaC/live/argocd-apps" / app
+    output = terragrunt(unit, "plan", "-input=false", "-no-color", "-lock-timeout=30s",
+                       "-var-file=" + str(var_file), "-out=" + str(plan))
+    (attempt / "plan.log").write_text(output)
+    rendered = json.loads(terragrunt(unit, "show", "-json", str(plan)))
+    validate_plan(rendered, desired)
+    write_json(Path(str(plan) + ".n8n-permit.json"), {
+        "plan_sha256": phase.digest(plan), "var_file": str(var_file),
+        "before": {name: phase.markers(item) for name, item in live.items()}})
+    output = terragrunt(unit, "apply", "-input=false", "-no-color", "-lock-timeout=30s", str(plan))
+    (attempt / "apply.log").write_text(output)
+    wait_for(lambda: application_synced(app, desired, expected_main_revision or session["revision"]), RECONCILE_TIMEOUT, f"{app} {target} reconciliation")
+
+
+def application_synced(app, desired, revision):
+    return reconciled_profile(kube("get", "application", app, "-n", "argocd"), desired, revision)
+
+
+def reconciled_profile(obj, desired, revision):
+    """A ready old Pod and stale Synced status do not prove a new spec was applied."""
+    sync = obj.get("status", {}).get("sync", {})
+    compared = sync.get("comparedTo", {})
+    sources = phase.normalized_sources(desired["spec"]["sources"])
+    destination = normalized_destination(desired["spec"]["destination"])
+    return (expected_revision(obj, revision) and phase.markers(obj) == phase.markers(desired)
+            and sync.get("status") == "Synced"
+            and phase.normalized_sources(obj["spec"]["sources"]) == sources
+            and phase.normalized_sources(compared.get("sources", [])) == sources
+            and normalized_destination(obj["spec"].get("destination", {})) == destination
+            == normalized_destination(compared.get("destination", {})))
+
+
+def wait_for(predicate, seconds, label):
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if predicate():
+            return
+        time.sleep(2)
+    raise TimeoutError(label)
+
+
+def absent(name):
+    return all(p["metadata"]["name"] != name for p in source_pods())
+
+
+def ready_pod(app, session):
+    candidates = [p for p in source_pods() if p["metadata"]["name"].startswith(app + "-")
+                  and p["metadata"]["name"] not in READERS]
+    if app == "n8n":
+        candidates = [p for p in candidates if not p["metadata"]["name"].startswith("n8n-postgres-")]
+    if (len(candidates) == 1
+            and {c["name"]: c["image"] for c in candidates[0]["spec"]["containers"]} == session["writers"][app]["images"]
+            and containers_ready(candidates[0])):
+        return candidates[0]
+    return None
+
+
+def ready(app, session):
+    return ready_pod(app, session) is not None
+
+
+def verify_archive(path, kind):
+    names = set()
+    with tarfile.open(path, "r:") as archive:
+        for item in archive:
+            name = item.name.removeprefix("./").rstrip("/")
+            if name in ("", "."):
+                continue
+            if name.startswith("/") or ".." in Path(name).parts or name in names:
+                raise ValueError("unsafe or duplicate archive member")
+            if not (item.isfile() or item.isdir()):
+                raise ValueError("archive contains a link or special file")
+            names.add(name)
+            if item.isfile():
+                # Consume every payload to detect truncation without extracting secrets.
+                stream = archive.extractfile(item)
+                count = sum(len(chunk) for chunk in iter(lambda stream=stream: stream.read(1024 * 1024), b""))
+                if count != item.size:
+                    raise ValueError("truncated archive member")
+    required = {"config"} if kind == "n8n" else {"pgdata/PG_VERSION", "pgdata/global/pg_control", "pgdata/pg_wal"}
+    if not required <= names:
+        raise ValueError("archive lacks required recovery paths")
+    return {"bytes": path.stat().st_size, "sha256": phase.digest(path), "members": len(names)}
+
+
+def stream_archive(directory, kind, assert_fence=None):
+    target = directory / (kind + ".tar")
+    with target.open("xb") as stream, (directory / (kind + "-reader.log")).open("xb") as errors:
+        process = subprocess.Popen(["kubectl", "--request-timeout=330s", "exec", "-n", "automation",
+                                    "n8n-checkpoint-" + kind, "-c", "reader", "--", "timeout", "300",
+                                    "/bin/bash", "/capture/read.sh", kind], stdout=stream, stderr=errors,
+                                   start_new_session=True)
+        try:
+            deadline = time.monotonic() + STREAM_TIMEOUT
+            while process.poll() is None and time.monotonic() < deadline:
+                if assert_fence:
+                    assert_fence()
+                if shutil.disk_usage(directory).free < 128 * 1024 ** 2:
+                    raise ValueError("archive reached private filesystem reserve")
+                time.sleep(1)
+            code = process.wait(timeout=1)
+            if code != 0:
+                raise ValueError("reader failed; partial archive is not accepted")
+        finally:
+            # Even a successful parent can leave descendants holding the output
+            # files. Stop the whole group before accepting any archive bytes.
+            try:
+                terminate_command(process)
+            except BaseException as cleanup_failure:
+                raise CommandCleanupError(f"command group {process.pid} cleanup failed; recovery was not started") from cleanup_failure
+        stream.flush()
+        os.fsync(stream.fileno())
+    fsync_directory(directory)
+    result = verify_archive(target, kind)
+    remote = re.findall(r"^archive-sha256: ([0-9a-f]{64})  -$",
+                        (directory / (kind + "-reader.log")).read_text(), re.MULTILINE)
+    if remote != [result["sha256"]]:
+        raise ValueError("local archive differs from remote stream checksum")
+    return result
+
+
+class CaptureFence:
+    def __init__(self, session):
+        self.session, self.error, self.stop = session, None, threading.Event()
+        self.last_success, self.observations = 0.0, 0
+        self.thread = threading.Thread(target=self.observe, daemon=True)
+        self.thread.start()
+
+    def observe(self):
+        try:
+            while not self.stop.is_set():
+                started = time.monotonic()
+                live = phase.load_live()
+                if any(not expected_revision(live[app], self.session["revision"]) for app in phase.APPS):
+                    raise ValueError("Git revision changed during capture")
+                if any(phase.markers(live[app])[phase.SESSION] != self.session["id"] for app in phase.APPS):
+                    raise ValueError("maintenance session changed during capture")
+                if phase.markers(live["n8n"])[phase.PHASE] != "stopped" or phase.markers(live["n8n-postgres"])[phase.PHASE] not in ("capture", "cold"):
+                    raise ValueError("writer phase changed during capture")
+                fence(self.session, list(self.session["writers"].values()), readers=True)
+                if time.monotonic() - started > 45 or (self.last_success and started - self.last_success > 10):
+                    raise ValueError("capture observation exceeded its continuity budget")
+                self.last_success, self.observations = time.monotonic(), self.observations + 1
+                self.stop.wait(2)
+        except Exception as exc:  # noqa: BLE001 - Any observer failure invalidates capture.
+            self.error = str(exc)
+
+    def require_valid(self):
+        if self.error or not self.observations or time.monotonic() - self.last_success > 45:
+            raise ValueError("capture fence failed or expired: " + str(self.error))
+
+    def close(self):
+        self.stop.set()
+        self.thread.join(timeout=50)
+        self.require_valid()
+
+
+def prepare(parent, talosconfig, talosctl):
+    os.umask(0o077)
+    parent = private_destination(parent.expanduser())
+    require_capture_filesystem(parent)
+    context = run(["kubectl", "config", "current-context"]).strip()
+    server = run(["kubectl", "config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}"]).strip()
+    if server != "https://10.1.0.199:6443":
+        raise ValueError("select the existing direct homelab Kubernetes context before preparation")
+    if shutil.disk_usage(parent).free < 1024 ** 3:
+        raise ValueError("at least1GiB free required; larger actual sources need additional room")
+    run(["git", "diff", "--exit-code", "HEAD"], cwd=ROOT)
+    revision = run(["git", "rev-parse", "HEAD"], cwd=ROOT).strip()
+    if run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip() != revision:
+        raise ValueError("prepare from freshly fetched current main")
+    require_generated_units()
+    bases = {}
+    for app in phase.APPS:
+        bases[app] = json.loads(run(["terragrunt", "--log-disable", "render", "--json", "--write=false"],
+                                   cwd=ROOT / "IaC/live/argocd-apps" / app, timeout=60))["inputs"]["manifest"]
+    live = phase.load_live()
+    require_capture_ready(live, revision)
+    require_application_bases(live, bases)
+    pods, writers = source_pods(), {}
+    for app, claim in CLAIMS.items():
+        candidates = [p for p in pods if any(v.get("persistentVolumeClaim", {}).get("claimName") == claim for v in p["spec"]["volumes"])]
+        if len(candidates) != 1 or not ready_without_restarts(candidates[0]):
+            raise ValueError("exactly one healthy original writer with zero restarts required for each claim")
+        writers[app] = pod_identity(candidates[0])
+    nodes = node_metadata()
+    check_nodes(nodes, nodes)
+    session = {"id": uuid.uuid4().hex, "revision": revision, "prepared_at": now(),
+               "talosconfig": str(talosconfig.expanduser().resolve(strict=True)), "bases": bases,
+               "writers": writers, "nodes": nodes, "claims": claim_metadata(),
+               "talosctl": str(talosctl.expanduser().resolve(strict=True)), "kube_context": context, "kube_server": server}
+    version = run([session["talosctl"], "version", "--client"])
+    if re.findall(r"^\s*Tag:\s*(\S+)\s*$", version, re.MULTILINE) != ["v1.11.3"]:
+        raise ValueError("use the cluster-matching Talos client1.11.3")
+    talos_fence(session, [{"name": name} for name in READERS])
+    directory = Path(tempfile.mkdtemp(prefix="n8n-pair-", dir=parent))
+    write_json(directory / "session.json", session)
+    print(directory)
+
+
+def require_session(live, session):
+    if any(phase.markers(item)[phase.PHASE] != "normal" and phase.markers(item)[phase.SESSION] != session["id"]
+           for item in live.values()):
+        raise ValueError("another checkpoint session is active")
+    observed = tuple(phase.markers(live[app])[phase.PHASE] for app in phase.APPS)
+    supported = {("normal", "normal"), ("stopped", "normal"), ("stopped", "cold"),
+                 ("stopped", "capture"), ("stopped", "recovery-cold"), ("stopped", "recovered"),
+                 ("recovered", "recovered"), ("recovered", "normal")}
+    if observed not in supported:
+        raise ValueError("unsupported checkpoint phase pair: " + repr(observed))
+
+
+def normal_revision(directory, session):
+    """Bind normal completion to a durable target, or the untouched prepared main."""
+    target = directory / "unpin-target.json"
+    if not target.exists():
+        return session["revision"]
+    value = json.loads(target.read_text())
+    if (not isinstance(value, dict) or set(value) != {"session", "revision"}
+            or value["session"] != session["id"]
+            or not isinstance(value["revision"], str) or not re.fullmatch(r"[a-f0-9]{40}", value["revision"])):
+        raise ValueError("invalid unpin target; retain session evidence and review before continuing")
+    return value["revision"]
+
+
+def require_service_complete(session, normal_revision, normal_only=False):
+    """A phase marker alone never proves that its workloads have recovered."""
+    live = phase.load_live()
+    require_session(live, session)
+    restarts = {}
+    for app in phase.APPS:
+        target = phase.markers(live[app])[phase.PHASE]
+        if target not in (("normal",) if normal_only else ("normal", "recovered")):
+            raise ValueError("service has not reached its completed phase")
+        desired = phase.profile(session["bases"][app], target, session["id"], session["revision"])
+        revision = session["revision"] if target == "recovered" else normal_revision
+        pod = ready_pod(app, session)
+        if pod is None or not application_synced(app, desired, revision):
+            raise ValueError("both original workloads must be ready and reconciled before completion")
+        restarts[app] = {"pod": pod["metadata"]["name"], "containers": {
+            item["name"]: item.get("restartCount") for item in pod["status"]["containerStatuses"]}}
+    return restarts
+
+
+def resume(directory, session):
+    """Return service at the already-reviewed revision without a GitHub fetch."""
+    live = phase.load_live()
+    require_session(live, session)
+    app_phase = phase.markers(live["n8n"])[phase.PHASE]
+    pg_phase = phase.markers(live["n8n-postgres"])[phase.PHASE]
+    if pg_phase == "capture":
+        apply_phase(directory, session, "n8n-postgres", "recovery-cold")
+        pg_phase = "recovery-cold"
+    if pg_phase in ("cold", "recovery-cold"):
+        wait_for(lambda: all(absent(name) for name in READERS), 120, "reader removal")
+        wait_for(lambda: all(absent(x["name"]) for x in session["writers"].values()), 150, "old writer removal")
+        fence(session, list(session["writers"].values()))
+        talos_fence(session, [{"name": name} for name in READERS])
+        apply_phase(directory, session, "n8n-postgres", "recovered")
+    elif pg_phase == "normal" and app_phase == "stopped":
+        # App-only stop failures still pin the original, running database first.
+        apply_phase(directory, session, "n8n-postgres", "recovered")
+    wait_for(lambda: ready("n8n-postgres", session), 300, "PostgreSQL SQL readiness")
+    live = phase.load_live()
+    if phase.markers(live["n8n"])[phase.PHASE] == "stopped":
+        wait_for(lambda: absent(session["writers"]["n8n"]["name"]), 150, "old n8n writer removal")
+        fence(session, [session["writers"]["n8n"]], check_survivors=False)
+        apply_phase(directory, session, "n8n", "recovered")
+    wait_for(lambda: ready("n8n", session), 300, "n8n database-aware readiness")
+    restarts = require_service_complete(session, normal_revision(directory, session))
+    write_json(directory / ("resumed-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+               "revision": session["revision"], "observed_restarts": restarts,
+               "next_step": "unpin after reachable main source verification"})
+
+
+def unpin(directory, session):
+    """After service recovery, verify main before removing temporary SHA pins."""
+    live = phase.load_live()
+    require_session(live, session)
+    if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
+        target_revision = normal_revision(directory, session)
+        restarts = require_service_complete(session, target_revision, normal_only=True)
+        write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+                   "already_normal": True, "main_revision": target_revision, "observed_restarts": restarts})
+        return
+    if any(phase.markers(item)[phase.PHASE] not in ("normal", "recovered") for item in live.values()):
+        raise ValueError("resume service before unpinning")
+    if any(not ready(app, session) for app in phase.APPS):
+        raise ValueError("both original workloads must be ready before unpinning")
+    run(["git", "fetch", "origin", "main"], cwd=ROOT, timeout=60)
+    run(["git", "diff", "--exit-code", session["revision"], "origin/main", "--", *UNPIN_SOURCES], cwd=ROOT)
+    main_revision = run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip()
+    target = directory / "unpin-target.json"
+    if target.exists():
+        if normal_revision(directory, session) != main_revision:
+            raise ValueError("main changed after unpin started; retain target and review before continuing")
+    else:
+        if not re.fullmatch(r"[a-f0-9]{40}", main_revision):
+            raise ValueError("unpin requires the full fetched main revision")
+        write_json(target, {"session": session["id"], "revision": main_revision})
+    for app in reversed(phase.APPS):
+        if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":
+            apply_phase(directory, session, app, "normal", expected_main_revision=main_revision)
+            wait_for(lambda app=app: ready(app, session), 300, app + " readiness after unpin")
+    restarts = require_service_complete(session, normal_only=True, normal_revision=main_revision)
+    write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
+               "main_revision": main_revision, "observed_restarts": restarts})
+
+
+def capture(directory, session):
+    require_capture_filesystem(directory)
+    require_generated_units()
+    watches, observer = [], None
+    safe_to_resume = True
+    live = phase.load_live()
+    require_capture_ready(live, session["revision"])
+    require_application_bases(live, session["bases"])
+    current = {p["metadata"]["name"]: p for p in source_pods()}
+    for writer in session["writers"].values():
+        pod = current.get(writer["name"])
+        if pod and not ready_without_restarts(pod):
+            raise ValueError("original writers must remain ready with zero restarts before capture")
+        if not pod or pod_identity(pod)["uid"] != writer["uid"] or pod_identity(pod)["containers"] != writer["containers"] or pod_identity(pod)["mounts"] != writer["mounts"]:
+            raise ValueError("prepared writer identity changed; prepare again")
+    fence(session, [])
+    try:
+        for app in phase.APPS:
+            watch = PodExitWatch(session["writers"][app])
+            watches.append(watch)
+            wait_for(lambda watch=watch: watch.observed or watch.error is not None, 10, "initial pod observation")
+            if watch.error:
+                raise ValueError("source pod watch failed before phase change")
+            apply_phase(directory, session, app, "stopped" if app == "n8n" else "cold")
+            wait_for(lambda app=app: absent(session["writers"][app]["name"]), 150, app + " shutdown")
+            wait_for(lambda watch=watch: watch.error is not None or set(watch.terminal) == set(watch.writer["containers"]),
+                     10, "terminal status delivery")
+            watch.require_clean()
+            stopped = [session["writers"][name] for name in phase.APPS[:len(watches)]]
+            fence(session, stopped)
+            write_json(directory / (app + "-shutdown.json"), watch.terminal)
+        apply_phase(directory, session, "n8n-postgres", "capture")
+        wait_for(lambda: all(any(p["metadata"]["name"] == name and p.get("status", {}).get("phase") == "Running"
+                                and containers_ready(p)
+                                for p in source_pods()) for name in READERS), READER_READY_TIMEOUT, "readers")
+        observer = CaptureFence(session)
+        wait_for(lambda: observer.observations > 0 or observer.error is not None, FIRST_FENCE_TIMEOUT, "first fence")
+        observer.require_valid()
+        archives = {}
+        for kind in ("n8n", "postgres"):
+            archives[kind] = stream_archive(directory, kind, assert_fence=observer.require_valid)
+            observer.require_valid()
+        apply_phase(directory, session, "n8n-postgres", "cold")
+        wait_for(lambda: all(absent(name) for name in READERS), 120, "reader removal")
+        fence(session, list(session["writers"].values()))
+        talos_fence(session, [{"name": name} for name in READERS])
+        observer.close()
+        observer = None
+        write_json(directory / "paired-capture.json", {"session": session["id"], "at": now(),
+                   "revision": session["revision"], "archives": archives,
+                   "proof": "cold pair captured; application restore unverified"})
+    except CommandCleanupError:
+        safe_to_resume = False
+        raise
+    finally:
+        if observer:
+            observer.stop.set()
+            observer.thread.join(timeout=50)
+        try:
+            for watch in watches:
+                watch.close()
+        finally:
+            if safe_to_resume:
+                resume(directory, session)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    prep = sub.add_parser("prepare")
+    prep.add_argument("--destination", type=Path, required=True)
+    prep.add_argument("--talosconfig", type=Path, required=True)
+    prep.add_argument("--talosctl", type=Path, required=True)
+    for command in ("capture", "resume", "unpin"):
+        child = sub.add_parser(command)
+        child.add_argument("--session-directory", type=Path, required=True)
+    args = parser.parse_args()
+    os.umask(0o077)
+    if args.command == "prepare":
+        prepare(args.destination, args.talosconfig, args.talosctl)
+        return
+    directory = private_destination(args.session_directory.expanduser())
+    session = json.loads((directory / "session.json").read_text())
+    if (run(["kubectl", "config", "current-context"]).strip() != session["kube_context"]
+            or run(["kubectl", "config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}"]).strip() != session["kube_server"]):
+        raise ValueError("restore the prepared Kubernetes context before continuing")
+    if run(["git", "rev-parse", "HEAD"], cwd=ROOT).strip() != session["revision"]:
+        raise ValueError("use the exact prepared repository revision")
+    run(["git", "diff", "--exit-code", "HEAD"], cwd=ROOT)
+    if args.command == "capture":
+        if any(directory.glob("*-shutdown.json")) or (directory / "paired-capture.json").exists():
+            raise ValueError("session already started; resume it and prepare a new capture")
+        capture(directory, session)
+    elif args.command == "resume":
+        resume(directory, session)
+    else:
+        unpin(directory, session)
+
+
+if __name__ == "__main__":
+    main()

@@ -341,6 +341,42 @@ test_allows_withheld_live_command_output if {
 	count(violations) == 0
 }
 
+test_allows_exact_plan_stage_failure_notice if {
+	run := replace(withheld_live_run, `echo "failure details withheld"`, `python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log"`)
+	violations := deny with input as workflow_with_live_run(run)
+	count(violations) == 0
+}
+
+test_rejects_modified_plan_stage_failure_notice if {
+	every notice in [
+		`python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log" --verbose`,
+		`python3 scripts/ci/terragrunt-plan-diagnostics.py "$other_log"`,
+		`python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log"; cat "$private_log"`,
+		`python3 scripts/ci/other-diagnostics.py "$private_log"`,
+		`python3 scripts/ci/terragrunt-plan-diagnostics.py $private_log`,
+	] {
+		run := replace(withheld_live_run, `echo "failure details withheld"`, notice)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_plan_stage_notice_with_extra_public_output if {
+	run := replace(withheld_live_run, `echo "failure details withheld"`, `python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log"
+  cat "$private_log"`)
+	violations := deny with input as workflow_with_live_run(run)
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
+test_rejects_plan_stage_helper_as_success_notice if {
+	run := replace(withheld_live_run, `echo "success details withheld"`, `python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log"`)
+	violations := deny with input as workflow_with_live_run(run)
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
 test_rejects_octelium_catalog_without_one_use_credential if {
 	violations := deny with input as workflow_with_catalog_run({})
 	some msg in violations

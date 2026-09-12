@@ -145,12 +145,14 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
+          echo "homelab-plan-stage: kubeconfig"
           bash scripts/ci/install-kubeconfig.sh
+          echo "homelab-plan-stage: api-readiness"
           kubectl --request-timeout=15s version >/dev/null
           bash scripts/ci/terragrunt-plan.sh
           EOF
           then
-            echo "::error::Live plan failed; detailed output was withheld because this is a public repository. Reproduce it locally."
+            python3 scripts/ci/terragrunt-plan-diagnostics.py "$private_log"
             exit 1
           fi
           echo "Live plan and policy checks passed; details withheld."
