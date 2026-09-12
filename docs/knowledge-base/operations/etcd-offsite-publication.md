@@ -18,6 +18,12 @@ retrieval remains possible after local snapshot loss.
 
 This is manual offsite copy/retrieval support, not scheduled publication or
 new unattended credentials. Synthetic tests cover failure and recovery paths;
-actual publication/retrieval must be recorded after reviewed execution.
+one real publication and exact-version retrieval completed on 2026-09-07 at
+`17:55:16 UTC`, using the first scheduled snapshot. Independent checks confirmed
+both remote versions/checksums and matching original, working and downloaded
+bytes, including the embedded etcd checksum. The source was preserved; exact
+version IDs and receipts remain private. Unattended offsite freshness remains
+unverified. The downloaded snapshot has not been restored; the earlier offline
+restore used a different manual post-upgrade snapshot.
 Database restoration uses [[operations/etcd-offline-restore-validation]];
 neither helper proves control-plane startup or PVC recovery.

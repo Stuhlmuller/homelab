@@ -129,12 +129,21 @@ incomplete-upload lifecycle rule using read-only AWS metadata calls with
 Retain the private plan and verification receipt in the operator's durable
 maintenance directory. Do not treat creation alone as backup readiness.
 
+On 2026-09-07, the merged unit from
+[PR #1008](https://github.com/Stuhlmuller/homelab/pull/1008) applied the reviewed
+saved plan once, from `17:34:28` through `17:35:38 UTC`: seven resources added,
+none changed or destroyed. Read-only bucket metadata acceptance passed;
+provider refresh and the follow-up no-drift plan exited zero at `17:37:27 UTC`.
+That provider check also covered the SSE-C block field absent from the
+installed AWS CLI model. Private receipts retain the exact plan and source
+identity. No snapshot objects were uploaded by this storage acceptance.
+
 The [manual publisher/retriever](etcd-offsite-publication.md) publishes an
 already verified local snapshot and manifest, then retrieves their immutable
-object versions and repeats offline verification. Keep local copies and the
-private version receipt. The bucket unit does not run this workflow or supply
-unattended credentials; offsite freshness and restore readiness remain separate
-gates requiring execution evidence.
+object versions and repeats offline verification. Its first manual execution
+passed on 2026-09-07, after bucket acceptance. Keep local copies and the private
+version receipt. The bucket unit does not run this workflow or supply unattended
+credentials; ongoing offsite freshness and full recovery remain separate gates.
 
 Rollback is a reviewed forward correction to bucket configuration. Do not
 destroy the bucket, suspend versioning, or add expiration to undo this unit.
