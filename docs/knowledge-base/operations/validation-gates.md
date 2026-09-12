@@ -214,7 +214,14 @@ scripts/octelium-e2e-check.sh
 ```
 
 The transport probe resolves the browser API through `1.1.1.1` and validates
-its gRPC-Web status-16 trailer. It separately starts a temporary TCP carrier
+its gRPC-Web status-16 trailer. A trailers-only response may carry that status
+in its headers with an empty body, as the
+[gRPC-Web protocol](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md)
+permits. The September 12 audit reproduced this response from the healthy
+public endpoint; requiring a body trailer incorrectly failed the transport
+gate. Nonempty responses still require their final trailer frame, and the
+probe retains its HTTP/2, content-type, status and TLS checks.
+It separately starts a temporary TCP carrier
 and requires verified origin TLS, HTTP/2, and native gRPC status 16. Generic
 HTTP responses and local listener readiness do not pass. The catalog checks
 still require authenticated `octeliumctl` with a configured native transport

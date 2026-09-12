@@ -52,8 +52,11 @@ def probe(api, directory, *, port=None):
         return False
     if port:
         return has_status_16(header_text)
-    # gRPC-Web transports trailers as a length-prefixed body frame.
+    # gRPC-Web permits a trailers-only response in the headers with no body.
     payload = body.read_bytes()
+    if not payload:
+        return has_status_16(header_text)
+    # Responses with a body must finish with a length-prefixed trailer frame.
     while len(payload) >= 5:
         flag, length = payload[0], int.from_bytes(payload[1:5], "big")
         if len(payload) < 5 + length:
