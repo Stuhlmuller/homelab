@@ -20,10 +20,17 @@ Generic CI performs offline validation but does not live-plan or apply operator
 units. An existing administrator session must review and apply a focused saved
 plan. Module tests reject an unexpected account, region, and bucket-name suffix.
 
-This storage declaration does not establish an offsite backup. The separate
-[[operations/etcd-offsite-publication|manual publisher/retriever]] provides a
-reviewed copy path; actual publication, unattended credentials, freshness
-monitoring, and retention objectives remain separate work. Record an actual
-apply and verified copy before marking either ready. See
-[[architecture/storage-and-state]] and
+**Deployment evidence:** the reviewed saved plan applied once on 2026-09-07,
+adding seven resources with no changes or destruction. Read-only metadata
+acceptance passed, followed by provider refresh and a zero-change plan at
+`17:37:27 UTC`. The provider check covered the SSE-C block field omitted by
+the installed AWS CLI model. Exact plan/source and acceptance receipts remain
+private; this deployment uploaded no snapshots.
+
+The separate [[operations/etcd-offsite-publication|manual publisher/retriever]]
+completed its first publication and exact-version retrieval on 2026-09-07;
+independent checks confirmed remote versions and downloaded checksums. Storage
+creation alone does not establish this proof. Unattended offsite publication,
+freshness monitoring, retention objectives and full recovery remain separate
+work. See [[architecture/storage-and-state]] and
 [[operations/kubernetes-patch-maintenance-2026-09]] for local recovery evidence.
