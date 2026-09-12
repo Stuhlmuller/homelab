@@ -4,9 +4,11 @@ set -euo pipefail
 # This transport changes only the ephemeral GitHub runner's host resolution.
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
-[[ $# -eq 1 && "$1" =~ ^[0-9]+$ ]]
+[[ $# -ge 1 && $# -le 2 && "$1" =~ ^[0-9]+$ ]]
 execution_deadline="$1"
+mode="${2:-checks}"
 (( $(date +%s) < execution_deadline - 180 ))
+python3 -I scripts/cordium-ci-acceptance.py --mode "$mode" --verify-context
 scratch="$(mktemp -d "${RUNNER_TEMP}/cordium-ci.XXXXXX")"
 chmod 700 "$scratch"
 carrier_pid=""
@@ -70,8 +72,23 @@ for _ in {1..10}; do
 done
 "$ready" || { echo 'Native TLS transport is not ready.' >&2; exit 1; }
 
-timeout 60 octelium --homedir "$scratch/login" login --domain stinkyboi.com \
-  --assertion github-actions >"$scratch/login.log" 2>&1
-logged_in=true
-python3 -I scripts/cordium-check.py --checkout "$GITHUB_SHA" --homedir "$scratch/login" \
-  --deadline "$execution_deadline"
+case "$mode" in
+  deny-ref | deny-workflow)
+    # These cases may authenticate only to observe rejection. They never invoke
+    # Cordium or create a workspace, even if login unexpectedly succeeds.
+    python3 -I scripts/cordium-ci-acceptance.py --mode "$mode" \
+      --homedir "$scratch/login" --deadline "$execution_deadline"
+    ;;
+  checks | force-failure | forbidden-method)
+    timeout 60 octelium --homedir "$scratch/login" login --domain stinkyboi.com \
+      --assertion github-actions >"$scratch/login.log" 2>&1
+    logged_in=true
+    if [[ "$mode" == forbidden-method ]]; then
+      python3 -I scripts/cordium-ci-acceptance.py --mode "$mode" \
+        --homedir "$scratch/login" --deadline "$execution_deadline"
+    else
+      python3 -I scripts/cordium-check.py --checkout "$GITHUB_SHA" --homedir "$scratch/login" \
+        --deadline "$execution_deadline" --mode "$mode"
+    fi
+    ;;
+esac
