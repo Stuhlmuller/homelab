@@ -426,6 +426,23 @@ with the risk. Desired state must be represented in the repo before applying it.
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
 
+## Gluetun CPU capture
+
+The static gate exercises the bounded profiling helper with synthetic Pod,
+process, and HTTP responses. Wrong or insecure API endpoints, identity,
+readiness, image, listener, deadline, response-size, and cleanup failures must
+stop capture. Endpoint flags remain pinned if the ambient context changes;
+an already-absent capture directory counts as cleaned. Chart rendering must
+retain the existing Deluge networking, CPU limits, capabilities, and storage;
+only Gluetun mounts the two private-listener configuration files. Rendering
+`pprof_enabled: "off"` must change the Pod's ConfigMap checksum.
+
+Synthetic checks do not prove a runtime bind address, safe profiling overhead,
+or the cause of saturation. After reviewed activation, the helper verifies the
+actual listener before collecting a private profile. After a reviewed disable
+rollout, `check-disabled` verifies its absence. See
+[[deluge-cpu-audit-2026-09-05]] for measurement and rollback requirements.
+
 ## OpenClaw doctor state gate
 
 The static gate permits one exact noninteractive pinned doctor repair after
