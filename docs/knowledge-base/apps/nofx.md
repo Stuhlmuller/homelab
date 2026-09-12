@@ -48,9 +48,10 @@ its review and merge. It verifies the pinned native client, starts the scoped
 Tunnel transport, and defaults to read-only inspection:
 
 ```sh
-nix develop --command python3 scripts/octelium-nofx-reconcile.py
+nix develop --command python3 -I scripts/octelium-nofx-reconcile.py
 ```
 
+The runbook checks the clean, exact reviewed commit before entering Nix.
 Execution uses the same helper with `--execute --expected-sha` and the full
 reviewed main commit, as documented in that runbook. It requires matching local
 and remote main, a clean checkout including untracked files, and passing
@@ -61,3 +62,8 @@ or login redirect, verify authorized NOFX login, and correlate the audit event.
 Argo CD syncing the Kubernetes app does not reconcile the native Octelium
 catalog. Rollback must retain the authentication policy and header passthrough;
 do not restore anonymous access.
+
+The native helper requires isolated Python before importing modules, restores
+an authenticated missing `nofx.default` during guarded execution, and verifies
+both human policy enforcement and `Authorization` passthrough after applying.
+Use the [fixed reconciliation runbook](../../octelium-nofx-reconciliation.md).

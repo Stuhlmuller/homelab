@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Inspect or reconcile the single repository-owned NOFX Service over Tunnel."""
+import sys
+
+# sys is built in. Reject unsafe module search paths before any other imports.
+if __name__ == "__main__" and not sys.flags.isolated:
+    raise SystemExit("Run this operator command with python3 -I")
+
 import argparse
 import contextlib
 import importlib.util
@@ -38,12 +44,17 @@ def verified_client():
     return executable
 
 
+def authorization_mode(service):
+    return service.get("spec", {}).get("config", {}).get("http", {}).get("header", {}).get("authorizationMode")
+
+
 def declared_service():
     service = json.loads(run("yq", "ea", "-o=json", "-I=0",
         'select(.kind == "Service" and .metadata.name == "nofx")', str(ROOT / CATALOG)).stdout)
     if (service.get("kind") != "Service" or service.get("metadata", {}).get("name") != "nofx"
             or service.get("spec", {}).get("isAnonymous") is not False
-            or service["spec"].get("authorization", {}).get("policies") != ["homelab-human-web-access"]):
+            or service["spec"].get("authorization", {}).get("policies") != ["homelab-human-web-access"]
+            or authorization_mode(service) != "PASS"):
         raise RuntimeError("NOFX catalog must retain the reviewed non-anonymous human-access contract")
     return service
 
@@ -144,13 +155,23 @@ def native_transport(directory):
 
 def reconcile(client, environment, desired, directory, execute):
     def current():
-        value = json.loads(run(*client, "get", "service", "nofx.default", "-o", "json", env=environment).stdout)
+        try:
+            result = run(*client, "get", "service", "nofx.default", "-o", "json", env=environment)
+        except subprocess.CalledProcessError as error:
+            if (re.search(r"^gRPC error NotFound:", error.stdout or "", re.MULTILINE)
+                    or re.search(r"\bcode = NotFound\b", error.stderr or "")):
+                return None
+            raise RuntimeError("Native inspection failed; absence is not established") from None
+        value = json.loads(result.stdout)
         if value.get("metadata", {}).get("name") != "nofx.default":
             raise RuntimeError("Unexpected Service identity")
         return value
 
     before = current()
-    print("NOFX anonymous access:", before["spec"].get("isAnonymous", False))
+    print("NOFX Service present:", before is not None)
+    if before is not None:
+        print("NOFX anonymous access:", before["spec"].get("isAnonymous", False))
+        print("NOFX authorization passthrough:", authorization_mode(before) == "PASS")
     if not execute:
         print("Read-only check; no catalog resources changed")
         return
@@ -166,11 +187,15 @@ def reconcile(client, environment, desired, directory, execute):
     if "No applied changes in Cluster Core resources" not in result.stdout:
         raise RuntimeError("Second catalog apply did not prove convergence")
     after = current()
+    if after is None:
+        raise RuntimeError("NOFX Service remains absent after reconciliation")
+    if authorization_mode(after) != "PASS":
+        raise RuntimeError("NOFX authorization passthrough was not restored")
     if after["spec"].get("isAnonymous", False) is not False:
         raise RuntimeError("NOFX still permits anonymous access")
     if after["spec"].get("authorization", {}).get("policies") != ["homelab-human-web-access"]:
         raise RuntimeError("NOFX human-access policy was not restored")
-    print("Verified NOFX catalog convergence and disabled anonymous access")
+    print("Verified NOFX convergence, disabled anonymous access, and authorization passthrough")
 
 
 def main():

@@ -9,12 +9,20 @@ case "$(uname -s)-$(uname -m)" in
   Linux-aarch64) platform=linux-arm64; checksum=8de5cd959ecb50594b92e0cba03c7473aa24b6348ed018ba69a51decb6b86e99 ;;
   *) echo "Unsupported Octelium CLI platform" >&2; exit 1 ;;
 esac
+if command -v sha256sum >/dev/null 2>&1; then
+  checksum_command=(sha256sum --check -)
+elif command -v shasum >/dev/null 2>&1; then
+  checksum_command=(shasum -a 256 --check -)
+else
+  echo "Install sha256sum or shasum before installing the pinned CLI" >&2
+  exit 1
+fi
 temporary="$(mktemp -d)"
 trap 'rm -rf "$temporary"' EXIT
 curl --fail --silent --show-error --location --max-time 120 \
   "https://github.com/octelium/octelium/releases/download/v0.35.0/octeliumctl-${platform}.tar.gz" \
   --output "$temporary/client.tar.gz"
-printf '%s  %s\n' "$checksum" "$temporary/client.tar.gz" | shasum -a 256 --check -
+printf '%s  %s\n' "$checksum" "$temporary/client.tar.gz" | "${checksum_command[@]}"
 tar -xzf "$temporary/client.tar.gz" -C "$temporary"
 install -d -m 0755 "$1"
 install -m 0755 "$temporary/octeliumctl" "$1/octeliumctl"

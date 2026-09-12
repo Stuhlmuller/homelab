@@ -4,6 +4,9 @@ import importlib.util
 import json
 import pathlib
 import subprocess
+import sys
+import shutil
+import os
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -14,18 +17,24 @@ spec.loader.exec_module(nofx)
 
 
 class Reconciliation(unittest.TestCase):
-    def exercise(self, *, execute=True, apply_error=False, no_convergence=False, anonymous=False, wrong_identity=False):
+    def exercise(self, *, execute=True, apply_error=False, no_convergence=False, anonymous=False, wrong_identity=False, absent=False, auth_failure=False, still_absent=False, authorization_mode="PASS"):
         applied = []
         reads = 0
-        desired = {"kind": "Service", "metadata": {"name": "nofx"}, "spec": {"isAnonymous": False}}
+        desired = {"kind": "Service", "metadata": {"name": "nofx"},
+                   "spec": {"isAnonymous": False, "config": {"http": {"header": {"authorizationMode": "PASS"}}}}}
 
         def run(*command, **_kwargs):
             nonlocal reads
             if "get" in command:
                 reads += 1
+                if auth_failure:
+                    raise subprocess.CalledProcessError(1, command, "", "rpc error: code = Unauthenticated")
+                if still_absent or (absent and reads == 1):
+                    raise subprocess.CalledProcessError(1, command, "gRPC error NotFound: core.v1.Service nofx.default does not exist", "")
                 output = json.dumps({"metadata": {"name": "other.default" if wrong_identity else "nofx.default"},
                                      "spec": {"isAnonymous": reads == 1 or anonymous,
-                                              "authorization": {"policies": ["homelab-human-web-access"]}}})
+                                              "authorization": {"policies": ["homelab-human-web-access"]},
+                                              "config": {"http": {"header": {"authorizationMode": authorization_mode}}}}})
             else:
                 self.assertEqual(command[1:4], ("apply", "--include", "Service"))
                 value = json.loads(pathlib.Path(command[-1]).read_text())
@@ -40,7 +49,7 @@ class Reconciliation(unittest.TestCase):
             try:
                 nofx.reconcile(["octeliumctl"], {}, desired, pathlib.Path(directory), execute)
                 success = True
-            except RuntimeError:
+            except (RuntimeError, subprocess.SubprocessError):
                 success = False
         return success, len(applied)
 
@@ -54,6 +63,48 @@ class Reconciliation(unittest.TestCase):
         self.assertEqual(self.exercise(apply_error=True), (False, 1))
         self.assertFalse(self.exercise(no_convergence=True)[0])
         self.assertFalse(self.exercise(anonymous=True)[0])
+
+    def test_missing_service_can_be_recreated_but_auth_failure_blocks_writes(self):
+        self.assertEqual(self.exercise(absent=True), (True, 2))
+        self.assertEqual(self.exercise(absent=True, execute=False), (True, 0))
+        self.assertEqual(self.exercise(auth_failure=True), (False, 0))
+        self.assertEqual(self.exercise(still_absent=True), (False, 2))
+
+    def test_declared_catalog_requires_authorization_passthrough(self):
+        service = {"kind": "Service", "metadata": {"name": "nofx"},
+                   "spec": {"isAnonymous": False,
+                            "authorization": {"policies": ["homelab-human-web-access"]}}}
+        with patch.object(nofx, "run", return_value=subprocess.CompletedProcess([], 0, json.dumps(service), "")):
+            with self.assertRaises(RuntimeError):
+                nofx.declared_service()
+        service["spec"]["config"] = {"http": {"header": {"authorizationMode": "PASS"}}}
+        with patch.object(nofx, "run", return_value=subprocess.CompletedProcess([], 0, json.dumps(service), "")):
+            self.assertEqual(nofx.declared_service(), service)
+
+    def test_authorization_passthrough_must_persist(self):
+        for mode in (None, "STRIP", ""):
+            with self.subTest(mode=mode):
+                self.assertFalse(self.exercise(authorization_mode=mode)[0])
+
+    def test_shadowed_stdlib_is_never_imported_by_operator_entrypoint(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            scripts = pathlib.Path(temporary)
+            helper = scripts / "octelium-nofx-reconcile.py"
+            shutil.copyfile(nofx.ROOT / "scripts/octelium-nofx-reconcile.py", helper)
+            marker = scripts / "unreviewed-code-ran"
+            (scripts / "json.py").write_text(
+                f"from pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n"
+                "raise RuntimeError('unreviewed module imported')\n")
+            result = subprocess.run([sys.executable, str(helper), "--execute", "--expected-sha", "a" * 40],
+                                    capture_output=True, text=True, timeout=10)
+            self.assertFalse(marker.exists())
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("python3 -I", result.stderr)
+            result = subprocess.run([sys.executable, "-I", str(helper), "--help"],
+                                    cwd=scripts, env={**os.environ, "PYTHONPATH": str(scripts)},
+                                    capture_output=True, text=True, timeout=10)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(marker.exists())
 
     def test_wrong_identity_prevents_apply(self):
         self.assertEqual(self.exercise(wrong_identity=True), (False, 0))
@@ -127,6 +178,51 @@ class Reconciliation(unittest.TestCase):
                         else:
                             real_run("git", "-C", str(checkout), "restore", "--staged", "--worktree", "--", relative)
                 nofx.verify_reviewed_main(expected)
+
+
+class Installer(unittest.TestCase):
+    def exercise(self, *, platform="Linux", checksum_tool="sha256sum", checksum_valid=True):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = pathlib.Path(temporary)
+            commands = root / "bin"
+            commands.mkdir()
+            for command in ("mktemp", "install", "rm"):
+                (commands / command).symlink_to(shutil.which(command))
+
+            def executable(name, source):
+                path = commands / name
+                path.write_text(f"#!{sys.executable}\n" + source)
+                path.chmod(0o755)
+
+            executable("uname", f"import sys\nprint({platform!r} if sys.argv[1] == '-s' else {'aarch64' if platform == 'Linux' else 'arm64'!r})\n")
+            executable("curl", "import pathlib,sys\npathlib.Path(sys.argv[sys.argv.index('--output')+1]).write_bytes(b'fixture')\n")
+            executable("tar", "import pathlib,sys\np=pathlib.Path(sys.argv[sys.argv.index('-C')+1])/'octeliumctl'\n"
+                       "p.write_text('#!/bin/sh\\necho pinned-fixture\\n')\np.chmod(0o755)\n")
+            if checksum_tool:
+                flags = ["--check", "-"] if checksum_tool == "sha256sum" else ["-a", "256", "--check", "-"]
+                executable(checksum_tool, "import sys\n" +
+                           f"assert sys.argv[1:] == {flags!r}\n" +
+                           "assert len(sys.stdin.read().split()[0]) == 64\n" +
+                           f"sys.exit({0 if checksum_valid else 1})\n")
+            destination = root / "installed"
+            result = subprocess.run(["/bin/bash", str(nofx.ROOT / "scripts/install-octeliumctl.sh"), str(destination)],
+                                    env={**os.environ, "PATH": str(commands)},
+                                    capture_output=True, text=True, timeout=15)
+            return result, (destination / "octeliumctl").exists()
+
+    def test_linux_coreutils_and_darwin_fallback(self):
+        for platform, tool in (("Linux", "sha256sum"), ("Darwin", "shasum")):
+            with self.subTest(platform=platform, tool=tool):
+                result, installed = self.exercise(platform=platform, checksum_tool=tool)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertTrue(installed)
+
+    def test_missing_or_failed_checksum_never_installs(self):
+        for options in ({"checksum_tool": None}, {"checksum_valid": False}):
+            with self.subTest(options=options):
+                result, installed = self.exercise(**options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(installed)
 
 
 if __name__ == "__main__":
