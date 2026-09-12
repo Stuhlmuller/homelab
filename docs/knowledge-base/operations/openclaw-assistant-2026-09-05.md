@@ -278,3 +278,36 @@ watchdog when requesting a heartbeat; busy-reply deferrals use a 60-second grace
 Heartbeat now shares the existing bounded 600-second agent budget. Verification
 must check cron `completionStatus: succeeded`, successful tool receipts, and
 zero consecutive errors after repeated runs, including admission delays.
+
+### Stale subscription block recurrence, September 11 Pacific
+
+OpenClaw 2026.9.2 reproduced the Discord `agent-runner-failure` heartbeat
+receipt on September 12 at 00:39 UTC. The Pod was 2/2 Ready with zero restarts.
+Read-only auth inspection found an unexpired OAuth credential and a saved
+`wham` / `subscription_limit` block whose last probe was September 7; hourly
+attempts rejected auth before inference. The repository recovery helper's
+check mode reproduced `FAIL: Astra OAuth profile is blocked before inference`.
+
+The helper now explicitly supports reviewed 2026.9.2 module exports alongside
+2026.9.1. Its upstream recheck retains provider denial, probe throttling, and
+atomic credential/block-generation guards. At 01:04 UTC the native recheck
+cleared the stale block and public `secrets.reload` refreshed gateway auth.
+No credential replacement, usage-reset credit, session reset, or Pod restart
+was needed. At 01:05:07 UTC a quiet heartbeat completed in 37 seconds with
+`status: ok-token`, `indicatorType: ok`, and the Discord route marked silent;
+its receipt confirmed reading `HEARTBEAT.md`. This verifies heartbeat execution
+without sending an unsolicited owner message. A second quiet heartbeat at
+01:06:38 UTC also returned `ok-token` in 26 seconds.
+
+Validation: recovery tests first failed against 2026.9.2, then passed with
+both reviewed versions, unknown-version rejection, provider denial, snapshot
+reload failure, and idempotent recovery. The full
+`nix develop -c bash scripts/ci/static-checks.sh` gate passed.
+`nix run .#validate` is not defined in this checkout.
+
+Remaining reliability finding: native Codex auth admission can still strand
+an existing subscription block without another usage probe in 2026.9.2.
+The supported operator recovery restores service but does not change that
+upstream admission behavior. Review a future upstream fix against this
+blocked-profile reproduction before retiring the helper; do not implement
+unconditional block clearing or automatic credit redemption.
