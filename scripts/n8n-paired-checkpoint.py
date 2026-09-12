@@ -27,6 +27,7 @@ _backup_spec.loader.exec_module(etcd_backup)
 CLAIMS = {"n8n": "n8n", "n8n-postgres": "data-n8n-postgres-0"}
 READERS = {"n8n-checkpoint-n8n", "n8n-checkpoint-postgres"}
 COMMAND_TIMEOUT = 30
+COMMAND_CLEANUP_TIMEOUT = 2
 TERRAGRUNT_TIMEOUT = 900
 RECONCILE_TIMEOUT = 240
 READER_READY_TIMEOUT = 120
@@ -62,7 +63,7 @@ def terminate_command(process):
         # The group has already exited; continue with bounded parent reaping.
         pass
     try:
-        process.wait(timeout=2)
+        process.wait(timeout=COMMAND_CLEANUP_TIMEOUT)
     except subprocess.TimeoutExpired:
         # TERM did not finish in the grace period; finally escalates to KILL.
         pass
@@ -73,7 +74,7 @@ def terminate_command(process):
         except ProcessLookupError:
             # No group remains to kill, but its parent still needs to be reaped.
             pass
-    process.communicate(timeout=2)
+    process.communicate(timeout=COMMAND_CLEANUP_TIMEOUT)
 
 
 def run(command, **kwargs):
@@ -454,7 +455,8 @@ def stream_archive(directory, kind, assert_fence=None):
     with target.open("xb") as stream, (directory / (kind + "-reader.log")).open("xb") as errors:
         process = subprocess.Popen(["kubectl", "--request-timeout=330s", "exec", "-n", "automation",
                                     "n8n-checkpoint-" + kind, "-c", "reader", "--", "timeout", "300",
-                                    "/bin/bash", "/capture/read.sh", kind], stdout=stream, stderr=errors)
+                                    "/bin/bash", "/capture/read.sh", kind], stdout=stream, stderr=errors,
+                                   start_new_session=True)
         try:
             deadline = time.monotonic() + STREAM_TIMEOUT
             while process.poll() is None and time.monotonic() < deadline:
@@ -466,12 +468,15 @@ def stream_archive(directory, kind, assert_fence=None):
             code = process.wait(timeout=1)
             if code != 0:
                 raise ValueError("reader failed; partial archive is not accepted")
-            stream.flush()
-            os.fsync(stream.fileno())
         finally:
-            if process.poll() is None:
-                process.terminate()
-                process.wait(timeout=10)
+            # Even a successful parent can leave descendants holding the output
+            # files. Stop the whole group before accepting any archive bytes.
+            try:
+                terminate_command(process)
+            except BaseException as cleanup_failure:
+                raise CommandCleanupError(f"command group {process.pid} cleanup failed; recovery was not started") from cleanup_failure
+        stream.flush()
+        os.fsync(stream.fileno())
     fsync_directory(directory)
     result = verify_archive(target, kind)
     remote = re.findall(r"^archive-sha256: ([0-9a-f]{64})  -$",

@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import re
 import shlex
 import shutil
@@ -341,7 +342,8 @@ class CheckpointTests(unittest.TestCase):
         # kubectl calls cover sync/readiness predicate overshoot; local first
         # archive verification gets a 15-minute allowance, not a hard deadline.
         needed = (checkpoint.TERRAGRUNT_TIMEOUT + checkpoint.RECONCILE_TIMEOUT + checkpoint.READER_READY_TIMEOUT
-                  + checkpoint.FIRST_FENCE_TIMEOUT + 2 * (checkpoint.STREAM_TIMEOUT + 1)
+                  + checkpoint.FIRST_FENCE_TIMEOUT
+                  + 2 * (checkpoint.STREAM_TIMEOUT + 1 + 2 * checkpoint.COMMAND_CLEANUP_TIMEOUT)
                   + 3 * checkpoint.COMMAND_TIMEOUT + 15 * 60)
         pods = [doc for doc in rendered.split("\n---\n") if "\nkind: Pod\n" in doc]
         self.assertEqual(len(pods), 2)
@@ -787,6 +789,121 @@ class CheckpointTests(unittest.TestCase):
             with self.assertRaises(checkpoint.CommandCleanupError):
                 checkpoint.capture(Path("/unused"), session)
             resume.assert_not_called()
+
+    def test_stream_cancellation_stops_owned_descendants_before_return(self):
+        for reason in ("timeout", "interrupt"):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                ready, release, marker = [root / name for name in ("ready", "release", "late-write")]
+                child = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                         f"pathlib.Path({str(ready)!r}).write_text('ready')\n"
+                         f"while not pathlib.Path({str(release)!r}).exists(): time.sleep(.01)\n"
+                         f"pathlib.Path({str(marker)!r}).write_text('late')")
+                parent = f"import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',{child!r}]); time.sleep(30)"
+                real_popen, processes, ownership = subprocess.Popen, [], []
+
+                def start(_command, *, ownership=ownership, real_popen=real_popen,
+                          parent=parent, processes=processes, ready=ready, **kwargs):
+                    ownership.append(kwargs.get("start_new_session"))
+                    # Isolate even the old implementation so a failing regression
+                    # can safely clean up its own surviving descendant afterward.
+                    kwargs["start_new_session"] = True
+                    process = real_popen([sys.executable, "-c", parent], **kwargs)
+                    processes.append(process)
+                    deadline = time.monotonic() + 10
+                    while not ready.exists() and time.monotonic() < deadline:
+                        time.sleep(.01)
+                    self.assertTrue(ready.exists())
+                    return process
+
+                try:
+                    with patch.object(checkpoint.subprocess, "Popen", side_effect=start), \
+                            patch.object(checkpoint, "STREAM_TIMEOUT", 0 if reason == "timeout" else 30), \
+                            patch.object(checkpoint, "verify_archive") as verify, \
+                            patch.object(checkpoint.os, "fsync") as sync:
+                        failure = subprocess.TimeoutExpired if reason == "timeout" else KeyboardInterrupt
+                        with self.assertRaises(failure):
+                            checkpoint.stream_archive(root, "n8n", assert_fence=MagicMock(side_effect=KeyboardInterrupt))
+                        release.write_text("stream cancellation returned")
+                        time.sleep(.2)
+                        self.assertFalse(marker.exists(), "stream descendant wrote after cancellation returned")
+                        self.assertEqual(ownership, [True])
+                        verify.assert_not_called()
+                        sync.assert_not_called()
+                finally:
+                    for process in processes:
+                        checkpoint.terminate_command(process)
+
+    def test_successful_stream_reaps_exited_parent_descendants_before_acceptance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.tar"
+            with tarfile.open(source, "w") as archive:
+                archive.addfile(tarfile.TarInfo("config"))
+            ready, release, marker = [root / name for name in ("ready", "release", "late-write")]
+            child = ("import signal,time,pathlib; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                     f"pathlib.Path({str(ready)!r}).write_text('ready')\n"
+                     f"while not pathlib.Path({str(release)!r}).exists(): time.sleep(.01)\n"
+                     f"pathlib.Path({str(marker)!r}).write_text('late')")
+            parent = (f"import subprocess,sys,time,pathlib,hashlib; subprocess.Popen([sys.executable,'-c',{child!r}]); "
+                      f"payload=pathlib.Path({str(source)!r}).read_bytes(); sys.stdout.buffer.write(payload); "
+                      "sys.stdout.buffer.flush(); print('archive-sha256: '+hashlib.sha256(payload).hexdigest()+'  -',file=sys.stderr)\n"
+                      f"while not pathlib.Path({str(ready)!r}).exists(): time.sleep(.01)")
+            real_popen, real_fsync, processes, ownership = subprocess.Popen, os.fsync, [], []
+
+            def start(_command, **kwargs):
+                ownership.append(kwargs.get("start_new_session"))
+                kwargs["start_new_session"] = True
+                process = real_popen([sys.executable, "-c", parent], **kwargs)
+                processes.append(process)
+                process.wait(timeout=10)
+                return process
+
+            def sync(descriptor):
+                release.write_text("archive fsync started")
+                time.sleep(.2)
+                self.assertFalse(marker.exists(), "archive was flushed before its remaining command group was stopped")
+                return real_fsync(descriptor)
+
+            try:
+                with patch.object(checkpoint.subprocess, "Popen", side_effect=start), \
+                        patch.object(checkpoint.os, "fsync", side_effect=sync):
+                    result = checkpoint.stream_archive(root, "n8n")
+                self.assertEqual(result["sha256"], hashlib.sha256(source.read_bytes()).hexdigest())
+                self.assertEqual(ownership, [True])
+                self.assertEqual(result["members"], 1)
+            finally:
+                for process in processes:
+                    checkpoint.terminate_command(process)
+
+    def test_failed_stream_cleanup_prevents_acceptance_and_automatic_resume(self):
+        pods = writer_pods()
+        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}, "writers": {
+            app: checkpoint.pod_identity(pod) for app, pod in zip(phase.APPS, pods)}}
+        process = MagicMock(pid=123, poll=MagicMock(return_value=0), wait=MagicMock(return_value=0))
+        watch = MagicMock(observed=True, error=None, terminal={"app": {"exitCode": 0}})
+        observer = MagicMock(observations=1, error=None)
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(phase, "load_live", return_value=live()), \
+                patch.object(checkpoint, "source_pods", return_value=pods), \
+                patch.object(checkpoint, "fence"), patch.object(checkpoint, "wait_for"), \
+                patch.object(checkpoint, "PodExitWatch", return_value=watch), \
+                patch.object(checkpoint, "CaptureFence", return_value=observer), \
+                patch.object(checkpoint, "apply_phase"), \
+                patch.object(checkpoint.subprocess, "Popen", return_value=process), \
+                patch.object(checkpoint, "terminate_command", side_effect=TimeoutError("fixture cleanup failure")), \
+                patch.object(checkpoint, "verify_archive") as verify, \
+                patch.object(checkpoint.os, "fsync") as sync, \
+                patch.object(checkpoint, "resume") as resume:
+            root = Path(directory)
+            with self.assertRaises(checkpoint.CommandCleanupError):
+                checkpoint.capture(root, session)
+            verify.assert_not_called()
+            resume.assert_not_called()
+            # Shutdown evidence is durable before streaming begins; the failed
+            # stream must not add archive/file-system fsync or a pair receipt.
+            self.assertEqual(sync.call_count, 4)
+            self.assertFalse((root / "paired-capture.json").exists())
 
     def test_unknown_profile_and_arbitrary_session_fail(self):
         for target, session in [("delete", SESSION), ("stopped", "../escape")]:

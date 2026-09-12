@@ -96,12 +96,13 @@ No snapshot, pod, or phase change occurs during preparation.
 Keep free space comfortably above the combined source size. The September 7
 metadata estimate was about 217 MiB; that estimate can become stale. Streaming
 also stops at the 128 MiB local reserve. Each archive has a 300-second remote
-command limit and a 320-second client deadline plus one second to reap it.
+command limit and a 320-second client deadline, one second for completion,
+and up to four seconds for owned-process cleanup.
 Both reader Pods have a 3600-second deadline and sleep for 3590 seconds.
 Their last required live use is the second archive stream: the budget includes
 900 seconds of remaining provider apply, 240 for reconciliation, 120 for reader
-readiness, 50 for the first fence, two 321-second streams and up to 90 seconds
-of synchronous Kubernetes predicate overrun, totaling 2042 seconds. This leaves
+readiness, 50 for the first fence, two 325-second streams and up to 90 seconds
+of synchronous Kubernetes predicate overrun, totaling 2050 seconds. This leaves
 more than 15 minutes for the first archive's local validation/hash and other
 local I/O. Local validation has no hard deadline, so this is a conservative
 allowance, not a guarantee that arbitrarily slow storage can finish. The fixture
@@ -148,11 +149,12 @@ succeed, readers disappear, and the final source fence passes. An archive or
 partial directory without that receipt is not an accepted pair.
 
 Normal command failures and interrupts enter the same database-then-app resume
-path. Timed-out or interrupted operator commands run in owned process groups:
+path. Operator commands, including archive streams, run in owned process groups:
 the runner sends TERM, waits up to two seconds, then sends KILL to surviving
 group members and allows two seconds to reap the command. Recovery starts only
-after cleanup succeeds. A cleanup failure reports the group ID and blocks
-automatic recovery; establish that the earlier command has stopped before
+after cleanup succeeds. Streams also clean up descendants after a successful
+parent exit, before archive fsync and validation. A cleanup failure reports the
+group ID and blocks automatic recovery; establish that the earlier command has stopped before
 retrying. Reader removal must finish before database restart. If nodes cannot
 be reached or writer state remains uncertain, automatic resume stops rather
 than creating another possible writer. Preserve the session and use the same

@@ -26,7 +26,8 @@ application restore has been verified for this code yet.
   `unpin` verifies reachable, unchanged n8n sources, checkpoint scripts and the
   full IaC tree before restoring `main`; changed definitions leave service pinned.
 - Timed-out or interrupted commands terminate their owned process groups before
-  recovery starts; failed cleanup blocks automatic resume.
+  recovery starts; failed cleanup blocks automatic resume. Archive streams also
+  stop remaining descendants after parent exit, before fsync and validation.
 - Resume and unpin receipts require both original workloads ready and their
   Applications reconciled, including retries whose markers already read normal.
   Recovery requires prepared images and complete current container readiness;
