@@ -153,14 +153,22 @@ checks the five n8n source/maintenance directories, both checkpoint scripts and
 the complete `IaC` tree against the prepared commit. The conservative IaC
 check includes shared configuration, catalog units and Application modules;
 even an unrelated IaC change requires review before unpinning.
-It returns PostgreSQL, then n8n, to `main` through fresh original-unit plans.
-If the fetch fails or those sources changed, service stays running at the
-prepared SHA; review and resolve the source difference before retrying. A
+Before either normal apply, it fsyncs the fetched revision to the private
+`unpin-target.json` session record. It returns PostgreSQL, then n8n, to `main`
+through fresh original-unit plans. Keep merges paused: if main advances during
+a partial unpin, the retry preserves that target and stops for source review.
+If the fetch fails or those sources changed, the existing healthy state is
+preserved; during a partial retry, PostgreSQL may already follow `main`. Review
+and resolve the source difference before retrying. A
 partial unpin resumes with the remaining Application; an already-normal retry
 records completion only after both original workloads are ready and both
-Applications have reconciled at freshly fetched and source-verified `main`.
-A stale `Synced` status from the prior pin cannot complete a retry. Resume and the
-final unpin step also recheck both workloads before writing completion receipts.
+Applications have reconciled to the recorded target, without another GitHub
+request. Before any unpin target exists, normal completion requires the prepared
+revision. Argo's compared sources and destination must match the desired profile;
+a stale pinned `Synced` status cannot prove that returning to `main` completed,
+even when both references resolve to the same SHA. Resume and the final unpin
+step also recheck both workloads before writing completion receipts. Retain the
+target record with the session; an invalid or unreadable record fails closed.
 Do not start another
 capture until both markers are normal. Failed captures are not retried in
 place: resume, unpin, prepare a new session and retain the failed evidence.

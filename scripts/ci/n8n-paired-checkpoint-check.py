@@ -29,7 +29,8 @@ REVISION = "b" * 40
 
 def base(app):
     return {"metadata": {"name": app, "annotations": {phase.PHASE: "normal", phase.SESSION: ""}},
-            "spec": {"sources": ([{"repoURL": "https://charts.example", "chart": "app-template",
+            "spec": {"destination": {"server": "https://kubernetes.default.svc", "namespace": "automation"},
+                     "sources": ([{"repoURL": "https://charts.example", "chart": "app-template",
                                   "targetRevision": "4.4.0", "path": ".",
                                   "helm": {"valueFiles": ["original"]}},
                                  {"repoURL": phase.REPO, "targetRevision": "main", "ref": "values", "path": "."},
@@ -41,7 +42,7 @@ def base(app):
 def live():
     result = {app: base(app) for app in phase.APPS}
     for item in result.values():
-        item["status"] = {"health": {"status": "Healthy"}, "sync": {"status": "Synced", "revisions": [
+        item["status"] = {"health": {"status": "Healthy"}, "sync": {"status": "Synced", "comparedTo": copy.deepcopy(item["spec"]), "revisions": [
             REVISION if source["repoURL"] == phase.REPO else source["targetRevision"] for source in item["spec"]["sources"]]}}
     return result
 
@@ -124,7 +125,8 @@ class CheckpointTests(unittest.TestCase):
         actual = copy.deepcopy(desired)
         actual["spec"]["sources"][0].pop("path")
         actual["spec"]["sources"][1]["path"] = ""
-        actual["status"] = {"sync": {"status": "Synced", "revisions": ["4.4.0", REVISION, REVISION]}}
+        actual["status"] = {"sync": {"status": "Synced", "revisions": ["4.4.0", REVISION, REVISION],
+                                    "comparedTo": copy.deepcopy(actual["spec"])}}
         with patch.object(checkpoint, "kube", return_value=actual):
             self.assertTrue(checkpoint.application_synced("n8n", desired, REVISION))
             actual["spec"]["sources"][0]["path"] = "unexpected-chart-path"
@@ -262,29 +264,21 @@ class CheckpointTests(unittest.TestCase):
             checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION})
         self.assertEqual(calls, [("n8n", "normal", "c" * 40)])
 
-    def test_normal_unpin_retry_rejects_old_synced_revision(self):
+    def test_completed_unpin_is_idempotent_without_network(self):
         current = live()
-        session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}}
         with tempfile.TemporaryDirectory() as directory, \
                 patch.object(phase, "load_live", return_value=current), \
                 patch.object(checkpoint, "ready", return_value=True), \
                 patch.object(checkpoint, "kube", side_effect=lambda *args: current[args[2]]), \
-                patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
+                patch.object(checkpoint, "run", side_effect=AssertionError("completed unpin needs no GitHub")), \
                 patch.object(checkpoint, "apply_phase") as apply:
+            session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}}
+            current["n8n"]["status"]["sync"]["revisions"][-1] = "c" * 40
             with self.assertRaisesRegex(ValueError, "ready and reconciled"):
                 checkpoint.unpin(Path(directory), session)
-            apply.assert_not_called()
             self.assertEqual(list(Path(directory).glob("unpinned-*.json")), [])
-
-    def test_completed_unpin_revalidates_main_without_apply(self):
-        with tempfile.TemporaryDirectory() as directory, \
-                patch.object(phase, "load_live", return_value=live()), \
-                patch.object(checkpoint, "ready", return_value=True), \
-                patch.object(checkpoint, "application_synced", return_value=True), \
-                patch.object(checkpoint, "run", side_effect=["", "", "c" * 40]), \
-                patch.object(checkpoint, "apply_phase") as apply:
-            checkpoint.unpin(Path(directory), {"id": SESSION, "revision": REVISION,
-                             "bases": {app: base(app) for app in phase.APPS}})
+            current["n8n"]["status"]["sync"]["revisions"][-1] = REVISION
+            checkpoint.unpin(Path(directory), session)
             apply.assert_not_called()
             self.assertTrue(json.loads(next(Path(directory).glob("unpinned-*.json")).read_text())["already_normal"])
 
@@ -312,12 +306,10 @@ class CheckpointTests(unittest.TestCase):
             self.assertTrue(all(phase.markers(item)[phase.PHASE] == "normal" for item in current.values()))
             self.assertEqual(list(root.glob("unpinned-*.json")), [])
             applied.reset_mock()
-            def verified_main(args, **_kwargs):
-                return "c" * 40 if args[1] == "rev-parse" else ""
-            command.side_effect = verified_main
+            command.side_effect = AssertionError("normal retry must not fetch GitHub")
             for unready in phase.APPS:
                 ready.side_effect = lambda app, _session, unready=unready: app != unready
-                with self.assertRaisesRegex(ValueError, "ready"):
+                with self.assertRaisesRegex(ValueError, "ready and reconciled"):
                     checkpoint.unpin(root, session)
                 self.assertEqual(list(root.glob("unpinned-*.json")), [])
             ready.side_effect = None
@@ -343,6 +335,97 @@ class CheckpointTests(unittest.TestCase):
                     checkpoint.resume(Path("/unused"), session)
                 receipt.assert_not_called()
                 applied.assert_not_called()
+
+    def test_normal_retry_requires_recorded_revision_and_current_comparison(self):
+        # A spec update can leave healthy Pods and the previous pinned Synced
+        # status intact, even when main resolves to the same prepared SHA.
+        for fetched_revision in (REVISION, "c" * 40):
+            with self.subTest(fetched_revision=fetched_revision), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                current = live()
+                for app in phase.APPS:
+                    pinned = phase.profile(base(app), "recovered", SESSION, REVISION)
+                    current[app].update(pinned)
+                    current[app]["status"]["sync"]["comparedTo"] = copy.deepcopy(pinned["spec"])
+                session = {"id": SESSION, "revision": REVISION, "bases": {app: base(app) for app in phase.APPS}}
+
+                def apply(_directory, _session, app, target, *, root=root, current=current,
+                          fetched_revision=fetched_revision, **_kwargs):
+                    self.assertEqual(json.loads((root / "unpin-target.json").read_text()),
+                                     {"session": SESSION, "revision": fetched_revision})
+                    current[app].update(phase.profile(base(app), target, SESSION, REVISION))
+                    if app == "n8n":
+                        raise TimeoutError("last spec applied before reconciliation completed")
+
+                with patch.object(phase, "load_live", return_value=current), \
+                        patch.object(checkpoint, "ready", return_value=True), \
+                        patch.object(checkpoint, "kube", side_effect=lambda *args, current=current: current[args[2]]), \
+                        patch.object(checkpoint, "apply_phase", side_effect=apply) as applied, \
+                        patch.object(checkpoint, "run", side_effect=["", "", fetched_revision]) as command:
+                    with self.assertRaises(TimeoutError):
+                        checkpoint.unpin(root, session)
+                    applied.reset_mock()
+                    command.side_effect = AssertionError("normal retry must not fetch GitHub")
+                    with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                        checkpoint.unpin(root, session)
+                    self.assertEqual(list(root.glob("unpinned-*.json")), [])
+                    for app in phase.APPS:
+                        current[app]["status"]["sync"]["comparedTo"] = copy.deepcopy(current[app]["spec"])
+                    if fetched_revision != REVISION:
+                        with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                            checkpoint.unpin(root, session)
+                        with self.assertRaisesRegex(ValueError, "ready and reconciled"):
+                            checkpoint.resume(root, session)
+                        self.assertEqual(list(root.glob("resumed-*.json")), [])
+                    for app in phase.APPS:
+                        current[app]["status"]["sync"]["revisions"] = [
+                            fetched_revision if source["repoURL"] == phase.REPO else source["targetRevision"]
+                            for source in current[app]["spec"]["sources"]]
+                    checkpoint.unpin(root, session)
+                    applied.assert_not_called()
+                    receipts = list(root.glob("unpinned-*.json"))
+                    self.assertEqual(len(receipts), 1)
+                    self.assertEqual(json.loads(receipts[0].read_text())["main_revision"], fetched_revision)
+
+    def test_unpin_keeps_original_target_if_main_advances_during_partial_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            checkpoint.write_json(root / "unpin-target.json", {"session": SESSION, "revision": "c" * 40})
+            current = live()
+            current["n8n"] = phase.profile(base("n8n"), "recovered", SESSION, REVISION)
+            with patch.object(phase, "load_live", return_value=current), \
+                    patch.object(checkpoint, "ready", return_value=True), \
+                    patch.object(checkpoint, "run", side_effect=["", "", "d" * 40]), \
+                    patch.object(checkpoint, "apply_phase") as applied:
+                with self.assertRaisesRegex(ValueError, "main changed after unpin started"):
+                    checkpoint.unpin(root, {"id": SESSION, "revision": REVISION})
+                applied.assert_not_called()
+                self.assertEqual(json.loads((root / "unpin-target.json").read_text())["revision"], "c" * 40)
+                self.assertEqual(list(root.glob("unpinned-*.json")), [])
+
+    def test_reconciliation_requires_current_compared_sources_and_destination(self):
+        current = live()["n8n"]
+        with patch.object(checkpoint, "kube", return_value=current):
+            self.assertTrue(checkpoint.application_synced("n8n", base("n8n"), REVISION))
+            current["status"]["sync"]["comparedTo"]["sources"] = phase.profile(base("n8n"), "recovered", SESSION, REVISION)["spec"]["sources"]
+            self.assertFalse(checkpoint.application_synced("n8n", base("n8n"), REVISION))
+            current["status"]["sync"]["comparedTo"]["sources"] = copy.deepcopy(current["spec"]["sources"])
+            current["status"]["sync"]["comparedTo"]["destination"]["namespace"] = "previous-namespace"
+            self.assertFalse(checkpoint.application_synced("n8n", base("n8n"), REVISION))
+
+    def test_invalid_unpin_target_cannot_produce_completion_receipt(self):
+        for target in ({"session": "d" * 32, "revision": REVISION}, {"session": SESSION, "revision": "main"}, []):
+            with tempfile.TemporaryDirectory() as directory, \
+                    patch.object(phase, "load_live", return_value=live()), \
+                    patch.object(checkpoint, "require_service_complete") as complete, \
+                    patch.object(checkpoint, "apply_phase") as applied:
+                root = Path(directory)
+                checkpoint.write_json(root / "unpin-target.json", target)
+                with self.assertRaisesRegex(ValueError, "invalid unpin target"):
+                    checkpoint.unpin(root, {"id": SESSION, "revision": REVISION})
+                complete.assert_not_called()
+                applied.assert_not_called()
+                self.assertEqual(list(root.glob("unpinned-*.json")), [])
 
     def test_command_timeout_stops_child_and_grandchild_before_return(self):
         with tempfile.TemporaryDirectory() as directory:

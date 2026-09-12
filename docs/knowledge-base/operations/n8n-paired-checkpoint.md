@@ -24,9 +24,9 @@ application restore has been verified for this code yet.
   recovery starts; failed cleanup blocks automatic resume.
 - Resume and unpin receipts require both original workloads ready and their
   Applications reconciled, including retries whose markers already read normal.
-  Every unpin retry fetches and verifies current main and requires its exact
-  revision in Argo status before recording completion; it never accepts stale
-  `Synced` status from the previous pin.
+  Completion binds to the durable unpin target (or prepared main before unpin)
+  and Argo's compared sources/destination, so old pinned sync status is rejected.
+  Partial unpin retries refuse a changed main target; retain the session record.
 - A failed or interrupted session must be resumed and unpinned, then replaced
   by a fresh session for a new capture. Never equate candidate files with an
   accepted pair.
