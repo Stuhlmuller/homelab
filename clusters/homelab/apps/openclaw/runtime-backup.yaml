@@ -1,0 +1,75 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: openclaw-runtime-backup
+  namespace: ai
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    checkov.io/skip1: CKV_K8S_40=UID 1000 reads private OpenClaw databases without weakening their permissions.
+  labels:
+    app.kubernetes.io/name: openclaw-runtime-backup
+    app.kubernetes.io/part-of: homelab-ai
+spec:
+  schedule: "25 4 * * *"
+  timeZone: America/Los_Angeles
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 600
+      backoffLimit: 1
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+            app.kubernetes.io/name: openclaw-runtime-backup
+        spec:
+          automountServiceAccountToken: false
+          nodeSelector:
+            kubernetes.io/hostname: zimaboard-1
+          restartPolicy: Never
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: backup
+              image: ghcr.io/openclaw/openclaw:2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250
+              command: [python3, /etc/openclaw-assistant/runtime-storage.py, backup]
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: [ALL]
+              volumeMounts:
+                - name: runtime
+                  mountPath: /runtime-volume
+                  readOnly: true
+                - name: backup
+                  mountPath: /data
+                - name: scripts
+                  mountPath: /etc/openclaw-assistant
+                  readOnly: true
+          volumes:
+            - name: runtime
+              persistentVolumeClaim:
+                claimName: openclaw-runtime-local
+                readOnly: true
+            - name: backup
+              persistentVolumeClaim:
+                claimName: openclaw
+            - name: scripts
+              configMap:
+                name: openclaw-assistant

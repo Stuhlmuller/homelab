@@ -163,6 +163,11 @@ depend on Grafana rule evaluation for the only Argo CD notification path. After
 rollout, validate that the `argocd-application-health` `PrometheusRule` is
 present and that Prometheus is receiving `argocd_app_info`.
 
+[[../operations/monitoring-resource-requests]] records the September 2026
+memory measurements, explicit monitoring reservations, scheduling-fit model,
+and required post-rollout checks. These requests protect scheduler accounting;
+the cluster's remaining failover-capacity deficit remains open.
+
 ## Sonarr
 
 Sonarr runs behind Octelium with `AuthenticationMethod=External` and
