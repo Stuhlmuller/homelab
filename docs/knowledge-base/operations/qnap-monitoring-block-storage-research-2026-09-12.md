@@ -11,9 +11,11 @@ compatibility finding, not a proven storage or restore path.
 `Storage Pool 1`: RAID 5 across four 2 TB disks with a 10% snapshot reserve.
 Current firmware, disk health, pool allocation, and free capacity have not been
 verified through authenticated NAS management. September 12 read-only probes
-found TCP `10.1.0.2:3260` refused and HTTP `:8080` returning an unidentified
-landing page. These results do not establish the QTS management endpoint or
-explain whether iSCSI is disabled or bound elsewhere.
+found TCP `10.1.0.2:3260` refused. Following the HTTP landing page's normal
+redirects identified `http://10.1.0.2:8080/cgi-bin/QTS.cgi`, which redirects
+unauthenticated requests to the QNAP login page. Pool health and capacity are
+not visible there without authentication. No login was attempted; whether
+iSCSI is disabled or bound elsewhere remains unverified.
 
 The official [QNAP CSI v1.6.2 documentation][qnap] lists Kubernetes
 `1.24–1.35`, Talos `1.8+`, and QTS `5.1+`, covering the cluster's Kubernetes
@@ -66,8 +68,8 @@ the proposed fit for repeatable provisioning through the existing GitOps model.
 
 ## Missing Provisioning Contract
 
-- Verified QTS management URL/port and controller-accessible credentials for
-  pool discovery and target/LUN provisioning, supplied through the existing
+- Authenticated QTS backend API access and controller-accessible credentials
+  for pool discovery and target/LUN provisioning, supplied through the existing
   external-secret workflow. The pinned guide does not establish a minimum
   delegated account role; validate the actual required permissions. Do not
   place login values in git or ordinary environment inputs.
@@ -76,8 +78,8 @@ the proposed fit for repeatable provisioning through the existing GitOps model.
   and measured verification copies. Backend virtual-pool labels are not proof
   of a particular physical pool; verify the selected NAS pool before allocation.
 - Confirmed portal/interface, intended node initiators, management and iSCSI
-  reachability, and CHAP secret references if enabled. `:8080` and a NAS NFS
-  export alone satisfy none of these requirements.
+  reachability, and CHAP secret references if enabled. The QTS login page and
+  NAS NFS export do not establish this storage provisioning contract.
 - Repo-owned bootstrap/service operation and CSI resources, a reviewed serial
   Talos installer rollout, and measured workload placement/replay capacity.
   NAS storage does not fix the cluster's memory or sole-control-plane limits.
