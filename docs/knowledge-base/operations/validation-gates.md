@@ -116,6 +116,10 @@ buildless `actions` analysis job because this repository has no compiled
 application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
+The CodeQL action v4.38.0 pin (`b96794f015dfd88f77b49b1c93e0fa7110f94c63`)
+is recorded in the exact normalized workflow security hash. Updating action
+revisions requires reviewing that workflow and refreshing its hash alongside
+the pin; the credentialed-job inventory and permission checks still apply.
 
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
@@ -701,3 +705,12 @@ Source: pinned upstream
 [managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
 [cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
 and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
+
+## OpenClaw container privilege gate
+
+The app, bootstrap, and proxy declare UID/GID 1000, non-root execution, no
+privilege escalation, and an empty capability set. Pod seccomp is explicitly
+`RuntimeDefault`. The root Nix toolbox init remains a documented exception;
+server-side Restricted warnings for that init are expected and must not be
+misreported as full Pod compliance. See the OpenClaw README's container
+privilege boundary for post-rollout process and functionality checks.
