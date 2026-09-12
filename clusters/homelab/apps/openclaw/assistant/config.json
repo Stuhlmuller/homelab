@@ -80,5 +80,12 @@
         ]
       }
     }
+  },
+  "skills": {
+    "entries": {
+      "gog": {
+        "enabled": true
+      }
+    }
   }
 }
