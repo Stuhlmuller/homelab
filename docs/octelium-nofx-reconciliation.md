@@ -27,6 +27,22 @@ processes receive that dynamically allocated proxy address. Inner TLS remains
 verified; it changes no hosts file, DNS settings, or saved client config.
 Temporary files and both listeners are removed afterward. Use `--homedir`
 only to select a different existing private operator login directory.
+The helper rejects inherited `OCTELIUM_INSECURE_TLS=true` or a nonempty
+`OCTELIUM_AUTH_PROXY_SOCKET` before opening transport: the pinned native client
+would otherwise bypass certificate verification or use its authentication
+proxy socket instead of the reviewed TLS path.
+
+## Read-only observation: 2026-09-12
+
+The earlier 45-second native lookup timeout did not recur with the unmodified
+helper. The pinned client completed an authenticated lookup through the
+verified TLS carrier; bounded transport diagnostics confirmed the expected
+API CONNECT requests. No transport or authentication changes were required.
+The read-only result still reported `NOFX anonymous access: True`.
+
+This confirms native catalog drift remains. Merging the manifest or applying
+Kubernetes does not satisfy catalog acceptance: run the guarded reconciliation
+below, then verify convergence, human authorization, and audit evidence.
 
 ## Apply and verify
 

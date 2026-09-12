@@ -72,6 +72,17 @@ class Reconciliation(unittest.TestCase):
                         with self.assertRaises(RuntimeError):
                             nofx.verified_client()
 
+    def test_unsafe_native_overrides_fail_before_opening_transport(self):
+        for overrides in ({"OCTELIUM_INSECURE_TLS": "true"},
+                          {"OCTELIUM_AUTH_PROXY_SOCKET": "/private/proxy.sock"}):
+            with self.subTest(overrides=overrides), \
+                    patch.dict(nofx.os.environ, overrides, clear=True), \
+                    patch.object(nofx.importlib.util, "spec_from_file_location",
+                                 side_effect=AssertionError("Transport opened before override rejection")):
+                with self.assertRaisesRegex(RuntimeError, "TLS or authentication"):
+                    with nofx.native_transport(pathlib.Path("/unused")):
+                        self.fail("Unsafe transport override accepted")
+
     def test_reviewed_commit_is_required(self):
         with self.assertRaises(RuntimeError):
             nofx.verify_reviewed_main(None)

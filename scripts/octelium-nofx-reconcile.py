@@ -63,6 +63,9 @@ def verify_reviewed_main(expected):
 
 @contextlib.contextmanager
 def native_transport(directory):
+    if (os.environ.get("OCTELIUM_INSECURE_TLS") == "true"
+            or os.environ.get("OCTELIUM_AUTH_PROXY_SOCKET")):
+        raise RuntimeError("Native overrides must not bypass TLS or authentication")
     spec = importlib.util.spec_from_file_location("tunnel_probe", ROOT / "scripts/octelium-tunnel-check.py")
     probe = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(probe)

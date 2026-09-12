@@ -103,6 +103,13 @@ pods and a login page alone prove neither ingestion nor query results.
 - Repair the known public Octelium gRPC and Cordium nested-wildcard TLS paths;
   they currently block the intended external control and developer experience.
 - Reconcile NOFX's native catalog drift through the declared apply path.
+  On 2026-09-12 the unmodified read-only helper recovered from an earlier
+  native timeout and still reported anonymous access enabled. Kubernetes
+  convergence does not reconcile this catalog. Preserve the exact-main apply,
+  repeated-apply convergence, human authorization, and audit gates in the
+  [NOFX runbook](../../octelium-nofx-reconciliation.md). The helper rejects
+  inherited native overrides that disable TLS verification or substitute an
+  authentication proxy socket.
 - Run a GitHub workflow whose remote workspace checks demonstrably pass, then
   verify a deliberate failing check fails the GitHub job and cleanup occurs.
 - Demonstrate a human development session and an OpenClaw-owned execution
@@ -140,7 +147,8 @@ its login return destination.
 Core 0.35.0 builds this redirect from the canonical managed Service hostname
 unless `status.managedService.forwardHost` is true and a valid forwarded host
 is present. Read-only native-resource projection found that flag absent on
-`console.octelium`; do not mutate generated status to repair it. Neither Enterprise 0.22.0 nor current 0.29.0 exposes a supported alias setting.
+`console.octelium`; do not mutate generated status to repair it. Neither
+Enterprise 0.22.0 nor current 0.29.0 exposes a supported alias setting.
 The repository now declares a narrow Envoy response filter for this exact
 unauthorized console login redirect, preserving path/query and authentication.
 Runtime rollout and authenticated console query validation remain pending.
