@@ -36,6 +36,8 @@ repos:
     hooks:
       - id: codespell
         args: ["--ignore-words-list", "notin"]
+        # Upstream Go module names and h1 checksums are machine data, not prose.
+        exclude: ^images/gluetun/dependencies\.patch$
 
   - repo: https://github.com/bridgecrewio/checkov.git
     # 3.2.495

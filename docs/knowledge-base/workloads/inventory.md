@@ -133,6 +133,9 @@ reconciles the cluster-scoped `automation` Namespace.
 
 ## Worker Resource Contracts
 
+The inactive Gluetun candidate in [[../operations/gluetun-image-build]] adds
+build validation only; it does not change Deluge's deployed image or resources.
+
 - Prometheus, Grafana, Prometheus Operator, kube-state-metrics, and config
   reloaders declare memory requests from the retained September 2026 usage
   sample. See [[../operations/monitoring-resource-requests]] for sizing,

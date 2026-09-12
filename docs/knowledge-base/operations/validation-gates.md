@@ -117,6 +117,11 @@ application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
 
+[[codeql-analysis-categories]] records a pre-existing legacy category on main
+that leaves PR introduced-alert comparison incomplete even when the current
+Actions analysis uploads successfully. Do not treat its neutral aggregate as
+complete scanning coverage.
+
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
 
@@ -126,6 +131,15 @@ rg -n \
   "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" \
   docs/knowledge-base .agents/skills
 ```
+
+## Gluetun Image Checks
+
+[[gluetun-image-build]] links the pinned candidate's complete-image build and
+native fixture gate. Run `nix develop --command python3
+scripts/ci/gluetun-image-build.py` from a committed, clean native Linux/amd64
+checkout with local Docker. Source/schema checks and Darwin cross-compilation
+do not satisfy this gate. Native CI success is still pending; publishing and
+real VPN rollout acceptance remain separately authorized work.
 
 ## Kubernetes Source Checks
 

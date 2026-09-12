@@ -1,0 +1,12 @@
+{
+  "vpn_service_provider": "airvpn",
+  "vpn_type": "wireguard",
+  "firewall": "on",
+  "publicip_enabled": "off",
+  "updater_period": "0",
+  "dns_keep_nameserver": "on",
+  "health_restart_vpn": "off",
+  "health_target_addresses": "127.0.0.1:1",
+  "health_server_address": "127.0.0.1:9999",
+  "pprof_http_server_address": "127.0.0.1:6060"
+}
