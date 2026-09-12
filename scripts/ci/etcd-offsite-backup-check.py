@@ -20,7 +20,7 @@ offsite = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(offsite)
 
 
-class PublicationTests(unittest.TestCase):
+class PublicationFixture(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -132,6 +132,8 @@ class PublicationTests(unittest.TestCase):
     def publication(self):
         return next(self.output.glob("publication-*"))
 
+
+class PublicationTests(PublicationFixture):
     def test_publishes_snapshot_then_manifest_and_verifies_download(self):
         original = self.snapshot.read_bytes()
         publication, downloaded = self.publish()
