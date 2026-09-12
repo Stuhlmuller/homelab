@@ -221,6 +221,12 @@ permits. The September 12 audit reproduced this response from the healthy
 public endpoint; requiring a body trailer incorrectly failed the transport
 gate. Nonempty responses still require their final trailer frame, and the
 probe retains its HTTP/2, content-type, status and TLS checks.
+The probe parses the final HTTP response in curl's header dump, excluding
+informational and proxy CONNECT responses. It requires one actual content-type
+field with the expected media type; optional parameters are permitted.
+Duplicate status or content-type fields cannot satisfy the gate. Native gRPC
+may return status in its actual HTTP trailers, while a nonempty gRPC-Web body
+must carry its sole status in the final body trailer frame.
 It separately starts a temporary TCP carrier
 and requires verified origin TLS, HTTP/2, and native gRPC status 16. Generic
 HTTP responses and local listener readiness do not pass. The catalog checks
