@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "launchd_label": "org.homelab.etcd-backup",
+  "minute": 17,
+  "backup_interval_hours": 24,
+  "stale_after_hours": 36,
+  "retention_days": 28,
+  "minimum_valid_copies": 7,
+  "talos_client_version": "v1.11.3"
+}

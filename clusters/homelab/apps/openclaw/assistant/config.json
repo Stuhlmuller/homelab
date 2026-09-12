@@ -25,7 +25,7 @@
           "end": "22:00",
           "timezone": "America/Los_Angeles"
         },
-        "timeoutSeconds": 120,
+        "timeoutSeconds": 600,
         "prompt": "Read HEARTBEAT.md in your workspace and follow it. Only follow up on explicitly tracked work or a completed background task. Recurring homelab checks have separate automation jobs. If nothing meaningful needs the owner, reply exactly NO_REPLY."
       },
       "maxConcurrent": 4
@@ -64,9 +64,20 @@
   "models": {
     "providers": {
       "openai": {
-        "baseUrl": "https://chatgpt.com/backend-api",
+        "baseUrl": "https://chatgpt.com/backend-api/codex",
         "api": "openai-chatgpt-responses",
-        "models": []
+        "models": [
+          {
+            "id": "gpt-6-astra",
+            "name": "GPT-6 Astra",
+            "api": "openai-chatgpt-responses",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ]
+          }
+        ]
       }
     }
   }
