@@ -324,9 +324,15 @@ def apply_phase(directory, session, app, target, expected_main_revision=None):
 
 def application_synced(app, desired, revision):
     obj = kube("get", "application", app, "-n", "argocd")
-    return ((revision is None or expected_revision(obj, revision)) and phase.markers(obj) == phase.markers(desired)
-            and obj.get("status", {}).get("sync", {}).get("status") == "Synced"
-            and phase.normalized_sources(obj["spec"]["sources"]) == phase.normalized_sources(desired["spec"]["sources"]))
+    sync = obj.get("status", {}).get("sync", {})
+    compared = sync.get("comparedTo", {})
+    sources = phase.normalized_sources(desired["spec"]["sources"])
+    destination = desired["spec"]["destination"]
+    return (expected_revision(obj, revision) and phase.markers(obj) == phase.markers(desired)
+            and sync.get("status") == "Synced"
+            and phase.normalized_sources(obj["spec"]["sources"]) == sources
+            and phase.normalized_sources(compared.get("sources", [])) == sources
+            and obj["spec"].get("destination") == destination == compared.get("destination"))
 
 
 def wait_for(predicate, seconds, label):
@@ -498,7 +504,20 @@ def require_session(live, session):
         raise ValueError("unsupported checkpoint phase pair: " + repr(observed))
 
 
-def require_service_complete(session, normal_only=False, normal_revision=None):
+def normal_revision(directory, session):
+    """Bind normal completion to a durable target, or the untouched prepared main."""
+    target = directory / "unpin-target.json"
+    if not target.exists():
+        return session["revision"]
+    value = json.loads(target.read_text())
+    if (not isinstance(value, dict) or set(value) != {"session", "revision"}
+            or value["session"] != session["id"]
+            or not isinstance(value["revision"], str) or not re.fullmatch(r"[a-f0-9]{40}", value["revision"])):
+        raise ValueError("invalid unpin target; retain session evidence and review before continuing")
+    return value["revision"]
+
+
+def require_service_complete(session, normal_revision, normal_only=False):
     """A phase marker alone never proves that its workloads have recovered."""
     live = phase.load_live()
     require_session(live, session)
@@ -537,7 +556,7 @@ def resume(directory, session):
         fence(session, [session["writers"]["n8n"]], check_survivors=False)
         apply_phase(directory, session, "n8n", "recovered")
     wait_for(lambda: ready("n8n", session), 300, "n8n database-aware readiness")
-    require_service_complete(session)
+    require_service_complete(session, normal_revision(directory, session))
     write_json(directory / ("resumed-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
                "revision": session["revision"], "next_step": "unpin after reachable main source verification"})
 
@@ -547,9 +566,10 @@ def unpin(directory, session):
     live = phase.load_live()
     require_session(live, session)
     if all(phase.markers(item)[phase.PHASE] == "normal" for item in live.values()):
-        require_service_complete(session, normal_only=True)
+        target_revision = normal_revision(directory, session)
+        require_service_complete(session, target_revision, normal_only=True)
         write_json(directory / ("unpinned-" + uuid.uuid4().hex + ".json"), {"at": now(), "session": session["id"],
-                   "already_normal": True})
+                   "already_normal": True, "main_revision": target_revision})
         return
     if any(phase.markers(item)[phase.PHASE] not in ("normal", "recovered") for item in live.values()):
         raise ValueError("resume service before unpinning")
@@ -558,6 +578,14 @@ def unpin(directory, session):
     run(["git", "fetch", "origin", "main"], cwd=ROOT, timeout=60)
     run(["git", "diff", "--exit-code", session["revision"], "origin/main", "--", *UNPIN_SOURCES], cwd=ROOT)
     main_revision = run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip()
+    target = directory / "unpin-target.json"
+    if target.exists():
+        if normal_revision(directory, session) != main_revision:
+            raise ValueError("main changed after unpin started; retain target and review before continuing")
+    else:
+        if not re.fullmatch(r"[a-f0-9]{40}", main_revision):
+            raise ValueError("unpin requires the full fetched main revision")
+        write_json(target, {"session": session["id"], "revision": main_revision})
     for app in reversed(phase.APPS):
         if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":
             apply_phase(directory, session, app, "normal", expected_main_revision=main_revision)
