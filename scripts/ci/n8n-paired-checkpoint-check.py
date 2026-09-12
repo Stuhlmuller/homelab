@@ -583,6 +583,8 @@ class CheckpointTests(unittest.TestCase):
                 process.communicate = communicate
                 return process
 
+            # Start the timeout after the actual grandchild exists; slow process
+            # startup under concurrent load is not cancellation evidence.
             with patch.object(checkpoint.subprocess, "Popen", side_effect=start), self.assertRaises(subprocess.TimeoutExpired):
                 checkpoint.run([sys.executable, "-c", parent], timeout=0.4)
             release.write_text("parent cancellation returned")
