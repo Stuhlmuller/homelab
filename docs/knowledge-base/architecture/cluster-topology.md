@@ -9,6 +9,12 @@ Tags: #architecture #talos #kubernetes
 The homelab is a Talos Linux Kubernetes cluster with one active seed
 control-plane node and three Zimaboard workers.
 
+Verified on 2026-09-07 after the
+[[operations/kubernetes-patch-maintenance-2026-09|Kubernetes patch maintenance]]:
+all four nodes are Ready on Kubernetes `1.34.11` and Talos `1.11.3`. All four
+boot IDs were preserved. The single control-plane topology is unchanged;
+its API interruption caused temporary dependent-controller restarts.
+
 | Node | Address | Role | Notes |
 | --- | --- | --- | --- |
 | `acer` | `10.1.0.199` | control-plane | Canonical Talos and Kubernetes API endpoint |
@@ -16,7 +22,7 @@ control-plane node and three Zimaboard workers.
 | `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
-## Current Worker Recovery
+## Worker Recovery History
 
 Initial inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
 `zimaboard-1` Ready. `zimaboard-2` was NotReady; its last kubelet
