@@ -123,7 +123,7 @@ def latest_status(directory, policy, now):
     """Verify the newest selected artifact offline; never hide it behind an older one."""
     directories = completed_directories(directory)
     if not directories:
-        return {"status": "missing"}
+        return {"status": "missing", "checked_at": now.isoformat()}
     newest = [path for path in directories if path.name[:21] == directories[0].name[:21]]
     # Random suffixes are not chronological. Read completion times only for
     # the newest same-second group; a corrupt older group must not block the
@@ -132,7 +132,8 @@ def latest_status(directory, policy, now):
     record = backup.verify(latest)
     age = (now - created_at(record, now)).total_seconds() / 3600
     result = {"status": "fresh", "directory": str(latest), "age_hours": age,
-              "created_at": record["created_at"], "integrity": record["integrity"]}
+              "created_at": record["created_at"], "integrity": record["integrity"],
+              "checked_at": now.isoformat()}
     receipt = directory / SUCCESS
     if not receipt.exists():
         result["status"] = "unconfirmed"
@@ -226,6 +227,25 @@ def executable(path):
 def command(arguments, check=True):
     return subprocess.run([str(arg) for arg in arguments], capture_output=True,
                           text=True, timeout=30, check=check)
+
+
+def command_failure(error, action):
+    """Describe a failed command without forwarding arguments or client output."""
+    operation = "local-command"
+    arguments = error.cmd if isinstance(error.cmd, (list, tuple)) else []
+    if action == "run":
+        operation = "talos-etcd-snapshot"
+    elif arguments and Path(arguments[0]).name == "launchctl":
+        if len(arguments) > 1 and arguments[1] in ("print", "bootstrap", "bootout"):
+            operation = "launchctl-" + arguments[1]
+    result = {"action": action, "status": "failed", "operation": operation,
+              "checked_at": datetime.now(timezone.utc).isoformat(),
+              "prior_backups": "retained"}
+    if isinstance(error, subprocess.TimeoutExpired):
+        result.update(failure="timeout", timeout_seconds=error.timeout)
+    else:
+        result.update(failure="exit", exit_code=error.returncode)
+    return result
 
 
 def reviewed_sources(revision):
@@ -448,12 +468,12 @@ def main():
                     plist_path = Path.home() / "Library" / "LaunchAgents" / (policy["launchd_label"] + ".plist")
                     plist_path.unlink(missing_ok=True)
                 result = {"action": "uninstalled", "backups_and_runtime": "preserved"}
-        print(json.dumps(result, indent=2))
+        print(json.dumps({"checked_at": datetime.now(timezone.utc).isoformat(), **result}, indent=2))
         return 0
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        print("Schedule failed: client or local service command failed; prior backups retained.", file=sys.stderr)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
+        print(json.dumps(command_failure(error, args.command), indent=2), file=sys.stderr)
     except (OSError, ValueError, KeyError, TypeError) as error:
-        print(f"Schedule failed: {error}", file=sys.stderr)
+        print(f"{datetime.now(timezone.utc).isoformat()} Schedule failed: {error}", file=sys.stderr)
     return 1
 
 
