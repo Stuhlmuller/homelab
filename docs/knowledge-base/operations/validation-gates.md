@@ -461,3 +461,12 @@ Source: pinned upstream
 [managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
 [cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
 and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
+
+## OpenClaw container privilege gate
+
+The app, bootstrap, and proxy declare UID/GID 1000, non-root execution, no
+privilege escalation, and an empty capability set. Pod seccomp is explicitly
+`RuntimeDefault`. The root Nix toolbox init remains a documented exception;
+server-side Restricted warnings for that init are expected and must not be
+misreported as full Pod compliance. See the OpenClaw README's container
+privilege boundary for post-rollout process and functionality checks.
