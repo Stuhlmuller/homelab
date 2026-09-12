@@ -30,3 +30,16 @@ gate passed locally. Live rollout and account acceptance remain pending.
 September 11 integration retains the newer heartbeat rule: check each optional
 status, task, and daily-note path before reading; preserve real read failures.
 The rollout digest includes that rule and the current runtime-storage bundle.
+
+September 12 UTC hardening acceptance: all init containers exited zero; the
+Pod reached 2/2 Ready, proxy HTTP returned 200, and the Discord connection and
+read-only credential probe passed. Gateway and proxy reported UID/GID 1000,
+zero effective capabilities, `NoNewPrivs: 1`, and seccomp filtering.
+
+The cold rollout took about 21 minutes: toolbox installation took 8m22s and
+bootstrap 10m02s. Argo terminated the sync operation after 15 minutes, then
+reported Synced/Healthy when startup completed. Retain both observations when
+assessing rollout success. This extends the existing
+[[openclaw-assistant-2026-09-05#Startup performance finding]]; profile or batch
+configuration writes through reviewed code, preserve migration/backup gates,
+and evaluate declared rollout budgets against the measured startup bound.
