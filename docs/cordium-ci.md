@@ -124,6 +124,11 @@ codex/cordium-oidc-denial.
 
 The failure operation is exactly /bin/sh -c 'exit 42', after remote SHA
 verification. ListSpace must return the exact Octelium: Unauthorized detail.
+The pinned workspace server
+[extracts the process exit status and publishes it in the response](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/workspace/workspace/task.go#L503-L544).
+The pinned CLI
+[exits directly with that response code](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/client/cordium/commands/exec/cmd.go#L208-L214).
+This establishes the exit-42 contract independently of the local mock.
 
 The two login-only cases never invoke Cordium or create workspaces, including
 after an unexpected successful login. Normal execution and the fixed failure
