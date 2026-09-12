@@ -18,7 +18,8 @@ application restore has been verified for this code yet.
   publication. Failures enter the existing-owner database-then-app resume path.
 - Resume uses a documented temporary pin to the prepared commit SHA without an
   operator GitHub fetch. Service retains its maintenance markers until separate
-  `unpin` verifies reachable, unchanged n8n sources and restores `main`.
+  `unpin` verifies reachable, unchanged n8n sources, checkpoint scripts and the
+  full IaC tree before restoring `main`; changed definitions leave service pinned.
 - Timed-out or interrupted commands terminate their owned process groups before
   recovery starts; failed cleanup blocks automatic resume.
 - A failed or interrupted session must be resumed and unpinned, then replaced

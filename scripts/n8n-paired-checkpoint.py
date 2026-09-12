@@ -25,6 +25,12 @@ etcd_backup = importlib.util.module_from_spec(_backup_spec)
 _backup_spec.loader.exec_module(etcd_backup)
 CLAIMS = {"n8n": "n8n", "n8n-postgres": "data-n8n-postgres-0"}
 READERS = {"n8n-checkpoint-n8n", "n8n-checkpoint-postgres"}
+# Include all IaC so shared includes, catalog units and module inputs cannot
+# change underneath the prepared Application manifests when returning to main.
+UNPIN_SOURCES = ("IaC", "clusters/homelab/apps/n8n", "clusters/homelab/apps/n8n-postgres",
+                 "clusters/homelab/apps/n8n-maintenance", "clusters/homelab/apps/n8n-postgres-cold",
+                 "clusters/homelab/apps/n8n-postgres-capture", "scripts/n8n-checkpoint-phase.py",
+                 "scripts/n8n-paired-checkpoint.py")
 
 
 def private_destination(path):
@@ -46,16 +52,19 @@ def terminate_command(process):
     try:
         os.killpg(process.pid, signal.SIGTERM)
     except ProcessLookupError:
+        # The group has already exited; continue with bounded parent reaping.
         pass
     try:
         process.wait(timeout=2)
     except subprocess.TimeoutExpired:
+        # TERM did not finish in the grace period; finally escalates to KILL.
         pass
     finally:
         # A parent may exit while a child ignores TERM or has closed its pipes.
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
+            # No group remains to kill, but its parent still needs to be reaped.
             pass
     process.communicate(timeout=2)
 
@@ -531,10 +540,7 @@ def unpin(directory, session):
     if any(not ready(app, session) for app in phase.APPS):
         raise ValueError("both original workloads must be ready before unpinning")
     run(["git", "fetch", "origin", "main"], cwd=ROOT, timeout=60)
-    run(["git", "diff", "--exit-code", session["revision"], "origin/main", "--",
-         "clusters/homelab/apps/n8n", "clusters/homelab/apps/n8n-postgres",
-         "clusters/homelab/apps/n8n-maintenance", "clusters/homelab/apps/n8n-postgres-cold",
-         "clusters/homelab/apps/n8n-postgres-capture"], cwd=ROOT)
+    run(["git", "diff", "--exit-code", session["revision"], "origin/main", "--", *UNPIN_SOURCES], cwd=ROOT)
     main_revision = run(["git", "rev-parse", "origin/main"], cwd=ROOT).strip()
     for app in reversed(phase.APPS):
         if phase.markers(phase.load_live()[app])[phase.PHASE] == "recovered":

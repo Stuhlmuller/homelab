@@ -195,6 +195,53 @@ class CheckpointTests(unittest.TestCase):
                 checkpoint.unpin(Path("/unused"), {"id": SESSION, "revision": REVISION})
             apply.assert_not_called()
 
+    def test_unpin_rejects_changed_application_definitions_with_real_git_diff(self):
+        definitions = ("IaC/terragrunt.stack.hcl", "IaC/.catalog/units/live/argocd-app/terragrunt.hcl",
+                       "IaC/modules/argocd-application-kubernetes/main.tf", "IaC/kubernetes-provider.hcl")
+        current = {app: phase.profile(base(app), "recovered", SESSION, REVISION) for app in phase.APPS}
+        before = copy.deepcopy(current)
+        real_run = checkpoint.run
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+
+            def git(*arguments):
+                return subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+
+            git("init", "-q")
+            for definition in definitions:
+                path = root / definition
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("original Application definition\n")
+            git("add", ".")
+            prepared_tree = git("write-tree")
+            for definition in definitions:
+                with self.subTest(definition=definition):
+                    path = root / definition
+                    path.write_text("changed Application definition\n")
+                    git("add", ".")
+                    fetched_tree = git("write-tree")
+
+                    def run(command, *, fetched_tree=fetched_tree, **kwargs):
+                        if command[1] == "fetch":
+                            return ""  # Local Git trees replace the network fetch.
+                        if command[1] == "rev-parse":
+                            return fetched_tree
+                        return real_run([fetched_tree if arg == "origin/main" else arg for arg in command], **kwargs)
+
+                    with patch.object(checkpoint, "ROOT", root), \
+                            patch.object(phase, "load_live", return_value=current), \
+                            patch.object(checkpoint, "ready", return_value=True), \
+                            patch.object(checkpoint, "run", side_effect=run), \
+                            patch.object(checkpoint, "apply_phase") as apply, \
+                            patch.object(checkpoint, "write_json") as receipt:
+                        with self.assertRaises(subprocess.CalledProcessError):
+                            checkpoint.unpin(root, {"id": SESSION, "revision": prepared_tree})
+                        apply.assert_not_called()
+                        receipt.assert_not_called()
+                        self.assertEqual(current, before)
+                    path.write_text("original Application definition\n")
+                    git("add", ".")
+
     def test_unpin_retry_finishes_only_remaining_application(self):
         current = live()
         current["n8n"] = phase.profile(base("n8n"), "recovered", SESSION, REVISION)

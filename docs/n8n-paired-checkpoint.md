@@ -42,7 +42,8 @@ n8n plan/apply/destroy while either Application carries an active maintenance
 marker, including while service is recovered at the pinned SHA. The serial
 runner's permit binds exact saved-plan bytes, the fixed profile and observed
 previous markers. A separate `unpin` step fetches current main and verifies
-unchanged n8n source directories before restoring `main` and clearing markers.
+unchanged n8n sources, checkpoint scripts and IaC before restoring `main` and
+clearing markers.
 Existing backend locks still serialize each unit's apply.
 This is an operator workflow, not a distributed lock service: old checkouts or
 an independent actor bypassing the documented path are outside its contract.
@@ -148,7 +149,10 @@ python3 scripts/n8n-paired-checkpoint.py unpin \
 ```
 
 Unpin first requires healthy original workloads, fetches current main and
-checks the five n8n source/maintenance directories against the prepared commit.
+checks the five n8n source/maintenance directories, both checkpoint scripts and
+the complete `IaC` tree against the prepared commit. The conservative IaC
+check includes shared configuration, catalog units and Application modules;
+even an unrelated IaC change requires review before unpinning.
 It returns PostgreSQL, then n8n, to `main` through fresh original-unit plans.
 If the fetch fails or those sources changed, service stays running at the
 prepared SHA; review and resolve the source difference before retrying. A
