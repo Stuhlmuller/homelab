@@ -6,6 +6,11 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
+python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-ci-retire-test.py
+python3 -I scripts/ci/cordium-ci-reconcile-test.py
+python3 -I scripts/ci/cordium-isolation-check-test.py
+python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/n8n-paired-checkpoint-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
@@ -610,7 +615,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
     $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
     ($cluster_configs | length) == 1 and
-    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260822" and
+    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
     ($misowned_prerequisites | length) == 0 and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
@@ -794,6 +799,7 @@ jq -en '
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
@@ -825,6 +831,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
+.github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
 .github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
@@ -841,6 +848,7 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \

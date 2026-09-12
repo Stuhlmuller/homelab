@@ -430,6 +430,59 @@ with the risk. Desired state must be represented in the repo before applying it.
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
 
+## Cordium remote repository gate
+
+The optional manual `cordium-check.yml` workflow executes the exact reviewed
+main commit inside a disposable Cordium workspace using dedicated GitHub OIDC.
+Its workflow is included in the credentialed-job inventory, normalized hash,
+and exact-dispatch guard. Local lifecycle tests are part of the static gate;
+live execution, cleanup, denied identity/method cases, and audit correlation
+remain acceptance requirements. See [Cordium CI](../../cordium-ci.md).
+
+The current workflow has only a positive exact-SHA execution path. Wrong-ref
+dispatch skips before authentication; it cannot prove server-side denial.
+Repository-owned live probes for wrong-workflow/ref assertions, a forbidden
+Cordium method, and deliberate remote-command failure are still missing.
+Add a reviewed bounded acceptance path using real GitHub OIDC contexts;
+local mocked failures and a passing positive run do not close those gates.
+Audit records must be correlated through the existing authenticated console;
+there is no workflow audit-record assertion or export helper.
+
+Cordium work shares a deadline captured before Nix setup and reserves three
+minutes for verified deletion and wrapper cleanup. Startup/check limits are
+five/20 minutes; API calls cannot consume the cleanup reserve. Lifecycle tests
+exercise timeout cleanup and exhausted setup without creating a workspace.
+Cordium cleanup polls bounded inventory until asynchronous deletion completes.
+Its fixed retirement helper requires the workflow and CI catalog definitions
+to be removed on clean, exact reviewed local/remote main first, deletes only
+the three dedicated CI identity resources,
+and verifies absence. Tests reject remaining declarations, network errors,
+and incomplete deletion. Ordinary catalog apply does not prune these objects.
+Retirement verifies the pinned native client and reuses the private TLS carrier
+for every inspection and deletion. Transport/pin failures prevent native calls;
+the read-only target preview opens no carrier. Tests require carrier-scoped
+environment on every request and cleanup after failed inspection.
+
+The Tunnel probe accepts the protocol-defined empty-body gRPC-Web response
+with status trailers in headers. Live browser and native TCP-carrier probes
+passed after PR 957; malformed bodies and spoofed status headers still fail.
+[Protocol reference](https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-WEB.md).
+
+Cordium native CI installation tests verify read-only previews, fixed
+three-resource selection, policy-first ordering, exact-main guards, and
+repeated-apply convergence. Missing resources are distinguished from failed
+native reads; wrong identities, duplicate definitions, reported apply errors,
+and post-apply specification drift fail closed. Use the bounded
+[CI catalog command](../../cordium-ci.md#fixed-native-catalog-reconciliation)
+for rollout; broad catalog application is not required.
+Operator commands use `python3 -I`; the documented caller checks clean reviewed
+main before evaluating Nix or repository Python. A copied-checkout regression
+proves an untracked `scripts/json.py` cannot run before these helper guards.
+
+Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
+format as well as raw gRPC stderr errors. Already-absent resources are skipped;
+other native failures remain errors.
+
 ## OpenClaw doctor state gate
 
 The static gate permits one exact noninteractive pinned doctor repair after
@@ -470,3 +523,22 @@ privilege escalation, and an empty capability set. Pod seccomp is explicitly
 server-side Restricted warnings for that init are expected and must not be
 misreported as full Pod compliance. See the OpenClaw README's container
 privilege boundary for post-rollout process and functionality checks.
+
+## NOFX catalog gate
+
+The fixed NOFX reconciliation command defaults to read-only inspection.
+The documented caller verifies exact local/remote reviewed main and a clean
+checkout before Nix evaluates `flake.nix` or `flake.lock`. The helper repeats
+that guard before parsing the catalog or opening transport; it cannot protect
+Nix code that a caller already evaluated. Staged and untracked files also fail
+execution.
+Tests reject wrong resource identities, missing or mismatched pinned CLI builds,
+reported native apply errors, missing convergence, and remaining anonymous
+access. Live acceptance requires an unauthenticated denial,
+authorized human access, and audit correlation after the reviewed apply.
+The operator entrypoint requires `python3 -I` before non-built-in imports.
+A copied-script fixture proves untracked `scripts/json.py` never executes.
+Tests also cover Linux `sha256sum`, Darwin `shasum`, failed-checksum rejection,
+missing-Service recreation without treating auth failures as absence, and
+live `authorizationMode: PASS` verification.
+See [the operator path](../../octelium-nofx-reconciliation.md).

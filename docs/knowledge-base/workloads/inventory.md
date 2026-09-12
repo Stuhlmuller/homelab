@@ -117,7 +117,11 @@ change; storage migration and restore verification remain separate work.
 
 OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved
-personal memory. Monitoring depends on Grafana: the OpenClaw mesh identity
+personal memory. Its personal-assistant extension installs the pinned Google
+CLI and enables the Calendar skill, with scoped Marketplace outreach and private
+task/deal tracking. Google OAuth and a private Facebook browser/login remain
+unconfigured; see [[operations/openclaw-personal-assistant]].
+Monitoring depends on Grafana: the OpenClaw mesh identity
 can reach the internal Grafana service, where its dedicated login authorizes
 datasource queries. No default Kubernetes context is provided.
 See [[application-notes#OpenClaw]].
@@ -200,6 +204,14 @@ OpenClaw keeps its UID-private identity coordinator on a shared Pod-local
 configuration, sessions, and backups remain on NFS. Its single-replica
 `Recreate` strategy and same-Pod writer restriction are required; see
 [[../architecture/storage-and-state]].
+
+### Cordium CI execution contract
+
+The optional `cordium-check.yml` workflow uses a dedicated OIDC workload user
+and `.cordium/workspace.yaml` to execute repository checks remotely. Workspace
+data is disposable node-local state. Cluster limits allow four stored and one
+active workspace per user, including interactive users. Live execution and
+negative-policy acceptance remain pending; see [Cordium CI](../../cordium-ci.md).
 
 ### OpenClaw workspace-state readiness
 

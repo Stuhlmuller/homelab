@@ -10,4 +10,4 @@ configMapGenerator:
       - cluster-config.yaml
     options:
       annotations:
-        homelab.rst.io/cordium-cluster-config-revision: "20260822"
+        homelab.rst.io/cordium-cluster-config-revision: "20260905"
