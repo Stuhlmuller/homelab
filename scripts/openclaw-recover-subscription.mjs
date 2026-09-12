@@ -11,12 +11,16 @@ if (!["--check", "--recover"].includes(mode)) {
   throw new Error("Expected --check or --recover");
 }
 const runtime = JSON.parse(await readFile("/app/package.json", "utf8"));
-if (runtime.version !== "2026.9.1") {
-  throw new Error("Recovery requires reviewed OpenClaw 2026.9.1 internals");
+const reviewed = {
+  "2026.9.1": { store: "store-CZzbMlii.js", load: "m", state: "usage-state-C0QBjJnZ.js", usage: "usage-CWqpxTil.js" },
+  "2026.9.2": { store: "store-F1B2duCT.js", load: "d", state: "usage-state-CAKmPrwS.js", usage: "usage-_yfLJGtN.js" },
+}[runtime.version];
+if (!reviewed) {
+  throw new Error("Recovery requires reviewed OpenClaw 2026.9.1 or 2026.9.2 internals");
 }
-const { m: loadStore } = await import("/app/dist/store-CZzbMlii.js");
-const { o: inCooldown } = await import("/app/dist/usage-state-C0QBjJnZ.js");
-const { s: reprobe } = await import("/app/dist/usage-CWqpxTil.js");
+const { [reviewed.load]: loadStore } = await import(`/app/dist/${reviewed.store}`);
+const { o: inCooldown } = await import(`/app/dist/${reviewed.state}`);
+const { s: reprobe } = await import(`/app/dist/${reviewed.usage}`);
 const agentDir = "/data/openclaw/agents/main/agent";
 const model = "gpt-6-astra";
 const store = loadStore(agentDir);

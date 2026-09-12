@@ -28,8 +28,8 @@ backup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(backup)
 
 
-def destination():
-    value = json.loads(CONFIG.read_text())
+def destination(path=CONFIG):
+    value = json.loads(path.read_text())
     if (set(value) != {"account_id", "region", "bucket"}
             or not re.fullmatch(r"[0-9]{12}", value["account_id"])
             or value["region"] != "us-east-1"
@@ -170,7 +170,7 @@ def load(directory, target, require_files=True):
     return directory, value
 
 
-def retrieve(publication, destination_path, aws):
+def retrieve(publication, destination_path, aws, before_download=None):
     publication, value = load(publication, aws.target, require_files=False)
     if value.get("status") not in ("published", "verified"):
         raise ValueError("publication is incomplete; resume it before retrieval")
@@ -180,6 +180,8 @@ def retrieve(publication, destination_path, aws):
     if output == publication or publication in output.parents:
         raise ValueError("retrieval output must be outside the publication copy")
     aws.check()
+    if before_download is not None:
+        before_download()
     pending = Path(tempfile.mkdtemp(prefix=".partial-retrieval-", dir=output))
     # Deliberately retain failed/partial downloads; never remove recovery data.
     for name in FILES:
@@ -209,33 +211,41 @@ def retrieve(publication, destination_path, aws):
     return complete
 
 
-def publish(source, destination_path, aws, resume=None):
+def prepare(source, destination_path, target):
+    """Retain and sync a verified private pair without any network operation."""
     source = backup.private_directory(source)
     original = backup.verify(source)
     output = backup.private_directory(destination_path)
     if output == source or source in output.parents:
         raise ValueError("publication output must be outside the original backup")
-    if resume is None:
-        publication = Path(tempfile.mkdtemp(prefix="publication-", dir=output))
-        for name in FILES:
-            shutil.copyfile(source / name, publication / name)
-            (publication / name).chmod(0o600)
-            sync_file(publication / name)
-        if backup.verify(publication) != original:
-            raise ValueError("working copy differs from the verified original")
-        identifier = uuid.uuid4().hex
-        value = {
-            "format": 1, "id": identifier, "destination": aws.target,
-            "prefix": f"etcd/{original['integrity']['sha256']}/{identifier}",
-            "source_integrity": original["integrity"], "status": "incomplete",
-            "objects": {name: {"digest": digest(publication / name), "version_id": None}
-                        for name in FILES},
-        }
-        save(publication / RECEIPT, value)
-    else:
-        publication, value = load(resume, aws.target)
-        if backup.verify(publication) != original:
-            raise ValueError("resume source differs from the retained publication copy")
+    publication = Path(tempfile.mkdtemp(prefix="publication-", dir=output))
+    for name in FILES:
+        shutil.copyfile(source / name, publication / name)
+        (publication / name).chmod(0o600)
+        sync_file(publication / name)
+    if backup.verify(publication) != original:
+        raise ValueError("working copy differs from the verified original")
+    identifier = uuid.uuid4().hex
+    value = {
+        "format": 1, "id": identifier, "destination": target,
+        "prefix": f"etcd/{original['integrity']['sha256']}/{identifier}",
+        "source_integrity": original["integrity"], "status": "incomplete",
+        "objects": {name: {"digest": digest(publication / name), "version_id": None}
+                    for name in FILES},
+    }
+    save(publication / RECEIPT, value)
+    backup.sync_directory(publication.parent)
+    return publication
+
+
+def finish(publication, destination_path, aws, source=None, before_download=None):
+    """Resume a retained pair; optionally also guard the manual caller's source."""
+    publication, value = load(publication, aws.target)
+    original = backup.verify(publication)
+    source = backup.private_directory(source) if source is not None else publication
+    if backup.verify(source) != original:
+        raise ValueError("resume source differs from the retained publication copy")
+    output = backup.private_directory(destination_path)
     # A previous attempt may have stopped specifically at this durability gate.
     # Recheck the retained publication's actual parent before resuming uploads.
     backup.sync_directory(publication.parent)
@@ -271,12 +281,21 @@ def publish(source, destination_path, aws, resume=None):
     load(publication, aws.target)
     value["status"] = "published"
     save(publication / RECEIPT, value)
-    downloaded = retrieve(publication, output, aws)
+    downloaded = retrieve(publication, output, aws, before_download=before_download)
     value["status"] = "verified"
     value["verified_at"] = datetime.now(timezone.utc).isoformat()
     value["retrieval_directory"] = str(downloaded)
     save(publication / RECEIPT, value)
     return publication, downloaded
+
+
+def publish(source, destination_path, aws, resume=None):
+    source = backup.private_directory(source)
+    output = backup.private_directory(destination_path)
+    if output == source or source in output.parents:
+        raise ValueError("publication output must be outside the original backup")
+    publication = prepare(source, output, aws.target) if resume is None else resume
+    return finish(publication, output, aws, source=source)
 
 
 def main():

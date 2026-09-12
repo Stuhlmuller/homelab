@@ -1,5 +1,9 @@
 # Manual Etcd Offsite Publication
 
+For recurring attempts using this publisher and an existing AWS/SSO profile,
+see [Scheduled Etcd Offsite Attempts](etcd-offsite-schedule.md). The manual
+commands below remain unchanged.
+
 `scripts/etcd-offsite-backup.py` publishes one already verified local snapshot
 and manifest, then downloads their exact S3 versions and repeats offline
 checksum verification. It uses the
@@ -122,8 +126,21 @@ Synthetic fixtures exercise conditional creation, partial failures, lost put
 responses, resume, changed local/remote bytes, private paths, wrong identities,
 suspended versioning, exact-version retrieval using receipt-only recovery
 metadata, and receipt changes during download. They execute no AWS operations.
-Actual publication and retrieval remain pending until the reviewed helper is
-run against a verified snapshot and deployed bucket.
+
+On 2026-09-07, the merged helper from
+[PR #1010](https://github.com/Stuhlmuller/homelab/pull/1010) completed one manual
+publication and exact-version retrieval at `17:55:16 UTC`. It used the first
+scheduled snapshot from `17:17:10 UTC`, containing `61,505,568` bytes. Independent
+acceptance confirmed both immutable S3 versions and their checksum metadata;
+the original, local working copy and downloaded snapshot matched, including
+the embedded etcd checksum. The original snapshot and manifest were preserved.
+Exact version IDs, digests, and execution/acceptance receipts remain private.
+
+This proves one offsite copy and retrieval at that time. Unattended offsite
+publication, ongoing freshness, control-plane recovery and PVC recovery remain
+unverified. This downloaded scheduled snapshot has not undergone a database
+restore; the separate successful offline restore used an earlier manual
+post-upgrade snapshot.
 
 - [AWS conditional puts and checksum arguments](https://docs.aws.amazon.com/cli/latest/reference/s3api/put-object.html)
 - [AWS version-specific retrieval](https://docs.aws.amazon.com/cli/latest/reference/s3api/get-object.html)
