@@ -195,3 +195,10 @@ portable drill's console-discard fix without retaining a public ancestor handle.
 The updated Linux regression is pending CI; offline contracts are not runtime
 proof. Talos's existing synthetic receipt script retains public descriptors and
 continues to prove network isolation only, until a separate privacy case lands.
+
+The native procfd canary probes shell stdout/stderr, PID1 stdout/stderr, and
+saved descriptors 3/4 only on the known restore entry script. PostgreSQL program
+children inherit protocol and death-watch pipes, including in their shells;
+writing arbitrary child fd3/4 falsely crashes the synthetic database. The offline
+fixture reproduces that pipe write and requires it remain untouched. The canary
+reads parent identity from procfs, avoiding shell-dependent inherited PPID values.

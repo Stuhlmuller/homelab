@@ -58,7 +58,7 @@ def check_probe_receipts(work, success):
                 or path.stat().st_mode & 0o777 != 0o600):
             raise RuntimeError("Invalid private console probe receipt")
         text = path.read_text()
-        if not re.fullmatch(r"[0-9]+\n", text) or not 8 <= int(text) <= 132:
+        if not re.fullmatch(r"[0-9]+\n", text) or not 4 <= int(text) <= 130:
             raise RuntimeError("Incomplete console ancestor probe")
 
 

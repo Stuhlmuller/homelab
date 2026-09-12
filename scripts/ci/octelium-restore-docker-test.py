@@ -155,7 +155,7 @@ class DockerContracts(unittest.TestCase):
             path.write_text("15\n")
             path.chmod(0o600)
         DOCKER.check_probe_receipts(self.root, True)
-        path.write_text("5\n")
+        path.write_text("3\n")
         with self.assertRaisesRegex(RuntimeError, "Incomplete"):
             DOCKER.check_probe_receipts(self.root, False)
         path.write_text("15\n")
@@ -175,14 +175,24 @@ class DockerContracts(unittest.TestCase):
             node = proc / str(pid)
             (node / "fd").mkdir(parents=True)
             (node / "comm").write_text("sh\n")
+            (node / "cmdline").write_bytes(b"/bin/sh\0-e\0fixture\0")
             (node / "status").write_text("PPid:\t1\n" if pid != 1 else "PPid:\t0\n")
             for fd in (1, 2, 3, 4):
                 (node / "fd" / str(fd)).symlink_to("/dev/null")
+        # SQL-spawned shells inherit PostgreSQL death-watch pipes above stderr.
+        # A procfs-shaped symlink allows the real write-selection code to prove
+        # that those pipe descriptors stay untouched without a live database.
+        danger = proc / str(os.getpid()) / "fd" / "pipe:[synthetic-death-watch]"
+        danger.write_text("original\n")
+        (proc / str(os.getpid()) / "fd/3").unlink()
+        (proc / str(os.getpid()) / "fd/3").symlink_to(danger.name)
         parent = proc / str(os.getpid())
         (parent / "fd/1").unlink()
         (parent / "fd/1").symlink_to(log)
         script = self.root / "probe.sh"
-        script.write_text(DOCKER.CONSOLE_PROBE.read_text().replace("/proc/", str(proc) + "/")
+        script.write_text(DOCKER.CONSOLE_PROBE.read_text()
+                          .replace('pid=$(awk \'/^PPid:/ {print $2}\' "/proc/$$/status")', f"pid={os.getpid()}")
+                          .replace("/proc/", str(proc) + "/")
                           .replace("/work/", str(work) + "/"))
         for process in ("postgres", "sh"):
             (parent / "comm").write_text(process + "\n")
@@ -190,7 +200,8 @@ class DockerContracts(unittest.TestCase):
             subprocess.run(["sh", str(script), "client"], check=True, capture_output=True, timeout=5)
             self.assertEqual(DOCKER.CONSOLE_MARKER in log.read_text(), process == "sh")
             receipt = work / "console-probe-client.executed"
-            self.assertGreaterEqual(int(receipt.read_text()), 8)
+            self.assertGreaterEqual(int(receipt.read_text()), 4)
+            self.assertEqual(danger.read_text(), "original\n")
 
     def test_archive_rejects_traversal_links_devices_and_oversized_files(self):
         for kind in ("traversal", "symlink", "hardlink", "device", "size"):

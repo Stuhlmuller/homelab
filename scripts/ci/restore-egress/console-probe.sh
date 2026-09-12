@@ -5,7 +5,7 @@ umask 077
 mode=$1
 case "$mode" in client|server) ;; *) exit 1 ;; esac
 marker=OCTELIUM_SYNTHETIC_PRIVATE_CONSOLE_CANARY
-pid=$PPID
+pid=$(awk '/^PPid:/ {print $2}' "/proc/$$/status")
 attempts=0
 ancestors=0
 writes=0
@@ -25,7 +25,13 @@ while [ "$pid" -gt 0 ] && [ "$ancestors" -lt 32 ]; do
     sh|dash|bash)
       # PostgreSQL ancestors have protocol/death-watch pipes that are not logs.
       # Inspect only shell ancestors that can retain the script's console handles.
-      for fd in 1 2 3 4; do
+      descriptors="1 2"
+      # SQL-created shells can inherit PostgreSQL death-watch pipes in fd3/4.
+      # Extra descriptors are console candidates only on the known entry script.
+      if tr '\000' '\n' < "/proc/$pid/cmdline" | grep -qx /tests/restore-drill.sh; then
+        descriptors="1 2 3 4"
+      fi
+      for fd in $descriptors; do
         probe_fd "/proc/$pid/fd/$fd"
         attempts=$((attempts + 1))
       done ;;
@@ -38,7 +44,7 @@ while [ "$pid" -gt 0 ] && [ "$ancestors" -lt 32 ]; do
   ancestors=$((ancestors + 1))
 done
 # Docker exec ancestry can terminate outside this PID namespace; test PID1 explicitly.
-for fd in 1 2 3 4; do
+for fd in 1 2; do
   probe_fd "/proc/1/fd/$fd"
   attempts=$((attempts + 1))
 done
