@@ -1,3 +1,5 @@
+<!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
+
 # n8n Paired Recovery Draft
 
 Status: design only. No maintenance window, recurring interruption, rollout,
@@ -63,7 +65,8 @@ or use sync waves alone as evidence of a stopped writer.
 The existing `clusters/homelab/apps/media-postgres-recovery/` pattern represents
 maintenance through a recovery overlay. Reuse its declared phase separation,
 with the stronger node-level fence required by
-[[architecture/cluster-topology#Current Worker Recovery|the unchanged-boot worker incident]].
+the unchanged-boot worker incident in
+[[architecture/cluster-topology#Current Worker Recovery]].
 Prepare capture and resume revisions for review **before** entering maintenance.
 All deployed repository references remain on `main`.
 
