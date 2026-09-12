@@ -205,5 +205,6 @@ The native procfd canary probes shell stdout/stderr, PID1 stdout/stderr, and
 saved descriptors 3/4 only on the known restore entry script. PostgreSQL program
 children inherit protocol and death-watch pipes, including in their shells;
 writing arbitrary child fd3/4 falsely crashes the synthetic database. The offline
-fixture reproduces that pipe write and requires it remain untouched. The canary
-reads parent identity from procfs, avoiding shell-dependent inherited PPID values.
+fixture reproduces that pipe write and requires it remain untouched. The fixture rewrites proc/work paths in one pass so GitHub
+runner paths containing `/work/` cannot corrupt an inserted fake procfs path.
+The canary reads parent identity from procfs, avoiding shell-dependent inherited PPID values.

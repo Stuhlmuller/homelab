@@ -4,6 +4,7 @@ import importlib.util
 import io
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tarfile
@@ -166,8 +167,11 @@ class DockerContracts(unittest.TestCase):
     def test_probe_skips_postgres_ancestors_but_checks_shell_ancestors(self):
         # An inert procfs-shaped tree tests the real shell selection logic. Linux
         # CI still supplies actual procfd permissions and pipe behavior.
-        proc, work = self.root / "proc", self.root / "work"
-        work.mkdir()
+        # GitHub's temporary directory already contains /work/. Include both
+        # replacement tokens so fixture rewriting cannot corrupt inserted paths.
+        fixture = self.root / "work" / "proc" / "fixture"
+        proc, work = fixture / "proc", fixture / "work"
+        work.mkdir(parents=True)
         private = work / "restore-drill"
         private.mkdir()
         log = private / "details.log"
@@ -190,10 +194,10 @@ class DockerContracts(unittest.TestCase):
         (parent / "fd/1").unlink()
         (parent / "fd/1").symlink_to(log)
         script = self.root / "probe.sh"
-        script.write_text(DOCKER.CONSOLE_PROBE.read_text()
-                          .replace('pid=$(awk \'/^PPid:/ {print $2}\' "/proc/$$/status")', f"pid={os.getpid()}")
-                          .replace("/proc/", str(proc) + "/")
-                          .replace("/work/", str(work) + "/"))
+        source = DOCKER.CONSOLE_PROBE.read_text().replace(
+            'pid=$(awk \'/^PPid:/ {print $2}\' "/proc/$$/status")', f"pid={os.getpid()}")
+        paths = {"/proc/": str(proc) + "/", "/work/": str(work) + "/"}
+        script.write_text(re.sub(r"/(?:proc|work)/", lambda match: paths[match[0]], source))
         for process in ("postgres", "sh"):
             (parent / "comm").write_text(process + "\n")
             log.write_text("original\n")
