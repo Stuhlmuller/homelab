@@ -193,7 +193,8 @@ Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
 `octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
 NOFX SQLite state, and OctoBot. OpenClaw keeps configuration and workspace on
 its retained NAS claim, but its global state, per-agent SQLite databases, and
-native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The platform-storage application owns its StorageClass and PV;
+native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The
+platform-storage application owns its StorageClass and PV;
 the namespaced OpenClaw application owns its PVC. This permits
 local WAL and preserves native bindings across Pod replacement. A one-time
 verified offline copy retains the NAS source. Daily SQLite online backups keep
@@ -317,6 +318,11 @@ failures so stale catalog state cannot trigger a silent redownload.
 
 ## Source Files
 
+The [[operations/n8n-paired-recovery-draft-2026-09-06|n8n paired recovery draft]]
+requires a matched database/configuration/filesystem checkpoint, node-level
+writer fencing, and an isolated restore. It records version-identity and
+maintenance-window gates; it does not authorize a recurring interruption.
+
 - `docs/storage-nfs.md`
 - `clusters/homelab/platform/storage`
 - `clusters/homelab/apps/cordium-bootstrap/cluster-config.yaml`
@@ -342,8 +348,9 @@ UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
 coordinator ownership check blocked gateway startup after session migration
 completed successfully. The repository mounts a shared local `emptyDir` at
 `/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
-Only coordinator locks move off NFS; identity/configuration files and the verified pre-upgrade backup remain on the
-NAS PVC; the later runtime migration below moves session/state databases local. This requires one
+Only coordinator locks move off NFS; identity/configuration files and the
+verified pre-upgrade backup remain on the NAS PVC; the later runtime migration
+below moves session/state databases local. This requires one
 `Recreate` Pod and all writers using its shared mount. Never start an external
 writer against that PVC with a separate coordinator. See the OpenClaw README
 for verification and rollback limits; live recovery remains pending rollout.
