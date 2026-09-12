@@ -8,6 +8,8 @@ terragrunt_generate_stack
 
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/restore-image-publish-test.py
+python3 scripts/ci/octelium-restore-docker-test.py
+python3 scripts/ci/octelium-restore-drill-test.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py

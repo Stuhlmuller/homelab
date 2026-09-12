@@ -25,6 +25,14 @@ def run(*command, **kwargs):
     return subprocess.run(command, check=True, text=True, timeout=600, **kwargs)
 
 
+def runtime_options():
+    """Shared synthetic runtime contract; the caller supplies only fixture mounts."""
+    return ["docker", "run", "--network", "bridge", "--user", "65534:65534",
+            "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
+            "--read-only", "--pids-limit", "64", "--memory", "512m", "--cpus", "1",
+            "--tmpfs", "/work:rw,nosuid,nodev,size=128m,uid=65534,gid=65534,mode=0700"]
+
+
 class TCP(socketserver.BaseRequestHandler):
     def handle(self):
         data = self.request.recv(1)
@@ -164,10 +172,7 @@ def verified_image():
             # Docker bind mounts must be traversable by UID65534.
             scratch.chmod(0o755)
             probe.chmod(0o555)
-            common = ["docker", "run", "--rm", "--network", "bridge", "--user", "65534:65534",
-                      "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true",
-                      "--read-only", "--pids-limit", "64", "--memory", "512m", "--cpus", "1",
-                      "--tmpfs", "/work:rw,nosuid,nodev,size=128m,uid=65534,gid=65534,mode=0700",
+            common = [*runtime_options(), "--rm",
                       "--mount", f"type=bind,src={probe},dst=/tests/probe,readonly"]
             # No seccomp override in successful cases: Docker's RuntimeDefault remains in force.
             gateway = run("docker", "network", "inspect", "bridge", "--format",
@@ -195,6 +200,11 @@ def verified_image():
                     sql_test = ROOT / "scripts/ci/restore-egress/postgres.sh"
                     run(*common, "--mount", f"type=bind,src={sql_test},dst=/tests/postgres.sh,readonly",
                         image_id, "/bin/sh", "/tests/postgres.sh")
+                    # Python/rendering stay on the host. Every fixture PG command
+                    # and restore-script invocation runs through this image's launcher.
+                    run("nix", "shell", "--inputs-from", str(ROOT), "nixpkgs#kubectl", "nixpkgs#yq-go",
+                        "--command", "python3", str(ROOT / "scripts/ci/octelium-restore-drill-test.py"),
+                        "--image-id", image_id, "--probe", str(probe), cwd=ROOT)
                     assert (tcp.received, udp.received) == (1, 1), "filtered tests sent network data"
                 finally:
                     tcp.shutdown()

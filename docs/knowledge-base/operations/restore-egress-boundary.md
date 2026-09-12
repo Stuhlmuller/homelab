@@ -94,6 +94,54 @@ production backups or contact production services. Restoring dumps can execute
 source-superuser code, so a checksum alone cannot replace this boundary.
 [PostgreSQL restore warning](https://www.postgresql.org/docs/14/app-pgrestore.html).
 
+The final-image harness also requires all eleven
+`scripts/ci/octelium-restore-drill-test.py` cases. Its Docker backend keeps
+Python plus offline Kustomize rendering on the host; all PostgreSQL commands,
+the exact local `octelium-storage/restore-drill-candidate/restore-drill.sh`, and
+restored-locale inspection run in the
+tested image under the launcher. `docker exec` does not inherit PID1's filter,
+so every exec names the launcher explicitly. The launcher uses `execv` without
+PATH lookup: the backend maps its declared tools to the pinned image's absolute
+PostgreSQL 14 and Debian utility paths. Unexpected fixture command failures
+include at most 512 stderr characters and omit stdout. Source PostgreSQL and
+each restore use separate disposable containers with the same runtime flags. Only
+synthetic backup files, the local restore script, and the synthetic probe are
+bind-mounted as inputs; those binds are read-only. Database scratch uses bounded
+writable tmpfs. Owned container cleanup also removes the pinned base image's
+unused anonymous data volume; the fixture creates no named or shared volumes. Filtered
+`cat`/`tar` streams retrieve fixture results because Docker documents limitations
+copying tmpfs with `docker cp`. Host ingestion caps bytes, file count and elapsed
+time; extraction rejects traversal, links and special files before writing.
+Results contain fixture data only and are removed with the host temporary tree.
+[Docker tmpfs copy behavior](https://docs.docker.com/reference/cli/docker/container/cp/#corner-cases).
+
+Eight cases execute PostgreSQL: source preservation/private diagnostics,
+non-C encoding/collation/owner preservation, newest-archive corruption,
+checksum-path confinement, stale and previous-day rejection, missing wrapped
+keys, and empty required tables. The ninth validates declared manifest
+contracts on the host. Synthetic globals additionally run the denial probe
+through SQL `COPY FROM PROGRAM`, so the actual globals-restore server and its
+program child must retain the filter. Existing client-child/broker/fault probes
+remain required. Each restore container is removed after its case; source and
+uncertain container creations are cleaned up even on test failure.
+
+The live `octelium-storage` kustomization excludes the candidate CronJob, script
+ConfigMap, and declared NetworkPolicy. Their separate `restore-drill-candidate/`
+kustomization is rendered only for validation; the CronJob is suspended as a
+second hold. The ninth fixture proves the live graph has none of these resources
+and verifies the candidate's suspension and declared contracts. Activation
+requires a separate reviewed change after the image, launcher, and Talos gates.
+
+This fixture integration combines the reviewed publication and restore-drill
+drafts temporarily. It does not authorize applying their combined manifests:
+the real CronJob still requires explicit launcher wiring, a published digest,
+anonymous pull proof, and the Talos synthetic gate below. Filtered Octelium
+fixture execution remains unverified until native CI passes this combined
+source; local PostgreSQL or mocked backend tests cannot establish that result.
+Do not merge this combined branch. After prerequisites land, port the net fixture
+implementation delta against the updated parents; do not blindly cherry-pick
+combined integration commits.
+
 ## Integration and rollout gates
 
 1. Obtain genuine green native Linux results for the exact reviewed source and
@@ -117,6 +165,8 @@ source-superuser code, so a checksum alone cannot replace this boundary.
    image, launcher and production security settings, but no backup PVC or
    credentials. Require its startup denial checks and a synthetic Unix-socket
    PostgreSQL restore to pass on the target runtime. Do not use ad hoc live probes.
+   [[restore-talos-runtime-validation]] records the dated runtime baseline and
+   the proof still required; it does not establish stacked-filter compatibility.
 5. Only after that proof, enable the real drill through GitOps. Verify the
    actual scheduled Job's startup denial checks and successful restore before
    claiming recovery coverage. A normal restore success without filter checks
@@ -129,3 +179,27 @@ the drill through GitOps; never remove the launcher just to make it green.
 [[restore-image-publication]] describes the separate, unexecuted protected
 publication path and its source/digest/readback requirements. It does not remove
 the registry access or Talos synthetic-runtime gates above.
+
+## Native console privacy regression
+
+The filtered Docker fixture's PID1 permanently redirects stdin/stdout/stderr to
+`/dev/null` before its hold loop; an inspected private PID namespace is mandatory.
+Synthetic globals invoke a read-only procfd probe through both psql shell and
+PostgreSQL program children. It inspects shell-ancestor and PID1 FDs1–4, appending a fixed canary only to
+pipes, `/dev/null`, or the known private logs. Other regular data files and PostgreSQL ancestors
+are skipped: PostgreSQL internal notification pipes are not console descriptors.
+A same-UID pipe forwarded to captured output must first expose the canary; its
+private witness is deleted before the actual restore. Both private execution receipts are mandatory on successful restores;
+all exec and container log streams must exclude the canary. This checks the
+portable drill's console-discard fix without retaining a public ancestor handle.
+The updated Linux regression is pending CI; offline contracts are not runtime
+proof. Talos's existing synthetic receipt script retains public descriptors and
+continues to prove network isolation only, until a separate privacy case lands.
+
+The native procfd canary probes shell stdout/stderr, PID1 stdout/stderr, and
+saved descriptors 3/4 only on the known restore entry script. PostgreSQL program
+children inherit protocol and death-watch pipes, including in their shells;
+writing arbitrary child fd3/4 falsely crashes the synthetic database. The offline
+fixture reproduces that pipe write and requires it remain untouched. The fixture rewrites proc/work paths in one pass so GitHub
+runner paths containing `/work/` cannot corrupt an inserted fake procfs path.
+The canary reads parent identity from procfs, avoiding shell-dependent inherited PPID values.
