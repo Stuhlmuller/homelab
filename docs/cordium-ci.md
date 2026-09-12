@@ -167,10 +167,14 @@ In a reviewed retirement commit, remove `cordium-check.yml` and the three CI
 catalog definitions, but retain `scripts/cordium-ci-retire.py` and its shared
 `scripts/octelium-nofx-reconcile.py` guard. Normal catalog
 reapplication does not prune absent native resources. Using an operator admin
-session, run the fixed retirement path from that commit:
+session, run the fixed retirement path from that commit. The Nix environment
+supplies `cloudflared`; execution verifies the pinned `octeliumctl` release and
+uses the same private TLS carrier as reconciliation for every read and deletion.
+The dry run only reports the fixed targets and opens no native transport:
 
 ```sh
-python3 -I scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN
+nix develop --command python3 -I scripts/cordium-ci-retire.py \
+  --homedir /PRIVATE/OPERATOR_LOGIN
 (
 set -euo pipefail
 reviewed_main_sha=FULL_REVIEWED_RETIREMENT_SHA
@@ -182,7 +186,8 @@ remote_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git \
 test -z "$checkout_status"
 test "$checkout_sha" = "$reviewed_main_sha"
 test "$remote_main_sha" = "$reviewed_main_sha"
-python3 -I scripts/cordium-ci-retire.py --homedir /PRIVATE/OPERATOR_LOGIN \
+nix develop --command python3 -I scripts/cordium-ci-retire.py \
+  --homedir /PRIVATE/OPERATOR_LOGIN \
   --execute --expected-sha "$reviewed_main_sha"
 )
 ```
@@ -194,7 +199,9 @@ Unmerged or local-only removals cannot authorize retirement. It removes only
 `homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
 `homelab-cordium-ci-execution`, in that order, and verifies each is absent.
 Authentication/network errors are failures, not evidence of absence. Repeating
-it skips already-absent objects. Keep the helper until retirement is verified.
+it skips already-absent objects. Unpinned clients and failed carrier setup stop
+before native operations. The carrier and its private temporary logs are closed
+on success, failure, or SIGTERM. Keep the helper until retirement is verified.
 Restore previous Cordium capacity limits through Argo CD only if reverting that
 capacity decision is intended. OpenClaw execution uses a separate future
 identity and is not enabled by this CI workflow.

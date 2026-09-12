@@ -449,6 +449,10 @@ to be removed on clean, exact reviewed local/remote main first, deletes only
 the three dedicated CI identity resources,
 and verifies absence. Tests reject remaining declarations, network errors,
 and incomplete deletion. Ordinary catalog apply does not prune these objects.
+Retirement verifies the pinned native client and reuses the private TLS carrier
+for every inspection and deletion. Transport/pin failures prevent native calls;
+the read-only target preview opens no carrier. Tests require carrier-scoped
+environment on every request and cleanup after failed inspection.
 
 The Tunnel probe accepts the protocol-defined empty-body gRPC-Web response
 with status trailers in headers. Live browser and native TCP-carrier probes

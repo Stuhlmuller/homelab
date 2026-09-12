@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Verify the fixed retirement scope and fail-closed rollback checks."""
+import contextlib
 import importlib.util
 import json
 import pathlib
@@ -15,14 +16,36 @@ spec.loader.exec_module(retire)
 
 
 class Retirement(unittest.TestCase):
-    def exercise(self, *, declared=False, stuck=False, unavailable=False, execute=True, already_absent=False, native_errors=True):
+    def exercise(self, *, declared=False, stuck=False, unavailable=False, execute=True, already_absent=False, native_errors=True, bad_client=False, broken_carrier=False, terminate=False):
         deleted = []
+        self.native_calls = []
+        self.carrier_active = False
+        self.carrier_closed = False
+        environment = {"HTTPS_PROXY": "http://127.0.0.1:43123", "NO_PROXY": ""}
 
-        def run(command, **_kwargs):
+        @contextlib.contextmanager
+        def transport(directory):
+            self.assertEqual(directory.stat().st_mode & 0o777, 0o700)
+            if broken_carrier:
+                raise RuntimeError("Verified carrier could not start")
+            self.carrier_active = True
+            try:
+                yield environment
+            finally:
+                self.carrier_active = False
+                self.carrier_closed = True
+
+        def run(command, **kwargs):
             output, error, code = "", "", 0
             if command[0] == "yq":
                 output = json.dumps([{"kind": kind, "metadata": {"name": name}} for kind, name in retire.TARGETS] if declared else [])
             else:
+                self.assertEqual(command[0], "/pinned/octeliumctl")
+                self.assertTrue(self.carrier_active, "Native operation escaped the verified carrier")
+                self.assertEqual(kwargs["env"], environment)
+                self.native_calls.append(command)
+                if terminate:
+                    registered.call_args.args[1](retire.signal.SIGTERM, None)
                 operation, kind, name = command[5:8]
                 if unavailable:
                     code, error = 1, "rpc error: code = Unavailable"
@@ -40,12 +63,14 @@ class Retirement(unittest.TestCase):
             return subprocess.CompletedProcess(command, code, output, error)
 
         argv = ["retire", "--homedir", "/tmp/operator"] + (["--execute"] if execute else [])
-        with patch.object(sys, "argv", argv), patch.object(retire.subprocess, "run", side_effect=run), patch.object(pathlib.Path, "exists", return_value=False), patch.object(retire.native, "verify_reviewed_main"), patch.object(retire.native, "run"):
+        with patch.object(sys, "argv", argv), patch.object(retire.subprocess, "run", side_effect=run), patch.object(pathlib.Path, "exists", return_value=False), patch.object(retire.native, "verify_reviewed_main"), patch.object(retire.native, "run"), patch.object(retire.native, "verified_client", side_effect=RuntimeError("Unpinned client") if bad_client else None, return_value="/pinned/octeliumctl") as verified, patch.object(retire.native, "native_transport", side_effect=transport) as carrier, patch.object(retire.signal, "signal") as registered:
             try:
                 retire.main()
                 success = True
             except RuntimeError:
                 success = False
+            self.verified_calls = verified.call_count
+            self.carrier_calls = carrier.call_count
         return success, deleted
 
     def test_only_fixed_targets_are_deleted_and_verified(self):
@@ -62,6 +87,32 @@ class Retirement(unittest.TestCase):
 
     def test_dry_run_never_deletes(self):
         self.assertEqual(self.exercise(execute=False), (True, []))
+        self.assertEqual(self.native_calls, [])
+        self.assertEqual(self.verified_calls, 0)
+        self.assertEqual(self.carrier_calls, 0)
+
+    def test_pinned_client_and_carrier_wrap_all_reads_and_deletes(self):
+        self.assertTrue(self.exercise()[0])
+        self.assertEqual(self.verified_calls, 1)
+        self.assertEqual(self.carrier_calls, 1)
+        self.assertTrue(self.carrier_closed)
+        self.assertEqual(len(self.native_calls), 9)
+
+    def test_client_or_carrier_failure_prevents_native_operations(self):
+        for failure in ({"bad_client": True}, {"broken_carrier": True}):
+            with self.subTest(failure=failure):
+                self.assertEqual(self.exercise(**failure), (False, []))
+                self.assertEqual(self.native_calls, [])
+
+    def test_failed_inspection_still_closes_carrier(self):
+        self.assertEqual(self.exercise(unavailable=True), (False, []))
+        self.assertTrue(self.carrier_closed)
+
+    def test_sigterm_closes_carrier_before_exit(self):
+        with self.assertRaises(SystemExit) as stopped:
+            self.exercise(terminate=True)
+        self.assertEqual(stopped.exception.code, 143)
+        self.assertTrue(self.carrier_closed)
 
     def test_unavailable_is_not_absent_and_stuck_delete_fails(self):
         self.assertEqual(self.exercise(unavailable=True), (False, []))
@@ -91,7 +142,7 @@ class Retirement(unittest.TestCase):
             real_run = subprocess.run
 
             def run(command, **kwargs):
-                if command[:2] == ["git", "ls-remote"]:
+                if tuple(command[:2]) == ("git", "ls-remote"):
                     return subprocess.CompletedProcess(command, 0, "b" * 40 + "\trefs/heads/main\n", "")
                 self.assertEqual(command[0], "git", "Catalog or native call occurred before main verification")
                 return real_run(command, **kwargs)

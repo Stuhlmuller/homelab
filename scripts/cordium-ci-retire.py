@@ -9,7 +9,9 @@ import importlib.util
 import json
 import pathlib
 import re
+import signal
 import subprocess
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location("native", ROOT / "scripts/octelium-nofx-reconcile.py")
@@ -41,12 +43,20 @@ def main():
         raise RuntimeError("Remove the CI catalog definitions in the reviewed retirement commit first")
     if (ROOT / ".github/workflows/cordium-check.yml").exists():
         raise RuntimeError("Remove the dispatch workflow before retiring its identity")
-    client = ["octeliumctl", "--homedir", str(pathlib.Path(args.homedir).resolve()),
+    if not args.execute:
+        print("Dry run: retire only " + ", ".join(name for _, name in TARGETS))
+        return
+    client = [native.verified_client(), "--homedir", str(pathlib.Path(args.homedir).resolve()),
               "--domain", "stinkyboi.com"]
 
-    def get(kind, name):
+    def interrupted(signum, _frame):
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGTERM, interrupted)
+
+    def get(kind, name, environment):
         result = subprocess.run(client + ["get", kind.lower(), name, "-o", "json"],
-                                capture_output=True, text=True, timeout=30)
+                                env=environment, capture_output=True, text=True, timeout=30)
         if result.returncode:
             if (re.search(r"^gRPC error NotFound:", result.stdout, re.MULTILINE)
                     or re.search(r"\bcode = NotFound\b", result.stderr)):
@@ -57,18 +67,17 @@ def main():
             raise RuntimeError("Unexpected resource identity; no deletion attempted")
         return value
 
-    if not args.execute:
-        print("Dry run: retire only " + ", ".join(name for _, name in TARGETS))
-        return
-    # Removing the provider first prevents new logins. The workflow is already absent.
-    for kind, name in TARGETS:
-        if get(kind, name) is None:
-            continue
-        result = subprocess.run(client + ["delete", kind.lower(), name],
-                                capture_output=True, text=True, timeout=30)
-        if result.returncode or get(kind, name) is not None:
-            raise RuntimeError(f"Retirement failed for {kind} {name}; do not claim rollback complete")
-        print(f"Verified retirement: {kind} {name}")
+    with tempfile.TemporaryDirectory(prefix="cordium-ci-retire-") as temporary:
+        with native.native_transport(pathlib.Path(temporary)) as environment:
+            # Removing the provider first prevents new logins. The workflow is already absent.
+            for kind, name in TARGETS:
+                if get(kind, name, environment) is None:
+                    continue
+                result = subprocess.run(client + ["delete", kind.lower(), name],
+                                        env=environment, capture_output=True, text=True, timeout=30)
+                if result.returncode or get(kind, name, environment) is not None:
+                    raise RuntimeError(f"Retirement failed for {kind} {name}; do not claim rollback complete")
+                print(f"Verified retirement: {kind} {name}")
 
 
 if __name__ == "__main__":
