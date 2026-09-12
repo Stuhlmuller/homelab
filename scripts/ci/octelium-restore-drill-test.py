@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the repository restore script against disposable PostgreSQL fixtures."""
+"""Exercise the candidate restore script against disposable PostgreSQL fixtures."""
 import argparse
 import datetime
 import hashlib
@@ -284,6 +284,8 @@ DROP TABLE fixture_program_child;
         container = pod["containers"][0]
         self.assertEqual(container["command"], ["/bin/sh", "/scripts/restore-drill.sh",
                                                 "/backup/logical-backups", "/work"])
+        self.assertEqual(container["terminationMessagePath"], "/root/restore-termination-log")
+        self.assertEqual(container["terminationMessagePolicy"], "File")
         self.assertNotIn("env", container)
         self.assertNotIn("envFrom", container)
         self.assertTrue(next(m for m in container["volumeMounts"] if m["name"] == "backup")["readOnly"])

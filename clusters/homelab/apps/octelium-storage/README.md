@@ -168,8 +168,8 @@ Enterprise package-store PVCs, or protect against NAS loss. It proves the named
 PostgreSQL recovery set can be restored and passes these explicit invariants.
 Keep external encryption-key recovery material and the existing backup target.
 
-After activation, to stop future runs, commit `spec.suspend: true` to this CronJob and let Argo CD
-sync it. Suspension leaves an already running drill to finish within its deadline.
+After activation, to stop future runs, commit `spec.suspend: true` to this
+CronJob and let Argo CD sync it. Suspension leaves an already running drill to finish within its deadline.
 For full removal, revert the drill resources, ConfigMap, and alert expansion
 through a reviewed PR; preserve the backup CronJob and claim. No production data
 rollback is needed because the drill never writes there.

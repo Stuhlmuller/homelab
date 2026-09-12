@@ -49,6 +49,9 @@ spec:
             - name: restore-drill
               image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
               imagePullPolicy: Always
+              # Kubelet mounts a writable file; its root-only parent blocks the restore UID.
+              terminationMessagePath: /root/restore-termination-log
+              terminationMessagePolicy: File
               command:
                 - /bin/sh
                 - /scripts/restore-drill.sh

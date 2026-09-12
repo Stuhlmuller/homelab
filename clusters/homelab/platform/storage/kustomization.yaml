@@ -6,3 +6,4 @@ resources:
   - cordium-namespace.yaml
   - cordium-local-path-provisioner-application.yaml
   - nfs-subdir-external-provisioner-application.yaml
+  - openclaw-runtime.yaml

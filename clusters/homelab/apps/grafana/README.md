@@ -159,7 +159,11 @@ The provisioned rules cover:
 - Deluge VPN or daemon health missing or failing for 5 minutes, using the
   `deluge_vpn_healthy` and `deluge_daemon_rpc_healthy` metrics from the Deluge
   metrics sidecar instead of generic Pod readiness.
-- Homelab stateful PVC usage above 85 percent for 15 minutes.
+- Homelab PVC backing-filesystem usage above 85 percent for 15 minutes, or
+  missing capacity metrics. Missing data enters Grafana's `Alerting` state;
+  it does not prove disk exhaustion. NFS subdirectory claims share filesystem
+  capacity rather than enforcing the requested PVC size. See
+  [storage metric recovery](../../../../docs/knowledge-base/operations/pvc-metrics-recovery.md).
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining in `Progressing` for 30 minutes.
