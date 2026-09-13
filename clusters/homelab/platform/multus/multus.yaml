@@ -181,7 +181,7 @@ spec:
       serviceAccountName: multus
       initContainers:
         - name: install-multus-binary
-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.1-thick@sha256:a357a79359b80ddd5f4699117946cacf3b54f5baecf7944535594863e875fc25
           imagePullPolicy: Always
           command:
             - /usr/src/multus-cni/bin/install_multus
@@ -205,7 +205,7 @@ spec:
               mountPropagation: Bidirectional
       containers:
         - name: kube-multus
-          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9
+          image: ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.1-thick@sha256:a357a79359b80ddd5f4699117946cacf3b54f5baecf7944535594863e875fc25
           imagePullPolicy: Always
           command:
             - /usr/src/multus-cni/bin/multus-daemon
