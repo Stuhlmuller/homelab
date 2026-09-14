@@ -1,6 +1,6 @@
 # NOFX
 
-NOFX runs the `ghcr.io/nofxaios/nofx` backend and frontend images at the
+NOFX declares the maintained `ghcr.io/stuhlmuller/homelab-nofx-*` images at the
 publicly resolvable `https://nofx.stinkyboi.com`. The Cloudflare public tunnel
 provides transport, while the Octelium WEB Service requires
 `homelab-human-web-access` before forwarding to the private Istio route. NOFX's
@@ -53,9 +53,10 @@ at `e9b13076`; the September 14 Argo CD UI check showed `Synced` and `Healthy`.
 A new backtest then reached historical-data loading and failed on Binance HTTP
 451. Storage readiness therefore does not yet establish a working simulation.
 
-## Maintained images: publication and rollout pending
+## Maintained images
 
-The [build recipe](../../../../builds/nofx/README.md) maintains a derivative of
+The [build recipe](../../../../builds/nofx/README.md), merged in
+[PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030), maintains a derivative of
 upstream commit
 `bdfd8dc0d02c14b295eb36cbaee00d8402867927`.
 [source.json](../../../../builds/nofx/source.json) pins the source archive and
@@ -89,10 +90,15 @@ pass on current `main`, it rebuilds before GHCR login and publishes
 A manual rerun also requires that exact current `main` SHA. The Actions summary
 records both resulting digest references.
 
-These images are not deployed by this build change. First-time GHCR packages
-default to private; explicitly set both packages public and verify
-anonymous image access before a separate reviewed PR updates the deployment's
-image digests. Keep the existing PVC, absolute command, working directory, and
+The [publication run](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
+passed and published the images pinned by `deployment.yaml`, from homelab
+revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. On September 14, anonymous
+pull checks returned HTTP 401 for both new packages. Keep the digest rollout
+in draft until both package settings are public and anonymous pulls succeed;
+otherwise Argo CD will encounter `ImagePullBackOff`. GitHub documents this
+[one-time publication setting](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility).
+
+Keep the existing PVC, absolute command, working directory, and
 read-only root. Then verify a blank-key model edit preserves credentials without
 starting traders, the source download works, invalid run IDs are rejected, and
 a short OKX-backed simulation completes.
@@ -108,9 +114,9 @@ Name `openrouter/free`. The pinned client appends `/chat/completions`; entering
 `/responses` or `/chat/completions` in the Base URL produces an invalid endpoint.
 Keep the API key in NOFX's encrypted application store, never in git.
 
-Backtest Lab runs simulations without an exchange account. The deployed upstream
-images use Binance futures history; the maintained derivative uses OKX US public
-history for new runs. Compare strategy styles over the same symbols, data source,
+Backtest Lab runs simulations without an exchange account. Upstream images use
+Binance futures history; the maintained images use OKX US public history for new
+runs. Compare strategy styles over the same symbols, data source,
 dates, initial balance, decision cadence, fees, and slippage. Start with a
 24-hour window and one decision per four-hour bar to keep free-model usage
 bounded. Inspect each run's return, drawdown, and trade count; this release's

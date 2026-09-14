@@ -42,4 +42,5 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
+    # Model/exchange APIs and the explicit OKX US public historical-data feed.
     - {}

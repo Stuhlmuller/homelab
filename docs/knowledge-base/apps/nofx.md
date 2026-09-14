@@ -15,8 +15,9 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The app uses the upstream GHCR backend and frontend images from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The maintained derivative in `builds/nofx` is pending publication and a separate
-reviewed deployment-digest change; adding its build workflow does not deploy it.
+The maintained derivative in `builds/nofx` was published by reviewed main
+revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. The digest rollout remains
+in draft until its GHCR packages permit anonymous pulls; it is not yet live.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -109,7 +110,7 @@ and OKX US public historical candles for new simulations. Legacy saved runs keep
 their Binance source. Historical decisions exclude current quant/ranking feeds
 and use the simulated clock for position age. OKX construction only reads account
 mode; it no longer changes it during stopped-trader startup. Existing running
-traders still auto-resume, so keep simulation work stopped at the exchange level.
+traders still auto-resume, so keep OKX traders stopped when using Backtest Lab.
 The frontend offers the patched corresponding source
 at `/nofx-source.tar.gz` under AGPL-3.0, including its build recipe. This does not
 add demo trading, net-mode order support, or activate a trader.
@@ -120,10 +121,18 @@ tests/builds with read-only repository permission. Only current `main` can
 publish the fixed `ghcr.io/stuhlmuller/homelab-nofx-backend` and
 `homelab-nofx-frontend` packages, tagged `homelab-<full-main-sha>`; manual dispatch
 requires that exact SHA. The workflow reports digests after pushing.
-First-time GHCR packages are private: verify explicit public publication and
-anonymous image access before a separate reviewed digest rollout. Keep the PVC
+The reviewed source repair merged in
+[PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
+[publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
+passed. Both anonymous pull checks returned HTTP 401 on September 14; keep the
+digest rollout in draft until explicit public publication and anonymous image
+access are verified. Keep the PVC
 and storage fix during rollback; reverting to upstream restores its model-save
 side effects and Binance dependency.
+
+The existing backend NetworkPolicy permits all egress for configured model,
+exchange, and public historical-data APIs. Tightening it requires an endpoint
+inventory and a reviewed policy change; the image rollout preserves that rule.
 
 Until that rollout is verified, the deployed upstream model editor still asks
 for a key again and its save handler can log credentials and reload traders.
