@@ -17,6 +17,8 @@ repos:
     rev: cef0300fd0fc4d2a87a85fa2093c6b283ea36f4b
     hooks:
       - id: trailing-whitespace
+        # Preserve unified diff context; image tests verify the applied source.
+        exclude: ^builds/nofx/patches/.*\.patch$
       - id: end-of-file-fixer
       - id: check-added-large-files
       - id: check-yaml

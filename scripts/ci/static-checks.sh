@@ -807,6 +807,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
+    '.github/workflows/nofx-images.yml:publish' \
+    '.github/workflows/nofx-images.yml:test-build' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
@@ -840,6 +842,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
+.github/workflows/nofx-images.yml a2779b56c0bf84cf1e39f72e136f4aca9574175afac03118c814e00d22fb1df0
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
@@ -856,6 +859,7 @@ for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
+  '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"

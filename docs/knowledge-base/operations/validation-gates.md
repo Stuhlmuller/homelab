@@ -524,7 +524,7 @@ server-side Restricted warnings for that init are expected and must not be
 misreported as full Pod compliance. See the OpenClaw README's container
 privilege boundary for post-rollout process and functionality checks.
 
-## NOFX catalog gate
+## NOFX runtime, image, and catalog gates
 
 The static gate also renders the NOFX workload and runs
 `scripts/ci/nofx-runtime-check.py`. It resolves relative backtest/log writes
@@ -532,6 +532,24 @@ against the effective working directory and most-specific mount, preserving
 the existing SQLite path and claim while requiring an absolute executable and
 read-only image root. A running health endpoint does not test these writes;
 live acceptance additionally requires a short simulated Backtest Lab run.
+
+Changes under `builds/nofx` also require `bash builds/nofx/test.sh` and
+`bash builds/nofx/build.sh` on a Linux Docker host. The tests exercise the actual
+patched backend and frontend build targets. The NOFX Images workflow runs these
+without publishing credentials on PRs. Its main-only publishing job rebuilds
+before registry login, rejects stale or mismatched main SHAs, and records fixed
+GHCR image digest references. Both jobs are included in the closed credentialed
+workflow inventory and the exact normalized workflow hash; actionlint,
+Conftest, and Checkov cover workflow edits.
+
+Image publication and deployment are separate changes. First-time packages
+default to private, so public visibility and anonymous image access must be
+verified before a reviewed PR changes runtime digests. Post-rollout acceptance
+requires a blank-key model edit without trader initialization, a working AGPL
+source download, rejected invalid backtest run IDs, and a completed short
+simulation using the default OKX US public feed. Legacy saved runs retain
+Binance. The September 14 storage rollout was `Synced`/`Healthy` but hit Binance
+HTTP 451 on a new backtest; it did not satisfy this functional gate.
 
 The fixed NOFX reconciliation command defaults to read-only inspection.
 The documented caller verifies exact local/remote reviewed main and a clean
