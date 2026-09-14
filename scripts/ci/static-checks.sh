@@ -384,6 +384,12 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::NOFX runtime storage"
+kubectl kustomize clusters/homelab/apps/nofx |
+  yq ea -o=json -I=0 '[.]' - |
+  python3 scripts/ci/nofx-runtime-check.py
+echo "::endgroup::"
+
 echo "::group::Multica PostgreSQL recovery probes"
 kubectl kustomize clusters/homelab/apps/multica |
   yq ea -o=json -I=0 '[.]' - |
