@@ -65,6 +65,8 @@ either runtime. The derivative adds:
 
 - Key-preserving model edits without submitted-credential logging or trader
   initialization during configuration save.
+- Read-only OKX client construction: restarting NOFX with stopped traders no
+  longer attempts to change their exchange account's position mode.
 - Run-ID validation before backtest filesystem access.
 - OKX US public historical candles for new simulations; legacy saved runs
   retain their Binance source. No exchange account or API key is needed.
@@ -120,9 +122,13 @@ runs, not fixed model identities. Check its
 [current request limits](https://openrouter.ai/docs/faq) before increasing run
 length or concurrency.
 
-The pinned OKX client always selects the live API, even if a configuration UI
+The upstream pinned OKX client always selects the live API, even if a configuration UI
 offers a testnet option. Use Backtest Lab for simulations. Creating or reloading
-an OKX trader can change the account's position mode before trading starts.
+an upstream OKX trader can change the account's position mode before trading
+starts. The derivative removes that constructor write; it does not add demo
+trading or net-mode order support. Operators must configure the account mode
+themselves before any live use. Existing running traders still auto-resume on
+startup; the stopped state remains essential during simulation work.
 On September 14, the existing OKX trader remained stopped and three
 private simulation strategies were saved inactive. Live OKX trading was not
 activated.

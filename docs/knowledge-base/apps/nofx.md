@@ -107,9 +107,12 @@ The repository-owned derivative preserves upstream revision
 save, removal of submitted-credential logging, strict backtest run-ID validation,
 and OKX US public historical candles for new simulations. Legacy saved runs keep
 their Binance source. Historical decisions exclude current quant/ranking feeds
-and use the simulated clock for position age. The frontend offers the patched corresponding source
+and use the simulated clock for position age. OKX construction only reads account
+mode; it no longer changes it during stopped-trader startup. Existing running
+traders still auto-resume, so keep simulation work stopped at the exchange level.
+The frontend offers the patched corresponding source
 at `/nofx-source.tar.gz` under AGPL-3.0, including its build recipe. This does not
-change the live OKX adapter or activate a trader.
+add demo trading, net-mode order support, or activate a trader.
 
 `builds/nofx/test.sh` and `builds/nofx/build.sh` run without arguments or
 credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR

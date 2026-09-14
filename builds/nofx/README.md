@@ -3,9 +3,10 @@
 This recipe rebuilds the pinned NOFX release with passive, key-preserving model
 configuration, validated backtest run IDs, and OKX US public historical candles
 for new simulations. Historical decisions exclude current quant/ranking feeds
-and use the simulated clock for position age. It does not enable live traders.
-Deployment and operational
-acceptance are documented in the [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
+and use the simulated clock for position age. OKX construction reads account
+mode without trying to change it. It does not enable live traders. Deployment
+and operational acceptance are documented in the
+[NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
 ## Source and build contract
 
