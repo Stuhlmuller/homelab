@@ -1,0 +1,32 @@
+# Preserve the pinned release's runtime and already-built TA-Lib ABI.
+FROM ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7 AS runtime
+
+FROM golang:1.25.3-alpine3.22@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS dependencies
+RUN apk add --no-cache git build-base
+COPY --from=runtime /usr/local /usr/local
+WORKDIR /src
+COPY upstream/go.mod upstream/go.sum ./
+RUN go mod download
+COPY upstream/ ./
+
+FROM dependencies AS tests
+RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
+    go test ./api ./backtest ./market/okxhistory -count=1 && \
+    CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
+    go test ./market ./kernel -run '^TestHistorical' -count=1
+
+FROM tests AS build
+RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
+    go build -trimpath -ldflags="-s -w" -o /out/nofx .
+
+FROM runtime AS final
+LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
+      org.opencontainers.image.licenses="AGPL-3.0" \
+      org.opencontainers.image.description="NOFX pinned release with passive model configuration and public historical simulation fixes"
+COPY --from=build /out/nofx /app/nofx
+COPY upstream/LICENSE /usr/share/licenses/nofx/LICENSE
+USER 10000:10000
+WORKDIR /app/data
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
+CMD ["/app/nofx"]

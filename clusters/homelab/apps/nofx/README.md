@@ -37,12 +37,67 @@ filesystem history; restore this configuration to reuse those files.
 Validate the rendered runtime contract with:
 
 ```sh
-nix develop --command bash -c 'kubectl kustomize clusters/homelab/apps/nofx | yq -o=json -I=0 ea "[.]" | python3 scripts/ci/nofx-runtime-check.py'
+nix develop --command bash -c '
+  kubectl kustomize clusters/homelab/apps/nofx |
+    yq ea -o=json -I=0 "[.]" - |
+    python3 scripts/ci/nofx-runtime-check.py
+'
 ```
 
 After Argo CD sync, verify the backend becomes ready and a short Backtest Lab
 run reaches a running or completed state. A healthy `/api/health` alone does not
 exercise runtime directory creation.
+
+The storage fix merged in [PR #1029](https://github.com/Stuhlmuller/homelab/pull/1029)
+at `e9b13076`; the September 14 Argo CD UI check showed `Synced` and `Healthy`.
+A new backtest then reached historical-data loading and failed on Binance HTTP
+451. Storage readiness therefore does not yet establish a working simulation.
+
+## Maintained images: publication and rollout pending
+
+The [build recipe](../../../../builds/nofx/README.md) maintains a derivative of
+upstream commit
+`bdfd8dc0d02c14b295eb36cbaee00d8402867927`.
+[source.json](../../../../builds/nofx/source.json) pins the source archive and
+checksum; both Dockerfiles pin their builder and runtime images by digest.
+The preparation script applies the committed patches before Docker builds
+either runtime. The derivative adds:
+
+- Key-preserving model edits without submitted-credential logging or trader
+  initialization during configuration save.
+- Run-ID validation before backtest filesystem access.
+- OKX US public historical candles for new simulations; legacy saved runs
+  retain their Binance source. No exchange account or API key is needed.
+- Historical decisions exclude current quant/ranking feeds, which lack
+  point-in-time history, and measure position age using the simulation clock.
+- A footer download at `/nofx-source.tar.gz` containing the patched upstream,
+  license, lock files, patches, and build recipe under AGPL-3.0.
+
+Run the image tests and builds on a Linux Docker host:
+
+```sh
+bash builds/nofx/test.sh
+bash builds/nofx/build.sh
+```
+
+The [NOFX Images workflow](../../../../.github/workflows/nofx-images.yml) runs
+these commands on pull requests without publishing credentials. After tests
+pass on current `main`, it rebuilds before GHCR login and publishes
+`ghcr.io/stuhlmuller/homelab-nofx-{backend,frontend}:homelab-<full-main-sha>`.
+A manual rerun also requires that exact current `main` SHA. The Actions summary
+records both resulting digest references.
+
+These images are not deployed by this build change. First-time GHCR packages
+default to private; explicitly set both packages public and verify
+anonymous image access before a separate reviewed PR updates the deployment's
+image digests. Keep the existing PVC, absolute command, working directory, and
+read-only root. Then verify a blank-key model edit preserves credentials without
+starting traders, the source download works, invalid run IDs are rejected, and
+a short OKX-backed simulation completes.
+
+For rollback, stop simulations and restore the previous reviewed image digests
+while retaining `nofx-data` and the storage fix. Returning to upstream images
+also restores their model-save side effects and Binance data dependency.
 
 ## OpenRouter simulation setup
 
@@ -51,8 +106,9 @@ Name `openrouter/free`. The pinned client appends `/chat/completions`; entering
 `/responses` or `/chat/completions` in the Base URL produces an invalid endpoint.
 Keep the API key in NOFX's encrypted application store, never in git.
 
-Backtest Lab runs simulations without an exchange account, using upstream's
-Binance futures historical data. Compare strategy styles over the same symbols,
+Backtest Lab runs simulations without an exchange account. The deployed upstream
+images use Binance futures history; the maintained derivative uses OKX US public
+history for new runs. Compare strategy styles over the same symbols, data source,
 dates, initial balance, decision cadence, fees, and slippage. Start with a
 24-hour window and one decision per four-hour bar to keep free-model usage
 bounded. Inspect each run's return, drawdown, and trade count; this release's
@@ -67,21 +123,23 @@ length or concurrency.
 The pinned OKX client always selects the live API, even if a configuration UI
 offers a testnet option. Use Backtest Lab for simulations. Creating or reloading
 an OKX trader can change the account's position mode before trading starts.
+On September 14, the existing OKX trader remained stopped and three
+private simulation strategies were saved inactive. Live OKX trading was not
+activated.
 
 ### Upstream configuration findings
 
 At pinned source `bdfd8dc0d02c14b295eb36cbaee00d8402867927`, model editing
 requires the API key again although the backend can preserve an empty key.
 The model-save handler logs the submitted model structure and reloads missing
-traders. Do not treat model save as a harmless endpoint-only edit. A future
-upstream update or repository-owned image patch must remove credential logging,
-allow key-preserving edits, and separate model save from trader initialization.
-Never publish backend logs without redaction.
+traders. The maintained derivative addresses these behaviors, but until its
+reviewed digest rollout, do not treat model save as a harmless endpoint-only
+edit. Never publish backend logs without redaction.
 
 The pinned backtest API also lacks filesystem containment checks for supplied
 run IDs before filesystem access/deletion. This predates the working-directory
-fix. Keep the existing human access policy and add strict run-ID validation in
-an upstream fix before granting this API to other users or automation.
+fix. Keep the existing human access policy; the derivative's validation requires
+post-rollout verification before granting this API to other users or automation.
 
 The dashboard also labels all HTTP 404 responses as "API Not Found", including
 an existing trader that failed to load into the runtime manager. Check private

@@ -1,0 +1,124 @@
+name: NOFX Images
+
+# checkov:skip=CKV_GHA_7: expected_sha pins current main; dispatch cannot change build or publish commands.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - builds/nofx/**
+      - .github/workflows/nofx-images.yml
+      - scripts/ci/static-checks.sh
+      - policy/workflows*.rego
+  push:
+    branches: [main]
+    paths:
+      - builds/nofx/**
+      - .github/workflows/nofx-images.yml
+      - scripts/ci/static-checks.sh
+      - policy/workflows*.rego
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit whose NOFX images will be published
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: nofx-images-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test-build:
+    name: Test And Build NOFX Images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Test NOFX Patches
+        run: bash builds/nofx/test.sh
+
+      - name: Build NOFX Images
+        run: bash builds/nofx/build.sh
+
+  publish:
+    name: Publish Reviewed Main Images
+    needs: [test-build]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Build NOFX Images Before Registry Login
+        run: bash builds/nofx/build.sh
+
+      - name: Verify Current Main Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          else
+            test "${EVENT_NAME}" = "push"
+          fi
+          test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Log In To GHCR
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "${GITHUB_TOKEN}" | docker login ghcr.io --username "${REGISTRY_USER}" --password-stdin
+
+      - name: Push Fixed NOFX Image Repositories
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker tag homelab-nofx-backend:build "ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-${SOURCE_SHA}"
+          docker tag homelab-nofx-frontend:build "ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-${SOURCE_SHA}"
+          docker push "ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-${SOURCE_SHA}"
+          docker push "ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-${SOURCE_SHA}"
+          backend_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-${SOURCE_SHA}")"
+          frontend_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-${SOURCE_SHA}")"
+          [[ "${backend_digest}" =~ ^ghcr[.]io/stuhlmuller/homelab-nofx-backend@sha256:[0-9a-f]{64}$ ]]
+          [[ "${frontend_digest}" =~ ^ghcr[.]io/stuhlmuller/homelab-nofx-frontend@sha256:[0-9a-f]{64}$ ]]
+          printf '%s\n' "${backend_digest}" "${frontend_digest}" | tee -a "${GITHUB_STEP_SUMMARY}"
+
+      - name: Log Out Of GHCR
+        if: always()
+        run: docker logout ghcr.io

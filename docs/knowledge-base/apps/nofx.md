@@ -15,6 +15,8 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The app uses the upstream GHCR backend and frontend images from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
+The maintained derivative in `builds/nofx` is pending publication and a separate
+reviewed deployment-digest change; adding its build workflow does not deploy it.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -83,9 +85,11 @@ Read-only native inspection now confirms the human authorization policy and
 Octelium 401; an authorized browser reaches NOFX after app MFA. The earlier
 anonymous-access drift is resolved.
 
-Backtest Lab's start action returned "Failed to start backtest". The pinned
-source creates its run directory before starting, which the old pod filesystem
-contract cannot permit. Live post-rollout backtest acceptance remains required.
+The storage fix merged in
+[PR #1029](https://github.com/Stuhlmuller/homelab/pull/1029), main `e9b13076`.
+The Argo CD UI then showed `Synced` and `Healthy`. A new Backtest Lab run passed
+directory creation but failed while loading Binance history with HTTP 451.
+Successful simulation acceptance remains open.
 Backend logs could not be inspected: the direct LAN Kubernetes API was
 unreachable and native `kubernetes-api.homelab` returned authenticated NotFound.
 Restore the documented private operator route through its reviewed repository
@@ -93,14 +97,34 @@ workflow before relying on that diagnostic path; do not reuse the CI identity.
 
 OpenRouter's OpenAI-compatible Base URL must be `https://openrouter.ai/api/v1`,
 with model `openrouter/free`. NOFX appends `/chat/completions`; the observed
-`/responses` suffix is invalid. Backtest Lab uses simulated balances and Binance
-historical candles without an OKX account. The pinned OKX adapter has no demo
-mode and can change position mode during client construction.
+`/responses` suffix is invalid. The existing OKX trader remains stopped;
+three private simulation strategies are saved inactive. No live OKX trading
+was activated. The pinned OKX adapter has no demo mode and can change position
+mode during client construction.
 
-Upstream model editing requires a key again, logs the submitted configuration,
-and reloads missing traders. A key-preserving UI edit, credential-log removal,
-and separation of configuration save from trader initialization remain open
-hardening work. The dashboard's generic 404 label can also mean a trader failed
-to load; it does not prove a missing HTTP route. Source evidence, simulation
-setup, rollback, and validation commands are in the
+The repository-owned derivative preserves upstream revision
+`bdfd8dc0d02c14b295eb36cbaee00d8402867927` and adds passive key-preserving model
+save, removal of submitted-credential logging, strict backtest run-ID validation,
+and OKX US public historical candles for new simulations. Legacy saved runs keep
+their Binance source. Historical decisions exclude current quant/ranking feeds
+and use the simulated clock for position age. The frontend offers the patched corresponding source
+at `/nofx-source.tar.gz` under AGPL-3.0, including its build recipe. This does not
+change the live OKX adapter or activate a trader.
+
+`builds/nofx/test.sh` and `builds/nofx/build.sh` run without arguments or
+credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR
+tests/builds with read-only repository permission. Only current `main` can
+publish the fixed `ghcr.io/stuhlmuller/homelab-nofx-backend` and
+`homelab-nofx-frontend` packages, tagged `homelab-<full-main-sha>`; manual dispatch
+requires that exact SHA. The workflow reports digests after pushing.
+First-time GHCR packages are private: verify explicit public publication and
+anonymous image access before a separate reviewed digest rollout. Keep the PVC
+and storage fix during rollback; reverting to upstream restores its model-save
+side effects and Binance dependency.
+
+Until that rollout is verified, the deployed upstream model editor still asks
+for a key again and its save handler can log credentials and reload traders.
+The dashboard's generic 404 label can also mean a trader failed to load; it does
+not prove a missing HTTP route. Source evidence, simulation setup, rollback, and
+validation commands are in the
 [NOFX README](../../../clusters/homelab/apps/nofx/README.md).

@@ -1,0 +1,229 @@
+diff --git a/backtest/HISTORICAL_CONTEXT.md b/backtest/HISTORICAL_CONTEXT.md
+new file mode 100644
+index 0000000..bdc68e1
+--- /dev/null
++++ b/backtest/HISTORICAL_CONTEXT.md
+@@ -0,0 +1,18 @@
++# Historical decision context
++
++Backtests use simulated UTC time and closed historical candles. Quantitative
++feeds and OI, net-flow, and price rankings currently have no point-in-time
++history adapter. The historical runner therefore omits all four current feeds,
++even when a saved strategy enables them. Loading today's observations into past
++decisions would introduce look-ahead bias. Disable those options in simulation
++strategies so their configuration reflects the available inputs.
++
++Position age uses the simulated cutoff and the position's stored opening time.
++The optional `Context.SimulationTimeMS` field is populated only by backtests;
++other callers retain the existing wall-clock behavior.
++
++Regression checks:
++
++```sh
++go test -race ./backtest ./kernel -run 'TestHistorical(Context|PositionAge|Clock)' -count=1
++```
+diff --git a/backtest/historical_context_test.go b/backtest/historical_context_test.go
+new file mode 100644
+index 0000000..323d05e
+--- /dev/null
++++ b/backtest/historical_context_test.go
+@@ -0,0 +1,59 @@
++package backtest
++
++import (
++	"go/ast"
++	"go/parser"
++	"go/token"
++	"testing"
++	"time"
++
++	"nofx/kernel"
++	"nofx/store"
++)
++
++func TestHistoricalContextUsesOnlyHistoricalObservations(t *testing.T) {
++	// Guard the forbidden integration boundary before the behavioral test:
++	// a regression must fail without sending any current-data request.
++	file, err := parser.ParseFile(token.NewFileSet(), "runner.go", nil, 0)
++	if err != nil {
++		t.Fatal(err)
++	}
++	forbidden := map[string]bool{"FetchQuantDataBatch": true, "FetchOIRankingData": true, "FetchNetFlowRankingData": true, "FetchPriceRankingData": true}
++	ast.Inspect(file, func(node ast.Node) bool {
++		call, ok := node.(*ast.CallExpr)
++		if !ok {
++			return true
++		}
++		selector, ok := call.Fun.(*ast.SelectorExpr)
++		if ok && forbidden[selector.Sel.Name] {
++			t.Fatalf("historical runner must not call current data provider %s", selector.Sel.Name)
++		}
++		return true
++	})
++
++	start := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
++	entry := start.Add(30 * time.Minute)
++	cutoff := start.Add(3 * time.Hour)
++	account := NewBacktestAccount(1000, 0, 0)
++	if _, _, _, err := account.Open("BTCUSDT", "long", 1, 1, 100, entry.UnixMilli()); err != nil {
++		t.Fatal(err)
++	}
++	strategy := &store.StrategyConfig{
++		CoinSource: store.CoinSourceConfig{SourceType: "static", StaticCoins: []string{"BTCUSDT"}},
++		Indicators: store.IndicatorConfig{EnableQuantData: true, EnableOIRanking: true, EnableNetFlowRanking: true, EnablePriceRanking: true},
++	}
++	runner := Runner{cfg: BacktestConfig{StartTS: start.Unix(), Symbols: []string{"BTCUSDT"}}, account: account, strategyEngine: kernel.NewStrategyEngine(strategy)}
++	ctx, _, err := runner.buildDecisionContext(cutoff.UnixMilli(), nil, nil, map[string]float64{"BTCUSDT": 105}, 1)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if ctx.QuantDataMap != nil || ctx.OIRankingData != nil || ctx.NetFlowRankingData != nil || ctx.PriceRankingData != nil {
++		t.Fatal("current data leaked into historical context")
++	}
++	if ctx.SimulationTimeMS != cutoff.UnixMilli() || ctx.CurrentTime != "2020-01-01 03:00:00 UTC" || ctx.RuntimeMinutes != 180 {
++		t.Fatalf("wrong historical clock: %+v", ctx)
++	}
++	if len(ctx.Positions) != 1 || ctx.Positions[0].UpdateTime != entry.UnixMilli() {
++		t.Fatalf("position lost historical entry time: %+v", ctx.Positions)
++	}
++}
+diff --git a/backtest/runner.go b/backtest/runner.go
+index 5f039bd..9b33322 100644
+--- a/backtest/runner.go
++++ b/backtest/runner.go
+@@ -503,6 +503,8 @@ func (r *Runner) buildDecisionContext(ts int64, marketData map[string]*market.Da
+ 
+ 	runtime := int((ts - int64(r.cfg.StartTS*1000)) / 60000)
+ 	ctx := &kernel.Context{
++		SimulationTimeMS: ts,
++
+ 		CurrentTime:     time.UnixMilli(ts).UTC().Format("2006-01-02 15:04:05 UTC"),
+ 		RuntimeMinutes:  runtime,
+ 		CallCount:       callCount,
+@@ -517,53 +519,10 @@ func (r *Runner) buildDecisionContext(ts int64, marketData map[string]*market.Da
+ 		Timeframes:      r.cfg.Timeframes,
+ 	}
+ 
+-	// Fetch quantitative data if enabled in strategy (uses current data as approximation)
+-	strategyConfig := r.strategyEngine.GetConfig()
+-	if strategyConfig.Indicators.EnableQuantData {
+-		// Collect symbols to query (candidate coins + position coins)
+-		symbolSet := make(map[string]bool)
+-		for _, sym := range r.cfg.Symbols {
+-			symbolSet[sym] = true
+-		}
+-		for _, pos := range positions {
+-			symbolSet[pos.Symbol] = true
+-		}
+-		symbols := make([]string, 0, len(symbolSet))
+-		for sym := range symbolSet {
+-			symbols = append(symbols, sym)
+-		}
+-		ctx.QuantDataMap = r.strategyEngine.FetchQuantDataBatch(symbols)
+-		if len(ctx.QuantDataMap) > 0 {
+-			logger.Infof("📊 Backtest: fetched quant data for %d symbols", len(ctx.QuantDataMap))
+-		}
+-	}
+-
+-	// Fetch OI ranking data if enabled in strategy (uses current data as approximation)
+-	if strategyConfig.Indicators.EnableOIRanking {
+-		ctx.OIRankingData = r.strategyEngine.FetchOIRankingData()
+-		if ctx.OIRankingData != nil {
+-			logger.Infof("📊 Backtest: OI ranking data ready: %d top, %d low positions",
+-				len(ctx.OIRankingData.TopPositions), len(ctx.OIRankingData.LowPositions))
+-		}
+-	}
+-
+-	// Fetch NetFlow ranking data if enabled in strategy
+-	if strategyConfig.Indicators.EnableNetFlowRanking {
+-		ctx.NetFlowRankingData = r.strategyEngine.FetchNetFlowRankingData()
+-		if ctx.NetFlowRankingData != nil {
+-			logger.Infof("💰 Backtest: NetFlow ranking data ready: inst_in=%d, inst_out=%d",
+-				len(ctx.NetFlowRankingData.InstitutionFutureTop), len(ctx.NetFlowRankingData.InstitutionFutureLow))
+-		}
+-	}
+-
+-	// Fetch Price ranking data if enabled in strategy
+-	if strategyConfig.Indicators.EnablePriceRanking {
+-		ctx.PriceRankingData = r.strategyEngine.FetchPriceRankingData()
+-		if ctx.PriceRankingData != nil {
+-			logger.Infof("📈 Backtest: Price ranking data ready for %d durations",
+-				len(ctx.PriceRankingData.Durations))
+-		}
+-	}
++	// Quantitative and ranking providers expose current observations, not
++	// point-in-time history. Never fetch them in a historical simulation:
++	// doing so leaks future information regardless of saved strategy toggles.
++	// Only the historical candle snapshots above are supported here.
+ 
+ 	record := &store.DecisionRecord{
+ 		AccountState: store.AccountSnapshot{
+@@ -865,7 +824,7 @@ func (r *Runner) convertPositions(priceMap map[string]float64) []kernel.Position
+ 			UnrealizedPnLPct: 0,
+ 			LiquidationPrice: pos.LiquidationPrice,
+ 			MarginUsed:       pos.Margin,
+-			UpdateTime:       time.Now().UnixMilli(),
++			UpdateTime:       pos.OpenTime,
+ 		})
+ 	}
+ 	return list
+diff --git a/kernel/engine.go b/kernel/engine.go
+index e452c73..24d355c 100644
+--- a/kernel/engine.go
++++ b/kernel/engine.go
+@@ -106,6 +106,9 @@ type RecentOrder struct {
+ 
+ // Context trading context (complete information passed to AI)
+ type Context struct {
++	// SimulationTimeMS is set only by historical runners; zero keeps live time behavior.
++	SimulationTimeMS int64 `json:"-"`
++
+ 	CurrentTime     string                             `json:"current_time"`
+ 	RuntimeMinutes  int                                `json:"runtime_minutes"`
+ 	CallCount       int                                `json:"call_count"`
+@@ -1245,7 +1248,11 @@ func (e *StrategyEngine) formatPositionInfo(index int, pos PositionInfo, ctx *Co
+ 
+ 	holdingDuration := ""
+ 	if pos.UpdateTime > 0 {
+-		durationMs := time.Now().UnixMilli() - pos.UpdateTime
++		referenceTimeMS := time.Now().UnixMilli()
++		if ctx != nil && ctx.SimulationTimeMS > 0 {
++			referenceTimeMS = ctx.SimulationTimeMS
++		}
++		durationMs := referenceTimeMS - pos.UpdateTime
+ 		durationMin := durationMs / (1000 * 60)
+ 		if durationMin < 60 {
+ 			holdingDuration = fmt.Sprintf(" | Holding Duration %d min", durationMin)
+diff --git a/kernel/historical_context_test.go b/kernel/historical_context_test.go
+new file mode 100644
+index 0000000..9cb9a7b
+--- /dev/null
++++ b/kernel/historical_context_test.go
+@@ -0,0 +1,27 @@
++package kernel
++
++import (
++	"strings"
++	"testing"
++	"time"
++
++	"nofx/store"
++)
++
++func TestHistoricalPositionAgeUsesSimulationTime(t *testing.T) {
++	entry := time.Date(2020, 1, 1, 0, 30, 0, 0, time.UTC)
++	ctx := &Context{SimulationTimeMS: entry.Add(150 * time.Minute).UnixMilli()}
++	engine := NewStrategyEngine(&store.StrategyConfig{})
++	prompt := engine.formatPositionInfo(1, PositionInfo{Symbol: "BTCUSDT", Side: "long", UpdateTime: entry.UnixMilli()}, ctx)
++	if !strings.Contains(prompt, "Holding Duration 2h 30m") {
++		t.Fatalf("incorrect simulated position age: %s", prompt)
++	}
++}
++
++func TestHistoricalClockOmittedRetainsLiveAge(t *testing.T) {
++	engine := NewStrategyEngine(&store.StrategyConfig{})
++	prompt := engine.formatPositionInfo(1, PositionInfo{Symbol: "BTCUSDT", Side: "long", UpdateTime: time.Now().Add(-5 * time.Minute).UnixMilli()}, &Context{})
++	if !strings.Contains(prompt, "Holding Duration 5 min") {
++		t.Fatalf("live age behavior changed: %s", prompt)
++	}
++}
