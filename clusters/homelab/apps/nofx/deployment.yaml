@@ -39,6 +39,10 @@ spec:
         - name: backend
           image: ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7
           imagePullPolicy: IfNotPresent
+          # NOFX writes relative backtest and log paths; keep them on the PVC.
+          workingDir: /app/data
+          command:
+            - /app/nofx
           ports:
             - name: http
               containerPort: 8080

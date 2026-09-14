@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-06
+updated: 2026-09-14
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,6 +15,14 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The app uses the upstream GHCR backend and frontend images from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
+
+The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
+relative `backtests` and `data` directories; the image's original `/app`
+working directory makes backtest startup fail against the read-only root.
+SQLite stays at `/app/data/data.db`, backtests use `/app/data/backtests`, and
+new logs use `/app/data/data`. Existing files remain intact. The rendered
+runtime gate in `scripts/ci/nofx-runtime-check.py` covers these write paths,
+database identity, mount shadowing, and the absolute executable.
 
 Runtime secrets are not committed. External Secrets reads the NOFX secret
 contract from AWS SSM:
@@ -67,3 +75,32 @@ The native helper requires isolated Python before importing modules, restores
 an authenticated missing `nofx.default` during guarded execution, and verifies
 both human policy enforcement and `Authorization` passthrough after applying.
 Use the [fixed reconciliation runbook](../../octelium-nofx-reconciliation.md).
+
+## Inspection and configuration findings: 2026-09-14
+
+Read-only native inspection now confirms the human authorization policy and
+`Authorization: PASS`. Unauthenticated `/` and `/api/health` return the expected
+Octelium 401; an authorized browser reaches NOFX after app MFA. The earlier
+anonymous-access drift is resolved.
+
+Backtest Lab's start action returned "Failed to start backtest". The pinned
+source creates its run directory before starting, which the old pod filesystem
+contract cannot permit. Live post-rollout backtest acceptance remains required.
+Backend logs could not be inspected: the direct LAN Kubernetes API was
+unreachable and native `kubernetes-api.homelab` returned authenticated NotFound.
+Restore the documented private operator route through its reviewed repository
+workflow before relying on that diagnostic path; do not reuse the CI identity.
+
+OpenRouter's OpenAI-compatible Base URL must be `https://openrouter.ai/api/v1`,
+with model `openrouter/free`. NOFX appends `/chat/completions`; the observed
+`/responses` suffix is invalid. Backtest Lab uses simulated balances and Binance
+historical candles without an OKX account. The pinned OKX adapter has no demo
+mode and can change position mode during client construction.
+
+Upstream model editing requires a key again, logs the submitted configuration,
+and reloads missing traders. A key-preserving UI edit, credential-log removal,
+and separation of configuration save from trader initialization remain open
+hardening work. The dashboard's generic 404 label can also mean a trader failed
+to load; it does not prove a missing HTTP route. Source evidence, simulation
+setup, rollback, and validation commands are in the
+[NOFX README](../../../clusters/homelab/apps/nofx/README.md).

@@ -17,6 +17,84 @@ The backend stores its SQLite database and logs on the `nofx-data` NFS PVC at
 Rollout depends on External Secrets, Istio ambient, Octelium,
 `octelium-public`, and the `nfs-default` storage class.
 
+## Runtime storage and backtests
+
+The backend launches `/app/nofx` with `/app/data` as its working directory.
+The pinned upstream runner creates relative `backtests/<run-id>` directories
+before starting a simulation. Running from the image's default `/app` instead
+fails because the root filesystem is read-only. Keep the absolute command and
+working directory together: the image's default `./nofx` command would not
+resolve from the data directory.
+
+The existing claim retains SQLite at `/app/data/data.db`, simulation runs at
+`/app/data/backtests`, and new log files at `/app/data/data/nofx_YYYY-MM-DD.log`.
+Earlier logs under `/app/data` remain untouched. Back up the whole claim as one
+recovery set; simulation traces and caches can contain private configuration.
+No new claim or database migration is required. Reverting the working-directory
+change leaves data intact but breaks new backtests and hides their relative
+filesystem history; restore this configuration to reuse those files.
+
+Validate the rendered runtime contract with:
+
+```sh
+nix develop --command bash -c 'kubectl kustomize clusters/homelab/apps/nofx | yq -o=json -I=0 ea "[.]" | python3 scripts/ci/nofx-runtime-check.py'
+```
+
+After Argo CD sync, verify the backend becomes ready and a short Backtest Lab
+run reaches a running or completed state. A healthy `/api/health` alone does not
+exercise runtime directory creation.
+
+## OpenRouter simulation setup
+
+Use the OpenAI provider with Base URL `https://openrouter.ai/api/v1` and Model
+Name `openrouter/free`. The pinned client appends `/chat/completions`; entering
+`/responses` or `/chat/completions` in the Base URL produces an invalid endpoint.
+Keep the API key in NOFX's encrypted application store, never in git.
+
+Backtest Lab runs simulations without an exchange account, using upstream's
+Binance futures historical data. Compare strategy styles over the same symbols,
+dates, initial balance, decision cadence, fees, and slippage. Start with a
+24-hour window and one decision per four-hour bar to keep free-model usage
+bounded. Inspect each run's return, drawdown, and trade count; this release's
+comparison selection does not render a combined leaderboard.
+
+The [OpenRouter free router](https://openrouter.ai/docs/guides/routing/routers/free-router)
+can select a different free model for each request. Results compare strategy
+runs, not fixed model identities. Check its
+[current request limits](https://openrouter.ai/docs/faq) before increasing run
+length or concurrency.
+
+The pinned OKX client always selects the live API, even if a configuration UI
+offers a testnet option. Use Backtest Lab for simulations. Creating or reloading
+an OKX trader can change the account's position mode before trading starts.
+
+### Upstream configuration findings
+
+At pinned source `bdfd8dc0d02c14b295eb36cbaee00d8402867927`, model editing
+requires the API key again although the backend can preserve an empty key.
+The model-save handler logs the submitted model structure and reloads missing
+traders. Do not treat model save as a harmless endpoint-only edit. A future
+upstream update or repository-owned image patch must remove credential logging,
+allow key-preserving edits, and separate model save from trader initialization.
+Never publish backend logs without redaction.
+
+The pinned backtest API also lacks filesystem containment checks for supplied
+run IDs before filesystem access/deletion. This predates the working-directory
+fix. Keep the existing human access policy and add strict run-ID validation in
+an upstream fix before granting this API to other users or automation.
+
+The dashboard also labels all HTTP 404 responses as "API Not Found", including
+an existing trader that failed to load into the runtime manager. Check private
+startup logs and the saved strategy/model/exchange configuration before assuming
+an API route or image-version mismatch.
+
+Source: pinned upstream
+[runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),
+[backtest runner](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/backtest/runner.go),
+[OpenAI client](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/mcp/openai_client.go),
+[model handler](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/api/server.go),
+and [OKX client](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go).
+
 ## Native access policy reconciliation
 
 Argo CD does not apply the native Octelium Service catalog. Use the fixed

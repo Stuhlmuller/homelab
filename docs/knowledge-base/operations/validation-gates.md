@@ -526,6 +526,13 @@ privilege boundary for post-rollout process and functionality checks.
 
 ## NOFX catalog gate
 
+The static gate also renders the NOFX workload and runs
+`scripts/ci/nofx-runtime-check.py`. It resolves relative backtest/log writes
+against the effective working directory and most-specific mount, preserving
+the existing SQLite path and claim while requiring an absolute executable and
+read-only image root. A running health endpoint does not test these writes;
+live acceptance additionally requires a short simulated Backtest Lab run.
+
 The fixed NOFX reconciliation command defaults to read-only inspection.
 The documented caller verifies exact local/remote reviewed main and a clean
 checkout before Nix evaluates `flake.nix` or `flake.lock`. The helper repeats
