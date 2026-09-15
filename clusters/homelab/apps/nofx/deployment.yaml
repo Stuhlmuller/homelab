@@ -24,6 +24,8 @@ spec:
         app.kubernetes.io/component: backend
         app.kubernetes.io/part-of: homelab-ai
     spec:
+      imagePullSecrets:
+        - name: harbor-pull
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 10000
@@ -125,6 +127,8 @@ spec:
         app.kubernetes.io/component: frontend
         app.kubernetes.io/part-of: homelab-ai
     spec:
+      imagePullSecrets:
+        - name: harbor-pull
       automountServiceAccountToken: false
       securityContext:
         fsGroup: 10000

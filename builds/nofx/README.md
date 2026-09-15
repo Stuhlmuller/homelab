@@ -55,14 +55,53 @@ matching the deployed image revision.
 ## Publish, update, and revert
 
 The [NOFX Images workflow](../../.github/workflows/nofx-images.yml) tests and
-builds PRs without publication credentials. Only a tested current `main` commit
-can publish fixed GHCR repositories with tags `homelab-<full-main-sha>`; manual
-dispatch requires the same exact SHA. The publish job rebuilds before logging
-in and reports both digest references in its Actions summary.
+builds PRs without publication credentials. A tested current `main` commit can
+publish these private Harbor repositories after the `homelab-production`
+environment gate:
 
-First-time GHCR packages default to private. Explicit public publication and
-anonymous image access must be verified before a separate reviewed deployment
-PR pins the resulting digests. This recipe change alone does not deploy images.
+- `harbor.stinkyboi.com/homelab/homelab-nofx-backend`
+- `harbor.stinkyboi.com/homelab/homelab-nofx-frontend`
+
+Tags are `homelab-<full-main-sha>`; manual dispatch requires the exact current
+`main` SHA. The publish job rebuilds before AWS authentication or registry
+login. It reads `/homelab/harbor/robot-push-password` from SSM in `us-west-2`
+for the `robot$homelab+publisher` account. Credentials stay in restrictive
+temporary files and the public Actions summary contains only verified digest
+references. Transfers and transport diagnostics remain private.
+
+The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
+Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves
+`harbor.stinkyboi.com` certificate validation while uploads bypass the public
+Cloudflare HTTP request-size limit. Cleanup removes the forwarding process,
+host entry, kubeconfig, registry credentials, and private logs. Harbor, its TLS
+certificate, project/robot reconciliation, and production CI access must be
+ready before publication.
+
+### Existing GHCR package migration
+
+The [migration inventory](../../scripts/config/harbor-migration.json) records
+the two private artifacts published by
+[run 34815485548](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
+at revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`.
+After Harbor is ready, dispatch the
+[migration workflow](../../.github/workflows/harbor-migrate.yml) from current
+`main` with that checkout's exact SHA as `expected_sha`. The inventory's source
+revision stays fixed to the original build; the dispatch SHA identifies the
+reviewed migration code.
+
+The workflow requires static checks and the production environment gate,
+reads private GHCR packages using its repository-scoped `GITHUB_TOKEN`, and
+copies the fixed digests with `skopeo copy --all --preserve-digests`. It verifies
+the SHA-256 of each destination's raw manifest against the recorded source
+digest before publishing the result. It retains the original tags and GHCR
+sources; reruns copy the same content. Future builds publish directly to Harbor.
+
+Package publication and copying do not change running NOFX images. A reviewed
+runtime change must pin the Harbor digest and provide its namespace-scoped
+read-only pull credentials before Argo CD rollout. Keep Harbor repositories
+private and perform the NOFX acceptance checks in the linked runbook. For a
+registry rollback, retain the Harbor artifacts until consumers have switched
+to another verified private registry through reviewed desired state.
 
 For an upstream update, change the source revision and archive checksum together,
 review the runtime/builder digest compatibility, rebase the patches, and require

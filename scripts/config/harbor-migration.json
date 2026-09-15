@@ -1,0 +1,14 @@
+{
+  "source_revision": "f76c27834ff987aa1dfad81d0c9ff273be7dd3cd",
+  "source_workflow_run": "https://github.com/Stuhlmuller/homelab/actions/runs/34815485548",
+  "images": [
+    {
+      "name": "homelab-nofx-backend",
+      "digest": "sha256:8da04a4a63b5c0a1eb7b938218a41c7cbebba82489f784d9abda43a5fa47985f"
+    },
+    {
+      "name": "homelab-nofx-frontend",
+      "digest": "sha256:66f001923a8ea65af86d777db2bd46e9c829acba0a877c1af2037bf6dab974c5"
+    }
+  ]
+}

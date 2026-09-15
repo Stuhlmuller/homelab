@@ -249,6 +249,34 @@ spec:
 ---
 kind: Service
 metadata:
+  name: harbor
+spec:
+  displayName: Harbor
+  isPublic: true
+  isAnonymous: true
+  mode: WEB
+  port: 80
+  config:
+    upstream:
+      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+    tls:
+      insecureSkipVerify: true
+    http:
+      header:
+        authorizationMode: PASS
+        forwardedMode: TRANSPARENT
+        host:
+          value: harbor.stinkyboi.com
+        addRequestHeaders:
+          - key: X-Forwarded-Host
+            value: harbor.stinkyboi.com
+          - key: X-Forwarded-Port
+            value: "443"
+          - key: X-Forwarded-Proto
+            value: https
+---
+kind: Service
+metadata:
   name: argocd
 spec:
   displayName: Argo CD
