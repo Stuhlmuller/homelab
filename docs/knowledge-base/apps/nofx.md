@@ -12,13 +12,14 @@ source is `clusters/homelab/apps/nofx`. Octelium passes NOFX's application
 `Authorization` header because NOFX sends its session JWT there. The
 Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 
-The app uses the upstream GHCR backend and frontend images from
+The deployment declares maintained GHCR backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
 The maintained derivative in `builds/nofx` was published by reviewed main
-revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. The digest rollout remains
-pending until authenticated private image pulls work; it is not yet live.
-Both packages must remain private.
+revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. Both deployments reference
+`nofx-registry-auth` only through `imagePullSecrets`. Live rollout remains gated
+on successful authenticated pulls and a fresh ExternalSecret refresh; the
+manifest alone does not prove deployment. Both packages must remain private.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -129,11 +130,15 @@ The reviewed source repair merged in
 [PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
 [publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
 passed. Both anonymous pull checks returned HTTP 401 on September 14. Package
-visibility must remain private. The bootstrap configuration retains upstream
-images and leaves the registry Secret unattached until its dedicated credential
-passes authenticated pulls. Follow the
-[private-image runbook](../../nofx-private-images.md) before the separate image
-rollout. Keep the PVC
+visibility must remain private. Credential bootstrap
+[PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031), main `0b352ebd`,
+retained upstream images and left the registry Secret unattached. The next
+deployment attaches it with the reviewed private image digests. Require a
+successful credential workflow and ExternalSecret `Ready=True` with
+`status.refreshTime` after injection before merging that rollout; old readiness
+can describe the placeholder. Then verify both running image digests and
+application acceptance through the
+[private-image runbook](../../nofx-private-images.md). Keep the PVC
 and storage fix during rollback; reverting to upstream restores its model-save
 side effects and Binance dependency.
 
