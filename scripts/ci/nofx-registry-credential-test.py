@@ -58,12 +58,51 @@ class CredentialTests(unittest.TestCase):
                 self.assertEqual(request.get_header("Authorization"), f"Bearer {TOKEN}")
 
     def test_subprocess_failure_never_echoes_credentials(self):
-        with patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, TOKEN, TOKEN)) as run:
+        with patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, TOKEN, TOKEN)) as run, redirect_stdout(io.StringIO()) as output:
             with self.assertRaises(module.Failure) as failure:
-                module.command(["aws", "ssm", "put-parameter"], data=TOKEN)
+                module.command(["aws", "ssm", "put-parameter"], stage="ssm-write", data=TOKEN)
             self.assertNotIn(TOKEN, str(failure.exception))
             self.assertNotIn(TOKEN, " ".join(run.call_args.args[0]))
             self.assertNotIn("NOFX_GHCR_READ_TOKEN", run.call_args.kwargs["env"])
+            self.assertEqual(output.getvalue(), "NOFX registry credential: stage ssm-write\n")
+
+    def test_command_failure_reports_only_fixed_stage_and_error_code(self):
+        for stage, stderr, code in [
+            ("ssm-metadata", f"An error occurred (AccessDeniedException): {TOKEN}", "aws-access-denied"),
+            ("ssm-write", f"An error occurred (InvalidKeyId): {TOKEN}", "aws-invalid-key"),
+            ("ssm-write", f"An error occurred ({TOKEN}): unknown", "command-failed"),
+            ("registry-login", f"Error response from daemon: unauthorized: {TOKEN}", "registry-unauthorized"),
+            ("backend-pull", f"Error response from daemon: denied: {TOKEN}", "registry-denied"),
+            ("frontend-pull", f"manifest unknown: {TOKEN}", "registry-manifest-unknown"),
+            ("frontend-pull", f"toomanyrequests: {TOKEN}", "registry-rate-limited"),
+            ("current-main", f"fatal: {TOKEN}", "command-failed"),
+        ]:
+            with self.subTest(stage=stage, code=code), patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, TOKEN, stderr)), redirect_stdout(io.StringIO()) as output:
+                with self.assertRaises(module.Failure) as failure:
+                    module.command(["synthetic-command"], stage=stage)
+                self.assertEqual(str(failure.exception), f"Stage {stage} failed: {code}; private output withheld")
+                self.assertNotIn(TOKEN, str(failure.exception))
+                self.assertEqual(output.getvalue(), f"NOFX registry credential: stage {stage}\n")
+
+    def test_command_exception_reports_stage_without_private_exception_details(self):
+        for error, code in [
+            (subprocess.TimeoutExpired([TOKEN], 1, output=TOKEN, stderr=TOKEN), "command-timeout"),
+            (OSError(TOKEN), "command-unavailable"),
+            (subprocess.SubprocessError(TOKEN), "command-failed"),
+        ]:
+            with self.subTest(code=code), patch.object(module.subprocess, "run", side_effect=error), redirect_stdout(io.StringIO()) as output:
+                with self.assertRaises(module.Failure) as failure:
+                    module.command(["synthetic-command"], stage="registry-login")
+                self.assertEqual(str(failure.exception), f"Stage registry-login failed: {code}; private output withheld")
+                self.assertEqual(output.getvalue(), "NOFX registry credential: stage registry-login\n")
+
+    def test_untrusted_stage_is_never_logged_or_executed(self):
+        with patch.object(module.subprocess, "run") as run, redirect_stdout(io.StringIO()) as output:
+            with self.assertRaises(module.Failure) as failure:
+                module.command(["synthetic-command"], stage=TOKEN)
+        run.assert_not_called()
+        self.assertEqual(str(failure.exception), "Unknown credential validation stage")
+        self.assertEqual(output.getvalue(), "")
 
     def run_rotation(self, *, fail_at=None, argv=None):
         calls = []
@@ -91,6 +130,7 @@ class CredentialTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(calls, ["context", "user", "parameter", "images", "context"])
         self.assertEqual(command.call_count, 1)
+        self.assertEqual(command.call_args.kwargs["stage"], "ssm-write")
         self.assertEqual(command.call_args.args[0], [
             "aws", "ssm", "put-parameter", "--region", "us-west-2",
             "--cli-input-json", "file:///dev/stdin", "--output", "json",
@@ -147,6 +187,9 @@ class CredentialTests(unittest.TestCase):
             module.authenticate_images(TOKEN)
         pulls = [call.args[0] for call in run.call_args_list if "pull" in call.args[0]]
         self.assertEqual([args[-1] for args in pulls], list(module.IMAGES))
+        self.assertEqual([call.kwargs["stage"] for call in run.call_args_list], [
+            "registry-login", "backend-pull", "backend-inspect", "frontend-pull", "frontend-inspect",
+        ])
         self.assertTrue(all(not path.exists() for path in paths))
 
     def test_stale_main_rejected_before_write(self):
