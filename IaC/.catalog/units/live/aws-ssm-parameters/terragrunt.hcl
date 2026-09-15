@@ -236,6 +236,10 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/nofx/ghcr-read-token" = {
+      description   = "Dedicated classic GitHub PAT with read:packages only for private NOFX image pulls."
+      initial_value = local.placeholder
+    }
     "/homelab/nofx/jwt-secret" = {
       description = "NOFX JWT signing secret."
       generated = {

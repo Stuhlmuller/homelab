@@ -60,9 +60,11 @@ can publish fixed GHCR repositories with tags `homelab-<full-main-sha>`; manual
 dispatch requires the same exact SHA. The publish job rebuilds before logging
 in and reports both digest references in its Actions summary.
 
-First-time GHCR packages default to private. Explicit public publication and
-anonymous image access must be verified before a separate reviewed deployment
-PR pins the resulting digests. This recipe change alone does not deploy images.
+Both GHCR packages remain private. Provision the dedicated registry credential
+through the [private-image runbook](../../docs/nofx-private-images.md) and verify
+authenticated image access before a separate reviewed deployment PR pins the
+resulting digests. This recipe change alone does not deploy images. Do not
+change package visibility to work around a missing pull credential.
 
 For an upstream update, change the source revision and archive checksum together,
 review the runtime/builder digest compatibility, rebase the patches, and require

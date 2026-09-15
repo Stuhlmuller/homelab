@@ -100,6 +100,14 @@ included in that closed credentialed-workflow inventory. It uses only the
 existing production AWS role and Cloudflare rule-removal secret, with private
 API output withheld. Validate its full definition before updating the hash.
 
+The `NOFX Registry Credential` workflow uses the same reviewed-main and protected
+environment boundaries. Its AWS session can update only the dedicated NOFX
+registry parameter after validating the PAT's owner, exact `read:packages`
+scope, and both pinned image pulls. The static gate runs offline failure and
+secret-handling tests for its helper; the runtime gate validates the dedicated
+ExternalSecret and requires pull-secret references only with the private
+maintained images. See [private-image bootstrap](../../nofx-private-images.md).
+
 The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
 blobs whose working-tree file was removed.
