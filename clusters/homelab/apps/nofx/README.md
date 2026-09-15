@@ -99,11 +99,12 @@ passed and published the fixed credential-validation images, from homelab
 revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. On September 14, anonymous
 pull checks returned HTTP 401 for both new packages, as expected for private
 images. Keep both packages private. Follow the
-[private-image runbook](../../../../docs/nofx-private-images.md) to provision
-and verify the dedicated credential before enabling `imagePullSecrets` and
-the maintained image digests in a separate PR. The bootstrap change retains
-the original upstream images and leaves the new registry Secret unattached;
-an absent or placeholder credential must not interrupt the existing deployment.
+[private-image runbook](../../../../docs/nofx-private-images.md) for credential
+provisioning, rotation, and rollout gates. Both deployments pin these maintained
+images and reference `nofx-registry-auth` through `imagePullSecrets`. The token
+is used by the node's kubelet and is not mounted or injected into NOFX containers.
+Before merging the image switch, require a successful credential workflow and
+an ExternalSecret refresh after that write; placeholder readiness is insufficient.
 
 Keep the existing PVC, absolute command, working directory, and
 read-only root. Then verify a blank-key model edit preserves credentials without
