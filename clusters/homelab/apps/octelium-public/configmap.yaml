@@ -78,6 +78,10 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: kiali.stinkyboi.com
+      - hostname: harbor.stinkyboi.com
+        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+        originRequest:
+          httpHostHeader: harbor.stinkyboi.com
       - hostname: kubernetes-api-ci.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
