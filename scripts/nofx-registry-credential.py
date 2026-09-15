@@ -25,6 +25,30 @@ IMAGES = (
     "ghcr.io/stuhlmuller/homelab-nofx-frontend@sha256:"
     "66f001923a8ea65af86d777db2bd46e9c829acba0a877c1af2037bf6dab974c5",
 )
+COMMAND_STAGES = frozenset({
+    "checkout-revision", "current-main", "ssm-metadata", "registry-login",
+    "backend-pull", "backend-inspect", "frontend-pull", "frontend-inspect", "ssm-write",
+})
+AWS_ERROR_CODES = {
+    "AccessDenied": "aws-access-denied",
+    "AccessDeniedException": "aws-access-denied",
+    "ExpiredToken": "expired",
+    "ExpiredTokenException": "expired",
+    "InvalidClientTokenId": "invalid",
+    "InvalidKeyId": "aws-invalid-key",
+    "KMSAccessDeniedException": "kms-access-denied",
+    "ParameterNotFound": "ssm-parameter-not-found",
+    "Throttling": "aws-throttled",
+    "ThrottlingException": "aws-throttled",
+    "ValidationException": "aws-validation-error",
+}
+REGISTRY_ERROR_CODES = {
+    "unauthorized": "registry-unauthorized",
+    "denied": "registry-denied",
+    "manifest unknown": "registry-manifest-unknown",
+    "name unknown": "registry-name-unknown",
+    "toomanyrequests": "registry-rate-limited",
+}
 
 
 class Failure(Exception):
@@ -36,7 +60,27 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         raise Failure("GitHub authentication unexpectedly redirected")
 
 
-def command(args, *, data=None, timeout=30):
+def command_error_code(stage, stderr):
+    # Never publish a captured substring. Only recognize known error codes and
+    # return their fixed labels; arbitrary messages and credential echoes stay
+    # private. A nonstandard response receives the same generic fallback.
+    if stage.startswith("ssm-"):
+        match = re.search(r"An error occurred \(([A-Za-z][A-Za-z0-9]+)\)", stderr)
+        if match:
+            return AWS_ERROR_CODES.get(match.group(1), "command-failed")
+    elif stage in {"registry-login", "backend-pull", "frontend-pull"}:
+        for code, label in REGISTRY_ERROR_CODES.items():
+            if re.search(r"(?:^|[\s:])" + re.escape(code) + r"(?::|$)", stderr.lower()):
+                return label
+    return "command-failed"
+
+
+def command(args, *, stage, data=None, timeout=30):
+    if stage not in COMMAND_STAGES:
+        raise Failure("Unknown credential validation stage")
+    # A fixed progress marker also identifies the active boundary if parsing a
+    # successful command's private response fails afterward.
+    print(f"NOFX registry credential: stage {stage}", flush=True)
     # Do not propagate the PAT into children. Docker login receives it on stdin;
     # AWS receives only the single write payload on stdin after pull validation.
     env = {key: value for key, value in os.environ.items()
@@ -48,10 +92,15 @@ def command(args, *, data=None, timeout=30):
             args, input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, check=False, timeout=timeout, cwd=ROOT, env=env,
         )
-    except (OSError, subprocess.SubprocessError):
-        raise Failure("Credential validation command failed or timed out") from None
+    except subprocess.TimeoutExpired:
+        raise Failure(f"Stage {stage} failed: command-timeout; private output withheld") from None
+    except OSError:
+        raise Failure(f"Stage {stage} failed: command-unavailable; private output withheld") from None
+    except subprocess.SubprocessError:
+        raise Failure(f"Stage {stage} failed: command-failed; private output withheld") from None
     if result.returncode:
-        raise Failure("Credential validation command failed; no command output published")
+        code = command_error_code(stage, result.stderr)
+        raise Failure(f"Stage {stage} failed: {code}; private output withheld")
     return result.stdout
 
 
@@ -82,9 +131,9 @@ def validate_context():
     sha = os.environ.get("GITHUB_SHA", "")
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise Failure("Invalid reviewed main revision")
-    if command(["git", "rev-parse", "HEAD"]).strip() != sha:
+    if command(["git", "rev-parse", "HEAD"], stage="checkout-revision").strip() != sha:
         raise Failure("Checkout does not match the dispatched main revision")
-    current = command(["git", "ls-remote", f"https://github.com/{REPO}.git", "refs/heads/main"])
+    current = command(["git", "ls-remote", f"https://github.com/{REPO}.git", "refs/heads/main"], stage="current-main")
     if current.split() != [sha, "refs/heads/main"]:
         raise Failure("Dispatch is stale; use the current reviewed main revision")
 
@@ -94,7 +143,7 @@ def parameter_metadata():
         "aws", "ssm", "describe-parameters", "--region", REGION,
         "--parameter-filters", f"Key=Name,Option=Equals,Values={PARAMETER}",
         "--output", "json",
-    ]))
+    ], stage="ssm-metadata"))
     parameters = metadata.get("Parameters", [])
     if (len(parameters) != 1 or parameters[0].get("Name") != PARAMETER
             or parameters[0].get("Type") != "SecureString"
@@ -109,10 +158,11 @@ def authenticate_images(token):
         # failure and never enters the checkout or an uploaded artifact.
         docker = ["docker", "--config", directory]
         command(docker + ["login", "ghcr.io", "--username", REGISTRY_USER, "--password-stdin"],
-                data=token, timeout=60)
-        for image in IMAGES:
-            command(docker + ["pull", "--platform", "linux/amd64", image], timeout=240)
-            labels = json.loads(command(docker + ["image", "inspect", "--format", "{{json .Config.Labels}}", image]))
+                stage="registry-login", data=token, timeout=60)
+        for component, image in zip(("backend", "frontend"), IMAGES, strict=True):
+            command(docker + ["pull", "--platform", "linux/amd64", image], stage=f"{component}-pull", timeout=240)
+            labels = json.loads(command(docker + ["image", "inspect", "--format", "{{json .Config.Labels}}", image],
+                                        stage=f"{component}-inspect"))
             if (labels.get("org.opencontainers.image.source") != f"https://github.com/{REPO}"
                     or labels.get("org.opencontainers.image.revision") != SOURCE_SHA):
                 raise Failure("Pulled image provenance does not match the reviewed NOFX release")
@@ -134,7 +184,7 @@ def rotate():
     result = json.loads(command([
         "aws", "ssm", "put-parameter", "--region", REGION,
         "--cli-input-json", "file:///dev/stdin", "--output", "json",
-    ], data=json.dumps({"Name": PARAMETER, "Type": "SecureString", "KeyId": KEY_ID,
+    ], stage="ssm-write", data=json.dumps({"Name": PARAMETER, "Type": "SecureString", "KeyId": KEY_ID,
                         "Value": token, "Overwrite": True})))
     if type(result.get("Version")) is not int or result["Version"] < 1:
         raise Failure("SSM write returned no version; inspect the private parameter before retrying")

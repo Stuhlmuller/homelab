@@ -147,3 +147,9 @@ The dashboard's generic 404 label can also mean a trader failed to load; it does
 not prove a missing HTTP route. Source evidence, simulation setup, rollback, and
 validation commands are in the
 [NOFX README](../../../clusters/homelab/apps/nofx/README.md).
+
+The private credential workflow reports fixed command stages and allowlisted
+error categories while withholding captured output. This distinguishes registry
+pull failures from SSM failures without logging credentials. A failed workflow
+does not satisfy the image rollout gate, even when the placeholder ExternalSecret
+reports healthy.

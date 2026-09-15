@@ -101,6 +101,13 @@ slot prevents any credential write. Investigate the failed check; do not make
 the packages public. A successful image publication job proves that CI can push
 images, not that Kubernetes can pull them.
 
+Credential workflow logs identify fixed stages such as `backend-pull` and
+`ssm-write`, with allowlisted error categories. Command output stays private.
+For a registry authorization failure, check package read access and organization
+SSO authorization; for an SSM error, check the declared slot and workflow role.
+An unknown error remains redacted. Do not enable shell tracing or print Docker
+configuration, command responses, or parameter values to diagnose it.
+
 If image startup fails after rollout, retain the PVC and restore the prior
 reviewed upstream image digests together with removal of the registry pull
 references through a PR. This restores the previous software, including its
