@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check NOFX's image-relative writes against the rendered pod's storage mounts.
+"""Check NOFX's persisted write paths and private image credential contract.
 
 Accept a JSON array of rendered resources on stdin or at the supplied path.
 Upstream docker/Dockerfile.backend starts ./nofx in /app; backtest/storage.go
@@ -14,17 +14,81 @@ import sys
 from pathlib import Path
 
 
-def backend(resources):
+REGISTRY_AUTH_NAME = "nofx-registry-auth"
+REGISTRY_TEMPLATE = (
+    '{"auths":{"ghcr.io":{"auth":"'
+    '{{ printf "rstuhlmuller:%s" .token | b64enc }}'
+    '"}}}'
+)
+
+
+def deployment(resources, component="backend"):
     deployments = [item for item in resources if item.get("kind") == "Deployment"
-                   and item.get("metadata", {}).get("name") == "nofx-backend"
+                   and item.get("metadata", {}).get("name") == f"nofx-{component}"
                    and item["metadata"].get("namespace") == "nofx"]
     if len(deployments) != 1:
-        raise ValueError("expected one nofx/nofx-backend Deployment")
+        raise ValueError(f"expected one nofx/nofx-{component} Deployment")
     pod = deployments[0]["spec"]["template"]["spec"]
-    containers = [item for item in pod["containers"] if item["name"] == "backend"]
+    containers = [item for item in pod["containers"] if item["name"] == component]
     if len(containers) != 1:
-        raise ValueError("expected one backend container")
+        raise ValueError(f"expected one {component} container")
     return pod, containers[0]
+
+
+def registry_errors(resources):
+    errors = []
+    secrets = [item for item in resources if item.get("kind") == "ExternalSecret"
+               and item.get("metadata", {}).get("name") == REGISTRY_AUTH_NAME
+               and item["metadata"].get("namespace") == "nofx"]
+    if len(secrets) != 1:
+        errors.append("expected one nofx/nofx-registry-auth ExternalSecret")
+    else:
+        spec = secrets[0]["spec"]
+        if spec.get("secretStoreRef") != {"kind": "ClusterSecretStore", "name": "aws-ssm"}:
+            errors.append("registry auth must use the aws-ssm ClusterSecretStore")
+        if spec.get("refreshPolicy") != "Periodic" or spec.get("refreshInterval") != "5m":
+            errors.append("registry auth must refresh rotated credentials every five minutes")
+        if spec.get("data") != [{"secretKey": "token", "remoteRef": {
+                "key": "/homelab/nofx/ghcr-read-token", "conversionStrategy": "Default",
+                "decodingStrategy": "None", "metadataPolicy": "None"}}] or spec.get("dataFrom"):
+            errors.append("registry auth must read only the dedicated GHCR token parameter")
+        target = spec.get("target", {})
+        if (target.get("name") != REGISTRY_AUTH_NAME or target.get("creationPolicy") != "Owner"
+                or target.get("deletionPolicy") != "Retain"):
+            errors.append("registry auth must own and retain its dedicated target Secret")
+        template = target.get("template", {})
+        if (template.get("engineVersion") != "v2" or template.get("mergePolicy") != "Replace"
+                or template.get("type") != "kubernetes.io/dockerconfigjson"
+                or template.get("data") != {".dockerconfigjson": REGISTRY_TEMPLATE}
+                or template.get("templateFrom")):
+            errors.append("registry auth must render only the fixed GHCR base64 credential template")
+    if any(item.get("kind") == "Secret" and item.get("metadata", {}).get("name") == REGISTRY_AUTH_NAME
+           and item["metadata"].get("namespace") == "nofx" for item in resources):
+        errors.append("registry auth must not be committed as a Secret")
+    for component in ("backend", "frontend"):
+        pod, container = deployment(resources, component)
+        image_repository = container.get("image", "").split(":", 1)[0].split("@", 1)[0]
+        private_image = image_repository == f"ghcr.io/stuhlmuller/homelab-nofx-{component}"
+        if private_image and pod.get("imagePullSecrets") != [{"name": REGISTRY_AUTH_NAME}]:
+            errors.append(f"{component} must pull private images using nofx-registry-auth")
+        if not private_image and pod.get("imagePullSecrets"):
+            errors.append(f"{component} must defer registry credentials until the private image rollout")
+        for volume in pod.get("volumes", []):
+            refs = [volume.get("secret", {}).get("secretName")]
+            refs += [source.get("secret", {}).get("name")
+                     for source in volume.get("projected", {}).get("sources", [])]
+            if REGISTRY_AUTH_NAME in refs:
+                errors.append(f"{component} must not mount the registry credential")
+        containers = pod.get("containers", []) + pod.get("initContainers", [])
+        containers += pod.get("ephemeralContainers", [])
+        for container in containers:
+            refs = [entry.get("secretRef", {}).get("name")
+                    for entry in container.get("envFrom", [])]
+            refs += [entry.get("valueFrom", {}).get("secretKeyRef", {}).get("name")
+                     for entry in container.get("env", [])]
+            if REGISTRY_AUTH_NAME in refs:
+                errors.append(f"{component} must not expose the registry credential as environment")
+    return errors
 
 
 def storage_error(path, pod, container, retained_relative=None):
@@ -50,8 +114,8 @@ def storage_error(path, pod, container, retained_relative=None):
 
 
 def validate(resources):
-    pod, container = backend(resources)
-    errors = []
+    pod, container = deployment(resources)
+    errors = registry_errors(resources)
     if container.get("securityContext", {}).get("readOnlyRootFilesystem") is not True:
         errors.append("backend must keep readOnlyRootFilesystem: true")
     if container.get("command") != ["/app/nofx"]:
@@ -83,10 +147,15 @@ def validate(resources):
 def negative_checks(resources):
     """Mutate the real rendered contract, especially mount shadowing and identity."""
     cases = ("image-workdir", "sibling-path", "relative-command", "relative-database",
-             "writable-root", "readonly-claim", "remapped-database", "shadowed-backtests")
+             "writable-root", "readonly-claim", "remapped-database", "shadowed-backtests",
+             "backend-pull-secret", "frontend-pull-secret", "registry-parameter",
+             "registry-json-injection", "registry-raw-key", "registry-refresh",
+             "registry-env", "registry-mount")
     for case in cases:
         changed = copy.deepcopy(resources)
-        pod, container = backend(changed)
+        pod, container = deployment(changed)
+        registry = next(item for item in changed if item.get("kind") == "ExternalSecret"
+                        and item.get("metadata", {}).get("name") == REGISTRY_AUTH_NAME)
         if case == "image-workdir":
             container.pop("workingDir", None)
         elif case == "sibling-path":
@@ -111,6 +180,25 @@ def negative_checks(resources):
             pod["volumes"].append({"name": "shadow", "emptyDir": {}})
             container["volumeMounts"].append({
                 "name": "shadow", "mountPath": container["workingDir"] + "/backtests"})
+        elif case in ("backend-pull-secret", "frontend-pull-secret"):
+            component = case.split("-")[0]
+            pull_pod, pull_container = deployment(changed, component)
+            pull_container["image"] = f"ghcr.io/stuhlmuller/homelab-nofx-{component}:guard-case"
+            pull_pod.pop("imagePullSecrets", None)
+        elif case == "registry-parameter":
+            registry["spec"]["data"][0]["remoteRef"]["key"] = "/homelab/nofx/jwt-secret"
+        elif case == "registry-json-injection":
+            registry["spec"]["target"]["template"]["data"][".dockerconfigjson"] = (
+                REGISTRY_TEMPLATE.replace('printf "rstuhlmuller:%s" .token | b64enc', '.token'))
+        elif case == "registry-raw-key":
+            registry["spec"]["target"]["template"]["mergePolicy"] = "Merge"
+        elif case == "registry-refresh":
+            registry["spec"]["refreshPolicy"] = "OnChange"
+        elif case == "registry-env":
+            container["envFrom"].append({"secretRef": {"name": REGISTRY_AUTH_NAME}})
+        elif case == "registry-mount":
+            pod["volumes"].append({"name": "registry", "projected": {
+                "sources": [{"secret": {"name": REGISTRY_AUTH_NAME}}]}})
         if not validate(changed):
             raise ValueError(f"runtime regression was accepted: {case}")
     return len(cases)
@@ -123,7 +211,7 @@ def main():
     if errors:
         raise ValueError("; ".join(errors))
     count = negative_checks(resources)
-    print(f"NOFX runtime storage: writable persisted paths, database identity, read-only root; "
+    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth; "
           f"{count} regressions rejected")
 
 
@@ -131,4 +219,4 @@ if __name__ == "__main__":
     try:
         main()
     except (ValueError, KeyError, StopIteration) as error:
-        sys.exit(f"NOFX runtime storage: {error}")
+        sys.exit(f"NOFX runtime: {error}")

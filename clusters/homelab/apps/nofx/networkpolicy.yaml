@@ -43,4 +43,5 @@ spec:
           port: 8080
   egress:
     # Model/exchange APIs and the explicit OKX US public historical-data feed.
+    # Registry pulls run on nodes; the pull credential is not used by app pods.
     - {}
