@@ -199,8 +199,9 @@ def robot_matches(robot, desired):
     # API permission order is not stable; implicit effect means allow.
     actual = robot["permissions"][0]["access"]
     wanted = desired["permissions"][0]["access"]
-    normalize = lambda items: sorted(json.dumps({**item, "effect": item.get("effect") or "allow"},
-                                                sort_keys=True) for item in items)
+    def normalize(items):
+        return sorted(json.dumps({**item, "effect": item.get("effect") or "allow"},
+                                 sort_keys=True) for item in items)
     return all(robot.get(key) == value for key, value in desired.items() if key != "permissions") and (
         normalize(actual) == normalize(wanted)
     )
