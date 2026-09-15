@@ -31,7 +31,7 @@ The data path is:
    `/homelab/nofx/ghcr-read-token` in `us-west-2`, encrypted with `alias/aws/ssm`.
 4. External Secrets refreshes `nofx/nofx-registry-auth` every five minutes.
    The target type is `kubernetes.io/dockerconfigjson`, scoped to `ghcr.io`.
-5. A later deployment PR attaches this Secret through `imagePullSecrets`.
+5. Both maintained-image deployments attach this Secret through `imagePullSecrets`.
    NOFX containers receive neither a token environment variable nor a token
    volume mount.
 
@@ -43,8 +43,9 @@ create a missing slot or write another parameter.
 
 ## Bootstrap without interrupting NOFX
 
-Merge the reviewed credential bootstrap first. It retains the original upstream
-images and does not attach the new pull Secret. A placeholder credential is not
+The first stage, [PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031),
+merged at `0b352ebd05a944de46b0cdda7240edbc10671d76`. It retains the original
+upstream images and does not attach the new pull Secret. A placeholder credential is not
 an authenticated image pull and must never be treated as rollout readiness.
 The new ExternalSecret uses sync wave `-1`; until the SSM slot exists, Argo CD
 may show a pending sync or unhealthy ExternalSecret. Existing pods keep running.
@@ -80,12 +81,20 @@ successful static/policy checks. The script requires both full image pulls to
 succeed before writing the credential. It emits validation status without
 tokens, authorization headers, registry configuration, or decrypted parameters.
 
-Require workflow success and a fresh ExternalSecret `Ready` condition after
-credential injection. A previous `Ready` condition created from the placeholder
-is insufficient. Only then enable `imagePullSecrets: [{name: nofx-registry-auth}]`
-on both deployments and the reviewed maintained digests in a separate PR.
-Verify Argo CD is `Synced` and `Healthy`, both expected image digests are ready,
-and the application acceptance checks in the
+The second-stage deployment manifest selects the private images published from
+reviewed source revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` and attaches
+`imagePullSecrets: [{name: nofx-registry-auth}]` to both deployments. Its exact
+digests are declared in
+[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml).
+
+Before merging that rollout, require credential workflow success, ExternalSecret
+`Ready=True`, and `status.refreshTime` later than credential injection. `Ready`
+alone can describe the old placeholder; its transition timestamp need not change
+when a healthy Secret refreshes. A failed credential run leaves the rollout gate
+closed even when static checks pass.
+
+After GitOps rollout, verify Argo CD is `Synced` and `Healthy`, both containers
+are ready with the declared image digests, and the application acceptance checks in the
 [NOFX README](../clusters/homelab/apps/nofx/README.md) pass.
 
 ## Rotation and failure modes

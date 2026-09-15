@@ -152,8 +152,10 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/nofx/ghcr-read-token`. The protected `NOFX Registry Credential`
   workflow validates a dedicated classic PAT with only `read:packages` before
   updating that exact SecureString. `nofx-registry-auth` refreshes every five
-  minutes and renders a kubelet-only Docker config Secret. Bootstrap retains
-  upstream images until authenticated image pulls and secret refresh succeed;
+  minutes and renders a kubelet-only Docker config Secret. The maintained-image
+  deployment references it through `imagePullSecrets`; merge that rollout only
+  after authenticated pulls and a fresh successful Secret refresh. Bootstrap
+  PR #1031 retained upstream images while establishing this credential path;
   see the [private-image runbook](../../nofx-private-images.md).
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
