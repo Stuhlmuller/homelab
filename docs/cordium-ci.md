@@ -96,18 +96,90 @@ remote exit status, cleanup failure, invalid creation names, and retained
 workspace rejection. They do not prove cluster policy enforcement, available
 capacity, remote Nix permissions, or live transport stability.
 
-The current workflow implements the positive exact-SHA gate and verified
-workspace deletion only. A wrong-ref dispatch skips the job before login,
-so it does not prove server-side assertion denial. There is no repository-owned
-live test mode yet for wrong-workflow/ref assertions, a forbidden Cordium
-method, or an intentionally failed remote command. Add a reviewed bounded
-acceptance path using real GitHub OIDC contexts before claiming those checks
-passed. Mocked lifecycle failures are local regression evidence only.
-
 Audit correlation currently requires a read-only inspection in the existing
 authenticated audit console; this workflow does not export or assert audit
 records. Successful CI alone therefore does not complete identity-boundary,
 failure-cleanup, or audit acceptance.
+
+### Fixed acceptance cases
+
+After the reviewed code is merged and the declared bootstrap hooks have
+succeeded, first require a fresh successful allowed-main check at the same
+reviewed SHA. Then run the fixed cases sequentially; both workflows share
+the same concurrency group. Tokens and native output remain private.
+Skipped jobs, setup failures, TLS errors, timeouts, or arbitrary nonzero exits
+are never successful denial evidence.
+
+All modes use cordium-check.yml except deny-workflow, which is the fixed
+cordium-login-denial.yml workflow. The test branch has the fixed name
+codex/cordium-oidc-denial.
+
+| Mode | Ref | Expected evidence |
+| --- | --- | --- |
+| checks | main | Remote gate and verified workspace deletion |
+| force-failure | main | Exit 42 and verified deletion; job stays failed |
+| forbidden-method | main | Read-only ListSpace returns PermissionDenied |
+| deny-ref | test branch | Login returns Unauthenticated; correlate audit |
+| deny-workflow | main | Login returns PermissionDenied; correlate audit |
+
+The failure operation is exactly /bin/sh -c 'exit 42', after remote SHA
+verification. ListSpace must return the exact Octelium: Unauthorized detail.
+The pinned workspace server
+[extracts the process exit status and publishes it in the response](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/workspace/workspace/task.go#L503-L544).
+The pinned CLI
+[exits directly with that response code](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/client/cordium/commands/exec/cmd.go#L208-L214).
+This establishes the exit-42 contract independently of the local mock.
+
+The two login-only cases never invoke Cordium or create workspaces, including
+after an unexpected successful login. Normal execution and the fixed failure
+command remain main-only. No input accepts a command, method, workspace name,
+identity, policy, or token.
+
+Use the reviewed main SHA for each main case:
+
+```sh
+gh workflow run cordium-check.yml --ref main \
+  -f expected_sha=FULL_REVIEWED_MAIN_SHA -f mode=force-failure
+gh workflow run cordium-check.yml --ref main \
+  -f expected_sha=FULL_REVIEWED_MAIN_SHA -f mode=forbidden-method
+gh workflow run cordium-login-denial.yml --ref main \
+  -f expected_sha=FULL_REVIEWED_MAIN_SHA
+```
+
+For the ref case, first publish the fixed test branch at that exact reviewed
+commit through the normal reviewed branch workflow, with no source changes.
+Dispatch the original workflow from that branch:
+
+```sh
+gh workflow run cordium-check.yml --ref codex/cordium-oidc-denial \
+  -f expected_sha=FULL_REVIEWED_MAIN_SHA -f mode=deny-ref
+```
+
+This genuine branch context changes the JWT ref, workflow-ref suffix, and
+subject together. The wrapper verifies GitHub's
+[default ref and workflow variables](https://docs.github.com/en/actions/reference/workflows-and-actions/variables#default-environment-variables)
+before opening transport. The branch subject is not mapped to the CI User.
+Octelium also
+returns Unauthenticated for provider or key failures and intentionally hides
+details; the client result alone cannot establish claim-rejection causality.
+Require the successful allowed-main control and correlate each run's SHA,
+workflow/ref, identity or rejected assertion, method, and outcome through
+the private authenticated audit console before completing acceptance.
+
+The classifier matches the entire stdout error and the exact raw Cobra error
+plus client-generated usage on stderr. It rejects mixed output and HTTP
+403 fallback messages. Source contracts:
+[Cordium ListSpace](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/client/cordium/commands/get/space/cmd.go),
+[Cordium error rendering](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/client/cordium/main.go),
+[Octelium error rendering](https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/client/common/cliutils/cliutils.go),
+[login rejection codes](https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/authserver/authserver/sessiontoken.go),
+and [method rejection](https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/vigil/vigil/modes/httpg/middlewares/auth/denied.go).
+
+Every assertion attempt gets a bounded logout attempt before local cleanup.
+The pinned logout removes local state but reports success even when its
+server RPC fails. Unexpected login success therefore always fails acceptance;
+inspect the dedicated identity's sessions privately before retrying.
+Do not infer remote revocation from logout's exit status.
 
 ## Fixed native catalog reconciliation
 
