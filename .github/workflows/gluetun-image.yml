@@ -1,0 +1,35 @@
+---
+name: Gluetun image compatibility
+on:
+  pull_request:
+    paths:
+      - images/gluetun/**
+      - scripts/ci/gluetun-image-*
+      - scripts/ci/gluetun-image-fixtures/**
+      - .github/workflows/gluetun-image.yml
+      - flake.nix
+      - flake.lock
+  push:
+    branches: [main]
+    paths:
+      - images/gluetun/**
+      - scripts/ci/gluetun-image-*
+      - scripts/ci/gluetun-image-fixtures/**
+      - .github/workflows/gluetun-image.yml
+      - flake.nix
+      - flake.lock
+permissions:
+  contents: read
+jobs:
+  native-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+      - name: Install locked Nix toolchain
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Build and test complete image with native VPN fixtures and Trivy
+        run: nix develop --command python3 scripts/ci/gluetun-image-build.py

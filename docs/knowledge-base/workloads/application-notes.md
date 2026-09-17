@@ -34,6 +34,12 @@ workload README and [[../architecture/storage-and-state]]. Secret values stay
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [[../architecture/secrets-and-identity]].
 
+## Gluetun candidate image
+
+[[../operations/gluetun-image-build]] records the inactive candidate build
+and native compatibility gates. Deluge's image pin and runtime contract remain
+unchanged; publication and rollout require separate authorization.
+
 ## Kiali mesh visibility
 
 The 2026-09-05 read-only probes found cluster-wide namespace and Istio config

@@ -129,6 +129,11 @@ is recorded in the exact normalized workflow security hash. Updating action
 revisions requires reviewing that workflow and refreshing its hash alongside
 the pin; the credentialed-job inventory and permission checks still apply.
 
+[[codeql-analysis-categories]] records a pre-existing legacy category on main
+that leaves PR introduced-alert comparison incomplete even when the current
+Actions analysis uploads successfully. Do not treat its neutral aggregate as
+complete scanning coverage.
+
 For docs-only or knowledge-base-only changes, focused Markdown and whitespace
 checks are acceptable when the infrastructure graph is untouched:
 
@@ -138,6 +143,15 @@ rg -n \
   "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" \
   docs/knowledge-base .agents/skills
 ```
+
+## Gluetun Image Checks
+
+[[gluetun-image-build]] links the pinned candidate's complete-image build and
+native fixture gate. Run `nix develop --command python3
+scripts/ci/gluetun-image-build.py` from a committed, clean native Linux/amd64
+checkout with local Docker. Source/schema checks and Darwin cross-compilation
+do not satisfy this gate. Native CI success is still pending; publishing and
+real VPN rollout acceptance remain separately authorized work.
 
 ## Kubernetes Source Checks
 

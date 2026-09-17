@@ -18,6 +18,17 @@
       forEachSystem = nixpkgs.lib.genAttrs systems;
     in
     {
+      packages = forEachSystem (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          gluetun = import ./images/gluetun { inherit pkgs; };
+        in
+        {
+          gluetun-candidate = gluetun.binary;
+          gluetun-scanner = gluetun.trivy;
+        }
+      );
       devShells = forEachSystem (
         system:
         let
