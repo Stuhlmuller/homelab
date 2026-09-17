@@ -103,7 +103,7 @@ observations below retain their original dates.
 - **Next step:** Complete the remaining image inventory and add the smallest
   continuous scan and exception-expiry gate under issue `#791`.
 
-- **Status:** mitigation pending rollout and observation
+- **Status:** fixed
 - **Area:** Istio ambient / ztunnel readiness
 - **Evidence:** Read-only inspection on 2026-08-28 found the `zimaboard-0`
   ztunnel returning 13,872 readiness HTTP 500 responses over 36 hours. Its
@@ -115,20 +115,26 @@ observations below retain their original dates.
   in both CNI and ztunnel, forces the CNI DaemonSet to roll, and explicitly
   enrolls the connector pod so its replacement receives a fresh network
   namespace.
-- **Risk:** The connector remains reachable without ambient redirection, but
-  its Istio workload identity and policy telemetry are absent. Ztunnel
-  readiness on `zimaboard-1` and `zimaboard-2` cannot recover while those nodes
-  remain NotReady.
-- **Next step:** Merge and apply the committed state, then recover both NotReady
-  nodes under issue `#775`. The live CNI DaemonSet already has two unavailable
-  nodes against `maxUnavailable=1`, so its Ready-node rollout can complete only
-  after node recovery. Close `#778` only after all four ztunnel pods run the new
-  template and are Ready, Argo CD reports Istio
-  `Synced/Healthy`, every active connector reports redirection `enabled`, and
-  ztunnel records no readiness HTTP 500 or IPv6 bind/route errors for 24 hours.
-  Roll back by reverting these desired-state settings and letting Argo CD
-  reconcile; do not opt the connector out of ambient because protected
-  workloads depend on its service-account principal.
+- **Validation:** Read-only verification on 2026-09-05 met the recovery gates
+  for `#778`: CNI and ztunnel were fully updated and Ready on all four nodes,
+  live IPv6 settings were disabled, Istio was `Synced/Healthy`, and every active
+  connector reported redirection `enabled`. Prometheus recorded uninterrupted
+  ztunnel readiness and no failed CNI or ztunnel readiness probes for 24 hours.
+  Current and retained rotated logs covered that window without readiness
+  HTTP 500 or IPv6 bind/route errors. September 6 revalidation found one later,
+  unclassified CNI probe miss with continuous Pod readiness and no matching IPv6
+  signature; this does not establish recurrence of the original defect. A full
+  repeat at September 6 23:01 UTC passed the 24-hour acceptance gate, including
+  exact Pod-UID series, complete scrape coverage, zero failed probes, and
+  current/rotated log coverage without error signatures. The acceptance hold is
+  closed; the earlier transient's cause remains unknown. See [[audit-2026-09-04]].
+- **Risk:** Future node recovery can interrupt ambient enrollment. Protected
+  workloads depend on the connector's Istio service-account principal.
+- **Next step:** After future node recovery, repeat
+  [[validation-gates#Istio Ambient Recovery]] and classify any further probe
+  failure. Roll back by reverting the desired-state settings
+  and letting Argo CD reconcile;
+  do not opt the connector out of ambient to bypass readiness failures.
 
 - **Status:** fixed
 - **Area:** observability / Grafana startup and security
