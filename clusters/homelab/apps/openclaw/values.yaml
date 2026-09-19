@@ -132,7 +132,7 @@ controllers:
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -162,7 +162,7 @@ controllers:
         dependsOn: 01-runtime-storage
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         resources:
           requests:
             cpu: 500m
@@ -677,7 +677,7 @@ controllers:
             drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -775,7 +775,7 @@ controllers:
             drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         command:
           - python3
           - -u
