@@ -1,0 +1,830 @@
+diff --git a/backtest/ai_client.go b/backtest/ai_client.go
+index 4eeb085..553177c 100644
+--- a/backtest/ai_client.go
++++ b/backtest/ai_client.go
+@@ -10,6 +10,10 @@ import (
+ // configureMCPClient creates/clones an MCP client based on configuration (returns mcp.AIClient interface).
+ // Note: mcp.New() returns an interface type; here we convert to concrete implementation before copying to avoid concurrent shared state.
+ func configureMCPClient(cfg BacktestConfig, base mcp.AIClient) (mcp.AIClient, error) {
++	// Only historical runners construct this adapter. Never alter shared/live clients.
++	if isHistoricalFreeRouter(cfg.AICfg) {
++		return newHistoricalFreeRouterClient(cfg.AICfg), nil
++	}
+ 	provider := strings.ToLower(strings.TrimSpace(cfg.AICfg.Provider))
+ 
+ 	// DeepSeek
+diff --git a/backtest/historical_structured_test.go b/backtest/historical_structured_test.go
+new file mode 100644
+index 0000000..6848055
+--- /dev/null
++++ b/backtest/historical_structured_test.go
+@@ -0,0 +1,115 @@
++package backtest
++
++import (
++	"errors"
++	"testing"
++
++	"nofx/kernel"
++	"nofx/market"
++	"nofx/mcp"
++	"nofx/store"
++)
++
++func TestHistoricalFreeRouterSelection(t *testing.T) {
++	cases := []struct {
++		model, url string
++		want       bool
++	}{
++		{"openrouter/free", "https://openrouter.ai/api/v1", true},
++		{"openrouter/free", "https://openrouter.ai/api/v1/", true},
++		{"other/free", "https://openrouter.ai/api/v1", false},
++		{"openrouter/free", "http://openrouter.ai/api/v1", false},
++		{"openrouter/free", "https://openrouter.ai.evil.example/api/v1", false},
++		{"openrouter/free", "https://evil.example/api/v1", false},
++		{"openrouter/free", "https://user@openrouter.ai/api/v1", false},
++		{"openrouter/free", "https://openrouter.ai:444/api/v1", false},
++		{"openrouter/free", "https://openrouter.ai/api/v1?x=1", false},
++		{"openrouter/free", "https://openrouter.ai/api/v1?", false},
++		{"openrouter/free", "https://openrouter.ai/api/v1#other", false},
++		{"openrouter/free", "https://openrouter.ai/api/v1/responses", false},
++	}
++	for _, tc := range cases {
++		t.Run(tc.url+tc.model, func(t *testing.T) {
++			cfg := BacktestConfig{AICfg: AIConfig{Provider: "openai", APIKey: "fixture", Model: tc.model, BaseURL: tc.url}}
++			client, err := configureMCPClient(cfg, nil)
++			if err != nil {
++				t.Fatal(err)
++			}
++			_, got := client.(mcp.StructuredOutputClient)
++			if got != tc.want {
++				t.Fatalf("structured=%v want=%v", got, tc.want)
++			}
++		})
++	}
++}
++
++type historicalRequestCapture struct {
++	mcp.AIClient
++	request *mcp.Request
++}
++
++func (c *historicalRequestCapture) CallWithRequest(req *mcp.Request) (string, error) {
++	c.request = req
++	return "fixture", nil
++}
++func TestHistoricalFreeRouterRequest(t *testing.T) {
++	capture := &historicalRequestCapture{}
++	client := &historicalFreeRouterClient{AIClient: capture}
++	_, err := client.CallWithStructuredOutput("system", "user", map[string]any{"type": "object"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	req := capture.request
++	if req.Model != "openrouter/free" || req.ResponseFormat.Type != "json_schema" || !req.ResponseFormat.JSONSchema.Strict || !req.Provider.RequireParameters || len(req.Messages) != 2 {
++		t.Fatal("incomplete structured request")
++	}
++}
++
++type failingHistoricalModel struct {
++	mcp.AIClient
++	calls int
++	err   error
++}
++
++func (m *failingHistoricalModel) CallWithStructuredOutput(system, user string, schema map[string]any) (string, error) {
++	m.calls++
++	return "User Safety: safe", m.err
++}
++func TestHistoricalStructuredFailureIsOneAttempt(t *testing.T) {
++	for _, failure := range []error{nil, errors.New("provider unavailable")} {
++		cfg := store.GetDefaultStrategyConfig("en")
++		model := &failingHistoricalModel{err: failure}
++		r := &Runner{mcpClient: model, strategyEngine: kernel.NewStrategyEngine(&cfg)}
++		ctx := &kernel.Context{SimulationTimeMS: 1577847600000, Account: kernel.AccountInfo{TotalEquity: 1000}, MarketDataMap: map[string]*market.Data{"BTCUSDT": {Symbol: "BTCUSDT", CurrentPrice: 100}}}
++		if fd, err := r.invokeAIWithRetry(ctx); err == nil || fd != nil || model.calls != 1 {
++			t.Fatalf("failure retried/accepted: %v, calls=%d", err, model.calls)
++		}
++	}
++}
++
++func TestHistoricalLeverageCapAtExecution(t *testing.T) {
++	for _, symbol := range []string{"BTCUSDT", "ETHUSDT", "SOLUSDT"} {
++		for _, action := range []string{"open_long", "open_short"} {
++			t.Run(symbol+action, func(t *testing.T) {
++				r := &Runner{cfg: BacktestConfig{Leverage: LeverageConfig{BTCETHLeverage: 1, AltcoinLeverage: 1}}, feed: &DataFeed{}, account: NewBacktestAccount(1000, 5, 2), state: &BacktestState{Equity: 1000}}
++				record, trades, _, err := r.executeDecision(kernel.Decision{Symbol: symbol, Action: action, Leverage: 20, PositionSizeUSD: 100}, map[string]float64{symbol: 100}, 1577847600000, 1)
++				if err != nil {
++					t.Fatal(err)
++				}
++				if record.Leverage != 1 || len(trades) != 1 || trades[0].Leverage != 1 || len(r.account.Positions()) != 1 || r.account.Positions()[0].Leverage != 1 {
++					t.Fatal("configured cap bypassed by model leverage")
++				}
++			})
++		}
++	}
++	r := &Runner{cfg: BacktestConfig{Leverage: LeverageConfig{BTCETHLeverage: 3, AltcoinLeverage: 2}}}
++	for _, tc := range []struct {
++		requested int
++		symbol    string
++		want      int
++	}{{0, "BTCUSDT", 3}, {1, "BTCUSDT", 1}, {20, "BTCUSDT", 3}, {20, "SOLUSDT", 2}, {1, "SOLUSDT", 1}} {
++		if got := r.resolveLeverage(tc.requested, tc.symbol); got != tc.want {
++			t.Fatalf("leverage=%d want=%d", got, tc.want)
++		}
++	}
++}
+diff --git a/backtest/runner.go b/backtest/runner.go
+index 9b33322..38daa44 100644
+--- a/backtest/runner.go
++++ b/backtest/runner.go
+@@ -555,7 +555,12 @@ func (r *Runner) fillDecisionRecord(record *store.DecisionRecord, full *kernel.F
+ 
+ func (r *Runner) invokeAIWithRetry(ctx *kernel.Context) (*kernel.FullDecision, error) {
+ 	var lastErr error
+-	for attempt := 0; attempt < aiDecisionMaxRetries; attempt++ {
++	attempts := aiDecisionMaxRetries
++	if _, structured := r.mcpClient.(mcp.StructuredOutputClient); structured && ctx.SimulationTimeMS > 0 {
++		// A failed cycle remains failed; do not retry malformed/provider responses into a winner.
++		attempts = 1
++	}
++	for attempt := 0; attempt < attempts; attempt++ {
+ 		// Use GetFullDecisionWithStrategy with the pre-configured strategy engine
+ 		// This ensures backtest uses the same unified prompt generation as live trading
+ 		fd, err := kernel.GetFullDecisionWithStrategy(
+@@ -568,8 +573,10 @@ func (r *Runner) invokeAIWithRetry(ctx *kernel.Context) (*kernel.FullDecision, e
+ 			return fd, nil
+ 		}
+ 		lastErr = err
+-		delay := time.Duration(attempt+1) * 500 * time.Millisecond
+-		time.Sleep(delay)
++		if attempt+1 < attempts {
++			delay := time.Duration(attempt+1) * 500 * time.Millisecond
++			time.Sleep(delay)
++		}
+ 	}
+ 	return nil, lastErr
+ }
+@@ -764,20 +771,18 @@ func (r *Runner) determineCloseQuantity(symbol, side string, dec kernel.Decision
+ }
+ 
+ func (r *Runner) resolveLeverage(requested int, symbol string) int {
+-	if requested > 0 {
+-		return requested
+-	}
++	limit := r.cfg.Leverage.AltcoinLeverage
+ 	sym := strings.ToUpper(symbol)
+ 	if sym == "BTCUSDT" || sym == "ETHUSDT" {
+-		if r.cfg.Leverage.BTCETHLeverage > 0 {
+-			return r.cfg.Leverage.BTCETHLeverage
+-		}
+-	} else {
+-		if r.cfg.Leverage.AltcoinLeverage > 0 {
+-			return r.cfg.Leverage.AltcoinLeverage
+-		}
++		limit = r.cfg.Leverage.BTCETHLeverage
++	}
++	if limit <= 0 {
++		limit = 5
++	}
++	if requested > 0 && requested < limit {
++		return requested
+ 	}
+-	return 5
++	return limit
+ }
+ 
+ func (r *Runner) remainingPosition(symbol, side string) float64 {
+diff --git a/backtest/structured_client.go b/backtest/structured_client.go
+new file mode 100644
+index 0000000..41b14ab
+--- /dev/null
++++ b/backtest/structured_client.go
+@@ -0,0 +1,41 @@
++package backtest
++
++import (
++	"net/url"
++	"strings"
++
++	"nofx/mcp"
++)
++
++// The exact free router at its official origin is opt-in only for historical runs.
++// Do not infer support from a model name alone or alter clients used by live traders.
++func isHistoricalFreeRouter(cfg AIConfig) bool {
++	if cfg.Model != "openrouter/free" {
++		return false
++	}
++	u, err := url.Parse(cfg.BaseURL)
++	return err == nil && u.Scheme == "https" && u.Host == "openrouter.ai" &&
++		u.User == nil && u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" &&
++		u.RawPath == "" && strings.TrimRight(u.Path, "/") == "/api/v1"
++}
++
++type historicalFreeRouterClient struct{ mcp.AIClient }
++
++func newHistoricalFreeRouterClient(cfg AIConfig) mcp.AIClient {
++	return &historicalFreeRouterClient{AIClient: mcp.NewClient(
++		mcp.WithProvider(mcp.ProviderCustom), mcp.WithAPIKey(cfg.APIKey),
++		mcp.WithBaseURL("https://openrouter.ai/api/v1"), mcp.WithModel("openrouter/free"),
++		mcp.WithTemperature(cfg.Temperature), mcp.WithMaxRetries(1),
++	)}
++}
++
++func (c *historicalFreeRouterClient) CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error) {
++	return c.AIClient.CallWithRequest(&mcp.Request{
++		Model:    "openrouter/free",
++		Messages: []mcp.Message{mcp.NewSystemMessage(systemPrompt), mcp.NewUserMessage(userPrompt)},
++		ResponseFormat: &mcp.ResponseFormat{Type: "json_schema", JSONSchema: mcp.JSONSchema{
++			Name: "historical_decisions", Strict: true, Schema: schema,
++		}},
++		Provider: &mcp.ProviderPreferences{RequireParameters: true},
++	})
++}
+diff --git a/kernel/engine.go b/kernel/engine.go
+index f1288fd..8f2a252 100644
+--- a/kernel/engine.go
++++ b/kernel/engine.go
+@@ -294,21 +294,37 @@ func GetFullDecisionWithStrategy(ctx *Context, mcpClient mcp.AIClient, engine *S
+ 
+ 	// 4. Call AI API
+ 	aiCallStart := time.Now()
+-	aiResponse, err := mcpClient.CallWithMessages(systemPrompt, userPrompt)
++	structuredClient, supportsStructured := mcpClient.(mcp.StructuredOutputClient)
++	historicalStructured := ctx.SimulationTimeMS > 0 && supportsStructured
++	var aiResponse string
++	var err error
++	if historicalStructured {
++		systemPrompt += historicalStructuredOutputInstruction
++		aiResponse, err = structuredClient.CallWithStructuredOutput(systemPrompt, userPrompt, historicalDecisionSchema(ctx))
++	} else {
++		aiResponse, err = mcpClient.CallWithMessages(systemPrompt, userPrompt)
++	}
+ 	aiCallDuration := time.Since(aiCallStart)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("AI API call failed: %w", err)
+ 	}
+ 
+ 	// 5. Parse AI response
+-	decision, err := parseFullDecisionResponse(
+-		aiResponse,
+-		ctx.Account.TotalEquity,
+-		riskConfig.BTCETHMaxLeverage,
+-		riskConfig.AltcoinMaxLeverage,
+-		riskConfig.BTCETHMaxPositionValueRatio,
+-		riskConfig.AltcoinMaxPositionValueRatio,
+-	)
++	var decision *FullDecision
++	if historicalStructured {
++		decision, err = parseHistoricalStructuredDecision(aiResponse, ctx)
++		if err == nil {
++			err = validateDecisions(decision.Decisions, ctx.Account.TotalEquity,
++				riskConfig.BTCETHMaxLeverage, riskConfig.AltcoinMaxLeverage,
++				riskConfig.BTCETHMaxPositionValueRatio, riskConfig.AltcoinMaxPositionValueRatio)
++		}
++	} else {
++		decision, err = parseFullDecisionResponse(
++			aiResponse, ctx.Account.TotalEquity,
++			riskConfig.BTCETHMaxLeverage, riskConfig.AltcoinMaxLeverage,
++			riskConfig.BTCETHMaxPositionValueRatio, riskConfig.AltcoinMaxPositionValueRatio,
++		)
++	}
+ 
+ 	if decision != nil {
+ 		decision.Timestamp = time.Now()
+diff --git a/kernel/historical_structured.go b/kernel/historical_structured.go
+new file mode 100644
+index 0000000..22bd4ea
+--- /dev/null
++++ b/kernel/historical_structured.go
+@@ -0,0 +1,149 @@
++package kernel
++
++import (
++	"encoding/json"
++	"fmt"
++	"io"
++	"sort"
++	"strings"
++)
++
++const historicalStructuredOutputInstruction = `
++
++Historical simulation output contract: return ONLY the JSON object defined by the supplied schema, containing a non-empty decisions array. This replaces earlier XML, markdown, or free-text output formatting instructions. Use zero for numeric fields irrelevant to an action. Each reasoning field must contain one brief explanation; do not include a reasoning trace. Use an explicit wait decision for a configured symbol when taking no action.`
++
++var historicalDecisionActions = []string{"open_long", "open_short", "close_long", "close_short", "hold", "wait"}
++var historicalDecisionFields = []string{"symbol", "action", "leverage", "position_size_usd", "stop_loss", "take_profit", "confidence", "risk_usd", "reasoning"}
++
++func historicalDecisionSchema(ctx *Context) map[string]any {
++	symbols := make([]string, 0, len(ctx.MarketDataMap))
++	for symbol := range ctx.MarketDataMap {
++		symbols = append(symbols, symbol)
++	}
++	sort.Strings(symbols)
++	properties := map[string]any{
++		"symbol":            map[string]any{"type": "string", "enum": symbols},
++		"action":            map[string]any{"type": "string", "enum": historicalDecisionActions},
++		"leverage":          map[string]any{"type": "integer", "minimum": 0},
++		"position_size_usd": map[string]any{"type": "number", "minimum": 0},
++		"stop_loss":         map[string]any{"type": "number", "minimum": 0},
++		"take_profit":       map[string]any{"type": "number", "minimum": 0},
++		"confidence":        map[string]any{"type": "integer", "minimum": 0, "maximum": 100},
++		"risk_usd":          map[string]any{"type": "number", "minimum": 0},
++		"reasoning":         map[string]any{"type": "string", "minLength": 1, "description": "One brief explanation of the simulation action."},
++	}
++	return map[string]any{
++		"type": "object", "additionalProperties": false, "required": []string{"decisions"},
++		"properties": map[string]any{"decisions": map[string]any{
++			"type": "array", "minItems": 1,
++			"items": map[string]any{"type": "object", "additionalProperties": false, "required": historicalDecisionFields, "properties": properties},
++		}},
++	}
++}
++
++// Pointers distinguish omitted/null fields from valid zero values. The strict
++// local decoder is required even when a provider advertises JSON-schema support.
++type historicalWireDecision struct {
++	Symbol          *string  `json:"symbol"`
++	Action          *string  `json:"action"`
++	Leverage        *int     `json:"leverage"`
++	PositionSizeUSD *float64 `json:"position_size_usd"`
++	StopLoss        *float64 `json:"stop_loss"`
++	TakeProfit      *float64 `json:"take_profit"`
++	Confidence      *int     `json:"confidence"`
++	RiskUSD         *float64 `json:"risk_usd"`
++	Reasoning       *string  `json:"reasoning"`
++}
++
++func parseHistoricalStructuredDecision(response string, ctx *Context) (*FullDecision, error) {
++	// encoding/json accepts case-insensitive struct fields and last-wins duplicates.
++	// Check exact, unique object keys first so those extensions cannot bypass schema.
++	envelopeFields, err := historicalUniqueObject([]byte(response), []string{"decisions"})
++	if err != nil {
++		return nil, err
++	}
++	var rawDecisions []json.RawMessage
++	if json.Unmarshal(envelopeFields["decisions"], &rawDecisions) != nil {
++		return nil, fmt.Errorf("historical decision response requires a decisions array")
++	}
++	for _, raw := range rawDecisions {
++		if _, err := historicalUniqueObject(raw, historicalDecisionFields); err != nil {
++			return nil, err
++		}
++	}
++	var envelope struct {
++		Decisions []historicalWireDecision `json:"decisions"`
++	}
++	decoder := json.NewDecoder(strings.NewReader(response))
++	decoder.DisallowUnknownFields()
++	if err := decoder.Decode(&envelope); err != nil {
++		return nil, fmt.Errorf("historical decision response does not match JSON schema")
++	}
++	if err := decoder.Decode(new(any)); err != io.EOF {
++		return nil, fmt.Errorf("historical decision response contains trailing content")
++	}
++	if len(envelope.Decisions) == 0 {
++		return nil, fmt.Errorf("historical decision response requires a non-empty decisions array")
++	}
++	result := &FullDecision{Decisions: make([]Decision, 0, len(envelope.Decisions))}
++	for i, wire := range envelope.Decisions {
++		if wire.Symbol == nil || wire.Action == nil || wire.Leverage == nil || wire.PositionSizeUSD == nil || wire.StopLoss == nil || wire.TakeProfit == nil || wire.Confidence == nil || wire.RiskUSD == nil || wire.Reasoning == nil {
++			return nil, fmt.Errorf("historical decision #%d has missing or null fields", i+1)
++		}
++		if _, allowed := ctx.MarketDataMap[*wire.Symbol]; !allowed {
++			return nil, fmt.Errorf("historical decision #%d uses an unconfigured symbol", i+1)
++		}
++		allowedAction := false
++		for _, action := range historicalDecisionActions {
++			if *wire.Action == action {
++				allowedAction = true
++				break
++			}
++		}
++		if !allowedAction {
++			return nil, fmt.Errorf("historical decision #%d has an invalid action", i+1)
++		}
++		if *wire.Leverage < 0 || *wire.PositionSizeUSD < 0 || *wire.StopLoss < 0 || *wire.TakeProfit < 0 || *wire.RiskUSD < 0 || *wire.Confidence < 0 || *wire.Confidence > 100 || strings.TrimSpace(*wire.Reasoning) == "" {
++			return nil, fmt.Errorf("historical decision #%d has invalid schema values", i+1)
++		}
++		result.Decisions = append(result.Decisions, Decision{Symbol: *wire.Symbol, Action: *wire.Action, Leverage: *wire.Leverage, PositionSizeUSD: *wire.PositionSizeUSD, StopLoss: *wire.StopLoss, TakeProfit: *wire.TakeProfit, Confidence: *wire.Confidence, RiskUSD: *wire.RiskUSD, Reasoning: *wire.Reasoning})
++	}
++	return result, nil
++}
++
++// historicalUniqueObject validates field names without relying on Go's lenient
++// struct matching. JSON escape sequences resolve before uniqueness is checked.
++func historicalUniqueObject(data []byte, allowedFields []string) (map[string]json.RawMessage, error) {
++	decoder := json.NewDecoder(strings.NewReader(string(data)))
++	token, err := decoder.Token()
++	if err != nil || token != json.Delim('{') {
++		return nil, fmt.Errorf("historical decision response requires JSON objects")
++	}
++	allowed := make(map[string]bool, len(allowedFields))
++	for _, field := range allowedFields {
++		allowed[field] = true
++	}
++	fields := make(map[string]json.RawMessage, len(allowedFields))
++	for decoder.More() {
++		token, err := decoder.Token()
++		field, ok := token.(string)
++		if err != nil || !ok || !allowed[field] {
++			return nil, fmt.Errorf("historical decision response has a non-schema field name")
++		}
++		if _, duplicate := fields[field]; duplicate {
++			return nil, fmt.Errorf("historical decision response has a duplicate field")
++		}
++		var value json.RawMessage
++		if decoder.Decode(&value) != nil {
++			return nil, fmt.Errorf("historical decision response contains invalid JSON")
++		}
++		fields[field] = value
++	}
++	if token, err := decoder.Token(); err != nil || token != json.Delim('}') {
++		return nil, fmt.Errorf("historical decision response contains invalid JSON")
++	}
++	if _, err := decoder.Token(); err != io.EOF {
++		return nil, fmt.Errorf("historical decision response contains trailing content")
++	}
++	return fields, nil
++}
+diff --git a/kernel/historical_structured_test.go b/kernel/historical_structured_test.go
+new file mode 100644
+index 0000000..68d6809
+--- /dev/null
++++ b/kernel/historical_structured_test.go
+@@ -0,0 +1,115 @@
++package kernel
++
++import (
++	"encoding/json"
++	"strings"
++	"testing"
++
++	"nofx/market"
++	"nofx/mcp"
++	"nofx/store"
++)
++
++const structuredWaitFixture = `{"decisions":[{"symbol":"BTCUSDT","action":"wait","leverage":0,"position_size_usd":0,"stop_loss":0,"take_profit":0,"confidence":50,"risk_usd":0,"reasoning":"No signal."}]}`
++
++func structuredContextFixture() *Context {
++	return &Context{SimulationTimeMS: 1577847600000, CurrentTime: "2020-01-01 03:00:00 UTC", Account: AccountInfo{TotalEquity: 1000}, CandidateCoins: []CandidateCoin{{Symbol: "BTCUSDT"}}, MarketDataMap: map[string]*market.Data{"BTCUSDT": {Symbol: "BTCUSDT", CurrentPrice: 100}}, OITopDataMap: map[string]*OITopData{}}
++}
++
++func TestHistoricalStructuredParser(t *testing.T) {
++	ctx := structuredContextFixture()
++	validOpen := strings.NewReplacer(`"action":"wait"`, `"action":"open_long"`, `"leverage":0`, `"leverage":1`, `"position_size_usd":0`, `"position_size_usd":100`, `"stop_loss":0`, `"stop_loss":90`, `"take_profit":0`, `"take_profit":130`).Replace(structuredWaitFixture)
++	for _, response := range []string{structuredWaitFixture, validOpen} {
++		if fd, err := parseHistoricalStructuredDecision(response, ctx); err != nil || len(fd.Decisions) != 1 {
++			t.Fatalf("valid response rejected: %v", err)
++		}
++	}
++	cases := map[string]string{
++		"uppercase_root":           strings.Replace(structuredWaitFixture, `"decisions"`, `"DECISIONS"`, 1),
++		"uppercase_field":          strings.Replace(structuredWaitFixture, `"action"`, `"Action"`, 1),
++		"duplicate_action":         strings.Replace(structuredWaitFixture, `"action":"wait"`, `"action":"refused","action":"wait"`, 1),
++		"duplicate_decisions":      strings.Replace(structuredWaitFixture, `{"decisions":`, `{"decisions":null,"decisions":`, 1),
++		"escaped_duplicate_action": strings.Replace(structuredWaitFixture, `"action":"wait"`, `"action":"refused","ac\u0074ion":"wait"`, 1),
++
++		"prose":          "User Safety: safe",
++		"xml":            "<decision>" + structuredWaitFixture + "</decision>",
++		"missing":        `{}`,
++		"empty":          `{"decisions":[]}`,
++		"null":           `{"decisions":null}`,
++		"refused":        `{"refusal":"no"}`,
++		"all":            strings.ReplaceAll(structuredWaitFixture, "BTCUSDT", "ALL"),
++		"missing_field":  strings.ReplaceAll(structuredWaitFixture, `"leverage":0,`, ""),
++		"null_field":     strings.ReplaceAll(structuredWaitFixture, `"leverage":0`, `"leverage":null`),
++		"unknown_field":  strings.ReplaceAll(structuredWaitFixture, `"leverage":0`, `"extra":0,"leverage":0`),
++		"unknown_outer":  strings.Replace(structuredWaitFixture, `{"decisions":`, `{"extra":0,"decisions":`, 1),
++		"wrong_type":     strings.ReplaceAll(structuredWaitFixture, `"leverage":0`, `"leverage":"0"`),
++		"bad_action":     strings.ReplaceAll(structuredWaitFixture, `"action":"wait"`, `"action":"buy"`),
++		"bad_confidence": strings.ReplaceAll(structuredWaitFixture, `"confidence":50`, `"confidence":101`),
++		"negative":       strings.ReplaceAll(structuredWaitFixture, `"risk_usd":0`, `"risk_usd":-1`),
++		"empty_reason":   strings.ReplaceAll(structuredWaitFixture, "No signal.", " "),
++		"trailing":       structuredWaitFixture + ` {}`,
++		"bare_array":     `[{"symbol":"BTCUSDT","action":"wait","reasoning":"fixture"}]`,
++	}
++	for name, response := range cases {
++		t.Run(name, func(t *testing.T) {
++			if fd, err := parseHistoricalStructuredDecision(response, ctx); err == nil || fd != nil {
++				t.Fatal("malformed decision became success")
++			}
++		})
++	}
++}
++
++type structuredDecisionFixtureClient struct {
++	mcp.AIClient
++	structuredCalls, legacyCalls int
++	response, system             string
++	schema                       map[string]any
++}
++
++func (c *structuredDecisionFixtureClient) CallWithStructuredOutput(system, user string, schema map[string]any) (string, error) {
++	c.structuredCalls++
++	c.system = system
++	c.schema = schema
++	return c.response, nil
++}
++func (c *structuredDecisionFixtureClient) CallWithMessages(system, user string) (string, error) {
++	c.legacyCalls++
++	return `<decision>[{"symbol":"BTCUSDT","action":"wait","reasoning":"fixture"}]</decision>`, nil
++}
++
++func TestHistoricalStructuredDecisionPath(t *testing.T) {
++	for _, historical := range []bool{false, true} {
++		t.Run(map[bool]string{false: "live_unchanged", true: "historical"}[historical], func(t *testing.T) {
++			cfg := store.GetDefaultStrategyConfig("en")
++			engine := NewStrategyEngine(&cfg)
++			engine.nofxosClient = nil
++			ctx := structuredContextFixture()
++			if !historical {
++				ctx.SimulationTimeMS = 0
++			}
++			client := &structuredDecisionFixtureClient{response: structuredWaitFixture}
++			fd, err := GetFullDecisionWithStrategy(ctx, client, engine, "baseline")
++			if err != nil {
++				t.Fatal(err)
++			}
++			if historical {
++				if client.structuredCalls != 1 || client.legacyCalls != 0 || fd.RawResponse != structuredWaitFixture || !strings.Contains(client.system, "replaces earlier XML") {
++					t.Fatal("historical path/response mismatch")
++				}
++				encoded, _ := json.Marshal(client.schema)
++				if !strings.Contains(string(encoded), `"enum":["BTCUSDT"]`) || strings.Contains(string(encoded), "ALL") {
++					t.Fatal("incorrect symbol enum")
++				}
++			} else if client.structuredCalls != 0 || client.legacyCalls != 1 {
++				t.Fatal("live path changed")
++			}
++		})
++	}
++	cfg := store.GetDefaultStrategyConfig("en")
++	engine := NewStrategyEngine(&cfg)
++	engine.nofxosClient = nil
++	client := &structuredDecisionFixtureClient{response: "User Safety: safe"}
++	if fd, err := GetFullDecisionWithStrategy(structuredContextFixture(), client, engine, "baseline"); err == nil || fd != nil || client.structuredCalls != 1 {
++		t.Fatal("prose became ALL wait success")
++	}
++}
+diff --git a/mcp/client.go b/mcp/client.go
+index 3e778fb..345a8ca 100644
+--- a/mcp/client.go
++++ b/mcp/client.go
+@@ -465,8 +465,17 @@ func (client *Client) callWithRequest(req *Request) (string, error) {
+ 
+ 	// Check HTTP status code
+ 	if resp.StatusCode != http.StatusOK {
++		if req.ResponseFormat != nil {
++			// Provider bodies may echo request content; retain status without logging it.
++			return "", fmt.Errorf("structured AI request failed (HTTP %d)", resp.StatusCode)
++		}
+ 		return "", fmt.Errorf("API returned error (status %d): %s", resp.StatusCode, string(body))
+ 	}
++	if req.ResponseFormat != nil {
++		if err := validateStructuredCompletion(body); err != nil {
++			return "", err
++		}
++	}
+ 
+ 	// Parse response
+ 	result, err := client.hooks.parseMCPResponse(body)
+@@ -542,5 +551,12 @@ func (client *Client) buildRequestBodyFromRequest(req *Request) map[string]any {
+ 		requestBody["stream"] = true
+ 	}
+ 
++	if req.ResponseFormat != nil {
++		requestBody["response_format"] = req.ResponseFormat
++	}
++	if req.Provider != nil {
++		requestBody["provider"] = req.Provider
++	}
++
+ 	return requestBody
+ }
+diff --git a/mcp/historical_structured_test.go b/mcp/historical_structured_test.go
+new file mode 100644
+index 0000000..d383451
+--- /dev/null
++++ b/mcp/historical_structured_test.go
+@@ -0,0 +1,109 @@
++package mcp
++
++import (
++	"encoding/json"
++	"errors"
++	"io"
++	"net/http"
++	"strings"
++	"testing"
++)
++
++type structuredFixtureTransport func(*http.Request) (*http.Response, error)
++
++func (f structuredFixtureTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
++
++func TestHistoricalStructuredRequestWire(t *testing.T) {
++	for _, structured := range []bool{false, true} {
++		t.Run(map[bool]string{false: "legacy", true: "structured"}[structured], func(t *testing.T) {
++			calls := 0
++			transport := structuredFixtureTransport(func(r *http.Request) (*http.Response, error) {
++				calls++
++				if r.URL.String() != "https://openrouter.ai/api/v1/chat/completions" {
++					t.Fatal("wrong request endpoint")
++				}
++				var body map[string]any
++				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
++					t.Fatal(err)
++				}
++				if body["model"] != "openrouter/free" {
++					t.Fatal("wrong model")
++				}
++				if structured {
++					format, ok := body["response_format"].(map[string]any)
++					if !ok || format["type"] != "json_schema" {
++						t.Fatal("missing schema format")
++					}
++					schema := format["json_schema"].(map[string]any)
++					if schema["strict"] != true || schema["name"] != "fixture" || schema["schema"].(map[string]any)["type"] != "object" {
++						t.Fatal("schema altered")
++					}
++					if body["provider"].(map[string]any)["require_parameters"] != true {
++						t.Fatal("provider capability not required")
++					}
++				} else if body["response_format"] != nil || body["provider"] != nil {
++					t.Fatal("legacy request changed")
++				}
++				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"choices":[{"finish_reason":"stop","message":{"content":"fixture"}}]}`)), Header: make(http.Header)}, nil
++			})
++			client := NewClient(WithProvider(ProviderCustom), WithAPIKey("fixture"), WithBaseURL("https://openrouter.ai/api/v1"), WithModel("openrouter/free"), WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: transport}))
++			req := &Request{Messages: []Message{NewUserMessage("fixture")}}
++			if structured {
++				req.ResponseFormat = &ResponseFormat{Type: "json_schema", JSONSchema: JSONSchema{Name: "fixture", Strict: true, Schema: map[string]any{"type": "object"}}}
++				req.Provider = &ProviderPreferences{RequireParameters: true}
++			}
++			if _, err := client.CallWithRequest(req); err != nil {
++				t.Fatal(err)
++			}
++			if calls != 1 {
++				t.Fatalf("request count=%d", calls)
++			}
++		})
++	}
++}
++
++func TestHistoricalStructuredResponseFailures(t *testing.T) {
++	cases := map[string]string{
++		"refused":   `{"choices":[{"finish_reason":"stop","message":{"content":"{}","refusal":"fixture refusal"}}]}`,
++		"truncated": `{"choices":[{"finish_reason":"length","message":{"content":"{}"}}]}`,
++		"filtered":  `{"choices":[{"finish_reason":"content_filter","message":{"content":"{}"}}]}`,
++		"empty":     `{"choices":[{"finish_reason":"stop","message":{"content":""}}]}`,
++		"null":      `{"choices":[{"finish_reason":"stop","message":{"content":null}}]}`,
++		"missing":   `{"choices":[]}`,
++		"malformed": `not json`,
++	}
++	for name, body := range cases {
++		t.Run(name, func(t *testing.T) {
++			if err := validateStructuredCompletion([]byte(body)); err == nil {
++				t.Fatal("bad completion accepted")
++			}
++		})
++	}
++	if err := validateStructuredCompletion([]byte(`{"choices":[{"finish_reason":"stop","message":{"content":"{}","refusal":null}}]}`)); err != nil {
++		t.Fatal(err)
++	}
++}
++
++func TestHistoricalStructuredProviderErrorDoesNotEchoBody(t *testing.T) {
++	calls := 0
++	client := NewClient(WithAPIKey("fixture"), WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: structuredFixtureTransport(func(*http.Request) (*http.Response, error) {
++		calls++
++		return &http.Response{StatusCode: 429, Body: io.NopCloser(strings.NewReader("private-request-fixture")), Header: make(http.Header)}, nil
++	})}))
++	_, err := client.CallWithRequest(&Request{ResponseFormat: &ResponseFormat{Type: "json_schema"}})
++	if err == nil || !strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "private-request-fixture") || calls != 1 {
++		t.Fatalf("error/count mismatch: %v, %d", err, calls)
++	}
++}
++
++func TestHistoricalStructuredTransientErrorIsOneAttempt(t *testing.T) {
++	calls := 0
++	client := NewClient(WithAPIKey("fixture"), WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: structuredFixtureTransport(func(*http.Request) (*http.Response, error) {
++		calls++
++		return nil, errors.New("temporary failure")
++	})}))
++	_, err := client.CallWithRequest(&Request{ResponseFormat: &ResponseFormat{Type: "json_schema"}})
++	if err == nil || calls != 1 {
++		t.Fatalf("transient error silently retried: err=%v calls=%d", err, calls)
++	}
++}
+diff --git a/mcp/interface.go b/mcp/interface.go
+index 696b03b..c8fd9f4 100644
+--- a/mcp/interface.go
++++ b/mcp/interface.go
+@@ -13,6 +13,13 @@ type AIClient interface {
+ 	CallWithRequest(req *Request) (string, error) // Builder pattern API (supports advanced features)
+ }
+ 
++// StructuredOutputClient is an optional capability used by historical simulations.
++// Normal AI clients and live decision calls retain their existing request format.
++type StructuredOutputClient interface {
++	AIClient
++	CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error)
++}
++
+ // clientHooks internal hook interface (for subclass to override specific steps)
+ // These methods are only used inside the package to implement dynamic dispatch
+ type clientHooks interface {
+diff --git a/mcp/request.go b/mcp/request.go
+index 3ade2d7..fa8ef46 100644
+--- a/mcp/request.go
++++ b/mcp/request.go
+@@ -19,12 +19,28 @@ type FunctionDef struct {
+ 	Parameters  map[string]any `json:"parameters,omitempty"`  // Parameter schema (JSON Schema)
+ }
+ 
++// ResponseFormat requests a provider-supported JSON schema without changing default requests.
++type ResponseFormat struct {
++	Type       string     `json:"type"`
++	JSONSchema JSONSchema `json:"json_schema"`
++}
++
++type JSONSchema struct {
++	Name   string         `json:"name"`
++	Strict bool           `json:"strict"`
++	Schema map[string]any `json:"schema"`
++}
++
++type ProviderPreferences struct {
++	RequireParameters bool `json:"require_parameters"`
++}
++
+ // Request AI API request (supports advanced features)
+ type Request struct {
+ 	// Basic fields
+-	Model    string    `json:"model"`              // Model name
+-	Messages []Message `json:"messages"`           // Conversation message list
+-	Stream   bool      `json:"stream,omitempty"`   // Whether to stream response
++	Model    string    `json:"model"`            // Model name
++	Messages []Message `json:"messages"`         // Conversation message list
++	Stream   bool      `json:"stream,omitempty"` // Whether to stream response
+ 
+ 	// Optional parameters (for fine-grained control)
+ 	Temperature      *float64 `json:"temperature,omitempty"`       // Temperature (0-2), controls randomness
+@@ -35,8 +51,10 @@ type Request struct {
+ 	Stop             []string `json:"stop,omitempty"`              // Stop sequences
+ 
+ 	// Advanced features
+-	Tools      []Tool `json:"tools,omitempty"`       // Available tools list
+-	ToolChoice string `json:"tool_choice,omitempty"` // Tool choice strategy ("auto", "none", {"type": "function", "function": {"name": "xxx"}})
++	ResponseFormat *ResponseFormat      `json:"response_format,omitempty"`
++	Provider       *ProviderPreferences `json:"provider,omitempty"`
++	Tools          []Tool               `json:"tools,omitempty"`       // Available tools list
++	ToolChoice     string               `json:"tool_choice,omitempty"` // Tool choice strategy ("auto", "none", {"type": "function", "function": {"name": "xxx"}})
+ }
+ 
+ // NewMessage creates a message
+diff --git a/mcp/structured_response.go b/mcp/structured_response.go
+new file mode 100644
+index 0000000..b65950e
+--- /dev/null
++++ b/mcp/structured_response.go
+@@ -0,0 +1,36 @@
++package mcp
++
++import (
++	"encoding/json"
++	"fmt"
++	"strings"
++)
++
++// Only requests explicitly opting into JSON schema use these checks. A refusal,
++// incomplete generation, or error response must not become a simulated wait.
++func validateStructuredCompletion(body []byte) error {
++	var response struct {
++		Choices []struct {
++			FinishReason string `json:"finish_reason"`
++			Message      struct {
++				Content *string         `json:"content"`
++				Refusal json.RawMessage `json:"refusal"`
++			} `json:"message"`
++		} `json:"choices"`
++	}
++	if json.Unmarshal(body, &response) != nil || len(response.Choices) != 1 {
++		return fmt.Errorf("structured AI response requires one completion")
++	}
++	choice := response.Choices[0]
++	refusal := strings.TrimSpace(string(choice.Message.Refusal))
++	if refusal != "" && refusal != "null" && refusal != `""` {
++		return fmt.Errorf("structured AI response was refused")
++	}
++	if choice.FinishReason != "stop" {
++		return fmt.Errorf("structured AI response did not finish normally")
++	}
++	if choice.Message.Content == nil || strings.TrimSpace(*choice.Message.Content) == "" {
++		return fmt.Errorf("structured AI response has no content")
++	}
++	return nil
++}

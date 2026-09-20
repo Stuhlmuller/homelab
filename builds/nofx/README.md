@@ -8,6 +8,18 @@ mode without trying to change it. It does not enable live traders. Deployment
 and operational acceptance are documented in the
 [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
+Historical runs using `openrouter/free` at the official OpenRouter API request
+strict structured decisions and require a provider that supports those request
+parameters. Malformed responses remain failed cycles instead of becoming
+synthetic `ALL` wait decisions. Other models and live traders retain their
+existing request path. The simulator also caps executed leverage at the
+configured limit.
+
+Backtest Lab compares selected runs using recorded equity, return, drawdown,
+and decision outcomes. The table does not infer a valid score from Completed:
+review decision completeness, matching inputs, and executed leverage as described
+in the [competition runbook](../../docs/nofx-agent-competition.md).
+
 ## Source and build contract
 
 - [source.json](source.json) fixes upstream revision
