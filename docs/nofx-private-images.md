@@ -79,6 +79,12 @@ Approve the protected environment only after reviewing the exact commit and
 successful static/policy checks. The script requires both full image pulls to
 succeed before writing the credential. It emits validation status without
 tokens, authorization headers, registry configuration, or decrypted parameters.
+The final AWS CLI write reads a mode `0600` JSON file inside a mode `0700`
+temporary directory. The helper removes both on success or failure; they never
+enter the checkout or uploaded artifacts. This uses AWS CLI's documented
+[input-file mechanism](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-skeleton.html).
+Do not substitute `/dev/stdin`: the reproduced CLI input parsing failure occurs
+before AWS receives the write.
 
 Require workflow success and a fresh ExternalSecret `Ready` condition after
 credential injection. A previous `Ready` condition created from the placeholder

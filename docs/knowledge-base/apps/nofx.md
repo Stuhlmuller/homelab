@@ -153,3 +153,9 @@ error categories while withholding captured output. This distinguishes registry
 pull failures from SSM failures without logging credentials. A failed workflow
 does not satisfy the image rollout gate, even when the placeholder ExternalSecret
 reports healthy.
+
+The first credential runs successfully pulled both private images but failed at
+the AWS CLI input parser before SSM received a write. The helper now supplies a
+restricted temporary JSON file, with cleanup on success and failure. An offline
+AWS CLI skeleton regression exercises the real input parser using synthetic data;
+it does not contact SSM or use the production token.

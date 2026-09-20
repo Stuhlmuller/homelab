@@ -82,7 +82,7 @@ def command(args, *, stage, data=None, timeout=30):
     # successful command's private response fails afterward.
     print(f"NOFX registry credential: stage {stage}", flush=True)
     # Do not propagate the PAT into children. Docker login receives it on stdin;
-    # AWS receives only the single write payload on stdin after pull validation.
+    # AWS reads the single write payload from a private temporary JSON file.
     env = {key: value for key, value in os.environ.items()
            if key not in {"NOFX_GHCR_READ_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"}
            and not key.startswith("AWS_ENDPOINT_URL")}
@@ -168,6 +168,23 @@ def authenticate_images(token):
                 raise Failure("Pulled image provenance does not match the reviewed NOFX release")
 
 
+def store_credential(token):
+    # AWS CLI's file:// loader does not support a non-seekable stdin pipe.
+    # Keep the payload in a regular 0600 file inside a 0700 directory only for
+    # this request. No secret enters argv, child environment, or public output;
+    # TemporaryDirectory removes the file on success and on exceptions.
+    with tempfile.TemporaryDirectory(prefix="nofx-ssm-") as directory:
+        payload_path = Path(directory) / "parameter.json"
+        descriptor = os.open(payload_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as payload_file:
+            json.dump({"Name": PARAMETER, "Type": "SecureString", "KeyId": KEY_ID,
+                       "Value": token, "Overwrite": True}, payload_file)
+        return json.loads(command([
+            "aws", "ssm", "put-parameter", "--region", REGION,
+            "--cli-input-json", f"file://{payload_path}", "--output", "json",
+        ], stage="ssm-write"))
+
+
 def rotate():
     if len(sys.argv) != 1:
         raise Failure("This workflow accepts no command-line inputs")
@@ -181,11 +198,7 @@ def rotate():
     # Recheck main immediately before the only mutation, after potentially slow
     # image pulls. No Kubernetes resource or NOFX application setting changes.
     validate_context()
-    result = json.loads(command([
-        "aws", "ssm", "put-parameter", "--region", REGION,
-        "--cli-input-json", "file:///dev/stdin", "--output", "json",
-    ], stage="ssm-write", data=json.dumps({"Name": PARAMETER, "Type": "SecureString", "KeyId": KEY_ID,
-                        "Value": token, "Overwrite": True})))
+    result = store_credential(token)
     if type(result.get("Version")) is not int or result["Version"] < 1:
         raise Failure("SSM write returned no version; inspect the private parameter before retrying")
     print(f"Verified both private NOFX image pulls; updated declared SSM credential version {result['Version']}.")
