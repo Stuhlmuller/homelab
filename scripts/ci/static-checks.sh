@@ -842,7 +842,7 @@ while read -r workflow expected_hash; do
   }
 done <<'EOF'
 .github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
-.github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
+.github/workflows/codeql.yml 4bcb2c57e8fb39d41cda8bca0ab4107335cd0de94b7af7dd11181c92acc070dd
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/nofx-images.yml a2779b56c0bf84cf1e39f72e136f4aca9574175afac03118c814e00d22fb1df0
