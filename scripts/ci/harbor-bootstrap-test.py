@@ -158,7 +158,7 @@ class BootstrapTest(unittest.TestCase):
 
     def test_initial_bootstrap_and_repeat_preserve_identities_and_least_privilege(self):
         self.assertEqual(self.main()[0], 0)
-        self.assertEqual(self.api.project["metadata"]["public"], "false")
+        self.assertEqual(self.api.project["metadata"], {"public": "false", "auto_scan": "true"})
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
@@ -189,6 +189,23 @@ class BootstrapTest(unittest.TestCase):
         self.assertEqual(self.api.robots[1]["permissions"], bootstrap.permissions("pull"))
         self.assertFalse(self.api.robots[1]["disable"])
         self.assertFalse(any(method == "DELETE" for method, _, _ in self.mutations()))
+
+    def test_enables_missing_or_disabled_scanning_and_preserves_other_metadata(self):
+        for metadata in ({"public": "false"}, {"public": "false", "auto_scan": "false"}):
+            with self.subTest(metadata=metadata):
+                self.api.project = {"project_id": 7, "name": "homelab",
+                                    "metadata": {**metadata, "severity": "high"}}
+                self.reconcile()
+                self.assertEqual(self.api.project["metadata"],
+                                 {"public": "false", "auto_scan": "true", "severity": "high"})
+
+    def test_ignored_scanning_update_fails_verification(self):
+        self.api.project = {"project_id": 7, "name": "homelab",
+                            "metadata": {"public": "false", "auto_scan": "false"}}
+        self.api.override = lambda method, path, body: (
+            (200, b"", {}) if method == "PUT" and path == "/projects/homelab" else None)
+        self.assertEqual(self.main()[0], 1)
+        self.assertEqual(self.api.robots, {})
 
     def test_denied_admin_and_unexpected_response_never_log_credentials(self):
         for status in (401, 403, 500):
