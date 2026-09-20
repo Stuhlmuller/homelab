@@ -148,13 +148,15 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
   generated through the shared SSM parameter module and enables browser-side
   transport encryption without committing key material.
-  Its private maintained images use a separate, externally issued
+  Its private maintained images use the read-only Harbor robot through the
+  namespace-scoped `harbor-pull` Secret, referenced only by `imagePullSecrets`.
+  The retained GHCR recovery path uses a separate, externally issued
   `/homelab/nofx/ghcr-read-token`. The protected `NOFX Registry Credential`
   workflow validates a dedicated classic PAT with only `read:packages` before
   updating that exact SecureString. `nofx-registry-auth` refreshes every five
-  minutes and renders a kubelet-only Docker config Secret. The maintained-image
-  deployment references it through `imagePullSecrets`; merge that rollout only
-  after authenticated pulls and a fresh successful Secret refresh. Bootstrap
+  minutes and renders a kubelet-only Docker config Secret. A GHCR rollback must
+  switch image references and pull Secret together after authenticated pulls
+  and a fresh successful Secret refresh. Bootstrap
   PR #1031 retained upstream images while establishing this credential path;
   see the [private-image runbook](../../nofx-private-images.md).
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in

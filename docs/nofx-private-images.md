@@ -1,19 +1,21 @@
 # Private NOFX images
 
-Keep `ghcr.io/stuhlmuller/homelab-nofx-backend` and
-`ghcr.io/stuhlmuller/homelab-nofx-frontend` private. Anonymous HTTP 401 is
+Keep both Harbor `homelab/homelab-nofx-*` repositories and their retained
+`ghcr.io/stuhlmuller/homelab-nofx-*` originals private. Anonymous HTTP 401 is
 expected. The NOFX application login and registry authentication are separate:
 the kubelet needs a registry credential before it can start either container.
 
-The initial functional repair temporarily consumes the existing verified GHCR
-artifacts while Harbor rollout and migration acceptance are unfinished. New
-builds publish to Harbor. This does not change that publication path: after
-digest-preserving migration and complete read-only pull checks pass, switch
-both runtime references and their pull Secret together through a reviewed PR.
+The maintained runtime uses the existing `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`
+artifacts migrated to Harbor without changing their digests. The successful
+[migration workflow](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
+verified complete read-only pulls and denied anonymous access. Both deployments
+use `imagePullSecrets: [{name: harbor-pull}]`, rendered by the existing
+ExternalSecret from `/homelab/nofx/harbor-pull-password`. The read-only robot
+credential never enters NOFX containers. New builds also publish to Harbor.
 See the [migration contract](../builds/nofx/README.md#existing-ghcr-package-migration).
-Retain the GHCR credential until the Harbor runtime is independently verified.
+Retain the GHCR originals and credential as a reviewed recovery path.
 
-## Credential contract
+## GHCR recovery credential contract
 
 Use a dedicated GitHub classic personal access token belonging to
 `rstuhlmuller`, with only `read:packages` and a chosen expiry. The account must
@@ -39,9 +41,9 @@ The data path is:
    `/homelab/nofx/ghcr-read-token` in `us-west-2`, encrypted with `alias/aws/ssm`.
 4. External Secrets refreshes `nofx/nofx-registry-auth` every five minutes.
    The target type is `kubernetes.io/dockerconfigjson`, scoped to `ghcr.io`.
-5. Both maintained-image deployments attach this Secret through `imagePullSecrets`.
-   NOFX containers receive neither a token environment variable nor a token
-   volume mount.
+5. A reviewed GHCR rollback attaches this Secret through `imagePullSecrets`
+   together with both GHCR image references. NOFX containers receive neither
+   a token environment variable nor a token volume mount.
 
 The SSM parameter and exact reader permissions belong to
 `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. The registry
@@ -49,7 +51,7 @@ ExternalSecret belongs to `clusters/homelab/apps/nofx`. Parameter creation uses
 the existing OpenTofu placeholder contract; the credential workflow cannot
 create a missing slot or write another parameter.
 
-## Bootstrap without interrupting NOFX
+## GHCR bootstrap without interrupting NOFX
 
 The first stage, [PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031),
 merged at `0b352ebd05a944de46b0cdda7240edbc10671d76`. It retains the original
@@ -95,23 +97,27 @@ enter the checkout or uploaded artifacts. This uses AWS CLI's documented
 Do not substitute `/dev/stdin`: the reproduced CLI input parsing failure occurs
 before AWS receives the write.
 
-The second-stage deployment manifest selects the private images published from
-reviewed source revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` and attaches
-`imagePullSecrets: [{name: nofx-registry-auth}]` to both deployments. Its exact
-digests are declared in
-[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml).
-
-Before merging that rollout, require credential workflow success, ExternalSecret
+Before any GHCR rollback, require credential workflow success, ExternalSecret
 `Ready=True`, and `status.refreshTime` later than credential injection. `Ready`
 alone can describe the old placeholder; its transition timestamp need not change
 when a healthy Secret refreshes. A failed credential run leaves the rollout gate
 closed even when static checks pass.
 
+## Harbor runtime acceptance
+
+The maintained deployment selects the migrated private images from reviewed
+source revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` and attaches
+`harbor-pull` to both deployments. Exact digests are declared in
+[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml).
+Before merging, verify migration success, `nofx/harbor-pull` ExternalSecret
+`Ready=True`, and stopped live traders. Readiness alone does not validate the
+credential; the separate full read-only pulls provide that evidence.
+
 After GitOps rollout, verify Argo CD is `Synced` and `Healthy`, both containers
-are ready with the declared image digests, and the application acceptance checks in the
+are ready after pulling the declared Harbor image digests, and the acceptance checks in the
 [NOFX README](../clusters/homelab/apps/nofx/README.md) pass.
 
-## Rotation and failure modes
+## Recovery token rotation and failure modes
 
 Before expiry, create a replacement dedicated token, update the same protected
 environment secret, and dispatch the workflow at current reviewed `main`.

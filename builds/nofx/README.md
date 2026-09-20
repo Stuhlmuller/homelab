@@ -111,14 +111,13 @@ Live inspection on 2026-09-19 confirmed NOFX still runs upstream images; there
 are no deployed consumers of these custom packages. Registry-origin cutover
 applies only to an existing custom-image consumer and must preserve its exact
 deployed digest. Adopting the maintained NOFX release is a separate functional
-rollout, with the acceptance checks in the linked runbook. The initial repair
-temporarily uses the already published private GHCR artifacts at the recorded
-`f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` digests and the verified
-`nofx-registry-auth` pull Secret. This bounded transition lets the simulation
-fix ship while Harbor rollout and migration acceptance remain unfinished;
-it does not restore GHCR publication. After migration passes, a separate
-reviewed change must preserve both digests while selecting Harbor and its
-namespace-scoped `harbor-pull` Secret. Keep Harbor repositories private.
+rollout, with the acceptance checks in the linked runbook. The successful
+[migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
+preserved all historical digests and verified complete read-only pulls. The
+maintained runtime selects the migrated
+`f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` images from Harbor with the
+namespace-scoped `harbor-pull` Secret. Require ready Pods at both exact digests
+before declaring Kubernetes pull acceptance. Keep Harbor repositories private.
 For a registry rollback,
 retain the artifacts until consumers have switched to another verified private
 registry through reviewed desired state.

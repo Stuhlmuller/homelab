@@ -26,7 +26,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       imagePullSecrets:
-        - name: nofx-registry-auth
+        - name: harbor-pull
       securityContext:
         fsGroup: 10000
         runAsGroup: 10000
@@ -39,7 +39,7 @@ spec:
             value: "0"
       containers:
         - name: backend
-          image: ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-f76c27834ff987aa1dfad81d0c9ff273be7dd3cd@sha256:8da04a4a63b5c0a1eb7b938218a41c7cbebba82489f784d9abda43a5fa47985f
+          image: harbor.stinkyboi.com/homelab/homelab-nofx-backend:homelab-f76c27834ff987aa1dfad81d0c9ff273be7dd3cd@sha256:8da04a4a63b5c0a1eb7b938218a41c7cbebba82489f784d9abda43a5fa47985f
           imagePullPolicy: IfNotPresent
           # NOFX writes relative backtest and log paths; keep them on the PVC.
           workingDir: /app/data
@@ -129,7 +129,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       imagePullSecrets:
-        - name: nofx-registry-auth
+        - name: harbor-pull
       securityContext:
         fsGroup: 10000
         runAsGroup: 10000
@@ -142,7 +142,7 @@ spec:
             value: "0"
       containers:
         - name: frontend
-          image: ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-f76c27834ff987aa1dfad81d0c9ff273be7dd3cd@sha256:66f001923a8ea65af86d777db2bd46e9c829acba0a877c1af2037bf6dab974c5
+          image: harbor.stinkyboi.com/homelab/homelab-nofx-frontend:homelab-f76c27834ff987aa1dfad81d0c9ff273be7dd3cd@sha256:66f001923a8ea65af86d777db2bd46e9c829acba0a877c1af2037bf6dab974c5
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
