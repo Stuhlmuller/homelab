@@ -149,8 +149,10 @@ kubectl kustomize clusters/homelab/apps/prometheus
 After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 
 ```sh
-kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
-kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
+kubectl -n argocd get svc argocd-application-controller-metrics \
+  argocd-repo-server-metrics argocd-server-metrics
+kubectl -n monitoring get servicemonitor argocd-application-controller \
+  argocd-repo-server argocd-server
 kubectl -n monitoring get prometheusrule argocd-application-health
 kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook

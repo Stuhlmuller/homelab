@@ -112,6 +112,10 @@ pull credentials. Keep Harbor repositories private. For a registry rollback,
 retain the artifacts until consumers have switched to another verified private
 registry through reviewed desired state.
 
+The retained GHCR packages remain private. Their recovery pull credential is
+covered by the [private-image runbook](../../docs/nofx-private-images.md).
+Do not change package visibility to work around a missing pull credential.
+
 For an upstream update, change the source revision and archive checksum together,
 review the runtime/builder digest compatibility, rebase the patches, and require
 both test and build commands to pass. Preserve historical-source provenance:

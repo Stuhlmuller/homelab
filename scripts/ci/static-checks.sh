@@ -10,6 +10,7 @@ python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
+python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
@@ -819,6 +820,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/lint.yml:build' \
     '.github/workflows/nofx-images.yml:publish' \
     '.github/workflows/nofx-images.yml:test-build' \
+    '.github/workflows/nofx-registry-credential.yml:credential' \
+    '.github/workflows/nofx-registry-credential.yml:static-policy' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
@@ -854,6 +857,7 @@ done <<'EOF'
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/nofx-images.yml b0f51bec5da30ee6d3e7597ae89d23ada81db49416c86a63f7fdc3993aebe986
+.github/workflows/nofx-registry-credential.yml 3d4c7528601d89062f169b3b6a7e4e2b159e0013150f097b0d710c7c85fff6db
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
@@ -872,6 +876,7 @@ for workflow_job in \
   '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
+  '.github/workflows/nofx-registry-credential.yml:static-policy' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"

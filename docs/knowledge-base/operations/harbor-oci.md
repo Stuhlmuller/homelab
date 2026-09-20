@@ -72,9 +72,14 @@ mirrored by this task.
 
 1. Validate static checks, rendered chart/manifests and Terragrunt plan. Merge
    through the repository's signed-commit and review gates.
-2. Dispatch the protected full `Terragrunt Apply` at the exact merged main SHA
-   to create SSM parameters and register Harbor. Require healthy external
-   secrets, storage, PostgreSQL and the bootstrap Job.
+2. From a clean checkout of exact merged main, regenerate the Terragrunt stack
+   and plan/apply only `IaC/live/aws-ssm-parameters`, then
+   `IaC/live/argocd-apps/harbor`. Review saved plans and run Conftest before
+   applying; reject deletes, replacements, or unrelated changes. The shared
+   SSM unit must be inspected for earlier drift before calling it Harbor-only.
+   The full apply currently requires missing AzureAD credentials for unrelated
+   changes; the documented unit-level path avoids that scope. Require healthy
+   external secrets, storage, PostgreSQL and the bootstrap Job.
 3. From a clean checkout of that exact reviewed main revision, reconcile the
    fixed Octelium Service with the command below. Reconcile Tunnel DNS through
    the existing `octelium-public-tunnel.yml` workflow.
@@ -108,16 +113,19 @@ contract. It never creates operator credentials or applies the entire catalog.
 
 Implementation validated; live Harbor deployment and migration remain pending.
 The full static gate, four-platform Nix evaluation, signed-commit hooks,
-deterministic Helm/Kustomize policy checks, 51 focused regression tests, and
+deterministic Helm/Kustomize policy checks, 56 focused regression tests, and
 OpenTofu module validation passed. The Harbor Application also passed a live
 server-side dry run. Independent review corrected PostgreSQL prerequisite
 ordering and the ClusterSecretStore namespace allow-list; the initial backup
 hook is bounded to ten minutes within Argo CD's fifteen-minute operation.
 Read-only inspection on 2026-09-14 found all four nodes Ready, every Argo CD
 Application Synced/Healthy, no placement-blocking node taints, and the wildcard
-TLS certificate Ready. Local AWS SSO was expired; protected Actions uses its
-own AWS OIDC identity. None of these checks constitutes live Harbor rollout
-or package migration acceptance.
+TLS certificate Ready. On 2026-09-19, the refreshed AWS operator session
+produced policy-passing scoped plans: 21 Harbor password/parameter creates,
+three reader-policy updates adding only the eleven Harbor parameter paths,
+and one Harbor Application create; no deletions or replacements. Octelium
+operator access succeeded and the Harbor Service was absent. None of these
+checks constitutes live Harbor rollout or package migration acceptance.
 
 ## Sources
 
