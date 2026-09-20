@@ -337,3 +337,13 @@ main commit, selects only `nofx.default`, proves a second apply is empty, and
 verifies the human-access policy. Existing operator credentials stay private;
 the temporary native transport changes no saved host or client settings.
 See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
+
+## Harbor registry identities
+
+[[../operations/harbor-oci|Harbor]] uses generated SSM secrets under
+`/homelab/harbor/`, file-mounted bootstrap credentials, a private project, and
+separate project robots for pull and publication. NOFX receives only the pull
+credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
+Authorization headers; Harbor authenticates OCI clients. Registration is
+disabled and project creation is admin-only. Never store Harbor bootstrap
+images in Harbor itself.

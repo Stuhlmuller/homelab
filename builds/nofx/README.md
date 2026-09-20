@@ -55,16 +55,66 @@ matching the deployed image revision.
 ## Publish, update, and revert
 
 The [NOFX Images workflow](../../.github/workflows/nofx-images.yml) tests and
-builds PRs without publication credentials. Only a tested current `main` commit
-can publish fixed GHCR repositories with tags `homelab-<full-main-sha>`; manual
-dispatch requires the same exact SHA. The publish job rebuilds before logging
-in and reports both digest references in its Actions summary.
+builds PRs without publication credentials. A tested current `main` commit can
+publish these private Harbor repositories after the `homelab-production`
+environment gate:
 
-Both GHCR packages remain private. Provision the dedicated registry credential
-through the [private-image runbook](../../docs/nofx-private-images.md) and verify
-authenticated image access before a separate reviewed deployment PR pins the
-resulting digests. This recipe change alone does not deploy images. Do not
-change package visibility to work around a missing pull credential.
+- `harbor.stinkyboi.com/homelab/homelab-nofx-backend`
+- `harbor.stinkyboi.com/homelab/homelab-nofx-frontend`
+
+Tags are `homelab-<full-main-sha>`; manual dispatch requires the exact current
+`main` SHA. The publish job rebuilds before AWS authentication or registry
+login. It reads `/homelab/harbor/robot-push-password` from SSM in `us-west-2`
+for the `robot$homelab+publisher` account. Credentials stay in restrictive
+temporary files and the public Actions summary contains only verified digest
+references. Transfers and transport diagnostics remain private.
+
+The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
+Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves
+`harbor.stinkyboi.com` certificate validation while uploads bypass the public
+Cloudflare HTTP request-size limit. Cleanup removes the forwarding process,
+host entry, kubeconfig, registry credentials, and private logs. Harbor, its TLS
+certificate, project/robot reconciliation, and production CI access must be
+ready before publication.
+
+### Existing GHCR package migration
+
+The [migration inventory](../../scripts/config/harbor-migration.json) records
+the two private artifacts published by
+[run 34815485548](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
+at revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`.
+After Harbor is ready, dispatch the
+[migration workflow](../../.github/workflows/harbor-migrate.yml) from current
+`main` with that checkout's exact SHA as `expected_sha`. The inventory's source
+revision stays fixed to the original build; the dispatch SHA identifies the
+reviewed migration code.
+
+The workflow requires static checks and the production environment gate,
+reads private GHCR packages using its repository-scoped `GITHUB_TOKEN`, and
+copies the fixed digests with `skopeo copy --all --preserve-digests`. It verifies
+the SHA-256 of each destination's raw manifest against the recorded source
+digest. It then reads `/homelab/nofx/harbor-pull-password` into a separate
+temporary authfile for `robot$homelab+pull`, downloads both complete artifacts
+to fresh directories, and verifies those manifest digests. Anonymous requests
+must receive an authentication denial with an explicitly empty authfile and
+`--no-creds`; network failures do not count as denial. Only then does it publish
+the result. Downloaded blobs and all credentials are removed on success or
+failure. Original tags and GHCR sources remain; reruns copy the same content.
+Future builds publish directly to Harbor.
+
+Live inspection on 2026-09-19 confirmed NOFX still runs upstream images; there
+are no deployed consumers of these custom packages. Registry-origin cutover
+applies only to an existing custom-image consumer and must preserve its exact
+deployed digest. Adopting the maintained NOFX release is a separate functional
+rollout, with the acceptance checks in the linked runbook. That later reviewed
+change must pin a verified Harbor digest and use namespace-scoped read-only
+pull credentials. Keep Harbor repositories private. For a registry rollback,
+retain the artifacts until consumers have switched to another verified private
+registry through reviewed desired state.
+
+The retained GHCR packages remain private. Their recovery pull credential is
+covered by the [private-image runbook](../../docs/nofx-private-images.md).
+Do not change package visibility to work around a missing pull credential.
 
 For an upstream update, change the source revision and archive checksum together,
 review the runtime/builder digest compatibility, rebase the patches, and require

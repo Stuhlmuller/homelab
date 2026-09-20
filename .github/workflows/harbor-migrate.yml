@@ -1,94 +1,39 @@
-name: NOFX Images
+name: Migrate Custom Packages To Harbor
 
-# checkov:skip=CKV_GHA_7: expected_sha pins current main; dispatch cannot change build or publish commands.
+# checkov:skip=CKV_GHA_7: expected_sha binds the fixed migration inventory to reviewed current main; it cannot alter commands or destinations.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - builds/nofx/**
-      - .github/workflows/nofx-images.yml
-      - scripts/ci/harbor-publish.sh
-      - scripts/ci/harbor-publish-test.py
-      - scripts/config/harbor-migration.json
-      - scripts/ci/static-checks.sh
-      - policy/workflows*.rego
-  push:
-    branches: [main]
-    paths:
-      - builds/nofx/**
-      - .github/workflows/nofx-images.yml
-      - scripts/ci/harbor-publish.sh
-      - scripts/ci/harbor-publish-test.py
-      - scripts/config/harbor-migration.json
-      - scripts/ci/static-checks.sh
-      - policy/workflows*.rego
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Exact current main commit whose NOFX images will be published
+        description: Exact current main commit containing the reviewed Harbor migration
         required: true
         type: string
 
 permissions: {}
 
-concurrency:
-  group: nofx-images-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  test-build:
-    name: Test And Build NOFX Images
+  static-policy:
+    name: Validate Harbor Migration
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
       - name: Verify Dispatch Commit
-        if: github.event_name == 'workflow_dispatch'
         env:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_REF}" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
-          test "${ACTUAL_SHA}" = "${current_main_sha}"
 
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
         with:
+          fetch-depth: 2
           persist-credentials: false
-
-      - name: Test NOFX Patches
-        run: bash builds/nofx/test.sh
-
-      - name: Build NOFX Images
-        run: bash builds/nofx/build.sh
-
-  publish:
-    name: Publish Reviewed Main Images
-    needs: [test-build]
-    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    concurrency:
-      group: harbor-packages-production
-      cancel-in-progress: false
-    environment:
-      name: homelab-production
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - name: Check Out Repository
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
-        with:
-          persist-credentials: false
-
-      - name: Build NOFX Images Before Registry Login
-        run: bash builds/nofx/build.sh
 
       - name: Install Nix
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
@@ -102,24 +47,58 @@ jobs:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
+      - name: Run Static Checks
+        run: nix develop --command bash scripts/ci/static-checks.sh
+
+      - name: Run Conftest Policies
+        run: nix develop --command bash scripts/ci/conftest-policies.sh
+
       - name: Validate Harbor Publication Gates
         run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
 
-      - name: Verify Current Main Commit
+  migrate:
+    name: Copy Reviewed Private Images
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    concurrency:
+      group: harbor-packages-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Verify Current Main Commit Before Credentials
         env:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
-          EVENT_NAME: ${{ github.event_name }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
-          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
-            test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
-          else
-            test "${EVENT_NAME}" = "push"
-          fi
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
@@ -129,13 +108,14 @@ jobs:
         with:
           aws-region: us-west-2
           mask-aws-account-id: true
-          role-session-name: homelab-harbor-publish-${{ github.run_id }}
+          role-session-name: homelab-harbor-migration-${{ github.run_id }}
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
-      - name: Publish And Verify Private Harbor Images
+      - name: Copy And Verify Fixed GHCR Digests
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
@@ -146,10 +126,10 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
-          bash scripts/ci/harbor-publish.sh publish
+          bash scripts/ci/harbor-publish.sh migrate
           EOF
           then
-            echo "::error::Harbor publication failed; private transport and registry output withheld."
+            echo "::error::Harbor migration failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Both private Harbor images published and destination digests verified; private output withheld."
+          echo "Both images copied with matching digests; GHCR sources retained; private output withheld."

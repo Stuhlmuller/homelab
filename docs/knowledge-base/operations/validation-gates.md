@@ -575,3 +575,18 @@ Tests also cover Linux `sha256sum`, Darwin `shasum`, failed-checksum rejection,
 missing-Service recreation without treating auth failures as absence, and
 live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
+
+## Harbor OCI rollout
+
+Harbor requires chart/Kustomize rendering, bootstrap and transport regression
+tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
+verified TLS, API health, denied anonymous artifact pulls, successful robot
+push/pull, identical migrated image digests, ready consumer Pods and a verified
+logical database backup. See [[harbor-oci]]; a Healthy Application alone does
+not establish successful private package migration.
+
+The full Harbor chart is rendered twice to reject randomly generated state,
+then combined with the owned manifests to validate prerequisite references and
+sync ordering. A narrow policy exception accepts only the six exact empty or
+public-configuration Secret payloads emitted by chart 1.19.2; actual credential
+data or an added field still fails the raw-Secret gate.

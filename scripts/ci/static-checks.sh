@@ -12,6 +12,10 @@ python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
+python3 -I scripts/ci/octelium-harbor-reconcile-test.py
+python3 -I scripts/ci/harbor-bootstrap-test.py
+python3 -I scripts/ci/harbor-publish-test.py
+python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
@@ -383,6 +387,10 @@ done < <(
     -name kustomization.yaml \
     -exec dirname {} \; | sort
 )
+echo "::endgroup::"
+
+echo "::group::Harbor chart, credentials and cold bootstrap"
+bash scripts/ci/harbor-check.sh
 echo "::endgroup::"
 
 echo "::group::NOFX runtime storage"
@@ -806,6 +814,8 @@ expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/harbor-migrate.yml:migrate' \
+    '.github/workflows/harbor-migrate.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/nofx-images.yml:publish' \
@@ -843,9 +853,10 @@ while read -r workflow expected_hash; do
 done <<'EOF'
 .github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
 .github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
+.github/workflows/harbor-migrate.yml dbc4f04dcc32b773b0eab067ac81f444ae4a4a4fbeadd8b74a210c95a446a653
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
-.github/workflows/nofx-images.yml a2779b56c0bf84cf1e39f72e136f4aca9574175afac03118c814e00d22fb1df0
+.github/workflows/nofx-images.yml b0f51bec5da30ee6d3e7597ae89d23ada81db49416c86a63f7fdc3993aebe986
 .github/workflows/nofx-registry-credential.yml 3d4c7528601d89062f169b3b6a7e4e2b159e0013150f097b0d710c7c85fff6db
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
@@ -862,6 +873,7 @@ echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
+  '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \

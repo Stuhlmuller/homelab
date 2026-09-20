@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: harbor-octelium
+  namespace: harbor
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts: [harbor.stinkyboi.com]
+  gateways: [istio-system/tailnet-gateway]
+  http:
+    - route:
+        - destination:
+            host: harbor.harbor.svc.cluster.local
+            port:
+              number: 80
+      # OCI uploads can stream for minutes; never retry writes at this proxy.
+      timeout: 0s

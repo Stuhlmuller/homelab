@@ -291,3 +291,14 @@ Backbone:
 Rollback command:
 Data exposed:
 ```
+
+## Harbor OCI clients
+
+`https://harbor.stinkyboi.com` routes through the public Tunnel and anonymous
+Octelium `harbor` WEB transport to Istio. Its Authorization header is passed
+unchanged and Harbor enforces private-project authentication; browser login
+interception is incompatible with Docker, Helm and containerd. Self-registration
+is disabled. Internal Pod DNS rewrites this hostname directly to Istio while
+retaining the public TLS certificate. Hosted publication uses a reviewed
+Kubernetes TLS port-forward to bypass Cloudflare request-size limits.
+See the [rollout and transport contract](knowledge-base/operations/harbor-oci.md).

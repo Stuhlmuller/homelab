@@ -8,7 +8,7 @@ This inventory summarizes the current application and platform ownership map.
 Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt
 units as the source of truth when they disagree with this note.
 
-Runtime secret contract: all 68 SSM parameters use AWS-managed `alias/aws/ssm`.
+Runtime secret contract: declared SSM parameters use AWS-managed `alias/aws/ssm`.
 Application secret names and values are unchanged. Historical secret/state
 recovery copies and the old-key retirement status are recorded in
 [[operations/kms-cost-audit-2026-09-05]].
@@ -32,6 +32,7 @@ direct Tailscale LoadBalancer path around Octelium authentication.
 | `metrics-server`        | support                   | `kube-system`           | official `metrics-server` Helm chart          | `IaC/live/argocd-apps/metrics-server`        | Kubernetes API and node kubelets                            |
 | `platform-crossplane`   | support                   | `crossplane-system`     | `clusters/homelab/platform/crossplane`        | `IaC/live/argocd-apps/platform-crossplane`   | Argo CD bootstrap                                           |
 | `octelium-storage`      | support                   | `octelium-storage`      | `clusters/homelab/apps/octelium-storage`      | `IaC/live/argocd-apps/octelium-storage`      | external-secrets, platform-storage                          |
+| `harbor`                | private OCI registry      | `harbor`                | `clusters/homelab/apps/harbor`                | `IaC/live/argocd-apps/harbor`                | external-secrets, cert-manager, Istio, storage, Prometheus  |
 | `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none                                                        |
 | `media-postgres`        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`        | `IaC/live/argocd-apps/media-postgres`        | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres`          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`          | `IaC/live/argocd-apps/n8n-postgres`          | external-secrets, platform-storage                          |
@@ -220,3 +221,11 @@ gateway exposed an additional legacy workspace-state migration gate. Bootstrap
 now declares a one-time pinned doctor repair after backup verification and
 configuration, with session identity verification before completion. Live
 gateway/Discord recovery remains pending.
+
+## Private OCI Packages
+
+Harbor owns the private `homelab` project and NOFX custom image publication.
+Its database uses retained local storage on `acer`; registry blobs and logical
+backups use retained NFS. See [[../operations/harbor-oci]] for secret,
+networking, migration and acceptance boundaries. Live readiness remains subject
+to the evidence recorded there.

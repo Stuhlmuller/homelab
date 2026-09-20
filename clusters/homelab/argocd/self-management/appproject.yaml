@@ -16,6 +16,7 @@ spec:
     - https://charts.jetstack.io
     - https://charts.crossplane.io/stable
     - https://grafana-community.github.io/helm-charts
+    - https://helm.goharbor.io
     - https://istio-release.storage.googleapis.com/charts
     - https://kiali.org/helm-charts
     - https://kubernetes-sigs.github.io/descheduler
@@ -50,6 +51,8 @@ spec:
       namespace: finance
     - server: https://kubernetes.default.svc
       namespace: github-actions-runner
+    - server: https://kubernetes.default.svc
+      namespace: harbor
     - server: https://kubernetes.default.svc
       namespace: istio-system
     - server: https://kubernetes.default.svc
