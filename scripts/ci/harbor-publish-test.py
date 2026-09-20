@@ -39,6 +39,7 @@ class HarborPublicationGates(unittest.TestCase):
             "GITHUB_EVENT_NAME": "workflow_dispatch",
             "GITHUB_ACTOR": "migration-test",
             "GITHUB_STEP_SUMMARY": str(self.root / "summary"),
+            "GITHUB_OUTPUT": str(self.root / "outputs"),
             "EXPECTED_SHA": SHA,
             "GITHUB_TOKEN": SECRET_SENTINEL,
             "OCTELIUM_AUTH_TOKEN": SECRET_SENTINEL,
@@ -323,6 +324,10 @@ class HarborPublicationGates(unittest.TestCase):
         self.env["GITHUB_EVENT_NAME"] = "pull_request"
         self.rejected(mode="publish")
 
+    def test_publisher_requires_output_file_before_credentials(self):
+        del self.env["GITHUB_OUTPUT"]
+        self.rejected(mode="publish")
+
     def test_migration_copies_exact_digests_and_cleans_credentials(self):
         self.transport_mocks()
         result = self.run_helper()
@@ -387,6 +392,18 @@ class HarborPublicationGates(unittest.TestCase):
             f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@{digest}"
             for name, digest in sorted(self.published_digests.items())
         ])
+        self.assertEqual((self.root / "outputs").read_text().splitlines(), [
+            f"{name.removeprefix('homelab-nofx-')}=harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@{digest}"
+            for name, digest in sorted(self.published_digests.items())
+        ])
+        self.assert_cleaned()
+
+    def test_publisher_digest_failure_withholds_outputs(self):
+        self.transport_mocks(failure="digest")
+        result = self.run_helper(mode="publish")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "outputs").exists())
+        self.assertFalse((self.root / "summary").exists())
         self.assert_cleaned()
 
     def test_digest_mismatch_withholds_summary_and_cleans(self):
@@ -463,6 +480,84 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.calls_for("aws"))
         self.assert_cleaned()
+
+
+class PublishedDigestReport(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        workflow = json.loads(subprocess.check_output(
+            ["yq", "-o=json", ".", str(ROOT / ".github/workflows/nofx-images.yml")], text=True,
+        ))
+        cls.job = workflow["jobs"]["published-digests"]
+        cls.script = cls.job["steps"][0]["run"]
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="nofx-report-")
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.output = self.root / "nofx-published-images.txt"
+        self.backend = f"harbor.stinkyboi.com/homelab/homelab-nofx-backend:homelab-{SHA}@sha256:{'a' * 64}"
+        self.frontend = f"harbor.stinkyboi.com/homelab/homelab-nofx-frontend:homelab-{SHA}@sha256:{'b' * 64}"
+        self.env = {
+            "PATH": os.environ["PATH"], "GITHUB_SHA": SHA, "RUNNER_TEMP": str(self.root),
+            "BACKEND_REFERENCE": self.backend, "FRONTEND_REFERENCE": self.frontend,
+        }
+
+    def run_report(self):
+        result = subprocess.run(
+            ["bash", "-c", self.script], env=self.env, cwd=self.root,
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+        self.assertNotIn(SECRET_SENTINEL, result.stdout + result.stderr)
+        return result
+
+    def test_report_job_has_no_credentials_and_uploads_one_exact_file(self):
+        self.assertEqual(self.job["needs"], ["publish"])
+        self.assertEqual(self.job["permissions"], {})
+        self.assertNotIn("environment", self.job)
+        self.assertNotIn("secrets.", json.dumps(self.job))
+        self.assertEqual(len(self.job["steps"]), 2)
+        upload = self.job["steps"][1]
+        self.assertEqual(upload["uses"], "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a")
+        self.assertNotIn("if", upload)
+        self.assertEqual(upload["with"], {
+            "name": "nofx-published-images-${{ github.sha }}",
+            "path": "${{ runner.temp }}/nofx-published-images.txt",
+            "if-no-files-found": "error", "retention-days": 30, "include-hidden-files": False,
+        })
+
+    def test_report_contains_only_two_current_verified_references(self):
+        result = self.run_report()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), f"{self.backend}\n{self.frontend}\n")
+        self.assertEqual(self.output.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(result.stdout, "")
+
+    def test_untrusted_or_incomplete_references_create_no_report(self):
+        invalid = [
+            self.backend.replace(SHA, "c" * 40),
+            self.backend.replace("harbor.stinkyboi.com", "untrusted.example"),
+            self.backend.replace("homelab-nofx-backend", "other-package"),
+            self.backend.split("@")[0],
+            self.frontend,
+            self.backend + "\n" + self.frontend,
+            SECRET_SENTINEL,
+            "",
+        ]
+        for value in invalid:
+            with self.subTest(value=value):
+                self.env["BACKEND_REFERENCE"] = value
+                self.assertNotEqual(self.run_report().returncode, 0)
+                self.assertFalse(self.output.exists())
+        self.env["BACKEND_REFERENCE"] = self.backend
+        self.env["FRONTEND_REFERENCE"] = self.backend
+        self.assertNotEqual(self.run_report().returncode, 0)
+        self.assertFalse(self.output.exists())
+
+    def test_report_cannot_overwrite_an_existing_file(self):
+        self.output.write_text("existing file")
+        self.assertNotEqual(self.run_report().returncode, 0)
+        self.assertEqual(self.output.read_text(), "existing file")
 
 
 if __name__ == "__main__":

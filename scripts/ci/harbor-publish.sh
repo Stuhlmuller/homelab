@@ -43,6 +43,9 @@ jq --exit-status '
 ' "$manifest" >/dev/null
 
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
+if [[ "$mode" == publish ]]; then
+  : "${GITHUB_OUTPUT:?GITHUB_OUTPUT must be set by GitHub Actions}"
+fi
 : "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
 [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
 [[ "$mode" != migrate || -n "${GITHUB_TOKEN:-}" ]]
@@ -198,4 +201,11 @@ if [[ "$mode" == migrate ]]; then
 fi
 
 # Publish only allowlisted references after transfer and required acceptance pass.
+if [[ "$mode" == publish ]]; then
+  mapfile -t published_refs <"$scratch/verified-digests"
+  [[ "${#published_refs[@]}" -eq 2 ]]
+  [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+  [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+  printf 'backend=%s\nfrontend=%s\n' "${published_refs[0]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

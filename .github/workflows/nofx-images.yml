@@ -81,6 +81,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      backend: ${{ steps.publication.outputs.backend }}
+      frontend: ${{ steps.publication.outputs.frontend }}
     steps:
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -134,6 +137,7 @@ jobs:
           unset-current-credentials: true
 
       - name: Publish And Verify Private Harbor Images
+        id: publication
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
@@ -153,3 +157,32 @@ jobs:
             exit 1
           fi
           echo "Both private Harbor images published and destination digests verified; private output withheld."
+
+  published-digests:
+    name: Report Published NOFX Digests
+    needs: [publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Validate Published References
+        env:
+          BACKEND_REFERENCE: ${{ needs.publish.outputs.backend }}
+          FRONTEND_REFERENCE: ${{ needs.publish.outputs.frontend }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${BACKEND_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          [[ "${FRONTEND_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          set -o noclobber
+          printf '%s\n' "$BACKEND_REFERENCE" "$FRONTEND_REFERENCE" >"${RUNNER_TEMP:?}/nofx-published-images.txt"
+
+      - name: Upload Published References
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: nofx-published-images-${{ github.sha }}
+          path: ${{ runner.temp }}/nofx-published-images.txt
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false

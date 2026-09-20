@@ -81,6 +81,23 @@ for the `robot$homelab+publisher` account. Credentials stay in restrictive
 temporary files and the public Actions summary contains only verified digest
 references. Transfers and transport diagnostics remain private.
 
+After publication succeeds, a separate job with no repository permissions or
+production credentials validates exactly one backend and one frontend reference
+for that workflow's source revision. It uploads only `nofx-published-images.txt`
+as `nofx-published-images-<full-main-sha>`, retained for 30 days. Download it with
+the signed-in CLI, then use its two references in the reviewed runtime-pin PR:
+
+```sh
+gh run download <successful-run-id> --repo Stuhlmuller/homelab \
+  --name nofx-published-images-<full-main-sha> --dir /tmp/nofx-published-images
+cat /tmp/nofx-published-images/nofx-published-images.txt
+```
+
+The report is generated only from verified publication outputs; it never uploads
+registry authfiles, transport logs, or the publisher workspace. The existing
+Actions step summary remains available. Artifact expiry does not delete images;
+a missing report is not permission to infer digests from mutable tags.
+
 The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
 Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves
 `harbor.stinkyboi.com` certificate validation while uploads bypass the public
