@@ -111,6 +111,11 @@ read-only root. Then verify a blank-key model edit preserves credentials without
 starting traders, the source download works, invalid run IDs are rejected, and
 a short OKX-backed simulation completes.
 
+Use the [agent competition runbook](../../../../docs/nofx-agent-competition.md)
+for three distinct personas with equal simulation settings and verified result
+eligibility. Keep each strategy-to-run-ID mapping with the results; this release's
+Compare buttons do not render a combined scoreboard.
+
 For rollback, stop simulations and restore the previous reviewed image digests
 while retaining `nofx-data` and the storage fix. Returning to upstream images
 also restores their model-save side effects and Binance data dependency.

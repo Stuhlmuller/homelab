@@ -164,3 +164,12 @@ the AWS CLI input parser before SSM received a write. The helper now supplies a
 restricted temporary JSON file, with cleanup on success and failure. An offline
 AWS CLI skeleton regression exercises the real input parser using synthetic data;
 it does not contact SSM or use the production token.
+
+The [agent competition runbook](../../nofx-agent-competition.md) defines three
+isolated historical competitors with equal virtual balances, costs, and market
+data. The pinned Backtest Lab has no rendered comparison table; its Completed
+status can conceal failed AI cycles, leverage validation mutates a decision copy,
+and stop-loss/take-profit triggers are not simulated. Require six successful
+decisions and verify every fill's leverage before ranking a round. The runbook
+records the focused follow-up fixes and avoids presenting incomplete runs or
+shared live-account balances as independent competition results.
