@@ -122,41 +122,64 @@ contract. It never creates operator credentials or applies the entire catalog.
 
 ## Current Evidence
 
-Harbor secrets and its Application registration were applied from reviewed main
-`e35547e8` on 2026-09-19; no resources were destroyed. The first GitOps sync
-stopped before workload creation because ESO 2.0.1 requires an explicit
-`htpasswd` algorithm. The registry template now selects `bcrypt`, matching the
-installed operator and Harbor registry. At main `affa10e8`, ESO was Ready, all
-six PVCs were Bound, and all nine workload Pods were Ready. Rendered manifests
-alone did not exercise ESO template functions.
+Harbor rollout was independently verified on 2026-09-20 UTC at main
+`7a59f266eb0c776c97dc9bc72132e91d2a4dc09d`, merged through
+[PR #1046](https://github.com/Stuhlmuller/homelab/pull/1046).
+[Repository validation](https://github.com/Stuhlmuller/homelab/actions/runs/35486057081)
+and [static policy/security checks](https://github.com/Stuhlmuller/homelab/actions/runs/35486057091)
+passed; the corrected VirtualService also passed a live server-side dry run.
 
-The next sync failed to create `harbor-octelium`: the installed Istio CRD
-rejected `timeout: 0s` with `must be a valid duration greater than 1ms`.
-`virtualservice.yaml` now omits the timeout, whose documented default is
-disabled, and sets `retries.attempts: 0` so OCI writes cannot inherit Istio's
-default retry policy. See the [Istio HTTPRoute reference](https://istio.io/latest/docs/reference/config/networking/virtual-service/#HTTPRoute).
-The corrected manifest passed Kustomize rendering and a live server-side dry
-run against the installed CRD without persisting changes.
-The bootstrap and initial-backup PostSync hooks remain pending until this
-route passes sync; package migration and full live acceptance remain pending.
-The four Harbor Prometheus targets (core, exporter, jobservice and registry)
-were independently observed UP with no scrape errors through a temporary
-localhost port-forward; the live monitor namespace selector includes Harbor.
+- Argo CD was Synced/Healthy with a successful operation at that exact revision.
+  All nine workload Pods were Ready, all six PVCs were Bound, and the
+  ExternalSecret and token-signing certificate were Ready.
+- Public HTTPS passed certificate verification; the native Harbor login page
+  rendered, and authenticated administrator API reads succeeded. Registration
+  is disabled, project creation is administrator-only, `homelab` is private,
+  and both project robots have their exact declared permissions.
+  Anonymous `/v2/` returned HTTP 401 with Harbor's native Bearer challenge.
+- The bootstrap and initial database-backup PostSync hooks succeeded. The
+  initial dump passed archive and checksum verification. Nightly backups are
+  enabled at 03:35 America/Los_Angeles; the nightly schedule has not yet run.
+  This proves a logical metadata backup, not an independent registry backup
+  or a completed restore drill.
+- All four Prometheus targets (core, exporter, jobservice and registry) were
+  UP without scrape errors; live namespace selection includes Harbor.
+- The protected [current-main publisher](https://github.com/Stuhlmuller/homelab/actions/runs/35486181588)
+  built and pushed both custom images to Harbor and verified destination
+  digests. Future custom builds use this same private OCI path.
+- The protected [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
+  copied all four historical versions with their original tags and digests.
+  Separate read-only robot downloads verified every complete artifact, and
+  explicitly anonymous requests were denied. GHCR originals remain private
+  and retained.
+- Independent public Skopeo 1.24.0 acceptance downloaded all four artifacts
+  through normal public DNS and verified TLS, with no tunnel or hosts override.
+  All tag and full-download digests matched; anonymous requests were denied.
+  The downloads totaled 193,487,792 bytes, and temporary credentials, policy
+  and downloaded files were removed. Final API inventory showed two private
+  repositories with three tagged releases each: both migrated releases and
+  the new `7a59f266` build.
 
-The full static gate, four-platform Nix evaluation, signed-commit hooks,
-deterministic Helm/Kustomize policy checks, 56 focused regression tests, and
-OpenTofu module validation passed. The Harbor Application also passed a live
-server-side dry run. Independent review corrected PostgreSQL prerequisite
-ordering and the ClusterSecretStore namespace allow-list; the initial backup
-hook is bounded to ten minutes within Argo CD's fifteen-minute operation.
-Read-only inspection on 2026-09-14 found all four nodes Ready, every Argo CD
-Application Synced/Healthy, no placement-blocking node taints, and the wildcard
-TLS certificate Ready. On 2026-09-19, the refreshed AWS operator session
-produced policy-passing scoped plans: 21 Harbor password/parameter creates,
-three reader-policy updates adding only the eleven Harbor parameter paths,
-and one Harbor Application create; no deletions or replacements. Octelium
-operator access succeeded and the Harbor Service was absent. None of these
-checks constitutes live Harbor rollout or package migration acceptance.
+Python's default urllib User-Agent received HTTP 403 from the public endpoint.
+The same HTTPS request with the descriptive
+`homelab-harbor-acceptance/1.0` User-Agent returned the expected Harbor response;
+curl also succeeded. Acceptance uses that explicit User-Agent without relaxing
+TLS verification. The public Skopeo full-pull checks above also passed. Local
+Nix/macOS Skopeo needed a temporary trust policy for these unsigned images:
+default reject, with acceptance limited to the two exact repositories; expected
+digests remained mandatory. No system policy was changed.
+
+The largest migrated compressed layer was 18.96 MiB. These transfers do not
+validate uploads over 100 MiB. No live workload uses the custom images yet;
+a new Kubernetes image-pull check is still required before a consumer changes
+its registry origin. The GHCR sources remain available for that later rollout.
+
+Two rollout failures refined validation: ESO 2.0.1 requires an explicit
+`bcrypt` argument to `htpasswd`, and the installed Istio CRD rejects
+`timeout: 0s`. The VirtualService omits timeout (disabled by default) and sets
+`retries.attempts: 0` to prevent replaying writes. See the
+[Istio HTTPRoute reference](https://istio.io/latest/docs/reference/config/networking/virtual-service/#HTTPRoute).
+Static rendering did not catch either runtime validation issue.
 
 ## Sources
 
