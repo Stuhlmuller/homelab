@@ -111,7 +111,12 @@ contract. It never creates operator credentials or applies the entire catalog.
 
 ## Current Evidence
 
-Implementation validated; live Harbor deployment and migration remain pending.
+Harbor secrets and its Application registration were applied from reviewed main
+`e35547e8` on 2026-09-19; no resources were destroyed. The first GitOps sync
+stopped before workload creation because ESO 2.0.1 requires an explicit
+`htpasswd` algorithm. The registry template now selects `bcrypt`, matching the
+installed operator and Harbor registry. Live readiness and migration remain
+pending; rendered manifests alone did not exercise ESO template functions.
 The full static gate, four-platform Nix evaluation, signed-commit hooks,
 deterministic Helm/Kustomize policy checks, 56 focused regression tests, and
 OpenTofu module validation passed. The Harbor Application also passed a live
