@@ -89,16 +89,19 @@ bash builds/nofx/build.sh
 
 The [NOFX Images workflow](../../../../.github/workflows/nofx-images.yml) runs
 these commands on pull requests without publishing credentials. After tests
-pass on current `main`, it rebuilds before GHCR login and publishes
-`ghcr.io/stuhlmuller/homelab-nofx-{backend,frontend}:homelab-<full-main-sha>`.
+pass on current `main`, it rebuilds before Harbor login and publishes
+`harbor.stinkyboi.com/homelab/homelab-nofx-{backend,frontend}:homelab-<full-main-sha>`.
 A manual rerun also requires that exact current `main` SHA. The Actions summary
 records both resulting digest references.
 
-The [publication run](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
+The earlier [GHCR publication](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
 passed and published the fixed credential-validation images, from homelab
 revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. On September 14, anonymous
 pull checks returned HTTP 401 for both new packages, as expected for private
-images. Keep both packages private. Follow the
+images. This initial repair temporarily uses those verified artifacts; the
+[registry transition](../../../../builds/nofx/README.md#existing-ghcr-package-migration)
+preserves their digests when Harbor migration is verified. Keep both packages
+private. Follow the
 [private-image runbook](../../../../docs/nofx-private-images.md) for credential
 provisioning, rotation, and rollout gates. Both deployments pin these maintained
 images and reference `nofx-registry-auth` through `imagePullSecrets`. The token

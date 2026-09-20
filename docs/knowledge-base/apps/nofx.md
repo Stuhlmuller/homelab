@@ -122,10 +122,14 @@ add demo trading, net-mode order support, or activate a trader.
 
 `builds/nofx/test.sh` and `builds/nofx/build.sh` run without arguments or
 credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR
-tests/builds with read-only repository permission. Only current `main` can
-publish the fixed `ghcr.io/stuhlmuller/homelab-nofx-backend` and
-`homelab-nofx-frontend` packages, tagged `homelab-<full-main-sha>`; manual dispatch
-requires that exact SHA. The workflow reports digests after pushing.
+tests/builds with read-only repository permission. Following the Harbor change,
+only current `main` can publish new images to the private Harbor repositories,
+tagged `homelab-<full-main-sha>`; manual dispatch requires that exact SHA.
+The workflow reports digests after pushing. The initial functional repair
+temporarily uses the existing verified private GHCR artifacts. Future publication
+remains on Harbor; cut over the runtime only after the migration verifies the
+same digests and complete read-only pulls, using the namespace's `harbor-pull`
+Secret. See [[../operations/harbor-oci]].
 The reviewed source repair merged in
 [PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
 [publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)

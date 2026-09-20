@@ -5,6 +5,14 @@ Keep `ghcr.io/stuhlmuller/homelab-nofx-backend` and
 expected. The NOFX application login and registry authentication are separate:
 the kubelet needs a registry credential before it can start either container.
 
+The initial functional repair temporarily consumes the existing verified GHCR
+artifacts while Harbor rollout and migration acceptance are unfinished. New
+builds publish to Harbor. This does not change that publication path: after
+digest-preserving migration and complete read-only pull checks pass, switch
+both runtime references and their pull Secret together through a reviewed PR.
+See the [migration contract](../builds/nofx/README.md#existing-ghcr-package-migration).
+Retain the GHCR credential until the Harbor runtime is independently verified.
+
 ## Credential contract
 
 Use a dedicated GitHub classic personal access token belonging to
