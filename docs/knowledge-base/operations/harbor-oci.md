@@ -23,6 +23,12 @@ Istio with the existing Octelium CI credential. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
 retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
 
+The shared Octelium-to-Istio hop currently skips upstream certificate validation
+for the Kubernetes Service hostname, as declared in
+`docs/examples/octelium/homelab-services.yaml`. Public clients and CI still
+verify Harbor TLS. A shared ingress hardening change should establish a trusted
+upstream server name/CA and remove this bypass across the service catalog.
+
 ## Identity And State
 
 SSM in `us-west-2` generates ten Harbor secrets. `harbor-secrets` materializes
@@ -43,14 +49,19 @@ for backup schedule, restore sequence and limitations.
 ## Package Migration
 
 Repository inventory found only the NOFX backend and frontend custom images.
-The successful [source publication](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
-used commit `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`; exact source digests and
-destination tags are committed in `scripts/config/harbor-migration.json`.
+Authenticated GHCR inspection on 2026-09-19 found two tags in each repository:
+the Packages API also confirmed two active versions per repository and no
+untagged versions. The releases are `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` and
+`0b352ebd05a944de46b0cdda7240edbc10671d76`. Their four manifest hashes match
+the [first publication](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
+and [second publication](https://github.com/Stuhlmuller/homelab/actions/runs/34926391605).
+Exact source digests, release provenance and destination tags are committed in
+`scripts/config/harbor-migration.json`.
 The migration copies all referenced platform manifests, preserves digests,
 compares destination manifests, and retains GHCR originals. It then uses the
 namespace-scoped read-only robot credential in a separate authfile to download
-both complete artifacts into fresh temporary directories and verify their
-digests. Explicitly anonymous manifest requests must fail with authentication
+all four complete artifacts into separate fresh temporary directories and
+verify their digests. Explicitly anonymous manifest requests must fail with authentication
 denial; network failures do not satisfy that gate. All downloaded content and
 credentials are removed before the workflow exits. The repository
 Actions token reads those private GHCR packages; local operator OAuth lacks
@@ -115,8 +126,23 @@ Harbor secrets and its Application registration were applied from reviewed main
 `e35547e8` on 2026-09-19; no resources were destroyed. The first GitOps sync
 stopped before workload creation because ESO 2.0.1 requires an explicit
 `htpasswd` algorithm. The registry template now selects `bcrypt`, matching the
-installed operator and Harbor registry. Live readiness and migration remain
-pending; rendered manifests alone did not exercise ESO template functions.
+installed operator and Harbor registry. At main `affa10e8`, ESO was Ready, all
+six PVCs were Bound, and all nine workload Pods were Ready. Rendered manifests
+alone did not exercise ESO template functions.
+
+The next sync failed to create `harbor-octelium`: the installed Istio CRD
+rejected `timeout: 0s` with `must be a valid duration greater than 1ms`.
+`virtualservice.yaml` now omits the timeout, whose documented default is
+disabled, and sets `retries.attempts: 0` so OCI writes cannot inherit Istio's
+default retry policy. See the [Istio HTTPRoute reference](https://istio.io/latest/docs/reference/config/networking/virtual-service/#HTTPRoute).
+The corrected manifest passed Kustomize rendering and a live server-side dry
+run against the installed CRD without persisting changes.
+The bootstrap and initial-backup PostSync hooks remain pending until this
+route passes sync; package migration and full live acceptance remain pending.
+The four Harbor Prometheus targets (core, exporter, jobservice and registry)
+were independently observed UP with no scrape errors through a temporary
+localhost port-forward; the live monitor namespace selector includes Harbor.
+
 The full static gate, four-platform Nix evaluation, signed-commit hooks,
 deterministic Helm/Kustomize policy checks, 56 focused regression tests, and
 OpenTofu module validation passed. The Harbor Application also passed a live

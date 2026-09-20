@@ -80,13 +80,17 @@ ready before publication.
 ### Existing GHCR package migration
 
 The [migration inventory](../../scripts/config/harbor-migration.json) records
-the two private artifacts published by
+four private artifacts: backend and frontend releases published by
 [run 34815485548](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
-at revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`.
+at revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` and
+[run 34926391605](https://github.com/Stuhlmuller/homelab/actions/runs/34926391605)
+at revision `0b352ebd05a944de46b0cdda7240edbc10671d76`. Authenticated GHCR and
+GitHub Packages inventory on 2026-09-19 confirmed two active tagged versions
+per repository and no untagged versions.
 After Harbor is ready, dispatch the
 [migration workflow](../../.github/workflows/harbor-migrate.yml) from current
 `main` with that checkout's exact SHA as `expected_sha`. The inventory's source
-revision stays fixed to the original build; the dispatch SHA identifies the
+revisions stay fixed to the original builds; the dispatch SHA identifies the
 reviewed migration code.
 
 The workflow requires static checks and the production environment gate,
@@ -94,8 +98,9 @@ reads private GHCR packages using its repository-scoped `GITHUB_TOKEN`, and
 copies the fixed digests with `skopeo copy --all --preserve-digests`. It verifies
 the SHA-256 of each destination's raw manifest against the recorded source
 digest. It then reads `/homelab/nofx/harbor-pull-password` into a separate
-temporary authfile for `robot$homelab+pull`, downloads both complete artifacts
-to fresh directories, and verifies those manifest digests. Anonymous requests
+temporary authfile for `robot$homelab+pull`, downloads all four complete
+artifacts to separate fresh directories, and verifies those manifest digests.
+Anonymous requests
 must receive an authentication denial with an explicitly empty authfile and
 `--no-creds`; network failures do not count as denial. Only then does it publish
 the result. Downloaded blobs and all credentials are removed on success or

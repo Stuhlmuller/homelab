@@ -25,14 +25,21 @@ cd "$repository_root"
 # Validate every migration input before installing credentials or contacting AWS.
 manifest=scripts/config/harbor-migration.json
 jq --exit-status '
-  (keys | sort) == ["images", "source_revision", "source_workflow_run"] and
-  (.source_revision | test("^[0-9a-f]{40}$")) and
-  .source_workflow_run == "https://github.com/Stuhlmuller/homelab/actions/runs/34815485548" and
-  (.images | length) == 2 and
-  ([.images[].name] | sort) == ["homelab-nofx-backend", "homelab-nofx-frontend"] and
-  all(.images[];
-    (keys | sort) == ["digest", "name"] and
-    (.digest | test("^sha256:[0-9a-f]{64}$")))
+  (keys | sort) == ["releases"] and
+  (.releases | type == "array" and length == 2) and
+  ([.releases[].source_revision] | unique | length) == 2 and
+  ([.releases[].source_workflow_run] | sort) == [
+    "https://github.com/Stuhlmuller/homelab/actions/runs/34815485548",
+    "https://github.com/Stuhlmuller/homelab/actions/runs/34926391605"
+  ] and
+  all(.releases[];
+    (keys | sort) == ["images", "source_revision", "source_workflow_run"] and
+    (.source_revision | type == "string" and test("^[0-9a-f]{40}$")) and
+    (.images | type == "array" and length == 2) and
+    ([.images[].name] | sort) == ["homelab-nofx-backend", "homelab-nofx-frontend"] and
+    all(.images[];
+      (keys | sort) == ["digest", "name"] and
+      (.digest | type == "string" and test("^sha256:[0-9a-f]{64}$"))))
 ' "$manifest" >/dev/null
 
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
@@ -126,12 +133,8 @@ else
 fi
 rm -f -- "$scratch/harbor-password"
 
-if [[ "$mode" == migrate ]]; then
-  tag="homelab-$(jq --raw-output .source_revision "$manifest")"
-else
-  tag="homelab-${GITHUB_SHA}"
-fi
-while IFS=$'\t' read -r name source_digest; do
+while IFS=$'\t' read -r revision name source_digest; do
+  tag="homelab-${revision}"
   destination="harbor.stinkyboi.com/homelab/${name}"
   if [[ "$mode" == migrate ]]; then
     skopeo copy --all --preserve-digests --authfile "$scratch/auth.json" \
@@ -148,8 +151,17 @@ while IFS=$'\t' read -r name source_digest; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
-  printf '%s@%s\n' "$destination" "$destination_digest" >>"$scratch/verified-digests"
-done < <(jq --raw-output '.images[] | [.name, .digest] | @tsv' "$manifest")
+  printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
+done < <(jq --raw-output --arg mode "$mode" --arg revision "$GITHUB_SHA" '
+  if $mode == "migrate" then
+    .releases[] | .source_revision as $source_revision |
+    .images[] | [$source_revision, .name, .digest] | @tsv
+  else
+    # Release history must not duplicate publication of the current build.
+    ([.releases[].images[].name] | unique[]) as $name |
+    [$revision, $name, ""] | @tsv
+  end
+' "$manifest")
 
 if [[ "$mode" == migrate ]]; then
   # Independently exercise the namespace-scoped pull credential and every blob.
@@ -162,9 +174,11 @@ if [[ "$mode" == migrate ]]; then
     --password-stdin harbor.stinkyboi.com <"$scratch/pull-password" >/dev/null
   rm -f -- "$scratch/pull-password"
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
-  while IFS=@ read -r repository expected_digest; do
-    pull_directory="$scratch/pull/${repository##*/}"
-    mkdir -p "$pull_directory"
+  while IFS=@ read -r tagged_repository expected_digest; do
+    repository="${tagged_repository%:*}"
+    # A new empty directory for each artifact prevents one release's blobs
+    # from masking an incomplete pull of another release of the same image.
+    pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
     skopeo copy --all --preserve-digests --src-authfile "$scratch/pull-auth.json" \
       "docker://${repository}@${expected_digest}" "dir:${pull_directory}"
     skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
@@ -179,6 +193,7 @@ if [[ "$mode" == migrate ]]; then
     # A network/TLS failure is not evidence that the registry denied access.
     grep -Eiq 'unauthorized|authentication required|requested access to the resource is denied' \
       "$scratch/anonymous-error"
+    rm -rf -- "$pull_directory"
   done <"$scratch/verified-digests"
 fi
 
