@@ -131,3 +131,51 @@ the resulting new commit tag. To roll back deployment, stop simulations and
 restore the previous reviewed image digests while retaining `nofx-data` and the
 absolute executable/working-directory configuration. Returning to upstream
 images restores their model-save side effects and Binance dependency.
+
+## Private image signing
+
+New publications sign each verified image digest with Cosign using the dedicated
+AWS KMS P-256 key `alias/homelab-harbor-signing` in `us-west-2`. The private key
+never leaves KMS. The existing protected publishing role is authorized by the
+key policy; its existing trust and production approval gates remain the trust
+boundary. This does not isolate signing from other code authorized to use that
+same infrastructure role.
+
+Cosign is pinned by `flake.lock`. The helper explicitly disables transparency
+log upload, public signing configuration and ambient OIDC signing, and stores
+legacy Cosign signature attachments alongside the private images in Harbor.
+It resolves the alias once, signs by immutable digest and key ID, then verifies
+with that key's exported public half. Signing or verification failure fails the
+job and withholds its success summary. An image pushed before a signing failure
+can remain unsigned: rerun the reviewed publication before using it.
+
+Apply `IaC/live/harbor-signing` through the normal reviewed Terragrunt plan/apply
+path before the first signed publication. The plan should create only one KMS
+key and its alias. Asymmetric KMS keys do not support automatic rotation: keep
+old public keys for historical verification and introduce a new key through a
+reviewed migration. `prevent_destroy` and a 30-day deletion window protect the
+key. Retain Harbor signatures with the images. This adds approximately [$1/month for the key](https://aws.amazon.com/kms/pricing/)
+plus API charges ($0.15 per 10,000 P-256 signing requests).
+
+After logging into Harbor, operators can verify a digest without a public log:
+
+```sh
+aws kms get-public-key --profile default --region us-west-2 \
+  --key-id alias/homelab-harbor-signing --query PublicKey --output text |
+  base64 --decode > /tmp/harbor-signing-public.der
+openssl pkey -pubin -inform DER -in /tmp/harbor-signing-public.der \
+  -out /tmp/harbor-signing.pub
+nix develop --command cosign verify --key /tmp/harbor-signing.pub \
+  --insecure-ignore-tlog --new-bundle-format=false \
+  'harbor.stinkyboi.com/homelab/homelab-nofx-backend@sha256:<digest>'
+```
+
+`--insecure-ignore-tlog` skips only the intentionally absent transparency log;
+cryptographic signature, image digest and registry TLS verification remain on.
+Obtain public keys from trusted KMS access and retain them across rotation.
+Historical migrated images are unchanged. Signing does not enable Kubernetes
+admission enforcement or prove an image is vulnerability-free. Verify signatures
+before adoption; enforcing trusted signatures is a separate rollout.
+
+References: [Cosign signing](https://docs.sigstore.dev/cosign/signing/signing_with_containers/)
+and [Harbor signatures](https://goharbor.io/docs/main/working-with-projects/working-with-images/sign-images/).

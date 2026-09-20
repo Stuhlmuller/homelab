@@ -152,4 +152,4 @@ jobs:
             echo "::error::Harbor publication failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Both private Harbor images published and destination digests verified; private output withheld."
+          echo "Both private Harbor images published, signed, and verified; private output withheld."

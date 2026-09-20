@@ -46,7 +46,7 @@ class HarborPublicationGates(unittest.TestCase):
         }
         self.executable("uname", "printf '%s\\n' Linux\n")
         self.executable("git", f"printf '%s\\n' {SHA}\n")
-        for command in ("aws", "skopeo", "docker", "kubectl", "sudo", "curl"):
+        for command in ("aws", "skopeo", "docker", "kubectl", "sudo", "curl", "cosign"):
             self.executable(command, f"printf '%s\\n' {command} >>'{self.calls}'\nexit 97\n")
 
     def executable(self, name, body):
@@ -148,7 +148,30 @@ class HarborPublicationGates(unittest.TestCase):
                     raise SystemExit(7)
                 print("401", end="")
             elif command == "aws":
-                print("private-test-credential-must-never-appear")
+                if args[:2] == ["kms", "describe-key"]:
+                    print("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+                else:
+                    print("private-test-credential-must-never-appear")
+            elif command == "cosign":
+                if args[0] == "public-key":
+                    print("test public key")
+                else:
+                    assert args[-1].startswith("harbor.stinkyboi.com/homelab/")
+                    assert "@sha256:" in args[-1]
+                    assert os.environ["DOCKER_CONFIG"]
+                    assert "--new-bundle-format=false" in args
+                    if args[0] == "sign":
+                        assert "--tlog-upload=false" in args
+                        assert "--use-signing-config=false" in args
+                        assert "--oidc-disable-ambient-providers" in args
+                        assert args[args.index("--key") + 1] == "awskms:///aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                    elif args[0] == "verify":
+                        assert "--insecure-ignore-tlog" in args
+                        assert Path(args[args.index("--key") + 1]).read_text().strip() == "test public key"
+                    else:
+                        raise SystemExit(94)
+                    if FIXTURE["failure"] == args[0]:
+                        raise SystemExit(16)
             elif command == "skopeo":
                 if args[0] == "login":
                     assert sys.stdin.read().strip() == "private-test-credential-must-never-appear"
@@ -218,7 +241,7 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "docker", "kubectl", "sudo", "curl", "timeout"):
+        for command in ("aws", "skopeo", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
@@ -388,6 +411,28 @@ class HarborPublicationGates(unittest.TestCase):
             for name, digest in sorted(self.published_digests.items())
         ])
         self.assert_cleaned()
+
+    def test_publisher_signs_and_verifies_each_digest_privately(self):
+        self.transport_mocks()
+        result = self.run_helper(mode="publish")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls_for("cosign")
+        self.assertEqual([args[0] for args in calls], ["public-key", "sign", "verify", "sign", "verify"])
+        expected = [f"harbor.stinkyboi.com/homelab/{name}@{digest}"
+                    for name, digest in sorted(self.published_digests.items())]
+        self.assertEqual([args[-1] for args in calls if args[0] == "sign"], expected)
+        self.assertEqual([args[-1] for args in calls if args[0] == "verify"], expected)
+        self.assert_cleaned()
+
+    def test_signing_failure_withholds_success_and_cleans(self):
+        for failure in ("sign", "verify"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure)
+                result = self.run_helper(mode="publish")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+                (self.root / "published-images.json").unlink(missing_ok=True)
 
     def test_digest_mismatch_withholds_summary_and_cleans(self):
         self.transport_mocks(failure="digest")

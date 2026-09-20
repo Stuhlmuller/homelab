@@ -3550,3 +3550,9 @@ unit "operator_etcd_backup_storage" {
   path                    = "operator/etcd-backup-storage"
   no_dot_terragrunt_stack = true
 }
+
+unit "harbor_signing" {
+  source                  = "./.catalog/units/live/harbor-signing"
+  path                    = "live/harbor-signing"
+  no_dot_terragrunt_stack = true
+}

@@ -33,6 +33,7 @@
             cloudflared
             conftest
             coreutils
+            cosign
             curl
             findutils
             gh

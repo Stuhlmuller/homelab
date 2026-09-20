@@ -180,3 +180,16 @@ secret_expressions(true, true) := {
 	"data_wo_revision": {"references": ["var.data_revision"]},
 	"metadata": {"references": ["var.name", "var.namespace"]},
 }
+
+test_rotation_exception_requires_asymmetric_signing if {
+    after := {"enable_key_rotation": false, "key_usage": "SIGN_VERIFY", "customer_master_key_spec": "ECC_NIST_P256", "deletion_window_in_days": 30}
+    change := {"address": "aws_kms_key.signing", "type": "aws_kms_key", "change": {"actions": ["create"], "after": after}}
+    violations := deny with input as {"resource_changes": [change]}
+    count(violations) == 0
+    symmetric := object.union(after, {"key_usage": "ENCRYPT_DECRYPT", "customer_master_key_spec": "SYMMETRIC_DEFAULT"})
+    rejected := deny with input as {"resource_changes": [object.union(change, {"change": {"actions": ["create"], "after": symmetric}})]}
+    some message in rejected
+    contains(message, "must enable KMS key rotation")
+    not p256_signing_key(object.union(after, {"key_usage": "ENCRYPT_DECRYPT"}))
+    not p256_signing_key(object.union(after, {"customer_master_key_spec": "SYMMETRIC_DEFAULT"}))
+}

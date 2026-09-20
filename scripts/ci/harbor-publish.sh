@@ -133,6 +133,15 @@ else
 fi
 rm -f -- "$scratch/harbor-password"
 
+if [[ "$mode" == publish ]]; then
+  # Resolve the fixed alias once; sign and verify with this immutable key ID.
+  signing_key="$(aws kms describe-key --region us-west-2 \
+    --key-id alias/homelab-harbor-signing --query KeyMetadata.KeyId --output text)"
+  [[ "$signing_key" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
+  signing_uri="awskms:///${signing_key}"
+  AWS_REGION=us-west-2 cosign public-key --key "$signing_uri" >"$scratch/signing.pub"
+fi
+
 while IFS=$'\t' read -r revision name source_digest; do
   tag="homelab-${revision}"
   destination="harbor.stinkyboi.com/homelab/${name}"
@@ -151,6 +160,17 @@ while IFS=$'\t' read -r revision name source_digest; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
+  if [[ "$mode" == publish ]]; then
+    # Legacy Cosign attachments are understood by Harbor. No Fulcio, Rekor,
+    # public timestamp service, or ambient GitHub signing identity is used.
+    DOCKER_CONFIG="$scratch/docker" AWS_REGION=us-west-2 cosign sign --yes \
+      --key "$signing_uri" --tlog-upload=false --use-signing-config=false \
+      --new-bundle-format=false --oidc-disable-ambient-providers \
+      "${destination}@${destination_digest}"
+    DOCKER_CONFIG="$scratch/docker" cosign verify \
+      --key "$scratch/signing.pub" --insecure-ignore-tlog \
+      --new-bundle-format=false "${destination}@${destination_digest}" >"$scratch/signature-verification.json"
+  fi
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
 done < <(jq --raw-output --arg mode "$mode" --arg revision "$GITHUB_SHA" '
   if $mode == "migrate" then

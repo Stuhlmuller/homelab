@@ -189,3 +189,18 @@ Static rendering did not catch either runtime validation issue.
 - [[../architecture/storage-and-state]]
 - [[../architecture/secrets-and-identity]]
 - [[../architecture/gitops-flow]]
+
+## Private Signing Rollout
+
+New publications use the dedicated asymmetric KMS key declared by
+`IaC/.catalog/units/live/harbor-signing` and `IaC/modules/aws-oci-signing-key`.
+`scripts/ci/harbor-publish.sh` signs verified digests and verifies the stored
+Cosign signature before publication succeeds. Public Sigstore services and
+transparency-log upload are explicitly disabled; signatures remain in Harbor.
+The existing protected AWS publishing role can sign; this is not a separate
+workflow-specific IAM identity. See `builds/nofx/README.md` for verification,
+key rotation, failure recovery and rollback implications.
+
+Status: implementation prepared; KMS apply, first signed publication and
+independent live signature verification are pending. Existing artifacts are
+not retroactively signed. No admission or pull enforcement is enabled.
