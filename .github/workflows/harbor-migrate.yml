@@ -132,4 +132,4 @@ jobs:
             echo "::error::Harbor migration failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Both images copied with matching digests; GHCR sources retained; private output withheld."
+          echo "All inventoried artifact versions copied with matching digests; GHCR sources retained; private output withheld."

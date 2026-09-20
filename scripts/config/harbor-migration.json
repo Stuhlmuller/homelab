@@ -1,14 +1,32 @@
 {
-  "source_revision": "f76c27834ff987aa1dfad81d0c9ff273be7dd3cd",
-  "source_workflow_run": "https://github.com/Stuhlmuller/homelab/actions/runs/34815485548",
-  "images": [
+  "releases": [
     {
-      "name": "homelab-nofx-backend",
-      "digest": "sha256:8da04a4a63b5c0a1eb7b938218a41c7cbebba82489f784d9abda43a5fa47985f"
+      "source_revision": "f76c27834ff987aa1dfad81d0c9ff273be7dd3cd",
+      "source_workflow_run": "https://github.com/Stuhlmuller/homelab/actions/runs/34815485548",
+      "images": [
+        {
+          "name": "homelab-nofx-backend",
+          "digest": "sha256:8da04a4a63b5c0a1eb7b938218a41c7cbebba82489f784d9abda43a5fa47985f"
+        },
+        {
+          "name": "homelab-nofx-frontend",
+          "digest": "sha256:66f001923a8ea65af86d777db2bd46e9c829acba0a877c1af2037bf6dab974c5"
+        }
+      ]
     },
     {
-      "name": "homelab-nofx-frontend",
-      "digest": "sha256:66f001923a8ea65af86d777db2bd46e9c829acba0a877c1af2037bf6dab974c5"
+      "source_revision": "0b352ebd05a944de46b0cdda7240edbc10671d76",
+      "source_workflow_run": "https://github.com/Stuhlmuller/homelab/actions/runs/34926391605",
+      "images": [
+        {
+          "name": "homelab-nofx-backend",
+          "digest": "sha256:9dc75c5353c0c89fc629e068d3face3f42efad2bd09438e2ed98932d9ddf56cc"
+        },
+        {
+          "name": "homelab-nofx-frontend",
+          "digest": "sha256:4ada98300c371902abd0b92fc33c268823fb5cfc7430007b0e2b4eda657b2723"
+        }
+      ]
     }
   ]
 }
