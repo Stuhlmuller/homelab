@@ -47,16 +47,26 @@ The successful [source publication](https://github.com/Stuhlmuller/homelab/actio
 used commit `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`; exact source digests and
 destination tags are committed in `scripts/config/harbor-migration.json`.
 The migration copies all referenced platform manifests, preserves digests,
-compares destination manifests, and retains GHCR originals. The repository
+compares destination manifests, and retains GHCR originals. It then uses the
+namespace-scoped read-only robot credential in a separate authfile to download
+both complete artifacts into fresh temporary directories and verify their
+digests. Explicitly anonymous manifest requests must fail with authentication
+denial; network failures do not satisfy that gate. All downloaded content and
+credentials are removed before the workflow exits. The repository
 Actions token reads those private GHCR packages; local operator OAuth lacks
 `read:packages`. This inventory does not establish the absence of packages
 in other repositories or organization accounts.
 
 New NOFX builds publish to Harbor after the existing build and reviewed-main
-gates. Changing runtime image origins happens only after destination copies
-and private authenticated pulls pass. The separate NOFX simulation deployment
-PR owns functional image activation; preserve its selected version during
-registry cutover. No third-party images are mirrored by this task.
+gates. Live inspection on 2026-09-19 confirmed NOFX still runs its upstream
+backend/frontend digests and Argo CD is Synced/Healthy at main `e17e34a6`.
+No deployed workload currently consumes the custom packages. Merged PR #1031
+bootstraps private GHCR credentials and retains upstream runtime images;
+adopting the custom NOFX release remains a separate functional rollout.
+Registry-origin cutover is required only for an actual custom-image consumer:
+first verify copies and read-only pulls, then preserve that consumer's exact
+digest while changing its registry through GitOps. No third-party images are
+mirrored by this task.
 
 ## Rollout And Acceptance
 
@@ -70,8 +80,11 @@ registry cutover. No third-party images are mirrored by this task.
    the existing `octelium-public-tunnel.yml` workflow.
 4. Verify HTTPS, API health, `/v2/` authentication challenge, private project
    settings, denied anonymous artifact access and authenticated pull/push.
-5. Run the migration workflow, verify both preserved digests, then update NOFX
-   registry references through GitOps. Verify new Pods pulled from Harbor.
+5. Run the migration workflow and require preserved digests, complete read-only
+   pulls, and denied anonymous access. If custom-image consumers exist at that
+   time, update only their registry references through GitOps, retain their
+   exact digests, and verify new Pods pulled from Harbor. Current upstream NOFX
+   runtime images do not require a registry-origin change.
 6. Require a completed verified database backup, retained PVCs and documented
    restore limits before reporting operational readiness.
 

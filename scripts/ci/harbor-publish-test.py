@@ -137,14 +137,41 @@ class HarborPublicationGates(unittest.TestCase):
                 if args[0] == "login":
                     assert sys.stdin.read().strip() == "private-test-credential-must-never-appear"
                     authfile = Path(args[args.index("--authfile") + 1])
-                    authfile.write_text("private mock registry credentials")
+                    username = args[args.index("--username") + 1]
+                    if FIXTURE["failure"] == "pull-auth" and username == "robot$homelab+pull":
+                        raise SystemExit(14)
+                    authfile.write_text(json.dumps({"username": username}))
                     assert authfile.stat().st_mode & 0o077 == 0
                 elif args[0] == "inspect":
-                    name = args[-1].rsplit("/", 1)[1].split(":", 1)[0]
+                    if args[-1].startswith("dir:"):
+                        sys.stdout.write((Path(args[-1][4:]) / "manifest.json").read_text())
+                        raise SystemExit(0)
+                    name = args[-1].rsplit("/", 1)[1].split("@", 1)[0].split(":", 1)[0]
                     raw = FIXTURE["manifests"][name]
+                    if "--no-creds" in args:
+                        authfile = Path(args[args.index("--authfile") + 1])
+                        assert json.loads(authfile.read_text()) == {"auths": {}}
+                        if FIXTURE["failure"] != "anonymous":
+                            message = ("connection refused" if FIXTURE["failure"] == "anonymous-network"
+                                       else "unauthorized: authentication required")
+                            print(message, file=sys.stderr)
+                            raise SystemExit(1)
                     if FIXTURE["failure"] == "digest" and name.endswith("frontend"):
                         raw += "corruption"
                     sys.stdout.write(raw)
+                elif args[0] == "copy" and args[-1].startswith("dir:"):
+                    authfile = Path(args[args.index("--src-authfile") + 1])
+                    assert json.loads(authfile.read_text()) == {"username": "robot$homelab+pull"}
+                    name = args[-2].rsplit("/", 1)[1].split("@", 1)[0]
+                    raw = FIXTURE["manifests"][name]
+                    if FIXTURE["failure"] == "pull-digest" and name.endswith("frontend"):
+                        raw += "corrupted download"
+                    if FIXTURE["failure"] == "pull" and name.endswith("frontend"):
+                        raise SystemExit(15)
+                    directory = Path(args[-1][4:])
+                    assert list(directory.iterdir()) == []
+                    (directory / "manifest.json").write_text(raw)
+                    (directory / "blob").write_text("downloaded image content")
                 elif args[0] != "copy":
                     raise SystemExit(95)
             elif command == "docker":
@@ -227,13 +254,25 @@ class HarborPublicationGates(unittest.TestCase):
         self.transport_mocks()
         result = self.run_helper()
         self.assertEqual(result.returncode, 0, result.stderr)
-        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        copies = [args for args in self.calls_for("skopeo")
+                  if args[0] == "copy" and args[-2].startswith("docker://ghcr.io/")]
         self.assertEqual(len(copies), 2)
         for args, artifact in zip(copies, self.manifest["images"]):
             self.assertIn("--all", args)
             self.assertIn("--preserve-digests", args)
             self.assertEqual(args[-2], f"docker://ghcr.io/stuhlmuller/{artifact['name']}@{artifact['digest']}")
             self.assertEqual(args[-1], f"docker://harbor.stinkyboi.com/homelab/{artifact['name']}:homelab-{SHA}")
+        pulls = [args for args in self.calls_for("skopeo") if args[0] == "copy" and args[-1].startswith("dir:")]
+        self.assertEqual(len(pulls), 2)
+        for args, artifact in zip(pulls, self.manifest["images"]):
+            self.assertIn("--all", args)
+            self.assertIn("--preserve-digests", args)
+            self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "pull-auth.json")
+            self.assertEqual(args[-2], f"docker://harbor.stinkyboi.com/homelab/{artifact['name']}@{artifact['digest']}")
+        anonymous = [args for args in self.calls_for("skopeo") if "--no-creds" in args]
+        self.assertEqual(len(anonymous), 2)
+        parameters = [args[args.index("--name") + 1] for args in self.calls_for("aws")]
+        self.assertEqual(parameters, ["/homelab/harbor/robot-push-password", "/homelab/nofx/harbor-pull-password"])
         summary = (self.root / "summary").read_text().splitlines()
         self.assertEqual(summary, [
             f"harbor.stinkyboi.com/homelab/{image['name']}@{image['digest']}"
@@ -255,6 +294,41 @@ class HarborPublicationGates(unittest.TestCase):
 
     def test_digest_mismatch_withholds_summary_and_cleans(self):
         self.transport_mocks(failure="digest")
+        result = self.run_helper()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_pull_robot_authentication_failure_withholds_summary_and_cleans(self):
+        self.transport_mocks(failure="pull-auth")
+        result = self.run_helper()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_full_pull_failure_withholds_summary_and_cleans(self):
+        self.transport_mocks(failure="pull")
+        result = self.run_helper()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_downloaded_digest_mismatch_withholds_summary_and_cleans(self):
+        self.transport_mocks(failure="pull-digest")
+        result = self.run_helper()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_anonymous_access_withholds_summary_and_cleans(self):
+        self.transport_mocks(failure="anonymous")
+        result = self.run_helper()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_anonymous_network_error_is_not_accepted_as_access_denial(self):
+        self.transport_mocks(failure="anonymous-network")
         result = self.run_helper()
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse((self.root / "summary").exists())

@@ -93,15 +93,24 @@ The workflow requires static checks and the production environment gate,
 reads private GHCR packages using its repository-scoped `GITHUB_TOKEN`, and
 copies the fixed digests with `skopeo copy --all --preserve-digests`. It verifies
 the SHA-256 of each destination's raw manifest against the recorded source
-digest before publishing the result. It retains the original tags and GHCR
-sources; reruns copy the same content. Future builds publish directly to Harbor.
+digest. It then reads `/homelab/nofx/harbor-pull-password` into a separate
+temporary authfile for `robot$homelab+pull`, downloads both complete artifacts
+to fresh directories, and verifies those manifest digests. Anonymous requests
+must receive an authentication denial with an explicitly empty authfile and
+`--no-creds`; network failures do not count as denial. Only then does it publish
+the result. Downloaded blobs and all credentials are removed on success or
+failure. Original tags and GHCR sources remain; reruns copy the same content.
+Future builds publish directly to Harbor.
 
-Package publication and copying do not change running NOFX images. A reviewed
-runtime change must pin the Harbor digest and provide its namespace-scoped
-read-only pull credentials before Argo CD rollout. Keep Harbor repositories
-private and perform the NOFX acceptance checks in the linked runbook. For a
-registry rollback, retain the Harbor artifacts until consumers have switched
-to another verified private registry through reviewed desired state.
+Live inspection on 2026-09-19 confirmed NOFX still runs upstream images; there
+are no deployed consumers of these custom packages. Registry-origin cutover
+applies only to an existing custom-image consumer and must preserve its exact
+deployed digest. Adopting the maintained NOFX release is a separate functional
+rollout, with the acceptance checks in the linked runbook. That later reviewed
+change must pin a verified Harbor digest and use namespace-scoped read-only
+pull credentials. Keep Harbor repositories private. For a registry rollback,
+retain the artifacts until consumers have switched to another verified private
+registry through reviewed desired state.
 
 For an upstream update, change the source revision and archive checksum together,
 review the runtime/builder digest compatibility, rebase the patches, and require

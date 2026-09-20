@@ -151,5 +151,36 @@ while IFS=$'\t' read -r name source_digest; do
   printf '%s@%s\n' "$destination" "$destination_digest" >>"$scratch/verified-digests"
 done < <(jq --raw-output '.images[] | [.name, .digest] | @tsv' "$manifest")
 
-# Publish only allowlisted artifact references after both transfers verify.
+if [[ "$mode" == migrate ]]; then
+  # Independently exercise the namespace-scoped pull credential and every blob.
+  # Publisher credentials and the local image cache cannot satisfy this check.
+  aws ssm get-parameter --region us-west-2 \
+    --name /homelab/nofx/harbor-pull-password --with-decryption \
+    --query Parameter.Value --output text >"$scratch/pull-password"
+  [[ -s "$scratch/pull-password" ]]
+  skopeo login --authfile "$scratch/pull-auth.json" --username "robot\$homelab+pull" \
+    --password-stdin harbor.stinkyboi.com <"$scratch/pull-password" >/dev/null
+  rm -f -- "$scratch/pull-password"
+  printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
+  while IFS=@ read -r repository expected_digest; do
+    pull_directory="$scratch/pull/${repository##*/}"
+    mkdir -p "$pull_directory"
+    skopeo copy --all --preserve-digests --src-authfile "$scratch/pull-auth.json" \
+      "docker://${repository}@${expected_digest}" "dir:${pull_directory}"
+    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
+    pulled_digest="sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)"
+    [[ "$pulled_digest" == "$expected_digest" ]]
+    if skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+      "docker://${repository}@${expected_digest}" \
+      >"$scratch/anonymous-manifest" 2>"$scratch/anonymous-error"; then
+      echo 'Anonymous access to a private migrated artifact was allowed.' >&2
+      exit 1
+    fi
+    # A network/TLS failure is not evidence that the registry denied access.
+    grep -Eiq 'unauthorized|authentication required|requested access to the resource is denied' \
+      "$scratch/anonymous-error"
+  done <"$scratch/verified-digests"
+fi
+
+# Publish only allowlisted references after transfer and required acceptance pass.
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

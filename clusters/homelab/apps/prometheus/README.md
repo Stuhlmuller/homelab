@@ -1,9 +1,11 @@
 # Prometheus Storage Profile
 
 Prometheus persists metrics and Alertmanager state on `nfs-default`.
-Prometheus also discovers repo-owned ServiceMonitor objects in the `monitoring`
-namespace so independent Applications, such as Grafana, can expose metrics
-without spoofing the Prometheus Helm release label.
+Prometheus also discovers ServiceMonitor objects in the `monitoring` and
+`harbor` namespaces so independent Applications, such as Grafana and Harbor,
+can expose metrics without spoofing the Prometheus Helm release label.
+Harbor's NetworkPolicy allows the monitoring namespace to scrape its
+component metrics on TCP port 8001.
 Repo-owned PrometheusRule objects are selected the same way, which lets
 non-chart alert rules load without a Helm release label.
 
