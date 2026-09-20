@@ -8,6 +8,7 @@ on:
       - builds/nofx/**
       - .github/workflows/nofx-images.yml
       - scripts/ci/harbor-publish.sh
+      - clusters/homelab/apps/harbor/signing-job.yaml
       - scripts/ci/harbor-publish-test.py
       - scripts/config/harbor-migration.json
       - scripts/ci/static-checks.sh
@@ -18,6 +19,7 @@ on:
       - builds/nofx/**
       - .github/workflows/nofx-images.yml
       - scripts/ci/harbor-publish.sh
+      - clusters/homelab/apps/harbor/signing-job.yaml
       - scripts/ci/harbor-publish-test.py
       - scripts/config/harbor-migration.json
       - scripts/ci/static-checks.sh

@@ -53,6 +53,7 @@
             nixVersions.latest
             opentofu
             openssh
+            openssl
             pre-commit
             prometheus.cli
             ripgrep

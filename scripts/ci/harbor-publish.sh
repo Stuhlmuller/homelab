@@ -133,15 +133,6 @@ else
 fi
 rm -f -- "$scratch/harbor-password"
 
-if [[ "$mode" == publish ]]; then
-  # Resolve the fixed alias once; sign and verify with this immutable key ID.
-  signing_key="$(aws kms describe-key --region us-west-2 \
-    --key-id alias/homelab-harbor-signing --query KeyMetadata.KeyId --output text)"
-  [[ "$signing_key" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
-  signing_uri="awskms:///${signing_key}"
-  AWS_REGION=us-west-2 cosign public-key --key "$signing_uri" >"$scratch/signing.pub"
-fi
-
 while IFS=$'\t' read -r revision name source_digest; do
   tag="homelab-${revision}"
   destination="harbor.stinkyboi.com/homelab/${name}"
@@ -160,17 +151,6 @@ while IFS=$'\t' read -r revision name source_digest; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
-  if [[ "$mode" == publish ]]; then
-    # Legacy Cosign attachments are understood by Harbor. No Fulcio, Rekor,
-    # public timestamp service, or ambient GitHub signing identity is used.
-    DOCKER_CONFIG="$scratch/docker" AWS_REGION=us-west-2 cosign sign --yes \
-      --key "$signing_uri" --tlog-upload=false --use-signing-config=false \
-      --new-bundle-format=false --oidc-disable-ambient-providers \
-      "${destination}@${destination_digest}"
-    DOCKER_CONFIG="$scratch/docker" cosign verify \
-      --key "$scratch/signing.pub" --insecure-ignore-tlog \
-      --new-bundle-format=false "${destination}@${destination_digest}" >"$scratch/signature-verification.json"
-  fi
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
 done < <(jq --raw-output --arg mode "$mode" --arg revision "$GITHUB_SHA" '
   if $mode == "migrate" then
@@ -182,6 +162,37 @@ done < <(jq --raw-output --arg mode "$mode" --arg revision "$GITHUB_SHA" '
     [$revision, $name, ""] | @tsv
   end
 ' "$manifest")
+
+if [[ "$mode" == publish ]]; then
+  # Only verified, allowlisted digests enter the repository-owned Job template.
+  signing_references=()
+  while IFS=@ read -r tagged_repository digest; do
+    signing_references+=("${tagged_repository%:*}@${digest}")
+  done <"$scratch/verified-digests"
+  [[ "${#signing_references[@]}" -eq 2 ]]
+  yq -o=json '.' clusters/homelab/apps/harbor/signing-job.yaml |
+    jq --arg backend "${signing_references[0]}" --arg frontend "${signing_references[1]}" \
+      'del(.metadata.name) | .metadata.generateName = "harbor-sign-" |
+       .spec.template.spec.initContainers[1].args += [$backend, $frontend]' >"$scratch/signing-job.json"
+  kubectl --namespace harbor create -f "$scratch/signing-job.json" -o json >"$scratch/created-job.json"
+  signing_job="$(jq -er '.metadata.name' "$scratch/created-job.json")"
+  signing_uid="$(jq -er '.metadata.uid' "$scratch/created-job.json")"
+  [[ "$signing_job" =~ ^harbor-sign-[a-z0-9]+$ && "$signing_uid" =~ ^[a-f0-9-]{36}$ ]]
+  kubectl --namespace harbor wait --for=condition=complete --timeout=360s "job/${signing_job}"
+  # Pod status contains only the public key emitted by the successful signer.
+  # CI never GETs the signing Secret or receives the private key.
+  kubectl --namespace harbor get pods -l "batch.kubernetes.io/controller-uid=${signing_uid}" -o json |
+    jq -er --arg uid "$signing_uid" '
+      .items | select(length == 1) | .[0] |
+      select(any(.metadata.ownerReferences[]; .uid == $uid and .kind == "Job")) |
+      .status.containerStatuses[] | select(.name == "public-key" and .state.terminated.exitCode == 0) |
+      .state.terminated.message' >"$scratch/signing.pub"
+  for reference in "${signing_references[@]}"; do
+    DOCKER_CONFIG="$scratch/docker" cosign verify \
+      --key "$scratch/signing.pub" --insecure-ignore-tlog \
+      --new-bundle-format=false "$reference" >"$scratch/signature-verification.json"
+  done
+fi
 
 if [[ "$mode" == migrate ]]; then
   # Independently exercise the namespace-scoped pull credential and every blob.

@@ -23,9 +23,11 @@ class HarborPublicationGates(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="harbor-gates-")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        for directory in ("scripts/ci", "scripts/config", "bin", "home", "runner"):
+        for directory in ("scripts/ci", "scripts/config", "clusters/homelab/apps/harbor", "bin", "home", "runner"):
             (self.root / directory).mkdir(parents=True)
         shutil.copyfile(ROOT / "scripts/ci/harbor-publish.sh", self.root / "scripts/ci/harbor-publish.sh")
+        shutil.copyfile(ROOT / "clusters/homelab/apps/harbor/signing-job.yaml",
+                        self.root / "clusters/homelab/apps/harbor/signing-job.yaml")
         self.manifest = json.loads((ROOT / "scripts/config/harbor-migration.json").read_text())
         self.calls = self.root / "external-calls"
         self.env = {
@@ -132,6 +134,34 @@ class HarborPublicationGates(unittest.TestCase):
                     (root / "home/.kube/config").write_text("private mock kubeconfig")
                     if FIXTURE["failure"] == "kubeconfig":
                         raise SystemExit(12)
+                elif "create" in args:
+                    job = json.loads(Path(args[args.index("-f") + 1]).read_text())
+                    pod = job["spec"]["template"]["spec"]
+                    sign = pod["initContainers"][1]
+                    assert sign["name"] == "sign"
+                    for flag in ("--tlog-upload=false", "--use-signing-config=false",
+                                 "--new-bundle-format=false", "--oidc-disable-ambient-providers"):
+                        assert flag in sign["args"]
+                    expected = ["harbor.stinkyboi.com/homelab/" + name + "@" + digest
+                                for name, digest in sorted(FIXTURE["published_digests"].items())]
+                    assert sign["args"][-2:] == expected
+                    assert not pod["automountServiceAccountToken"]
+                    assert job["spec"]["backoffLimit"] == 0
+                    assert job["spec"]["activeDeadlineSeconds"] == 300
+                    assert job["spec"]["ttlSecondsAfterFinished"] == 600
+                    (root / "signing-job.json").write_text(json.dumps(job))
+                    print(json.dumps({"metadata": {"name": "harbor-sign-abcde",
+                                                  "uid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}}))
+                elif "wait" in args:
+                    if FIXTURE["failure"] == "sign":
+                        raise SystemExit(16)
+                elif "get" in args:
+                    assert "pods" in args, "CI must never read the signing Secret"
+                    assert "batch.kubernetes.io/controller-uid=aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" in args
+                    owner = "wrong-owner" if FIXTURE["failure"] == "signer-owner" else "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+                    print(json.dumps({"items": [{"metadata": {"ownerReferences": [{"kind": "Job", "uid": owner}]},
+                        "status": {"containerStatuses": [{"name": "public-key", "state": {"terminated": {
+                            "exitCode": 0, "message": "test public key"}}}]}}]}))
                 elif "port-forward" in args:
                     (root / "forward-pid").write_text(str(os.getpid()))
                     if FIXTURE["failure"] == "forward":
@@ -148,30 +178,18 @@ class HarborPublicationGates(unittest.TestCase):
                     raise SystemExit(7)
                 print("401", end="")
             elif command == "aws":
-                if args[:2] == ["kms", "describe-key"]:
-                    print("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
-                else:
-                    print("private-test-credential-must-never-appear")
+                assert args[0] == "ssm", "No cloud signing calls allowed"
+                print("private-test-credential-must-never-appear")
             elif command == "cosign":
-                if args[0] == "public-key":
-                    print("test public key")
-                else:
-                    assert args[-1].startswith("harbor.stinkyboi.com/homelab/")
-                    assert "@sha256:" in args[-1]
-                    assert os.environ["DOCKER_CONFIG"]
-                    assert "--new-bundle-format=false" in args
-                    if args[0] == "sign":
-                        assert "--tlog-upload=false" in args
-                        assert "--use-signing-config=false" in args
-                        assert "--oidc-disable-ambient-providers" in args
-                        assert args[args.index("--key") + 1] == "awskms:///aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-                    elif args[0] == "verify":
-                        assert "--insecure-ignore-tlog" in args
-                        assert Path(args[args.index("--key") + 1]).read_text().strip() == "test public key"
-                    else:
-                        raise SystemExit(94)
-                    if FIXTURE["failure"] == args[0]:
-                        raise SystemExit(16)
+                assert args[0] == "verify", "Signing must happen inside the cluster"
+                assert args[-1].startswith("harbor.stinkyboi.com/homelab/")
+                assert "@sha256:" in args[-1]
+                assert os.environ["DOCKER_CONFIG"]
+                assert "--new-bundle-format=false" in args
+                assert "--insecure-ignore-tlog" in args
+                assert Path(args[args.index("--key") + 1]).read_text().strip() == "test public key"
+                if FIXTURE["failure"] == "verify":
+                    raise SystemExit(16)
             elif command == "skopeo":
                 if args[0] == "login":
                     assert sys.stdin.read().strip() == "private-test-credential-must-never-appear"
@@ -261,6 +279,26 @@ class HarborPublicationGates(unittest.TestCase):
             call["args"] for call in map(json.loads, self.calls.read_text().splitlines())
             if call["command"] == command
         ]
+
+    def test_cert_manager_pkcs8_key_import_and_public_key_handoff(self):
+        # Exercise the real pinned CLI's file/password contract without services.
+        private = self.root / "tls.key"
+        prefix = self.root / "cosign"
+        public = self.root / "termination-message"
+        env = {**os.environ, "COSIGN_PASSWORD": SECRET_SENTINEL}
+        commands = [
+            ["openssl", "genpkey", "-algorithm", "EC", "-pkeyopt", "ec_paramgen_curve:P-256", "-out", str(private)],
+            ["cosign", "import-key-pair", "--key", str(private), "--output-key-prefix", str(prefix)],
+            ["cosign", "public-key", "--key", str(prefix) + ".key", "--outfile", str(public)],
+        ]
+        for command in commands:
+            result = subprocess.run(command, env=env, capture_output=True, timeout=30, check=False)
+            self.assertEqual(result.returncode, 0, "Local signing key conversion failed")
+            self.assertNotIn(SECRET_SENTINEL.encode(), result.stdout + result.stderr)
+        expected = subprocess.run(["openssl", "pkey", "-in", str(private), "-pubout"],
+                                  capture_output=True, check=True).stdout
+        self.assertEqual(public.read_bytes(), expected)
+        self.assertLess(public.stat().st_size, 4096)
 
     def test_feature_branch_cannot_reach_credentials(self):
         self.env["GITHUB_REF"] = "refs/heads/codex/unreviewed"
@@ -417,15 +455,16 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.run_helper(mode="publish")
         self.assertEqual(result.returncode, 0, result.stderr)
         calls = self.calls_for("cosign")
-        self.assertEqual([args[0] for args in calls], ["public-key", "sign", "verify", "sign", "verify"])
+        self.assertEqual([args[0] for args in calls], ["verify", "verify"])
         expected = [f"harbor.stinkyboi.com/homelab/{name}@{digest}"
                     for name, digest in sorted(self.published_digests.items())]
-        self.assertEqual([args[-1] for args in calls if args[0] == "sign"], expected)
+        job = json.loads((self.root / "signing-job.json").read_text())
+        self.assertEqual(job["spec"]["template"]["spec"]["initContainers"][1]["args"][-2:], expected)
         self.assertEqual([args[-1] for args in calls if args[0] == "verify"], expected)
         self.assert_cleaned()
 
     def test_signing_failure_withholds_success_and_cleans(self):
-        for failure in ("sign", "verify"):
+        for failure in ("sign", "verify", "signer-owner"):
             with self.subTest(failure=failure):
                 self.transport_mocks(failure=failure)
                 result = self.run_helper(mode="publish")

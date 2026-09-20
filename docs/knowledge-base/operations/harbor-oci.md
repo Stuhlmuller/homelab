@@ -201,15 +201,22 @@ Static rendering did not catch either runtime validation issue.
 
 ## Private Signing Rollout
 
-New publications use the dedicated asymmetric KMS key declared by
-`IaC/.catalog/units/live/harbor-signing` and `IaC/modules/aws-oci-signing-key`.
-`scripts/ci/harbor-publish.sh` signs verified digests and verifies the stored
-Cosign signature before publication succeeds. Public Sigstore services and
-transparency-log upload are explicitly disabled; signatures remain in Harbor.
-The existing protected AWS publishing role can sign; this is not a separate
-workflow-specific IAM identity. See `builds/nofx/README.md` for verification,
-key rotation, failure recovery and rollback implications.
+New publications use the local P-256 key in the cert-manager-owned
+`harbor-image-signing` Secret. `rotationPolicy: Never` preserves signer identity
+through certificate renewal. `scripts/ci/harbor-publish.sh` creates the fixed
+`signing-job.yaml` template for its two verified image digests. The Job mounts
+the key inside the cluster; CI reads only its public key from successful Pod
+status and verifies both signatures. No AWS signing resource, public signing
+service or transparency-log submission is used. Existing registry credentials
+still follow the SSM/ExternalSecret contract above.
 
-Status: implementation prepared; KMS apply, first signed publication and
-independent live signature verification are pending. Existing artifacts are
-not retroactively signed. No admission or pull enforcement is enabled.
+The Job has no API token and only DNS/Istio egress. Temporary imported keys live
+in memory-backed storage; finished Jobs expire after ten minutes. Namespace
+Pod creators and cluster administrators remain trusted. Protect the signing
+Secret in encrypted off-node etcd backups, retain public keys independently,
+and restore the Secret before cert-manager after a disaster. PostgreSQL backups
+do not cover the signing key. See `builds/nofx/README.md` for recovery and rollback.
+
+Status: revised implementation prepared; Argo reconciliation, fresh key backup,
+first signed publication and independent live verification are pending.
+Historical artifacts and pull/admission enforcement remain unchanged.

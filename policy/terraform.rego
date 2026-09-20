@@ -92,7 +92,6 @@ deny contains msg if {
 	change.type == "aws_kms_key"
 	after := planned_after(change)
 	after.enable_key_rotation != true
-	not p256_signing_key(after)
 	msg := sprintf("Terraform resource %q must enable KMS key rotation", [change.address])
 }
 
@@ -169,11 +168,4 @@ empty_or_absent_map(value, key) if {
 action_deletes(actions) if {
 	some action in actions
 	action == "delete"
-}
-
-# AWS cannot automatically rotate asymmetric keys. P-256 signing keys rotate
-# through a reviewed replacement; symmetric encryption keys still require it.
-p256_signing_key(after) if {
-    after.key_usage == "SIGN_VERIFY"
-    after.customer_master_key_spec == "ECC_NIST_P256"
 }

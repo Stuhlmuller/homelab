@@ -352,10 +352,11 @@ Authorization headers; Harbor authenticates OCI clients. Registration is
 disabled and project creation is admin-only. Never store Harbor bootstrap
 images in Harbor itself.
 
-Harbor OCI signing uses a separate non-exportable KMS P-256 signing key in
-`us-west-2`, managed by `IaC/live/harbor-signing`. The key policy grants the
-existing protected `Github-TF-State` publisher role signing/public-key access.
-No signing private key enters SSM, CI files or OpenTofu state. Signatures stay
-in private Harbor storage; public transparency-log submission is disabled.
-Retain trusted public keys across manual rotation. Rollout status and verification
-are recorded in [[../operations/harbor-oci]].
+Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
+`harbor-image-signing` Kubernetes Secret, with key rotation disabled during
+certificate renewal. The protected in-cluster signing Job mounts that key;
+CI receives only its public half through Pod status and verifies signatures.
+No AWS signing resource or public transparency log is used. Namespace Pod
+creators and cluster administrators can access the key: keep those permissions
+restricted, back up etcd to encrypted off-node storage, and retain trusted public
+keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
