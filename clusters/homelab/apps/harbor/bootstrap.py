@@ -23,6 +23,7 @@ ENDPOINT = "http://harbor-core.harbor.svc.cluster.local"
 SECRET_DIRECTORY = Path("/secrets")
 PROJECT = "homelab"
 PREFIX = "robot$"
+PROJECT_METADATA = {"public": "false", "auto_scan": "true"}
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
 ROBOTS = {"pull": ("pull",), "publisher": ("pull", "push")}
 SECRET_FILES = {"pull": "robot-pull-password", "publisher": "robot-push-password"}
@@ -222,14 +223,14 @@ def reconcile(client, robot_passwords):
     if changes:
         client.request("PUT", "/configurations", changes, json_response=False)
     if project is None:
-        client.request("POST", "/projects", {"project_name": PROJECT, "metadata": {"public": "false"}},
+        client.request("POST", "/projects", {"project_name": PROJECT, "metadata": PROJECT_METADATA},
                        expected=(201,), json_response=False)
-    elif project["metadata"]["public"] != "false":
-        client.request("PUT", f"/projects/{PROJECT}", {"metadata": {"public": "false"}},
+    elif any(project["metadata"].get(key) != value for key, value in PROJECT_METADATA.items()):
+        client.request("PUT", f"/projects/{PROJECT}", {"metadata": PROJECT_METADATA},
                        json_response=False)
     project = read_project(client)
-    if project is None or project["metadata"]["public"] != "false":
-        raise BootstrapError("Harbor private project verification failed")
+    if project is None or any(project["metadata"].get(key) != value for key, value in PROJECT_METADATA.items()):
+        raise BootstrapError("Harbor project privacy or automatic scanning verification failed")
 
     for name in ROBOTS:
         desired = desired_robot(name)
