@@ -15,9 +15,17 @@ from pathlib import Path
 
 
 REGISTRY_AUTH_NAME = "nofx-registry-auth"
+HARBOR_AUTH_NAME = "harbor-pull"
+REGISTRY_AUTH_NAMES = {REGISTRY_AUTH_NAME, HARBOR_AUTH_NAME}
 REGISTRY_TEMPLATE = (
     '{"auths":{"ghcr.io":{"auth":"'
     '{{ printf "rstuhlmuller:%s" .token | b64enc }}'
+    '"}}}'
+)
+HARBOR_TEMPLATE = (
+    '{"auths":{"harbor.stinkyboi.com":{"username":"robot$homelab+pull",'
+    '"password":{{ .password | toJson }},"auth":"'
+    '{{ printf "robot$homelab+pull:%s" .password | b64enc }}'
     '"}}}'
 )
 
@@ -62,22 +70,56 @@ def registry_errors(resources):
                 or template.get("data") != {".dockerconfigjson": REGISTRY_TEMPLATE}
                 or template.get("templateFrom")):
             errors.append("registry auth must render only the fixed GHCR base64 credential template")
-    if any(item.get("kind") == "Secret" and item.get("metadata", {}).get("name") == REGISTRY_AUTH_NAME
+    harbor_secrets = [item for item in resources if item.get("kind") == "ExternalSecret"
+                     and item.get("metadata", {}).get("name") == HARBOR_AUTH_NAME
+                     and item["metadata"].get("namespace") == "nofx"]
+    if len(harbor_secrets) != 1:
+        errors.append("expected one nofx/harbor-pull ExternalSecret")
+    else:
+        harbor = harbor_secrets[0]
+        spec = harbor["spec"]
+        if spec.get("secretStoreRef") != {"kind": "ClusterSecretStore", "name": "aws-ssm"}:
+            errors.append("Harbor pull auth must use the aws-ssm ClusterSecretStore")
+        revision = harbor["metadata"].get("annotations", {}).get(
+            "homelab.stuhlmuller.dev/generated-secret-revision")
+        if spec.get("refreshPolicy") != "OnChange" or not revision:
+            errors.append("Harbor pull auth must retain its generated-secret revision refresh contract")
+        if spec.get("data") != [{"secretKey": "password", "remoteRef": {
+                "key": "/homelab/nofx/harbor-pull-password", "conversionStrategy": "Default",
+                "decodingStrategy": "None", "metadataPolicy": "None"}}] or spec.get("dataFrom"):
+            errors.append("Harbor pull auth must read only the dedicated NOFX pull password")
+        target = spec.get("target", {})
+        if (target.get("name") != HARBOR_AUTH_NAME or target.get("creationPolicy") != "Owner"
+                or target.get("deletionPolicy") != "Retain"):
+            errors.append("Harbor pull auth must own and retain its dedicated target Secret")
+        template = target.get("template", {})
+        if (template.get("engineVersion") != "v2" or template.get("mergePolicy", "Replace") != "Replace"
+                or template.get("type") != "kubernetes.io/dockerconfigjson"
+                or template.get("data") != {".dockerconfigjson": HARBOR_TEMPLATE}
+                or template.get("templateFrom")):
+            errors.append("Harbor pull auth must render only the fixed read-only robot credential template")
+    if any(item.get("kind") == "Secret" and item.get("metadata", {}).get("name") in REGISTRY_AUTH_NAMES
            and item["metadata"].get("namespace") == "nofx" for item in resources):
         errors.append("registry auth must not be committed as a Secret")
     for component in ("backend", "frontend"):
         pod, container = deployment(resources, component)
         image_repository = container.get("image", "").split(":", 1)[0].split("@", 1)[0]
-        private_image = image_repository == f"ghcr.io/stuhlmuller/homelab-nofx-{component}"
-        if private_image and pod.get("imagePullSecrets") != [{"name": REGISTRY_AUTH_NAME}]:
-            errors.append(f"{component} must pull private images using nofx-registry-auth")
-        if not private_image and pod.get("imagePullSecrets"):
+        private_repositories = {
+            f"ghcr.io/stuhlmuller/homelab-nofx-{component}": REGISTRY_AUTH_NAME,
+            f"harbor.stinkyboi.com/homelab/homelab-nofx-{component}": HARBOR_AUTH_NAME,
+        }
+        pull_secret = private_repositories.get(image_repository)
+        if image_repository.startswith("harbor.stinkyboi.com/") and pull_secret != HARBOR_AUTH_NAME:
+            errors.append(f"{component} must use its exact maintained Harbor repository")
+        if pull_secret and pod.get("imagePullSecrets") != [{"name": pull_secret}]:
+            errors.append(f"{component} must pull private images using {pull_secret}")
+        if not pull_secret and pod.get("imagePullSecrets"):
             errors.append(f"{component} must defer registry credentials until the private image rollout")
         for volume in pod.get("volumes", []):
             refs = [volume.get("secret", {}).get("secretName")]
             refs += [source.get("secret", {}).get("name")
                      for source in volume.get("projected", {}).get("sources", [])]
-            if REGISTRY_AUTH_NAME in refs:
+            if REGISTRY_AUTH_NAMES.intersection(refs):
                 errors.append(f"{component} must not mount the registry credential")
         containers = pod.get("containers", []) + pod.get("initContainers", [])
         containers += pod.get("ephemeralContainers", [])
@@ -86,7 +128,7 @@ def registry_errors(resources):
                     for entry in container.get("envFrom", [])]
             refs += [entry.get("valueFrom", {}).get("secretKeyRef", {}).get("name")
                      for entry in container.get("env", [])]
-            if REGISTRY_AUTH_NAME in refs:
+            if REGISTRY_AUTH_NAMES.intersection(refs):
                 errors.append(f"{component} must not expose the registry credential as environment")
     return errors
 
@@ -150,12 +192,19 @@ def negative_checks(resources):
              "writable-root", "readonly-claim", "remapped-database", "shadowed-backtests",
              "backend-pull-secret", "frontend-pull-secret", "registry-parameter",
              "registry-json-injection", "registry-raw-key", "registry-refresh",
-             "registry-env", "registry-mount")
+             "registry-env", "registry-mount", "registry-committed-secret",
+             "harbor-backend-pull-secret", "harbor-frontend-pull-secret",
+             "harbor-wrong-pull-secret", "harbor-wrong-repository", "harbor-parameter",
+             "harbor-json-injection", "harbor-raw-key", "harbor-missing-secret",
+             "harbor-refresh", "harbor-env", "harbor-init-env", "harbor-ephemeral-env",
+             "harbor-mount", "harbor-projected-mount", "harbor-committed-secret")
     for case in cases:
         changed = copy.deepcopy(resources)
         pod, container = deployment(changed)
         registry = next(item for item in changed if item.get("kind") == "ExternalSecret"
                         and item.get("metadata", {}).get("name") == REGISTRY_AUTH_NAME)
+        harbor = next(item for item in changed if item.get("kind") == "ExternalSecret"
+                      and item.get("metadata", {}).get("name") == HARBOR_AUTH_NAME)
         if case == "image-workdir":
             container.pop("workingDir", None)
         elif case == "sibling-path":
@@ -199,6 +248,43 @@ def negative_checks(resources):
         elif case == "registry-mount":
             pod["volumes"].append({"name": "registry", "projected": {
                 "sources": [{"secret": {"name": REGISTRY_AUTH_NAME}}]}})
+        elif case in ("registry-committed-secret", "harbor-committed-secret"):
+            name = HARBOR_AUTH_NAME if case.startswith("harbor-") else REGISTRY_AUTH_NAME
+            changed.append({"kind": "Secret", "metadata": {"name": name, "namespace": "nofx"}})
+        elif case in ("harbor-backend-pull-secret", "harbor-frontend-pull-secret", "harbor-wrong-pull-secret"):
+            component = "frontend" if case == "harbor-frontend-pull-secret" else "backend"
+            pull_pod, pull_container = deployment(changed, component)
+            pull_container["image"] = f"harbor.stinkyboi.com/homelab/homelab-nofx-{component}:guard-case"
+            if case == "harbor-wrong-pull-secret":
+                pull_pod["imagePullSecrets"] = [{"name": REGISTRY_AUTH_NAME}]
+            else:
+                pull_pod.pop("imagePullSecrets", None)
+        elif case == "harbor-wrong-repository":
+            container["image"] = "harbor.stinkyboi.com/unreviewed/homelab-nofx-backend:guard-case"
+            pod.pop("imagePullSecrets", None)
+        elif case == "harbor-parameter":
+            harbor["spec"]["data"][0]["remoteRef"]["key"] = "/homelab/harbor/ci-push-password"
+        elif case == "harbor-json-injection":
+            harbor["spec"]["target"]["template"]["data"][".dockerconfigjson"] = (
+                HARBOR_TEMPLATE.replace('.password | toJson', '.password'))
+        elif case == "harbor-raw-key":
+            harbor["spec"]["target"]["template"]["mergePolicy"] = "Merge"
+        elif case == "harbor-missing-secret":
+            changed.remove(harbor)
+        elif case == "harbor-refresh":
+            harbor["metadata"]["annotations"].pop("homelab.stuhlmuller.dev/generated-secret-revision", None)
+        elif case == "harbor-env":
+            container["envFrom"].append({"secretRef": {"name": HARBOR_AUTH_NAME}})
+        elif case in ("harbor-init-env", "harbor-ephemeral-env"):
+            field = "initContainers" if case == "harbor-init-env" else "ephemeralContainers"
+            pod.setdefault(field, []).append({"name": "registry-leak", "env": [{
+                "name": "REGISTRY_PASSWORD", "valueFrom": {
+                    "secretKeyRef": {"name": HARBOR_AUTH_NAME, "key": ".dockerconfigjson"}}}]})
+        elif case == "harbor-mount":
+            pod["volumes"].append({"name": "registry", "secret": {"secretName": HARBOR_AUTH_NAME}})
+        elif case == "harbor-projected-mount":
+            pod["volumes"].append({"name": "registry", "projected": {
+                "sources": [{"secret": {"name": HARBOR_AUTH_NAME}}]}})
         if not validate(changed):
             raise ValueError(f"runtime regression was accepted: {case}")
     return len(cases)

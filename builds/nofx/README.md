@@ -111,9 +111,14 @@ Live inspection on 2026-09-19 confirmed NOFX still runs upstream images; there
 are no deployed consumers of these custom packages. Registry-origin cutover
 applies only to an existing custom-image consumer and must preserve its exact
 deployed digest. Adopting the maintained NOFX release is a separate functional
-rollout, with the acceptance checks in the linked runbook. That later reviewed
-change must pin a verified Harbor digest and use namespace-scoped read-only
-pull credentials. Keep Harbor repositories private. For a registry rollback,
+rollout, with the acceptance checks in the linked runbook. The successful
+[migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
+preserved all historical digests and verified complete read-only pulls. The
+maintained runtime selects the migrated
+`f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` images from Harbor with the
+namespace-scoped `harbor-pull` Secret. Require ready Pods at both exact digests
+before declaring Kubernetes pull acceptance. Keep Harbor repositories private.
+For a registry rollback,
 retain the artifacts until consumers have switched to another verified private
 registry through reviewed desired state.
 
