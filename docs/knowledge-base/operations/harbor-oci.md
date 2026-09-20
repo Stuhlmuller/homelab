@@ -46,6 +46,15 @@ registry blobs and logical database backups use retained QNAP NFS. Backups on
 the same NAS are not independent blob disaster recovery. See the app README
 for backup schedule, restore sequence and limitations.
 
+## Image Scanning
+
+The chart enables Trivy with a retained 5 Gi cache. The repository-owned
+PostSync bootstrap sets and verifies `auto_scan: "true"` for the private
+`homelab` project on creation and subsequent syncs. New image pushes trigger
+scans; enabling this setting does not backfill existing artifacts. Verify a
+completed report after a new push before claiming live scanning acceptance.
+See `clusters/homelab/apps/harbor/README.md`.
+
 ## Package Migration
 
 Repository inventory found only the NOFX backend and frontend custom images.

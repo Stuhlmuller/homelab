@@ -42,6 +42,18 @@ recovery dependency on the service being recovered. Keep original migration
 sources until independent pulls and workload rollouts succeed. Do not delete
 old GHCR artifacts as part of migration.
 
+## Image scanning
+
+Trivy is enabled in `values.yaml`, with a retained 5 Gi database/cache PVC.
+The PostSync bootstrap reconciles `homelab` project metadata `auto_scan: "true"`
+so newly pushed images receive vulnerability scans. It verifies the setting
+on readback and repairs drift on subsequent syncs. Existing artifacts are not
+retroactively scanned by enabling scan-on-push.
+
+After rollout, verify the Trivy Pod is Ready and a newly pushed image shows a
+completed vulnerability report in Harbor. Bootstrap success proves the project
+setting, not successful database downloads or an image scan.
+
 ## Secrets and reconciliation
 
 `harbor-secrets` is an `OnChange` ExternalSecret backed by these generated
