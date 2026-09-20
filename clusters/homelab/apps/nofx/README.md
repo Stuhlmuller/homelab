@@ -1,8 +1,8 @@
 # NOFX
 
 NOFX runs at the publicly resolvable `https://nofx.stinkyboi.com`. The maintained
-`harbor.stinkyboi.com/homelab/homelab-nofx-*` images remain private and require the staged
-registry setup below before deployment. The Cloudflare public tunnel
+`harbor.stinkyboi.com/homelab/homelab-nofx-*` images remain private and use the
+namespace's `harbor-pull` Secret. The Cloudflare public tunnel
 provides transport, while the Octelium WEB Service requires
 `homelab-human-web-access` before forwarding to the private Istio route. NOFX's
 own login remains a second authentication boundary. Octelium passes the
@@ -68,7 +68,9 @@ upstream commit
 [source.json](../../../../builds/nofx/source.json) pins the source archive and
 checksum; both Dockerfiles pin their builder and runtime images by digest.
 The preparation script applies the committed patches before Docker builds
-either runtime. The derivative adds:
+either runtime. The source includes the following repairs; the competition
+additions target build `25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b` and require the
+publication and rollout acceptance below:
 
 - Key-preserving model edits without submitted-credential logging or trader
   initialization during configuration save.
@@ -79,6 +81,12 @@ either runtime. The derivative adds:
   retain their Binance source. No exchange account or API key is needed.
 - Historical decisions exclude current quant/ranking feeds, which lack
   point-in-time history, and measure position age using the simulation clock.
+- Strict JSON-schema decisions for historical `openrouter/free` requests to
+  `https://openrouter.ai/api/v1`, with one provider attempt per cycle. Refused,
+  truncated, or malformed output remains a failed cycle.
+- A leverage cap applied to actual simulated fills, plus selected-run comparison
+  of equity, return, drawdown, and recorded decision outcomes. Generated run IDs
+  include a safe strategy slug; the table does not declare a winner.
 - A footer download at `/nofx-source.tar.gz` containing the patched upstream,
   license, lock files, patches, and build recipe under AGPL-3.0.
 
@@ -102,26 +110,36 @@ revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. On September 14, anonymous
 pull checks returned HTTP 401 for both new packages, as expected for private
 images. The successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
 preserved their digests in Harbor and verified complete read-only pulls plus
-denied anonymous access. This deployment selects those same artifacts from
-Harbor. Keep all packages private. Follow the
-[private-image runbook](../../../../docs/nofx-private-images.md) for credential
-provisioning, rotation, and rollout gates. Both deployments pin these maintained
-images and reference `harbor-pull` through `imagePullSecrets`. The credential
-is used by the node's kubelet and is not mounted or injected into NOFX containers.
-Before merging the image switch, require the verified migration, healthy
-`harbor-pull` ExternalSecret, and stopped live traders. After rollout, verify
-both new Pods actually pulled the expected Harbor digests; registry tests alone
-do not prove Kubernetes image-pull readiness.
+denied anonymous access. The initial maintained rollout in
+[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036) used that pair; retain
+it as recovery history. [deployment.yaml](deployment.yaml) declares the current
+desired image references. Both deployments use `harbor-pull` only through
+`imagePullSecrets`; the kubelet credential never enters NOFX containers.
 
-Keep the existing PVC, absolute command, working directory, and
-read-only root. Then verify a blank-key model edit preserves credentials without
-starting traders, the source download works, invalid run IDs are rejected, and
-a short OKX-backed simulation completes.
+The next image-pin rollout targets
+[build 35494703264](https://github.com/Stuhlmuller/homelab/actions/runs/35494703264),
+which successfully published and verified both private Harbor images. Copy its
+verified digests into the manifest. Before merge, also require a healthy `harbor-pull`
+ExternalSecret and a fresh authenticated check that all live traders are
+stopped. Use the UI or the runbook's read-only database count; an old observation
+does not satisfy this gate.
+Keep all packages private and follow the
+[private-image runbook](../../../../docs/nofx-private-images.md) for credential,
+publication, and rollout checks. Publication and the earlier migration do not
+prove the competition build is deployed.
+
+Retain the PVC, absolute command, working directory, and read-only root. After
+Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expected
+Harbor digests. Check that a blank-key model edit preserves credentials without
+starting traders, invalid run IDs remain rejected, and the source download
+matches the deployed revision. Then run a fresh short OKX-backed simulation:
+inspect valid structured decisions and actual fill leverage, and confirm the
+selected-run table shows recorded successes/failures and missing data accurately.
 
 Use the [agent competition runbook](../../../../docs/nofx-agent-competition.md)
-for three distinct personas with equal simulation settings and verified result
-eligibility. Keep each strategy-to-run-ID mapping with the results; this release's
-Compare buttons do not render a combined scoreboard.
+for three distinct personas with equal simulation settings. Keep the
+strategy-to-run-ID mapping with the results. Compare displays factual metrics;
+verify all expected decisions and matching inputs before judging returns.
 
 For rollback, stop simulations and restore the previous reviewed image digests
 while retaining `nofx-data` and the storage fix. Returning to upstream images
@@ -139,8 +157,15 @@ Binance futures history; the maintained images use OKX US public history for new
 runs. Compare strategy styles over the same symbols, data source,
 dates, initial balance, decision cadence, fees, and slippage. Start with a
 24-hour window and one decision per four-hour bar to keep free-model usage
-bounded. Inspect each run's return, drawdown, and trade count; this release's
-comparison selection does not render a combined leaderboard.
+bounded. The strict historical path makes one provider attempt per cycle,
+including transient failures. Its schema instruction supersedes the earlier
+XML-format prompt mitigation. Inspect each run's return, drawdown, actual fill
+leverage, and recorded decision outcomes; Completed alone is not a valid score.
+The comparison table becomes available after the competition-image rollout.
+
+Keep each round uninterrupted by backend restarts. Cold resume does not reliably
+restore the selected strategy snapshot; finish or stop simulations before
+rollout and start a new matched round afterward.
 
 The [OpenRouter free router](https://openrouter.ai/docs/guides/routing/routers/free-router)
 can select a different free model for each request. Results compare strategy
@@ -164,14 +189,15 @@ activated.
 At pinned source `bdfd8dc0d02c14b295eb36cbaee00d8402867927`, model editing
 requires the API key again although the backend can preserve an empty key.
 The model-save handler logs the submitted model structure and reloads missing
-traders. The maintained derivative addresses these behaviors, but until its
-reviewed digest rollout, do not treat model save as a harmless endpoint-only
-edit. Never publish backend logs without redaction.
+traders. The initial maintained Harbor derivative addresses these behaviors.
+Recheck passive, key-preserving edits after each image rollout, and never publish
+backend logs without redaction.
 
 The pinned backtest API also lacks filesystem containment checks for supplied
 run IDs before filesystem access/deletion. This predates the working-directory
-fix. Keep the existing human access policy; the derivative's validation requires
-post-rollout verification before granting this API to other users or automation.
+fix. The maintained derivative validates these IDs; keep the existing human
+access policy and verify that validation after each rollout before extending
+access to other users or automation.
 
 The dashboard also labels all HTTP 404 responses as "API Not Found", including
 an existing trader that failed to load into the runtime manager. Check private

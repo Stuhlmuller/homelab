@@ -41,26 +41,21 @@ following in every persona's simulation prompt:
 > explicit close decisions; do not rely on automatic stop-loss or take-profit
 > triggers in this simulation. Holding cash is valid.
 
-Also require a brief rationale followed by a valid JSON decision array inside
-`<decision>...</decision>`. Every entry must use `BTCUSDT`, `ETHUSDT`, or
-`SOLUSDT`; never use `ALL`. A no-action response still needs an explicit wait:
-
-```text
-No confirmed signal.
-<decision>[{"symbol":"BTCUSDT","action":"wait"}]</decision>
-```
-
-This prompt mitigation is saved for all three competitors. Start a fresh round
-with the same strengthened prompt for each competitor; do not mix its results
-with earlier runs. It does not guarantee valid model output.
+The maintained competition build supplies a strict JSON schema to the free
+router and validates the returned object locally. This replaces earlier XML
+format examples. Keep the persona prompt focused on signals, risk limits, and a
+brief rationale. Decisions must use the configured symbols, including explicit
+wait decisions when no action is justified; `ALL` is invalid.
 
 ## Run and score
 
 Select a saved strategy and the shared model, enter the matching settings,
 then start its historical run. Record the strategy-to-run-ID mapping immediately;
-the UI generates the run ID. Repeat for the other two strategies. Each round
+the UI includes the strategy name in generated run IDs. Repeat for the other two
+strategies. Each round
 has six scheduled decision cycles per competitor, 18 logical model requests in
-total. Provider retries may add requests. A free-provider limit is a failed or
+total. The strict historical free-router path makes one provider attempt per
+cycle, including transient errors. A free-provider limit is a failed or
 incomplete round, not permission to switch to a paid model.
 
 Before ranking a run, verify all of the following in the UI:
@@ -81,23 +76,20 @@ than all openings. Preserve these definitions in any published results.
 
 ## Current limitations
 
-The pinned simulator does not execute stop-loss/take-profit triggers. Its
-leverage validation currently clamps a copy of each decision while execution
-can use the original requested leverage. Also, Completed can conceal earlier
-failed AI cycles. Enforce the eligibility checks above; a violating run cannot
-supply a valid score. A future runtime change should clamp the actual executed
-decision and preserve failed-cycle visibility, with focused regression tests.
+The simulator does not execute stop-loss/take-profit triggers. Completed can
+still conceal earlier failed AI cycles. The maintained competition build caps
+actual fill leverage and exposes recorded failures in the comparison table;
+nevertheless, enforce every eligibility check above before assigning a score.
 
 The first observed Trend and Breakout runs displayed Completed despite two and
 three failed decisions out of six, respectively. Both are ineligible for ranking.
 Their error was `ALL wait: price unavailable for ALL`; failed responses included
-prose or a safety label without the required JSON. The parser in
+prose or a safety label without the required JSON. The legacy parser in
 `kernel/engine.go` synthesizes an `ALL` wait when decision JSON is missing, then
-`backtest/runner.go` looks up its price before treating wait as a no-op. A future
-fix must distinguish malformed model output from a genuine wait, preserve the
-failure for round eligibility, and handle valid no-action decisions without
-inventing a tradable symbol. Test missing JSON separately from explicit waits;
-do not turn parse failures into successful cash decisions.
+`backtest/runner.go` looks up its price before treating wait as a no-op. The new
+historical free-router path bypasses that fallback: malformed output remains a
+failed cycle rather than a successful cash decision. Other model request paths
+retain their legacy parsing behavior.
 
 Keep each round uninterrupted by backend restarts. A running simulation retains
 its loaded strategy, but the persisted configuration does not serialize that
@@ -105,18 +97,16 @@ strategy object. Cold resume can therefore reconstruct defaults instead of the
 selected persona. Start a fresh matched round after a restart; a future runtime
 fix should persist and restore the complete strategy snapshot.
 
-The Backtest Lab Compare buttons only select IDs; this release has no rendered
-comparison table. Read each eligible run's Overview, Trades, Positions, and
-Decisions and record actual results together. Do not publish private account
+Select Compare on the three runs to show their recorded metrics side by side.
+The table preserves selection order and does not certify eligibility or declare
+a winner. Missing metrics stay unavailable, and decision-record completeness
+must be checked against the six expected cycles. Read each run's Overview,
+Trades, Positions, and Decisions before ranking. Do not publish private account
 balances through the live Competition page to imitate a simulation scoreboard.
 
-The next maintained build adds a factual comparison table and strategy names in
-new run IDs. It also requests strict JSON-schema output for historical
-`openrouter/free` calls to the official OpenRouter API and caps actual fill
-leverage. That path makes one provider attempt per cycle, including transient
-errors; failures remain failures. Its schema instruction supersedes the earlier
-XML-format prompt mitigation. After publishing and deploying the new image
-digests, use fresh run IDs and repeat all eligibility checks before ranking.
+These features require the competition build from reviewed source
+`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`. Verify its running image digests before
+acceptance, then use fresh run IDs. The earlier `f76c278` images lack these fixes.
 
 Source: `backtest/runner.go`, `backtest/account.go`, `kernel/engine.go`, and
 `web/src/components/BacktestPage.tsx` at the maintained upstream revision in
@@ -125,7 +115,8 @@ eligible round or a winner.
 
 ## Observed prompt-only rerun
 
-The second round used the shared JSON prompt mitigation above. UI inspection
+The second round used a shared prompt requiring a JSON array inside `<decision>`
+tags and explicit configured symbols. UI inspection
 on 2026-09-20 UTC found the following completed simulations:
 
 | Persona | Run ID | Successful cycles | Failed cycles | Ending virtual USDT | Eligible |

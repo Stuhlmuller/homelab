@@ -112,6 +112,13 @@ The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
 blobs whose working-tree file was removed.
 
+The local Checkov hook scans the full `clusters` directory for Kubernetes YAML
+changes. A changed-files-only scan omits unchanged NetworkPolicies and can
+incorrectly fail `CKV2_K8S_6` for a Deployment. Other files retain the diff scan;
+the dedicated secrets hook still scans every changed file with the upstream
+`--enable-secret-scan-all-files` entry and required `-f` argument. Do not override
+that argument with `-v`, which prints Checkov's version instead of scanning.
+
 Do not require a new Actions context in ruleset `14700233` before the workflow
 that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
 trusted live-plan PR, and a fork; then add only that context while preserving

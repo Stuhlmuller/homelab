@@ -11,14 +11,18 @@ and operational acceptance are documented in the
 Historical runs using `openrouter/free` at the official OpenRouter API request
 strict structured decisions and require a provider that supports those request
 parameters. Malformed responses remain failed cycles instead of becoming
-synthetic `ALL` wait decisions. Other models and live traders retain their
-existing request path. The simulator also caps executed leverage at the
-configured limit.
+synthetic `ALL` wait decisions. This strict path makes one provider attempt per
+cycle, including transient errors; failures remain visible. Other models and
+live traders retain their existing request path. The simulator also caps actual
+fill leverage at the configured limit.
 
 Backtest Lab compares selected runs using recorded equity, return, drawdown,
 and decision outcomes. The table does not infer a valid score from Completed:
 review decision completeness, matching inputs, and executed leverage as described
-in the [competition runbook](../../docs/nofx-agent-competition.md).
+in the [competition runbook](../../docs/nofx-agent-competition.md). Newly generated
+run IDs include a safe strategy slug. Keep rounds uninterrupted: cold resume
+still does not reliably restore the selected strategy snapshot, so start fresh
+matched runs after a backend restart.
 
 ## Source and build contract
 
@@ -136,20 +140,22 @@ the result. Downloaded blobs and all credentials are removed on success or
 failure. Original tags and GHCR sources remain; reruns copy the same content.
 Future builds publish directly to Harbor.
 
-Live inspection on 2026-09-19 confirmed NOFX still runs upstream images; there
-are no deployed consumers of these custom packages. Registry-origin cutover
-applies only to an existing custom-image consumer and must preserve its exact
-deployed digest. Adopting the maintained NOFX release is a separate functional
-rollout, with the acceptance checks in the linked runbook. The successful
-[migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
+At the migration inventory check, NOFX still used upstream images. The
+successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
 preserved all historical digests and verified complete read-only pulls. The
-maintained runtime selects the migrated
-`f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` images from Harbor with the
-namespace-scoped `harbor-pull` Secret. Require ready Pods at both exact digests
-before declaring Kubernetes pull acceptance. Keep Harbor repositories private.
-For a registry rollback,
-retain the artifacts until consumers have switched to another verified private
-registry through reviewed desired state.
+initial maintained rollout then selected the migrated `f76c278` pair in
+[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036). Preserve those
+artifacts as recovery history; a later source build requires its own verified
+publication and functional acceptance.
+
+Use [deployment.yaml](../../clusters/homelab/apps/nofx/deployment.yaml) for the
+current desired image references, rather than copying this historical migration
+inventory. Pin both published images in a separate reviewed rollout PR with
+`harbor-pull`, then verify ready Pods at both exact digests. Follow the
+[rollout gates](../../docs/nofx-private-images.md#harbor-runtime-acceptance),
+including a fresh authenticated `STOPPED` check before merge. Keep Harbor
+repositories private and retain old artifacts until consumers have moved to
+another verified pair through reviewed desired state.
 
 The retained GHCR packages remain private. Their recovery pull credential is
 covered by the [private-image runbook](../../docs/nofx-private-images.md).

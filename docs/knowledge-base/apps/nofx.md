@@ -15,14 +15,15 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The deployed derivative was published by reviewed main
-revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. Both deployments reference
+The competition rollout targets reviewed main revision
+`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`. Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
 [PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036) merged at
 `78ca869aae86c7cd94b6c725bec59f68b032c6b5`. Subsequent Argo CD inspection showed
-`Synced` and `Healthy` at that revision, with both exact pinned Harbor images
-ready `1/1`. Both packages remain private.
+`Synced` and `Healthy` at that revision, with both earlier `f76c278` Harbor images
+ready `1/1`. Verify the new running digests separately before accepting the
+competition rollout. Both packages remain private.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -131,9 +132,9 @@ credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR
 tests/builds with read-only repository permission. Following the Harbor change,
 only current `main` can publish new images to the private Harbor repositories,
 tagged `homelab-<full-main-sha>`; manual dispatch requires that exact SHA.
-The workflow reports digests after pushing. The functional repair uses the same
-published artifacts after their verified Harbor migration, with the namespace's
-`harbor-pull` Secret. See [[../operations/harbor-oci]].
+The workflow reports digests after pushing. The initial functional repair used
+the migrated artifacts; subsequent releases publish directly to Harbor and use
+the same namespace-scoped `harbor-pull` Secret. See [[../operations/harbor-oci]].
 The reviewed source repair merged in
 [PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
 [publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
@@ -141,7 +142,7 @@ passed. Both anonymous pull checks returned HTTP 401 on September 14. Package
 visibility must remain private. Credential bootstrap
 [PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031), main `0b352ebd`,
 retained upstream images and left the GHCR recovery Secret unattached. The
-maintained deployment now selects the same digests from Harbor after the
+initial maintained rollout selected the same digests from Harbor after the
 successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550).
 The rollout was verified with `harbor-pull` ExternalSecret readiness, both
 running Harbor digests, and the live trader stopped. Complete simulation
@@ -175,27 +176,32 @@ it does not contact SSM or use the production token.
 
 The [agent competition runbook](../../nofx-agent-competition.md) defines three
 isolated historical competitors with equal virtual balances, costs, and market
-data. The pinned Backtest Lab has no rendered comparison table; its Completed
-status can conceal failed AI cycles, leverage validation mutates a decision copy,
-and stop-loss/take-profit triggers are not simulated. Require six successful
-decisions and verify every fill's leverage before ranking a round. The runbook
-records the focused follow-up fixes and avoids presenting incomplete runs or
-shared live-account balances as independent competition results.
+data. The competition build adds a factual Backtest Lab comparison table and
+caps leverage on actual fills. Completed still does not prove that all decisions
+succeeded, and stop-loss/take-profit triggers are not simulated. Require six
+successful decisions and verify every fill's leverage before ranking a round.
+The runbook records the failed earlier rounds without presenting them or shared
+live-account balances as independent competition results.
 
 The first observed Trend and Breakout simulations reported Completed with two
 and three failed cycles out of six. Missing JSON caused the parser to synthesize
 an `ALL` wait, which the runner rejected as `price unavailable for ALL` before
-handling the wait action. All three saved prompts now require a valid decision
-array in `<decision>` tags, only the three configured symbols, and an explicit
-real-symbol wait for no action. Fresh-round acceptance remains pending. A runtime
-fix must preserve malformed responses as failures, separately from genuine waits;
-these incomplete runs do not establish a winner.
+handling the wait action. Adding an explicit JSON-array requirement to all three
+saved prompts did not resolve the issue: the second Trend and Breakout runs each
+still failed one of six cycles. These incomplete rounds do not establish a
+winner.
 
-The next maintained build requests strict structured output for historical
+The competition build requests strict structured output for historical
 `openrouter/free` calls to the official OpenRouter API, preserves malformed or
-refused responses as failed cycles, and caps actual simulated leverage. Its
-Backtest Lab comparison table reports recorded outcomes without inferring
-eligibility from Completed. Publication and deployment of that build remain
-separate from the verified `f76c278` deployment above. Also avoid resuming a round
-across a backend restart: the pinned simulator does not persist its loaded saved
-strategy object, so a cold resume can lose the selected persona.
+refused responses as failed cycles, and makes one provider attempt per cycle,
+including transient errors. Fresh live acceptance remains separate from the
+verified earlier deployment: confirm stopped live traders, new running image
+digests, and a complete eligible simulation round. Avoid resuming a round across
+a backend restart: the simulator does not persist its loaded saved strategy
+object, so a cold resume can lose the selected persona.
+
+The pinned `backtest/manager.go` also saves its pre-start `created` metadata
+after launching a runner. Counting only database `running` rows can therefore
+miss a first decision in progress. The rollout runbook combines read-only state
+counts with absence of heartbeat lock files; unknown activity leaves the gate
+closed. A future runtime fix should persist the post-start state consistently.
