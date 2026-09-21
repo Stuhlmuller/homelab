@@ -37,13 +37,14 @@ Live activation remains a user action; no live orders were placed during setup.
 Read-only persisted checks verified `is_running=0` and `show_in_competition=0`
 for all three after using the trader cards' visibility toggles.
 
-Keep the drafts stopped pending runtime verification. In the deployed
-`25bceceb` source, `kernel/engine.go` validates a copied decision, so its live
+Keep the drafts stopped pending runtime verification. In the earlier
+`25bceceb` runtime, `kernel/engine.go` validates a copied decision, so its live
 leverage clamp does not persist. `store/trader.go` also defaults newly created
 traders to visible despite an explicit false value; the card toggles corrected
 the saved drafts. Configured 1x and a creation-form Hide selection alone therefore
-do not prove enforcement or persisted visibility. The maintained source patches
-`0007-live-leverage-cap.patch` and `0008-trader-visibility.patch` fix those shared
+do not prove enforcement or persisted visibility. Reviewed source
+`05fcf60be529c063ae9f5fa16494466c3db0f400` includes patches
+`0007-live-leverage-cap.patch` and `0008-trader-visibility.patch`, which fix those shared
 code paths, with parser and SQLite regression checks in the backend build.
 `0009-okx-leverage-failure.patch` reads current OKX cross-margin leverage,
 skips writes when it already matches, and otherwise sends one instrument-level
@@ -51,8 +52,11 @@ request. Invalid lookup data or failed leverage requests stop openings before
 canceling existing orders; mocked transport checks cover both directions. Previously,
 leverage API errors were logged and trading continued.
 The visibility migration removes the old column default while preserving saved
-values; omitted API visibility still defaults to true. Roll out verified new
-images before relying on these fixes. Arena's separate
+values; omitted API visibility still defaults to true. Follow the
+[runtime acceptance checks](nofx-private-images.md#harbor-runtime-acceptance)
+before relying on these fixes; `deployment.yaml` owns the desired image pair.
+After restart, reload the UI and verify all three drafts remain stopped and
+hidden. Arena's separate
 `ExecuteConsensus` to `ExecuteDecision` path bypasses the shared validator and
 is not used by these drafts.
 
@@ -156,7 +160,7 @@ must be checked against the six expected cycles. Read each run's Overview,
 Trades, Positions, and Decisions before ranking. Do not publish private account
 balances through the live Competition page to imitate a simulation scoreboard.
 
-These features require the competition build from reviewed source
+The earlier competition features shipped in reviewed source
 `25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`, deployed by
 [PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052). Read-only inspection
 on 2026-09-20 found Argo CD Synced/Healthy at

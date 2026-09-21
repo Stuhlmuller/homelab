@@ -15,10 +15,13 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The competition rollout uses reviewed main revision
-`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`. Both deployments reference
+The shared-account rollout targets reviewed source revision
+`05fcf60be529c063ae9f5fa16494466c3db0f400`; `deployment.yaml` declares the desired
+image pair. Publication and runtime acceptance remain separate gates.
+Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
+The earlier `25bceceb` rollout in
 [PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052) merged at
 `047d26f088b6733dcd8b9c48dcec9cdca393c10f`. Read-only inspection on 2026-09-20
 showed Argo CD `Synced` and `Healthy`, both deployments ready `1/1`, and running
@@ -185,14 +188,15 @@ rollout. The user-selected live setup saves Trend, Mean Reversion, and Breakout
 as stopped traders on the same existing OKX connection and `openrouter/free`,
 with separate private `Live - <persona>` strategies configured for 1x leverage.
 Read-only persisted checks confirmed all three stopped and hidden after using
-the trader cards' visibility toggles. The runbook records pending runtime
-verification: live decision validation loses its leverage clamp, and trader
-creation can override explicit hidden visibility. Source patches `0007` and
-`0008` fix both paths with focused backend build regressions. Patch `0009`
+the trader cards' visibility toggles. In the earlier `25bceceb` runtime, decision
+validation loses its leverage clamp and trader creation can override explicit
+hidden visibility. Source `05fcf60` patches `0007` and `0008` fix both paths with
+focused backend build regressions. Patch `0009`
 also checks current OKX cross-margin leverage, skips matching settings, and uses
 one instrument-level update when needed. Leverage errors stop openings before
-canceling existing orders, with a mocked transport regression. New image
-publication and rollout remain required. Sharing an account is supported, but
+canceling existing orders, with a mocked transport regression. Verify exact
+published digests, source patches, and persisted stopped/hidden flags after
+rollout before accepting the runtime. Sharing an account is supported, but
 also shares positions and account-level returns; Initial Balance does not reserve
 capital. Separate funded accounts or
 subaccounts are needed only for independent live balances and P&L. The runbook
