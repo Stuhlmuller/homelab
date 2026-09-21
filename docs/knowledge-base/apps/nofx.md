@@ -15,15 +15,20 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The startup-error rollout targets build revision
-`9716e9d9121a062029c72dc5f03f0d266a166650`, retaining the NOFX source fix from
-[PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056), merged at
-`1c826acdbb16af08cf879ee5fcf4871a0307b45d`.
-[Publication run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
-passed publication and private pull verification. `deployment.yaml` declares
-the verified image pair; publication and runtime acceptance remain separate
-gates. Require the exact build revision,
-patches `0007`–`0010`, and all three drafts stopped and hidden after restart.
+The US connection and dashboard rollout targets source revision
+`689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
+[PR #1066](https://github.com/Stuhlmuller/homelab/pull/1066).
+[Publication run 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
+passed publication and private pull verification.
+`deployment.yaml` owns the image pair. Require the exact build revision,
+patches `0007`–`0011`, and read-only authenticated dashboard checks after
+rollout. All traders must remain stopped and the three drafts hidden.
+Publication alone does not establish authentication, spot support, or
+independent returns.
+The prior startup-error build `9716e9d9121a062029c72dc5f03f0d266a166650` from
+successful
+[run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+remains recovery history; it uses global-host routing.
 Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
@@ -245,8 +250,29 @@ Mocked handler tests reproduce the original 404, verify all ten runtime readers,
 and cover stopped successful reads, ownership, failed initialization, and the
 public history route.
 Transport tests cover signed US GET/POST requests; Axios tests cover error display.
-Publication and live acceptance remain pending; no trader was activated. The
-regional host does not add US spot support or make USDT perpetuals available.
+Publication passed; live acceptance remains pending. No trader was activated.
+After rollout, freshly verify every persisted trader is stopped before using
+**AI Traders → View**; runtime loading can auto-start saved running traders.
+Read-only account/positions requests must return 200 on successful exchange
+reads, or safe `503 TRADER_UNAVAILABLE` guidance when initialization fails.
+The latter leaves authentication unresolved. Recheck all traders stopped and
+the three drafts hidden afterward; never use Start as an authentication test.
+The regional host does not add US spot support or make USDT perpetuals
+available.
+
+The remaining US execution gap is concrete: in the
+[pinned OKX adapter](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go),
+`convertSymbol` creates `*-USDT-SWAP` IDs and `GetPositions` requests `SWAP`.
+It has no cash spot-order path. Shared-account ownership also needs an execution
+design: `CancelAllOrders` selects every pending order for an instrument, while
+`CloseLong`/`CloseShort` use the account's aggregate position. These paths do
+not isolate the three personas' orders or inventory. Before live competition,
+add a US-supported spot executor with per-persona order/inventory accounting and
+enforced shared exposure limits, then test that one persona cannot cancel or
+close another's allocation. The
+[competition runbook](../../nofx-agent-competition.md#one-okx-account) records
+why shared account equity and Initial Balance cannot establish independent
+returns; this rollout does not resolve that gap.
 
 During this trace, `handleOrderFills` was also found to query fills by order ID
 without checking that the order belongs to the resolved trader. The shared

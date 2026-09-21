@@ -110,18 +110,24 @@ closed even when static checks pass.
 
 ## Harbor runtime acceptance
 
-The startup-error rollout targets build revision
-`9716e9d9121a062029c72dc5f03f0d266a166650`, retaining the NOFX source fix from
-[PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056), merged at
-`1c826acdbb16af08cf879ee5fcf4871a0307b45d`.
-[NOFX Images run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
-passed publication and private pull verification; both manifest references come
-from its verified digest report.
-Patch `0010` provides safe guidance for known OKX `50119` startup failures and
-preserves that message in the UI. The shared constructor propagates account-config
-errors through all four callers, including when a saved balance skips a later
-balance lookup. This changes no endpoint, credential, or exchange product.
-Actual OKX authentication remains unresolved pending account-region confirmation.
+The US connection and dashboard rollout targets source revision
+`689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
+[PR #1066](https://github.com/Stuhlmuller/homelab/pull/1066).
+[NOFX Images run 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
+passed publication and private pull verification. Both manifest references
+come from its verified digest report.
+Patch `0011` routes signed REST calls through `us.okx.com` for the confirmed US
+account and distinguishes unavailable owned traders from missing/foreign IDs.
+It preserves database-only equity history and shows safe dashboard guidance.
+This changes no credential and adds neither spot execution nor independent
+agent returns. Live authentication still requires read-only runtime
+verification.
+
+The prior startup-error build `9716e9d9121a062029c72dc5f03f0d266a166650` from
+[run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+passed publication and private pull verification. Retain it as recovery history.
+Its patch `0010` rejects failed account-config reads even with a saved balance
+and displays known `50119` guidance, but still uses the global OKX host.
 
 The previous shared-account rollout used source
 `05fcf60be529c063ae9f5fa16494466c3db0f400`, merged in
@@ -183,12 +189,21 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0010`
-in the source download and confirm all three shared-account drafts remain
-stopped and hidden after restart. Reproduce parser, visibility-migration, and
-OKX transport/startup-error checks through the image test target, without live
-orders. Startup-error guidance does not establish successful OKX authentication
-or product eligibility. For a fresh
+[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0011`
+in the source download and confirm all traders remain stopped and the three
+shared-account drafts remain hidden after restart. Reload the authenticated UI
+only after a fresh persisted stopped-state check, because runtime loading can
+auto-start saved running traders. Select **AI Traders → View** and inspect its
+read-only account/positions requests. Require HTTP 200 from successful exchange
+reads; a safe `503 TRADER_UNAVAILABLE` verifies
+error handling but leaves authentication unresolved. Missing/foreign IDs must
+remain 404. Recheck all traders stopped afterward. Do not press Start or replace
+failed reads with empty successes.
+Reproduce parser, visibility-migration, startup, signed US transport, dashboard
+ownership, public-history, and Axios regressions through the image test target.
+These checks use mocks and place no live orders. Successful authentication does
+not add US spot support, product eligibility, or independent agent returns.
+For a fresh
 [simulation comparison](nofx-agent-competition.md), all expected decisions
 must pass before scoring; publication and Pod readiness do not establish a valid
 competition result. Live activation remains a user action.
@@ -215,7 +230,9 @@ configuration, command responses, or parameter values to diagnose it.
 
 If startup or functional acceptance fails, restore the prior reviewed Harbor
 backend/frontend pair through a PR, retaining `harbor-pull`, the PVC, and the
-working-directory configuration. The initial `f76c278` pair is recorded in
+working-directory configuration. The prior `9716e9d9` pair retains the startup
+error guidance but restores global-host routing and the old dashboard lookup.
+The initial `f76c278` pair is recorded in
 [PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036); restoring it also
 restores its structured-output and leverage limitations. A GHCR recovery must
 switch both references and their pull Secret together using the gates above.

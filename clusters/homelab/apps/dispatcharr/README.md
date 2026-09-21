@@ -3,6 +3,21 @@
 Dispatcharr runs in the `media` namespace as an Octelium-protected IPTV and EPG
 manager at `https://dispatcharr.stinkyboi.com`.
 
+## Capacity suspension
+
+Dispatcharr and its dedicated PostgreSQL StatefulSet are suspended at zero
+replicas to release 1.875 GiB of memory requests. Argo CD stops the app in wave
+`-3` before PostgreSQL in wave `-1`. Both PVCs remain; PostgreSQL explicitly
+retains its claim on scale-down and deletion. The hostname is unavailable while
+suspended, and ephemeral Redis queues are cleared.
+
+After GitOps sync, verify no Dispatcharr Pods remain and both the `dispatcharr`
+and `data-dispatcharr-postgres-0` PVCs remain `Bound` in `media`. To resume,
+restore both replica counts to one and remove the app's suspension sync-wave
+annotation in `values.yaml`; the database must start before the app. Render
+the pinned app-template chart and the Kustomization, then verify database/app
+readiness after Argo CD reconciles. Recheck memory capacity before resuming.
+
 ## Runtime Shape
 
 - Image: `ghcr.io/dispatcharr/dispatcharr`
