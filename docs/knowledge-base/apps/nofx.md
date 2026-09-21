@@ -274,9 +274,17 @@ Credential diagnosis found a possible masking defect in pinned
 and returns the original ciphertext. `manager/trader_manager.go` passes those
 values into the exchange client, so decryption failure can resemble an invalid
 OKX key. Initialization order and field mapping are correct. This is not yet
-proven to cause the live rejection. Next, verify decryption and nonempty fields
-using booleans only, without exposing credentials; make scanning fail closed
-with a focused regression if confirmed. Successful decryption instead requires
+proven to cause the live rejection. The repository-owned
+[`nofx-credential-check.sh`](../../../scripts/nofx-credential-check.sh) compares
+the deployed encryption source and dependencies, then inspects the fixed SQLite
+database read-only inside the existing backend. Its temporary executable reports
+aggregate counters only; no credential material leaves the container. Synthetic
+tests cover successful, corrupt, wrong-key, legacy, empty, nested, and whitespace
+values and verify rejected writes with unchanged fixture bytes. See the
+[operator commands](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis).
+If decryption failure is confirmed, make scanning fail closed while retaining
+the UI's credential-replacement path; the current full-record list would otherwise
+fail before its safe metadata projection. Successful decryption instead requires
 checking the saved key's account and live/demo status in OKX and NOFX. Do not
 infer that another regional host or credential rotation is the required fix.
 
