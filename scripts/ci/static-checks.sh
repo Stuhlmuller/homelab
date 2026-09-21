@@ -18,6 +18,8 @@ python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 scripts/ci/istio-ambient-log-check-test.py
+python3 scripts/ci/istio-ambient-probe-check.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
