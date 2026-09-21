@@ -13,6 +13,14 @@ is reserved for the operator. Incoming identity labels are replaced with the
 authenticated app name in Langfuse `userId`, trace name, metadata and `app:*`
 tags. A caller's session ID is retained.
 
+The `openrouter/free` alias preserves NOFX's current provider model. Its
+maintained client can forward the original provider key separately from its
+gateway bearer key. The pre-call hook removes credentials from LiteLLM's saved
+request copy before telemetry; INFO logging and disabled raw-request capture
+are required. The provider client still needs the original key in memory.
+Verify new callbacks against the credential-marker regression before enabling
+them; never serialize the full inference argument dictionary.
+
 In Langfuse, filter by `app:nofx` (or another app), inspect traces for prompts,
 responses and failures, and group token usage by user. Provider-reported token
 counts and price availability determine token/cost completeness; subscription

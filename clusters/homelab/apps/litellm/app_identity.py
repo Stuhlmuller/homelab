@@ -53,10 +53,19 @@ class AppAttribution(CustomLogger):
             raise HTTPException(400, "metadata must be an object")
         metadata.update(trace_user_id=app, trace_name=app, tags=[f"app:{app}"],
                         trace_metadata={"app": app})
+        # LiteLLM snapshots the inbound body before this hook. Provider keys
+        # forwarded by apps must survive for inference, but never in that log copy.
+        snapshot = data.get("proxy_server_request", {})
+        body = snapshot.get("body", {})
+        if isinstance(body, dict):
+            for key in ("api_key", "aws_access_key_id", "aws_secret_access_key", "aws_session_token"):
+                body.pop(key, None)
         # LiteLLM's Langfuse integration lets these headers override metadata.
-        headers = data.get("proxy_server_request", {}).get("headers", {})
+        headers = snapshot.get("headers", {})
         for key in list(headers):
-            if key.lower().startswith("langfuse_"):
+            if key.lower().startswith("langfuse_") or key.lower() in {
+                "authorization", "x-api-key", "x-litellm-api-key", "api-key",
+            }:
                 del headers[key]
         return data
 

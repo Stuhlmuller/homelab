@@ -29,6 +29,7 @@ fixture = {
                             "modelPolicy": {"allow": ["openai/gpt-5.5"]}}},
     "skills": {"allowBundled": ["existing-skill"],
                "entries": {"existing-skill": {"enabled": False}, "gog": {"enabled": False}}},
+    "plugins": {"allow": ["discord"]},
     "channels": {"discord": {"enabled": True, "allowFrom": ["123456789012345678"],
                              "token": {"source": "env", "provider": "default", "id": "TOKEN"}}},
 }
@@ -47,6 +48,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert result["skills"]["allowBundled"] == ["existing-skill", "gog"]
     assert result["skills"]["entries"]["existing-skill"] == {"enabled": False}
     assert result["skills"]["entries"]["gog"] == {"enabled": True}
+    assert result["plugins"]["allow"] == ["discord", "diagnostics-otel"]
     assert result["channels"] == fixture["channels"]
     assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
         "openai/gpt-5.5", "openai/gpt-6-astra"]

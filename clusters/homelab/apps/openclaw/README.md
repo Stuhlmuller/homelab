@@ -74,6 +74,50 @@ per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
 plugin is installed and checked at the exact gateway version during bootstrap.
 
+### Langfuse direct telemetry
+
+OpenClaw remains on the ChatGPT/Codex OAuth transport; it is not routed through
+LiteLLM. The configured LiteLLM upstream API key is not a valid replacement for
+that subscription route. This is therefore a telemetry-only integration and a
+known gateway-routing gap.
+
+Bootstrap installs the official `@openclaw/diagnostics-otel` package at the
+exact OpenClaw image version and verifies the installed package before enabling
+it. The exporter sends OTLP/HTTP protobuf **traces** to Langfuse at
+`/api/public/otel`, with the Langfuse v4 real-time-ingestion header. Its Basic
+authorization value is rendered by External Secrets from the Langfuse project
+public and secret keys; neither key is committed or persisted in OpenClaw's
+configuration. `service.name` is `openclaw`, which identifies this app in the
+[Langfuse trace metadata](https://langfuse.com/integrations/native/opentelemetry).
+The supported exporter contract is documented in [OpenClaw's OpenTelemetry
+guide](https://docs.openclaw.ai/gateway/opentelemetry).
+
+`captureContent` is enabled because this project needs prompt and response
+inspection. OpenClaw bounds and redacts captured messages, excludes system and
+provider-internal thinking, and does not capture external Codex tool-call
+content. The plugin emits `gen_ai.usage.*` only when the Codex app-server result
+exposes usage. Codex runs are opaque turn-level spans, so Langfuse traces and
+content are expected, but exact per-request tokens or cost are not guaranteed.
+The native exporter has no supported way to set Langfuse user, session, or tag
+attributes, and Langfuse does not advertise OTLP metrics or log ingestion at
+this endpoint. Do not treat direct telemetry as proof of complete gateway
+attribution.
+
+After rollout and one real OpenClaw turn, verify the exporter without exposing
+its header:
+
+```sh
+kubectl -n ai exec deploy/openclaw -c app -- \
+  openclaw plugins inspect diagnostics-otel --runtime --json
+kubectl -n ai exec deploy/openclaw -c app -- openclaw status --all
+```
+
+Confirm Langfuse shows `service.name: openclaw`, a model-call/generation span,
+and prompt/output content as appropriate. On a Langfuse project-key rotation,
+bump both `openclaw-langfuse-otel`'s generated-secret revision and
+`homelab.rst.io/openclaw-langfuse-project-keys-ssm-version` so the ExternalSecret
+refreshes and the Pod receives the replacement header.
+
 The behavior is conversational and evidence-driven: remember corrections,
 follow through on requested work, keep unchanged checks silent, and report
 what was actually validated or deployed. Existing owner authorization for

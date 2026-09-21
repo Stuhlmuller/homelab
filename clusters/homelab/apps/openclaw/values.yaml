@@ -26,11 +26,12 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "56b8e7e5543910ba48110a49d444063be647526ccd9b92bdc6e783976fbe2cb5"
+        homelab.rst.io/openclaw-assistant-sha256: "59290ed25c9fcf2b8f19d3920a67a751bf63fe552f0fade91822d03108dd1ac3"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
+        homelab.rst.io/openclaw-langfuse-project-keys-ssm-version: "1"
     initContainers:
       00-operator-toolbox:
         image:
@@ -186,6 +187,11 @@ controllers:
               secretKeyRef:
                 name: openclaw-secrets
                 key: APP_SECRET
+          LANGFUSE_OTEL_AUTHORIZATION:
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-langfuse-otel
+                key: LANGFUSE_OTEL_AUTHORIZATION
           DISCORD_BOT_TOKEN:
             valueFrom:
               secretKeyRef:
@@ -430,6 +436,51 @@ controllers:
               }
             fi
             verify_discord_plugin installed
+
+            verify_diagnostics_otel_plugin() {
+              openclaw plugins inspect diagnostics-otel --runtime --json |
+                python3 -c '
+            import json
+            import pathlib
+            import sys
+
+            expected_version, expected_status = sys.argv[1:]
+            report = json.load(sys.stdin)
+            plugin = report["plugin"]
+            install = report.get("install") or {}
+            root = pathlib.Path(plugin["rootDir"])
+            package = json.loads((root / "package.json").read_text())
+            valid = (
+                plugin.get("id") == "diagnostics-otel"
+                and plugin.get("origin") == "global"
+                and install.get("source") == "npm"
+                and install.get("spec") == f"@openclaw/diagnostics-otel@{expected_version}"
+                and install.get("version") == expected_version
+                and package.get("name") == "@openclaw/diagnostics-otel"
+                and package.get("version") == expected_version
+                and (expected_status != "loaded" or plugin.get("status") == "loaded")
+            )
+            valid or sys.exit("OpenTelemetry external runtime verification failed")
+            ' "$openclaw_version" "$1"
+            }
+            if ! verify_diagnostics_otel_plugin installed; then
+              otel_installed=false
+              for delay in 0 5 15 30; do
+                [ "$delay" -eq 0 ] || sleep "$delay"
+                echo "Installing OpenTelemetry diagnostics plugin (retry delay ${delay}s)"
+                if openclaw plugins install \
+                  "npm:@openclaw/diagnostics-otel@${openclaw_version}" \
+                  --pin --force --accept-capabilities; then
+                  otel_installed=true
+                  break
+                fi
+              done
+              "$otel_installed" || {
+                echo "Exact OpenTelemetry diagnostics plugin install failed after bounded retries" >&2
+                exit 1
+              }
+            fi
+            verify_diagnostics_otel_plugin installed
             python3 /etc/openclaw-assistant/install-codex.py
 
             session_sqlite() {
@@ -604,6 +655,10 @@ controllers:
             python3 /etc/openclaw-assistant/bootstrap.py
             openclaw config validate
 
+            openclaw plugins enable diagnostics-otel --accept-capabilities
+            verify_diagnostics_otel_plugin loaded
+            openclaw config validate
+
             openclaw config set --strict-json \
               agents.defaults.sandbox.mode \
               '"off"'
@@ -693,6 +748,11 @@ controllers:
               secretKeyRef:
                 name: openclaw-secrets
                 key: APP_SECRET
+          LANGFUSE_OTEL_AUTHORIZATION:
+            valueFrom:
+              secretKeyRef:
+                name: openclaw-langfuse-otel
+                key: LANGFUSE_OTEL_AUTHORIZATION
           GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
           LITELLM_TOKEN:

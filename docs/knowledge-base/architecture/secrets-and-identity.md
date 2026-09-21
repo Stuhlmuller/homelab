@@ -267,12 +267,18 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `/homelab/langfuse/`. The `langfuse-secrets` ExternalSecret materializes them
   only in the `langfuse` namespace. `IaC/live/langfuse-blob-storage` creates
   the distinct S3 runtime credential pair there; LiteLLM receives only the two
-  project ingestion keys for callback tracing.
+  project ingestion keys for callback tracing. OpenClaw's separate
+  `openclaw-langfuse-otel` ExternalSecret renders those same two project keys
+  into native OTLP Basic authentication; it receives no datastore or operator
+  credentials. The exact-version diagnostics plugin preserves ChatGPT OAuth
+  provider access. This telemetry route does not imply complete token usage.
 - LiteLLM app keys are distinct generated `/homelab/<app>/litellm-token`
   parameters for OpenClaw, NOFX, n8n and Multica. The gateway reads mounted
   Secret files, restricts app keys to inference/model discovery, and attaches
   authenticated app identity to Langfuse traces. OpenClaw's former alias of the
-  master key is replaced with its own key. This declaration alone does not
+  master key is replaced with its own key; the `openclaw-secrets` revision is
+  bumped so its OnChange refresh actually picks up that rotation.
+  This declaration alone does not
   migrate app runtime traffic; see the
   [gateway contract](../../../clusters/homelab/apps/litellm/README.md).
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile

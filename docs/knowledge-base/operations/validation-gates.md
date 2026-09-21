@@ -148,6 +148,14 @@ rg -n \
 
 ## Kubernetes Source Checks
 
+AI routing requires both the source gates and per-caller live evidence in
+[[../architecture/ai-observability]]. Run
+`scripts/ci/litellm-attribution-check.py` in the pinned LiteLLM 1.80.8 environment
+to verify auth, token attributes and credential redaction; the `validate`
+workflow also runs it against that SDK version. Confirm actual
+Langfuse generations after rollout; a Ready Secret may still contain a provider
+placeholder and direct Codex OAuth may omit usage fields.
+
 Use the renderer that matches the changed source:
 
 ```sh

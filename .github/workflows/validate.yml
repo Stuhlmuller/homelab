@@ -46,5 +46,12 @@ jobs:
       - name: Check whitespace
         run: git diff --check
 
+      - name: Verify LiteLLM Authentication And Attribution
+        run: |
+          nix develop --command python3 -m venv "${RUNNER_TEMP}/litellm-test"
+          source "${RUNNER_TEMP}/litellm-test/bin/activate"
+          python -m pip install 'litellm[proxy]==1.80.8'
+          python scripts/ci/litellm-attribution-check.py
+
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh

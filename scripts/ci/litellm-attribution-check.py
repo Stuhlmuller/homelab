@@ -2,6 +2,7 @@
 
 import asyncio
 import importlib.util
+import json
 from pathlib import Path
 import shutil
 import tempfile
@@ -11,6 +12,8 @@ from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
 from litellm.proxy.types_utils.utils import get_instance_fn
 
 ROOT = Path(__file__).resolve().parents[2]
+assert "tag: main-v1.80.8-stable@" in (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text(), \
+    "Update the attribution check and CI dependency when changing the gateway version"
 spec = importlib.util.spec_from_file_location(
     "app_identity", ROOT / "clusters/homelab/apps/litellm/app_identity.py"
 )
@@ -50,9 +53,14 @@ async def check():
                 await denied(identity.authenticate(request(path), token), 403)
             await denied(identity.authenticate(request("/v1/models", "DELETE"), token), 403)
             for call_type, metadata_key in (("acompletion", "metadata"), ("aresponses", "litellm_metadata")):
+                marker = "test-provider-key-must-not-be-exported"
                 data = {
+                    "api_key": marker,
                     metadata_key: {"trace_user_id": "spoofed", "session_id": "session-1"},
-                    "proxy_server_request": {"headers": {"langfuse_trace_user_id": "spoofed"}},
+                    "proxy_server_request": {
+                        "headers": {"langfuse_trace_user_id": "spoofed", "authorization": marker},
+                        "body": {"api_key": marker},
+                    },
                 }
                 result = await identity.attribution.async_pre_call_hook(user, None, data, call_type)
                 metadata = result[metadata_key]
@@ -63,6 +71,30 @@ async def check():
                 assert exported["trace_user_id"] == app
                 assert exported["trace_metadata"] == {"app": app}
                 assert exported["tags"] == [f"app:{app}"]
+                assert result["api_key"] == marker, "Provider auth must survive for inference"
+                assert marker not in json.dumps(result["proxy_server_request"])
+                class Span:
+                    def __init__(self):
+                        self.attributes = {}
+                    def set_attribute(self, key, value):
+                        self.attributes[key] = value
+                    def record_exception(self, error):
+                        raise AssertionError("Langfuse exporter failed") from error
+                span = Span()
+                response = {"choices": [{"message": {"role": "assistant", "content": "OK"}}],
+                            "usage": {"prompt_tokens": 8, "completion_tokens": 1, "total_tokens": 9}}
+                LangfuseOtelLogger.set_langfuse_otel_attributes(span, {
+                    "model": "test", "messages": [{"role": "user", "content": "Reply OK"}],
+                    "standard_logging_object": {"call_type": call_type, "metadata": metadata,
+                                                "model_parameters": {}},
+                    "litellm_params": {"api_key": marker, "metadata": metadata,
+                                       "proxy_server_request": result["proxy_server_request"]},
+                }, response)
+                assert marker not in json.dumps(span.attributes)
+                assert "Reply OK" in json.dumps(span.attributes)
+                assert "OK" in json.dumps(span.attributes)
+                assert span.attributes["llm.token_count.prompt"] == 8
+                assert span.attributes["llm.token_count.completion"] == 1
             await denied(identity.attribution.async_pre_call_hook(user, None, {"no-log": True}, "acompletion"), 400)
         await denied(identity.authenticate(request(), "wrong"), 401)
         await denied(identity.authenticate(request(), None), 401)
