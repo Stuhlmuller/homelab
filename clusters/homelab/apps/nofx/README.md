@@ -68,8 +68,8 @@ upstream commit
 [source.json](../../../../builds/nofx/source.json) pins the source archive and
 checksum; both Dockerfiles pin their builder and runtime images by digest.
 The preparation script applies the committed patches before Docker builds
-either runtime. The source includes the following repairs; the shared-account
-fixes target build `05fcf60be529c063ae9f5fa16494466c3db0f400` and require the
+either runtime. The source includes the following repairs; the startup-error
+rollout targets build `9716e9d9121a062029c72dc5f03f0d266a166650` and requires the
 publication and rollout acceptance below:
 
 - Key-preserving model edits without submitted-credential logging or trader
@@ -91,6 +91,8 @@ publication and rollout acceptance below:
   explicit hidden visibility when creating traders, including existing databases.
 - OKX cross-margin leverage lookup before openings, one update only when needed,
   and rejection of openings before order cancellation if lookup or update fails.
+- Failed OKX account-config reads block initialization even with a saved balance.
+  Known `50119` startup errors reach the UI as fixed account/region guidance.
 - A footer download at `/nofx-source.tar.gz` containing the patched upstream,
   license, lock files, patches, and build recipe under AGPL-3.0.
 
@@ -103,7 +105,8 @@ bash builds/nofx/build.sh
 
 The test target reproduces excess leverage in parsed decisions, explicit hidden
 trader creation against a legacy SQLite schema, and OKX leverage lookup/update
-failures with a mocked transport. These checks place no real exchange orders.
+failures with a mocked transport. Startup regressions cover zero/nonzero saved
+balances and the visible error toast. These checks place no real exchange orders.
 
 The [NOFX Images workflow](../../../../.github/workflows/nofx-images.yml) runs
 these commands on pull requests without publishing credentials. After tests
@@ -124,9 +127,10 @@ it as recovery history. [deployment.yaml](deployment.yaml) declares the current
 desired image references. Both deployments use `harbor-pull` only through
 `imagePullSecrets`; the kubelet credential never enters NOFX containers.
 
-The shared-account image-pin rollout targets
-[build 35551197231](https://github.com/Stuhlmuller/homelab/actions/runs/35551197231)
-from source `05fcf60be529c063ae9f5fa16494466c3db0f400`. Publication and private pull
+The startup-error image-pin rollout targets
+[build 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+at revision `9716e9d9121a062029c72dc5f03f0d266a166650`, including the source fix
+from [PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056). Publication and private pull
 verification passed; the manifest pins both references from its digest artifact.
 Before merge, also require a healthy `harbor-pull`
 ExternalSecret and a fresh authenticated check that all live traders are
@@ -142,9 +146,11 @@ Retain the PVC, absolute command, working directory, and read-only root. After
 Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expected
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
-source download matches the deployed revision, including patches `0007`–`0009`.
+source download matches the deployed revision, including patches `0007`–`0010`.
 Reload the UI and verify the three shared-account drafts remain stopped and hidden after
-restart. Keep activation manual. For historical workflow changes, also run a
+restart. The startup repair changes no credentials, regional routing, or products;
+actual OKX authentication remains unresolved pending account-region confirmation.
+Keep activation manual. For historical workflow changes, also run a
 fresh short OKX-backed simulation:
 inspect valid structured decisions and actual fill leverage, and confirm the
 selected-run table shows recorded successes/failures and missing data accurately.
