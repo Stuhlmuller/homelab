@@ -15,9 +15,15 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The shared-account rollout targets reviewed source revision
-`05fcf60be529c063ae9f5fa16494466c3db0f400`; `deployment.yaml` declares the desired
-image pair. Publication and runtime acceptance remain separate gates.
+The startup-error rollout targets build revision
+`9716e9d9121a062029c72dc5f03f0d266a166650`, retaining the NOFX source fix from
+[PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056), merged at
+`1c826acdbb16af08cf879ee5fcf4871a0307b45d`.
+[Publication run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+passed publication and private pull verification. `deployment.yaml` declares
+the verified image pair; publication and runtime acceptance remain separate
+gates. Require the exact build revision,
+patches `0007`–`0010`, and all three drafts stopped and hidden after restart.
 Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
@@ -219,12 +225,13 @@ Patch `0010` returns fixed HTTP 400 guidance for the known OKX `50119` load
 failure and carries that message through the Start toast. Unknown server errors
 remain generic. It also propagates account-config lookup failures from the shared
 OKX constructor instead of assuming hedge mode. This blocks initialization even
-when a saved Initial Balance skips the later balance lookup. All constructor
+when a saved Initial Balance skips the later balance lookup. All four constructor
 callers use their existing error paths. Handler and UI regressions use mocked
 exchange/API responses; they verify stopped state with zero and nonzero saved
 balances and error visibility, not live authentication. This
-repair does not change the endpoint or credentials. Correct routing and product
-compatibility still require the account region and read-only validation.
+repair does not change the endpoint, credentials, or exchange product. Actual
+OKX authentication remains unresolved; correct routing and product compatibility
+still require the account region and read-only validation.
 
 The unused Arena consensus execution path bypasses the shared decision validator;
 do not infer its leverage enforcement from the normal trader fix. A separate
