@@ -38,6 +38,13 @@ Kustomize registration, the chart-default replacement switch, and matching
 15-day retention. Live rollout must leave one healthy `KubeJobFailed` rule;
 see `clusters/homelab/apps/prometheus/README.md` for verification and rollback.
 
+The static gate also runs `scripts/ci/memory-overcommit-check.py` against the
+repository-owned `KubeMemoryOvercommit` rule. It checks the accepted non-HA
+total-capacity threshold, the 10-minute hold, recovery, cluster isolation, and
+replacement registration. Live rollout must leave one healthy rule in
+`homelab.memory` and no alert while requests fit total allocatable capacity.
+See `clusters/homelab/apps/prometheus/README.md#memory-capacity-policy`.
+
 Operator-owned AWS bootstrap units require a focused backend-free validation
 and an administrator-authenticated plan before apply:
 
