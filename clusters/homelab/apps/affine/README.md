@@ -7,6 +7,25 @@ to the Istio gateway. AFFiNE owns end-user authentication. This exception to
 the normal clientless-login boundary is required because stock AFFiNE Desktop
 must reach `/graphql`, auth endpoints, blobs, and Socket.IO directly.
 
+## Capacity suspension
+
+AFFiNE, PostgreSQL, and Redis are suspended at zero replicas to release
+1.625 GiB of memory requests. Argo CD stops AFFiNE in wave `-3` before its
+databases in wave `0`. All four PVCs remain; both StatefulSets explicitly
+retain claims on scale-down and deletion. The hostname and desktop sync are
+unavailable while suspended. Redis remains ephemeral, so queued work is lost.
+
+After GitOps sync, verify no Pods remain in `affine` and all four PVCs remain
+`Bound`. The Octelium end-to-end check skips AFFiNE application probes only
+while the repository declares zero replicas, and the Grafana PostgreSQL rule
+excludes its intentionally stopped database.
+
+To resume, restore all three replica counts to one, restore the AFFiNE
+Deployment sync wave to `10`, and restore `affine-postgres-0` in the Grafana
+PostgreSQL readiness expression, including its absent-series branch. Render
+the Kustomization, then run the normal validation below after Argo CD
+reconciles. Recheck memory capacity before resuming.
+
 ## Runtime contract
 
 - AFFiNE server: `ghcr.io/toeverything/affine:0.27.0`, one replica on port

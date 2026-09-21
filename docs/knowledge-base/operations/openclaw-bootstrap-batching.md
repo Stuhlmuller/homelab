@@ -63,10 +63,10 @@ Do not manually restart or modify the Pod to shorten the measurement.
 Sources: `clusters/homelab/apps/openclaw/values.yaml`, the app README, and the
 two configuration validation scripts under `scripts/ci/`.
 
-September 11 integration preserves the current 2026.9.2 image, retained local
-runtime storage, interrupted-backup recovery, and doctor ordering. The native
-fixture now requires that exact deployed image version; its new CI run must
-pass before merge. Historical 2026.9.1 evidence does not validate this upgrade.
+The September 11 integration preserved the then-pinned 2026.9.2 image, retained
+local runtime storage, interrupted-backup recovery, and doctor ordering. Its
+native fixture required that exact deployed image version; historical
+2026.9.1 evidence did not validate the 2026.9.2 integration.
 
 The 2026.9.5 integration updates the native gate's exact version, `.mjs` audit
 module lookup, and explicit `agents.entries.main` fixture required by that
