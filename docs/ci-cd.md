@@ -63,10 +63,9 @@ contract for Grafana.
   static and Terragrunt gates. It runs the upstream Super-Linter action with
   `VALIDATE_ALL_CODEBASE=false` and uses workflow concurrency to cancel stale
   lint runs for the same pull request.
-- Policy Bot reads this repository's `.policy.yml` and requires every pull
-  request commit to have a GitHub-verified signature before normal review
-  approval can satisfy the `policy-bot: main` branch protection check. The
-  Codex path accepts only the exact top-level `👍` comment from
+- Policy Bot reads this repository's `.policy.yml`; one of its normal review
+  approvals satisfies the `policy-bot: main` branch protection check. The Codex
+  path accepts only the exact top-level `👍` comment from
   `chatgpt-codex-connector[bot]` that `AGENTS.md` requires after a passing
   review with no P0 or P1 alerts. A later push invalidates that approval, so
   auto-merge remains queued until Policy Bot observes the pass signal for the
