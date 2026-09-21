@@ -17,6 +17,7 @@ python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
@@ -39,6 +40,10 @@ for fixture in scripts/ci/gluetun-image-fixtures/*.sh; do
   sh -n "$fixture"
 done
 python3 -m json.tool scripts/ci/gluetun-image-fixtures/settings.json >/dev/null
+echo "::endgroup::"
+
+echo "::group::Memory overcommit alert"
+python3 -I scripts/ci/memory-overcommit-check.py
 echo "::endgroup::"
 
 echo "::group::Octelium console login redirect"

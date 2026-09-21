@@ -4,7 +4,8 @@ metadata:
   name: affine
   namespace: affine
   annotations:
-    argocd.argoproj.io/sync-wave: "10"
+    # Capacity suspension: stop the app before PostgreSQL and Redis.
+    argocd.argoproj.io/sync-wave: "-3"
     checkov.io/skip1: CKV_K8S_22=AFFiNE needs writable image-managed runtime paths and writes durable blobs/config to retained PVCs.
     checkov.io/skip2: CKV_K8S_40=The upstream AFFiNE self-host image writes under /root/.affine and does not publish a non-root runtime contract.
     checkov.io/skip3: CKV_K8S_43=The image is pinned to an immutable linux-amd64 digest.
@@ -16,7 +17,7 @@ metadata:
     app.kubernetes.io/component: server
     app.kubernetes.io/part-of: homelab-productivity
 spec:
-  replicas: 1
+  replicas: 0
   revisionHistoryLimit: 5
   strategy:
     type: Recreate
