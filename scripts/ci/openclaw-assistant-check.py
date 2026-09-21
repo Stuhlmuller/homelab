@@ -44,6 +44,9 @@ with tempfile.TemporaryDirectory() as directory:
     memory.write_text("Private memory must survive.\n")
     bootstrap.install(BUNDLE, root, config)
     result = json.loads(config.read_text())
+    # Interactive Codex work can exceed ten minutes; background work stays bounded.
+    assert result["agents"]["defaults"]["timeoutSeconds"] == 3600
+    assert result["agents"]["defaults"]["heartbeat"]["timeoutSeconds"] == 600
     assert result["skills"]["allowBundled"] == ["existing-skill", "gog"]
     assert result["skills"]["entries"]["existing-skill"] == {"enabled": False}
     assert result["skills"]["entries"]["gog"] == {"enabled": True}
@@ -85,6 +88,7 @@ for owners in ([], ["*"], ["123456789012345678", "987654321098765432"]):
     except ValueError:
         pass
 jobs = json.loads((BUNDLE / "jobs.json").read_text())
+assert [job["timeoutSeconds"] for job in jobs] == [240, 180, 600]
 keys = set()
 for job in jobs:
     argv = reconcile.command(job, "user:123456789012345678")
@@ -95,6 +99,7 @@ for job in jobs:
     assert "--disabled" not in argv  # Let declarative reconciliation preserve pauses.
     assert "--best-effort-deliver" not in argv  # Delivery failure must remain visible.
     assert argv[argv.index("--model") + 1] == "openai/gpt-6-astra"
+    assert argv[argv.index("--timeout-seconds") + 1] == str(job["timeoutSeconds"])
 
 retired = json.loads((BUNDLE / "retired-jobs.json").read_text())
 existing = [dict(job, enabled=True) for job in retired] + [
