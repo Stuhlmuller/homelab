@@ -1,6 +1,15 @@
 diff --git a/api/server.go b/api/server.go
 --- a/api/server.go
 +++ b/api/server.go
+@@ -600,7 +600,7 @@
+ 				string(exchangeCfg.SecretKey),
+ 			)
+ 		case "okx":
+-			tempTrader = trader.NewOKXTrader(
++			tempTrader, createErr = trader.NewOKXTrader(
+ 				string(exchangeCfg.APIKey),
+ 				string(exchangeCfg.SecretKey),
+ 				string(exchangeCfg.Passphrase),
 @@ -962,6 +962,11 @@
  		}
  		// Check if there's a specific load error
@@ -13,11 +22,113 @@ diff --git a/api/server.go b/api/server.go
  			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load trader: " + loadErr.Error()})
  			return
  		}
+@@ -1144,7 +1149,7 @@
+ 			string(exchangeCfg.SecretKey),
+ 		)
+ 	case "okx":
+-		tempTrader = trader.NewOKXTrader(
++		tempTrader, createErr = trader.NewOKXTrader(
+ 			string(exchangeCfg.APIKey),
+ 			string(exchangeCfg.SecretKey),
+ 			string(exchangeCfg.Passphrase),
+@@ -1296,7 +1301,7 @@
+ 			string(exchangeCfg.SecretKey),
+ 		)
+ 	case "okx":
+-		tempTrader = trader.NewOKXTrader(
++		tempTrader, createErr = trader.NewOKXTrader(
+ 			string(exchangeCfg.APIKey),
+ 			string(exchangeCfg.SecretKey),
+ 			string(exchangeCfg.Passphrase),
+diff --git a/trader/auto_trader.go b/trader/auto_trader.go
+--- a/trader/auto_trader.go
++++ b/trader/auto_trader.go
+@@ -229,7 +229,10 @@
+ 		trader = NewBybitTrader(config.BybitAPIKey, config.BybitSecretKey)
+ 	case "okx":
+ 		logger.Infof("🏦 [%s] Using OKX Futures trading", config.Name)
+-		trader = NewOKXTrader(config.OKXAPIKey, config.OKXSecretKey, config.OKXPassphrase)
++		trader, err = NewOKXTrader(config.OKXAPIKey, config.OKXSecretKey, config.OKXPassphrase)
++		if err != nil {
++			return nil, fmt.Errorf("failed to initialize OKX trader: %w", err)
++		}
+ 	case "bitget":
+ 		logger.Infof("🏦 [%s] Using Bitget Futures trading", config.Name)
+ 		trader = NewBitgetTrader(config.BitgetAPIKey, config.BitgetSecretKey, config.BitgetPassphrase)
+diff --git a/trader/okx_trader.go b/trader/okx_trader.go
+--- a/trader/okx_trader.go
++++ b/trader/okx_trader.go
+@@ -106,7 +106,7 @@
+ }
+ 
+ // NewOKXTrader creates an OKX trader without changing exchange account settings.
+-func NewOKXTrader(apiKey, secretKey, passphrase string) *OKXTrader {
++func NewOKXTrader(apiKey, secretKey, passphrase string) (*OKXTrader, error) {
+ 	// Use default transport which respects system proxy settings
+ 	// OKX requires proxy in China due to DNS pollution
+ 	httpClient := &http.Client{
+@@ -126,12 +126,11 @@
+ 	// Construction also happens for stopped traders during application startup
+ 	// and configuration reloads. Read the existing mode; never switch it here.
+ 	if err := trader.detectPositionMode(); err != nil {
+-		logger.Infof("⚠️ Failed to detect OKX position mode: %v, assuming dual mode", err)
+-		trader.positionMode = "long_short_mode"
++		return nil, err
+ 	}
+ 
+ 	logger.Infof("✓ OKX trader initialized with position mode: %s", trader.positionMode)
+-	return trader
++	return trader, nil
+ }
+ 
+ // detectPositionMode gets current position mode from account config
+diff --git a/trader/okx_initialization_test.go b/trader/okx_initialization_test.go
+--- a/trader/okx_initialization_test.go
++++ b/trader/okx_initialization_test.go
+@@ -16,11 +16,14 @@
+ func TestOKXInitializationOnlyReadsAccountConfig(t *testing.T) {
+ 	for _, test := range []struct {
+ 		name, response, mode string
++		wantErr              bool
+ 	}{
+-		{"net", `{"code":"0","data":[{"posMode":"net_mode"}]}`, "net_mode"},
+-		{"hedge", `{"code":"0","data":[{"posMode":"long_short_mode"}]}`, "long_short_mode"},
+-		{"empty", `{"code":"0","data":[]}`, ""},
+-		{"failed", `{"code":"50113","msg":"fixture rejected","data":[]}`, "long_short_mode"},
++		{"net", `{"code":"0","data":[{"posMode":"net_mode"}]}`, "net_mode", false},
++		{"hedge", `{"code":"0","data":[{"posMode":"long_short_mode"}]}`, "long_short_mode", false},
++		{"empty", `{"code":"0","data":[]}`, "", false},
++		{"malformed", `{"code":"0","data":{}}`, "", true},
++		{"signature-failed", `{"code":"50113","msg":"fixture rejected","data":[]}`, "", true},
++		{"key-failed", `{"code":"50119","msg":"fixture rejected","data":[]}`, "", true},
+ 	} {
+ 		t.Run(test.name, func(t *testing.T) {
+ 			// Intercept the public constructor's transport. No request can leave
+@@ -32,9 +35,18 @@
+ 				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(test.response)), Request: request}, nil
+ 			})
+ 			t.Cleanup(func() { http.DefaultTransport = previous })
+-			trader := NewOKXTrader("fixture-key", "fixture-secret", "fixture-passphrase")
++			trader, err := NewOKXTrader("fixture-key", "fixture-secret", "fixture-passphrase")
+ 			if len(requests) != 1 || requests[0] != "GET /api/v5/account/config" {
+ 				t.Fatalf("constructor must only read account config, got %v", requests)
++			}
++			if test.wantErr {
++				if err == nil || trader != nil {
++					t.Fatalf("invalid account config returned trader=%v err=%v", trader, err)
++				}
++				return
++			}
++			if err != nil || trader == nil {
++				t.Fatalf("valid account config failed: %v", err)
+ 			}
+ 			if trader.positionMode != test.mode {
+ 				t.Fatalf("position mode changed: got %q, want %q", trader.positionMode, test.mode)
 diff --git a/api/start_trader_error_test.go b/api/start_trader_error_test.go
 new file mode 100644
 --- /dev/null
 +++ b/api/start_trader_error_test.go
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,110 @@
 +package api
 +
 +import (
@@ -42,13 +153,16 @@ new file mode 100644
 +
 +func TestStartTraderOKX50119IsActionable(t *testing.T) {
 +	for _, test := range []struct {
-+		code       string
-+		wantStatus int
++		code           string
++		wantStatus     int
++		initialBalance float64
 +	}{
-+		{"50119", http.StatusBadRequest},
-+		{"50113", http.StatusInternalServerError},
++		{"50119", http.StatusBadRequest, 0},
++		{"50119", http.StatusBadRequest, 1000},
++		{"50113", http.StatusInternalServerError, 0},
++		{"50113", http.StatusInternalServerError, 1000},
 +	} {
-+		t.Run(test.code, func(t *testing.T) {
++		t.Run(fmt.Sprintf("%s/balance-%g", test.code, test.initialBalance), func(t *testing.T) {
 +			st := configurationTestStore(t)
 +			const userID = "safety-test"
 +			if err := st.User().Create(&store.User{ID: userID, Email: "fixture@example.invalid", PasswordHash: "fixture"}); err != nil {
@@ -64,7 +178,7 @@ new file mode 100644
 +			if err := st.Strategy().Create(&store.Strategy{ID: "fixture-strategy", UserID: userID, Name: "fixture", Config: `{"coin_source":{"source_type":"static","static_coins":["BTCUSDT"]}}`}); err != nil {
 +				t.Fatal(err)
 +			}
-+			if err := st.Trader().Create(&store.Trader{ID: "fixture-trader", UserID: userID, Name: "fixture", AIModelID: "fixture-model", ExchangeID: exchangeID, StrategyID: "fixture-strategy", InitialBalance: 0, IsRunning: false}); err != nil {
++			if err := st.Trader().Create(&store.Trader{ID: "fixture-trader", UserID: userID, Name: "fixture", AIModelID: "fixture-model", ExchangeID: exchangeID, StrategyID: "fixture-strategy", InitialBalance: test.initialBalance, IsRunning: false}); err != nil {
 +				t.Fatal(err)
 +			}
 +
@@ -79,6 +193,15 @@ new file mode 100644
 +			})
 +			t.Cleanup(func() { http.DefaultTransport = previous })
 +			server := &Server{store: st, traderManager: manager.NewTraderManager()}
++			// Fail before invoking the Start handler if initialization incorrectly
++			// succeeds; even a regressed implementation must never launch Run here.
++			if err := server.traderManager.LoadUserTradersFromStore(st, userID); err != nil {
++				t.Fatal(err)
++			}
++			if _, err := server.traderManager.GetTrader("fixture-trader"); err == nil {
++				t.Fatal("rejected OKX account config loaded a trader; refusing to invoke Start")
++			}
++			requests = nil
 +			response := httptest.NewRecorder()
 +			ctx, _ := gin.CreateTestContext(response)
 +			ctx.Set("user_id", userID)
@@ -96,8 +219,8 @@ new file mode 100644
 +			if _, err := server.traderManager.GetTrader("fixture-trader"); err == nil {
 +				t.Fatal("failed initialization loaded a runnable trader")
 +			}
-+			if len(requests) != 2 {
-+				t.Fatalf("want config and balance reads only, got %v", requests)
++			if len(requests) != 1 || !strings.HasSuffix(requests[0], "/api/v5/account/config") {
++				t.Fatalf("want only failed account-config read, got %v", requests)
 +			}
 +			t.Logf("observed status=%d is_running=%v requests=%v body=%s", response.Code, saved.Trader.IsRunning, requests, response.Body.String())
 +			if response.Code != test.wantStatus {

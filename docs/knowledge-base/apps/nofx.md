@@ -217,8 +217,12 @@ Validate available account instruments read-only before any activation. Do not
 work around product eligibility by using another regional endpoint.
 Patch `0010` returns fixed HTTP 400 guidance for the known OKX `50119` load
 failure and carries that message through the Start toast. Unknown server errors
-remain generic. Handler and UI regressions use mocked exchange/API responses;
-they verify stopped state and error visibility, not live authentication. This
+remain generic. It also propagates account-config lookup failures from the shared
+OKX constructor instead of assuming hedge mode. This blocks initialization even
+when a saved Initial Balance skips the later balance lookup. All constructor
+callers use their existing error paths. Handler and UI regressions use mocked
+exchange/API responses; they verify stopped state with zero and nonzero saved
+balances and error visibility, not live authentication. This
 repair does not change the endpoint or credentials. Correct routing and product
 compatibility still require the account region and read-only validation.
 
