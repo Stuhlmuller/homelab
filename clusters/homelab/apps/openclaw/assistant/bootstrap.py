@@ -71,6 +71,10 @@ def install(bundle, state, config_path):
         main["heartbeat"] = patch["agents"]["defaults"]["heartbeat"]
     existing_tools = config.get("tools", {}).get("alsoAllow", [])
     patch["tools"]["alsoAllow"] = list(dict.fromkeys(existing_tools + patch["tools"]["alsoAllow"]))
+    # Preserve restricted skill lists while admitting the managed Calendar skill.
+    bundled = config.get("skills", {}).get("allowBundled")
+    if isinstance(bundled, list) and "gog" not in bundled:
+        bundled.append("gog")
     merge(config, patch)
     updates = []
     for name in FILES:

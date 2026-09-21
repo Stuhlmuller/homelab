@@ -6,8 +6,8 @@ configMaps:
     includeChecksumInControllers:
       - deluge
     data:
-      # Temporary diagnostic: set off through GitOps after the bounded capture.
-      pprof_enabled: "on"
+      # Dormant diagnostic; enable after reviewed fresh CPU and backup checks.
+      pprof_enabled: "off"
       # The image default is :6060; never enable profiling without this override.
       pprof_http_server_address: "127.0.0.1:6060"
 controllers:

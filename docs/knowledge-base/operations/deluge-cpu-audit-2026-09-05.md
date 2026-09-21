@@ -1,14 +1,16 @@
 # Deluge CPU Audit — 2026-09-05
 
-Status: diagnostic code prepared; rollout and profiling remain unverified.
-Diagnosis is required before changing the VPN CPU cap.
+Status: diagnostic code prepared with profiling disabled; activation and capture
+remain unverified. The September observations are historical; current high CPU
+has not been revalidated. Diagnosis is required before changing the VPN CPU cap.
 
 Source: `clusters/homelab/apps/deluge/values.yaml`, read-only Kubernetes and
 Prometheus inspection on September 5 Pacific / September 6 UTC.
 
 ## Finding
 
-Gluetun's 300m CPU limit is continuously binding. This is more than a high
+During the September 5-6 observation window, Gluetun's 300m CPU limit was
+continuously binding. This is more than a high
 throttled-period percentage, but a higher limit is not yet a proven throughput
 fix. The CPU shift followed a container restart without corresponding traffic
 growth.
@@ -70,10 +72,12 @@ or demonstrate a current functional outage.
 
 ## Next Step
 
-Keep the 300m cap while identifying the busy path. The diagnostic change enables
-Gluetun's existing pprof listener on loopback only, supplies a bounded private
-capture helper, and documents disabling it afterward. Profiling is disabled
-in the upstream image by default. Although the Go fallback is `localhost:6060`, the pinned
+Keep the 300m cap while identifying the busy path. The diagnostic change keeps
+Gluetun's existing pprof listener disabled, commits its loopback-only address,
+and supplies a bounded private capture helper. A later reviewed activation
+requires fresh sustained high CPU and a successful latest Deluge backup.
+Profiling is disabled in the upstream image by default. Although the Go fallback
+is `localhost:6060`, the pinned
 [image Dockerfile](https://github.com/passteque/gluetun/blob/v3.41.3/Dockerfile#L221-L224)
 overrides its address to `:6060`. Explicitly set `127.0.0.1:6060` when enabling
 profiling; enabling the flag alone would bind a wildcard listener.
@@ -108,11 +112,12 @@ namespace assumptions if the separate namespace-isolation PR #829 is adopted.
 Rendering with Helm 3.20.2 and exact app-template 4.4.0 adds only ConfigMap
 `media/deluge`, its volume, the two Gluetun-only read-only file mounts, and the
 Pod checksum. Prior resources, networking, probes, storage, security settings,
-and limits compare unchanged. Rendering `"off"` changes only the ConfigMap's
-enabled value and checksum. The proposed ConfigMap name was absent from the
-live namespace at preflight.
+and limits compare unchanged. The committed `"off"` setting leaves profiling
+disabled. Rendering `"on"` changes only the ConfigMap's enabled value and
+checksum. The proposed ConfigMap name was absent from the live namespace at
+the September preflight; current absence is unverified.
 
-Eleven offline helper tests cover endpoint/TLS fences, ownership/identity races,
+Twelve offline helper tests cover endpoint/TLS fences, ownership/identity races,
 loopback-only sockets, committed config, private files, idempotent cleanup,
 HTTP deadlines, and complete gzip/CRC
 validation under compressed and expanded size bounds. These synthetic cases

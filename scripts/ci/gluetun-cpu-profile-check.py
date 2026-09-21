@@ -40,6 +40,12 @@ def inventory():
 
 
 class Tests(unittest.TestCase):
+    def test_repository_profiling_stays_disabled_by_default(self):
+        result = subprocess.run(['yq', '-o=json', '.configMaps.gluetun-profiling.data',
+                                 str(M.ROOT / M.VALUES)], check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), {
+            'pprof_enabled': 'off', 'pprof_http_server_address': '127.0.0.1:6060'})
+
     def test_context_tls_contract_before_api_and_pinned_inspection(self):
         config = {'current-context': 'homelab', 'contexts': [{'name': 'homelab', 'context': {'cluster': 'home'}}],
                   'clusters': [{'name': 'home', 'cluster': {'server': M.API_SERVER}}]}

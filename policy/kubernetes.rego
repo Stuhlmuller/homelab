@@ -18,8 +18,33 @@ required_pod_security_labels := {
 
 deny contains msg if {
 	input.kind == "Secret"
+	not harmless_harbor_chart_secret
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("raw Kubernetes Secret %q must not be committed; use ExternalSecret, encrypted secret material, or a CI-injected secret path", [name])
+}
+
+# Harbor 1.19.2 emits six empty or public-configuration Secret shells even
+# with every credential sourced from ExternalSecret. Match complete payloads;
+# adding any credential field or changing a public value still fails closed.
+harbor_public_secret_data := {
+	"harbor-core": {"CONFIG_OVERWRITE_JSON": base64.encode(`{"auth_mode":"db_auth","self_registration":false,"project_creation_restriction":"adminonly"}`)},
+	"harbor-exporter": null,
+	"harbor-jobservice": null,
+	"harbor-registryctl": null,
+	"harbor-registry": {"REGISTRY_REDIS_PASSWORD": ""},
+	"harbor-trivy": {"redisURL": base64.encode("redis://harbor-redis:6379/5?idle_timeout_seconds=30"), "gitHubToken": ""},
+}
+
+harmless_harbor_chart_secret if {
+	input.kind == "Secret"
+	input.metadata.namespace == "harbor"
+	input.metadata.labels.chart == "harbor"
+	input.metadata.labels.release == "harbor"
+	input.metadata.labels.heritage == "Helm"
+	input.metadata.labels.app == "harbor"
+	input.type == "Opaque"
+	object.get(input, "stringData", {}) == {}
+	object.get(input, "data", null) == harbor_public_secret_data[input.metadata.name]
 }
 
 deny contains msg if {
@@ -318,6 +343,7 @@ external_secret_allowed_prefixes := {
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"github-actions-runner": {"/homelab/github-actions-runner/"},
+	"harbor": {"/homelab/harbor/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
 	"nofx": {"/homelab/nofx/"},

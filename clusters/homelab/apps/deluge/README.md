@@ -81,13 +81,18 @@ export. Radarr and Sonarr mount that same claim at `/downloads`, so their
 download-client checks can see the files Deluge creates without remote path
 mappings.
 
-The `media-downloads-migration` Job copies any files from the older
-`deluge-downloads` PVC into `/media/downloads` before Deluge switches to the new
-claim. The job also creates the expected Servarr subdirectories, sets
-write-friendly NFS permissions, and verifies that the target path accepts a
-write from inside the cluster. The older `deluge-downloads` claim remains in
-desired state as the migration source and rollback reference until the copy is
-verified.
+The completed `media-downloads-migration` Job is retired after its verified May
+2026 completion. Its replacement `media-downloads-directories` Job only
+creates required directories and sets their directory permissions. It never
+mounts the retained `deluge-downloads` source or copies old files over active data.
+Only this idempotent Job uses `Force=true,Replace=true`, so image changes
+recreate it without patching immutable Pod templates. Its deadline is two
+minutes; the dedicated deny-all NetworkPolicy is installed first. Argo CD prunes
+the completed legacy Job and its NetworkPolicy; all PVs/PVCs remain declared.
+
+On rollback, preserve the directory Job and claims. Do not restore the legacy
+copy Job: recreating it can overwrite newer media. A historical data restore
+requires a separate reviewed, fenced recovery operation.
 
 Use these Deluge paths:
 
@@ -201,20 +206,24 @@ pod-shared rule behind before the restartable sidecar starts again.
 
 ## Gluetun CPU Profiling
 
-The temporary `gluetun-profiling` ConfigMap enables the pinned Gluetun Go
-profiler only at `127.0.0.1:6060`. Individual read-only files override the image's
+The `gluetun-profiling` ConfigMap keeps the pinned Gluetun Go profiler disabled
+with `pprof_enabled: "off"` and declares `127.0.0.1:6060` for later activation. Individual read-only files override the image's
 wildcard address default without covering its writable `/gluetun/servers.json`.
 The chart checksum rolls the Pod when those values change. Existing Service
 ports, firewall rules, capabilities, CPU limits, and storage stay as declared.
 Other containers in this Pod share its loopback network and can reach the
 listener; it is not an authenticated service.
 
-Activation and removal each stop the singleton through its Recreate strategy.
-Before approving activation, confirm the latest `deluge-config-backup` Job
-succeeded. After Argo sync, wait for stable Pod, VPN, and Deluge RPC health.
-Confirm sustained high CPU has recurred, for example three consecutive
-five-minute windows above 285m with comparable traffic. A restart can change
-the busy condition; a quiet profile would not explain earlier saturation.
+Installing these disabled settings, activation, and disabling each stop the
+singleton through its Recreate strategy. Before activation, confirm the latest
+`deluge-config-backup` Job succeeded and renew the CPU evidence: three
+consecutive five-minute windows above 285m with comparable traffic and healthy
+VPN/Deluge RPC. The September audit alone does not establish a current need.
+Then change `configMaps.gluetun-profiling.data.pprof_enabled` to `"on"` in a
+reviewed PR, preserving the loopback address. After Argo sync, wait for stable
+Pod, VPN, and Deluge RPC health and require the same sustained high CPU again.
+A restart can change the busy condition; a quiet profile would not explain
+earlier saturation. Without renewed saturation, restore `"off"` without capture.
 
 Use the repository helper from a clean, committed checkout matching the reviewed
 profiling configuration:
