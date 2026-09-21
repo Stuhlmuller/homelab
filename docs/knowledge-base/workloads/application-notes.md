@@ -88,6 +88,13 @@ steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
 ## OpenClaw
 
+The `2026.9.5` upgrade pins the external Codex and Discord plugins to the gateway
+release and creates a new verified `pre-2026.9.5` archive. Keep the earlier
+local-storage migration checkpoint. The pinned container's configuration and
+plugin schemas, managed one-hour timeout, and compiled subscription-recovery
+exports were checked; account-backed Discord/Astra and scheduler acceptance
+remain post-sync checks. See the app README for state-aware rollback.
+
 [[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
 remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
 

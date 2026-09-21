@@ -49,6 +49,15 @@ the [official model definition](https://developers.openai.com/api/docs/models/gp
 Account access must be verified with an actual turn; configuration validation
 alone does not prove Astra entitlement.
 
+Interactive turns have a one-hour execution budget (`agents.defaults.timeoutSeconds:
+3600`). OpenClaw's Codex harness uses an absolute deadline: ongoing tool work
+does not reset it. The former 600-second setting interrupted an active Discord
+turn on September 21, 2026. Heartbeats retain 600 seconds; the morning brief,
+health watch, and daily improvement retain 240, 180, and 600 seconds respectively.
+If the deadline is reached, inspect completed work before retrying; the timeout
+does not undo earlier actions. Roll back the default and bundle digest together
+through GitOps. See the pinned [Codex timeout contract](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/plugins/codex-harness-reference.md#turn-execution-and-settlement).
+
 The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
 official ChatGPT endpoint. This deployment uses its retained subscription OAuth
 profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
@@ -64,15 +73,32 @@ architecture's SHA-256 for both the CLI and its code-mode host, and exposes
 OpenClaw Codex plugin. The sibling `codex-code-mode-host` executable is required
 for native tool execution; text-only inference does not test its presence. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
 added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
-OpenClaw is pinned to `2026.9.2`, which includes hidden models when discovering
+OpenClaw is pinned to `2026.9.5`, retaining hidden models when discovering
 the Codex catalog. This matters because Astra's initial catalog entry is hidden
 from the interactive picker. Bootstrap takes a verified offline
-`pre-2026.9.2` archive before touching runtime state; older migration markers
+`pre-2026.9.5` archive before touching runtime state; older migration markers
 remain intact. The explicit app-server command preserves the existing OAuth
 account and
 per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
 plugin is installed and checked at the exact gateway version during bootstrap.
+
+The [2026.9.5 release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.5)
+includes Doctor/history and Codex startup fixes. Bootstrap pins both external
+Discord and Codex plugins to the gateway version; the config check rejects
+plugin or backup-version drift. The retained 2026.9.2 checkpoint still protects
+the original local-storage cutover, while this upgrade creates its own full
+archive. Preserve both. For rollback, restore the 2026.9.2 image, Codex plugin
+pin, and assistant checksum through GitOps. If state migration prevents the old
+runtime from starting, restore the verified pre-2026.9.5 archive while stopped;
+an image revert alone does not undo state migrations.
+
+The pinned container's config and plugin schemas accept the managed Astra,
+3600-second interactive timeout, gateway, and hook configuration. Its exact
+compiled auth-store, cooldown, and provider-reprobe exports were reviewed for
+the subscription helper; async probe failures remain bounded and fail closed.
+After sync, verify plugin versions, readiness, a real Discord/Astra turn, and
+scheduled-job completion. Local validation cannot prove account access.
 
 The behavior is conversational and evidence-driven: remember corrections,
 follow through on requested work, keep unchanged checks silent, and report
@@ -154,7 +180,7 @@ the transaction and verifies unchanged credentials and block generation;
 provider denial, active authentication failures, and probe throttling retain
 the block. It never spends a usage-reset credit, replaces credentials, edits
 SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
-profile and the reviewed 2026.9.1 or 2026.9.2 runtime; re-review its internal imports before
+profile and a reviewed 2026.9.1, 2026.9.2, or 2026.9.5 runtime; re-review its internal imports before
 an upgrade. If it fails, inspect provider availability and auth diagnostics;
 do not erase the block or repeatedly force probes.
 
