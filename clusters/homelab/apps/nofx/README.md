@@ -262,8 +262,8 @@ checker to distinguish storage-decryption failures from exchange rejection.
 Run from a reviewed checkout with Go, Python, Git, kubectl, and yq available:
 
 ```sh
-bash scripts/nofx-credential-check.sh test
-bash scripts/nofx-credential-check.sh inspect
+nix develop --command bash scripts/nofx-credential-check.sh test
+nix develop --command bash scripts/nofx-credential-check.sh inspect
 ```
 
 `test` downloads the checksum-pinned source, applies maintained patches, tests

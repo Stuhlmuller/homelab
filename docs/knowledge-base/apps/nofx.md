@@ -287,6 +287,12 @@ the UI's credential-replacement path; the current full-record list would otherwi
 fail before its safe metadata projection. Successful decryption instead requires
 checking the saved key's account and live/demo status in OKX and NOFX. Do not
 infer that another regional host or credential rotation is the required fix.
+The September 21 live diagnostic passed: every saved OKX credential field
+decrypted successfully, with no empty results, nested envelopes, or surrounding
+API-key whitespace. This rules out those storage defects for that inspection;
+the exchange rejection and browser login remain unresolved. The synthetic test
+still reproduces `EncryptedString.Scan` returning ciphertext without an error
+for wrong-key/corrupt input; retain that separate fail-open finding for repair.
 
 The remaining US execution gap is concrete: in the
 [pinned OKX adapter](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go),
