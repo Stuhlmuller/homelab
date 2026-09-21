@@ -31,25 +31,21 @@ do not establish runtime compatibility or reproducible image output.
   `libcap-ng` before removing the stale OpenVPN package. Compiler, headers,
   and other SDK packages remain in the build stage.
 
-## Input retention prerequisite
+## Input availability
 
-The 41 APK inputs currently come only from Alpine's mutable `v3.22` package
-repository. Checksums verify downloaded bytes; they do not retain packages.
-Alpine [replicates removals across its mirrors](https://www.alpinelinux.org/posts/2024-10-28-postmortem-edge-mirror.html),
-so adding another ordinary mirror would not preserve superseded revisions.
-The public Nix content-addressed mirror returned 404 for all 41 APK hashes
-when checked on 2026-09-21. No retained copy is declared by this build.
+The gate compares repeated builds from the exact recorded inputs. It does not
+guarantee permanent availability of historical upstream packages. The 41 APK
+inputs use Alpine's mutable `v3.22` repository; Alpine
+[replicates removals across its mirrors](https://www.alpinelinux.org/posts/2024-10-28-postmortem-edge-mirror.html).
+All recorded APK URLs responded successfully on 2026-09-21, but a superseded
+revision may disappear later. Checksums verify bytes and the build fails closed
+on a missing or changed download; do not silently repin or bypass verification.
 
-Durable from-scratch rebuilds are blocked until these exact APK bytes have a
-reviewed, retained content-addressed location reachable by the unprivileged
-CI job. That follow-up must declare the archive and its retention policy,
-verify every existing SHA-256, and prove a clean download/build without the
-mutable Alpine URLs. Do not silently repin packages or bypass checksum and
-signature checks when an upstream revision disappears. This PR does not
-publish inputs or provision that archive.
-
-The checks below establish repeated output identity while the recorded
-inputs remain downloadable; they do not establish long-term input retention.
+Retaining historical inputs is a separate reliability follow-up recorded in
+the [knowledge base](../../docs/knowledge-base/operations/gluetun-image-build.md).
+It needs a reviewed archive and retention policy plus a clean download/build
+from the retained bytes. This candidate gate publishes neither inputs nor
+images and does not require an archive to compare currently available inputs.
 
 ## Validation
 

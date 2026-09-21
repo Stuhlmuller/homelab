@@ -15,15 +15,22 @@ toolchain/dependencies, and retains both OpenVPN binary paths. The maintained
 identity; 2.6 uses release 2.6.22. Signed offline Alpine SDK installation and
 the two runtime OpenSSL packages keep build tools out of the resulting image.
 
-Input retention remains a blocker for durable from-scratch rebuilds. All 41
-APK pins point to the mutable Alpine `v3.22` mirror; their checksums prevent
-substitution but cannot recover removed packages. The public Nix
-content-addressed mirror had none of those exact hashes on 2026-09-21.
-Before claiming durable reproducibility, declare and retain the exact APK
-blobs at a reviewed content-addressed location accessible to unprivileged CI,
-then verify a clean build without the mutable URLs. No publication or archive
-provisioning is included. The [retention prerequisite](../../../images/gluetun/README.md#input-retention-prerequisite)
-tracks this unresolved review finding separately from repeated-build identity.
+The [input-availability review finding](https://github.com/Stuhlmuller/homelab/pull/991#discussion_r4059175597)
+is a reliability follow-up: all 41 APK pins use Alpine's mutable `v3.22`
+repository. The current gate checks repeated-build identity from exact inputs,
+not permanent upstream availability. Every APK URL returned HTTP 200 on
+2026-09-21; the Nix content-addressed mirror had none of those hashes. A removed
+or changed upstream package fails the download/checksum gate and must not
+trigger an automatic repin.
+
+Next step for historical rebuilds: design a retained content-addressed APK
+bundle using the existing GitHub Releases delivery surface, with an explicit
+manual protected publication path bound to reviewed main and a clean,
+unprivileged download/build that verifies every current SHA-256. Ordinary
+Actions artifacts expire; Harbor and the backup S3 bucket are private and
+cannot supply this unprivileged PR workflow without changing its trust model.
+No publisher or archive is added by this candidate build PR. See the
+[input availability contract](../../../images/gluetun/README.md#input-availability).
 
 Required evidence includes repeated artifact/image identity, selected Go unit
 tests, file setting and pprof controls, firewall denial with a scoped positive
