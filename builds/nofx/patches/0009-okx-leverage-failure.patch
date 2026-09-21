@@ -1,29 +1,108 @@
 diff --git a/trader/okx_trader.go b/trader/okx_trader.go
 --- a/trader/okx_trader.go
 +++ b/trader/okx_trader.go
-@@ -208,7 +208,7 @@
+@@ -10,7 +10,9 @@
+ 	"encoding/json"
+ 	"fmt"
+ 	"io"
++	"math"
+ 	"net/http"
++	"net/url"
+ 	"nofx/logger"
+ 	"strconv"
+ 	"strings"
+@@ -25,6 +27,7 @@
+ 	okxPositionPath      = "/api/v5/account/positions"
+ 	okxOrderPath         = "/api/v5/trade/order"
+ 	okxLeveragePath      = "/api/v5/account/set-leverage"
++	okxLeverageInfoPath  = "/api/v5/account/leverage-info"
+ 	okxTickerPath        = "/api/v5/market/ticker"
+ 	okxInstrumentsPath   = "/api/v5/public/instruments"
+ 	okxCancelOrderPath   = "/api/v5/trade/cancel-order"
+@@ -208,7 +211,7 @@
  
  	// code=1 indicates partial success, need to check specific results in data
  	// code=2 indicates complete failure
 -	if okxResp.Code != "0" && okxResp.Code != "1" {
-+	if okxResp.Code != "0" && (okxResp.Code != "1" || path == okxLeveragePath) {
++	if okxResp.Code != "0" && (okxResp.Code != "1" || path == okxLeveragePath || strings.SplitN(path, "?", 2)[0] == okxLeverageInfoPath) {
  		return nil, fmt.Errorf("OKX API error: code=%s, msg=%s", okxResp.Code, okxResp.Msg)
  	}
  
-@@ -534,11 +534,7 @@
+@@ -519,42 +522,66 @@
+ 	return nil
+ }
  
- 		_, err := t.doRequest("POST", okxLeveragePath, body)
- 		if err != nil {
+-// SetLeverage sets leverage
++// SetLeverage sets cross-margin leverage after checking the current setting.
+ func (t *OKXTrader) SetLeverage(symbol string, leverage int) error {
+ 	instId := t.convertSymbol(symbol)
+-
+-	// Set leverage for both long and short
+-	for _, posSide := range []string{"long", "short"} {
+-		body := map[string]interface{}{
+-			"instId":  instId,
+-			"lever":   strconv.Itoa(leverage),
+-			"mgnMode": "cross",
+-			"posSide": posSide,
+-		}
+-
+-		_, err := t.doRequest("POST", okxLeveragePath, body)
+-		if err != nil {
 -			// Ignore if already at target leverage
 -			if strings.Contains(err.Error(), "same") {
 -				continue
 -			}
 -			logger.Infof("  ⚠️ Failed to set %s %s leverage: %v", symbol, posSide, err)
-+			return fmt.Errorf("failed to set %s %s leverage: %w", symbol, posSide, err)
- 		}
- 	}
- 
-@@ -548,13 +544,13 @@
+-		}
+-	}
+-
++	path := fmt.Sprintf("%s?instId=%s&mgnMode=cross", okxLeverageInfoPath, url.QueryEscape(instId))
++	data, err := t.doRequest("GET", path, nil)
++	if err != nil {
++		return fmt.Errorf("failed to get %s leverage: %w", symbol, err)
++	}
++	var settings []struct {
++		InstID  string `json:"instId"`
++		MgnMode string `json:"mgnMode"`
++		PosSide string `json:"posSide"`
++		Lever   string `json:"lever"`
++	}
++	if err := json.Unmarshal(data, &settings); err != nil {
++		return fmt.Errorf("failed to parse %s leverage: %w", symbol, err)
++	}
++
++	// OKX returns one net setting or both hedge sides. Never infer a match
++	// from empty, incomplete, or unrelated account settings.
++	seen := make(map[string]bool)
++	atTarget := true
++	for _, setting := range settings {
++		current, err := strconv.ParseFloat(setting.Lever, 64)
++		if setting.InstID != instId || setting.MgnMode != "cross" || seen[setting.PosSide] ||
++			err != nil || !(current > 0) || math.IsInf(current, 0) {
++			return fmt.Errorf("invalid leverage settings for %s", symbol)
++		}
++		seen[setting.PosSide] = true
++		atTarget = atTarget && current == float64(leverage)
++	}
++	if !(len(settings) == 1 && seen["net"] || len(settings) == 2 && seen["long"] && seen["short"]) {
++		return fmt.Errorf("missing or incomplete leverage settings for %s", symbol)
++	}
++	if atTarget {
++		return nil
++	}
++
++	// Cross-margin SWAP leverage is set once per instrument, without posSide.
++	body := map[string]interface{}{
++		"instId":  instId,
++		"lever":   strconv.Itoa(leverage),
++		"mgnMode": "cross",
++	}
++	if _, err := t.doRequest("POST", okxLeveragePath, body); err != nil {
++		return fmt.Errorf("failed to set %s leverage: %w", symbol, err)
++	}
+ 	logger.Infof("  ✓ %s leverage set to %dx", symbol, leverage)
+ 	return nil
+ }
  
  // OpenLong opens long position
  func (t *OKXTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
@@ -42,7 +121,7 @@ diff --git a/trader/okx_trader.go b/trader/okx_trader.go
  
  	instId := t.convertSymbol(symbol)
  
-@@ -625,13 +621,13 @@
+@@ -625,13 +652,13 @@
  
  // OpenShort opens short position
  func (t *OKXTrader) OpenShort(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
@@ -65,7 +144,7 @@ diff --git a/trader/okx_leverage_test.go b/trader/okx_leverage_test.go
 new file mode 100644
 --- /dev/null
 +++ b/trader/okx_leverage_test.go
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,107 @@
 +package trader
 +
 +import (
@@ -79,6 +158,9 @@ new file mode 100644
 +)
 +
 +func TestOKXLeverageFailurePreventsOrder(t *testing.T) {
++	const atTarget = `{"code":"0","data":[{"instId":"BTC-USDT-SWAP","mgnMode":"cross","posSide":"net","lever":"1.0"}]}`
++	const different = `{"code":"0","data":[{"instId":"BTC-USDT-SWAP","mgnMode":"cross","posSide":"net","lever":"5"}]}`
++	const hedge = `{"code":"0","data":[{"instId":"BTC-USDT-SWAP","mgnMode":"cross","posSide":"long","lever":"1"},{"instId":"BTC-USDT-SWAP","mgnMode":"cross","posSide":"short","lever":"1"}]}`
 +	for _, direction := range []struct {
 +		name, side string
 +		open       func(*OKXTrader, string, float64, int) (map[string]interface{}, error)
@@ -86,36 +168,52 @@ new file mode 100644
 +		{"long", "buy", (*OKXTrader).OpenLong},
 +		{"short", "sell", (*OKXTrader).OpenShort},
 +	} {
-+		for _, result := range []struct{ failedSide, code string }{
-+			{"long", "51000"}, {"short", "51000"},
-+			{"long", "1"}, {"short", "1"}, {"", "0"},
++		for _, test := range []struct {
++			name, info, setCode string
++			wantPosts           int
++			wantErr             bool
++		}{
++			{"already-target-net", atTarget, "0", 0, false},
++			{"already-target-hedge", hedge, "0", 0, false},
++			{"change-net", different, "0", 1, false},
++			{"change-hedge", strings.Replace(hedge, `"short","lever":"1"`, `"short","lever":"5"`, 1), "0", 1, false},
++			{"update-rejected", different, "51000", 1, true},
++			{"update-partial", different, "1", 1, true},
++			{"info-rejected", `{"code":"50113","msg":"fixture rejected","data":[]}`, "0", 0, true},
++			{"info-partial", strings.Replace(atTarget, `"code":"0"`, `"code":"1"`, 1), "0", 0, true},
++			{"info-malformed", `{"code":"0","data":{}}`, "0", 0, true},
++			{"info-empty", `{"code":"0","data":[]}`, "0", 0, true},
++			{"info-wrong-instrument", strings.Replace(atTarget, "BTC-USDT-SWAP", "ETH-USDT-SWAP", 1), "0", 0, true},
++			{"info-wrong-margin", strings.Replace(atTarget, "cross", "isolated", 1), "0", 0, true},
++			{"info-incomplete-hedge", strings.Replace(atTarget, "net", "long", 1), "0", 0, true},
++			{"info-invalid-leverage", strings.Replace(atTarget, "1.0", "NaN", 1), "0", 0, true},
 +		} {
-+			failedSide := result.failedSide
-+			name := failedSide + "-" + result.code
-+			if failedSide == "" {
-+				name = "success"
-+			}
-+			t.Run(direction.name+"/"+name, func(t *testing.T) {
-+				leverageRequests, otherRequests, orders := 0, 0, 0
++			t.Run(direction.name+"/"+test.name, func(t *testing.T) {
++				infoRequests, leverageRequests, otherRequests, orders := 0, 0, 0, 0
 +				transport := okxInitializationTransport(func(request *http.Request) (*http.Response, error) {
 +					response := `{"code":"0","data":[]}`
-+					if request.URL.Path != okxLeveragePath {
++					if request.URL.Path != "/api/v5/account/leverage-info" && request.URL.Path != okxLeveragePath {
 +						otherRequests++
 +					}
 +					switch request.URL.Path {
++					case "/api/v5/account/leverage-info":
++						infoRequests++
++						if request.Method != http.MethodGet || request.URL.Query().Get("instId") != "BTC-USDT-SWAP" || request.URL.Query().Get("mgnMode") != "cross" {
++							t.Fatalf("unexpected leverage lookup: %s %s", request.Method, request.URL)
++						}
++						response = test.info
 +					case okxLeveragePath:
 +						leverageRequests++
 +						var body map[string]string
 +						if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
 +							t.Fatal(err)
 +						}
-+						if body["lever"] != "1" {
-+							t.Fatalf("requested leverage %q, want 1", body["lever"])
++						_, hasPosSide := body["posSide"]
++						if request.Method != http.MethodPost || body["instId"] != "BTC-USDT-SWAP" || body["mgnMode"] != "cross" || body["lever"] != "1" || hasPosSide {
++							t.Fatalf("unexpected cross-margin leverage request: %s %v", request.Method, body)
 +						}
-+						if body["posSide"] == failedSide {
-+							// An arbitrary error containing "same" must still fail closed.
-+							response = fmt.Sprintf(`{"code":%q,"msg":"fixture rejected same-account leverage change","data":[]}`, result.code)
-+						}
++						// Arbitrary errors containing "same" must still fail closed.
++						response = fmt.Sprintf(`{"code":%q,"msg":"fixture same-account result","data":[]}`, test.setCode)
 +					case okxPendingOrdersPath, okxAlgoPendingPath:
 +					case okxOrderPath:
 +						orders++
@@ -140,12 +238,15 @@ new file mode 100644
 +					instrumentsCacheTime: time.Now(),
 +				}
 +				order, err := direction.open(trader, "BTCUSDT", 0.01, 1)
-+				if failedSide != "" {
++				if infoRequests != 1 || leverageRequests != test.wantPosts {
++					t.Fatalf("got %d lookups and %d updates; want 1 lookup and %d updates", infoRequests, leverageRequests, test.wantPosts)
++				}
++				if test.wantErr {
 +					if err == nil || order != nil || orders != 0 || otherRequests != 0 {
-+						t.Fatalf("failed leverage must stop before canceling or placing orders: err=%v order=%v orders=%d otherRequests=%d", err, order, orders, otherRequests)
++						t.Fatalf("invalid leverage state must stop before canceling or placing orders: err=%v order=%v orders=%d otherRequests=%d", err, order, orders, otherRequests)
 +					}
-+				} else if err != nil || order["orderId"] != "fixture-order" || orders != 1 || leverageRequests != 2 {
-+					t.Fatalf("successful leverage must preserve order placement: err=%v order=%v orders=%d leverageRequests=%d", err, order, orders, leverageRequests)
++				} else if err != nil || order["orderId"] != "fixture-order" || orders != 1 {
++					t.Fatalf("confirmed leverage must preserve order placement: err=%v order=%v orders=%d", err, order, orders)
 +				}
 +			})
 +		}

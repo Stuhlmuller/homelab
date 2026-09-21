@@ -45,9 +45,11 @@ the saved drafts. Configured 1x and a creation-form Hide selection alone therefo
 do not prove enforcement or persisted visibility. The maintained source patches
 `0007-live-leverage-cap.patch` and `0008-trader-visibility.patch` fix those shared
 code paths, with parser and SQLite regression checks in the backend build.
-`0009-okx-leverage-failure.patch` makes OKX openings stop if leverage setup fails,
-before canceling existing orders; a mocked transport regression covers both
-directions. Previously, leverage API errors were logged and trading continued.
+`0009-okx-leverage-failure.patch` reads current OKX cross-margin leverage,
+skips writes when it already matches, and otherwise sends one instrument-level
+request. Invalid lookup data or failed leverage requests stop openings before
+canceling existing orders; mocked transport checks cover both directions. Previously,
+leverage API errors were logged and trading continued.
 The visibility migration removes the old column default while preserving saved
 values; omitted API visibility still defaults to true. Roll out verified new
 images before relying on these fixes. Arena's separate
