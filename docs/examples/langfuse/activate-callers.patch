@@ -51,8 +51,8 @@ diff --git a/clusters/homelab/apps/openclaw/values.yaml b/clusters/homelab/apps/
                    - key: octelium.com/node-mode-dataplane
                      operator: DoesNotExist
        annotations:
--        homelab.rst.io/openclaw-assistant-sha256: "56b8e7e5543910ba48110a49d444063be647526ccd9b92bdc6e783976fbe2cb5"
-+        homelab.rst.io/openclaw-assistant-sha256: "59290ed25c9fcf2b8f19d3920a67a751bf63fe552f0fade91822d03108dd1ac3"
+-        homelab.rst.io/openclaw-assistant-sha256: "70d432cc5b4a5a894afdfa87e56ef2d4e28f115e23c016a89f08156149d19182"
++        homelab.rst.io/openclaw-assistant-sha256: "b0813b67ab806fef6da31ffdb7572b8d0631aa73c1a52c9e4d538dbf52cb63fb"
          homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
          homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
          homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"

@@ -119,7 +119,8 @@ change; storage migration and restore verification remain separate work.
 
 OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved
-personal memory. Its personal-assistant extension installs the pinned Google
+personal memory. Interactive Codex turns allow one hour; heartbeats and managed
+jobs keep their separate shorter budgets. Its personal-assistant extension installs the pinned Google
 CLI and enables the Calendar skill, with scoped Marketplace outreach and private
 task/deal tracking. Google OAuth and a private Facebook browser/login remain
 unconfigured; see [[operations/openclaw-personal-assistant]].
