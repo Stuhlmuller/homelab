@@ -39,7 +39,9 @@ caller changes merge. `scripts/ci/langfuse-staging-check.py` proves existing
 caller credentials remain unchanged and applies the pending patch in scratch
 before exercising the OpenClaw fixtures. Overlapping OpenClaw changes must
 refresh that artifact; it must preserve the current provider, model, image and
-execution budgets. The distinct future OpenClaw key is
+execution budgets. The activation fixture includes the existing batched CLI
+ordering and failure checks, including telemetry-plugin enable/verification.
+The distinct future OpenClaw key is
 `/homelab/openclaw/litellm-app-token`, leaving the live token alias untouched.
 NOFX similarly stages its ServiceAccount, hashed routing ConfigMap and dedicated
 token Secret without changing the active backend Pod spec. Its separate

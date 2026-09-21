@@ -5,10 +5,12 @@ variable "parameters" {
     generated = optional(object({
       kind             = optional(string, "password")
       length           = optional(number, 48)
+      lower            = optional(bool, true)
       override_special = optional(string)
       prefix           = optional(string, "")
       source_parameter = optional(string)
       special          = optional(bool, false)
+      upper            = optional(bool, true)
     }))
     initial_value = optional(string, "REPLACE_ME")
     reader_access = optional(bool, true)

@@ -125,7 +125,7 @@ diff --git a/clusters/homelab/apps/openclaw/values.yaml b/clusters/homelab/apps/
              python3 /etc/openclaw-assistant/install-codex.py
 
              session_sqlite() {
-@@ -604,6 +655,10 @@
+@@ -613,6 +664,10 @@
              python3 /etc/openclaw-assistant/bootstrap.py
              openclaw config validate
 
@@ -133,9 +133,9 @@ diff --git a/clusters/homelab/apps/openclaw/values.yaml b/clusters/homelab/apps/
 +            verify_diagnostics_otel_plugin loaded
 +            openclaw config validate
 +
-             openclaw config set --strict-json \
-               agents.defaults.sandbox.mode \
-               '"off"'
+             config_batch <<'OPENCLAW_SANDBOX_BATCH'
+             [
+               {"path":"agents.defaults.sandbox.mode","value":"off"},
 @@ -693,6 +748,11 @@
                secretKeyRef:
                  name: openclaw-secrets
@@ -306,11 +306,39 @@ diff --git a/scripts/ci/openclaw-config-check.py b/scripts/ci/openclaw-config-ch
  bootstrap = subprocess.check_output(
      ["yq", "-r", '.controllers.openclaw.initContainers."bootstrap-config".command[2]', values],
      text=True,
+@@ -246,14 +266,17 @@
+     assert state["plugins"]["entries"]["codex"]["enabled"] is True
+     assert state["plugins"]["entries"]["memory-wiki"]["enabled"] is True
+     state["assistantPreserved"] = True
+ elif args not in (["config", "validate"], ["plugins", "enable", "discord", "--accept-capabilities"],
+-                  ["verify_discord_plugin", "loaded"]):
++                  ["verify_discord_plugin", "loaded"],
++                  ["plugins", "enable", "diagnostics-otel", "--accept-capabilities"],
++                  ["verify_diagnostics_otel_plugin", "loaded"]):
+     raise AssertionError(args)
+ config.write_text(json.dumps(state))
+ '''
+ expected_events = ["batch:gateway.mode", "batch:hooks.enabled", "config unset hooks.token",
+                    "batch:hooks.token", "batch:plugins.entries.codex.enabled", "assistant",
+-                   "config validate", "batch:agents.defaults.sandbox.mode",
++                   "config validate", "plugins enable diagnostics-otel --accept-capabilities",
++                   "verify_diagnostics_otel_plugin loaded", "config validate", "batch:agents.defaults.sandbox.mode",
+                    "plugins enable discord --accept-capabilities", "verify_discord_plugin loaded",
+                    "batch:channels.discord.enabled"]
+ harness = r'''OPENCLAW_CONFIG_PATH="$1/config.json"
+@@ -271,6 +294,7 @@
+   fi
+ }
+ verify_discord_plugin() { openclaw verify_discord_plugin "$@"; }
++verify_diagnostics_otel_plugin() { openclaw verify_diagnostics_otel_plugin "$@"; }
+ '''
+ original = {"hooks": {"token": "${GRAFANA_ALERT_HOOK_TOKEN}", "unrelated": "retained"},
+             "gateway": {"unrelated": ["retained"]}, "channels": {"discord": {"unrelated": True}},
 diff --git a/scripts/ci/static-checks.sh b/scripts/ci/static-checks.sh
 --- a/scripts/ci/static-checks.sh
 +++ b/scripts/ci/static-checks.sh
-@@ -1233,7 +1233,7 @@
- fi
+@@ -1248,7 +1248,7 @@
+ python3 scripts/ci/gluetun-cpu-profile-check.py
  echo "::endgroup::"
 
 -echo "::group::OpenClaw Discord plugin"

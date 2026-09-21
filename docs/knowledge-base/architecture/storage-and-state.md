@@ -185,6 +185,11 @@ ready, but they must not be treated as production-ready until:
 
 ## Stateful Apps
 
+AFFiNE and Dispatcharr are suspended for memory capacity, including their
+dedicated PostgreSQL and AFFiNE Redis workloads. Their six PVCs remain retained;
+no durable data is removed. See [[operations/monitoring-resource-requests]] and
+the app READMEs for suspension and resume checks.
+
 The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral
 Redis, blob storage, and config state; Prometheus, Grafana, Deluge, Dispatcharr
 with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
@@ -193,7 +198,8 @@ Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
 `octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
 NOFX SQLite state, and OctoBot. OpenClaw keeps configuration and workspace on
 its retained NAS claim, but its global state, per-agent SQLite databases, and
-native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The platform-storage application owns its StorageClass and PV;
+native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The
+platform-storage application owns its StorageClass and PV;
 the namespaced OpenClaw application owns its PVC. This permits
 local WAL and preserves native bindings across Pod replacement. A one-time
 verified offline copy retains the NAS source. Daily SQLite online backups keep
@@ -356,8 +362,9 @@ UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
 coordinator ownership check blocked gateway startup after session migration
 completed successfully. The repository mounts a shared local `emptyDir` at
 `/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
-Only coordinator locks move off NFS; identity/configuration files and the verified pre-upgrade backup remain on the
-NAS PVC; the later runtime migration below moves session/state databases local. This requires one
+Only coordinator locks move off NFS; identity/configuration files and the verified
+pre-upgrade backup remain on the NAS PVC; the later runtime migration below moves
+session/state databases local. This requires one
 `Recreate` Pod and all writers using its shared mount. Never start an external
 writer against that PVC with a separate coordinator. See the OpenClaw README
 for verification and rollback limits; live recovery remains pending rollout.
@@ -372,6 +379,17 @@ marker. Private doctor reports retain latest plus previous. State restoration
 requires the archive and compatible software, not merely a manifest revert.
 See the OpenClaw README; gateway readiness is still a live acceptance gate.
 
+### Monitoring storage migration design
+
+[[../operations/monitoring-storage-migration-draft-2026-09-06]] records the
+pinned operator's new-claim migration path, separate writer fences, restore
+proof, capacity reservations, and rollback. Its September 7 refresh records
+deployed memory requests, current consumers, restored PVC telemetry, and the
+remaining capacity/control-plane recovery gaps. Those observations do not
+establish a monitoring-data restore proof. Healthy target hardware remains
+unselected; the draft does not authorize use of Acer's unverified storage or
+reduction of existing retention.
+
 ### Completed media-copy Job retirement
 
 September 12 read-only inspection confirmed `media-downloads-migration`,
@@ -379,7 +397,8 @@ September 12 read-only inspection confirmed `media-downloads-migration`,
 2026. Their existing BusyBox Pod templates cannot be updated in place. The
 three media applications now own bounded directory-only Jobs; they
 retain all claims and never mount or copy from legacy source claims. Per-Job
-`Force=true,Replace=true` permits image upgrades without immutable Job updates. Argo CD prunes
+`Force=true,Replace=true` permits image upgrades without immutable Job updates.
+Argo CD prunes
 only the old completed Jobs and their dedicated NetworkPolicies. Existing
 media contents are untouched; directory permission setup is nonrecursive.
 
