@@ -1,0 +1,309 @@
+diff --git a/backtest/HISTORICAL_CONTEXT.md b/backtest/HISTORICAL_CONTEXT.md
+new file mode 100644
+index 0000000..8debf48
+--- /dev/null
++++ b/backtest/HISTORICAL_CONTEXT.md
+@@ -0,0 +1,20 @@
++# Historical decision context
++
++Backtests use simulated UTC time and closed historical candles. Quantitative
++feeds and OI, net-flow, and price rankings currently have no point-in-time
++history adapter. The historical runner therefore omits all four current feeds,
++even when a saved strategy enables them. Loading today's observations into past
++decisions would introduce look-ahead bias. The shared decision path also skips
++current OI lookups and refuses missing historical candle snapshots instead of
++falling back to a current market fetch. Disable those options in simulation
++strategies so their configuration reflects the available inputs.
++
++Position age uses the simulated cutoff and the position's stored opening time.
++The optional `Context.SimulationTimeMS` field is populated only by backtests;
++other callers retain the existing wall-clock behavior.
++
++Regression checks:
++
++```sh
++go test -race ./backtest ./kernel -run 'TestHistorical(Context|PositionAge|Clock|Decision)' -count=1
++```
+diff --git a/backtest/historical_context_test.go b/backtest/historical_context_test.go
+new file mode 100644
+index 0000000..323d05e
+--- /dev/null
++++ b/backtest/historical_context_test.go
+@@ -0,0 +1,59 @@
++package backtest
++
++import (
++	"go/ast"
++	"go/parser"
++	"go/token"
++	"testing"
++	"time"
++
++	"nofx/kernel"
++	"nofx/store"
++)
++
++func TestHistoricalContextUsesOnlyHistoricalObservations(t *testing.T) {
++	// Guard the forbidden integration boundary before the behavioral test:
++	// a regression must fail without sending any current-data request.
++	file, err := parser.ParseFile(token.NewFileSet(), "runner.go", nil, 0)
++	if err != nil {
++		t.Fatal(err)
++	}
++	forbidden := map[string]bool{"FetchQuantDataBatch": true, "FetchOIRankingData": true, "FetchNetFlowRankingData": true, "FetchPriceRankingData": true}
++	ast.Inspect(file, func(node ast.Node) bool {
++		call, ok := node.(*ast.CallExpr)
++		if !ok {
++			return true
++		}
++		selector, ok := call.Fun.(*ast.SelectorExpr)
++		if ok && forbidden[selector.Sel.Name] {
++			t.Fatalf("historical runner must not call current data provider %s", selector.Sel.Name)
++		}
++		return true
++	})
++
++	start := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
++	entry := start.Add(30 * time.Minute)
++	cutoff := start.Add(3 * time.Hour)
++	account := NewBacktestAccount(1000, 0, 0)
++	if _, _, _, err := account.Open("BTCUSDT", "long", 1, 1, 100, entry.UnixMilli()); err != nil {
++		t.Fatal(err)
++	}
++	strategy := &store.StrategyConfig{
++		CoinSource: store.CoinSourceConfig{SourceType: "static", StaticCoins: []string{"BTCUSDT"}},
++		Indicators: store.IndicatorConfig{EnableQuantData: true, EnableOIRanking: true, EnableNetFlowRanking: true, EnablePriceRanking: true},
++	}
++	runner := Runner{cfg: BacktestConfig{StartTS: start.Unix(), Symbols: []string{"BTCUSDT"}}, account: account, strategyEngine: kernel.NewStrategyEngine(strategy)}
++	ctx, _, err := runner.buildDecisionContext(cutoff.UnixMilli(), nil, nil, map[string]float64{"BTCUSDT": 105}, 1)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if ctx.QuantDataMap != nil || ctx.OIRankingData != nil || ctx.NetFlowRankingData != nil || ctx.PriceRankingData != nil {
++		t.Fatal("current data leaked into historical context")
++	}
++	if ctx.SimulationTimeMS != cutoff.UnixMilli() || ctx.CurrentTime != "2020-01-01 03:00:00 UTC" || ctx.RuntimeMinutes != 180 {
++		t.Fatalf("wrong historical clock: %+v", ctx)
++	}
++	if len(ctx.Positions) != 1 || ctx.Positions[0].UpdateTime != entry.UnixMilli() {
++		t.Fatalf("position lost historical entry time: %+v", ctx.Positions)
++	}
++}
+diff --git a/backtest/runner.go b/backtest/runner.go
+index 5f039bd..9b33322 100644
+--- a/backtest/runner.go
++++ b/backtest/runner.go
+@@ -503,6 +503,8 @@ func (r *Runner) buildDecisionContext(ts int64, marketData map[string]*market.Da
+ 
+ 	runtime := int((ts - int64(r.cfg.StartTS*1000)) / 60000)
+ 	ctx := &kernel.Context{
++		SimulationTimeMS: ts,
++
+ 		CurrentTime:     time.UnixMilli(ts).UTC().Format("2006-01-02 15:04:05 UTC"),
+ 		RuntimeMinutes:  runtime,
+ 		CallCount:       callCount,
+@@ -517,53 +519,10 @@ func (r *Runner) buildDecisionContext(ts int64, marketData map[string]*market.Da
+ 		Timeframes:      r.cfg.Timeframes,
+ 	}
+ 
+-	// Fetch quantitative data if enabled in strategy (uses current data as approximation)
+-	strategyConfig := r.strategyEngine.GetConfig()
+-	if strategyConfig.Indicators.EnableQuantData {
+-		// Collect symbols to query (candidate coins + position coins)
+-		symbolSet := make(map[string]bool)
+-		for _, sym := range r.cfg.Symbols {
+-			symbolSet[sym] = true
+-		}
+-		for _, pos := range positions {
+-			symbolSet[pos.Symbol] = true
+-		}
+-		symbols := make([]string, 0, len(symbolSet))
+-		for sym := range symbolSet {
+-			symbols = append(symbols, sym)
+-		}
+-		ctx.QuantDataMap = r.strategyEngine.FetchQuantDataBatch(symbols)
+-		if len(ctx.QuantDataMap) > 0 {
+-			logger.Infof("📊 Backtest: fetched quant data for %d symbols", len(ctx.QuantDataMap))
+-		}
+-	}
+-
+-	// Fetch OI ranking data if enabled in strategy (uses current data as approximation)
+-	if strategyConfig.Indicators.EnableOIRanking {
+-		ctx.OIRankingData = r.strategyEngine.FetchOIRankingData()
+-		if ctx.OIRankingData != nil {
+-			logger.Infof("📊 Backtest: OI ranking data ready: %d top, %d low positions",
+-				len(ctx.OIRankingData.TopPositions), len(ctx.OIRankingData.LowPositions))
+-		}
+-	}
+-
+-	// Fetch NetFlow ranking data if enabled in strategy
+-	if strategyConfig.Indicators.EnableNetFlowRanking {
+-		ctx.NetFlowRankingData = r.strategyEngine.FetchNetFlowRankingData()
+-		if ctx.NetFlowRankingData != nil {
+-			logger.Infof("💰 Backtest: NetFlow ranking data ready: inst_in=%d, inst_out=%d",
+-				len(ctx.NetFlowRankingData.InstitutionFutureTop), len(ctx.NetFlowRankingData.InstitutionFutureLow))
+-		}
+-	}
+-
+-	// Fetch Price ranking data if enabled in strategy
+-	if strategyConfig.Indicators.EnablePriceRanking {
+-		ctx.PriceRankingData = r.strategyEngine.FetchPriceRankingData()
+-		if ctx.PriceRankingData != nil {
+-			logger.Infof("📈 Backtest: Price ranking data ready for %d durations",
+-				len(ctx.PriceRankingData.Durations))
+-		}
+-	}
++	// Quantitative and ranking providers expose current observations, not
++	// point-in-time history. Never fetch them in a historical simulation:
++	// doing so leaks future information regardless of saved strategy toggles.
++	// Only the historical candle snapshots above are supported here.
+ 
+ 	record := &store.DecisionRecord{
+ 		AccountState: store.AccountSnapshot{
+@@ -865,7 +824,7 @@ func (r *Runner) convertPositions(priceMap map[string]float64) []kernel.Position
+ 			UnrealizedPnLPct: 0,
+ 			LiquidationPrice: pos.LiquidationPrice,
+ 			MarginUsed:       pos.Margin,
+-			UpdateTime:       time.Now().UnixMilli(),
++			UpdateTime:       pos.OpenTime,
+ 		})
+ 	}
+ 	return list
+diff --git a/kernel/engine.go b/kernel/engine.go
+index e452c73..f1288fd 100644
+--- a/kernel/engine.go
++++ b/kernel/engine.go
+@@ -106,6 +106,9 @@ type RecentOrder struct {
+ 
+ // Context trading context (complete information passed to AI)
+ type Context struct {
++	// SimulationTimeMS is set only by historical runners; zero keeps live time behavior.
++	SimulationTimeMS int64 `json:"-"`
++
+ 	CurrentTime     string                             `json:"current_time"`
+ 	RuntimeMinutes  int                                `json:"runtime_minutes"`
+ 	CallCount       int                                `json:"call_count"`
+@@ -257,13 +260,17 @@ func GetFullDecisionWithStrategy(ctx *Context, mcpClient mcp.AIClient, engine *S
+ 
+ 	// 1. Fetch market data using strategy config
+ 	if len(ctx.MarketDataMap) == 0 {
++		if ctx.SimulationTimeMS > 0 {
++			return nil, fmt.Errorf("historical market snapshot is required")
++		}
+ 		if err := fetchMarketDataWithStrategy(ctx, engine); err != nil {
+ 			return nil, fmt.Errorf("failed to fetch market data: %w", err)
+ 		}
+ 	}
+ 
+-	// Ensure OITopDataMap is initialized
+-	if ctx.OITopDataMap == nil {
++	// Current OI is available only to live contexts; historical runners have
++	// no point-in-time OI adapter and must never fall back to today's feed.
++	if ctx.OITopDataMap == nil && ctx.SimulationTimeMS <= 0 {
+ 		ctx.OITopDataMap = make(map[string]*OITopData)
+ 		oiPositions, err := engine.nofxosClient.GetOITopPositions()
+ 		if err == nil {
+@@ -1245,7 +1252,11 @@ func (e *StrategyEngine) formatPositionInfo(index int, pos PositionInfo, ctx *Co
+ 
+ 	holdingDuration := ""
+ 	if pos.UpdateTime > 0 {
+-		durationMs := time.Now().UnixMilli() - pos.UpdateTime
++		referenceTimeMS := time.Now().UnixMilli()
++		if ctx != nil && ctx.SimulationTimeMS > 0 {
++			referenceTimeMS = ctx.SimulationTimeMS
++		}
++		durationMs := referenceTimeMS - pos.UpdateTime
+ 		durationMin := durationMs / (1000 * 60)
+ 		if durationMin < 60 {
+ 			holdingDuration = fmt.Sprintf(" | Holding Duration %d min", durationMin)
+diff --git a/kernel/historical_context_test.go b/kernel/historical_context_test.go
+new file mode 100644
+index 0000000..f594fc0
+--- /dev/null
++++ b/kernel/historical_context_test.go
+@@ -0,0 +1,85 @@
++package kernel
++
++import (
++	"strings"
++	"testing"
++	"time"
++
++	"nofx/market"
++	"nofx/mcp"
++	"nofx/store"
++)
++
++func TestHistoricalPositionAgeUsesSimulationTime(t *testing.T) {
++	entry := time.Date(2020, 1, 1, 0, 30, 0, 0, time.UTC)
++	ctx := &Context{SimulationTimeMS: entry.Add(150 * time.Minute).UnixMilli()}
++	engine := NewStrategyEngine(&store.StrategyConfig{})
++	prompt := engine.formatPositionInfo(1, PositionInfo{Symbol: "BTCUSDT", Side: "long", UpdateTime: entry.UnixMilli()}, ctx)
++	if !strings.Contains(prompt, "Holding Duration 2h 30m") {
++		t.Fatalf("incorrect simulated position age: %s", prompt)
++	}
++}
++
++func TestHistoricalClockOmittedRetainsLiveAge(t *testing.T) {
++	engine := NewStrategyEngine(&store.StrategyConfig{})
++	prompt := engine.formatPositionInfo(1, PositionInfo{Symbol: "BTCUSDT", Side: "long", UpdateTime: time.Now().Add(-5 * time.Minute).UnixMilli()}, &Context{})
++	if !strings.Contains(prompt, "Holding Duration 5 min") {
++		t.Fatalf("live age behavior changed: %s", prompt)
++	}
++}
++
++type historicalDecisionModel struct {
++	mcp.AIClient
++	called     bool
++	userPrompt string
++}
++
++func (model *historicalDecisionModel) CallWithMessages(_, userPrompt string) (string, error) {
++	model.called = true
++	model.userPrompt = userPrompt
++	return `<decision>[{"symbol":"BTCUSDT","action":"wait","reasoning":"fixture"}]</decision>`, nil
++}
++
++func TestHistoricalDecisionDoesNotFetchCurrentOI(t *testing.T) {
++	entry := time.Date(2020, 1, 1, 0, 30, 0, 0, time.UTC)
++	config := store.GetDefaultStrategyConfig("en")
++	engine := NewStrategyEngine(&config)
++	// Removing the provider makes any current-OI lookup fail locally, before
++	// an external request. Exercise the real shared decision function below.
++	engine.nofxosClient = nil
++	model := &historicalDecisionModel{}
++	ctx := &Context{
++		SimulationTimeMS: entry.Add(150 * time.Minute).UnixMilli(),
++		CurrentTime:      "2020-01-01 03:00:00 UTC",
++		Account:          AccountInfo{TotalEquity: 1000},
++		CandidateCoins:   []CandidateCoin{{Symbol: "BTCUSDT", Sources: []string{"backtest"}}},
++		Positions:        []PositionInfo{{Symbol: "BTCUSDT", Side: "long", UpdateTime: entry.UnixMilli()}},
++		MarketDataMap:    map[string]*market.Data{"BTCUSDT": {Symbol: "BTCUSDT", CurrentPrice: 100}},
++	}
++	decision, err := GetFullDecisionWithStrategy(ctx, model, engine, "baseline")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !model.called || decision == nil || len(decision.Decisions) != 1 {
++		t.Fatal("historical decision did not reach fake model")
++	}
++	if len(ctx.OITopDataMap) != 0 {
++		t.Fatal("current OI leaked into historical context")
++	}
++	if !strings.Contains(model.userPrompt, "Holding Duration 2h 30m") {
++		t.Fatalf("wrong historical age in actual model prompt: %s", model.userPrompt)
++	}
++}
++
++func TestHistoricalDecisionRejectsMissingSnapshot(t *testing.T) {
++	engine := NewStrategyEngine(&store.StrategyConfig{})
++	engine.nofxosClient = nil
++	model := &historicalDecisionModel{}
++	_, err := GetFullDecisionWithStrategy(&Context{SimulationTimeMS: 1577847600000}, model, engine, "baseline")
++	if err == nil || !strings.Contains(err.Error(), "historical market snapshot is required") {
++		t.Fatalf("expected missing historical snapshot error, got %v", err)
++	}
++	if model.called {
++		t.Fatal("model called without historical snapshot")
++	}
++}

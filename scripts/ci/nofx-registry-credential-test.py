@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""Offline behavior tests: only a verified narrow credential reaches SSM."""
+
+from contextlib import redirect_stderr, redirect_stdout
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import stat
+import subprocess
+import sys
+import unittest
+from unittest.mock import patch
+
+SCRIPT = Path(__file__).resolve().parents[1] / "nofx-registry-credential.py"
+spec = importlib.util.spec_from_file_location("nofx_registry_credential", SCRIPT)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+# Deliberately synthetic; constructed so scanning never mistakes it for a token.
+TOKEN = "ghp_" + "x" * 36
+
+
+class Response:
+    def __init__(self, login="rstuhlmuller", scopes="read:packages"):
+        self.headers = {"X-OAuth-Scopes": scopes}
+        self.login = login
+
+    def read(self, maximum):
+        return json.dumps({"login": self.login}).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class CredentialTests(unittest.TestCase):
+    def test_accepts_only_dedicated_owner_and_scope(self):
+        for login, scopes, valid in [
+            ("rstuhlmuller", "read:packages", True),
+            ("other-user", "read:packages", False),
+            ("rstuhlmuller", "read:packages, repo", False),
+            ("rstuhlmuller", "read:packages, write:packages", False),
+            ("rstuhlmuller", "read:packages, delete:packages", False),
+            ("rstuhlmuller", "read:packages, workflow", False),
+            ("rstuhlmuller", "", False),
+        ]:
+            with self.subTest(login=login, scopes=scopes), patch.object(module.urllib.request, "build_opener") as opener:
+                opener.return_value.open.return_value = Response(login, scopes)
+                if valid:
+                    module.github_user(TOKEN)
+                else:
+                    with self.assertRaises(module.Failure):
+                        module.github_user(TOKEN)
+                request = opener.return_value.open.call_args.args[0]
+                self.assertEqual(request.full_url, "https://api.github.com/user")
+                self.assertEqual(request.get_header("Authorization"), f"Bearer {TOKEN}")
+
+    def test_subprocess_failure_never_echoes_credentials(self):
+        with patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, TOKEN, TOKEN)) as run, redirect_stdout(io.StringIO()) as output:
+            with self.assertRaises(module.Failure) as failure:
+                module.command(["aws", "ssm", "put-parameter"], stage="ssm-write", data=TOKEN)
+            self.assertNotIn(TOKEN, str(failure.exception))
+            self.assertNotIn(TOKEN, " ".join(run.call_args.args[0]))
+            self.assertNotIn("NOFX_GHCR_READ_TOKEN", run.call_args.kwargs["env"])
+            self.assertEqual(output.getvalue(), "NOFX registry credential: stage ssm-write\n")
+
+    def test_command_failure_reports_only_fixed_stage_and_error_code(self):
+        for stage, stderr, code in [
+            ("ssm-metadata", f"An error occurred (AccessDeniedException): {TOKEN}", "aws-access-denied"),
+            ("ssm-write", f"An error occurred (InvalidKeyId): {TOKEN}", "aws-invalid-key"),
+            ("ssm-write", f"An error occurred ({TOKEN}): unknown", "command-failed"),
+            ("registry-login", f"Error response from daemon: unauthorized: {TOKEN}", "registry-unauthorized"),
+            ("backend-pull", f"Error response from daemon: denied: {TOKEN}", "registry-denied"),
+            ("frontend-pull", f"manifest unknown: {TOKEN}", "registry-manifest-unknown"),
+            ("frontend-pull", f"toomanyrequests: {TOKEN}", "registry-rate-limited"),
+            ("current-main", f"fatal: {TOKEN}", "command-failed"),
+        ]:
+            with self.subTest(stage=stage, code=code), patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 1, TOKEN, stderr)), redirect_stdout(io.StringIO()) as output:
+                with self.assertRaises(module.Failure) as failure:
+                    module.command(["synthetic-command"], stage=stage)
+                self.assertEqual(str(failure.exception), f"Stage {stage} failed: {code}; private output withheld")
+                self.assertNotIn(TOKEN, str(failure.exception))
+                self.assertEqual(output.getvalue(), f"NOFX registry credential: stage {stage}\n")
+
+    def test_command_exception_reports_stage_without_private_exception_details(self):
+        for error, code in [
+            (subprocess.TimeoutExpired([TOKEN], 1, output=TOKEN, stderr=TOKEN), "command-timeout"),
+            (OSError(TOKEN), "command-unavailable"),
+            (subprocess.SubprocessError(TOKEN), "command-failed"),
+        ]:
+            with self.subTest(code=code), patch.object(module.subprocess, "run", side_effect=error), redirect_stdout(io.StringIO()) as output:
+                with self.assertRaises(module.Failure) as failure:
+                    module.command(["synthetic-command"], stage="registry-login")
+                self.assertEqual(str(failure.exception), f"Stage registry-login failed: {code}; private output withheld")
+                self.assertEqual(output.getvalue(), "NOFX registry credential: stage registry-login\n")
+
+    def test_untrusted_stage_is_never_logged_or_executed(self):
+        with patch.object(module.subprocess, "run") as run, redirect_stdout(io.StringIO()) as output:
+            with self.assertRaises(module.Failure) as failure:
+                module.command(["synthetic-command"], stage=TOKEN)
+        run.assert_not_called()
+        self.assertEqual(str(failure.exception), "Unknown credential validation stage")
+        self.assertEqual(output.getvalue(), "")
+
+    def run_rotation(self, *, fail_at=None, argv=None):
+        calls = []
+
+        def step(name):
+            def operation(*args):
+                calls.append(name)
+                if name == fail_at:
+                    raise module.Failure("synthetic validation failure")
+            return operation
+
+        output = io.StringIO()
+        with patch.dict(os.environ, {"NOFX_GHCR_READ_TOKEN": TOKEN}), patch.object(sys, "argv", argv or [str(SCRIPT)]), \
+                patch.object(module, "validate_context", side_effect=step("context")), \
+                patch.object(module, "github_user", side_effect=step("user")), \
+                patch.object(module, "parameter_metadata", side_effect=step("parameter")), \
+                patch.object(module, "authenticate_images", side_effect=step("images")), \
+                patch.object(module, "store_credential", return_value={"Version": 2}) as command, \
+                redirect_stdout(output), redirect_stderr(output):
+            status = module.main()
+        return status, calls, command, output.getvalue()
+
+    def test_success_validates_twice_before_write(self):
+        status, calls, command, output = self.run_rotation()
+        self.assertEqual(status, 0)
+        self.assertEqual(calls, ["context", "user", "parameter", "images", "context"])
+        command.assert_called_once_with(TOKEN)
+        self.assertNotIn(TOKEN, output)
+
+    def inspect_write_payload(self, args, kwargs):
+        self.assertEqual(kwargs, {"stage": "ssm-write"})
+        self.assertEqual(args[:6], ["aws", "ssm", "put-parameter", "--region", "us-west-2", "--cli-input-json"])
+        self.assertTrue(args[6].startswith("file:///"))
+        self.assertEqual(args[7:], ["--output", "json"])
+        self.assertNotIn(TOKEN, " ".join(args))
+        path = Path(args[6].removeprefix("file://"))
+        self.assertTrue(stat.S_ISREG(path.stat().st_mode))
+        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
+        self.assertEqual(json.loads(path.read_text()), {
+            "Name": module.PARAMETER, "Type": "SecureString", "KeyId": "alias/aws/ssm", "Value": TOKEN, "Overwrite": True,
+        })
+        return path
+
+    def test_private_write_file_removed_on_success_and_failure(self):
+        for succeeds in [True, False]:
+            paths = []
+
+            def command(args, **kwargs):
+                paths.append(self.inspect_write_payload(args, kwargs))
+                if not succeeds:
+                    raise module.Failure("synthetic write failure")
+                return '{"Version": 2}'
+
+            with self.subTest(succeeds=succeeds), patch.object(module, "command", side_effect=command):
+                if succeeds:
+                    self.assertEqual(module.store_credential(TOKEN), {"Version": 2})
+                else:
+                    with self.assertRaises(module.Failure):
+                        module.store_credential(TOKEN)
+            self.assertEqual(len(paths), 1)
+            self.assertFalse(paths[0].exists())
+            self.assertFalse(paths[0].parent.exists())
+
+    def test_actual_aws_cli_accepts_regular_file_offline(self):
+        # This executes AWS's real parameter-file parser with synthetic data.
+        # Output skeleton mode validates input locally and never sends a request.
+        # no-sign-request and isolated environment prevent any credential lookup.
+        paths = []
+
+        def command(args, **kwargs):
+            paths.append(self.inspect_write_payload(args, kwargs))
+            result = subprocess.run(
+                args + ["--generate-cli-skeleton", "output", "--no-sign-request"],
+                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30,
+                env={"PATH": os.environ["PATH"], "AWS_EC2_METADATA_DISABLED": "true",
+                     "AWS_CONFIG_FILE": "/dev/null", "AWS_SHARED_CREDENTIALS_FILE": "/dev/null",
+                     "AWS_PAGER": ""},
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Version", json.loads(result.stdout))
+            self.assertNotIn(TOKEN, result.stdout + result.stderr)
+            return result.stdout
+
+        with patch.object(module, "command", side_effect=command):
+            module.store_credential(TOKEN)
+        self.assertEqual(len(paths), 1)
+        self.assertFalse(paths[0].parent.exists())
+
+    def test_failed_validation_never_writes_ssm(self):
+        for stage in ["context", "user", "parameter", "images"]:
+            with self.subTest(stage=stage):
+                status, _, command, output = self.run_rotation(fail_at=stage)
+                self.assertEqual(status, 1)
+                command.assert_not_called()
+                self.assertNotIn(TOKEN, output)
+
+    def test_unknown_exception_does_not_leak_secret(self):
+        with patch.object(module, "rotate", side_effect=ValueError(TOKEN)), redirect_stderr(io.StringIO()) as output:
+            self.assertEqual(module.main(), 1)
+        self.assertNotIn(TOKEN, output.getvalue())
+
+    def test_cli_inputs_rejected(self):
+        status, calls, command, _ = self.run_rotation(argv=[str(SCRIPT), "alternative-target"])
+        self.assertEqual(status, 1)
+        self.assertEqual(calls, [])
+        command.assert_not_called()
+
+    def test_requires_existing_secure_parameter(self):
+        good = {"Name": module.PARAMETER, "Type": "SecureString", "KeyId": "alias/aws/ssm", "Tier": "Standard"}
+        for parameters, valid in [([], False), ([good], True), ([good, good], False),
+                                  ([dict(good, Type="String")], False),
+                                  ([dict(good, KeyId="other-key")], False)]:
+            with patch.object(module, "command", return_value=json.dumps({"Parameters": parameters})):
+                if valid:
+                    module.parameter_metadata()
+                else:
+                    with self.assertRaises(module.Failure):
+                        module.parameter_metadata()
+
+    def test_both_full_images_and_provenance_checked_with_temporary_auth(self):
+        paths = []
+
+        def command(args, **kwargs):
+            paths.append(Path(args[2]))
+            self.assertTrue(paths[-1].is_dir())
+            if "login" in args:
+                self.assertEqual(kwargs["data"], TOKEN)
+                self.assertNotIn(TOKEN, args)
+            if "inspect" in args:
+                return json.dumps({"org.opencontainers.image.source": "https://github.com/Stuhlmuller/homelab", "org.opencontainers.image.revision": module.SOURCE_SHA})
+            return ""
+
+        with patch.object(module, "command", side_effect=command) as run:
+            module.authenticate_images(TOKEN)
+        pulls = [call.args[0] for call in run.call_args_list if "pull" in call.args[0]]
+        self.assertEqual([args[-1] for args in pulls], list(module.IMAGES))
+        self.assertEqual([call.kwargs["stage"] for call in run.call_args_list], [
+            "registry-login", "backend-pull", "backend-inspect", "frontend-pull", "frontend-inspect",
+        ])
+        self.assertTrue(all(not path.exists() for path in paths))
+
+    def test_stale_main_rejected_before_write(self):
+        env = {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": module.REPO,
+               "GITHUB_REF": "refs/heads/main", "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_SHA": "a" * 40}
+        with patch.dict(os.environ, env), patch.object(module, "command", side_effect=["a" * 40, "b" * 40 + "\trefs/heads/main\n"]):
+            with self.assertRaises(module.Failure):
+                module.validate_context()
+
+    def test_main_advancing_during_pulls_prevents_write(self):
+        with patch.dict(os.environ, {"NOFX_GHCR_READ_TOKEN": TOKEN}), patch.object(sys, "argv", [str(SCRIPT)]), \
+                patch.object(module, "validate_context", side_effect=[None, module.Failure("stale main")]), \
+                patch.object(module, "github_user"), patch.object(module, "parameter_metadata"), \
+                patch.object(module, "authenticate_images"), patch.object(module, "command") as command, \
+                redirect_stderr(io.StringIO()):
+            self.assertEqual(module.main(), 1)
+        command.assert_not_called()
+
+    def test_authentication_redirect_rejected(self):
+        with self.assertRaises(module.Failure):
+            module.NoRedirect().redirect_request(None, None, 302, None, None, "https://unexpected.invalid/")
+
+
+if __name__ == "__main__":
+    unittest.main()
