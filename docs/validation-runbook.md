@@ -169,10 +169,12 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 
 Deluge, Radarr, and Sonarr media-library data is an exception to the default
 StorageClass rule: their downloads, movies, and TV library mounts use static
-PV/PVC objects backed by the QNAP `/media` export. Before syncing that cutover,
-verify `showmount -e 10.1.0.2` lists `/media` for `10.1.0.199` through
-`10.1.0.202`, then confirm the `media-downloads-migration`,
-`media-movies-migration`, and `media-tv-migration` Jobs complete successfully.
+PV/PVC objects backed by the QNAP `/media` export. Verify
+`showmount -e 10.1.0.2` lists `/media` for `10.1.0.199` through `10.1.0.202`,
+then confirm the `media-downloads-directories`, `media-movies-directories`, and
+`media-tv-directories` Jobs complete successfully. The original
+`media-*-migration` Jobs completed in May 2026 and were retired after verification.
+Their replacements only ensure directories and preserve existing media data.
 
 Sonarr, Radarr, and Prowlarr must also wait for `media-postgres` to sync and
 become healthy. Verify the ExternalSecrets, StatefulSet, PVC, and logical
