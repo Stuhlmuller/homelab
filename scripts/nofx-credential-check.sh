@@ -1,14 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# != 1 || ( $1 != test && $1 != inspect ) ]]; then
-  echo 'Usage: bash scripts/nofx-credential-check.sh test|inspect' >&2
+mode=${1:-}
+if ! [[ $mode == test && $# == 1 ]] &&
+  ! [[ $mode == inspect && $# == 2 && ${2:-} =~ ^[a-f0-9]{40}$ ]]; then
+  echo 'Usage: bash scripts/nofx-credential-check.sh test | inspect REVIEWED_MAIN_SHA' >&2
   exit 2
 fi
-mode=$1
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 check_dir="$(mktemp -d /tmp/nofx-credential-check.XXXXXX)"
 trap 'rm -rf -- "$check_dir"' EXIT
+if [[ $mode == inspect ]]; then
+  reviewed_sha=$2
+  checkout_status="$(git -C "$root" status --porcelain --untracked-files=all)"
+  if [[ -n "$checkout_status" ]]; then
+    echo 'Inspection requires a clean reviewed checkout, including untracked files' >&2
+    exit 1
+  fi
+  if [[ "$(git -C "$root" rev-parse HEAD)" != "$reviewed_sha" ||
+    "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main)" != "$reviewed_sha"$'\t'refs/heads/main ]]; then
+    echo 'Inspection requires HEAD and remote main to match REVIEWED_MAIN_SHA' >&2
+    exit 1
+  fi
+  # Build immutable committed inputs; ignored files and concurrent edits cannot
+  # add executable code to the helper that receives the backend's environment.
+  mkdir "$check_dir/reviewed"
+  git -C "$root" archive "$reviewed_sha" -- builds/nofx scripts/nofx-credential-check \
+    clusters/homelab/apps/nofx/deployment.yaml | tar -x -C "$check_dir/reviewed"
+  root="$check_dir/reviewed"
+  printf '%s\n' "$reviewed_sha" > "$root/builds/nofx/revision.txt"
+fi
 python3 -I "$root/builds/nofx/prepare-source.py" "$check_dir/source"
 cp -R "$root/scripts/nofx-credential-check" "$check_dir/source/upstream/credentialcheck"
 cd "$check_dir/source/upstream"

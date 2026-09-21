@@ -259,13 +259,30 @@ its global-host authentication failure without changing stored credentials.
 
 If `50119` persists on the correct regional host, use the repository-owned
 checker to distinguish storage-decryption failures from exchange rejection.
-Run from a reviewed checkout. The locked Nix shell supplies Go 1.25, Python,
-Git, kubectl, and yq:
+The locked Nix shell supplies Go 1.25, Python, Git, kubectl, and yq. Development
+checks use synthetic data only:
 
 ```sh
+nix develop --command python3 -I scripts/nofx-credential-check-test.py
 nix develop --command bash scripts/nofx-credential-check.sh test
-nix develop --command bash scripts/nofx-credential-check.sh inspect
 ```
+
+For live inspection, use the full main commit from the reviewed PR. Check the
+checkout before entering Nix; the wrapper repeats these checks and requires
+remote main to match the supplied SHA:
+
+```sh
+reviewed_main_sha="<full-reviewed-main-commit>"
+test "$(git rev-parse HEAD)" = "$reviewed_main_sha" &&
+  test -z "$(git status --porcelain --untracked-files=all)" &&
+  nix develop --command bash scripts/nofx-credential-check.sh inspect "$reviewed_main_sha"
+```
+
+Dirty tracked/untracked files or mismatched revisions stop inspection before
+source preparation, compilation, or cluster access. Build inputs come from
+`git archive` of the reviewed commit, so ignored files and concurrent working
+tree edits cannot add code to the executable. The offline guard regression
+verifies these refusal paths and exclusion of an ignored Go file.
 
 `test` downloads the checksum-pinned source, applies maintained patches, tests
 synthetic credentials, and builds a static Linux executable. `inspect` repeats
