@@ -4,6 +4,62 @@ Use Backtest Lab for an isolated historical round. Each run has its own virtual
 account and AI cache. The live Competition page ranks exchange traders; it is
 not the scoreboard for these simulations.
 
+## One OKX account
+
+NOFX supports multiple traders using the same OKX connection. This is the
+user-selected setup; separate accounts are not required to configure the three
+personas. These traders share the account's balance and positions. Their actions
+can affect one another, and account-level returns cannot identify each persona's
+performance. Separate API keys for the same account do not provide isolation.
+A trader's Initial Balance is a return
+calculation baseline, not a capital allocation or spending limit.
+
+Separate funded OKX accounts or
+[subaccounts](https://www.okx.com/en-us/help/what-is-sub-account) are needed only
+for independent live balances and P&L. The shared-account setup cannot establish
+a winner from per-trader account returns. Backtest Lab remains available for
+isolated virtual comparisons; those simulations do not trade the OKX portfolio.
+
+## Configured live drafts
+
+Trend, Mean Reversion, and Breakout are saved as stopped traders using the same
+existing OKX connection and `openrouter/free`. Each has its own private,
+inactive `Live - <persona>` strategy copied from the matching simulation
+strategy. The copies retain their personas but remove historical-only and
+historical strict-JSON-schema instructions.
+
+Each draft is configured for 1x leverage caps, at most three positions, a 30%
+margin target, a 60-minute scan interval, and hidden leaderboard visibility.
+The margin target is advisory model-prompt text; the execution path does not
+enforce it. These settings do not reserve capital or impose a combined account limit.
+The existing Consensus trader and `Sim - <persona>` strategies are unchanged.
+Live activation remains a user action; no live orders were placed during setup.
+Read-only persisted checks verified `is_running=0` and `show_in_competition=0`
+for all three after using the trader cards' visibility toggles.
+
+Keep the drafts stopped pending runtime verification. In the earlier
+`25bceceb` runtime, `kernel/engine.go` validates a copied decision, so its live
+leverage clamp does not persist. `store/trader.go` also defaults newly created
+traders to visible despite an explicit false value; the card toggles corrected
+the saved drafts. Configured 1x and a creation-form Hide selection alone therefore
+do not prove enforcement or persisted visibility. Reviewed source
+`05fcf60be529c063ae9f5fa16494466c3db0f400` includes patches
+`0007-live-leverage-cap.patch` and `0008-trader-visibility.patch`, which fix those shared
+code paths, with parser and SQLite regression checks in the backend build.
+`0009-okx-leverage-failure.patch` reads current OKX cross-margin leverage,
+skips writes when it already matches, and otherwise sends one instrument-level
+request. Invalid lookup data or failed leverage requests stop openings before
+canceling existing orders; mocked transport checks cover both directions. Previously,
+leverage API errors were logged and trading continued.
+The visibility migration removes the old column default while preserving saved
+values; omitted API visibility still defaults to true. Follow the
+[runtime acceptance checks](nofx-private-images.md#harbor-runtime-acceptance)
+before relying on these fixes; `deployment.yaml` owns the desired image pair.
+After restart, reload the UI and verify all three drafts remain stopped and
+hidden. Arena's separate
+`ExecuteConsensus` to `ExecuteDecision` path bypasses the shared validator and
+is not used by these drafts.
+
 ## Competitors and shared rules
 
 | Competitor | Saved strategy | Approach |
@@ -41,26 +97,21 @@ following in every persona's simulation prompt:
 > explicit close decisions; do not rely on automatic stop-loss or take-profit
 > triggers in this simulation. Holding cash is valid.
 
-Also require a brief rationale followed by a valid JSON decision array inside
-`<decision>...</decision>`. Every entry must use `BTCUSDT`, `ETHUSDT`, or
-`SOLUSDT`; never use `ALL`. A no-action response still needs an explicit wait:
-
-```text
-No confirmed signal.
-<decision>[{"symbol":"BTCUSDT","action":"wait"}]</decision>
-```
-
-This prompt mitigation is saved for all three competitors. Start a fresh round
-with the same strengthened prompt for each competitor; do not mix its results
-with earlier runs. It does not guarantee valid model output.
+The maintained competition build supplies a strict JSON schema to the free
+router and validates the returned object locally. This replaces earlier XML
+format examples. Keep the persona prompt focused on signals, risk limits, and a
+brief rationale. Decisions must use the configured symbols, including explicit
+wait decisions when no action is justified; `ALL` is invalid.
 
 ## Run and score
 
 Select a saved strategy and the shared model, enter the matching settings,
 then start its historical run. Record the strategy-to-run-ID mapping immediately;
-the UI generates the run ID. Repeat for the other two strategies. Each round
+the UI includes the strategy name in generated run IDs. Repeat for the other two
+strategies. Each round
 has six scheduled decision cycles per competitor, 18 logical model requests in
-total. Provider retries may add requests. A free-provider limit is a failed or
+total. The strict historical free-router path makes one provider attempt per
+cycle, including transient errors. A free-provider limit is a failed or
 incomplete round, not permission to switch to a paid model.
 
 Before ranking a run, verify all of the following in the UI:
@@ -81,23 +132,20 @@ than all openings. Preserve these definitions in any published results.
 
 ## Current limitations
 
-The pinned simulator does not execute stop-loss/take-profit triggers. Its
-leverage validation currently clamps a copy of each decision while execution
-can use the original requested leverage. Also, Completed can conceal earlier
-failed AI cycles. Enforce the eligibility checks above; a violating run cannot
-supply a valid score. A future runtime change should clamp the actual executed
-decision and preserve failed-cycle visibility, with focused regression tests.
+The simulator does not execute stop-loss/take-profit triggers. Completed can
+still conceal earlier failed AI cycles. The maintained competition build caps
+actual fill leverage and exposes recorded failures in the comparison table;
+nevertheless, enforce every eligibility check above before assigning a score.
 
 The first observed Trend and Breakout runs displayed Completed despite two and
 three failed decisions out of six, respectively. Both are ineligible for ranking.
 Their error was `ALL wait: price unavailable for ALL`; failed responses included
-prose or a safety label without the required JSON. The parser in
+prose or a safety label without the required JSON. The legacy parser in
 `kernel/engine.go` synthesizes an `ALL` wait when decision JSON is missing, then
-`backtest/runner.go` looks up its price before treating wait as a no-op. A future
-fix must distinguish malformed model output from a genuine wait, preserve the
-failure for round eligibility, and handle valid no-action decisions without
-inventing a tradable symbol. Test missing JSON separately from explicit waits;
-do not turn parse failures into successful cash decisions.
+`backtest/runner.go` looks up its price before treating wait as a no-op. The new
+historical free-router path bypasses that fallback: malformed output remains a
+failed cycle rather than a successful cash decision. Other model request paths
+retain their legacy parsing behavior.
 
 Keep each round uninterrupted by backend restarts. A running simulation retains
 its loaded strategy, but the persisted configuration does not serialize that
@@ -105,18 +153,29 @@ strategy object. Cold resume can therefore reconstruct defaults instead of the
 selected persona. Start a fresh matched round after a restart; a future runtime
 fix should persist and restore the complete strategy snapshot.
 
-The Backtest Lab Compare buttons only select IDs; this release has no rendered
-comparison table. Read each eligible run's Overview, Trades, Positions, and
-Decisions and record actual results together. Do not publish private account
+Select Compare on the three runs to show their recorded metrics side by side.
+The table preserves selection order and does not certify eligibility or declare
+a winner. Missing metrics stay unavailable, and decision-record completeness
+must be checked against the six expected cycles. Read each run's Overview,
+Trades, Positions, and Decisions before ranking. Do not publish private account
 balances through the live Competition page to imitate a simulation scoreboard.
 
-The next maintained build adds a factual comparison table and strategy names in
-new run IDs. It also requests strict JSON-schema output for historical
-`openrouter/free` calls to the official OpenRouter API and caps actual fill
-leverage. That path makes one provider attempt per cycle, including transient
-errors; failures remain failures. Its schema instruction supersedes the earlier
-XML-format prompt mitigation. After publishing and deploying the new image
-digests, use fresh run IDs and repeat all eligibility checks before ranking.
+The earlier competition features shipped in reviewed source
+`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`, deployed by
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052). Read-only inspection
+on 2026-09-20 found Argo CD Synced/Healthy at
+`047d26f088b6733dcd8b9c48dcec9cdca393c10f`, both deployments ready `1/1`, and
+running image IDs matching the declared backend `58c274ba93e0…` and frontend
+`92542955d244…` digests. No live traders were running. Full image references
+remain in `clusters/homelab/apps/nofx/deployment.yaml`.
+
+Reload an already-open Backtest Lab tab after deployment and verify the OKX US
+data-source selector before starting fresh runs. An old tab still executing
+`index-DZRrtCHp` created `bt_20260920_235904` against Binance and failed with
+HTTP 451 despite the healthy new frontend. An ordinary reload loaded
+`index-CrqEPk8_` and the OKX selector. Retain the failed row as evidence; it is
+not a result from the new OKX round. The earlier `f76c278` images also lack the
+competition fixes.
 
 Source: `backtest/runner.go`, `backtest/account.go`, `kernel/engine.go`, and
 `web/src/components/BacktestPage.tsx` at the maintained upstream revision in
@@ -125,7 +184,8 @@ eligible round or a winner.
 
 ## Observed prompt-only rerun
 
-The second round used the shared JSON prompt mitigation above. UI inspection
+The second round used a shared prompt requiring a JSON array inside `<decision>`
+tags and explicit configured symbols. UI inspection
 on 2026-09-20 UTC found the following completed simulations:
 
 | Persona | Run ID | Successful cycles | Failed cycles | Ending virtual USDT | Eligible |
@@ -138,3 +198,25 @@ Mean Reversion made six explicit no-action decisions and had no trades. Both
 other runs still hit the `ALL` parse fallback. Prompt wording alone therefore
 did not produce a complete eligible competition; these results do not identify
 a winning persona. These amounts are simulated balances, not OKX account data.
+
+## Observed structured-output round
+
+After the browser reload, all three saved persona prompts used the supplied
+JSON schema without the old XML examples. UI inspection on 2026-09-21 UTC
+verified matching settings from the table above, OKX US candles, and all six
+expected decision timestamps per run. The terminal comparison displayed:
+
+| Persona | Run ID | Successful cycles | Failed cycles | Ending virtual USDT | Net return | Max drawdown |
+| --- | --- | --- | --- | --- | --- | --- |
+| Trend | `bt_sim_trend_20260921000146206_162142266b29` | 3 | 3 | 1,000.00 | 0.00% | 0.00% |
+| Mean Reversion | `bt_sim_mean_reversion_20260921000231158_226312a5f5bb` | 5 | 1 | 1,000.00 | 0.00% | 0.00% |
+| Breakout | `bt_sim_breakout_20260921000254193_9c618d52e692` | 5 | 1 | 999.75 | -0.02% | 0.25% |
+
+All three displayed Completed, but none is eligible and there is no winner.
+Trend had two client timeouts and one non-normal structured response finish;
+Mean Reversion and Breakout each had one non-normal finish. The displayed
+errors do not distinguish truncation, filtering, or another provider cause.
+Mean Reversion had no fills; Breakout opened BTC, ETH, and SOL shorts at 1x.
+These are recorded virtual results with displayed rounding. They verify that
+failed decisions remain visible, not successful competition acceptance. Keep
+the runs for diagnosis rather than counting their failures as cash decisions.

@@ -44,9 +44,12 @@ repos:
     rev: 9ea6d83d477afb3691795eda79d8f4dd56851d4b
     hooks:
       - id: checkov_diff
+        exclude: ^clusters/.*\.ya?ml$
+      - id: checkov
+        name: Checkov Kubernetes context
+        entry: checkov -d clusters --framework kubernetes
+        files: ^clusters/.*\.ya?ml$
       - id: checkov_secrets
-        args:
-          - "-v"
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     # v1.22.0

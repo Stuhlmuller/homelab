@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-19
+updated: 2026-09-21
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,14 +15,18 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The deployed derivative was published by reviewed main
-revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. Both deployments reference
+The shared-account rollout targets reviewed source revision
+`05fcf60be529c063ae9f5fa16494466c3db0f400`; `deployment.yaml` declares the desired
+image pair. Publication and runtime acceptance remain separate gates.
+Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
-[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036) merged at
-`78ca869aae86c7cd94b6c725bec59f68b032c6b5`. Subsequent Argo CD inspection showed
-`Synced` and `Healthy` at that revision, with both exact pinned Harbor images
-ready `1/1`. Both packages remain private.
+The earlier `25bceceb` rollout in
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052) merged at
+`047d26f088b6733dcd8b9c48dcec9cdca393c10f`. Read-only inspection on 2026-09-20
+showed Argo CD `Synced` and `Healthy`, both deployments ready `1/1`, and running
+image IDs matching the declared backend `58c274ba93e0…` and frontend
+`92542955d244…` digests. Both packages remain private.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -131,9 +135,9 @@ credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR
 tests/builds with read-only repository permission. Following the Harbor change,
 only current `main` can publish new images to the private Harbor repositories,
 tagged `homelab-<full-main-sha>`; manual dispatch requires that exact SHA.
-The workflow reports digests after pushing. The functional repair uses the same
-published artifacts after their verified Harbor migration, with the namespace's
-`harbor-pull` Secret. See [[../operations/harbor-oci]].
+The workflow reports digests after pushing. The initial functional repair used
+the migrated artifacts; subsequent releases publish directly to Harbor and use
+the same namespace-scoped `harbor-pull` Secret. See [[../operations/harbor-oci]].
 The reviewed source repair merged in
 [PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
 [publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
@@ -141,7 +145,7 @@ passed. Both anonymous pull checks returned HTTP 401 on September 14. Package
 visibility must remain private. Credential bootstrap
 [PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031), main `0b352ebd`,
 retained upstream images and left the GHCR recovery Secret unattached. The
-maintained deployment now selects the same digests from Harbor after the
+initial maintained rollout selected the same digests from Harbor after the
 successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550).
 The rollout was verified with `harbor-pull` ExternalSecret readiness, both
 running Harbor digests, and the live trader stopped. Complete simulation
@@ -175,27 +179,80 @@ it does not contact SSM or use the production token.
 
 The [agent competition runbook](../../nofx-agent-competition.md) defines three
 isolated historical competitors with equal virtual balances, costs, and market
-data. The pinned Backtest Lab has no rendered comparison table; its Completed
-status can conceal failed AI cycles, leverage validation mutates a decision copy,
-and stop-loss/take-profit triggers are not simulated. Require six successful
-decisions and verify every fill's leverage before ranking a round. The runbook
-records the focused follow-up fixes and avoids presenting incomplete runs or
-shared live-account balances as independent competition results.
+data. The competition build adds a factual Backtest Lab comparison table and
+caps leverage on actual fills. Completed still does not prove that all decisions
+succeeded, and stop-loss/take-profit triggers are not simulated. Require six
+successful decisions and verify every fill's leverage before ranking a round.
+The runbook records failed rounds and the required browser reload after image
+rollout. The user-selected live setup saves Trend, Mean Reversion, and Breakout
+as stopped traders on the same existing OKX connection and `openrouter/free`,
+with separate private `Live - <persona>` strategies configured for 1x leverage.
+Read-only persisted checks confirmed all three stopped and hidden after using
+the trader cards' visibility toggles. In the earlier `25bceceb` runtime, decision
+validation loses its leverage clamp and trader creation can override explicit
+hidden visibility. Source `05fcf60` patches `0007` and `0008` fix both paths with
+focused backend build regressions. Patch `0009`
+also checks current OKX cross-margin leverage, skips matching settings, and uses
+one instrument-level update when needed. Leverage errors stop openings before
+canceling existing orders, with a mocked transport regression. Verify exact
+published digests, source patches, and persisted stopped/hidden flags after
+rollout before accepting the runtime. Sharing an account is supported, but
+also shares positions and account-level returns; Initial Balance does not reserve
+capital. Separate funded accounts or
+subaccounts are needed only for independent live balances and P&L. The runbook
+records the draft limits without presenting shared balances or historical
+simulations as independent live competition results.
+
+The first user-initiated starts after the `05fcf60` rollout failed before the
+trading loop: OKX rejected account config/balance reads with code `50119`, so
+the manager could not load the traders. The UI replaced the resulting HTTP 500
+with generic retry guidance. The adapter hard-codes `https://www.okx.com`.
+[OKX's API FAQ](https://www.okx.com/en-us/help/api-faq) identifies regional-host
+mismatch as a common cause: US accounts use `us.okx.com`, EEA accounts
+`eea.okx.com`. Confirm the account region before changing routing or credentials;
+this error alone does not prove the key is invalid. Regional authentication does
+not establish trading compatibility: the adapter uses `*-USDT-SWAP` perpetuals,
+which [OKX says are unavailable to US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Validate available account instruments read-only before any activation. Do not
+work around product eligibility by using another regional endpoint.
+Patch `0010` returns fixed HTTP 400 guidance for the known OKX `50119` load
+failure and carries that message through the Start toast. Unknown server errors
+remain generic. It also propagates account-config lookup failures from the shared
+OKX constructor instead of assuming hedge mode. This blocks initialization even
+when a saved Initial Balance skips the later balance lookup. All constructor
+callers use their existing error paths. Handler and UI regressions use mocked
+exchange/API responses; they verify stopped state with zero and nonzero saved
+balances and error visibility, not live authentication. This
+repair does not change the endpoint or credentials. Correct routing and product
+compatibility still require the account region and read-only validation.
+
+The unused Arena consensus execution path bypasses the shared decision validator;
+do not infer its leverage enforcement from the normal trader fix. A separate
+`store/trader.go` creation default also overrides explicit `IsCrossMargin=false`.
+These drafts retain cross margin; preserving an explicit false value needs a
+focused follow-up before configuring isolated margin through that create path.
+The configured 30% margin target is also advisory: `MaxMarginUsage` appears in
+the model prompt but is not enforced by `trader/auto_trader.go`. Implement an
+execution check before presenting it as a hard account-exposure limit.
 
 The first observed Trend and Breakout simulations reported Completed with two
 and three failed cycles out of six. Missing JSON caused the parser to synthesize
 an `ALL` wait, which the runner rejected as `price unavailable for ALL` before
-handling the wait action. All three saved prompts now require a valid decision
-array in `<decision>` tags, only the three configured symbols, and an explicit
-real-symbol wait for no action. Fresh-round acceptance remains pending. A runtime
-fix must preserve malformed responses as failures, separately from genuine waits;
-these incomplete runs do not establish a winner.
+handling the wait action. Adding an explicit JSON-array requirement to all three
+saved prompts did not resolve the issue: the second Trend and Breakout runs each
+still failed one of six cycles. These incomplete rounds do not establish a
+winner.
 
-The next maintained build requests strict structured output for historical
+The competition build requests strict structured output for historical
 `openrouter/free` calls to the official OpenRouter API, preserves malformed or
-refused responses as failed cycles, and caps actual simulated leverage. Its
-Backtest Lab comparison table reports recorded outcomes without inferring
-eligibility from Completed. Publication and deployment of that build remain
-separate from the verified `f76c278` deployment above. Also avoid resuming a round
-across a backend restart: the pinned simulator does not persist its loaded saved
-strategy object, so a cold resume can lose the selected persona.
+refused responses as failed cycles, and makes one provider attempt per cycle,
+including transient errors. Deployment verification does not establish a
+complete eligible simulation round. Avoid resuming a round across
+a backend restart: the simulator does not persist its loaded saved strategy
+object, so a cold resume can lose the selected persona.
+
+The pinned `backtest/manager.go` also saves its pre-start `created` metadata
+after launching a runner. Counting only database `running` rows can therefore
+miss a first decision in progress. The rollout runbook combines read-only state
+counts with absence of heartbeat lock files; unknown activity leaves the gate
+closed. A future runtime fix should persist the post-start state consistently.
