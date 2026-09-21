@@ -193,8 +193,11 @@ work and can add head-of-line delay to every node-local CNI operation; it would
 not remove the overcommit. Revisit the value only with a controlled startup
 test on a correctly sized dedicated dataplane worker.
 
-Retain Multus `v4.3.0` and `connectionLimit: 4`; a version rollback is rejected
-for this outage. The [v4.3.0 release](https://github.com/k8snetworkplumbingwg/multus-cni/releases/tag/v4.3.0)
+Multus now pins `v4.3.1` for upstream conflist cleanup, certificate rotation,
+and thick-daemon termination fixes. Keep `connectionLimit: 4`; downgrading to
+v4.2.4 remains rejected as a fix for the August outage. See the
+[Multus runbook](../../../clusters/homelab/platform/multus/README.md) for the
+v4.3.0 rollback pin and required live attachment acceptance. The [v4.3.0 release](https://github.com/k8snetworkplumbingwg/multus-cni/releases/tag/v4.3.0)
 and [connection-limit implementation](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
 show an opt-in Unix-listener cap, while Kubernetes v1.34.1
 [GenericPLEG](https://github.com/kubernetes/kubernetes/blob/v1.34.1/pkg/kubelet/pleg/generic.go#L232-L258)

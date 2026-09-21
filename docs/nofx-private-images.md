@@ -110,17 +110,35 @@ closed even when static checks pass.
 
 ## Harbor runtime acceptance
 
-The next rollout targets competition build
-`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b` from
-[NOFX Images run 35494703264](https://github.com/Stuhlmuller/homelab/actions/runs/35494703264),
-which successfully published and verified both private Harbor images. It adds
-strict historical OpenRouter decisions, an execution-time leverage cap, and a
-factual selected-run comparison table. Runtime acceptance remains separate;
-successful publication does not establish deployment or competition results.
+The startup-error rollout targets build revision
+`9716e9d9121a062029c72dc5f03f0d266a166650`, retaining the NOFX source fix from
+[PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056), merged at
+`1c826acdbb16af08cf879ee5fcf4871a0307b45d`.
+[NOFX Images run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+passed publication and private pull verification; both manifest references come
+from its verified digest report.
+Patch `0010` provides safe guidance for known OKX `50119` startup failures and
+preserves that message in the UI. The shared constructor propagates account-config
+errors through all four callers, including when a saved balance skips a later
+balance lookup. This changes no endpoint, credential, or exchange product.
+Actual OKX authentication remains unresolved pending account-region confirmation.
+
+The previous shared-account rollout used source
+`05fcf60be529c063ae9f5fa16494466c3db0f400`, merged in
+[PR #1054](https://github.com/Stuhlmuller/homelab/pull/1054).
+[NOFX Images run 35551197231](https://github.com/Stuhlmuller/homelab/actions/runs/35551197231)
+passed publication and private pull verification. That source preserves parsed
+leverage caps and hidden trader creation, and stops OKX openings when leverage
+verification or updates fail.
+[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml) owns desired
+image references; publication alone establishes neither deployment nor returns.
+The earlier `25bceceb` competition build was deployed by
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052); retain that evidence
+as history, not acceptance of these additional fixes.
 
 Before merging the image-pin PR:
 
-1. Require successful private Harbor publication of that exact source revision.
+1. Require successful private Harbor publication of that exact build revision.
    Copy both verified digest references from the publication report into
    [deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml); never infer
    a digest from a tag or reuse the old migration result as new-build evidence.
@@ -165,9 +183,15 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md), including a fresh
-[simulation comparison](nofx-agent-competition.md). Image publication and Pod
-readiness do not establish a valid competition result.
+[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0010`
+in the source download and confirm all three shared-account drafts remain
+stopped and hidden after restart. Reproduce parser, visibility-migration, and
+OKX transport/startup-error checks through the image test target, without live
+orders. Startup-error guidance does not establish successful OKX authentication
+or product eligibility. For a fresh
+[simulation comparison](nofx-agent-competition.md), all expected decisions
+must pass before scoring; publication and Pod readiness do not establish a valid
+competition result. Live activation remains a user action.
 
 ## Recovery token rotation and failure modes
 
