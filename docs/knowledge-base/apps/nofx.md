@@ -282,6 +282,8 @@ aggregate counters only; no credential material leaves the container. Synthetic
 tests cover successful, corrupt, wrong-key, legacy, empty, nested, and whitespace
 values and verify rejected writes with unchanged fixture bytes. See the
 [operator commands](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis).
+The locked Nix development shell explicitly supplies Go 1.25 and Python for
+this operator path; no ambient language runtime is required.
 If decryption failure is confirmed, make scanning fail closed while retaining
 the UI's credential-replacement path; the current full-record list would otherwise
 fail before its safe metadata projection. Successful decryption instead requires

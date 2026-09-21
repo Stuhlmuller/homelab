@@ -259,7 +259,8 @@ its global-host authentication failure without changing stored credentials.
 
 If `50119` persists on the correct regional host, use the repository-owned
 checker to distinguish storage-decryption failures from exchange rejection.
-Run from a reviewed checkout with Go, Python, Git, kubectl, and yq available:
+Run from a reviewed checkout. The locked Nix shell supplies Go 1.25, Python,
+Git, kubectl, and yq:
 
 ```sh
 nix develop --command bash scripts/nofx-credential-check.sh test
