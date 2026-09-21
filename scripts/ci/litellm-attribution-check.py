@@ -1,6 +1,7 @@
 """Run with the gateway's pinned litellm[proxy]==1.80.8 Python environment."""
 
 import asyncio
+from hashlib import sha256
 import importlib.util
 import json
 from pathlib import Path
@@ -10,6 +11,7 @@ import tempfile
 from fastapi import HTTPException, Request
 from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
 from litellm.proxy.types_utils.utils import get_instance_fn
+from litellm.utils import get_optional_params
 
 ROOT = Path(__file__).resolve().parents[2]
 assert "tag: main-v1.80.8-stable@" in (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text(), \
@@ -35,6 +37,14 @@ async def denied(awaitable, status):
 
 
 async def check():
+    # NOFX's strict OpenRouter path must survive the provider translation.
+    response_format = {"type": "json_schema", "json_schema": {
+        "name": "decision", "strict": True, "schema": {"type": "object"}}}
+    params = get_optional_params(model="openrouter/free", custom_llm_provider="openrouter",
+                                 response_format=response_format,
+                                 provider={"require_parameters": True})
+    assert params["response_format"] == response_format
+    assert params["provider"] == {"require_parameters": True}
     with tempfile.TemporaryDirectory(dir="/tmp") as directory:
         # Like the container mount, the module path must not contain dots.
         shutil.copyfile(identity.__file__, Path(directory) / "app_identity.py")
@@ -48,7 +58,7 @@ async def check():
             token = (identity.KEY_DIRECTORY / app).read_text()
             user = await identity.authenticate(request(), token)
             assert user.key_alias == app and user.user_id == app
-            assert user.api_key != token, "LiteLLM must hash the key before logging"
+            assert user.api_key == sha256(token.encode()).hexdigest()
             for path in ("/key/generate", "/config/update", "/user/new"):
                 await denied(identity.authenticate(request(path), token), 403)
             await denied(identity.authenticate(request("/v1/models", "DELETE"), token), 403)
@@ -56,7 +66,9 @@ async def check():
                 marker = "test-provider-key-must-not-be-exported"
                 data = {
                     "api_key": marker,
-                    metadata_key: {"trace_user_id": "spoofed", "session_id": "session-1"},
+                    metadata_key: {"trace_user_id": "spoofed", "session_id": "session-1",
+                                   "user_api_key": user.api_key, "user_api_key_hash": user.api_key,
+                                   "user_api_key_auth": user.model_dump(mode="json")},
                     "proxy_server_request": {
                         "headers": {"langfuse_trace_user_id": "spoofed", "authorization": marker},
                         "body": {"api_key": marker},
@@ -91,6 +103,7 @@ async def check():
                                        "proxy_server_request": result["proxy_server_request"]},
                 }, response)
                 assert marker not in json.dumps(span.attributes)
+                assert token not in json.dumps(span.attributes)
                 assert "Reply OK" in json.dumps(span.attributes)
                 assert "OK" in json.dumps(span.attributes)
                 assert span.attributes["llm.token_count.prompt"] == 8
@@ -99,6 +112,13 @@ async def check():
         await denied(identity.authenticate(request(), "wrong"), 401)
         await denied(identity.authenticate(request(), None), 401)
         await identity.authenticate(request("/health/readiness", "GET"), None)
+        # LiteLLM hashes only sk-/JWT keys itself. Arbitrary rotated keys must
+        # still remain absent from the returned auth object and log metadata.
+        unprefixed = "operator-fixture-" + "z" * 48
+        (identity.KEY_DIRECTORY / "operator").write_text(unprefixed)
+        operator = await identity.authenticate(request(), unprefixed)
+        assert operator.api_key == sha256(unprefixed.encode()).hexdigest()
+        assert unprefixed not in operator.model_dump_json()
         # Secret volume rotation takes effect without restarting the gateway.
         old = (identity.KEY_DIRECTORY / "openclaw").read_text()
         (identity.KEY_DIRECTORY / "openclaw").write_text("sk-rotated-" + "y" * 48)

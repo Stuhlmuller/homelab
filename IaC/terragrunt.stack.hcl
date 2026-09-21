@@ -1878,6 +1878,7 @@ unit "argocd_apps_nofx" {
       "external-secrets",
       "istio",
       "octelium",
+      "litellm",
       "platform-storage"
     ]
     manifest = {

@@ -204,8 +204,10 @@ See the OpenClaw app README and [[operations/openclaw-assistant-2026-09-05]].
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`
-PVCs; it does not install a database operator. A dedicated raw-event S3 bucket
-expires objects after 30 days. Neither that lifecycle policy nor the retained
+PVCs; it does not install a database operator. A dedicated S3 bucket shared by
+raw events, uploaded media and batch exports expires all objects after 30 days
+(noncurrent versions after 7 days), including media links and export downloads.
+Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,

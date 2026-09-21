@@ -7,7 +7,7 @@ to label callers.
 
 `app_identity.py` uses LiteLLM's custom-auth and pre-call callback interfaces.
 Separate generated `/homelab/<app>/litellm-token` parameters identify OpenClaw,
-NOFX, n8n and Multica. The `litellm-app-keys` ExternalSecret mounts those keys
+NOFX and Multica. The `litellm-app-keys` ExternalSecret mounts those keys
 as files. App keys permit model discovery and inference only; the master key
 is reserved for the operator. Incoming identity labels are replaced with the
 authenticated app name in Langfuse `userId`, trace name, metadata and `app:*`
@@ -49,6 +49,10 @@ The September 20 live inspection found the existing `OPENAI_API_KEY` is still
 the `REPLACE_ME` placeholder. Do not migrate working subscriptions or Bedrock
 workflows to `openai-default`. Their provider/model and credential contracts
 must be preserved and verified during their individual migrations.
+
+The operator explicitly deferred n8n migration on September 20; its existing
+Bedrock credential and workflow remain unchanged, outside this rollout's
+Langfuse coverage.
 
 Sources: [custom authentication](https://docs.litellm.ai/docs/proxy/custom_auth),
 [Langfuse integration](https://langfuse.com/integrations/gateways/litellm).

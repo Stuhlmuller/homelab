@@ -16,6 +16,14 @@ cycle, including transient errors; failures remain visible. Other models and
 live traders retain their existing request path. The simulator also caps actual
 fill leverage at the configured limit.
 
+Patch `0011-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
+configuration and routes only `openrouter/free` through LiteLLM when the fixed
+mounted JSON config exists. It reads the gateway bearer from the declared token
+file, sends the original provider key only in the gateway request body, and uses
+no environment-variable routing inputs. The source change is inert until a
+reviewed `main` build publishes an exact backend image digest; do not change the
+active deployment digest as part of the configuration-only rollout.
+
 Normal trader decision parsing preserves the shared validator's leverage clamp
 in the returned decisions. Trader creation also preserves an explicit hidden
 leaderboard setting; the API retains its visible default when omitted. Focused
@@ -113,6 +121,12 @@ The report is generated only from verified publication outputs; it never uploads
 registry authfiles, transport logs, or the publisher workspace. The existing
 Actions step summary remains available. Artifact expiry does not delete images;
 a missing report is not permission to infer digests from mutable tags.
+
+For the LiteLLM routing patch, wait for its reviewed `main` image publication and
+then pin the verified backend digest in a separate rollout. Before that pin,
+confirm `nofx-litellm` is Ready; afterward, run a short historical
+`openrouter/free` simulation through LiteLLM and inspect the result for one
+structured provider attempt and no credential-bearing log output.
 
 The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
 Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves

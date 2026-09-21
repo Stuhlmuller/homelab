@@ -1,5 +1,6 @@
 """Authenticate file-backed app keys and attach trusted Langfuse attribution."""
 
+from hashlib import sha256
 from pathlib import Path
 from secrets import compare_digest
 
@@ -8,7 +9,7 @@ from litellm.integrations.custom_logger import CustomLogger
 from litellm.proxy._types import LitellmUserRoles, UserAPIKeyAuth
 
 KEY_DIRECTORY = Path("/var/run/secrets/litellm-apps")
-APPS = ("openclaw", "nofx", "n8n", "multica")
+APPS = ("openclaw", "nofx", "multica")
 INFERENCE_PATHS = {"/chat/completions", "/completions", "/responses", "/embeddings"}
 
 
@@ -30,7 +31,7 @@ async def authenticate(request: Request, api_key: str) -> UserAPIKeyAuth:
         ):
             raise HTTPException(403, "App keys permit inference and model discovery only")
         return UserAPIKeyAuth(
-            api_key=api_key,
+            api_key=sha256(api_key.encode()).hexdigest(),
             key_alias=app,
             user_id=app,
             user_role=LitellmUserRoles.PROXY_ADMIN if app == "operator" else LitellmUserRoles.INTERNAL_USER,

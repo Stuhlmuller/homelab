@@ -273,7 +273,7 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   credentials. The exact-version diagnostics plugin preserves ChatGPT OAuth
   provider access. This telemetry route does not imply complete token usage.
 - LiteLLM app keys are distinct generated `/homelab/<app>/litellm-token`
-  parameters for OpenClaw, NOFX, n8n and Multica. The gateway reads mounted
+  parameters for OpenClaw, NOFX and Multica. The gateway reads mounted
   Secret files, restricts app keys to inference/model discovery, and attaches
   authenticated app identity to Langfuse traces. OpenClaw's former alias of the
   master key is replaced with its own key; the `openclaw-secrets` revision is

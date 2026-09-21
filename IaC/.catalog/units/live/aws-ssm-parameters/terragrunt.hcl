@@ -275,14 +275,6 @@ inputs = {
         special = false
       }
     }
-    "/homelab/n8n/litellm-token" = {
-      description = "n8n inference-only LiteLLM key with app attribution."
-      generated = {
-        length  = 48
-        prefix  = "sk-"
-        special = false
-      }
-    }
     "/homelab/multica/litellm-token" = {
       description = "Multica inference-only LiteLLM key with app attribution."
       generated = {

@@ -19,9 +19,33 @@ The backend stores its SQLite database and logs on the `nofx-data` NFS PVC at
 - `/homelab/nofx/ghcr-read-token` is an externally issued, read-only registry
   recovery credential. Its dedicated `nofx-registry-auth` ExternalSecret renders a
   `kubernetes.io/dockerconfigjson` Secret; it is not exposed to NOFX containers.
+- `/homelab/nofx/litellm-token` is the generated inference-only gateway key.
+  `nofx-litellm` mounts it only as the backend's read-only
+  `/var/run/secrets/nofx/litellm/token` file; it is never an environment variable
+  or a frontend mount. Because this ExternalSecret uses `OnChange`, increment its
+  `generated-secret-revision` annotation after rotating the SSM value.
 
 Rollout depends on External Secrets, Istio ambient, Octelium,
 `octelium-public`, and the `nfs-default` storage class.
+
+## Deferred LiteLLM routing
+
+The overlay declares the fixed file-backed route at
+`/etc/nofx/litellm-routing.json` for the maintained source patch. It points only
+to `http://litellm.ai.svc.cluster.local:4000` and the mounted gateway-token file;
+there are no routing environment variables. The existing encrypted database
+continues to own the OpenRouter provider key, Base URL
+`https://openrouter.ai/api/v1`, and model `openrouter/free`. The patched client
+forwards that original provider key in its request body to LiteLLM while using the
+file token for gateway authentication, and rejects any other configured model.
+
+This manifest change deliberately does **not** change the current image digest:
+the deployed image does not yet contain the routing patch and ignores these
+mounts. After the patch has merged to reviewed `main`, the image workflow has
+published and verified its exact backend digest, and the gateway token Secret is
+Ready, use a separate reviewed follow-up to pin that digest. Then prove a short
+historical `openrouter/free` run reaches LiteLLM with one structured provider
+attempt and no raw provider or gateway credentials in application logs.
 
 ## Runtime storage and backtests
 
@@ -84,6 +108,9 @@ publication and rollout acceptance below:
 - Strict JSON-schema decisions for historical `openrouter/free` requests to
   `https://openrouter.ai/api/v1`, with one provider attempt per cycle. Refused,
   truncated, or malformed output remains a failed cycle.
+- File-backed LiteLLM routing for `openrouter/free`, preserving the encrypted
+  provider configuration while using the backend-only gateway token mount. This
+  remains inactive until an image built from the patch is published and pinned.
 - A leverage cap applied to actual simulated fills, plus selected-run comparison
   of equity, return, drawdown, and recorded decision outcomes. Generated run IDs
   include a safe strategy slug; the table does not declare a winner.
@@ -146,7 +173,7 @@ Retain the PVC, absolute command, working directory, and read-only root. After
 Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expected
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
-source download matches the deployed revision, including patches `0007`–`0010`.
+source download matches the deployed revision, including patches `0007`–`0011`.
 Reload the UI and verify the three shared-account drafts remain stopped and hidden after
 restart. The startup repair changes no credentials, regional routing, or products;
 actual OKX authentication remains unresolved pending account-region confirmation.
