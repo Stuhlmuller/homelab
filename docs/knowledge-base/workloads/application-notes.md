@@ -17,8 +17,9 @@ through `IaC/live/argocd-apps/<name>` and deliver runtime changes through Argo
 CD rather than direct cluster mutation.
 
 Human application access normally uses Octelium clientless `WEB` Services.
-AFFiNE is the reviewed exception: its Octelium Service is anonymous and
-delegates login to the application. AFFiNE public signup remains disabled.
+AFFiNE and Harbor use anonymous Octelium transport and delegate authentication
+to the application. Both disable public signup; Harbor passes native OCI
+Authorization headers and keeps its `homelab` project private.
 NOFX requires Octelium human browser authentication before its own login.
 Reviewed callback hosts use the public Octelium tunnel with explicit path
 restrictions.

@@ -1,0 +1,33 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: harbor-token-selfsigned
+  namespace: harbor
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-token-signing
+  namespace: harbor
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+spec:
+  secretName: harbor-token-signing
+  commonName: harbor-token-signing
+  isCA: true
+  duration: 87600h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 3072
+    rotationPolicy: Never
+  usages:
+    - digital signature
+    - cert sign
+  issuerRef:
+    name: harbor-token-selfsigned
+    kind: Issuer

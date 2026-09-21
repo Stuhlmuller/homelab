@@ -39,6 +39,85 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/harbor/admin-password" = {
+      description = "Initial Harbor administrator password."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
+    "/homelab/harbor/secret-key" = {
+      description = "Harbor database credential encryption key; retain with database backups."
+      generated = {
+        length  = 16
+        special = false
+      }
+    }
+    "/homelab/harbor/core-secret" = {
+      description = "Harbor core service authentication secret."
+      generated = {
+        length  = 16
+        special = false
+      }
+    }
+    "/homelab/harbor/xsrf-key" = {
+      description = "Harbor core CSRF signing key."
+      generated = {
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/harbor/jobservice-secret" = {
+      description = "Harbor jobservice authentication secret."
+      generated = {
+        length  = 16
+        special = false
+      }
+    }
+    "/homelab/harbor/registry-http-secret" = {
+      description = "Harbor registry upload signing secret."
+      generated = {
+        length  = 16
+        special = false
+      }
+    }
+    "/homelab/harbor/registry-password" = {
+      description = "Harbor internal registry controller credential."
+      generated = {
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/harbor/database-password" = {
+      description = "Harbor dedicated PostgreSQL password."
+      generated = {
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/harbor/robot-pull-password" = {
+      description = "Harbor homelab project read-only robot credential."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
+    "/homelab/harbor/robot-push-password" = {
+      description = "Harbor homelab project publisher robot credential."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
+    "/homelab/nofx/harbor-pull-password" = {
+      description = "Namespace-scoped copy of the read-only Harbor homelab project robot credential."
+      generated = {
+        source_parameter = "/homelab/harbor/robot-pull-password"
+      }
+    }
     "/homelab/argocd/oidc/issuer" = {
       description   = "Argo CD OIDC issuer URL used for provider discovery."
       initial_value = local.argocd_oidc_issuer
@@ -234,6 +313,10 @@ inputs = {
         length  = 40
         special = false
       }
+      initial_value = local.placeholder
+    }
+    "/homelab/nofx/ghcr-read-token" = {
+      description   = "Dedicated classic GitHub PAT with read:packages only for private NOFX image pulls."
       initial_value = local.placeholder
     }
     "/homelab/nofx/jwt-secret" = {

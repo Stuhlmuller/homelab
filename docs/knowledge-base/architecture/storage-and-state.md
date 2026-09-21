@@ -274,7 +274,12 @@ should stay in the stateful workload gate until backup and restore validation is
 completed in `docs/storage-nfs.md`.
 
 NOFX uses a single retained `nfs-default` claim for backend SQLite data and log
-state at `/app/data`. The first rollout is registered as stateful but should
+state at `/app/data`. Its backend working directory is also `/app/data`, so
+upstream's relative backtest writes persist at `/app/data/backtests` and new
+logs at `/app/data/data`; the absolute SQLite path remains `/app/data/data.db`.
+Back up the whole claim, including simulation traces and caches, as one private
+recovery set. The root filesystem remains read-only. See [[apps/nofx]].
+The first rollout is registered as stateful but should
 stay in the stateful workload gate until PVC smoke testing and backup/restore
 expectations are recorded in `docs/storage-nfs.md`.
 
@@ -373,3 +378,12 @@ Verify all three applications Synced/Healthy, old Job absence, unchanged bound
 claims and media access after rollout. Fresh bootstrap creates only the required
 directories. Rollback must not recreate the old copy Jobs against active data;
 use a reviewed fenced restore when historical data is actually needed.
+
+## Harbor registry state
+
+[[../operations/harbor-oci|Harbor]] uses a retained local PostgreSQL volume on
+`acer`, retained NFS registry blobs and retained NFS logical database backups.
+Recover the database and corresponding blobs together, retaining the SSM
+encryption key and signing certificate. NFS copies share the QNAP failure
+domain; off-NAS registry backup and an isolated restore drill remain open.
+See `clusters/homelab/apps/harbor/README.md` for the concrete restore contract.

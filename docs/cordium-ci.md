@@ -248,7 +248,8 @@ Inspect the dedicated user's workspace inventory and remove only confirmed
 disposable workspaces through the Cordium lifecycle before retiring its owner.
 Existing required repository checks remain independent.
 
-In a reviewed retirement commit, remove `cordium-check.yml` and the three CI
+In a reviewed retirement commit, remove both `cordium-check.yml` and
+`cordium-login-denial.yml` and the three CI
 catalog definitions, but retain `scripts/cordium-ci-retire.py` and its shared
 `scripts/octelium-nofx-reconcile.py` guard. Normal catalog
 reapplication does not prune absent native resources. Using an operator admin
@@ -279,7 +280,7 @@ nix develop --command python3 -I scripts/cordium-ci-retire.py \
 
 The helper refuses execution from a dirty checkout or when local, expected,
 and remote main commits differ, before reading the catalog or deleting anything.
-It also refuses retirement while the workflow or CI catalog definitions remain.
+It also refuses retirement while either workflow or CI catalog definitions remain.
 Unmerged or local-only removals cannot authorize retirement. It removes only
 `homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
 `homelab-cordium-ci-execution`, in that order, and verifies each is absent.
