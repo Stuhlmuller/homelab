@@ -1,0 +1,271 @@
+diff --git a/api/server.go b/api/server.go
+--- a/api/server.go
++++ b/api/server.go
+@@ -962,6 +962,11 @@
+ 		}
+ 		// Check if there's a specific load error
+ 		if loadErr := s.traderManager.GetLoadError(traderID); loadErr != nil {
++			if fullCfg != nil && fullCfg.Exchange != nil && fullCfg.Exchange.ExchangeType == "okx" &&
++				strings.Contains(loadErr.Error(), "OKX API error: code=50119,") {
++				c.JSON(http.StatusBadRequest, gin.H{"error": "OKX could not identify this API key (50119). Check the key's account and region. US and EEA accounts require the matching regional API endpoint."})
++				return
++			}
+ 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load trader: " + loadErr.Error()})
+ 			return
+ 		}
+diff --git a/api/start_trader_error_test.go b/api/start_trader_error_test.go
+new file mode 100644
+--- /dev/null
++++ b/api/start_trader_error_test.go
+@@ -0,0 +1,98 @@
++package api
++
++import (
++	"fmt"
++	"io"
++	"net/http"
++	"net/http/httptest"
++	"strings"
++	"testing"
++
++	"nofx/manager"
++	"nofx/store"
++
++	"github.com/gin-gonic/gin"
++)
++
++type startErrorTransport func(*http.Request) (*http.Response, error)
++
++func (transport startErrorTransport) RoundTrip(request *http.Request) (*http.Response, error) {
++	return transport(request)
++}
++
++func TestStartTraderOKX50119IsActionable(t *testing.T) {
++	for _, test := range []struct {
++		code       string
++		wantStatus int
++	}{
++		{"50119", http.StatusBadRequest},
++		{"50113", http.StatusInternalServerError},
++	} {
++		t.Run(test.code, func(t *testing.T) {
++			st := configurationTestStore(t)
++			const userID = "safety-test"
++			if err := st.User().Create(&store.User{ID: userID, Email: "fixture@example.invalid", PasswordHash: "fixture"}); err != nil {
++				t.Fatal(err)
++			}
++			if err := st.AIModel().Create(userID, "fixture-model", "fixture", "openai", true, "fixture-model-key", "https://example.invalid/api/v1"); err != nil {
++				t.Fatal(err)
++			}
++			exchangeID, err := st.Exchange().Create(userID, "okx", "fixture", true, "fixture-key", "fixture-secret", "fixture-passphrase", false, "", "", "", "", "", "", "", 0)
++			if err != nil {
++				t.Fatal(err)
++			}
++			if err := st.Strategy().Create(&store.Strategy{ID: "fixture-strategy", UserID: userID, Name: "fixture", Config: `{"coin_source":{"source_type":"static","static_coins":["BTCUSDT"]}}`}); err != nil {
++				t.Fatal(err)
++			}
++			if err := st.Trader().Create(&store.Trader{ID: "fixture-trader", UserID: userID, Name: "fixture", AIModelID: "fixture-model", ExchangeID: exchangeID, StrategyID: "fixture-strategy", InitialBalance: 0, IsRunning: false}); err != nil {
++				t.Fatal(err)
++			}
++
++			previous := http.DefaultTransport
++			var requests []string
++			http.DefaultTransport = startErrorTransport(func(request *http.Request) (*http.Response, error) {
++				requests = append(requests, request.Method+" "+request.URL.Host+request.URL.Path)
++				if request.Method != http.MethodGet || (request.URL.Path != "/api/v5/account/config" && request.URL.Path != "/api/v5/account/balance") {
++					t.Fatalf("unexpected request: %s %s", request.Method, request.URL.Path)
++				}
++				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(fmt.Sprintf(`{"code":%q,"msg":"API key doesn't exist","data":[]}`, test.code))), Request: request}, nil
++			})
++			t.Cleanup(func() { http.DefaultTransport = previous })
++			server := &Server{store: st, traderManager: manager.NewTraderManager()}
++			response := httptest.NewRecorder()
++			ctx, _ := gin.CreateTestContext(response)
++			ctx.Set("user_id", userID)
++			ctx.Params = gin.Params{{Key: "id", Value: "fixture-trader"}}
++			ctx.Request = httptest.NewRequest(http.MethodPost, "/api/traders/fixture-trader/start", nil)
++			server.handleStartTrader(ctx)
++
++			saved, err := st.Trader().GetFullConfig(userID, "fixture-trader")
++			if err != nil {
++				t.Fatal(err)
++			}
++			if saved.Trader.IsRunning {
++				t.Fatal("failed start set is_running=true")
++			}
++			if _, err := server.traderManager.GetTrader("fixture-trader"); err == nil {
++				t.Fatal("failed initialization loaded a runnable trader")
++			}
++			if len(requests) != 2 {
++				t.Fatalf("want config and balance reads only, got %v", requests)
++			}
++			t.Logf("observed status=%d is_running=%v requests=%v body=%s", response.Code, saved.Trader.IsRunning, requests, response.Body.String())
++			if response.Code != test.wantStatus {
++				t.Fatalf("want HTTP %d, got HTTP %d: %s", test.wantStatus, response.Code, response.Body.String())
++			}
++			if test.code == "50119" {
++				if !strings.Contains(response.Body.String(), "matching regional API endpoint") {
++					t.Fatal("response did not explain regional endpoint requirement")
++				}
++				if strings.Contains(response.Body.String(), "API key doesn't exist") || strings.Contains(response.Body.String(), "fixture-key") {
++					t.Fatal("response exposed raw upstream error or credential fixture")
++				}
++			} else if !strings.Contains(response.Body.String(), "code=50113,") {
++				t.Fatal("unrelated load error no longer follows existing server-error path")
++			}
++		})
++	}
++}
+--- a/web/src/lib/api.ts
++++ b/web/src/lib/api.ts
+@@ -103,7 +103,7 @@
+     const result = await httpClient.post(
+       `${API_BASE}/traders/${traderId}/start`
+     )
+-    if (!result.success) throw new Error('启动交易员失败')
++    if (!result.success) throw new Error(result.message || '启动交易员失败')
+   },
+ 
+   async stopTrader(traderId: string): Promise<void> {
+--- a/web/src/components/AITradersPage.tsx
++++ b/web/src/components/AITradersPage.tsx
+@@ -449,7 +449,8 @@
+         await toast.promise(api.startTrader(traderId), {
+           loading: '正在启动…',
+           success: '已启动',
+-          error: '启动失败',
++          error: (error: unknown) =>
++            error instanceof Error ? error.message : '启动失败',
+         })
+       }
+ 
+--- /dev/null
++++ b/web/src/components/AITradersPage.start.test.tsx
+@@ -0,0 +1,127 @@
++import { cleanup, fireEvent, render, screen } from '@testing-library/react'
++import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
++import { MemoryRouter } from 'react-router-dom'
++import { SWRConfig } from 'swr'
++import { Toaster, toast } from 'sonner'
++import { LanguageProvider } from '../contexts/LanguageContext'
++import { AITradersPage } from './AITradersPage'
++
++const { adapter } = vi.hoisted(() => ({ adapter: vi.fn() }))
++const startupMessage =
++  "OKX could not identify this API key (50119). Check the key's account and region. US and EEA accounts require the matching regional API endpoint."
++
++// Keep the real API client and interceptors; all HTTP transport is offline.
++vi.mock('axios', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('axios')>()
++  return {
++    ...actual,
++    default: {
++      ...actual.default,
++      create: (config: object) => actual.default.create({ ...config, adapter }),
++    },
++  }
++})
++
++vi.mock('../contexts/AuthContext', () => {
++  const auth = { user: { id: 'test-user' }, token: 'test-session' }
++  return { useAuth: () => auth }
++})
++
++beforeEach(() => {
++  adapter.mockReset()
++  vi.stubGlobal('matchMedia', () => ({
++    matches: false,
++    addEventListener: vi.fn(),
++    removeEventListener: vi.fn(),
++  }))
++})
++
++afterEach(() => {
++  cleanup()
++  for (const item of toast.getToasts()) toast.dismiss(item.id)
++  vi.unstubAllGlobals()
++})
++
++it.each([
++  {
++    status: 400,
++    running: false,
++    response: startupMessage,
++    visible: startupMessage,
++  },
++  {
++    status: 500,
++    running: false,
++    response: 'private upstream diagnostic must not be displayed',
++    visible: 'Please try again later or contact support',
++  },
++  {
++    status: 400,
++    running: true,
++    response: 'stop behavior remains unchanged',
++    visible: '停止失败',
++  },
++])(
++  'shows the expected failure for HTTP $status with running=$running',
++  async ({ status, running, response, visible }) => {
++    adapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
++      const result = {
++        config,
++        headers: {},
++        status: 200,
++        statusText: 'OK',
++        data: [] as unknown,
++      }
++      if (config.url === '/api/my-traders') {
++        result.data = [
++          {
++            trader_id: 'test-trader',
++            trader_name: 'Test Trader',
++            ai_model: 'openrouter',
++            is_running: running,
++          },
++        ]
++      } else if (config.method === 'post') {
++        result.status = status
++        result.data = { error: response }
++        throw new AxiosError(
++          'Request failed',
++          'ERR_BAD_RESPONSE',
++          config,
++          undefined,
++          result
++        )
++      }
++      return result
++    })
++
++    render(
++      <MemoryRouter>
++        <SWRConfig value={{ provider: () => new Map() }}>
++          <LanguageProvider>
++            <AITradersPage />
++            <Toaster />
++          </LanguageProvider>
++        </SWRConfig>
++      </MemoryRouter>
++    )
++    fireEvent.click(
++      await screen.findByRole('button', { name: running ? 'Stop' : 'Start' })
++    )
++    expect(await screen.findByText(visible)).toBeVisible()
++    expect(screen.getAllByText(visible)).toHaveLength(1)
++    expect(screen.queryByText('Operation failed')).not.toBeInTheDocument()
++    expect(
++      adapter.mock.calls
++        .filter(([config]) => config.method === 'post')
++        .map(([config]) => config.url)
++    ).toEqual([`/api/traders/test-trader/${running ? 'stop' : 'start'}`])
++    if (response !== visible)
++      expect(screen.queryByText(response)).not.toBeInTheDocument()
++    if (status === 400)
++      expect(
++        screen.queryByText('Please try again later or contact support')
++      ).not.toBeInTheDocument()
++  }
++)

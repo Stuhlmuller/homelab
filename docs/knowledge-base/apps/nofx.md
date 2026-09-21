@@ -203,6 +203,25 @@ subaccounts are needed only for independent live balances and P&L. The runbook
 records the draft limits without presenting shared balances or historical
 simulations as independent live competition results.
 
+The first user-initiated starts after the `05fcf60` rollout failed before the
+trading loop: OKX rejected account config/balance reads with code `50119`, so
+the manager could not load the traders. The UI replaced the resulting HTTP 500
+with generic retry guidance. The adapter hard-codes `https://www.okx.com`.
+[OKX's API FAQ](https://www.okx.com/en-us/help/api-faq) identifies regional-host
+mismatch as a common cause: US accounts use `us.okx.com`, EEA accounts
+`eea.okx.com`. Confirm the account region before changing routing or credentials;
+this error alone does not prove the key is invalid. Regional authentication does
+not establish trading compatibility: the adapter uses `*-USDT-SWAP` perpetuals,
+which [OKX says are unavailable to US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Validate available account instruments read-only before any activation. Do not
+work around product eligibility by using another regional endpoint.
+Patch `0010` returns fixed HTTP 400 guidance for the known OKX `50119` load
+failure and carries that message through the Start toast. Unknown server errors
+remain generic. Handler and UI regressions use mocked exchange/API responses;
+they verify stopped state and error visibility, not live authentication. This
+repair does not change the endpoint or credentials. Correct routing and product
+compatibility still require the account region and read-only validation.
+
 The unused Arena consensus execution path bypasses the shared decision validator;
 do not infer its leverage enforcement from the normal trader fix. A separate
 `store/trader.go` creation default also overrides explicit `IsCrossMargin=false`.
