@@ -166,6 +166,7 @@ hostnames=(
   "deluge.${domain}"
   "dispatcharr.${domain}"
   "grafana.${domain}"
+  "harbor.${domain}"
   "kiali.${domain}"
   "kubernetes-api-ci.${domain}"
   "litellm.${domain}"

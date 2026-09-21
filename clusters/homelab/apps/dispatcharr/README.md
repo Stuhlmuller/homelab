@@ -24,12 +24,13 @@ scratch space.
 
 ## Storage
 
-The `data` PVC uses `nfs-default` and stores Dispatcharr uploads, file-backed
-runtime data, and first-run admin configuration. PostgreSQL data lives in the
-dedicated `dispatcharr-postgres` PVC. Treat both as production state and include
-them with normal NFS backup coverage before relying on the service. The database
-has 30-minute startup and runtime liveness windows plus a 120-second termination
-grace so NFS-backed recovery can complete without a restart loop.
+The `data` PVC uses `nfs-default` and stores uploads and file-backed runtime
+data. Accounts, including the first administrator, and database configuration
+live in PostgreSQL on the dedicated `dispatcharr-postgres` PVC. Treat both
+claims as production state and include them with normal NFS backup coverage
+before relying on the service. The database has 30-minute startup and runtime
+liveness windows plus a 120-second termination grace so NFS-backed recovery can
+complete without a restart loop.
 
 The QNAP export maps writes from container root to UID/GID `65534`. The web
 container sets upstream `PUID`/`PGID` to that owner so nginx and Django can use
@@ -39,14 +40,53 @@ account to `dispatcharr`; upstream later drops web processes to that UID.
 
 ## First Run
 
-After Argo CD reports the `dispatcharr` Application `Synced` and `Healthy`,
-open the Octelium-protected UI and finish upstream first-run setup:
+After Argo CD reports the `dispatcharr` Application `Synced` and `Healthy`, use
+your authenticated Kubernetes context from a trusted workstation. Octelium
+login can succeed while Dispatcharr refuses first-run setup for the forwarded
+public client IP. Upstream permits creating the first administrator only when
+none exists and its local/private source-IP check passes. Keep that restriction;
+do not add a public setup allowlist or run an ad hoc `createsuperuser` command.
+
+Start a temporary tunnel bound only to workstation loopback and leave this
+terminal open:
 
 ```sh
-kubectl -n media get pod -l app.kubernetes.io/name=dispatcharr
-kubectl -n media logs deploy/dispatcharr -c app --tail=120
-kubectl -n media logs deploy/dispatcharr -c celery --tail=120
+kubectl -n media port-forward --address 127.0.0.1 service/dispatcharr 19191:9191
 ```
+
+Wait for `Forwarding from 127.0.0.1:19191 -> 9191`. In a second terminal, check
+the read-only setup endpoint:
+
+```sh
+(
+set -euo pipefail
+curl --fail --silent --show-error --max-time 10 --noproxy '*' \
+  http://127.0.0.1:19191/api/accounts/initialize-superuser/ |
+  jq -se 'length == 1 and .[0].superuser_exists == false and .[0].setup_allowed == true'
+)
+```
+
+Proceed only when this prints `true` and exits zero. If an administrator already
+exists, use normal login/account recovery. If setup remains denied, check the
+tunnel and current image behavior before proceeding; preserve the source-IP
+restriction.
+
+Open `http://127.0.0.1:19191` in your own browser on that workstation and create
+the first administrator through Dispatcharr's form. Choose and store credentials
+privately; never put them in CLI arguments, shell history, logs or git. This is
+human-owned application data written through the app to PostgreSQL. Close the
+tunnel with `Ctrl-C` when finished, then verify Octelium login followed by
+Dispatcharr account login at the protected hostname.
+
+On September 6, the pinned `df768adc…` image reported version `0.29.0`; the
+loopback GET returned `superuser_exists: false` and `setup_allowed: true`. No
+setup POST or account creation was performed during that inspection. The user
+confirmed Dispatcharr was never configured. The public authenticated route
+reached the app, but
+first-run setup and functional acceptance remain open.
+See [the workload note](../../../../docs/knowledge-base/workloads/application-notes.md#dispatcharr)
+for the observed first-run state. Confirm account login, provider/EPG
+configuration, channel loading and playback before claiming full acceptance.
 
 Do not commit IPTV provider credentials, playlist URLs, or guide source secrets.
 Configure those through the UI or a future ExternalSecret-backed integration.

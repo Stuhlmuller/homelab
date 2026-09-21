@@ -22,6 +22,11 @@ its API interruption caused temporary dependent-controller restarts.
 | `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
 | `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
 
+The [[operations/existing-node-control-plane-feasibility-2026-09-12|September 12 control-plane feasibility assessment]]
+identifies `zimaboard-0` and `zimaboard-1` as possible additional members.
+It separates potential API/etcd quorum improvement from the unresolved workload
+capacity, eMMC qualification, endpoint, and restore requirements; no roles changed.
+
 ## Worker Recovery History
 
 Initial inspection on 2026-09-02 found `acer`, `zimaboard-0`, and

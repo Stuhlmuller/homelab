@@ -1,0 +1,611 @@
+diff --git a/web/src/components/BacktestComparison.tsx b/web/src/components/BacktestComparison.tsx
+new file mode 100644
+--- /dev/null
++++ b/web/src/components/BacktestComparison.tsx
+@@ -0,0 +1,166 @@
++import { useRef } from 'react'
++import useSWR from 'swr'
++import { api } from '../lib/api'
++import { loadRecordedDecisionCounts } from '../lib/backtestComparison'
++import type { BacktestRunMetadata } from '../types'
++
++interface Props {
++  runIds: string[]
++  runs: BacktestRunMetadata[]
++  language: string
++}
++
++function ComparisonRow({
++  runId,
++  run,
++  language,
++}: {
++  runId: string
++  run?: BacktestRunMetadata
++  language: string
++}) {
++  const zh = language === 'zh'
++  const unavailable = zh ? '不可用' : 'Unavailable'
++  const terminal = ['completed', 'failed', 'stopped', 'liquidated'].includes(
++    run?.state ?? ''
++  )
++  const metricReads = useRef({ state: run?.state, count: 0 })
++  const { data: metrics, error: metricsError } = useSWR(
++    ['bt-compare-metrics', runId, run?.state],
++    () => {
++      if (metricReads.current.state !== run?.state) {
++        metricReads.current = { state: run?.state, count: 0 }
++      }
++      metricReads.current.count++
++      return api.getBacktestMetrics(runId)
++    },
++    {
++      // The runner publishes terminal status before saving final metrics.
++      // Read again twice after that transition, including HTTP 202 responses.
++      refreshInterval: () =>
++        terminal ? (metricReads.current.count < 3 ? 5000 : 0) : 10000,
++      shouldRetryOnError: true,
++      errorRetryCount: 2,
++      errorRetryInterval: 5000,
++    }
++  )
++  const { data: counts } = useSWR(
++    ['bt-compare-decisions', runId, run?.state],
++    () => loadRecordedDecisionCounts(runId),
++    { refreshInterval: terminal ? 0 : 10000, shouldRetryOnError: false }
++  )
++  const number = (value: unknown, suffix = '') =>
++    typeof value === 'number' && Number.isFinite(value)
++      ? `${value.toFixed(2)}${suffix}`
++      : unavailable
++  const hasRecords =
++    counts &&
++    counts.successful + counts.failed > 0 &&
++    counts.coverage !== 'unavailable'
++  const coverage = !counts
++    ? zh
++      ? '加载中'
++      : 'Loading'
++    : counts.coverage === 'unavailable'
++      ? unavailable
++      : !counts.loaded
++        ? zh
++          ? '没有决策记录'
++          : 'No recorded decisions'
++        : counts.coverage === 'partial' || !terminal
++          ? zh
++            ? `部分记录（${counts.loaded}）`
++            : `Partial records (${counts.loaded})`
++          : zh
++            ? `已返回 ${counts.loaded} 条；完整性未验证`
++            : `${counts.loaded} records; verify expected count`
++  return (
++    <tr className="border-t" style={{ borderColor: '#2B3139' }}>
++      <td className="p-3 font-mono text-xs break-all">{runId}</td>
++      <td className="p-3 capitalize">{run?.state ?? unavailable}</td>
++      <td className="p-3 text-right">{number(run?.summary?.equity_last)}</td>
++      <td className="p-3 text-right">
++        {number(metricsError ? undefined : metrics?.total_return_pct, '%')}
++      </td>
++      <td className="p-3 text-right">
++        {number(run?.summary?.max_drawdown_pct, '%')}
++      </td>
++      <td className="p-3 text-right">
++        {hasRecords ? counts.successful : unavailable}
++      </td>
++      <td
++        className="p-3 text-right"
++        style={{ color: counts?.failed ? '#F6465D' : undefined }}
++      >
++        {hasRecords ? counts.failed : unavailable}
++      </td>
++      <td className="p-3 text-xs" style={{ color: '#848E9C' }}>
++        {coverage}
++      </td>
++    </tr>
++  )
++}
++
++export function BacktestComparison({ runIds, runs, language }: Props) {
++  if (!runIds.length) return null
++  const zh = language === 'zh'
++  const columns = zh
++    ? [
++        '运行 ID',
++        '状态',
++        '最终/最新净值 (USDT)',
++        '净收益',
++        '最大回撤',
++        '已记录成功周期',
++        '已记录失败周期',
++        '决策覆盖范围',
++      ]
++    : [
++        'Run ID',
++        'Status',
++        'Ending/latest equity (USDT)',
++        'Net return',
++        'Max DD',
++        'Recorded successes',
++        'Recorded failures',
++        'Decision coverage',
++      ]
++  return (
++    <section
++      className="binance-card p-4"
++      aria-label={zh ? '已选运行对比' : 'Selected run comparison'}
++    >
++      <h2 className="font-semibold" style={{ color: '#EAECEF' }}>
++        {zh ? '已选运行对比' : 'Selected run comparison'}
++      </h2>
++      <p className="text-xs mt-2 mb-3" style={{ color: '#848E9C' }}>
++        {zh
++          ? '对比历史模拟。失败或不完整的决策不能作为有效得分。判断收益前，请核对相同设置及全部预期决策。'
++          : 'Compare historical simulations. Failed or incomplete decisions are not valid scores. Check matching settings and all expected decisions before judging returns.'}
++      </p>
++      <div className="overflow-x-auto">
++        <table className="w-full text-sm" style={{ color: '#EAECEF' }}>
++          <thead>
++            <tr>
++              {columns.map((column) => (
++                <th key={column} scope="col" className="p-3 text-left text-xs">
++                  {column}
++                </th>
++              ))}
++            </tr>
++          </thead>
++          <tbody>
++            {runIds.map((runId) => (
++              <ComparisonRow
++                key={runId}
++                runId={runId}
++                run={runs.find((run) => run.run_id === runId)}
++                language={language}
++              />
++            ))}
++          </tbody>
++        </table>
++      </div>
++    </section>
++  )
++}
+diff --git a/web/src/components/BacktestComparison.test.tsx b/web/src/components/BacktestComparison.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/web/src/components/BacktestComparison.test.tsx
+@@ -0,0 +1,331 @@
++import {
++  act,
++  cleanup,
++  render,
++  screen,
++  waitFor,
++  within,
++} from '@testing-library/react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import { SWRConfig } from 'swr'
++import { BacktestComparison } from './BacktestComparison'
++import { api } from '../lib/api'
++import {
++  createBacktestRunId,
++  loadRecordedDecisionCounts,
++} from '../lib/backtestComparison'
++import type {
++  BacktestMetrics,
++  BacktestRunMetadata,
++  DecisionRecord,
++} from '../types'
++
++vi.mock('../lib/api', () => ({
++  api: { getBacktestMetrics: vi.fn(), getBacktestDecisions: vi.fn() },
++}))
++
++const decision = (success: boolean) => ({ success }) as DecisionRecord
++const metrics = (total_return_pct: number) =>
++  ({ total_return_pct }) as BacktestMetrics
++const run = (run_id: string, equity = 1000): BacktestRunMetadata => ({
++  run_id,
++  version: 1,
++  state: 'completed',
++  created_at: '',
++  updated_at: '',
++  summary: {
++    symbol_count: 3,
++    decision_tf: '4h',
++    processed_bars: 6,
++    progress_pct: 100,
++    equity_last: equity,
++    max_drawdown_pct: 0.5,
++    liquidated: false,
++  },
++})
++
++function renderRuns(
++  runs: BacktestRunMetadata[],
++  runIds = runs.map((item) => item.run_id)
++) {
++  return render(
++    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
++      <BacktestComparison runs={runs} runIds={runIds} language="en" />
++    </SWRConfig>
++  )
++}
++
++afterEach(() => {
++  cleanup()
++  vi.resetAllMocks()
++  vi.restoreAllMocks()
++  vi.useRealTimers()
++})
++
++describe('BacktestComparison', () => {
++  it('compares three runs in selection order, including completed runs with failed cycles', async () => {
++    const runs = [
++      run('bt_trend', 1002),
++      run('bt_mean', 999),
++      run('bt_breakout', 1000),
++    ]
++    vi.mocked(api.getBacktestMetrics).mockResolvedValue(metrics(0.2))
++    vi.mocked(api.getBacktestDecisions).mockImplementation(async (id) =>
++      id === 'bt_trend' ? [decision(true), decision(false)] : [decision(true)]
++    )
++    renderRuns(runs, ['bt_breakout', 'bt_trend', 'bt_mean'])
++    await screen.findByText('2 records; verify expected count')
++    const rows = screen.getAllByRole('row').slice(1)
++    expect(
++      rows.map((row) => within(row).getAllByRole('cell')[0].textContent)
++    ).toEqual(['bt_breakout', 'bt_trend', 'bt_mean'])
++    const trend = within(rows[1]).getAllByRole('cell')
++    expect(trend.map((cell) => cell.textContent)).toEqual([
++      'bt_trend',
++      'completed',
++      '1002.00',
++      '0.20%',
++      '0.50%',
++      '1',
++      '1',
++      '2 records; verify expected count',
++    ])
++    expect(
++      screen.getByText(/Failed or incomplete decisions are not valid scores/)
++    ).toBeInTheDocument()
++    expect(
++      screen.queryByRole('columnheader', { name: /rank|winner|eligibility/i })
++    ).not.toBeInTheDocument()
++  })
++
++  it.each([
++    ['HTTP 202 error payload', { error: 'metrics not ready yet' }],
++    ['nonfinite metrics', { total_return_pct: Number.NaN }],
++  ])('shows unavailable instead of zero for %s', async (_, payload) => {
++    vi.mocked(api.getBacktestMetrics).mockResolvedValue(
++      payload as BacktestMetrics
++    )
++    vi.mocked(api.getBacktestDecisions).mockResolvedValue([decision(false)])
++    renderRuns([run('bt_failed_cycle')])
++    await screen.findByText('1 records; verify expected count')
++    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell')
++    expect(cells[3]).toHaveTextContent('Unavailable')
++    expect(cells[6]).toHaveTextContent('1')
++  })
++
++  it('does not invent zeros when metrics and decisions fail to load', async () => {
++    vi.mocked(api.getBacktestMetrics).mockRejectedValue(new Error('offline'))
++    vi.mocked(api.getBacktestDecisions).mockRejectedValue(new Error('offline'))
++    const unavailableRun = run('bt_unavailable', Number.NaN)
++    unavailableRun.summary.max_drawdown_pct = Number.POSITIVE_INFINITY
++    renderRuns([unavailableRun])
++    await waitFor(() => {
++      const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell')
++      expect(cells.slice(2).map((cell) => cell.textContent)).toEqual(
++        Array(6).fill('Unavailable')
++      )
++    })
++  })
++
++  it('loads later decision pages instead of hiding failures beyond the first 200', async () => {
++    vi.mocked(api.getBacktestMetrics).mockResolvedValue(metrics(0))
++    vi.mocked(api.getBacktestDecisions)
++      .mockResolvedValueOnce(Array.from({ length: 200 }, () => decision(true)))
++      .mockResolvedValueOnce([decision(false)])
++    renderRuns([run('bt_paginated')])
++    await screen.findByText('201 records; verify expected count')
++    expect(api.getBacktestDecisions).toHaveBeenNthCalledWith(
++      1,
++      'bt_paginated',
++      200,
++      0
++    )
++    expect(api.getBacktestDecisions).toHaveBeenNthCalledWith(
++      2,
++      'bt_paginated',
++      200,
++      200
++    )
++    const cells = within(screen.getAllByRole('row')[1]).getAllByRole('cell')
++    expect(cells[5]).toHaveTextContent('200')
++    expect(cells[6]).toHaveTextContent('1')
++  })
++
++  it('bounds paging and marks capped counts partial', async () => {
++    vi.mocked(api.getBacktestMetrics).mockResolvedValue(metrics(0))
++    vi.mocked(api.getBacktestDecisions).mockResolvedValue(
++      Array.from({ length: 200 }, () => decision(false))
++    )
++    renderRuns([run('bt_capped')])
++    await screen.findByText('Partial records (2000)')
++    expect(api.getBacktestDecisions).toHaveBeenCalledTimes(10)
++    expect(api.getBacktestDecisions).toHaveBeenLastCalledWith(
++      'bt_capped',
++      200,
++      1800
++    )
++  })
++
++  it('keeps loaded counts partial if a later page fails', async () => {
++    vi.mocked(api.getBacktestDecisions)
++      .mockResolvedValueOnce(Array.from({ length: 200 }, () => decision(true)))
++      .mockRejectedValueOnce(new Error('offline'))
++    expect(await loadRecordedDecisionCounts('bt_partial')).toEqual({
++      successful: 200,
++      failed: 0,
++      loaded: 200,
++      coverage: 'partial',
++    })
++  })
++
++  it.each([
++    ['not-ready response', { error: 'metrics not ready yet' }],
++    ['stale metrics', { total_return_pct: 0.1 }],
++  ])(
++    'refreshes a terminal %s after the final metrics are persisted',
++    async (_, early) => {
++      vi.useFakeTimers()
++      vi.mocked(api.getBacktestMetrics)
++        .mockResolvedValueOnce(metrics(0))
++        .mockResolvedValueOnce(early as BacktestMetrics)
++        .mockResolvedValue(metrics(2))
++      vi.mocked(api.getBacktestDecisions).mockResolvedValue([decision(true)])
++      const cache = new Map()
++      const table = (state: string) => (
++        <SWRConfig value={{ provider: () => cache, dedupingInterval: 0 }}>
++          <BacktestComparison
++            runIds={['bt_finishing']}
++            runs={[{ ...run('bt_finishing'), state }]}
++            language="en"
++          />
++        </SWRConfig>
++      )
++      const view = render(table('running'))
++      await act(async () => {
++        await Promise.resolve()
++      })
++      expect(api.getBacktestMetrics).toHaveBeenCalledTimes(1)
++      view.rerender(table('completed'))
++      await act(async () => {
++        await Promise.resolve()
++      })
++      expect(api.getBacktestMetrics).toHaveBeenCalledTimes(2)
++      await act(async () => {
++        await vi.advanceTimersByTimeAsync(5000)
++      })
++      expect(
++        within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++      ).toHaveTextContent('2.00%')
++      await act(async () => {
++        await vi.advanceTimersByTimeAsync(60000)
++      })
++      expect(api.getBacktestMetrics).toHaveBeenCalledTimes(4)
++    }
++  )
++
++  it('does not claim complete history for a changing run or an empty response', async () => {
++    vi.mocked(api.getBacktestMetrics).mockResolvedValue(metrics(0))
++    vi.mocked(api.getBacktestDecisions).mockImplementation(async (id) =>
++      id === 'bt_running' ? [decision(true)] : []
++    )
++    renderRuns([{ ...run('bt_running'), state: 'running' }, run('bt_empty')])
++    await screen.findByText('Partial records (1)')
++    await screen.findByText('No recorded decisions')
++    const empty = within(screen.getAllByRole('row')[2]).getAllByRole('cell')
++    expect(empty[5]).toHaveTextContent('Unavailable')
++    expect(empty[6]).toHaveTextContent('Unavailable')
++  })
++
++  it('recovers from a transient terminal metrics error without unbounded reads', async () => {
++    vi.useFakeTimers()
++    vi.spyOn(Math, 'random').mockReturnValue(0)
++    vi.mocked(api.getBacktestMetrics)
++      .mockRejectedValueOnce(new Error('temporary metrics failure'))
++      .mockResolvedValue(metrics(2))
++    vi.mocked(api.getBacktestDecisions).mockResolvedValue([decision(true)])
++    renderRuns([run('bt_retry')])
++    await act(async () => {
++      await Promise.resolve()
++    })
++    expect(
++      within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++    ).toHaveTextContent('Unavailable')
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(5000)
++    })
++    expect(
++      within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++    ).toHaveTextContent('2.00%')
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(60000)
++    })
++    expect(api.getBacktestMetrics).toHaveBeenCalledTimes(3)
++  })
++
++  it('stops retrying persistent terminal metrics failures', async () => {
++    vi.useFakeTimers()
++    vi.spyOn(Math, 'random').mockReturnValue(0)
++    vi.mocked(api.getBacktestMetrics).mockRejectedValue(new Error('offline'))
++    vi.mocked(api.getBacktestDecisions).mockResolvedValue([decision(true)])
++    renderRuns([run('bt_retry_bound')])
++    await act(async () => {
++      await Promise.resolve()
++    })
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(120000)
++    })
++    expect(
++      within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++    ).toHaveTextContent('Unavailable')
++    expect(api.getBacktestMetrics).toHaveBeenCalledTimes(3)
++  })
++
++  it('hides cached return values during a failed final refresh', async () => {
++    vi.useFakeTimers()
++    vi.spyOn(Math, 'random').mockReturnValue(0)
++    vi.mocked(api.getBacktestMetrics)
++      .mockResolvedValueOnce(metrics(0.1))
++      .mockRejectedValueOnce(new Error('temporary metrics failure'))
++      .mockResolvedValue(metrics(2))
++    vi.mocked(api.getBacktestDecisions).mockResolvedValue([decision(true)])
++    renderRuns([run('bt_cached_retry')])
++    await act(async () => {
++      await Promise.resolve()
++    })
++    expect(
++      within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++    ).toHaveTextContent('0.10%')
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(5000)
++    })
++    expect(
++      within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++    ).toHaveTextContent('Unavailable')
++    await act(async () => {
++      await vi.advanceTimersByTimeAsync(5000)
++    })
++    expect(
++      within(screen.getAllByRole('row')[1]).getAllByRole('cell')[3]
++    ).toHaveTextContent('2.00%')
++  })
++})
++
++describe('generated backtest run IDs', () => {
++  it('includes a safe strategy slug and remains unique within one timestamp', () => {
++    vi.useFakeTimers()
++    vi.setSystemTime(new Date('2026-09-20T08:00:00.000Z'))
++    const first = createBacktestRunId('Sim - Trend')
++    const second = createBacktestRunId('Sim - Trend')
++    expect(first).toMatch(/^bt_sim_trend_20260920080000000_[a-f0-9]{12}$/)
++    expect(second).not.toBe(first)
++  })
++
++  it.each(['../../Sim / Breakout!', 'x'.repeat(200), '趋势', undefined])(
++    'keeps the server ID contract for %s',
++    (name) => {
++      expect(createBacktestRunId(name)).toMatch(
++        /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
++      )
++    }
++  )
++})
+diff --git a/web/src/components/BacktestPage.tsx b/web/src/components/BacktestPage.tsx
+--- a/web/src/components/BacktestPage.tsx
++++ b/web/src/components/BacktestPage.tsx
+@@ -43,6 +43,8 @@
+ import { t } from '../i18n/translations'
+ import { confirmToast } from '../lib/notify'
+ import { DecisionCard } from './DecisionCard'
++import { BacktestComparison } from './BacktestComparison'
++import { createBacktestRunId } from '../lib/backtestComparison'
+ import { MetricTooltip } from './MetricTooltip'
+ import type {
+   BacktestStatusPayload,
+@@ -928,7 +930,7 @@
+       const symbolsToSend = (userSymbols.length === 0 && strategyHasDynamicCoins) ? [] : userSymbols
+ 
+       const payload = await api.startBacktest({
+-        run_id: formState.runId.trim() || undefined,
++        run_id: formState.runId.trim() || createBacktestRunId(selectedStrategy?.name),
+         strategy_id: formState.strategyId || undefined, // Use saved strategy from Strategy Studio
+         symbols: symbolsToSend,
+         market_data_source: formState.marketDataSource,
+@@ -1676,6 +1678,8 @@
+                             : 'transparent',
+                         }}
+                         title={language === 'zh' ? '添加到对比' : 'Add to compare'}
++                        aria-label={`${language === 'zh' ? '对比' : 'Compare'} ${run.run_id}`}
++                        aria-pressed={compareRunIds.includes(run.run_id)}
+                       >
+                         <Eye
+                           className="w-3 h-3"
+@@ -1694,6 +1698,7 @@
+ 
+         {/* Right Panel - Results */}
+         <div className="xl:col-span-2 space-y-4">
++          <BacktestComparison runIds={compareRunIds} runs={runs} language={language} />
+           {!selectedRunId ? (
+             <div
+               className="binance-card p-12 text-center"
+diff --git a/web/src/lib/backtestComparison.ts b/web/src/lib/backtestComparison.ts
+new file mode 100644
+--- /dev/null
++++ b/web/src/lib/backtestComparison.ts
+@@ -0,0 +1,61 @@
++import { api } from './api'
++
++const PAGE_SIZE = 200
++const MAX_PAGES = 10
++
++export interface RecordedDecisionCounts {
++  successful: number
++  failed: number
++  loaded: number
++  coverage: 'returned' | 'partial' | 'unavailable'
++}
++
++// These are counts of returned records, never proof that every scheduled cycle
++// was persisted. The API has no total or completeness contract.
++export async function loadRecordedDecisionCounts(
++  runId: string
++): Promise<RecordedDecisionCounts> {
++  const counts: RecordedDecisionCounts = {
++    successful: 0,
++    failed: 0,
++    loaded: 0,
++    coverage: 'partial',
++  }
++  let invalidRecord = false
++  for (let page = 0; page < MAX_PAGES; page++) {
++    try {
++      const records = await api.getBacktestDecisions(
++        runId,
++        PAGE_SIZE,
++        page * PAGE_SIZE
++      )
++      if (!Array.isArray(records)) throw new Error('Invalid decision response')
++      for (const record of records) {
++        if (record?.success === true) counts.successful++
++        else if (record?.success === false) counts.failed++
++        else invalidRecord = true
++      }
++      counts.loaded += records.length
++      if (records.length < PAGE_SIZE) {
++        counts.coverage = invalidRecord ? 'partial' : 'returned'
++        return counts
++      }
++    } catch {
++      counts.coverage = counts.loaded ? 'partial' : 'unavailable'
++      return counts
++    }
++  }
++  return counts
++}
++
++export function createBacktestRunId(strategyName?: string): string {
++  const slug =
++    (strategyName ?? 'run')
++      .toLowerCase()
++      .replace(/[^a-z0-9]+/g, '_')
++      .replace(/^_+|_+$/g, '')
++      .slice(0, 20) || 'run'
++  const timestamp = new Date().toISOString().replace(/\D/g, '')
++  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 12)
++  return `bt_${slug}_${timestamp}_${suffix}`
++}

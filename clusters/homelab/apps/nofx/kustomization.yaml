@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret.yaml
+  - harbor-pull-secret.yaml
+  - registry-externalsecret.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml

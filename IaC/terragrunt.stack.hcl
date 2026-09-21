@@ -1241,6 +1241,83 @@ unit "argocd_apps_istio" {
   }
 }
 
+unit "argocd_apps_harbor" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/harbor"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage", "prometheus"]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+      metadata = {
+        name      = "harbor"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+      spec = {
+        project = "homelab"
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "harbor"
+        }
+        sources = [
+          {
+            repoURL        = "https://helm.goharbor.io"
+            chart          = "harbor"
+            path           = "."
+            targetRevision = "1.19.2"
+            helm = {
+              releaseName = "harbor"
+              valueFiles  = ["$values/clusters/homelab/apps/harbor/values.yaml"]
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            ref            = "values"
+            path           = "."
+            directory = {
+              include = ".argocd-values-ref-placeholder.yaml"
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/harbor"
+          }
+        ]
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
+          retry = {
+            limit = 5
+            backoff = {
+              duration    = "30s"
+              factor      = 2
+              maxDuration = "3m"
+            }
+          }
+        }
+        info = [
+          { name = "url", value = "https://harbor.stinkyboi.com" },
+          { name = "runbook", value = "clusters/homelab/apps/harbor/README.md" }
+        ]
+      }
+    }
+  }
+}
+
 unit "argocd_apps_kiali" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/kiali"

@@ -127,11 +127,18 @@ Sonarr mounts the node-local `sonarr-config-local` PVC at `/config`, the static
 The media claims point at the QNAP `/media` NFS export instead of the default
 `/homelab` provisioner path.
 
-The `media-tv-migration` Job copies files from the older `sonarr-media` PVC into
-`/media/tv`, sets write-friendly NFS permissions, and verifies that the target
-path can be written before the app switches to the new claim. The older
-`sonarr-media` claim remains in desired state as the migration source and
-rollback reference until the copy is verified.
+The completed `media-tv-migration` Job is retired after its verified May
+2026 completion. Its replacement `media-tv-directories` Job only
+creates required directories and sets their directory permissions. It never
+mounts the retained `sonarr-media` source or copies old files over active data.
+Only this idempotent Job uses `Force=true,Replace=true`, so image changes
+recreate it without patching immutable Pod templates. Its deadline is two
+minutes; the dedicated deny-all NetworkPolicy is installed first. Argo CD prunes
+the completed legacy Job and its NetworkPolicy; all PVs/PVCs remain declared.
+
+On rollback, preserve the directory Job and claims. Do not restore the legacy
+copy Job: recreating it can overwrite newer media. A historical data restore
+requires a separate reviewed, fenced recovery operation.
 
 ## Migration Notes
 

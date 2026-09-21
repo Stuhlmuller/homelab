@@ -1,0 +1,57 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: harbor-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: harbor-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    app.kubernetes.io/name: harbor-postgres
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes: [ReadWriteOnce]
+  capacity:
+    storage: 10Gi
+  claimRef:
+    name: harbor-postgres-local
+    namespace: harbor
+  hostPath:
+    path: /var/lib/harbor-postgres
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: [acer]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: harbor-postgres-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: harbor-postgres-local
+  namespace: harbor
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: harbor-postgres-local
+  volumeMode: Filesystem
+  volumeName: harbor-postgres-local

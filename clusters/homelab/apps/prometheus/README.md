@@ -1,9 +1,11 @@
 # Prometheus Storage Profile
 
 Prometheus persists metrics and Alertmanager state on `nfs-default`.
-Prometheus also discovers repo-owned ServiceMonitor objects in the `monitoring`
-namespace so independent Applications, such as Grafana, can expose metrics
-without spoofing the Prometheus Helm release label.
+Prometheus also discovers ServiceMonitor objects in the `monitoring` and
+`harbor` namespaces so independent Applications, such as Grafana and Harbor,
+can expose metrics without spoofing the Prometheus Helm release label.
+Harbor's NetworkPolicy allows the monitoring namespace to scrape its
+component metrics on TCP port 8001.
 Repo-owned PrometheusRule objects are selected the same way, which lets
 non-chart alert rules load without a Helm release label.
 
@@ -147,8 +149,10 @@ kubectl kustomize clusters/homelab/apps/prometheus
 After Argo CD and Prometheus sync, verify the Argo CD scrape wiring:
 
 ```sh
-kubectl -n argocd get svc argocd-application-controller-metrics argocd-repo-server-metrics argocd-server-metrics
-kubectl -n monitoring get servicemonitor argocd-application-controller argocd-repo-server argocd-server
+kubectl -n argocd get svc argocd-application-controller-metrics \
+  argocd-repo-server-metrics argocd-server-metrics
+kubectl -n monitoring get servicemonitor argocd-application-controller \
+  argocd-repo-server argocd-server
 kubectl -n monitoring get prometheusrule argocd-application-health
 kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
