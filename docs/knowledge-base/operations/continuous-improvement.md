@@ -215,17 +215,24 @@ observations below retain their original dates.
   configuration that enables dependency graph and Dependabot alerts for
   `Stuhlmuller/homelab` while leaving Dependabot security updates disabled.
 
-- **Status:** internal workloads and GitOps fixed; public access pending
+- **Status:** transport and Octelium login verified; application setup pending
 - **Area:** Dispatcharr / NFS ownership and access
 - **Evidence:** The UID/GID correction produced a healthy three-container web
   Pod and ready PostgreSQL StatefulSet on 2026-08-27. Declaring the API-normalized
   PVC template type returned Argo CD to `Synced/Healthy`. An in-Pod HTTP check
-  returns `200` and the Service endpoint is ready, while the Octelium-protected
-  hostname still returns HTTP `503`.
-- **Risk:** The public UI remains unavailable despite healthy internal
-  workloads and converged GitOps state.
-- **Next step:** diagnose the repo-owned Octelium and Istio route, then verify
-  the protected hostname no longer returns `503`.
+  returned `200` while the protected hostname returned `503`. On September 6,
+  Entra login reached Dispatcharr `0.29.0`; first-run setup rejected the
+  forwarded public IP. A loopback-only authenticated port-forward allowed the
+  read-only setup check. PostgreSQL has no accounts/admins, channels or streams
+  and no configured provider beyond the default custom M3U seed. The user
+  confirmed the app was never configured. No account was created during these
+  checks.
+- **Risk:** The service is reachable but first-admin/provider setup and
+  functional use remain incomplete.
+- **Next step:** Complete human-owned first-admin setup through the documented
+  loopback tunnel, then verify protected account login and
+  provider/EPG/channel/playback behavior. Preserve both claims and the upstream
+  setup-IP restriction. See [[workloads/application-notes#Dispatcharr]].
 
 - **Status:** mitigated; hardware diagnosis pending
 - **Area:** Acer control plane / storage integrity

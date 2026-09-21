@@ -122,6 +122,11 @@ QNAP `/media` export for downloads, movies, and TV library data. Read-only
 
 ## Stateful Workload Gate
 
+The existing QNAP is also an unproven iSCSI block-storage candidate for
+monitoring. See [[operations/qnap-monitoring-block-storage-research-2026-09-12]]
+for pinned driver compatibility, missing Talos/NAS prerequisites, and retained
+restore/fencing gates. No storage class or active workload has changed.
+
 Stateful workloads can be registered before they are considered operationally
 ready, but they must not be treated as production-ready until:
 
@@ -269,7 +274,12 @@ should stay in the stateful workload gate until backup and restore validation is
 completed in `docs/storage-nfs.md`.
 
 NOFX uses a single retained `nfs-default` claim for backend SQLite data and log
-state at `/app/data`. The first rollout is registered as stateful but should
+state at `/app/data`. Its backend working directory is also `/app/data`, so
+upstream's relative backtest writes persist at `/app/data/backtests` and new
+logs at `/app/data/data`; the absolute SQLite path remains `/app/data/data.db`.
+Back up the whole claim, including simulation traces and caches, as one private
+recovery set. The root filesystem remains read-only. See [[apps/nofx]].
+The first rollout is registered as stateful but should
 stay in the stateful workload gate until PVC smoke testing and backup/restore
 expectations are recorded in `docs/storage-nfs.md`.
 
@@ -352,3 +362,28 @@ identities, and validates configuration before writing its own completion
 marker. Private doctor reports retain latest plus previous. State restoration
 requires the archive and compatible software, not merely a manifest revert.
 See the OpenClaw README; gateway readiness is still a live acceptance gate.
+
+### Completed media-copy Job retirement
+
+September 12 read-only inspection confirmed `media-downloads-migration`,
+`media-movies-migration`, and `media-tv-migration` completed successfully in May
+2026. Their existing BusyBox Pod templates cannot be updated in place. The
+three media applications now own bounded directory-only Jobs; they
+retain all claims and never mount or copy from legacy source claims. Per-Job
+`Force=true,Replace=true` permits image upgrades without immutable Job updates. Argo CD prunes
+only the old completed Jobs and their dedicated NetworkPolicies. Existing
+media contents are untouched; directory permission setup is nonrecursive.
+
+Verify all three applications Synced/Healthy, old Job absence, unchanged bound
+claims and media access after rollout. Fresh bootstrap creates only the required
+directories. Rollback must not recreate the old copy Jobs against active data;
+use a reviewed fenced restore when historical data is actually needed.
+
+## Harbor registry state
+
+[[../operations/harbor-oci|Harbor]] uses a retained local PostgreSQL volume on
+`acer`, retained NFS registry blobs and retained NFS logical database backups.
+Recover the database and corresponding blobs together, retaining the SSM
+encryption key and signing certificate. NFS copies share the QNAP failure
+domain; off-NAS registry backup and an isolated restore drill remain open.
+See `clusters/homelab/apps/harbor/README.md` for the concrete restore contract.

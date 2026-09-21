@@ -15,7 +15,7 @@
       },
       "thinkingDefault": "medium",
       "userTimezone": "America/Los_Angeles",
-      "timeoutSeconds": 600,
+      "timeoutSeconds": 3600,
       "heartbeat": {
         "every": "1h",
         "model": "openai/gpt-6-astra",
@@ -78,6 +78,13 @@
             ]
           }
         ]
+      }
+    }
+  },
+  "skills": {
+    "entries": {
+      "gog": {
+        "enabled": true
       }
     }
   }

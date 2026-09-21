@@ -156,3 +156,11 @@ files represent real module dependencies.
 - `docs/argocd-app-onboarding.md`
 - `docs/rollback-argocd-apps.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
+
+## Private OCI publication
+
+[[../operations/harbor-oci|Harbor]] is registered through the explicit stack.
+Its PostSync Job reconciles private projects and robot credentials through the
+Harbor API. CI publishes custom NOFX images only after testing and exact-main
+checks; runtime digest changes remain reviewed GitOps changes. Public upstream
+Harbor and platform images preserve a registry-independent bootstrap path.

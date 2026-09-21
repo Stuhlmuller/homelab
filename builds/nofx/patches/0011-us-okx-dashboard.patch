@@ -1,0 +1,649 @@
+diff --git a/api/server.go b/api/server.go
+--- a/api/server.go
++++ b/api/server.go
+@@ -359,34 +359,54 @@
+ 	return false
+ }
+ 
+-// getTraderFromQuery Get trader from query parameter
+-func (s *Server) getTraderFromQuery(c *gin.Context) (*manager.TraderManager, string, error) {
++const okxKeyRegionError = "OKX could not identify this API key (50119). Check the key's account and region. US and EEA accounts require the matching regional API endpoint."
++
++// getTraderIDFromQuery resolves only the authenticated user's persisted traders.
++func (s *Server) getTraderIDFromQuery(c *gin.Context) (string, error) {
+ 	userID := c.GetString("user_id")
++	if userID == "" {
++		SafeUnauthorized(c)
++		return "", fmt.Errorf("missing user")
++	}
++	traders, err := s.store.Trader().List(userID)
++	if err != nil {
++		SafeInternalError(c, "Get traders", err)
++		return "", err
++	}
+ 	traderID := c.Query("trader_id")
+-
+-	// Ensure user's traders are loaded into memory
+-	err := s.traderManager.LoadUserTradersFromStore(s.store, userID)
+-	if err != nil {
+-		logger.Infof("⚠️ Failed to load traders for user %s: %v", userID, err)
+-	}
+-
+-	if traderID == "" {
+-		// If no trader_id specified, return first trader for this user
+-		ids := s.traderManager.GetTraderIDs()
+-		if len(ids) == 0 {
+-			return nil, "", fmt.Errorf("No available traders")
+-		}
+-
+-		// Get user's trader list, prioritize returning user's own traders
+-		userTraders, err := s.store.Trader().List(userID)
+-		if err == nil && len(userTraders) > 0 {
+-			traderID = userTraders[0].ID
+-		} else {
+-			traderID = ids[0]
+-		}
+-	}
+-
+-	return s.traderManager, traderID, nil
++	for _, saved := range traders {
++		if traderID == "" || saved.ID == traderID {
++			return saved.ID, nil
++		}
++	}
++	SafeNotFound(c, "Trader")
++	return "", fmt.Errorf("trader not found")
++}
++
++// getTraderFromQuery distinguishes an unavailable saved trader from a missing one.
++func (s *Server) getTraderFromQuery(c *gin.Context) (*trader.AutoTrader, error) {
++	traderID, err := s.getTraderIDFromQuery(c)
++	if err != nil {
++		return nil, err
++	}
++	userID := c.GetString("user_id")
++	if err := s.traderManager.LoadUserTradersFromStore(s.store, userID); err != nil {
++		logger.Infof("Failed to load traders for user %s: %v", userID, err)
++	}
++	loaded, err := s.traderManager.GetTrader(traderID)
++	if err == nil {
++		return loaded, nil
++	}
++	message := "Trader is unavailable. Check its model and exchange configuration, then try again."
++	if loadErr := s.traderManager.GetLoadError(traderID); loadErr != nil &&
++		strings.Contains(loadErr.Error(), "OKX API error: code=50119,") {
++		cfg, _ := s.store.Trader().GetFullConfig(userID, traderID)
++		if cfg != nil && cfg.Exchange != nil && cfg.Exchange.ExchangeType == "okx" {
++			message = okxKeyRegionError
++		}
++	}
++	c.JSON(http.StatusServiceUnavailable, gin.H{"code": "TRADER_UNAVAILABLE", "error": message})
++	return nil, err
+ }
+ 
+ // AI trader management related structures
+@@ -964,7 +984,7 @@
+ 		if loadErr := s.traderManager.GetLoadError(traderID); loadErr != nil {
+ 			if fullCfg != nil && fullCfg.Exchange != nil && fullCfg.Exchange.ExchangeType == "okx" &&
+ 				strings.Contains(loadErr.Error(), "OKX API error: code=50119,") {
+-				c.JSON(http.StatusBadRequest, gin.H{"error": "OKX could not identify this API key (50119). Check the key's account and region. US and EEA accounts require the matching regional API endpoint."})
++				c.JSON(http.StatusBadRequest, gin.H{"error": okxKeyRegionError})
+ 				return
+ 			}
+ 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load trader: " + loadErr.Error()})
+@@ -2083,15 +2103,8 @@
+ 
+ // handleStatus System status
+ func (s *Server) handleStatus(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2101,15 +2114,8 @@
+ 
+ // handleAccount Account information
+ func (s *Server) handleAccount(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2131,15 +2137,8 @@
+ 
+ // handlePositions Position list
+ func (s *Server) handlePositions(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2154,15 +2153,8 @@
+ 
+ // handlePositionHistory Historical closed positions with statistics
+ func (s *Server) handlePositionHistory(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2206,15 +2198,8 @@
+ 
+ // handleTrades Historical trades list
+ func (s *Server) handleTrades(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2261,15 +2246,8 @@
+ 
+ // handleOrders Order list (all orders including open, close, stop loss, take profit, etc.)
+ func (s *Server) handleOrders(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2327,15 +2305,8 @@
+ 		return
+ 	}
+ 
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2724,15 +2695,8 @@
+ 
+ // handleDecisions Decision log list
+ func (s *Server) handleDecisions(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2748,15 +2712,8 @@
+ 
+ // handleLatestDecisions Latest decision logs (newest first, supports limit parameter)
+ func (s *Server) handleLatestDecisions(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2788,15 +2745,8 @@
+ 
+ // handleStatistics Statistics information
+ func (s *Server) handleStatistics(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
+-	}
+-
+-	trader, err := s.traderManager.GetTrader(traderID)
+-	if err != nil {
+-		SafeNotFound(c, "Trader")
++	trader, err := s.getTraderFromQuery(c)
++	if err != nil {
+ 		return
+ 	}
+ 
+@@ -2831,10 +2781,16 @@
+ // handleEquityHistory Return rate historical data
+ // Query directly from database, not dependent on trader in memory (so historical data can be retrieved after restart)
+ func (s *Server) handleEquityHistory(c *gin.Context) {
+-	_, traderID, err := s.getTraderFromQuery(c)
+-	if err != nil {
+-		SafeBadRequest(c, "Invalid trader ID")
+-		return
++	// This route is public competition data; preserve its existing ID contract
++	// without initializing exchanges or using the authenticated dashboard lookup.
++	traderID := c.Query("trader_id")
++	if traderID == "" {
++		ids := s.traderManager.GetTraderIDs()
++		if len(ids) == 0 {
++			SafeBadRequest(c, "Invalid trader ID")
++			return
++		}
++		traderID = ids[0]
+ 	}
+ 
+ 	// Get equity historical data from new equity table
+diff --git a/api/positions_load_error_test.go b/api/positions_load_error_test.go
+new file mode 100644
+--- /dev/null
++++ b/api/positions_load_error_test.go
+@@ -0,0 +1,149 @@
++package api
++
++import (
++	"encoding/json"
++	"fmt"
++	"io"
++	"net/http"
++	"net/http/httptest"
++	"strings"
++	"testing"
++
++	"nofx/manager"
++	"nofx/store"
++
++	"github.com/gin-gonic/gin"
++)
++
++func positionsTestServer(t *testing.T, code string, modelEnabled bool) (*Server, *[]string) {
++	t.Helper()
++	st := configurationTestStore(t)
++	for _, err := range []error{
++		st.User().Create(&store.User{ID: "owner", Email: "owner@example.invalid", PasswordHash: "fixture"}),
++		st.AIModel().Create("owner", "model", "fixture", "openai", modelEnabled, "fixture-model-key", "https://example.invalid/api/v1"),
++		st.Strategy().Create(&store.Strategy{ID: "strategy", UserID: "owner", Name: "fixture", Config: `{"coin_source":{"source_type":"static","static_coins":["BTCUSDT"]}}`}),
++	} {
++		if err != nil {
++			t.Fatal(err)
++		}
++	}
++	exchangeID, err := st.Exchange().Create("owner", "okx", "fixture", true, "fixture-key", "fixture-secret", "fixture-passphrase", false, "", "", "", "", "", "", "", 0)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if err := st.Trader().Create(&store.Trader{ID: "saved-trader", UserID: "owner", Name: "fixture", AIModelID: "model", ExchangeID: exchangeID, StrategyID: "strategy", InitialBalance: 1000, IsRunning: false}); err != nil {
++		t.Fatal(err)
++	}
++	previous := http.DefaultTransport
++	var requests []string
++	http.DefaultTransport = startErrorTransport(func(request *http.Request) (*http.Response, error) {
++		requests = append(requests, request.Method+" "+request.URL.Path)
++		if request.Method != http.MethodGet {
++			t.Fatalf("dashboard attempted mutation: %s", requests)
++		}
++		body := fmt.Sprintf(`{"code":%q,"msg":"private upstream detail fixture-secret","data":[]}`, code)
++		if code == "0" {
++			switch request.URL.Path {
++			case "/api/v5/account/config":
++				body = `{"code":"0","data":[{"posMode":"net_mode"}]}`
++			case "/api/v5/account/positions":
++				body = `{"code":"0","data":[]}`
++			default:
++				t.Fatalf("unexpected read: %s", requests)
++			}
++		}
++		return &http.Response{StatusCode: 200, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: request}, nil
++	})
++	t.Cleanup(func() { http.DefaultTransport = previous })
++	return &Server{store: st, traderManager: manager.NewTraderManager()}, &requests
++}
++
++func positionsTestRequest(handler gin.HandlerFunc, user, query string) *httptest.ResponseRecorder {
++	response := httptest.NewRecorder()
++	ctx, _ := gin.CreateTestContext(response)
++	ctx.Set("user_id", user)
++	ctx.Params = gin.Params{{Key: "id", Value: "1"}}
++	ctx.Request = httptest.NewRequest(http.MethodGet, "/api/positions"+query, nil)
++	handler(ctx)
++	return response
++}
++
++func TestDashboardTraderLoadFailure(t *testing.T) {
++	for _, test := range []struct {
++		code    string
++		enabled bool
++	}{{"50119", true}, {"50113", true}, {"0", false}} {
++		t.Run(fmt.Sprintf("%s/enabled-%v", test.code, test.enabled), func(t *testing.T) {
++			server, _ := positionsTestServer(t, test.code, test.enabled)
++			handlers := map[string]gin.HandlerFunc{
++				"positions": server.handlePositions, "status": server.handleStatus,
++				"account": server.handleAccount, "position-history": server.handlePositionHistory,
++				"trades": server.handleTrades, "orders": server.handleOrders,
++				"order-fills": server.handleOrderFills, "decisions": server.handleDecisions,
++				"latest-decisions": server.handleLatestDecisions, "statistics": server.handleStatistics,
++			}
++			for name, handler := range handlers {
++				t.Run(name, func(t *testing.T) {
++					response := positionsTestRequest(handler, "owner", "?trader_id=saved-trader")
++					var body struct{ Code, Error string }
++					if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
++						t.Fatal(err)
++					}
++					if response.Code != http.StatusServiceUnavailable || body.Code != "TRADER_UNAVAILABLE" {
++						t.Fatalf("want trader unavailable (503), got %d %s", response.Code, response.Body.String())
++					}
++					if test.code == "50119" && !strings.Contains(body.Error, "50119") {
++						t.Fatal("missing actionable OKX guidance")
++					}
++					if strings.Contains(body.Error, "private upstream") || strings.Contains(body.Error, "fixture-") {
++						t.Fatal("raw load error leaked")
++					}
++				})
++			}
++			saved, err := server.store.Trader().GetByID("saved-trader")
++			if err != nil || saved.IsRunning {
++				t.Fatalf("dashboard started trader: %v", err)
++			}
++		})
++	}
++}
++
++func TestDashboardTraderOwnershipAndRecovery(t *testing.T) {
++	server, requests := positionsTestServer(t, "0", true)
++	// A valid stopped trader can load and return a real empty positions result.
++	response := positionsTestRequest(server.handlePositions, "owner", "?trader_id=saved-trader")
++	var positions []any
++	if err := json.Unmarshal(response.Body.Bytes(), &positions); err != nil {
++		t.Fatal(err)
++	}
++	if response.Code != 200 || len(positions) != 0 {
++		t.Fatalf("positions: %d %s", response.Code, response.Body.String())
++	}
++	for _, test := range []struct{ user, query string }{
++		{"owner", "?trader_id=missing"}, {"other", "?trader_id=saved-trader"}, {"other", ""},
++	} {
++		*requests = nil
++		response = positionsTestRequest(server.handlePositions, test.user, test.query)
++		if response.Code != 404 || len(*requests) != 0 {
++			t.Fatalf("invalid or foreign trader: %d, requests=%v", response.Code, *requests)
++		}
++	}
++	response = positionsTestRequest(server.handlePositions, "owner", "")
++	if response.Code != 200 {
++		t.Fatalf("own default trader: %d", response.Code)
++	}
++	saved, err := server.store.Trader().GetByID("saved-trader")
++	if err != nil || saved.IsRunning {
++		t.Fatalf("dashboard started trader: %v", err)
++	}
++}
++
++func TestEquityHistoryDoesNotNeedLoadedTrader(t *testing.T) {
++	server, requests := positionsTestServer(t, "50119", true)
++	server = NewServer(server.traderManager, server.store, nil, nil, 0)
++	response := httptest.NewRecorder()
++	server.router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/equity-history?trader_id=saved-trader", nil))
++	if response.Code != 200 || len(*requests) != 0 {
++		t.Fatalf("public history required authentication or exchange access: %d, requests=%v", response.Code, *requests)
++	}
++}
+diff --git a/trader/okx_trader.go b/trader/okx_trader.go
+--- a/trader/okx_trader.go
++++ b/trader/okx_trader.go
+@@ -20,9 +20,9 @@
+ 	"time"
+ )
+ 
+-// OKX API endpoints
++// OKX API endpoints for this homelab's US-registered account.
+ const (
+-	okxBaseURL           = "https://www.okx.com"
++	okxBaseURL           = "https://us.okx.com"
+ 	okxAccountPath       = "/api/v5/account/balance"
+ 	okxPositionPath      = "/api/v5/account/positions"
+ 	okxOrderPath         = "/api/v5/trade/order"
+diff --git a/trader/okx_region_test.go b/trader/okx_region_test.go
+new file mode 100644
+--- /dev/null
++++ b/trader/okx_region_test.go
+@@ -0,0 +1,40 @@
++package trader
++
++import (
++	"io"
++	"net/http"
++	"strings"
++	"testing"
++)
++
++func TestOKXRequestsUseUSRegion(t *testing.T) {
++	for _, test := range []struct {
++		method, path string
++		body         interface{}
++	}{
++		{http.MethodGet, okxAccountConfigPath, nil},
++		{http.MethodGet, okxPositionPath + "?instType=SWAP", nil},
++		{http.MethodPost, okxLeveragePath, map[string]string{"instId": "BTC-USDT-SWAP", "lever": "1", "mgnMode": "cross"}},
++	} {
++		t.Run(test.method+test.path, func(t *testing.T) {
++			requests := 0
++			transport := okxInitializationTransport(func(request *http.Request) (*http.Response, error) {
++				requests++
++				if request.URL.Scheme != "https" || request.URL.Host != "us.okx.com" || request.Method != test.method || request.URL.RequestURI() != test.path {
++					t.Fatalf("unexpected regional request: %s %s", request.Method, request.URL)
++				}
++				if request.Header.Get("OK-ACCESS-KEY") != "fixture-key" || request.Header.Get("OK-ACCESS-PASSPHRASE") != "fixture-passphrase" || request.Header.Get("OK-ACCESS-SIGN") == "" || request.Header.Get("OK-ACCESS-TIMESTAMP") == "" {
++					t.Fatal("regional request lost authentication")
++				}
++				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(`{"code":"0","data":[]}`)), Request: request}, nil
++			})
++			trader := &OKXTrader{apiKey: "fixture-key", secretKey: "fixture-secret", passphrase: "fixture-passphrase", httpClient: &http.Client{Transport: transport}}
++			if _, err := trader.doRequest(test.method, test.path, test.body); err != nil {
++				t.Fatal(err)
++			}
++			if requests != 1 {
++				t.Fatalf("expected one regional request, got %d", requests)
++			}
++		})
++	}
++}
+diff --git a/web/src/lib/httpClient.ts b/web/src/lib/httpClient.ts
+--- a/web/src/lib/httpClient.ts
++++ b/web/src/lib/httpClient.ts
+@@ -93,7 +93,8 @@
+       throw new Error('Network error')
+     }
+ 
+-    const { status } = error.response as AxiosResponse<{
++    const { status, data } = error.response as AxiosResponse<{
++      code?: string
+       error?: string
+       message?: string
+     }>
+@@ -140,10 +141,22 @@
+ 
+     // Handle 404 Not Found - system error
+     if (status === 404) {
+-      toast.error('API Not Found', {
+-        description: 'The requested endpoint does not exist (404)',
+-      })
+-      throw new Error('API not found')
++      toast.error('Resource not found', {
++        description: 'The requested resource was not found (404)',
++      })
++      throw new Error('Resource not found')
++    }
++
++    if (
++      status === 503 &&
++      data?.code === 'TRADER_UNAVAILABLE' &&
++      typeof data.error === 'string'
++    ) {
++      toast.error('Trader unavailable', {
++        id: 'trader-unavailable',
++        description: data.error,
++      })
++      throw new Error('Trader unavailable')
+     }
+ 
+     // Handle 500+ Server Error - system error
+diff --git a/web/src/lib/httpClient.test.ts b/web/src/lib/httpClient.test.ts
+new file mode 100644
+--- /dev/null
++++ b/web/src/lib/httpClient.test.ts
+@@ -0,0 +1,96 @@
++import { AxiosError, type InternalAxiosRequestConfig } from 'axios'
++import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import { toast } from 'sonner'
++import { HttpClient } from './httpClient'
++
++const { adapter } = vi.hoisted(() => ({ adapter: vi.fn() }))
++
++// Exercise the real client and interceptors without making network requests.
++vi.mock('axios', async (importOriginal) => {
++  const actual = await importOriginal<typeof import('axios')>()
++  return {
++    ...actual,
++    default: {
++      ...actual.default,
++      create: (config: object) => actual.default.create({ ...config, adapter }),
++    },
++  }
++})
++
++beforeEach(() => {
++  adapter.mockReset()
++  vi.spyOn(toast, 'error').mockReturnValue('test-toast')
++})
++
++afterEach(() => vi.restoreAllMocks())
++
++it.each([
++  {
++    status: 503,
++    data: {
++      code: 'TRADER_UNAVAILABLE',
++      error:
++        "OKX could not identify this API key (50119). Check the key's account and region. US and EEA accounts require the matching regional API endpoint.",
++    },
++    title: 'Trader unavailable',
++    options: {
++      id: 'trader-unavailable',
++      description:
++        "OKX could not identify this API key (50119). Check the key's account and region. US and EEA accounts require the matching regional API endpoint.",
++    },
++    rejection: 'Trader unavailable',
++  },
++  {
++    status: 503,
++    data: {
++      code: 'TRADER_UNAVAILABLE',
++      error:
++        'Trader is unavailable. Check its model and exchange configuration, then try again.',
++    },
++    title: 'Trader unavailable',
++    options: {
++      id: 'trader-unavailable',
++      description:
++        'Trader is unavailable. Check its model and exchange configuration, then try again.',
++    },
++    rejection: 'Trader unavailable',
++  },
++  {
++    status: 503,
++    data: { error: 'private upstream diagnostic must not be displayed' },
++    title: 'Server Error',
++    options: { description: 'Please try again later or contact support' },
++    rejection: 'Server error',
++  },
++  {
++    status: 404,
++    data: { error: 'Trader not found' },
++    title: 'Resource not found',
++    options: { description: 'The requested resource was not found (404)' },
++    rejection: 'Resource not found',
++  },
++])(
++  'reports $title for HTTP $status',
++  async ({ status, data, title, options, rejection }) => {
++    adapter.mockImplementation(async (config: InternalAxiosRequestConfig) => {
++      throw new AxiosError(
++        'Request failed',
++        'ERR_BAD_RESPONSE',
++        config,
++        undefined,
++        {
++          config,
++          headers: {},
++          status,
++          statusText: 'Error',
++          data,
++        }
++      )
++    })
++
++    await expect(
++      new HttpClient().get('/api/positions?trader_id=test-trader')
++    ).rejects.toThrow(rejection)
++    expect(toast.error).toHaveBeenCalledExactlyOnceWith(title, options)
++  }
++)

@@ -244,3 +244,12 @@ app has acceptable backup and restore coverage.
   physical NIC errors stayed at zero. This evidence drove the local
   `media-postgres` cutover; QNAP remains the backup rather than active database
   path.
+
+## Harbor OCI registry
+
+Harbor stores registry blobs and logical PostgreSQL backups on retained NFS
+claims; active PostgreSQL data uses a retained node-local volume on `acer`.
+See [`clusters/homelab/apps/harbor/README.md`](../clusters/homelab/apps/harbor/README.md)
+for backup and coordinated database/blob recovery. A same-NAS backup is not
+independent disaster recovery; retain GHCR migration sources until the registry
+restore contract has been proven.
