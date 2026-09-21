@@ -78,11 +78,18 @@ Actions token reads those private GHCR packages; local operator OAuth lacks
 in other repositories or organization accounts.
 
 New NOFX builds publish to Harbor after the existing build and reviewed-main
-gates. Live inspection on 2026-09-19 confirmed NOFX still runs its upstream
-backend/frontend digests and Argo CD is Synced/Healthy at main `e17e34a6`.
-No deployed workload currently consumes the custom packages. Merged PR #1031
-bootstraps private GHCR credentials and retains upstream runtime images;
-adopting the custom NOFX release remains a separate functional rollout.
+gates. The publisher emits only the two verified current-revision image references
+as job outputs. A separate credential-free job validates them again and uploads
+one fixed text file, retained for 30 days, for `gh run download`; private logs and
+registry credentials remain outside artifacts. The live-job artifact upload ban
+is unchanged. See the [NOFX build recipe](../../../builds/nofx/README.md#publish-update-and-revert)
+for the artifact name and CLI retrieval command.
+
+At the pre-cutover inspection on 2026-09-19, NOFX still used upstream images.
+The initial maintained Harbor rollout then merged in PR #1036 at `78ca869` and
+was verified Synced/Healthy with both `f76c278` images ready. See [[../apps/nofx]]
+for runtime evidence and `clusters/homelab/apps/nofx/deployment.yaml` for current
+desired references. Later source builds require a separate functional rollout.
 Registry-origin cutover is required only for an actual custom-image consumer:
 first verify copies and read-only pulls, then preserve that consumer's exact
 digest while changing its registry through GitOps. No third-party images are
@@ -108,8 +115,8 @@ mirrored by this task.
 5. Run the migration workflow and require preserved digests, complete read-only
    pulls, and denied anonymous access. If custom-image consumers exist at that
    time, update only their registry references through GitOps, retain their
-   exact digests, and verify new Pods pulled from Harbor. Current upstream NOFX
-   runtime images do not require a registry-origin change.
+   exact digests, and verify new Pods pulled from Harbor. A source-version
+   upgrade requires its separate functional acceptance checks.
 6. Require a completed verified database backup, retained PVCs and documented
    restore limits before reporting operational readiness.
 
@@ -206,7 +213,9 @@ New publications use the local P-256 key in the cert-manager-owned
 through certificate renewal. `scripts/ci/harbor-publish.sh` creates the fixed
 `signing-job.yaml` template for its two verified image digests. The Job mounts
 the key inside the cluster; CI reads only its public key from successful Pod
-status and verifies both signatures. No AWS signing resource, public signing
+status, checks its SHA-256 against `scripts/config/harbor-signing.json`,
+and verifies both signatures. Initial enrollment is fail-closed (`null`) until
+the issued public key is independently read and its fingerprint reviewed. No AWS signing resource, public signing
 service or transparency-log submission is used. Existing registry credentials
 still follow the SSM/ExternalSecret contract above.
 

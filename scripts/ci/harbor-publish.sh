@@ -22,6 +22,14 @@ cd "$repository_root"
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
 [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
 
+# Enroll the independently checked public key through review before publication.
+if [[ "$mode" == publish ]]; then
+  signing_fingerprint="$(jq -er '.public_key_sha256 | strings | select(test("^[0-9a-f]{64}$"))' scripts/config/harbor-signing.json)" || {
+    echo 'Enroll the Harbor signing public-key fingerprint before publishing.' >&2
+    exit 1
+  }
+fi
+
 # Validate every migration input before installing credentials or contacting AWS.
 manifest=scripts/config/harbor-migration.json
 jq --exit-status '
@@ -43,6 +51,9 @@ jq --exit-status '
 ' "$manifest" >/dev/null
 
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
+if [[ "$mode" == publish ]]; then
+  : "${GITHUB_OUTPUT:?GITHUB_OUTPUT must be set by GitHub Actions}"
+fi
 : "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
 [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
 [[ "$mode" != migrate || -n "${GITHUB_TOKEN:-}" ]]
@@ -186,7 +197,11 @@ if [[ "$mode" == publish ]]; then
       .items | select(length == 1) | .[0] |
       select(any(.metadata.ownerReferences[]; .uid == $uid and .kind == "Job")) |
       .status.containerStatuses[] | select(.name == "public-key" and .state.terminated.exitCode == 0) |
-      .state.terminated.message' >"$scratch/signing.pub"
+      .state.terminated.message | rtrimstr("\n")' >"$scratch/signing.pub"
+  [[ "$(sha256sum "$scratch/signing.pub" | cut -d ' ' -f 1)" == "$signing_fingerprint" ]] || {
+    echo 'Harbor signing identity differs from the reviewed fingerprint.' >&2
+    exit 1
+  }
   for reference in "${signing_references[@]}"; do
     DOCKER_CONFIG="$scratch/docker" cosign verify \
       --key "$scratch/signing.pub" --insecure-ignore-tlog \
@@ -229,4 +244,11 @@ if [[ "$mode" == migrate ]]; then
 fi
 
 # Publish only allowlisted references after transfer and required acceptance pass.
+if [[ "$mode" == publish ]]; then
+  mapfile -t published_refs <"$scratch/verified-digests"
+  [[ "${#published_refs[@]}" -eq 2 ]]
+  [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+  [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+  printf 'backend=%s\nfrontend=%s\n' "${published_refs[0]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

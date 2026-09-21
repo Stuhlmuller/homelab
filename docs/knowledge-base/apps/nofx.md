@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-14
+updated: 2026-09-19
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,12 +15,15 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The maintained derivative in `builds/nofx` was published by reviewed main
-revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`. Both deployments reference
+The competition rollout targets reviewed main revision
+`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`. Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
-published digests and passed complete read-only pull checks. Live rollout still
-requires healthy Secret readiness and new Pods running those exact images; the
-manifest alone does not prove deployment. Both packages must remain private.
+published digests and passed complete read-only pull checks.
+[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036) merged at
+`78ca869aae86c7cd94b6c725bec59f68b032c6b5`. Subsequent Argo CD inspection showed
+`Synced` and `Healthy` at that revision, with both earlier `f76c278` Harbor images
+ready `1/1`. Verify the new running digests separately before accepting the
+competition rollout. Both packages remain private.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -108,8 +111,9 @@ OpenRouter's OpenAI-compatible Base URL must be `https://openrouter.ai/api/v1`,
 with model `openrouter/free`. NOFX appends `/chat/completions`; the observed
 `/responses` suffix is invalid. The existing OKX trader remains stopped;
 three private simulation strategies are saved inactive. No live OKX trading
-was activated. The pinned OKX adapter has no demo mode and can change position
-mode during client construction.
+was activated. The original upstream OKX adapter has no demo mode and can change
+position mode during client construction; the deployed derivative removes that
+construction side effect.
 
 The repository-owned derivative preserves upstream revision
 `bdfd8dc0d02c14b295eb36cbaee00d8402867927` and adds passive key-preserving model
@@ -128,9 +132,9 @@ credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR
 tests/builds with read-only repository permission. Following the Harbor change,
 only current `main` can publish new images to the private Harbor repositories,
 tagged `homelab-<full-main-sha>`; manual dispatch requires that exact SHA.
-The workflow reports digests after pushing. The functional repair uses the same
-published artifacts after their verified Harbor migration, with the namespace's
-`harbor-pull` Secret. See [[../operations/harbor-oci]].
+The workflow reports digests after pushing. The initial functional repair used
+the migrated artifacts; subsequent releases publish directly to Harbor and use
+the same namespace-scoped `harbor-pull` Secret. See [[../operations/harbor-oci]].
 The reviewed source repair merged in
 [PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
 [publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
@@ -138,11 +142,11 @@ passed. Both anonymous pull checks returned HTTP 401 on September 14. Package
 visibility must remain private. Credential bootstrap
 [PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031), main `0b352ebd`,
 retained upstream images and left the GHCR recovery Secret unattached. The
-maintained deployment now selects the same digests from Harbor after the
+initial maintained rollout selected the same digests from Harbor after the
 successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550).
-Require `harbor-pull` ExternalSecret readiness and stopped live traders before
-merging that rollout. Then verify both running Harbor image digests and
-application acceptance through the
+The rollout was verified with `harbor-pull` ExternalSecret readiness, both
+running Harbor digests, and the live trader stopped. Complete simulation
+acceptance remains separate; use the
 [private-image runbook](../../nofx-private-images.md). Keep the PVC
 and storage fix during rollback; reverting to upstream restores its model-save
 side effects and Binance dependency.
@@ -151,8 +155,8 @@ The existing backend NetworkPolicy permits all egress for configured model,
 exchange, and public historical-data APIs. Tightening it requires an endpoint
 inventory and a reviewed policy change; the image rollout preserves that rule.
 
-Until that rollout is verified, the deployed upstream model editor still asks
-for a key again and its save handler can log credentials and reload traders.
+The deployed derivative supports key-preserving model edits and removes the
+upstream save handler's credential logging and trader reload.
 The dashboard's generic 404 label can also mean a trader failed to load; it does
 not prove a missing HTTP route. Source evidence, simulation setup, rollback, and
 validation commands are in the
@@ -172,9 +176,32 @@ it does not contact SSM or use the production token.
 
 The [agent competition runbook](../../nofx-agent-competition.md) defines three
 isolated historical competitors with equal virtual balances, costs, and market
-data. The pinned Backtest Lab has no rendered comparison table; its Completed
-status can conceal failed AI cycles, leverage validation mutates a decision copy,
-and stop-loss/take-profit triggers are not simulated. Require six successful
-decisions and verify every fill's leverage before ranking a round. The runbook
-records the focused follow-up fixes and avoids presenting incomplete runs or
-shared live-account balances as independent competition results.
+data. The competition build adds a factual Backtest Lab comparison table and
+caps leverage on actual fills. Completed still does not prove that all decisions
+succeeded, and stop-loss/take-profit triggers are not simulated. Require six
+successful decisions and verify every fill's leverage before ranking a round.
+The runbook records the failed earlier rounds without presenting them or shared
+live-account balances as independent competition results.
+
+The first observed Trend and Breakout simulations reported Completed with two
+and three failed cycles out of six. Missing JSON caused the parser to synthesize
+an `ALL` wait, which the runner rejected as `price unavailable for ALL` before
+handling the wait action. Adding an explicit JSON-array requirement to all three
+saved prompts did not resolve the issue: the second Trend and Breakout runs each
+still failed one of six cycles. These incomplete rounds do not establish a
+winner.
+
+The competition build requests strict structured output for historical
+`openrouter/free` calls to the official OpenRouter API, preserves malformed or
+refused responses as failed cycles, and makes one provider attempt per cycle,
+including transient errors. Fresh live acceptance remains separate from the
+verified earlier deployment: confirm stopped live traders, new running image
+digests, and a complete eligible simulation round. Avoid resuming a round across
+a backend restart: the simulator does not persist its loaded saved strategy
+object, so a cold resume can lose the selected persona.
+
+The pinned `backtest/manager.go` also saves its pre-start `created` metadata
+after launching a runner. Counting only database `running` rows can therefore
+miss a first decision in progress. The rollout runbook combines read-only state
+counts with absence of heartbeat lock files; unknown activity leaves the gate
+closed. A future runtime fix should persist the post-start state consistently.

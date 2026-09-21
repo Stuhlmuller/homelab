@@ -8,6 +8,22 @@ mode without trying to change it. It does not enable live traders. Deployment
 and operational acceptance are documented in the
 [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
+Historical runs using `openrouter/free` at the official OpenRouter API request
+strict structured decisions and require a provider that supports those request
+parameters. Malformed responses remain failed cycles instead of becoming
+synthetic `ALL` wait decisions. This strict path makes one provider attempt per
+cycle, including transient errors; failures remain visible. Other models and
+live traders retain their existing request path. The simulator also caps actual
+fill leverage at the configured limit.
+
+Backtest Lab compares selected runs using recorded equity, return, drawdown,
+and decision outcomes. The table does not infer a valid score from Completed:
+review decision completeness, matching inputs, and executed leverage as described
+in the [competition runbook](../../docs/nofx-agent-competition.md). Newly generated
+run IDs include a safe strategy slug. Keep rounds uninterrupted: cold resume
+still does not reliably restore the selected strategy snapshot, so start fresh
+matched runs after a backend restart.
+
 ## Source and build contract
 
 - [source.json](source.json) fixes upstream revision
@@ -69,6 +85,23 @@ for the `robot$homelab+publisher` account. Credentials stay in restrictive
 temporary files and the public Actions summary contains only verified digest
 references. Transfers and transport diagnostics remain private.
 
+After publication succeeds, a separate job with no repository permissions or
+production credentials validates exactly one backend and one frontend reference
+for that workflow's source revision. It uploads only `nofx-published-images.txt`
+as `nofx-published-images-<full-main-sha>`, retained for 30 days. Download it with
+the signed-in CLI, then use its two references in the reviewed runtime-pin PR:
+
+```sh
+gh run download <successful-run-id> --repo Stuhlmuller/homelab \
+  --name nofx-published-images-<full-main-sha> --dir /tmp/nofx-published-images
+cat /tmp/nofx-published-images/nofx-published-images.txt
+```
+
+The report is generated only from verified publication outputs; it never uploads
+registry authfiles, transport logs, or the publisher workspace. The existing
+Actions step summary remains available. Artifact expiry does not delete images;
+a missing report is not permission to infer digests from mutable tags.
+
 The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
 Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves
 `harbor.stinkyboi.com` certificate validation while uploads bypass the public
@@ -107,20 +140,22 @@ the result. Downloaded blobs and all credentials are removed on success or
 failure. Original tags and GHCR sources remain; reruns copy the same content.
 Future builds publish directly to Harbor.
 
-Live inspection on 2026-09-19 confirmed NOFX still runs upstream images; there
-are no deployed consumers of these custom packages. Registry-origin cutover
-applies only to an existing custom-image consumer and must preserve its exact
-deployed digest. Adopting the maintained NOFX release is a separate functional
-rollout, with the acceptance checks in the linked runbook. The successful
-[migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
+At the migration inventory check, NOFX still used upstream images. The
+successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
 preserved all historical digests and verified complete read-only pulls. The
-maintained runtime selects the migrated
-`f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` images from Harbor with the
-namespace-scoped `harbor-pull` Secret. Require ready Pods at both exact digests
-before declaring Kubernetes pull acceptance. Keep Harbor repositories private.
-For a registry rollback,
-retain the artifacts until consumers have switched to another verified private
-registry through reviewed desired state.
+initial maintained rollout then selected the migrated `f76c278` pair in
+[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036). Preserve those
+artifacts as recovery history; a later source build requires its own verified
+publication and functional acceptance.
+
+Use [deployment.yaml](../../clusters/homelab/apps/nofx/deployment.yaml) for the
+current desired image references, rather than copying this historical migration
+inventory. Pin both published images in a separate reviewed rollout PR with
+`harbor-pull`, then verify ready Pods at both exact digests. Follow the
+[rollout gates](../../docs/nofx-private-images.md#harbor-runtime-acceptance),
+including a fresh authenticated `STOPPED` check before merge. Keep Harbor
+repositories private and retain old artifacts until consumers have moved to
+another verified pair through reviewed desired state.
 
 The retained GHCR packages remain private. Their recovery pull credential is
 covered by the [private-image runbook](../../docs/nofx-private-images.md).
@@ -150,7 +185,8 @@ The protected publisher verifies both pushed digests, instantiates the fixed
 Job template with those references, and waits for successful completion. The
 Job imports the mounted PKCS8 key into Cosign's format in a memory-backed
 volume, signs both digests, and returns only the public key through Pod status.
-CI verifies both stored signatures with that public key before reporting success;
+CI checks that public key against the reviewed SHA-256 fingerprint in
+`scripts/config/harbor-signing.json`, then verifies both stored signatures;
 it does not read the signing Secret. The existing publisher robot password
 protects the temporary Cosign key and authenticates registry writes. Cosign
 requires its password through `COSIGN_PASSWORD`; this CI Job injects that
@@ -172,6 +208,18 @@ unsigned. Retry the protected publication after correcting the cause. Historical
 images are not retroactively signed, and signature enforcement is not enabled.
 
 ### Public key, backup and recovery
+
+Initial enrollment is deliberately staged: the committed fingerprint is `null`,
+which blocks publication before credentials or image pushes. After Argo issues
+the Certificate, use the read-only extraction below on the trusted cluster.
+Run `shasum -a 256 /tmp/harbor-signing.pub` and commit that fingerprint as
+`public_key_sha256` in `scripts/config/harbor-signing.json` through a reviewed PR.
+The hash covers the exact PEM public-key file, including its final newline.
+Then dispatch the protected publisher at the enrolled main commit. Never enroll
+from a failed signing Job: independently check the retained key first.
+A replacement key fails verification even if its signatures are valid. Planned
+rotation requires a separately reviewed fingerprint update; accidental loss
+requires restoring the original Secret, not accepting its replacement.
 
 An operator can extract the public key locally from the certificate, then use
 it for independent verification (requires `kubectl`, `openssl`, and Harbor login):
