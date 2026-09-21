@@ -30,8 +30,9 @@ version is unchanged, so live CNI attachment acceptance remains required.
 Before merge, run `nix develop --command bash scripts/ci/static-checks.sh` and
 `nix develop --command bash scripts/ci/conftest-policies.sh`. These validate the
 repository and rendered manifests; they cannot prove live CNI behavior. After
-sync, check the DaemonSet below and run `scripts/octelium-e2e-check.sh` to verify
-Octelium's network attachments and paths.
+sync, complete the native attachment and direct Pod-IP checks below before
+running `scripts/octelium-e2e-check.sh` for externally routed paths. Emergency
+proxies can satisfy that script without using Multus.
 
 If v4.3.1 causes attachment or daemon failures, revert this image update through
 a PR to restore the previous v4.3.0 digest
@@ -51,6 +52,61 @@ kubectl -n kube-system get pods -l app=multus
 kubectl -n kube-system get daemonset kube-multus-ds -o jsonpath='{.spec.template.spec.priorityClassName}{"\n"}'
 kubectl -n kube-system top pod -l app=multus --containers
 ```
+
+### Native attachment acceptance
+
+Exclude the primary-network emergency Pods and inspect every native Pod that
+requests a Multus network:
+
+```sh
+kubectl -n octelium get pods -l '!homelab.rst.io/emergency-dataplane' -o json |
+  jq '.items[] |
+    select(.metadata.annotations["k8s.v1.cni.cncf.io/networks"] != null) |
+    {pod: .metadata.name, node: .spec.nodeName,
+     created: .metadata.creationTimestamp, primaryIP: .status.podIP,
+     ready: [.status.conditions[]? | select(.type == "Ready") | .status],
+     requested: .metadata.annotations["k8s.v1.cni.cncf.io/networks"],
+     attached: ((.metadata.annotations["k8s.v1.cni.cncf.io/network-status"] // "[]") | fromjson)}'
+```
+
+Empty output is a failed acceptance gate. Require each expected native workload
+to be present and Ready, and each requested NetworkAttachmentDefinition to
+appear in `attached` with its secondary interface and expected nonempty IPs.
+Inside each selected native Pod, confirm those interfaces and addresses exist
+and the expected secondary-network routes are installed:
+
+```sh
+kubectl -n octelium exec '<native-pod>' -c '<container-with-ip>' -- ip -br address
+kubectl -n octelium exec '<native-pod>' -c '<container-with-ip>' -- ip route
+```
+
+Require a successful attachment created after the upgraded Multus daemon became
+Ready on each node hosting native dataplane Pods. Existing pre-upgrade Pods do
+not exercise the new CNI ADD path. If none exists, record acceptance as pending
+until a reviewed repository-owned workload rollout creates one; do not manually
+restart or delete Pods to manufacture evidence.
+
+From an existing authorized client with Pod-network reachability, probe every
+recovered native service directly. For an HTTPS service, preserve its hostname
+and TLS verification while selecting the native Pod address:
+
+```sh
+curl --silent --show-error --max-time 10 --noproxy '*' \
+  --resolve '<service-host>:<native-port>:<native-pod-ip>' \
+  --output /dev/null --write-out '%{http_code}\n' \
+  'https://<service-host>:<native-port>/<read-only-path>'
+```
+
+Use the service's actual protocol, listener port, CA trust, and normal authorized
+probe; require its expected status/content, not merely any HTTP response. Repeat
+against each native Pod and its reported secondary address where that listener
+is bound. Do not use a Kubernetes Service, public DNS route, or emergency Pod as
+the destination. Missing native replicas, attachment/interface mismatches,
+unavailable inspection tools, unreachable native addresses, or unexpected probe
+results leave acceptance pending. Only after these checks pass, run
+`scripts/octelium-e2e-check.sh` for the external paths. Record Pod names, nodes,
+creation times, attachment addresses, and probe outcomes; no live acceptance has
+been established by this documentation change.
 
 Do not roll back to v4.2.4 for the August 2026 worker outage. The
 [v4.3.0 release](https://github.com/k8snetworkplumbingwg/multus-cni/releases/tag/v4.3.0)

@@ -176,6 +176,16 @@ the `octelium-enterprise` Application then prunes the 26 uniquely named
 temporary Deployments. Reverify native-only endpoints and the public paths
 afterward.
 
+Multus upgrade acceptance additionally requires native Pods without the
+`homelab.rst.io/emergency-dataplane` label: match requested networks against
+`network-status`, inspect the actual secondary interfaces/addresses and routes,
+and probe native Pod addresses directly before the public e2e gate. Require a
+new successful attachment after the upgraded daemon is Ready on each native
+dataplane node; pre-upgrade Pods and emergency/public responses cannot establish
+that. Missing native evidence leaves acceptance pending. Commands and evidence
+requirements live in the
+[Multus runbook](../../../clusters/homelab/platform/multus/README.md#native-attachment-acceptance).
+
 Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
 capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
 limits simultaneous Unix-socket connections to the thick daemon so its
