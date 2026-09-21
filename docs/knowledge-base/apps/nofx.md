@@ -167,8 +167,8 @@ inventory and a reviewed policy change; the image rollout preserves that rule.
 The deployed derivative supports key-preserving model edits and removes the
 upstream save handler's credential logging and trader reload.
 The upstream dashboard's generic 404 label can also mean a trader failed to load;
-patch `0011` addresses this as described below. Source evidence, simulation setup, rollback, and
-validation commands are in the
+patch `0011` addresses this as described below. Source evidence, simulation
+setup, rollback, and validation commands are in the
 [NOFX README](../../../clusters/homelab/apps/nofx/README.md).
 
 The private credential workflow reports fixed command stages and allowlisted
