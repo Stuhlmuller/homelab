@@ -218,10 +218,26 @@ fix. The maintained derivative validates these IDs; keep the existing human
 access policy and verify that validation after each rollout before extending
 access to other users or automation.
 
-The dashboard also labels all HTTP 404 responses as "API Not Found", including
-an existing trader that failed to load into the runtime manager. Check private
-startup logs and the saved strategy/model/exchange configuration before assuming
-an API route or image-version mismatch.
+The upstream dashboard labels all HTTP 404 responses as "API Not Found",
+including an existing trader that failed to load. Read-only inspection on
+September 21 reproduced this after OKX `50119` initialization failures.
+Patch `0011` routes this homelab's confirmed US account through `us.okx.com`,
+as required by the [US API documentation](https://app.okx.com/docs-v5/en/).
+It also returns safe `503 TRADER_UNAVAILABLE` guidance for an owned trader that
+cannot load, reserves 404 for missing/foreign traders, and fixes the UI label.
+All runtime dashboard readers share the lookup; the existing public
+equity-history route reads the database without exchange initialization.
+Authenticated dashboard defaults never fall back to another user's trader.
+
+Source validation is separate from publication and rollout. After deploying
+both verified images, reload the browser and check `/api/positions` for the
+saved stopped trader. Require HTTP 200 on successful exchange initialization,
+or the explicit unavailable guidance if configuration still fails. Confirm
+all traders remain stopped. Do not substitute an empty success for a failed
+exchange read. Changing regions does not add US spot trading: the adapter still
+targets USDT perpetuals, which [OKX excludes for US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Keep the existing rollout gates; rollback restores the previous image pair and
+its global-host authentication failure without changing stored credentials.
 
 Source: pinned upstream
 [runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),

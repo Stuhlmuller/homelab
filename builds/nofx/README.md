@@ -28,6 +28,16 @@ opening orders before canceling existing orders. Mocked transport checks cover
 both directions.
 Arena's separate consensus execution path does not use the decision validator.
 
+Patch `0011` routes the OKX adapter through `https://us.okx.com` for this
+homelab's confirmed US account. All signed REST calls share that constant;
+there is no automatic regional fallback. This does not add spot trading or
+establish eligibility for the adapter's USDT perpetuals. Keep traders stopped.
+Dashboard reads return a typed, safe HTTP 503 when an owned saved trader cannot
+load; missing or foreign traders return 404. The UI displays the load guidance
+without claiming the API route is missing. Equity history remains readable
+without initializing the exchange. Handler, transport, and Axios regressions
+run in the existing image test targets.
+
 Backtest Lab compares selected runs using recorded equity, return, drawdown,
 and decision outcomes. The table does not infer a valid score from Completed:
 review decision completeness, matching inputs, and executed leverage as described
