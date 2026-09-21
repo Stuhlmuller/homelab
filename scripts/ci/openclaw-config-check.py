@@ -8,26 +8,6 @@ import sys
 import tempfile
 
 values = "clusters/homelab/apps/openclaw/values.yaml"
-managed = json.loads(pathlib.Path("clusters/homelab/apps/openclaw/assistant/config.json").read_text())
-assert managed["models"]["providers"]["openai"]["baseUrl"] == "https://chatgpt.com/backend-api/codex"
-assert managed["models"]["providers"]["openai"]["api"] == "openai-chatgpt-responses"
-assert managed["plugins"]["entries"]["diagnostics-otel"]["enabled"] is True
-otel = managed["diagnostics"]["otel"]
-assert otel == {
-    "enabled": True,
-    "endpoint": "http://langfuse-web.langfuse.svc.cluster.local:3000/api/public/otel",
-    "protocol": "http/protobuf",
-    "serviceName": "openclaw",
-    "headers": {
-        "Authorization": "${LANGFUSE_OTEL_AUTHORIZATION}",
-        "x-langfuse-ingestion-version": "4",
-    },
-    "traces": True,
-    "metrics": False,
-    "logs": False,
-    "sampleRate": 1,
-    "captureContent": True,
-}
 bootstrap = subprocess.check_output(
     ["yq", "-r", '.controllers.openclaw.initContainers."bootstrap-config".command[2]', values],
     text=True,

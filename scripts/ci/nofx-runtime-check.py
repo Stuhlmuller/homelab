@@ -10,7 +10,10 @@ Recheck these paths when upgrading the backend image.
 import copy
 import json
 import posixpath
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -23,6 +26,8 @@ LITELLM_ROUTING_CONFIG = {
     "base_url": "http://litellm.ai.svc.cluster.local:4000",
     "token_file": "/var/run/secrets/nofx/litellm/token",
 }
+ROOT = Path(__file__).resolve().parents[2]
+ACTIVATION_PATCH = ROOT / "docs/examples/langfuse/activate-nofx.patch"
 REGISTRY_TEMPLATE = (
     '{"auths":{"ghcr.io":{"auth":"'
     '{{ printf "rstuhlmuller:%s" .token | b64enc }}'
@@ -161,15 +166,17 @@ def storage_error(path, pod, container, retained_relative=None):
     return None
 
 
-def litellm_routing_errors(resources, pod, container):
+def litellm_routing_errors(resources, pod, container, active):
     errors = []
     service_accounts = [item for item in resources if item.get("kind") == "ServiceAccount"
                         and item.get("metadata", {}).get("name") == "nofx"
                         and item["metadata"].get("namespace") == "nofx"]
     if len(service_accounts) != 1 or service_accounts[0].get("automountServiceAccountToken") is not False:
         errors.append("backend must use the dedicated non-token-mounting nofx ServiceAccount")
-    if pod.get("serviceAccountName") != "nofx":
+    if active and pod.get("serviceAccountName") != "nofx":
         errors.append("backend must use the nofx ServiceAccount")
+    if not active and "serviceAccountName" in pod:
+        errors.append("staged backend must not change its ServiceAccount")
     frontend_pod, _ = deployment(resources, "frontend")
     if frontend_pod.get("serviceAccountName", "default") != "default":
         errors.append("frontend must retain the default ServiceAccount")
@@ -191,13 +198,16 @@ def litellm_routing_errors(resources, pod, container):
 
     routing_volumes = [volume for volume in pod.get("volumes", [])
                        if volume.get("name") == "litellm-routing"]
-    if (len(routing_volumes) != 1 or configmap_name is None
-            or routing_volumes[0].get("configMap") != {"name": configmap_name}):
-        errors.append("backend must mount the generated LiteLLM routing ConfigMap")
     routing_mounts = [mount for mount in container.get("volumeMounts", [])
                       if mount.get("name") == "litellm-routing"]
-    if routing_mounts != [{"name": "litellm-routing", "mountPath": "/etc/nofx", "readOnly": True}]:
-        errors.append("backend must read the routing file from a read-only /etc/nofx mount")
+    if active:
+        if (len(routing_volumes) != 1 or configmap_name is None
+                or routing_volumes[0].get("configMap") != {"name": configmap_name}):
+            errors.append("backend must mount the generated LiteLLM routing ConfigMap")
+        if routing_mounts != [{"name": "litellm-routing", "mountPath": "/etc/nofx", "readOnly": True}]:
+            errors.append("backend must read the routing file from a read-only /etc/nofx mount")
+    elif routing_volumes or routing_mounts:
+        errors.append("staged backend must not mount LiteLLM routing configuration")
 
     secrets = [item for item in resources if item.get("kind") == "ExternalSecret"
                and item.get("metadata", {}).get("name") == LITELLM_SECRET_NAME
@@ -217,12 +227,15 @@ def litellm_routing_errors(resources, pod, container):
             errors.append("LiteLLM token must render only the dedicated token Secret")
     token_volumes = [volume for volume in pod.get("volumes", [])
                      if volume.get("name") == "litellm-token"]
-    if token_volumes != [{"name": "litellm-token", "secret": {"secretName": LITELLM_SECRET_NAME, "defaultMode": 288}}]:
-        errors.append("backend must mount the LiteLLM token Secret with restrictive file mode")
     token_mounts = [mount for mount in container.get("volumeMounts", [])
                     if mount.get("name") == "litellm-token"]
-    if token_mounts != [{"name": "litellm-token", "mountPath": "/var/run/secrets/nofx/litellm", "readOnly": True}]:
-        errors.append("backend must mount the LiteLLM token directory read-only")
+    if active:
+        if token_volumes != [{"name": "litellm-token", "secret": {"secretName": LITELLM_SECRET_NAME, "defaultMode": 288}}]:
+            errors.append("backend must mount the LiteLLM token Secret with restrictive file mode")
+        if token_mounts != [{"name": "litellm-token", "mountPath": "/var/run/secrets/nofx/litellm", "readOnly": True}]:
+            errors.append("backend must mount the LiteLLM token directory read-only")
+    elif token_volumes or token_mounts:
+        errors.append("staged backend must not mount the LiteLLM token")
     for pod_spec, app_container in ((pod, container), (frontend_pod, deployment(resources, "frontend")[1])):
         names = [entry.get("secretRef", {}).get("name") for entry in app_container.get("envFrom", [])]
         names += [entry.get("valueFrom", {}).get("secretKeyRef", {}).get("name")
@@ -235,10 +248,10 @@ def litellm_routing_errors(resources, pod, container):
     return errors
 
 
-def validate(resources):
+def validate(resources, active=False):
     pod, container = deployment(resources)
     errors = registry_errors(resources)
-    errors += litellm_routing_errors(resources, pod, container)
+    errors += litellm_routing_errors(resources, pod, container, active)
     if container.get("securityContext", {}).get("readOnlyRootFilesystem") is not True:
         errors.append("backend must keep readOnlyRootFilesystem: true")
     if container.get("command") != ["/app/nofx"]:
@@ -265,6 +278,18 @@ def validate(resources):
     if len(claims) != 1:
         errors.append("rendered resources must retain the nofx/nofx-data PVC")
     return errors
+
+
+def activated_resources():
+    app = Path("clusters/homelab/apps/nofx")
+    with tempfile.TemporaryDirectory() as directory:
+        scratch = Path(directory)
+        shutil.copytree(ROOT / app, scratch / app, ignore=shutil.ignore_patterns("__pycache__"))
+        subprocess.run(["git", "apply", "--check", str(ACTIVATION_PATCH)], cwd=scratch, check=True)
+        subprocess.run(["git", "apply", str(ACTIVATION_PATCH)], cwd=scratch, check=True)
+        rendered = subprocess.check_output(["kubectl", "kustomize", scratch / app], text=True)
+        return json.loads(subprocess.check_output(
+            ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
 
 
 def negative_checks(resources):
@@ -377,7 +402,7 @@ def negative_checks(resources):
             next(item for item in container["volumeMounts"] if item["name"] == "litellm-token")["readOnly"] = False
         elif case == "litellm-token-env":
             container["envFrom"].append({"secretRef": {"name": LITELLM_SECRET_NAME}})
-        if not validate(changed):
+        if not validate(changed, active=True):
             raise ValueError(f"runtime regression was accepted: {case}")
     return len(cases)
 
@@ -388,8 +413,12 @@ def main():
     errors = validate(resources)
     if errors:
         raise ValueError("; ".join(errors))
-    count = negative_checks(resources)
-    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth; "
+    activated = activated_resources()
+    errors = validate(activated, active=True)
+    if errors:
+        raise ValueError("activation patch: " + "; ".join(errors))
+    count = negative_checks(activated)
+    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth, staged LiteLLM route; "
           f"{count} regressions rejected")
 
 

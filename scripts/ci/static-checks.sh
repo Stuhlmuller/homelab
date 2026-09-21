@@ -1233,7 +1233,8 @@ if [[ -n "$tag_only_images" ]]; then
 fi
 echo "::endgroup::"
 
-echo "::group::OpenClaw plugins and telemetry"
+echo "::group::OpenClaw Discord plugin"
+python3 scripts/ci/langfuse-staging-check.py
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
 python3 scripts/ci/openclaw-runtime-storage-check.py
@@ -1255,14 +1256,6 @@ rg -Fq 'package.get("version") == expected_version' "$openclaw_values"
 rg -Fq 'for delay in 0 5 15 30' "$openclaw_values"
 rg -Fq 'verify_discord_plugin installed' "$openclaw_values"
 rg -Fq 'verify_discord_plugin loaded' "$openclaw_values"
-rg -Fq '"npm:@openclaw/diagnostics-otel@${openclaw_version}"' "$openclaw_values"
-rg -Fq 'openclaw plugins enable diagnostics-otel --accept-capabilities' "$openclaw_values"
-rg -Fq 'openclaw plugins inspect diagnostics-otel --runtime --json |' "$openclaw_values"
-rg -Fq 'plugin.get("id") == "diagnostics-otel"' "$openclaw_values"
-rg -Fq 'install.get("spec") == f"@openclaw/diagnostics-otel@{expected_version}"' "$openclaw_values"
-rg -Fq 'package.get("name") == "@openclaw/diagnostics-otel"' "$openclaw_values"
-rg -Fq 'verify_diagnostics_otel_plugin installed' "$openclaw_values"
-rg -Fq 'verify_diagnostics_otel_plugin loaded' "$openclaw_values"
 rg -Fq 'tar --one-file-system' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
@@ -1278,9 +1271,9 @@ if rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
   exit 1
 fi
 rg -Fq '"maxConcurrent": 4' clusters/homelab/apps/openclaw/assistant/config.json
-if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 2 ]] ||
-  rg -q 'falling back|current_discord_plugin_spec|current_diagnostics_otel_plugin_spec|clawhub:@openclaw/(discord|diagnostics-otel)|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
-  echo "OpenClaw bootstrap must use only exact Discord and OpenTelemetry external plugin versions" >&2
+if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
+  rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
+  echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2
   exit 1
 fi
 if ! awk '
@@ -1301,7 +1294,7 @@ if ! awk '
       inspect_after < config_validate)
   }
 ' "$openclaw_values"; then
-  echo "OpenClaw must back up, install managed plugins, migrate, then validate persisted state" >&2
+  echo "OpenClaw must back up, install Discord, migrate, then validate persisted state" >&2
   exit 1
 fi
 yq -e '

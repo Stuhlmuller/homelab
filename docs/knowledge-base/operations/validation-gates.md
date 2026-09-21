@@ -149,8 +149,11 @@ rg -n \
 ## Kubernetes Source Checks
 
 AI routing requires both the source gates and per-caller live evidence in
-[[../architecture/ai-observability]]. Run
-`scripts/ci/litellm-attribution-check.py` in the pinned LiteLLM 1.80.8 environment
+[[../architecture/ai-observability]].
+`scripts/ci/langfuse-staging-check.py` preserves current runtime secret/provider
+contracts and verifies the pending activation patch plus its OpenClaw fixtures
+in scratch. It must pass again after overlapping caller changes.
+Run `scripts/ci/litellm-attribution-check.py` in the pinned LiteLLM 1.80.8 environment
 to verify auth, token attributes and credential redaction; the `validate`
 workflow also runs it against that SDK version. Confirm actual
 Langfuse generations after rollout; a Ready Secret may still contain a provider

@@ -15,7 +15,7 @@
       },
       "thinkingDefault": "medium",
       "userTimezone": "America/Los_Angeles",
-      "timeoutSeconds": 600,
+      "timeoutSeconds": 3600,
       "heartbeat": {
         "every": "1h",
         "model": "openai/gpt-6-astra",
@@ -54,28 +54,7 @@
             "command": "/toolbox/codex/codex"
           }
         }
-      },
-      "diagnostics-otel": {
-        "enabled": true
       }
-    }
-  },
-  "diagnostics": {
-    "enabled": true,
-    "otel": {
-      "enabled": true,
-      "endpoint": "http://langfuse-web.langfuse.svc.cluster.local:3000/api/public/otel",
-      "protocol": "http/protobuf",
-      "serviceName": "openclaw",
-      "headers": {
-        "Authorization": "${LANGFUSE_OTEL_AUTHORIZATION}",
-        "x-langfuse-ingestion-version": "4"
-      },
-      "traces": true,
-      "metrics": false,
-      "logs": false,
-      "sampleRate": 1,
-      "captureContent": true
     }
   },
   "cron": {

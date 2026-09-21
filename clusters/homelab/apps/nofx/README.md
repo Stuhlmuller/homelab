@@ -20,7 +20,7 @@ The backend stores its SQLite database and logs on the `nofx-data` NFS PVC at
   recovery credential. Its dedicated `nofx-registry-auth` ExternalSecret renders a
   `kubernetes.io/dockerconfigjson` Secret; it is not exposed to NOFX containers.
 - `/homelab/nofx/litellm-token` is the generated inference-only gateway key.
-  `nofx-litellm` mounts it only as the backend's read-only
+  `nofx-litellm` reserves it for the activation patch as a backend-only read-only
   `/var/run/secrets/nofx/litellm/token` file; it is never an environment variable
   or a frontend mount. Because this ExternalSecret uses `OnChange`, increment its
   `generated-secret-revision` annotation after rotating the SSM value.
@@ -30,22 +30,26 @@ Rollout depends on External Secrets, Istio ambient, Octelium,
 
 ## Deferred LiteLLM routing
 
-The overlay declares the fixed file-backed route at
-`/etc/nofx/litellm-routing.json` for the maintained source patch. It points only
-to `http://litellm.ai.svc.cluster.local:4000` and the mounted gateway-token file;
-there are no routing environment variables. The existing encrypted database
-continues to own the OpenRouter provider key, Base URL
+The active overlay declares the fixed file-backed route, token Secret, and
+dedicated ServiceAccount but deliberately makes no backend Pod-spec change.
+[`activate-nofx.patch`](../../../../docs/examples/langfuse/activate-nofx.patch)
+is the reviewed follow-up that adds the route at `/etc/nofx/litellm-routing.json`,
+the read-only token file, and the backend ServiceAccount. The route points only to
+`http://litellm.ai.svc.cluster.local:4000`; there are no routing environment
+variables. The existing encrypted database continues to own the OpenRouter provider key, Base URL
 `https://openrouter.ai/api/v1`, and model `openrouter/free`. The patched client
 forwards that original provider key in its request body to LiteLLM while using the
 file token for gateway authentication, and rejects any other configured model.
 
-This manifest change deliberately does **not** change the current image digest:
-the deployed image does not yet contain the routing patch and ignores these
-mounts. After the patch has merged to reviewed `main`, the image workflow has
-published and verified its exact backend digest, and the gateway token Secret is
-Ready, use a separate reviewed follow-up to pin that digest. Then prove a short
-historical `openrouter/free` run reaches LiteLLM with one structured provider
-attempt and no raw provider or gateway credentials in application logs.
+This staging deliberately preserves the current image digest. Do not apply the
+activation patch until LiteLLM is activated, `nofx-litellm` is Ready and its target
+Secret exists, and a reviewed `main` image containing
+`0012-litellm-runtime-routing.patch` has published a verified backend digest.
+Use a separate reviewed digest-pin follow-up, then prove a short historical
+`openrouter/free` run reaches LiteLLM with one structured provider attempt and no
+raw provider or gateway credentials in application logs.
+That follow-up must consume this patch, remove the scratch activation check, and
+switch `nofx-runtime-check.py` to `active=True` for the now-active render.
 
 ## Runtime storage and backtests
 
@@ -173,7 +177,7 @@ Retain the PVC, absolute command, working directory, and read-only root. After
 Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expected
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
-source download matches the deployed revision, including patches `0007`–`0011`.
+source download matches the deployed revision, including patches `0007`–`0012`.
 Reload the UI and verify the three shared-account drafts remain stopped and hidden after
 restart. The startup repair changes no credentials, regional routing, or products;
 actual OKX authentication remains unresolved pending account-region confirmation.
@@ -245,10 +249,26 @@ fix. The maintained derivative validates these IDs; keep the existing human
 access policy and verify that validation after each rollout before extending
 access to other users or automation.
 
-The dashboard also labels all HTTP 404 responses as "API Not Found", including
-an existing trader that failed to load into the runtime manager. Check private
-startup logs and the saved strategy/model/exchange configuration before assuming
-an API route or image-version mismatch.
+The upstream dashboard labels all HTTP 404 responses as "API Not Found",
+including an existing trader that failed to load. Read-only inspection on
+September 21 reproduced this after OKX `50119` initialization failures.
+Patch `0011` routes this homelab's confirmed US account through `us.okx.com`,
+as required by the [US API documentation](https://app.okx.com/docs-v5/en/).
+It also returns safe `503 TRADER_UNAVAILABLE` guidance for an owned trader that
+cannot load, reserves 404 for missing/foreign traders, and fixes the UI label.
+All runtime dashboard readers share the lookup; the existing public
+equity-history route reads the database without exchange initialization.
+Authenticated dashboard defaults never fall back to another user's trader.
+
+Source validation is separate from publication and rollout. After deploying
+both verified images, reload the browser and check `/api/positions` for the
+saved stopped trader. Require HTTP 200 on successful exchange initialization,
+or the explicit unavailable guidance if configuration still fails. Confirm
+all traders remain stopped. Do not substitute an empty success for a failed
+exchange read. Changing regions does not add US spot trading: the adapter still
+targets USDT perpetuals, which [OKX excludes for US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Keep the existing rollout gates; rollback restores the previous image pair and
+its global-host authentication failure without changing stored credentials.
 
 Source: pinned upstream
 [runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),

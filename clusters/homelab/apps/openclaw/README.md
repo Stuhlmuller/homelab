@@ -49,6 +49,15 @@ the [official model definition](https://developers.openai.com/api/docs/models/gp
 Account access must be verified with an actual turn; configuration validation
 alone does not prove Astra entitlement.
 
+Interactive turns have a one-hour execution budget (`agents.defaults.timeoutSeconds:
+3600`). OpenClaw's Codex harness uses an absolute deadline: ongoing tool work
+does not reset it. The former 600-second setting interrupted an active Discord
+turn on September 21, 2026. Heartbeats retain 600 seconds; the morning brief,
+health watch, and daily improvement retain 240, 180, and 600 seconds respectively.
+If the deadline is reached, inspect completed work before retrying; the timeout
+does not undo earlier actions. Roll back the default and bundle digest together
+through GitOps. See the pinned [Codex timeout contract](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/plugins/codex-harness-reference.md#turn-execution-and-settlement).
+
 The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
 official ChatGPT endpoint. This deployment uses its retained subscription OAuth
 profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
@@ -74,14 +83,21 @@ per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
 plugin is installed and checked at the exact gateway version during bootstrap.
 
-### Langfuse direct telemetry
+### Pending Langfuse direct telemetry
+
+The exporter is staged in the
+[pending activation patch](../../../../docs/examples/langfuse/activate-callers.patch).
+Current bootstrap and runtime do not load it or require Langfuse credentials.
+The unconsumed `openclaw-langfuse-otel` ExternalSecret can reconcile separately.
+Follow the [caller activation gates](../langfuse/README.md#caller-activation)
+before enabling the behavior described below.
 
 OpenClaw remains on the ChatGPT/Codex OAuth transport; it is not routed through
 LiteLLM. The configured LiteLLM upstream API key is not a valid replacement for
 that subscription route. This is therefore a telemetry-only integration and a
 known gateway-routing gap.
 
-Bootstrap installs the official `@openclaw/diagnostics-otel` package at the
+After activation, bootstrap installs the official `@openclaw/diagnostics-otel` package at the
 exact OpenClaw image version and verifies the installed package before enabling
 it. The exporter sends OTLP/HTTP protobuf **traces** to Langfuse at
 `/api/public/otel`, with the Langfuse v4 real-time-ingestion header. Its Basic

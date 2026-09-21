@@ -25,7 +25,6 @@ spec:
         app.kubernetes.io/part-of: homelab-ai
     spec:
       automountServiceAccountToken: false
-      serviceAccountName: nofx
       imagePullSecrets:
         - name: harbor-pull
       securityContext:
@@ -99,25 +98,12 @@ spec:
               mountPath: /app/data
             - name: tmp
               mountPath: /tmp
-            - name: litellm-routing
-              mountPath: /etc/nofx
-              readOnly: true
-            - name: litellm-token
-              mountPath: /var/run/secrets/nofx/litellm
-              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: nofx-data
         - name: tmp
           emptyDir: {}
-        - name: litellm-routing
-          configMap:
-            name: nofx-litellm-routing
-        - name: litellm-token
-          secret:
-            secretName: nofx-litellm
-            defaultMode: 0440
 ---
 apiVersion: apps/v1
 kind: Deployment

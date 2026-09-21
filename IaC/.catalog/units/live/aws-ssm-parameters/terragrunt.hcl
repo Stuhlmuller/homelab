@@ -443,7 +443,14 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/openclaw/litellm-token" = {
-      description = "OpenClaw inference-only LiteLLM key with app attribution."
+      description = "OpenClaw token for LiteLLM access."
+      generated = {
+        source_parameter = "/homelab/litellm/master-key"
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/litellm-app-token" = {
+      description = "Staged OpenClaw inference-only LiteLLM key with app attribution."
       generated = {
         length  = 48
         prefix  = "sk-"

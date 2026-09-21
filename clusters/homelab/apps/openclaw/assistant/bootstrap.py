@@ -75,10 +75,6 @@ def install(bundle, state, config_path):
     bundled = config.get("skills", {}).get("allowBundled")
     if isinstance(bundled, list) and "gog" not in bundled:
         bundled.append("gog")
-    # An existing plugin allow-list must admit the managed diagnostics exporter.
-    plugin_allow = config.get("plugins", {}).get("allow")
-    if isinstance(plugin_allow, list) and "diagnostics-otel" not in plugin_allow:
-        plugin_allow.append("diagnostics-otel")
     merge(config, patch)
     updates = []
     for name in FILES:

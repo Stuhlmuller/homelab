@@ -45,7 +45,49 @@ kubectl -n langfuse get externalsecret,pvc,deploy
 scripts/octelium-e2e-check.sh
 ```
 
-Require Synced/Healthy, Ready ExternalSecret, Bound PVCs, and available
-Deployments, then send one authorized inference from each enabled caller.
-In the Homelab project, verify app attribution, model, prompt/output and
-nonzero token usage. See the [caller acceptance matrix](../../../../docs/knowledge-base/architecture/ai-observability.md).
+## Caller activation
+
+This change stages Langfuse and its credentials first. Existing OpenClaw and
+LiteLLM runtime configuration stays unchanged: an asynchronous protected full
+apply must not race a caller restart requiring credentials that do not exist.
+The old OpenClaw gateway token still aliases the operator master key; the new
+`/homelab/openclaw/litellm-app-token` is provisioned independently. Do not rotate
+the old parameter during staging.
+
+Before a follow-up activation PR:
+
+1. Complete the protected full `Terragrunt Apply`, which plans/policy-checks the
+   SSM/S3 producers before registering Langfuse. An Application-only dispatch
+   cannot provision these dependencies.
+2. Verify the Langfuse Application is Synced/Healthy, all three PVCs are Bound,
+   the project is initialized, and the authenticated UI opens through Octelium.
+   Verify `langfuse-secrets`, `litellm-app-keys` and `openclaw-langfuse-otel`
+   ExternalSecrets are Ready without printing their values.
+3. Prepare the existing caller changes in a fresh branch:
+
+   ```sh
+   nix develop --command python3 scripts/ci/langfuse-staging-check.py
+   git apply --check docs/examples/langfuse/activate-callers.patch
+   git apply docs/examples/langfuse/activate-callers.patch
+   ```
+
+   The staging check applies the patch only to scratch and exercises both
+   OpenClaw telemetry/config fixtures. It fails on stale patch context or an
+   outdated assistant checksum. Refresh the patch after overlapping changes;
+   preserve newer image, timeout and agent settings. In the activation PR,
+   remove the consumed patch and staging check (including its static-gate
+   invocation), then run the full static gate and pinned LiteLLM attribution
+   test. Review the live plan and render/diff the affected workloads.
+4. After activation, verify one real OpenClaw OAuth turn and gateway request
+   produce correlated traces with expected provider/model, content and available
+   usage. Keep the working ChatGPT subscription and n8n Bedrock workflow.
+5. Activate NOFX separately using its
+   [image and routing gates](../nofx/README.md#deferred-litellm-routing).
+   Its prepared `activate-nofx.patch` does not select an image: pair it with the
+   verified published backend digest containing source patch `0012` only after
+   LiteLLM and `nofx-litellm` are Ready. Preserve the original provider/model and
+   require a real correlated trace without credential leakage.
+
+Rollback the activation commit through GitOps; retain Langfuse data and keys.
+The staging merge does not establish inference coverage or a datastore restore
+drill. Those acceptance gaps remain in the knowledge base.
