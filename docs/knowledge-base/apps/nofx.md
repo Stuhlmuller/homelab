@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-19
+updated: 2026-09-21
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,15 +15,15 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The competition rollout targets reviewed main revision
+The competition rollout uses reviewed main revision
 `25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`. Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
-[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036) merged at
-`78ca869aae86c7cd94b6c725bec59f68b032c6b5`. Subsequent Argo CD inspection showed
-`Synced` and `Healthy` at that revision, with both earlier `f76c278` Harbor images
-ready `1/1`. Verify the new running digests separately before accepting the
-competition rollout. Both packages remain private.
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052) merged at
+`047d26f088b6733dcd8b9c48dcec9cdca393c10f`. Read-only inspection on 2026-09-20
+showed Argo CD `Synced` and `Healthy`, both deployments ready `1/1`, and running
+image IDs matching the declared backend `58c274ba93e0…` and frontend
+`92542955d244…` digests. Both packages remain private.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -180,8 +180,12 @@ data. The competition build adds a factual Backtest Lab comparison table and
 caps leverage on actual fills. Completed still does not prove that all decisions
 succeeded, and stop-loss/take-profit triggers are not simulated. Require six
 successful decisions and verify every fill's leverage before ranking a round.
-The runbook records the failed earlier rounds without presenting them or shared
-live-account balances as independent competition results.
+The runbook records failed rounds and the required browser reload after image
+rollout. Multiple live traders sharing one OKX account also share positions and
+account-level returns; Initial Balance does not reserve capital. Independent
+live competitors require separate funded accounts or subaccounts. The runbook
+does not present shared balances or historical simulations as live competition
+results.
 
 The first observed Trend and Breakout simulations reported Completed with two
 and three failed cycles out of six. Missing JSON caused the parser to synthesize
@@ -194,9 +198,8 @@ winner.
 The competition build requests strict structured output for historical
 `openrouter/free` calls to the official OpenRouter API, preserves malformed or
 refused responses as failed cycles, and makes one provider attempt per cycle,
-including transient errors. Fresh live acceptance remains separate from the
-verified earlier deployment: confirm stopped live traders, new running image
-digests, and a complete eligible simulation round. Avoid resuming a round across
+including transient errors. Deployment verification does not establish a
+complete eligible simulation round. Avoid resuming a round across
 a backend restart: the simulator does not persist its loaded saved strategy
 object, so a cold resume can lose the selected persona.
 
