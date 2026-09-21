@@ -28,6 +28,8 @@ defaultRules:
     Watchdog: true
     # Replaced by job-prometheusrules.yaml with proven CronJob recovery.
     KubeJobFailed: true
+    # Non-HA capacity policy; replaced by memory-prometheusrules.yaml.
+    KubeMemoryOvercommit: true
 kubeControllerManager:
   enabled: false
 kubeProxy:
