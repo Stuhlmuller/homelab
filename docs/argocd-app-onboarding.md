@@ -50,6 +50,7 @@ destination, and resources.
 | prowlarr              | requested                 | `media`                 | `clusters/homelab/apps/prowlarr`                | `IaC/live/argocd-apps/prowlarr`              | Yes           | cert-manager, istio, media-postgres, platform-storage                              |
 | radarr                | requested                 | `media`                 | `clusters/homelab/apps/radarr`                  | `IaC/live/argocd-apps/radarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage            |
 | sonarr                | requested                 | `media`                 | `clusters/homelab/apps/sonarr`                  | `IaC/live/argocd-apps/sonarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage            |
+| langfuse              | requested                 | `langfuse`              | `clusters/homelab/apps/langfuse`                | `IaC/live/argocd-apps/langfuse`              | Yes           | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, langfuse-blob-storage |
 | litellm               | requested                 | `ai`                    | `clusters/homelab/apps/litellm`                 | `IaC/live/argocd-apps/litellm`               | Yes           | external-secrets, cert-manager, istio, platform-storage                            |
 | openclaw              | requested                 | `ai`                    | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`              | Yes           | external-secrets, cert-manager, istio, litellm, platform-storage                   |
 | n8n                   | requested                 | `automation`            | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                   | Yes           | external-secrets, cert-manager, istio, platform-storage, n8n-postgres              |
@@ -99,6 +100,13 @@ AFFiNE is not considered ready until its ExternalSecret, PostgreSQL 16 with the
 pgvector extension, authenticated Redis, migration init container, four
 retained NFS claims, Istio route, Octelium `WEB` Service, Cloudflare Tunnel
 ingress, and public DNS record have all reconciled successfully.
+
+Langfuse is not ready until its ExternalSecret is Ready, its three retained
+`nfs-default` claims are Bound, PostgreSQL, Valkey, and ClickHouse are Healthy,
+the S3 credential parameters exist, and the protected UI responds through
+Octelium. LiteLLM registration follows Langfuse, but that does not gate runtime
+readiness; verify the initialized project before treating first-rollout callback
+records as complete. A small number of early callback events can be lost.
 
 ## Registration Provider
 

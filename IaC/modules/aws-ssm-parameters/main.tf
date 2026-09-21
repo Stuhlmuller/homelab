@@ -77,6 +77,11 @@ locals {
     name => parameter
     if try(parameter.generated.source_parameter, null) == null && try(parameter.generated.kind, "password") == "password"
   }
+  hex_generated_parameters = {
+    for name, parameter in local.generated_parameters :
+    name => parameter
+    if try(parameter.generated.source_parameter, null) == null && try(parameter.generated.kind, "password") == "hex"
+  }
   private_key_generated_parameters = {
     for name, parameter in local.generated_parameters :
     name => parameter
@@ -95,9 +100,14 @@ locals {
     for name, parameter in local.private_key_generated_parameters :
     name => tls_private_key.generated[name].private_key_pem
   }
+  hex_generated_values = {
+    for name, parameter in local.hex_generated_parameters :
+    name => random_id.generated[name].hex
+  }
   direct_generated_values = merge(
     local.random_generated_values,
     local.private_key_generated_values,
+    local.hex_generated_values,
   )
   generated_values = merge(
     local.direct_generated_values,
@@ -114,6 +124,12 @@ resource "random_password" "generated" {
   length           = each.value.generated.length
   override_special = each.value.generated.override_special
   special          = each.value.generated.special
+}
+
+resource "random_id" "generated" {
+  for_each = local.hex_generated_parameters
+
+  byte_length = each.value.generated.length
 }
 
 resource "tls_private_key" "generated" {

@@ -1,0 +1,44 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: langfuse-default-deny
+  namespace: langfuse
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: langfuse-allow-ui-and-ingestion
+  namespace: langfuse
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse
+      app.kubernetes.io/component: web
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/ai/sa/litellm
+              - cluster.local/ns/ai/sa/openclaw
+      to:
+        - operation:
+            ports: ["3000"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: langfuse-allow-datastores
+  namespace: langfuse
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/langfuse/sa/langfuse
+      to:
+        - operation:
+            ports: ["5432", "6379", "8123", "9000"]

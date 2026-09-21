@@ -300,7 +300,8 @@ workload credential, ready connector replica, and
 checks Cluster/API/portal TLS responses, the complete homelab WEB Service
 catalog, public DNS for each existing
 `*.stinkyboi.com` app hostname, and HTTPS access to each app hostname through
-Octelium public WEB access. It requires AFFiNE's anonymous Service mode, NOFX's
+Octelium public WEB access. Langfuse is included as a non-anonymous public WEB
+Service. It requires AFFiNE's anonymous Service mode, NOFX's
 `homelab-human-web-access` policy, and unauthenticated NOFX `/` and `/api/health`
 responses to carry Octelium's `401` denial header. It also validates AFFiNE's
 native-client CORS preflight plus public `serverConfig` GraphQL query, confirms

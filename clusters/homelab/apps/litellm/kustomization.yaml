@@ -5,3 +5,10 @@ resources:
   - externalsecret.yaml
   - authorizationpolicy.yaml
   - virtualservice.yaml
+configMapGenerator:
+  - name: litellm-app-identity
+    namespace: ai
+    files:
+      - app_identity.py
+generatorOptions:
+  disableNameSuffixHash: true

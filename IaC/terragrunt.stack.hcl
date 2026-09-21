@@ -1424,7 +1424,8 @@ unit "argocd_apps_litellm" {
       "external-secrets",
       "cert-manager",
       "istio",
-      "platform-storage"
+      "platform-storage",
+      "langfuse"
     ]
     manifest = {
       apiVersion = "argoproj.io/v1alpha1"
@@ -1500,6 +1501,101 @@ unit "argocd_apps_litellm" {
           {
             name  = "rollout"
             value = "automated; verify provider secrets and NFS backup coverage before exposing the gateway"
+          }
+        ]
+      }
+    }
+  }
+}
+
+unit "argocd_apps_langfuse" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/langfuse"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "../aws-ssm-parameters",
+      "external-secrets",
+      "cert-manager",
+      "istio",
+      "platform-storage",
+      "../langfuse-blob-storage"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "langfuse"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "langfuse"
+        }
+
+        sources = [
+          {
+            repoURL        = "ghcr.io/langfuse/langfuse-k8s/charts"
+            chart          = "langfuse"
+            path           = "."
+            targetRevision = "2.1.1"
+            helm = {
+              releaseName = "langfuse"
+              valueFiles  = ["$values/clusters/homelab/apps/langfuse/values.yaml"]
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            ref            = "values"
+            path           = "."
+            directory = {
+              include = ".argocd-values-ref-placeholder.yaml"
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/langfuse"
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "2m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "retention"
+            value = "single-replica pilot; raw event bodies expire from S3 after 30 days"
           }
         ]
       }
@@ -3500,6 +3596,12 @@ unit "argocd_apps_tailscale" {
 unit "aws_ssm_parameters" {
   source                  = "./.catalog/units/live/aws-ssm-parameters"
   path                    = "live/aws-ssm-parameters"
+  no_dot_terragrunt_stack = true
+}
+
+unit "langfuse_blob_storage" {
+  source                  = "./.catalog/units/live/langfuse-blob-storage"
+  path                    = "live/langfuse-blob-storage"
   no_dot_terragrunt_stack = true
 }
 

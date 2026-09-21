@@ -15,6 +15,14 @@ stores daily verified logical backups at 02:30 UTC with
 14-day retention. This creates a migration and logical-recovery checkpoint; it
 is not an independent copy because both claims use the same QNAP export.
 
+Langfuse chart `2.1.1` directly runs single-replica PostgreSQL (`20Gi`),
+Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default` PVCs; no
+database operator is installed. Its dedicated raw-event S3 bucket expires
+objects after 30 days. There is no automatic logical backup or restore job for
+these datastores. The retained PVCs and S3 lifecycle are not independent
+recovery copies, so record and test a manual restore procedure before claiming
+backup/restore readiness for `https://langfuse.stinkyboi.com`.
+
 ## NAS Configuration
 
 | Setting | Value |

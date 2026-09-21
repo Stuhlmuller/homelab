@@ -110,6 +110,7 @@ dispatcharr.stinkyboi.com
 grafana.stinkyboi.com
 kiali.stinkyboi.com
 litellm.stinkyboi.com
+langfuse.stinkyboi.com
 multica.stinkyboi.com
 n8n.stinkyboi.com
 nofx.stinkyboi.com
@@ -140,6 +141,7 @@ grafana
 homelab-demo.homelab
 kiali
 litellm
+langfuse
 multica
 n8n
 nofx
@@ -467,7 +469,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Octelium public Services have duplicate primary hostnames: $(tr '\n' ' ' <<<"${DUPLICATE_PRIMARY_HOSTNAMES}")"
     fi
-    for SERVICE in affine argocd compass cordium deluge dispatcharr grafana kiali litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine argocd compass cordium deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public"
       else
@@ -490,7 +492,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Octelium Service affine is not anonymous"
     fi
-    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} still requires authentication"
       else
@@ -507,7 +509,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Cordium package-managed default.cordium WEB Service is missing or invalid"
     fi
-    for SERVICE in affine argocd compass deluge dispatcharr grafana kiali litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine argocd compass deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.config.upstream.url == "https://istio-ingressgateway.istio-system.svc.cluster.local:443" and .spec.config.tls.insecureSkipVerify == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} uses the non-redirecting Istio HTTPS upstream"
       else

@@ -99,6 +99,9 @@ policy is added and validated.
 
 Ambient is intentionally not enabled for:
 
+- `langfuse`, because its dedicated single-node data stores use the ordinary
+  Kubernetes service path; mesh enrollment needs a complete store-to-web/worker
+  identity policy and rollback plan;
 - `media`, because Deluge Gluetun/WireGuard and the current media app traffic
   model still need a repo-owned waypoint or equivalent policy design before
   re-enrollment;
@@ -137,6 +140,7 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 | `argocd` | `clusters/homelab/argocd/self-management/namespace.yaml` |
 | `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
 | `finance` | `clusters/homelab/apps/octobot/namespace.yaml` |
+| `langfuse` | `clusters/homelab/apps/langfuse/namespace.yaml` |
 | `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
 | `storage` | `clusters/homelab/platform/storage/namespace.yaml` |
 
