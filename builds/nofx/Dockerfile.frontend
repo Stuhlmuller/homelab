@@ -6,7 +6,8 @@ COPY upstream/web/ ./
 
 FROM dependencies AS tests
 RUN npm test -- --run src/components/ModelConfigModal.test.tsx \
-    src/components/BacktestComparison.test.tsx
+    src/components/BacktestComparison.test.tsx \
+    src/components/AITradersPage.start.test.tsx
 
 FROM tests AS build
 RUN npm run build
