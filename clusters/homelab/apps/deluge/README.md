@@ -220,7 +220,10 @@ singleton through its Recreate strategy. Before activation, confirm the latest
 consecutive five-minute windows above 285m with comparable traffic and healthy
 VPN/Deluge RPC. The September audit alone does not establish a current need.
 Then change `configMaps.gluetun-profiling.data.pprof_enabled` to `"on"` in a
-reviewed PR, preserving the loopback address. After Argo sync, wait for stable
+reviewed PR, preserving the loopback address. The static gate accepts either
+committed state and still requires the exact loopback address; the capture
+helper requires committed `"on"` settings before any live inspection. After
+Argo sync, wait for stable
 Pod, VPN, and Deluge RPC health and require the same sustained high CPU again.
 A restart can change the busy condition; a quiet profile would not explain
 earlier saturation. Without renewed saturation, restore `"off"` without capture.
