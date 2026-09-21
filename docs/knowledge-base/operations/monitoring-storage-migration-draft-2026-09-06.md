@@ -14,7 +14,8 @@ The September 7 post-upgrade capture confirmed Operator `v0.90.1`, Prometheus
 `v3.11.3-distroless`, Alertmanager `v0.32.1`, and Alertmanager retention `120h`.
 Each has one replica; at 05:36 UTC Prometheus was Ready on `zimaboard-1` and
 Alertmanager was Ready on `acer`. These are current consumers, not selected
-migration targets; re-inventory all possible writers before fencing. Keep these versions,
+migration targets; re-inventory all possible writers before fencing. Keep these
+versions,
 resource names, Services, authentication, scrape selectors, and notification
 routing unchanged during the storage move.
 
@@ -42,7 +43,8 @@ Use Prometheus's own TSDB size metrics and an offline directory inventory for
 copy sizing. The requested PVC capacities are not hard quotas on NFS or hostPath.
 
 The September 6 inventory found only `acer` with enough local disk headroom for
-the unchanged `50Gi`/`10Gi` budgets and verification copies. Its `/var` filesystem is XFS on
+the unchanged `50Gi`/`10Gi` budgets and verification copies. Its `/var` filesystem
+is XFS on
 the existing system disk. However, its bit-flip/image/etcd corruption incident
 remains unresolved: see [[continuous-improvement]], Acer storage-integrity
 finding. Existing worker disks are approximately 32 GB system eMMC devices;
