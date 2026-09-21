@@ -58,6 +58,7 @@
             ripgrep
             shellcheck
             shfmt
+            skopeo
             sops
             talosctl
             terragrunt

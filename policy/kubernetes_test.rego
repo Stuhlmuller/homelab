@@ -279,3 +279,55 @@ cordium_genesis_job(spec) := {
 	"metadata": {"name": "cordium-genesis"},
 	"spec": spec,
 }
+
+harbor_public_secret(name, payload) := {
+	"apiVersion": "v1", "kind": "Secret", "type": "Opaque",
+	"metadata": {
+		"name": name, "namespace": "harbor",
+		"labels": {"app": "harbor", "chart": "harbor", "release": "harbor", "heritage": "Helm"},
+	},
+	"data": payload,
+}
+
+test_allows_only_exact_public_harbor_chart_secret_data if {
+	every name, payload in harbor_public_secret_data {
+		violations := deny with input as harbor_public_secret(name, payload)
+		count(violations) == 0
+	}
+}
+
+test_rejects_harbor_shell_with_credential_data if {
+	every name, _ in harbor_public_secret_data {
+		violations := deny with input as harbor_public_secret(name, {"password": base64.encode("sentinel")})
+		some msg in violations
+		contains(msg, "raw Kubernetes Secret")
+	}
+}
+
+test_rejects_harbor_shell_with_string_data if {
+	resource := object.union(harbor_public_secret("harbor-exporter", null), {"stringData": {"token": "sentinel"}})
+	violations := deny with input as resource
+	some msg in violations
+	contains(msg, "raw Kubernetes Secret")
+}
+
+test_rejects_public_harbor_settings_changed_to_registration_enabled if {
+	payload := {"CONFIG_OVERWRITE_JSON": base64.encode(`{"auth_mode":"db_auth","self_registration":true,"project_creation_restriction":"adminonly"}`)}
+	violations := deny with input as harbor_public_secret("harbor-core", payload)
+	some msg in violations
+	contains(msg, "raw Kubernetes Secret")
+}
+
+test_rejects_harbor_shell_from_another_namespace if {
+	resource := harbor_public_secret("harbor-exporter", null)
+	changed := object.union(resource, {"metadata": object.union(resource.metadata, {"namespace": "default"})})
+	violations := deny with input as changed
+	some msg in violations
+	contains(msg, "raw Kubernetes Secret")
+}
+
+test_rejects_unlisted_harbor_secret if {
+	violations := deny with input as harbor_public_secret("harbor-secrets", null)
+	some msg in violations
+	contains(msg, "raw Kubernetes Secret")
+}

@@ -423,3 +423,13 @@ live-trading autostart configuration until a separate PR adds the
 repository-owned secret contract or documents why UI-managed state is sufficient,
 records backtest and paper-trading evidence, and confirms withdrawal access is
 disabled at the exchange.
+
+## Harbor private registry
+
+The generated `/homelab/harbor/` contract owns administrator, encryption,
+internal-service, PostgreSQL and project-robot passwords. External Secrets
+materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
+The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
+alias of the pull robot credential, into its Docker-config Secret. CI reads
+only the publisher credential during protected image publication. See the
+[Harbor contract](knowledge-base/operations/harbor-oci.md).

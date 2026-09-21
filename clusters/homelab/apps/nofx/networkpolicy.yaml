@@ -42,4 +42,7 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
+    # Model/exchange APIs and the explicit OKX US public historical-data feed.
+    # Harbor pulls run through the node kubelet, outside this pod egress rule.
+    # imagePullSecrets does not grant the NOFX application registry access.
     - {}
