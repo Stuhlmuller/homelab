@@ -31,6 +31,35 @@ the Discord URL into Alertmanager's runtime config Secret because the
 Prometheus Operator schema does not support `webhook_url_file` for Discord.
 The secret is not committed.
 
+## Memory Capacity Policy
+
+`memory-prometheusrules.yaml` replaces the chart's `KubeMemoryOvercommit` rule.
+It warns when Pod memory requests exceed **100% of total node allocatable
+memory for 10 minutes**. The single-control-plane homelab explicitly accepts
+the existing largest-node-loss shortfall; the rule no longer reserves the
+largest node's capacity. Current requests of 22.862 GiB against 30.402 GiB
+allocatable are below this threshold, as are the projected 19.362 GiB after
+Dispatcharr and AFFiNE are suspended.
+
+This is a change in alerting policy, not proof of node-failure tolerance.
+The capacity risk remains recorded in
+`docs/knowledge-base/operations/monitoring-resource-requests.md`. Node pressure,
+high actual memory use, readiness, and unschedulable-Pod alerts remain active.
+Requests and allocatable capacity are scheduling inputs, not actual RAM use
+or a guarantee that affinity-constrained Pods fit on individual nodes.
+
+Run `nix develop --command python3 scripts/ci/memory-overcommit-check.py` to
+verify the actual rule at current, projected, exact-capacity, and over-capacity
+loads, including its firing delay, recovery, and per-cluster isolation. After
+GitOps sync, require exactly one healthy `KubeMemoryOvercommit` rule in
+`homelab.memory`, no chart-default duplicate, and no pending/firing instance
+while total requests fit. Confirm node health and other alerts independently.
+
+To restore the largest-node-loss policy, remove the custom rule from
+`kustomization.yaml` and remove `defaultRules.disabled.KubeMemoryOvercommit`
+in the same change. Revisit that policy when adding capacity or adopting an
+HA control plane.
+
 ## Job Failure Recovery
 
 `job-prometheusrules.yaml` replaces the chart's `KubeJobFailed` rule while

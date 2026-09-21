@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - argocd-prometheusrules.yaml
   - job-prometheusrules.yaml
+  - memory-prometheusrules.yaml
   - argocd-servicemonitors.yaml
   - deluge-servicemonitor.yaml
   - istio-podmonitors.yaml
