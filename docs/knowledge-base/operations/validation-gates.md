@@ -212,6 +212,14 @@ kubectl -n kube-system top pod -l app=multus --containers
 kubectl -n octelium get events --field-selector reason=FailedCreatePodSandBox
 ```
 
+DaemonSet readiness alone does not establish rollout acceptance. Complete the
+[native attachment acceptance procedure](../../../clusters/homelab/platform/multus/README.md#native-attachment-acceptance):
+exclude emergency Pods, verify each requested network's attachment, interface,
+address, and routes, and require a successful post-upgrade attachment on every
+node hosting native dataplane Pods. Probe the native Pod addresses directly
+before testing external paths. Missing evidence leaves acceptance pending;
+emergency proxies and pre-upgrade attachments cannot satisfy this gate.
+
 After the prerequisite apps are applied, `scripts/octelium-cluster-bootstrap.sh`
 checks the Multus CRD, Multus DaemonSet rollout, Octelium node labels, and
 PostgreSQL/Redis readiness before it calls `octops init` in front-proxy mode.
