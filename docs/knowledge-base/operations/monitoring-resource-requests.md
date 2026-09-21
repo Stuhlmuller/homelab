@@ -148,7 +148,9 @@ can be shorter than seven days and are not proven peak bounds.
 For read-only verification, use the temporary local Prometheus port-forward
 described in `clusters/homelab/apps/prometheus/README.md`, then query
 `/api/v1/alerts` and `/api/v1/rules?type=alert`. Require exactly one healthy
-`KubeMemoryOvercommit` rule, with no pending/firing instance after demand drops.
+`KubeMemoryOvercommit` rule still firing with approximately 3.863 GiB of
+shortfall after these two suspensions. Require no pending/firing instance only
+after further workload reduction or added capacity eliminates the shortfall.
 Recheck the expression's request/capacity inputs, node readiness, pressure,
 remaining workload health, and retained PVCs. No runtime changes were made
 during diagnosis. Verify the selected suspension through Argo CD before marking
