@@ -33,7 +33,10 @@ metadata:
     app.kubernetes.io/part-of: homelab-productivity
 spec:
   serviceName: affine-redis
-  replicas: 1
+  replicas: 0
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
   selector:
     matchLabels:
       app.kubernetes.io/name: affine-redis
