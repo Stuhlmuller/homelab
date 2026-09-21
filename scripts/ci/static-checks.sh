@@ -6,6 +6,16 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
 
+python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-ci-retire-test.py
+python3 -I scripts/ci/cordium-ci-reconcile-test.py
+python3 -I scripts/ci/cordium-isolation-check-test.py
+python3 -I scripts/ci/nofx-registry-credential-test.py
+python3 scripts/ci/octelium-nofx-reconcile-test.py
+python3 -I scripts/ci/octelium-harbor-reconcile-test.py
+python3 -I scripts/ci/harbor-bootstrap-test.py
+python3 -I scripts/ci/harbor-publish-test.py
+python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/restore-image-publish-test.py
 python3 scripts/ci/restore-image-anonymous-pull-test.py
@@ -386,6 +396,16 @@ done < <(
 )
 echo "::endgroup::"
 
+echo "::group::Harbor chart, credentials and cold bootstrap"
+bash scripts/ci/harbor-check.sh
+echo "::endgroup::"
+
+echo "::group::NOFX runtime storage"
+kubectl kustomize clusters/homelab/apps/nofx |
+  yq ea -o=json -I=0 '[.]' - |
+  python3 scripts/ci/nofx-runtime-check.py
+echo "::endgroup::"
+
 echo "::group::Multica PostgreSQL recovery probes"
 kubectl kustomize clusters/homelab/apps/multica |
   yq ea -o=json -I=0 '[.]' - |
@@ -616,7 +636,7 @@ kubectl kustomize clusters/homelab/apps/cordium-bootstrap |
     $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/hook"] == "PostSync" and
     $cluster_config_jobs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] == "1" and
     ($cluster_configs | length) == 1 and
-    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260822" and
+    $cluster_configs[0].metadata.annotations["homelab.rst.io/cordium-cluster-config-revision"] == "20260905" and
     ($misowned_prerequisites | length) == 0 and
     $cleanup_jobs[0].spec.template.spec.containers[0].args == [
       "delete",
@@ -800,8 +820,16 @@ jq -en '
 expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
+    '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/harbor-migrate.yml:migrate' \
+    '.github/workflows/harbor-migrate.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
+    '.github/workflows/nofx-images.yml:publish' \
+    '.github/workflows/nofx-images.yml:published-digests' \
+    '.github/workflows/nofx-images.yml:test-build' \
+    '.github/workflows/nofx-registry-credential.yml:credential' \
+    '.github/workflows/nofx-registry-credential.yml:static-policy' \
     '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
     '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
@@ -835,9 +863,13 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/codeql.yml 054c9f0d5c7305fe445b849942924088ee49ca660a3f5f2931ba650b7da471be
+.github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
+.github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
+.github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
+.github/workflows/nofx-images.yml 198c98b7a5229418eb8485b6431e1e29b5cf982a65245e7e3aa6821ab8fd9155
+.github/workflows/nofx-registry-credential.yml 3d4c7528601d89062f169b3b6a7e4e2b159e0013150f097b0d710c7c85fff6db
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
 .github/workflows/octelium-private-kubernetes-apply.yml d1500cd345ed01f16907ba9c43a15848f62cbcb13a76088e0f000428601d2aae
@@ -853,8 +885,12 @@ echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
+  '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
+  '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
+  '.github/workflows/nofx-images.yml:test-build' \
+  '.github/workflows/nofx-registry-credential.yml:static-policy' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"

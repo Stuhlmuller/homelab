@@ -8,7 +8,7 @@ This inventory summarizes the current application and platform ownership map.
 Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt
 units as the source of truth when they disagree with this note.
 
-Runtime secret contract: all 68 SSM parameters use AWS-managed `alias/aws/ssm`.
+Runtime secret contract: declared SSM parameters use AWS-managed `alias/aws/ssm`.
 Application secret names and values are unchanged. Historical secret/state
 recovery copies and the old-key retirement status are recorded in
 [[operations/kms-cost-audit-2026-09-05]].
@@ -32,6 +32,7 @@ direct Tailscale LoadBalancer path around Octelium authentication.
 | `metrics-server`        | support                   | `kube-system`           | official `metrics-server` Helm chart          | `IaC/live/argocd-apps/metrics-server`        | Kubernetes API and node kubelets                            |
 | `platform-crossplane`   | support                   | `crossplane-system`     | `clusters/homelab/platform/crossplane`        | `IaC/live/argocd-apps/platform-crossplane`   | Argo CD bootstrap                                           |
 | `octelium-storage`      | support                   | `octelium-storage`      | `clusters/homelab/apps/octelium-storage`      | `IaC/live/argocd-apps/octelium-storage`      | external-secrets, platform-storage                          |
+| `harbor`                | private OCI registry      | `harbor`                | `clusters/homelab/apps/harbor`                | `IaC/live/argocd-apps/harbor`                | external-secrets, cert-manager, Istio, storage, Prometheus  |
 | `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none                                                        |
 | `media-postgres`        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`        | `IaC/live/argocd-apps/media-postgres`        | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres`          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`          | `IaC/live/argocd-apps/n8n-postgres`          | external-secrets, platform-storage                          |
@@ -112,7 +113,7 @@ Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
 | `multica`              | `ai`               | `clusters/homelab/apps/multica`                 | `IaC/live/argocd-apps/multica`              | Multica `v0.4.29` self-host chart with frontend, backend API/WebSocket server, dedicated pgvector PostgreSQL, generated JWT and database secrets, Postgres and uploads PVCs on `nfs-default`, and Octelium-protected UI at `https://multica.stinkyboi.com`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | external-secrets, cert-manager, istio, platform-storage                            |
 | `openclaw`             | `ai`               | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`             | NAS configuration/workspace; retained node-local SQLite state and Codex home on zimaboard-1; daily verified NAS database snapshots; `6Gi` ephemeral cap; exact-image-version external Discord npm package with no floating fallback; SSM credentials limited to consuming containers; Codex OAuth on PVC; Kubernetes-only containment with sandboxing off until a supported Docker, SSH, or OpenShell backend exists; explicit agent resources; HTTP proxy probes; pinned to `zimaboard-1` for persistent local runtime state                                                                                                                                                                                                                                                                                                                                                                                                                                                       | external-secrets, cert-manager, istio, litellm, platform-storage                   |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public callbacks use `https://n8n-webhook.stinkyboi.com` through `octelium-public` and are limited to webhook prefixes; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio, platform-storage, n8n-postgres              |
-| `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data and logs on the retained `nofx-data` NFS claim; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | external-secrets, istio, octelium, octelium-public, platform-storage               |
+| `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with US OKX routing and explicit unavailable-trader errors (publication/rollout pending), declared by digest from Harbor with `harbor-pull` references; live rollout requires authenticated pulls and fresh Secret readiness for passive model saves and OKX-backed simulations; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                                                                                                                                                                                                                         | external-secrets, harbor, istio, octelium, octelium-public, platform-storage       |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | external-secrets, cert-manager, istio                                              |
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | cert-manager, istio, platform-storage                                              |
 
@@ -122,7 +123,11 @@ change; storage migration and restore verification remain separate work.
 
 OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved
-personal memory. Monitoring depends on Grafana: the OpenClaw mesh identity
+personal memory. Its personal-assistant extension installs the pinned Google
+CLI and enables the Calendar skill, with scoped Marketplace outreach and private
+task/deal tracking. Google OAuth and a private Facebook browser/login remain
+unconfigured; see [[operations/openclaw-personal-assistant]].
+Monitoring depends on Grafana: the OpenClaw mesh identity
 can reach the internal Grafana service, where its dedicated login authorizes
 datasource queries. No default Kubernetes context is provided.
 See [[application-notes#OpenClaw]].
@@ -206,6 +211,14 @@ configuration, sessions, and backups remain on NFS. Its single-replica
 `Recreate` strategy and same-Pod writer restriction are required; see
 [[../architecture/storage-and-state]].
 
+### Cordium CI execution contract
+
+The optional `cordium-check.yml` workflow uses a dedicated OIDC workload user
+and `.cordium/workspace.yaml` to execute repository checks remotely. Workspace
+data is disposable node-local state. Cluster limits allow four stored and one
+active workspace per user, including interactive users. Live execution and
+negative-policy acceptance remain pending; see [Cordium CI](../../cordium-ci.md).
+
 ### OpenClaw workspace-state readiness
 
 After the successful session import and coordinator ownership repair, the
@@ -213,3 +226,11 @@ gateway exposed an additional legacy workspace-state migration gate. Bootstrap
 now declares a one-time pinned doctor repair after backup verification and
 configuration, with session identity verification before completion. Live
 gateway/Discord recovery remains pending.
+
+## Private OCI Packages
+
+Harbor owns the private `homelab` project and NOFX custom image publication.
+Its database uses retained local storage on `acer`; registry blobs and logical
+backups use retained NFS. See [[../operations/harbor-oci]] for secret,
+networking, migration and acceptance boundaries. Live readiness remains subject
+to the evidence recorded there.
