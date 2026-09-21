@@ -115,10 +115,11 @@ time; extraction rejects traversal, links and special files before writing.
 Results contain fixture data only and are removed with the host temporary tree.
 [Docker tmpfs copy behavior](https://docs.docker.com/reference/cli/docker/container/cp/#corner-cases).
 
-Eight cases execute PostgreSQL: source preservation/private diagnostics,
-non-C encoding/collation/owner preservation, newest-archive corruption,
-checksum-path confinement, stale and previous-day rejection, missing wrapped
-keys, and empty required tables. The ninth validates declared manifest
+Ten cases execute PostgreSQL: source preservation/private diagnostics,
+client and server console-descriptor confinement, non-C encoding/collation/owner
+preservation, newest-archive corruption, checksum-path confinement, stale and
+previous-day rejection, missing wrapped keys, and empty required tables.
+The eleventh validates declared manifest
 contracts on the host. Synthetic globals additionally run the denial probe
 through SQL `COPY FROM PROGRAM`, so the actual globals-restore server and its
 program child must retain the filter. Existing client-child/broker/fault probes
@@ -128,19 +129,16 @@ uncertain container creations are cleaned up even on test failure.
 The live `octelium-storage` kustomization excludes the candidate CronJob, script
 ConfigMap, and declared NetworkPolicy. Their separate `restore-drill-candidate/`
 kustomization is rendered only for validation; the CronJob is suspended as a
-second hold. The ninth fixture proves the live graph has none of these resources
+second hold. The eleventh fixture proves the live graph has none of these resources
 and verifies the candidate's suspension and declared contracts. Activation
 requires a separate reviewed change after the image, launcher, and Talos gates.
 
-This fixture integration combines the reviewed publication and restore-drill
-drafts temporarily. It does not authorize applying their combined manifests:
+The fixture integration includes the launcher and protected publisher alongside
+the inactive restore candidate. Integration does not authorize activation:
 the real CronJob still requires explicit launcher wiring, a published digest,
-anonymous pull proof, and the Talos synthetic gate below. Filtered Octelium
-fixture execution remains unverified until native CI passes this combined
-source; local PostgreSQL or mocked backend tests cannot establish that result.
-Do not merge this combined branch. After prerequisites land, port the net fixture
-implementation delta against the updated parents; do not blindly cherry-pick
-combined integration commits.
+anonymous pull proof, and the Talos synthetic gate below. Each updated source
+requires fresh native CI; local PostgreSQL or mocked backend tests cannot
+establish filtered image execution or replace its native receipt.
 
 ## Integration and rollout gates
 
@@ -148,11 +146,10 @@ combined integration commits.
    derived image. The current job tests amd64 only; constrain an initial drill
    to `kubernetes.io/arch: amd64`, or add and pass native ARM64 validation before
    publishing a multi-architecture image.
-2. Add a separately reviewed, protected image-publication path. This repository
-   previously had semantic-release only, not an OCI publishing workflow. Record
+2. Use the reviewed protected [[restore-image-publication|image publisher]]. Record
    the tested source and immutable resulting image digest; do not substitute an
    untested image or add runtime downloads/compilers.
-3. Update PR #970 declaratively to that digest and make the launcher the explicit
+3. Declare a separate release Application with that digest and make the launcher the explicit
    Kubernetes command preceding `/bin/sh /scripts/restore-drill.sh ...`.
    Kubernetes `command` overrides an image ENTRYPOINT, so inheriting the image
    alone is insufficient. Static rendering must reject launcher bypass and
