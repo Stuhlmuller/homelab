@@ -1,0 +1,84 @@
+diff --git a/store/trader.go b/store/trader.go
+--- a/store/trader.go
++++ b/store/trader.go
+@@ -29,7 +29,7 @@
+ 	ScanIntervalMinutes int       `gorm:"column:scan_interval_minutes;default:3" json:"scan_interval_minutes"`
+ 	IsRunning           bool      `gorm:"column:is_running;default:false" json:"is_running"`
+ 	IsCrossMargin       bool      `gorm:"column:is_cross_margin;default:true" json:"is_cross_margin"`
+-	ShowInCompetition   bool      `gorm:"column:show_in_competition;default:true" json:"show_in_competition"`
++	ShowInCompetition   bool      `gorm:"column:show_in_competition" json:"show_in_competition"`
+ 	CreatedAt           time.Time `gorm:"column:created_at;autoCreateTime" json:"created_at"`
+ 	UpdatedAt           time.Time `gorm:"column:updated_at;autoUpdateTime" json:"updated_at"`
+ 
+diff --git a/store/trader_visibility_test.go b/store/trader_visibility_test.go
+new file mode 100644
+--- /dev/null
++++ b/store/trader_visibility_test.go
+@@ -0,0 +1,67 @@
++package store
++
++import (
++	"path/filepath"
++	"testing"
++
++	"gorm.io/driver/sqlite"
++	"gorm.io/gorm"
++)
++
++func TestTraderCreatePreservesVisibility(t *testing.T) {
++	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "traders.db")), &gorm.Config{})
++	if err != nil {
++		t.Fatal(err)
++	}
++	sqlDB, err := db.DB()
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { _ = sqlDB.Close() })
++	// Reproduce an existing table from before the visibility fix.
++	legacy := struct {
++		Trader
++		ShowInCompetition bool `gorm:"column:show_in_competition;default:true"`
++	}{}
++	if err := db.Table("traders").AutoMigrate(&legacy); err != nil {
++		t.Fatal(err)
++	}
++	traders := NewTraderStore(db)
++
++	cases := []struct {
++		name string
++		show bool
++	}{{"hidden", false}, {"visible", true}}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			trader := &Trader{
++				ID: tc.name, UserID: "fixture-user", Name: tc.name,
++				AIModelID: "fixture-model", ExchangeID: "fixture-exchange",
++				ShowInCompetition: tc.show,
++			}
++			if err := traders.Create(trader); err != nil {
++				t.Fatal(err)
++			}
++			saved, err := traders.GetByID(trader.ID)
++			if err != nil {
++				t.Fatal(err)
++			}
++			if saved.ShowInCompetition != tc.show || trader.ShowInCompetition != tc.show {
++				t.Fatalf("visibility: stored=%v input=%v, want %v", saved.ShowInCompetition, trader.ShowInCompetition, tc.show)
++			}
++		})
++	}
++
++	if err := traders.initTables(); err != nil {
++		t.Fatal(err)
++	}
++	for _, tc := range cases {
++		saved, err := traders.GetByID(tc.name)
++		if err != nil {
++			t.Fatal(err)
++		}
++		if saved.ShowInCompetition != tc.show {
++			t.Errorf("visibility after migration: %s=%v, want %v", tc.name, saved.ShowInCompetition, tc.show)
++		}
++	}
++}

@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-19
+updated: 2026-09-21
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,15 +15,24 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The competition rollout targets reviewed main revision
-`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b`. Both deployments reference
+The startup-error rollout targets build revision
+`9716e9d9121a062029c72dc5f03f0d266a166650`, retaining the NOFX source fix from
+[PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056), merged at
+`1c826acdbb16af08cf879ee5fcf4871a0307b45d`.
+[Publication run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+passed publication and private pull verification. `deployment.yaml` declares
+the verified image pair; publication and runtime acceptance remain separate
+gates. Require the exact build revision,
+patches `0007`–`0010`, and all three drafts stopped and hidden after restart.
+Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
-[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036) merged at
-`78ca869aae86c7cd94b6c725bec59f68b032c6b5`. Subsequent Argo CD inspection showed
-`Synced` and `Healthy` at that revision, with both earlier `f76c278` Harbor images
-ready `1/1`. Verify the new running digests separately before accepting the
-competition rollout. Both packages remain private.
+The earlier `25bceceb` rollout in
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052) merged at
+`047d26f088b6733dcd8b9c48dcec9cdca393c10f`. Read-only inspection on 2026-09-20
+showed Argo CD `Synced` and `Healthy`, both deployments ready `1/1`, and running
+image IDs matching the declared backend `58c274ba93e0…` and frontend
+`92542955d244…` digests. Both packages remain private.
 
 The backend now launches `/app/nofx` from `/app/data`. Pinned upstream writes
 relative `backtests` and `data` directories; the image's original `/app`
@@ -157,9 +166,9 @@ inventory and a reviewed policy change; the image rollout preserves that rule.
 
 The deployed derivative supports key-preserving model edits and removes the
 upstream save handler's credential logging and trader reload.
-The dashboard's generic 404 label can also mean a trader failed to load; it does
-not prove a missing HTTP route. Source evidence, simulation setup, rollback, and
-validation commands are in the
+The upstream dashboard's generic 404 label can also mean a trader failed to load;
+patch `0011` addresses this as described below. Source evidence, simulation
+setup, rollback, and validation commands are in the
 [NOFX README](../../../clusters/homelab/apps/nofx/README.md).
 
 The private credential workflow reports fixed command stages and allowlisted
@@ -180,8 +189,82 @@ data. The competition build adds a factual Backtest Lab comparison table and
 caps leverage on actual fills. Completed still does not prove that all decisions
 succeeded, and stop-loss/take-profit triggers are not simulated. Require six
 successful decisions and verify every fill's leverage before ranking a round.
-The runbook records the failed earlier rounds without presenting them or shared
-live-account balances as independent competition results.
+The runbook records failed rounds and the required browser reload after image
+rollout. The user-selected live setup saves Trend, Mean Reversion, and Breakout
+as stopped traders on the same existing OKX connection and `openrouter/free`,
+with separate private `Live - <persona>` strategies configured for 1x leverage.
+Read-only persisted checks confirmed all three stopped and hidden after using
+the trader cards' visibility toggles. In the earlier `25bceceb` runtime, decision
+validation loses its leverage clamp and trader creation can override explicit
+hidden visibility. Source `05fcf60` patches `0007` and `0008` fix both paths with
+focused backend build regressions. Patch `0009`
+also checks current OKX cross-margin leverage, skips matching settings, and uses
+one instrument-level update when needed. Leverage errors stop openings before
+canceling existing orders, with a mocked transport regression. Verify exact
+published digests, source patches, and persisted stopped/hidden flags after
+rollout before accepting the runtime. Sharing an account is supported, but
+also shares positions and account-level returns; Initial Balance does not reserve
+capital. Separate funded accounts or
+subaccounts are needed only for independent live balances and P&L. The runbook
+records the draft limits without presenting shared balances or historical
+simulations as independent live competition results.
+
+The first user-initiated starts after the `05fcf60` rollout failed before the
+trading loop: OKX rejected account config/balance reads with code `50119`, so
+the manager could not load the traders. The UI replaced the resulting HTTP 500
+with generic retry guidance. That build hard-codes `https://www.okx.com`.
+[OKX's API FAQ](https://www.okx.com/en-us/help/api-faq) identifies regional-host
+mismatch as a common cause: US accounts use `us.okx.com`, EEA accounts
+`eea.okx.com`. Confirm the account region before changing routing or credentials;
+this error alone does not prove the key is invalid. Regional authentication does
+not establish trading compatibility: the adapter uses `*-USDT-SWAP` perpetuals,
+which [OKX says are unavailable to US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Validate available account instruments read-only before any activation. Do not
+work around product eligibility by using another regional endpoint.
+Patch `0010` returns fixed HTTP 400 guidance for the known OKX `50119` load
+failure and carries that message through the Start toast. Unknown server errors
+remain generic. It also propagates account-config lookup failures from the shared
+OKX constructor instead of assuming hedge mode. This blocks initialization even
+when a saved Initial Balance skips the later balance lookup. All four constructor
+callers use their existing error paths. Handler and UI regressions use mocked
+exchange/API responses; they verify stopped state with zero and nonzero saved
+balances and error visibility, not live authentication. This
+repair does not change the endpoint, credentials, or exchange product. Actual
+OKX authentication remained unresolved at that rollout; the follow-up below
+addresses routing after account-region confirmation.
+
+On September 21, read-only inspection confirmed an existing stopped trader's
+positions 404s followed OKX `50119` initialization failures; Kubernetes remained
+healthy. The operator confirmed the account is US-registered. Patch `0011`
+changes the shared OKX REST host to `https://us.okx.com`, with no regional
+fallback or credential change. It distinguishes owned-but-unavailable traders
+(safe `503 TRADER_UNAVAILABLE`) from missing/foreign IDs (404), preserves
+database-only equity history, and displays the guidance in the shared HTTP
+client. It also removes the upstream default lookup's cross-user fallback.
+Mocked handler tests reproduce the original 404, verify all ten runtime readers,
+and cover stopped successful reads, ownership, failed initialization, and the
+public history route.
+Transport tests cover signed US GET/POST requests; Axios tests cover error display.
+Publication and live acceptance remain pending; no trader was activated. The
+regional host does not add US spot support or make USDT perpetuals available.
+
+During this trace, `handleOrderFills` was also found to query fills by order ID
+without checking that the order belongs to the resolved trader. The shared
+lookup fixes trader ownership but does not establish order ownership. Before
+expanding access, add a trader-scoped order lookup and a cross-trader regression
+at `api/server.go` / `store/order.go`. The public equity-history single/batch
+routes also accept IDs without enforcing hidden visibility; this patch preserves
+their existing public contract. Add consistent owner-or-public visibility checks
+across both before expanding access; retain the human-only access boundary.
+
+The unused Arena consensus execution path bypasses the shared decision validator;
+do not infer its leverage enforcement from the normal trader fix. A separate
+`store/trader.go` creation default also overrides explicit `IsCrossMargin=false`.
+These drafts retain cross margin; preserving an explicit false value needs a
+focused follow-up before configuring isolated margin through that create path.
+The configured 30% margin target is also advisory: `MaxMarginUsage` appears in
+the model prompt but is not enforced by `trader/auto_trader.go`. Implement an
+execution check before presenting it as a hard account-exposure limit.
 
 The first observed Trend and Breakout simulations reported Completed with two
 and three failed cycles out of six. Missing JSON caused the parser to synthesize
@@ -194,9 +277,8 @@ winner.
 The competition build requests strict structured output for historical
 `openrouter/free` calls to the official OpenRouter API, preserves malformed or
 refused responses as failed cycles, and makes one provider attempt per cycle,
-including transient errors. Fresh live acceptance remains separate from the
-verified earlier deployment: confirm stopped live traders, new running image
-digests, and a complete eligible simulation round. Avoid resuming a round across
+including transient errors. Deployment verification does not establish a
+complete eligible simulation round. Avoid resuming a round across
 a backend restart: the simulator does not persist its loaded saved strategy
 object, so a cold resume can lose the selected persona.
 
