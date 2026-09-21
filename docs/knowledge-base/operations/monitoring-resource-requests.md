@@ -85,3 +85,86 @@ September 7 monitoring Pod identities and admitted requests were unchanged.
 Keep the existing reservations; this observation does not resolve the
 largest-node-loss capacity deficit or monitoring storage recovery work.
 Queries and result receipts remain private.
+
+## September 21 Memory Overcommit Incident
+
+Status: partial remediation prepared; Dispatcharr and AFFiNE suspension selected.
+
+Authenticated read-only inspection at approximately `2026-09-21T03:13Z`
+reproduced `KubeMemoryOvercommit` firing, active since September 7. Prometheus
+was `Healthy` and `Synced` at `9716e9d9` with chart `85.2.0`; the rule evaluated
+successfully. All four nodes were Ready, with no MemoryPressure or Pending Pods.
+
+| Quantity | GiB |
+| --- | ---: |
+| Active ordinary-container memory requests | 22.862 |
+| Total allocatable memory | 30.402 |
+| Largest node, `acer` | 14.903 |
+| Capacity after largest-node loss | 15.499 |
+| Node-loss shortfall | 7.363 |
+
+The recording-rule total matched deduplicated requests for Running/Pending
+Pods. Each node had one allocatable-memory series. Thus stale terminal Pods
+and duplicate scrapes did not explain the alert. The seven-day request maximum,
+sampled every five minutes, was 22.894 GiB. This is a failover-capacity warning,
+not evidence of current memory pressure.
+
+The chart's expression combines a non-HA total-capacity branch with an ungated
+largest-node-loss branch. The `HA clusters` comment does not establish that
+single-control-plane clusters should be exempt: upstream
+[largest-node-loss rationale](https://github.com/kubernetes-sigs/kubernetes-mixin/pull/646)
+applies to heterogeneous clusters, and the current implementation retains that
+branch. Changing it would change availability policy without repairing the
+documented deficit. Keep the alert enabled while reducing demand.
+
+Rodman selected Dispatcharr and AFFiNE for suspension. Their combined 3.500 GiB
+reduction projects requests of 19.362 GiB and a remaining 3.863 GiB node-loss
+shortfall. Keep `KubeMemoryOvercommit` enabled; these two suspensions alone do
+not clear it. Further workload selection or added capacity remains necessary.
+
+Candidate savings below include running app containers and dedicated databases
+at diagnosis, but exclude shared platform services and access proxies. Only the
+two selected apps are configured for suspension; retain their PVCs.
+
+| App | Current requests GiB |
+| --- | ---: |
+| OpenClaw | 2.063 |
+| Dispatcharr and its PostgreSQL | 1.875 |
+| AFFiNE, PostgreSQL, and Redis | 1.625 |
+| Multica frontend, backend, and PostgreSQL | 1.500 |
+| n8n and its PostgreSQL | 0.750 |
+| OctoBot | 0.500 |
+| NOFX frontend and backend | 0.313 |
+
+Express selected suspensions in their repository-owned manifests/Helm values,
+account for scheduled jobs and dependent services, and render before GitOps
+rollout. Removing at least 7.363 GiB only satisfies the current alert arithmetic;
+init containers, placement constraints, rollout demand, and underrequested
+workloads still require headroom. Seven-day observed working sets exceeded
+requests for the API server, n8n, OctoBot, and Deluge; reducing reservations
+solely to clear the alert would conceal demand. Per-Pod observation windows
+can be shorter than seven days and are not proven peak bounds.
+
+For read-only verification, use the temporary local Prometheus port-forward
+described in `clusters/homelab/apps/prometheus/README.md`, then query
+`/api/v1/alerts` and `/api/v1/rules?type=alert`. Require exactly one healthy
+`KubeMemoryOvercommit` rule, with no pending/firing instance after demand drops.
+Recheck the expression's request/capacity inputs, node readiness, pressure,
+remaining workload health, and retained PVCs. No runtime changes were made
+during diagnosis. Verify the selected suspension through Argo CD before marking
+it applied; the remaining deficit must stay visible.
+
+Before rollout, the full static gate and rendered Conftest policies passed.
+Pinned Dispatcharr and Grafana charts rendered successfully; checks confirmed
+five zero-replica workloads, app-before-database sync waves, and unchanged claim
+definitions. Server-side dry-run diffs passed for both selected apps. Offline
+Prometheus fixtures confirmed that the narrowed Grafana expression omits AFFiNE
+while detecting missing probes for the other three databases. The committed
+AFFiNE suspension probe check covers zero, nonzero, omitted, and invalid replica
+values while retaining other app checks; shell/YAML/whitespace checks passed.
+
+Separate monitoring follow-up: the existing Grafana PostgreSQL query returns
+zero for its `increase(...) == 0` branch, while its threshold requires a value
+greater than zero. Verify stalled-but-present probe series with a dedicated
+fixture and correct that pre-existing detection gap separately; the missing
+probe branch returns one and remains active.
