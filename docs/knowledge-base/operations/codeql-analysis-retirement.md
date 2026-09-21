@@ -44,7 +44,7 @@ gh workflow run codeql-retire-legacy-actions.yml \
   -f expected_sha='<reviewed-current-main-sha>'
 ```
 
-Review the exact committed scope and `codeql-retirement-preview` artifact.
+Review the exact committed scope and `codeql-retirement-preview-<attempt>` artifact.
 The scope digest identifies the approved deletion set; it is not a substitute
 for approval. Retained scan IDs may grow as normal analyses finish.
 
@@ -82,15 +82,30 @@ identities before deleting. It reconstructs API endpoints from approved IDs;
 returned URLs cannot expand the scope. Every attempted deletion is recorded
 durably before the request so an uncertain response can be reconciled.
 
-The workflow retains safe preview and execution receipts for 30 days. They
-contain IDs and bookkeeping, never raw SARIF or credentials. A new workflow
-run starts with a fresh receipt and rejects missing IDs it did not attempt.
-The execution step is bounded to 25 minutes inside a 40-minute job, leaving
-time for setup and receipt upload. Upload is best-effort if the runner is lost;
-a missing artifact does not prove that no deletion occurred.
-If execution is interrupted, retain the original receipt and review a declared
-recovery path before resuming; do not forge attempt records or silently shrink
-the approved scope.
+Before the first DELETE, the protected job creates and successfully uploads an
+immutable `codeql-retirement-authorized-<run-id>` artifact. It binds the exact
+run, main commit and scope digest to the full identities of retained analyses.
+Creation requires all 97 approved IDs still present. A failed or cancelled
+upload prevents execution. The artifact contains public analysis metadata,
+never raw SARIF or credentials, and is retained for 30 days.
+
+To resume an interrupted execution, rerun the failed job or all jobs **within
+the same workflow run** while the reviewed commit remains current main. Both
+preview and execution download this run's authorization artifact, validate its
+repository/run/commit provenance and content binding, and recheck retained
+identities. Approved IDs already absent are recorded separately as recovered;
+the helper does not claim that their DELETE responses were observed. Remaining
+IDs must still match the reviewed scope before deletion. The artifact authorizes
+only the original 97 IDs and never permits loss of retained history.
+
+Preview and incremental execution receipts use attempt-specific artifact names,
+so retries do not collide with prior uploads. Incremental receipt upload remains
+best-effort after runner loss; recovery relies on the inventory already stored
+before execution. A new workflow run cannot import the prior authorization.
+Missing/expired artifacts, changed main, retained-identity drift, or missing IDs
+without this run's authorization stop recovery. Review a new declared recovery
+change in those cases; do not forge attempts or shrink the scope. The execution
+step is bounded to 25 minutes inside a 40-minute job.
 
 ## Acceptance and rollback limits
 

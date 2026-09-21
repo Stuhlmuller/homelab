@@ -24,6 +24,7 @@ CURRENT = '.github/workflows/codeql.yml:analyze-actions'
 ENVIRONMENT = '{"build-mode":"none","language":"actions"}'
 FIELDS = ('id', 'ref', 'commit_sha', 'category', 'analysis_key', 'environment', 'created_at', 'tool')
 MAX_BYTES = 8 * 1024 * 1024
+WORKFLOW = '.github/workflows/codeql-retire-legacy-actions.yml'
 
 
 def require(ok, message):
@@ -161,16 +162,93 @@ def inventory(api, main_only=False):
     raise RuntimeError('Analysis pagination exceeded bound')
 
 
+def run_binding():
+    run_id = os.environ.get('GITHUB_RUN_ID', '')
+    main_sha = os.environ.get('GITHUB_SHA', '')
+    require(os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == REPO and
+            os.environ.get('GITHUB_REF') == REF and
+            os.environ.get('GITHUB_WORKFLOW_REF') == REPO + '/' + WORKFLOW + '@' + REF and
+            re.fullmatch(r'[1-9][0-9]*', run_id) and re.fullmatch(r'[0-9a-f]{40}', main_sha),
+            'Recovery requires the original main retirement workflow run')
+    return run_id, main_sha
+
+
+def read_private(path):
+    require(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX_BYTES and
+            stat.S_IMODE(path.stat().st_mode) == 0o600, 'Receipt must be a private regular file')
+    return json.loads(path.read_bytes())
+
+
+def read_authorization(path, scope):
+    value = read_private(path)
+    run_id, main_sha = run_binding()
+    require(set(value) == {'schema', 'run_id', 'main_sha', 'scope_sha256', 'retained_identities'} and
+            value['schema'] == 1 and value['run_id'] == run_id and value['main_sha'] == main_sha and
+            value['scope_sha256'] == scope_digest(scope), 'Authorization run or scope binding mismatch')
+    rows = value['retained_identities']
+    approved = {row['id'] for row in scope['analyses']}
+    require(isinstance(rows, list) and all(set(row) == set(FIELDS) and type(row['id']) is int and
+            row['id'] > 0 and row['id'] not in approved for row in rows) and
+            len({row['id'] for row in rows}) == len(rows), 'Invalid authorized retained identities')
+    return value
+
+
+def restore_authorization(scope, api, output):
+    """Only the immutable artifact from this exact workflow run can authorize recovery."""
+    run_id, main_sha = run_binding()
+    name = 'codeql-retirement-authorized-' + run_id
+    listing = api.request('GET', PREFIX + '/actions/runs/' + run_id + '/artifacts?name=' + name + '&per_page=100')
+    artifacts = listing['artifacts']
+    require(listing['total_count'] == len(artifacts) and len(artifacts) <= 1, 'Ambiguous authorization artifact')
+    require(not output.exists() and not output.is_symlink(), 'Recovery output already exists')
+    if not artifacts:
+        return False
+    artifact = artifacts[0]
+    require(artifact['name'] == name and artifact['expired'] is False and
+            artifact['workflow_run']['id'] == int(run_id) and artifact['workflow_run']['head_sha'] == main_sha and
+            0 < artifact['size_in_bytes'] <= MAX_BYTES, 'Authorization artifact provenance mismatch')
+    with tempfile.TemporaryDirectory(prefix='codeql-authorization-') as directory:
+        command(['gh', 'run', 'download', run_id, '--repo', REPO, '--name', name, '--dir', directory])
+        source = Path(directory) / 'authorization.json'
+        require(list(Path(directory).iterdir()) == [source] and source.is_file() and not source.is_symlink(),
+                'Unexpected authorization artifact files')
+        source.chmod(0o600)
+        value = read_authorization(source, scope)
+        persist(output, value)
+    return True
+
+
+def authorize(scope, api, output, approved_hash, expected_main_sha, confirm_history_loss=False):
+    require(approved_hash == scope_digest(scope) and confirm_history_loss,
+            'Exact scope and explicit final history-loss confirmation required')
+    require(os.environ.get('GITHUB_JOB') == 'retire', 'Authorization requires the protected retirement job')
+    execution_guard(ROOT, api, expected_main_sha, scope)
+    run_id, main_sha = run_binding()
+    require(main_sha == expected_main_sha and not output.exists() and not output.is_symlink(),
+            'Authorization must be new and bound to approved main')
+    state = preview(scope, api)  # All 97 IDs must exist before creating durable authorization.
+    value = {'schema': 1, 'run_id': run_id, 'main_sha': main_sha, 'scope_sha256': approved_hash,
+             'retained_identities': state['retained_identities']}
+    persist(output, value)
+    return value
+
+
 def read_receipt(path, scope):
     if not path.exists():
         require(not path.is_symlink(), 'Receipt is a dangling symlink')
         return None
-    require(path.is_file() and not path.is_symlink() and path.stat().st_size <= MAX_BYTES and
-            stat.S_IMODE(path.stat().st_mode) == 0o600, 'Receipt must be a private regular file')
-    receipt = json.loads(path.read_bytes())
-    require(set(receipt) == {'schema', 'scope_sha256', 'main_sha', 'retained', 'retained_main', 'attempts'} and
-            receipt['schema'] == 1 and receipt['scope_sha256'] == scope_digest(scope), 'Receipt binding mismatch')
+    receipt = read_private(path)
+    require(set(receipt) == {'schema', 'run_id', 'scope_sha256', 'main_sha', 'retained', 'retained_main',
+                             'retained_identities', 'recovered', 'attempts'} and
+            receipt['schema'] == 2 and receipt['scope_sha256'] == scope_digest(scope) and
+            (receipt['run_id'], receipt['main_sha']) == run_binding(), 'Receipt binding mismatch')
     expected = {row['id'] for row in scope['analyses']}
+    require(isinstance(receipt['recovered'], list) and set(receipt['recovered']) <= expected and
+            all(type(value) is int for value in receipt['recovered']), 'Invalid recovered inventory')
+    require(isinstance(receipt['retained_identities'], list) and
+            all(set(row) == set(FIELDS) for row in receipt['retained_identities']) and
+            sorted(row['id'] for row in receipt['retained_identities']) == receipt['retained'],
+            'Invalid retained identities')
     attempts = receipt['attempts']
     require(isinstance(attempts, dict) and all(str(int(key)) == key and int(key) in expected and
             value in ('pending', 'complete') for key, value in attempts.items()), 'Invalid receipt attempts')
@@ -205,7 +283,7 @@ def persist(path, value):
             os.unlink(name)
 
 
-def preview(scope, api, receipt=None, main_only=False):
+def preview(scope, api, receipt=None, main_only=False, authorization=None):
     validate_scope(scope)
     rows = inventory(api, main_only)
     indexed = {row['id']: row for row in rows}
@@ -219,7 +297,8 @@ def preview(scope, api, receipt=None, main_only=False):
     for analysis_id, row in expected.items():
         current = indexed.get(analysis_id)
         if current is None:
-            require(str(analysis_id) in attempts, 'Unattempted approved analysis is absent')
+            require(str(analysis_id) in attempts or (receipt and analysis_id in receipt['recovered']) or
+                    authorization is not None, 'Unattempted approved analysis is absent')
         else:
             require(identity(current) == row and analysis_id in legacy, 'Approved analysis metadata drifted')
             require(attempts.get(str(analysis_id)) != 'complete', 'Completed analysis reappeared')
@@ -229,6 +308,12 @@ def preview(scope, api, receipt=None, main_only=False):
         require(set(receipt['retained_main']) <= set(retained_main), 'Retained main analysis disappeared')
     if receipt and not main_only:
         require(set(receipt['retained']) <= set(retained), 'Retained analysis disappeared')
+    for baseline in (receipt, authorization):
+        if baseline:
+            for row in baseline['retained_identities']:
+                if not main_only or row['ref'] == REF:
+                    require(row['id'] in indexed and identity(indexed[row['id']]) == row,
+                            'Retained analysis identity changed or disappeared')
     main = api.request('GET', PREFIX + '/git/ref/heads/main')['object']['sha']
     require(re.fullmatch(r'[0-9a-f]{40}', main), 'Invalid main revision')
     if not main_only:
@@ -236,14 +321,16 @@ def preview(scope, api, receipt=None, main_only=False):
         require(workflow.get('type') == 'file' and workflow.get('encoding') == 'base64', 'Invalid main workflow response')
         source = base64.b64decode(workflow['content'].replace('\n', ''), validate=True)
         require(hashlib.sha256(source).hexdigest() == scope['workflow_sha256'], 'Current main workflow changed')
-    if receipt:
-        require(receipt['main_sha'] == main, 'Main changed since receipt creation')
+    for baseline in (receipt, authorization):
+        if baseline:
+            require(baseline['main_sha'] == main, 'Main changed since receipt creation')
     require(any(row['ref'] == REF and row['commit_sha'] == main and row['analysis_key'] == CURRENT and
                 row['category'] == CURRENT and row['tool']['name'] == 'CodeQL' and row.get('error') == '' and
                 row.get('warning') == '' and type(row.get('rules_count')) is int and row['rules_count'] > 0
                 for row in rows), 'Successful current-main Actions analysis required')
     return {'scope_sha256': scope_digest(scope), 'main_sha': main, 'remaining': sorted(legacy),
-            'retained': retained, 'retained_main': retained_main, 'retained_sha256': hashlib.sha256(canonical(retained)).hexdigest()}
+            'retained': retained, 'retained_main': retained_main,
+            'retained_identities': [identity(indexed[value]) for value in retained], 'retained_sha256': hashlib.sha256(canonical(retained)).hexdigest()}
 
 
 def execution_guard(root, api, expected_main_sha, scope):
@@ -254,7 +341,7 @@ def execution_guard(root, api, expected_main_sha, scope):
     head = command(['git', 'rev-parse', 'HEAD']).decode().strip()
     require(head == expected_main_sha == api.request('GET', PREFIX + '/git/ref/heads/main')['object']['sha'],
             'Execute requires the approved exact current main commit')
-    for relative in (SCOPE_PATH, 'scripts/ci/codeql-retire-legacy-actions.py', '.github/workflows/codeql.yml'):
+    for relative in (SCOPE_PATH, 'scripts/ci/codeql-retire-legacy-actions.py', '.github/workflows/codeql.yml', WORKFLOW):
         path = root / relative
         require(not path.is_symlink() and path.is_file() and
                 path.read_bytes() == command(['git', 'show', 'HEAD:' + relative]), 'Execute source differs from HEAD')
@@ -262,16 +349,23 @@ def execution_guard(root, api, expected_main_sha, scope):
             'Current scanning workflow changed')
 
 
-def execute(scope, api, receipt_path, approved_hash, expected_main_sha, confirm_history_loss=False):
+def execute(scope, api, receipt_path, approved_hash, expected_main_sha, confirm_history_loss=False,
+            authorization_path=None):
     require(approved_hash == scope_digest(scope), 'Approved scope digest mismatch')
     require(confirm_history_loss, 'Explicit final history-loss confirmation required')
     execution_guard(ROOT, api, expected_main_sha, scope)
+    require(authorization_path is not None, 'Durable authorization artifact required before deletion')
+    authorization = read_authorization(authorization_path, scope)
     receipt = read_receipt(receipt_path, scope)
-    state = preview(scope, api, receipt)
+    state = preview(scope, api, receipt, authorization=authorization if receipt is None else None)
     require(state['main_sha'] == expected_main_sha, 'Approved main revision changed')
     if receipt is None:
-        receipt = {'schema': 1, 'scope_sha256': approved_hash, 'main_sha': expected_main_sha,
-                   'retained': state['retained'], 'retained_main': state['retained_main'], 'attempts': {}}
+        receipt = {'schema': 2, 'run_id': authorization['run_id'],
+                   'scope_sha256': approved_hash, 'main_sha': expected_main_sha,
+                   'retained': state['retained'], 'retained_main': state['retained_main'],
+                   'retained_identities': state['retained_identities'],
+                   'recovered': sorted({row['id'] for row in scope['analyses']} - set(state['remaining'])),
+                   'attempts': {}}
         persist(receipt_path, receipt)
     deadline = time.monotonic() + 1200
     for row in scope['analyses']:
@@ -308,6 +402,7 @@ def execute(scope, api, receipt_path, approved_hash, expected_main_sha, confirm_
                 fresh = preview(scope, api, receipt)
                 receipt['retained'] = sorted(set(receipt['retained']) | set(fresh['retained']))
                 receipt['retained_main'] = sorted(set(receipt['retained_main']) | set(fresh['retained_main']))
+                receipt['retained_identities'] = fresh['retained_identities']
                 persist(receipt_path, receipt)
                 if set(fresh['remaining']) == remaining:
                     reconciled = True
@@ -334,6 +429,9 @@ def execute(scope, api, receipt_path, approved_hash, expected_main_sha, confirm_
         require(set(after['remaining']) == remaining, 'Deletion readback differs from approved remaining inventory')
         receipt['retained_main'] = sorted(set(receipt['retained_main']) | set(after['retained_main']))
         receipt['retained'] = sorted(set(receipt['retained']) | set(after['retained_main']))
+        identities = {row['id']: row for row in receipt['retained_identities']}
+        identities.update({row['id']: row for row in after['retained_identities']})
+        receipt['retained_identities'] = [identities[value] for value in sorted(identities)]
         receipt['attempts'][str(analysis_id)] = 'complete'
         persist(receipt_path, receipt)
         state = after
@@ -346,20 +444,36 @@ def main():
     sub = parser.add_subparsers(dest='mode', required=True)
     check = sub.add_parser('preview')
     check.add_argument('--output', type=Path, required=True)
+    check.add_argument('--authorization', type=Path)
+    restore = sub.add_parser('restore')
+    restore.add_argument('--output', type=Path, required=True)
+    prepare = sub.add_parser('authorize')
+    prepare.add_argument('--output', type=Path, required=True)
+    prepare.add_argument('--approved-scope-sha256', required=True)
+    prepare.add_argument('--expected-main-sha', required=True)
+    prepare.add_argument('--confirm-history-loss', action='store_true')
     apply = sub.add_parser('execute')
     apply.add_argument('--receipt', type=Path, required=True)
+    apply.add_argument('--authorization', type=Path, required=True)
     apply.add_argument('--approved-scope-sha256', required=True)
     apply.add_argument('--expected-main-sha', required=True)
     apply.add_argument('--confirm-history-loss', action='store_true')
     args = parser.parse_args()
     scope, api = load_scope(), API()
     if args.mode == 'preview':
-        state = preview(scope, api)
+        authorization = read_authorization(args.authorization, scope) if args.authorization else None
+        state = preview(scope, api, authorization=authorization)
         persist(args.output, state)
         print(json.dumps({key: state[key] for key in ('scope_sha256', 'main_sha', 'retained_sha256')}))
+    elif args.mode == 'restore':
+        available = restore_authorization(scope, api, args.output)
+        print('available=' + str(available).lower())
+    elif args.mode == 'authorize':
+        authorize(scope, api, args.output, args.approved_scope_sha256,
+                  args.expected_main_sha, args.confirm_history_loss)
     else:
         print(json.dumps(execute(scope, api, args.receipt, args.approved_scope_sha256,
-                                 args.expected_main_sha, args.confirm_history_loss)))
+                                 args.expected_main_sha, args.confirm_history_loss, args.authorization)))
 
 
 if __name__ == '__main__':

@@ -855,7 +855,7 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/codeql-retire-legacy-actions.yml 0d0694d9af3be525ea6e7fb33e1d090161208111ef5293b4624c0f2791f0a7c4
+.github/workflows/codeql-retire-legacy-actions.yml 7d5b488cdaa6745047a5c4faafb2ca5c402bbb5dd6d2ae9c1039e1037b4b78c7
 .github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
 .github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592

@@ -29,6 +29,7 @@ jobs:
   preview:
     runs-on: ubuntu-24.04
     permissions:
+      actions: read
       contents: read
       security-events: read
     timeout-minutes: 20
@@ -62,6 +63,16 @@ jobs:
           nix develop --command bash scripts/ci/static-checks.sh
           nix develop --command bash scripts/ci/conftest-policies.sh
 
+      - name: Restore This Run's Durable Authorization
+        id: recovery
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          nix develop --command python3 scripts/ci/codeql-retire-legacy-actions.py \
+            restore --output "${RUNNER_TEMP}/authorization.json" >> "${GITHUB_OUTPUT}"
+
       - name: Preview Exact Legacy Scope
         env:
           GH_TOKEN: ${{ github.token }}
@@ -73,8 +84,12 @@ jobs:
           umask 077
           current_main_sha="$(gh api --hostname github.com repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
           test "${EXPECTED_SHA}" = "${current_main_sha}"
+          recovery_args=()
+          if [[ -f "${RUNNER_TEMP}/authorization.json" ]]; then
+            recovery_args=(--authorization "${RUNNER_TEMP}/authorization.json")
+          fi
           nix develop --command python3 scripts/ci/codeql-retire-legacy-actions.py \
-            preview --output "${RUNNER_TEMP}/codeql-retirement-preview.json"
+            preview --output "${RUNNER_TEMP}/codeql-retirement-preview.json" "${recovery_args[@]}"
           if [[ "${CONFIRM_HISTORY_LOSS}" == "true" ]]; then
             [[ "${APPROVED_SCOPE_SHA256}" =~ ^[0-9a-f]{64}$ ]]
             test "${APPROVED_SCOPE_SHA256}" = "$(jq -r .scope_sha256 "${RUNNER_TEMP}/codeql-retirement-preview.json")"
@@ -83,7 +98,7 @@ jobs:
       - name: Retain Safe Preview Receipt
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: codeql-retirement-preview
+          name: codeql-retirement-preview-${{ github.run_attempt }}
           path: ${{ runner.temp }}/codeql-retirement-preview.json
           if-no-files-found: error
           retention-days: 30
@@ -95,6 +110,7 @@ jobs:
     environment:
       name: homelab-production
     permissions:
+      actions: read
       contents: read
       security-events: write
     timeout-minutes: 40
@@ -126,6 +142,41 @@ jobs:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Restore This Run's Durable Authorization
+        id: recovery
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          nix develop --command python3 scripts/ci/codeql-retire-legacy-actions.py \
+            restore --output "${RUNNER_TEMP}/authorization.json" >> "${GITHUB_OUTPUT}"
+
+      - name: Prepare Approved Inventory Before Deletion
+        if: steps.recovery.outputs.available == 'false'
+        timeout-minutes: 3
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          APPROVED_SCOPE_SHA256: ${{ inputs.approved_scope_sha256 }}
+        run: |
+          set -euo pipefail
+          nix develop --command python3 scripts/ci/codeql-retire-legacy-actions.py \
+            authorize --expected-main-sha "${EXPECTED_SHA}" \
+            --approved-scope-sha256 "${APPROVED_SCOPE_SHA256}" \
+            --confirm-history-loss --output "${RUNNER_TEMP}/authorization.json"
+
+      # Immutable and uploaded successfully before any DELETE. Reuse only within this run.
+      - name: Persist Approved Inventory Before Deletion
+        if: steps.recovery.outputs.available == 'false'
+        timeout-minutes: 2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-retirement-authorized-${{ github.run_id }}
+          path: ${{ runner.temp }}/authorization.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Retire Only Approved Main Analyses
         timeout-minutes: 25
         env:
@@ -139,14 +190,15 @@ jobs:
             execute --expected-main-sha "${EXPECTED_SHA}" \
             --approved-scope-sha256 "${APPROVED_SCOPE_SHA256}" \
             --confirm-history-loss \
-            --receipt "${RUNNER_TEMP}/codeql-retirement-receipt.json"
+            --receipt "${RUNNER_TEMP}/codeql-retirement-receipt.json" \
+            --authorization "${RUNNER_TEMP}/authorization.json"
 
       - name: Retain Safe Execution Receipt
         timeout-minutes: 5
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: codeql-retirement-execution
+          name: codeql-retirement-execution-${{ github.run_attempt }}
           path: ${{ runner.temp }}/codeql-retirement-receipt.json
           if-no-files-found: warn
           retention-days: 30

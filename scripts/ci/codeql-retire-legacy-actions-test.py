@@ -142,11 +142,22 @@ class RetirementTests(unittest.TestCase):
         self.directory = Path(self.temporary.name)
         self.receipt = self.directory / "receipt.json"
         self.api = FakeAPI(self.scope, self.receipt)
+        self.environment = {"GITHUB_ACTIONS": "true", "GITHUB_REF": retire.REF,
+                            "GITHUB_REPOSITORY": retire.REPO, "GITHUB_RUN_ID": "12345", "GITHUB_SHA": MAIN,
+                            "GITHUB_WORKFLOW_REF": retire.REPO + "/" + retire.WORKFLOW + "@" + retire.REF,
+                            "GITHUB_JOB": "retire", "GH_TOKEN": "offline-test-token"}
+        environment = patch.dict(os.environ, self.environment, clear=True)
+        environment.start()
+        self.addCleanup(environment.stop)
+        self.authorization = self.directory / "authorization.json"
+        with patch.object(retire, "execution_guard"):
+            retire.authorize(self.scope, self.api, self.authorization, retire.scope_digest(self.scope), MAIN, True)
+        self.api.calls.clear()
 
     def execute(self, approved=None, consent=True):
         with patch.object(retire, "execution_guard"):
             return retire.execute(self.scope, self.api, self.receipt,
-                                  approved or retire.scope_digest(self.scope), MAIN, consent)
+                                  approved or retire.scope_digest(self.scope), MAIN, consent, self.authorization)
 
     def assert_no_writes(self):
         self.assertFalse(any(method != "GET" for method, _ in self.api.calls))
@@ -203,10 +214,9 @@ class RetirementTests(unittest.TestCase):
                     retire.preview(self.scope, self.api)
                 self.assert_no_writes()
 
-    def test_missing_new_and_changed_legacy_rows_abort_before_delete(self):
+    def test_new_and_changed_legacy_rows_abort_before_delete(self):
         selected = self.scope["analyses"][0]["id"]
-        for mutation in (lambda rows: rows.pop(selected),
-                         lambda rows: rows.__setitem__(3000000000, dict(rows[selected], id=3000000000)),
+        for mutation in (lambda rows: rows.__setitem__(3000000000, dict(rows[selected], id=3000000000)),
                          lambda rows: rows[selected].__setitem__("commit_sha", "e" * 40),
                          lambda rows: rows[selected].pop("environment")):
             with self.subTest(mutation=mutation):
@@ -496,7 +506,7 @@ class RetirementTests(unittest.TestCase):
                 self.assert_no_writes()
 
     def test_execution_guard_checks_ci_clean_exact_head_and_workflow(self):
-        files = (retire.SCOPE_PATH, "scripts/ci/codeql-retire-legacy-actions.py", ".github/workflows/codeql.yml")
+        files = (retire.SCOPE_PATH, "scripts/ci/codeql-retire-legacy-actions.py", ".github/workflows/codeql.yml", retire.WORKFLOW)
         committed = {name: (ROOT / name).read_bytes() for name in files}
         for name, data in committed.items():
             path = self.directory / name
@@ -544,6 +554,131 @@ class RetirementTests(unittest.TestCase):
             retire.read_receipt(self.receipt, self.scope)
         with self.assertRaises(RuntimeError):
             retire.persist(self.receipt, {})
+
+    def artifact_restore(self, value=None, artifact_change=None, output=None):
+        value = value or json.loads(self.authorization.read_text())
+        artifact = {"name": "codeql-retirement-authorized-12345", "expired": False, "size_in_bytes": 4096,
+                    "workflow_run": {"id": 12345, "head_sha": MAIN}}
+        if artifact_change:
+            artifact_change(artifact)
+        original = self.api.request
+        def request(method, path):
+            if "/actions/runs/" in path:
+                self.assertEqual(method, "GET")
+                self.assertEqual(path, PREFIX + "/actions/runs/12345/artifacts?name=" +
+                                 "codeql-retirement-authorized-12345&per_page=100")
+                return {"total_count": 1, "artifacts": [artifact]}
+            return original(method, path)
+        def download(args):
+            self.assertEqual(args[:-1], ["gh", "run", "download", "12345", "--repo", retire.REPO,
+                                       "--name", "codeql-retirement-authorized-12345", "--dir"])
+            # Artifact downloads do not preserve the original private mode.
+            downloaded = Path(args[-1]) / "authorization.json"
+            downloaded.write_text(json.dumps(value))
+            downloaded.chmod(0o644)
+            return b""
+        output = output or self.directory / "restored.json"
+        with patch.object(self.api, "request", side_effect=request), patch.object(retire, "command", side_effect=download):
+            self.assertTrue(retire.restore_authorization(self.scope, self.api, output))
+        return output
+
+    def test_runner_loss_before_final_upload_restores_preview_and_execution(self):
+        durable = json.loads(self.authorization.read_text())
+        def cancelled(_analysis_id):
+            raise SystemExit("runner lost before final receipt upload")
+        self.api.after_delete = cancelled
+        with self.assertRaises(SystemExit):
+            self.execute()
+        first = self.scope["analyses"][0]["id"]
+        self.assertEqual(self.api.deleted, [first])
+        # New runner has neither RUNNER_TEMP file; only the pre-deletion artifact survives.
+        self.receipt.unlink()
+        self.authorization.unlink()
+        with self.assertRaisesRegex(RuntimeError, "Unattempted"):
+            retire.preview(self.scope, self.api)
+        self.artifact_restore(value=durable, output=self.authorization)
+        output = self.directory / "preview.json"
+        with patch.object(sys, "argv", ["retire", "preview", "--authorization", str(self.authorization),
+                                        "--output", str(output)]), patch.object(retire, "API", return_value=self.api), \
+                contextlib.redirect_stdout(io.StringIO()):
+            retire.main()
+        self.assertNotIn(first, json.loads(output.read_text())["remaining"])
+        self.api.after_delete = None
+        self.execute()
+        self.assertEqual(self.api.deleted.count(first), 1)
+        self.assertEqual(len(self.api.deleted), 97)
+        self.assertEqual(self.api.rows, self.api.protected)
+        self.assertEqual(json.loads(self.receipt.read_text())["recovered"], [first])
+
+    def test_retry_completed_run_uses_durable_inventory_without_repeating_deletes(self):
+        self.execute()
+        self.receipt.unlink()
+        self.execute()
+        self.assertEqual(len(self.api.deleted), 97)
+        self.assertEqual(len(json.loads(self.receipt.read_text())["recovered"]), 97)
+
+    def test_authorization_cannot_be_created_after_an_approved_id_is_missing(self):
+        self.authorization.unlink()
+        del self.api.rows[self.scope["analyses"][0]["id"]]
+        with patch.object(retire, "execution_guard"), self.assertRaisesRegex(RuntimeError, "Unattempted"):
+            retire.authorize(self.scope, self.api, self.authorization, retire.scope_digest(self.scope), MAIN, True)
+        self.assertFalse(self.authorization.exists())
+        self.assert_no_writes()
+
+    def test_authorization_requires_protected_job_scope_and_consent(self):
+        self.authorization.unlink()
+        for digest, consent, job in (("0" * 64, True, "retire"),
+                                     (retire.scope_digest(self.scope), False, "retire"),
+                                     (retire.scope_digest(self.scope), True, "preview")):
+            with patch.dict(os.environ, {"GITHUB_JOB": job}), patch.object(retire, "execution_guard"), \
+                    self.assertRaises(RuntimeError):
+                retire.authorize(self.scope, self.api, self.authorization, digest, MAIN, consent)
+            self.assertFalse(self.authorization.exists())
+        self.assert_no_writes()
+
+    def test_download_rejects_foreign_expired_or_misbound_artifact(self):
+        changes = (lambda a: a.update(expired=True), lambda a: a.update(name="other-artifact"),
+                   lambda a: a.update(size_in_bytes=retire.MAX_BYTES + 1),
+                   lambda a: a["workflow_run"].update(id=999),
+                   lambda a: a["workflow_run"].update(head_sha="e" * 40))
+        for change in changes:
+            with self.subTest(change=change), self.assertRaises(RuntimeError):
+                self.artifact_restore(artifact_change=change)
+        original = json.loads(self.authorization.read_text())
+        for key, value in (("run_id", "999"), ("main_sha", "e" * 40), ("scope_sha256", "0" * 64)):
+            with self.subTest(key=key), self.assertRaises(RuntimeError):
+                self.artifact_restore(value=dict(original, **{key: value}))
+        self.assert_no_writes()
+
+    def test_new_run_cannot_reuse_prior_authorization_or_receipt(self):
+        self.execute()
+        with patch.dict(os.environ, {"GITHUB_RUN_ID": "999"}):
+            with self.assertRaises(RuntimeError):
+                retire.read_authorization(self.authorization, self.scope)
+            with self.assertRaises(RuntimeError):
+                retire.read_receipt(self.receipt, self.scope)
+        for key, value in (("GITHUB_WORKFLOW_REF", "other-workflow"), ("GITHUB_REF", "refs/heads/other"),
+                           ("GITHUB_SHA", "e" * 40), ("GITHUB_REPOSITORY", "other/repo")):
+            with patch.dict(os.environ, {key: value}), self.assertRaises(RuntimeError):
+                retire.read_authorization(self.authorization, self.scope)
+
+    def test_recovery_checks_full_retained_identities_before_any_delete(self):
+        for key, value in (("commit_sha", "e" * 40), ("ref", "refs/pull/999/merge"),
+                           ("category", "different"), ("tool", {"name": "other"})):
+            with self.subTest(key=key):
+                self.api = FakeAPI(self.scope, self.receipt)
+                self.api.rows[2000000002][key] = value
+                with self.assertRaisesRegex(RuntimeError, "Retained analysis identity"):
+                    self.execute()
+                self.assert_no_writes()
+
+    def test_missing_artifact_cannot_authorize_recovery(self):
+        self.authorization.unlink()
+        with patch.object(self.api, "request", return_value={"total_count": 0, "artifacts": []}):
+            self.assertFalse(retire.restore_authorization(self.scope, self.api, self.authorization))
+        with self.assertRaises(RuntimeError):
+            self.execute()
+        self.assert_no_writes()
 
     def test_git_environment_cannot_redirect_real_child_command(self):
         with patch.dict(os.environ, {"GIT_DIR": "/offline/foreign-repository", "GIT_WORK_TREE": "/offline/tree"}):
