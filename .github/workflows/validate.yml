@@ -48,7 +48,8 @@ jobs:
 
       - name: Verify LiteLLM Authentication And Attribution
         run: |
-          nix develop --command python3 -m venv "${RUNNER_TEMP}/litellm-test"
+          # PyPI native wheels require the runner's standard system libraries.
+          /usr/bin/python3 -m venv "${RUNNER_TEMP}/litellm-test"
           source "${RUNNER_TEMP}/litellm-test/bin/activate"
           python -m pip install 'litellm[proxy]==1.80.8'
           python scripts/ci/litellm-attribution-check.py
