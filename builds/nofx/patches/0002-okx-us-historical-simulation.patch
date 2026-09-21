@@ -1,0 +1,680 @@
+diff --git a/api/backtest.go b/api/backtest.go
+index acdfe37..79342ad 100644
+--- a/api/backtest.go
++++ b/api/backtest.go
+@@ -534,7 +534,7 @@ func (s *Server) handleBacktestKlines(c *gin.Context) {
+ 	startTime := time.Unix(cfg.StartTS, 0)
+ 	endTime := time.Unix(cfg.EndTS, 0)
+ 
+-	klines, err := market.GetKlinesRange(symbol, timeframe, startTime, endTime)
++	klines, err := market.GetKlinesRangeFromSource(cfg.MarketDataSource, symbol, timeframe, startTime, endTime, time.Now())
+ 	if err != nil {
+ 		SafeInternalError(c, "Fetch klines", err)
+ 		return
+diff --git a/backtest/config.go b/backtest/config.go
+index 5cb5d09..a977ca8 100644
+--- a/backtest/config.go
++++ b/backtest/config.go
+@@ -31,6 +31,7 @@ type BacktestConfig struct {
+ 	AIModelID            string   `json:"ai_model_id,omitempty"`
+ 	StrategyID           string   `json:"strategy_id,omitempty"` // Optional: use saved strategy from Strategy Studio
+ 	Symbols              []string `json:"symbols"`
++	MarketDataSource     string   `json:"market_data_source,omitempty"`
+ 	Timeframes           []string `json:"timeframes"`
+ 	DecisionTimeframe    string   `json:"decision_timeframe"`
+ 	DecisionCadenceNBars int      `json:"decision_cadence_nbars"`
+@@ -153,6 +154,12 @@ func (cfg *BacktestConfig) Validate() error {
+ 		cfg.Leverage.AltcoinLeverage = 5
+ 	}
+ 
++	source, err := market.NormalizeHistoricalSource(cfg.MarketDataSource)
++	if err != nil {
++		return err
++	}
++	cfg.MarketDataSource = source
++
+ 	return nil
+ }
+ 
+diff --git a/backtest/datafeed.go b/backtest/datafeed.go
+index 5480fff..f8e16c4 100644
+--- a/backtest/datafeed.go
++++ b/backtest/datafeed.go
+@@ -48,6 +48,7 @@ func NewDataFeed(cfg BacktestConfig) (*DataFeed, error) {
+ func (df *DataFeed) loadAll() error {
+ 	start := time.Unix(df.cfg.StartTS, 0)
+ 	end := time.Unix(df.cfg.EndTS, 0)
++	asOf := time.Now() // One acquisition cutoff for every symbol/timeframe.
+ 
+ 	// longest timeframe used for auxiliary indicators
+ 	var longestDur time.Duration
+@@ -73,7 +74,7 @@ func (df *DataFeed) loadAll() error {
+ 			}
+ 			fetchEnd := end.Add(dur)
+ 
+-			klines, err := market.GetKlinesRange(symbol, tf, fetchStart, fetchEnd)
++			klines, err := market.GetKlinesRangeFromSource(df.cfg.MarketDataSource, symbol, tf, fetchStart, fetchEnd, asOf)
+ 			if err != nil {
+ 				return fmt.Errorf("fetch klines for %s %s: %w", symbol, tf, err)
+ 			}
+diff --git a/backtest/historical_source_test.go b/backtest/historical_source_test.go
+new file mode 100644
+index 0000000..727fb97
+--- /dev/null
++++ b/backtest/historical_source_test.go
+@@ -0,0 +1,51 @@
++package backtest
++
++import (
++	"encoding/json"
++	"testing"
++
++	"nofx/market"
++)
++
++func TestHistoricalConfig(t *testing.T) {
++	for _, source := range []string{"", "okx_us", "binance"} {
++		cfg := BacktestConfig{RunID: "history-test", Symbols: []string{"BTCUSDT"}, StartTS: 1700000000, EndTS: 1700003600, MarketDataSource: source}
++		if err := cfg.Validate(); err != nil {
++			t.Fatal(err)
++		}
++		want := source
++		if want == "" {
++			want = "binance"
++		} // Legacy runs retain their original exchange.
++		data, err := json.Marshal(cfg)
++		if err != nil {
++			t.Fatal(err)
++		}
++		var saved BacktestConfig
++		if err := json.Unmarshal(data, &saved); err != nil {
++			t.Fatal(err)
++		}
++		if saved.MarketDataSource != want {
++			t.Fatalf("saved source=%q, want %q", saved.MarketDataSource, want)
++		}
++	}
++	cfg := BacktestConfig{RunID: "history-test", Symbols: []string{"BTCUSDT"}, StartTS: 1700000000, EndTS: 1700003600, MarketDataSource: "https://example.com"}
++	if err := cfg.Validate(); err == nil {
++		t.Fatal("unlisted source accepted")
++	}
++}
++
++func TestHistoricalSnapshotExcludesLaterCandleCloses(t *testing.T) {
++	// Acquired bars can include the next execution bar, but AI snapshots must
++	// never see it, nor the currently incomplete longer-timeframe candle.
++	df := DataFeed{symbolSeries: map[string]*symbolSeries{"BTCUSDT": {byTF: map[string]*timeframeSeries{
++		"3m":  {klines: []market.Kline{{OpenTime: 0, CloseTime: 179999}, {OpenTime: 180000, CloseTime: 359999}}, closeTimes: []int64{179999, 359999}},
++		"15m": {klines: []market.Kline{{OpenTime: 0, CloseTime: 899999}}, closeTimes: []int64{899999}},
++	}}}}
++	if got := df.sliceUpTo("BTCUSDT", "3m", 179999); len(got) != 1 || got[0].CloseTime != 179999 {
++		t.Fatalf("future primary candle visible: %+v", got)
++	}
++	if got := df.sliceUpTo("BTCUSDT", "15m", 179999); len(got) != 0 {
++		t.Fatalf("future longer candle visible: %+v", got)
++	}
++}
+diff --git a/market/historical_source.go b/market/historical_source.go
+new file mode 100644
+index 0000000..c1631f6
+--- /dev/null
++++ b/market/historical_source.go
+@@ -0,0 +1,42 @@
++package market
++
++import (
++	"fmt"
++	"strings"
++	"time"
++
++	"nofx/market/okxhistory"
++)
++
++// NormalizeHistoricalSource retains Binance provenance for older saved runs.
++func NormalizeHistoricalSource(source string) (string, error) {
++	switch strings.ToLower(strings.TrimSpace(source)) {
++	case "", "binance":
++		return "binance", nil
++	case "okx_us":
++		return "okx_us", nil
++	default:
++		return "", fmt.Errorf("unsupported historical market_data_source %q", source)
++	}
++}
++
++// GetKlinesRangeFromSource is only used by historical simulations and charts.
++// It does not construct an exchange trader or read exchange credentials.
++func GetKlinesRangeFromSource(source, symbol, timeframe string, start, end, asOf time.Time) ([]Kline, error) {
++	source, err := NormalizeHistoricalSource(source)
++	if err != nil {
++		return nil, err
++	}
++	if source == "binance" {
++		return GetKlinesRange(symbol, timeframe, start, end)
++	}
++	candles, err := okxhistory.GetRange(Normalize(symbol), timeframe, start, end, asOf)
++	if err != nil {
++		return nil, err
++	}
++	klines := make([]Kline, len(candles))
++	for i, c := range candles {
++		klines[i] = Kline{OpenTime: c.OpenTime, CloseTime: c.CloseTime, Open: c.Open, High: c.High, Low: c.Low, Close: c.Close, Volume: c.Volume}
++	}
++	return klines, nil
++}
+diff --git a/market/historical_source_test.go b/market/historical_source_test.go
+new file mode 100644
+index 0000000..2f26148
+--- /dev/null
++++ b/market/historical_source_test.go
+@@ -0,0 +1,20 @@
++package market
++
++import (
++	"testing"
++	"time"
++)
++
++func TestHistoricalSource(t *testing.T) {
++	for input, want := range map[string]string{"": "binance", "binance": "binance", "okx_us": "okx_us", " OKX_US ": "okx_us"} {
++		got, err := NormalizeHistoricalSource(input)
++		if err != nil || got != want {
++			t.Fatalf("source %q = %q, %v; want %q", input, got, err, want)
++		}
++	}
++	for _, input := range []string{"okx", "okx-global", "https://us.okx.com", "other"} {
++		if _, err := GetKlinesRangeFromSource(input, "BTCUSDT", "3m", time.Now().Add(-time.Hour), time.Now(), time.Now()); err == nil {
++			t.Fatalf("unexpected source accepted: %q", input)
++		}
++	}
++}
+diff --git a/market/okxhistory/README.md b/market/okxhistory/README.md
+new file mode 100644
+index 0000000..5f2f3b3
+--- /dev/null
++++ b/market/okxhistory/README.md
+@@ -0,0 +1,36 @@
++# OKX US historical candles
++
++Backtest Lab sends `market_data_source: "okx_us"` for new runs. This selects the
++fixed US public endpoint `https://us.okx.com/api/v5/market/history-candles`.
++Existing configs without a source retain Binance, so reloading an old run does
++not silently change its market data. Run configs persist the selected source;
++the backtest chart uses that same source.
++
++`BTCUSDT`, `ETHUSDT`, and `SOLUSDT` map to USDT perpetual instruments such as
++`BTC-USDT-SWAP`. Requests need no exchange account or API key. This reader does
++not construct a trader or change the endpoint used by live exchange accounts.
++It does not follow redirects or fall back to another region/provider.
++
++The reader paginates backward using exclusive `after` cursors, then deduplicates
++and sorts. It includes only confirmed candles closed by the acquisition cutoff.
++NOFX separately limits every AI snapshot to candles closed at simulation time;
++the next candle remains available only for simulated execution. Perpetual volume
++uses `volCcy` (base currency), not `vol` (contracts). Longer bars use UTC variants.
++
++The shared request gate limits this process to five requests per second. HTTP or
++API failures are surfaced, including access denial and rate limiting.
++
++Contract: [official OKX US API documentation](https://app.okx.com/docs-v5/en/#order-book-trading-market-data-get-candlesticks-history),
++[regional API domains](https://www.okx.com/docs-v5).
++
++Run deterministic fixture tests with:
++
++```sh
++go test -race ./market/okxhistory ./market ./backtest \
++  -run 'TestRange|TestMappings|TestFailures|TestMalformed|TestPagination|TestConflicting|TestHistorical' \
++  -count=1
++```
++
++Public network smoke checks are separate from these tests. Check 3m, 15m, and 4h
++candles through the declared regional endpoint after deployment. If denied, stop
++and diagnose access; do not use another region or provider automatically.
+diff --git a/market/okxhistory/history.go b/market/okxhistory/history.go
+new file mode 100644
+index 0000000..ff74854
+--- /dev/null
++++ b/market/okxhistory/history.go
+@@ -0,0 +1,192 @@
++// Package okxhistory reads public US OKX USDT perpetual candles for simulations.
++// It never uses account credentials or sends trading requests.
++package okxhistory
++
++import (
++	"encoding/json"
++	"fmt"
++	"io"
++	"math"
++	"net/http"
++	"regexp"
++	"sort"
++	"strconv"
++	"strings"
++	"sync"
++	"time"
++)
++
++const endpoint = "https://us.okx.com/api/v5/market/history-candles"
++
++// Candle uses milliseconds and base-asset volume, matching NOFX's candle model.
++type Candle struct {
++	OpenTime, CloseTime            int64
++	Open, High, Low, Close, Volume float64
++}
++
++type httpDoer interface {
++	Do(*http.Request) (*http.Response, error)
++}
++
++var requestGate struct {
++	sync.Mutex
++	last time.Time
++}
++
++// Public history is limited per IP. Share a conservative 5 requests/second
++// across concurrent backtests in this process (OKX permits 20 per 2 seconds).
++func waitForRequest() {
++	requestGate.Lock()
++	defer requestGate.Unlock()
++	if delay := time.Until(requestGate.last.Add(200 * time.Millisecond)); delay > 0 {
++		time.Sleep(delay)
++	}
++	requestGate.last = time.Now()
++}
++
++// GetRange returns confirmed candles with opening times in [start, end], sorted
++// oldest first. A candle must also have finished by asOf. No domain fallback or
++// redirects are allowed; regional access failures remain explicit errors.
++func GetRange(symbol, timeframe string, start, end, asOf time.Time) ([]Candle, error) {
++	client := &http.Client{
++		Timeout:       15 * time.Second,
++		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
++	}
++	return getRange(client, waitForRequest, symbol, timeframe, start, end, asOf)
++}
++
++var usdtSymbol = regexp.MustCompile(`^[A-Z0-9]+USDT$`)
++
++func instrumentID(symbol string) (string, error) {
++	symbol = strings.ToUpper(strings.TrimSpace(symbol))
++	if !usdtSymbol.MatchString(symbol) || symbol == "USDT" {
++		return "", fmt.Errorf("OKX historical data requires a USDT symbol, e.g. BTCUSDT")
++	}
++	return strings.TrimSuffix(symbol, "USDT") + "-USDT-SWAP", nil
++}
++
++func barSpec(timeframe string) (string, time.Duration, error) {
++	tf := strings.ToLower(strings.TrimSpace(timeframe))
++	bars := map[string]string{"1m": "1m", "3m": "3m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1H", "2h": "2H", "4h": "4H", "6h": "6Hutc", "12h": "12Hutc", "1d": "1Dutc"}
++	bar, ok := bars[tf]
++	if !ok {
++		return "", 0, fmt.Errorf("unsupported OKX historical timeframe %q", timeframe)
++	}
++	if tf == "1d" {
++		return bar, 24 * time.Hour, nil
++	}
++	duration, err := time.ParseDuration(tf)
++	return bar, duration, err
++}
++
++func getRange(client httpDoer, wait func(), symbol, timeframe string, start, end, asOf time.Time) ([]Candle, error) {
++	instrument, err := instrumentID(symbol)
++	if err != nil {
++		return nil, err
++	}
++	bar, duration, err := barSpec(timeframe)
++	if err != nil {
++		return nil, err
++	}
++	if start.UnixMilli() < 0 || !end.After(start) || asOf.IsZero() || asOf.Before(start) {
++		return nil, fmt.Errorf("invalid OKX historical time range or as-of time")
++	}
++	startMS, endMS, asOfMS := start.UnixMilli(), end.UnixMilli(), asOf.UnixMilli()
++	cursor := min(endMS, asOfMS)
++	if cursor == math.MaxInt64 {
++		return nil, fmt.Errorf("OKX historical time range overflows")
++	}
++	cursor++ // OKX's after boundary is exclusive.
++	candles := make(map[int64]Candle)
++	for cursor > startMS {
++		req, err := http.NewRequest(http.MethodGet, endpoint, nil)
++		if err != nil {
++			return nil, err
++		}
++		q := req.URL.Query()
++		q.Set("instId", instrument)
++		q.Set("bar", bar)
++		q.Set("limit", "300")
++		q.Set("after", strconv.FormatInt(cursor, 10))
++		req.URL.RawQuery = q.Encode()
++		wait()
++		resp, err := client.Do(req)
++		if err != nil {
++			return nil, fmt.Errorf("OKX US public history request: %w", err)
++		}
++		var payload struct {
++			Code string     `json:"code"`
++			Data [][]string `json:"data"`
++		}
++		if resp.StatusCode != http.StatusOK {
++			resp.Body.Close()
++			return nil, fmt.Errorf("OKX US public history returned HTTP %d", resp.StatusCode)
++		}
++		err = json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&payload)
++		resp.Body.Close()
++		if err != nil {
++			return nil, fmt.Errorf("decode OKX historical candles: %w", err)
++		}
++		if payload.Code != "0" {
++			return nil, fmt.Errorf("OKX US public history returned API code %q", payload.Code)
++		}
++		if len(payload.Data) == 0 {
++			break
++		}
++		oldest := cursor
++		for _, row := range payload.Data {
++			candle, confirmed, err := parseCandle(row, duration)
++			if err != nil {
++				return nil, err
++			}
++			if candle.OpenTime < oldest {
++				oldest = candle.OpenTime
++			}
++			if !confirmed || candle.OpenTime < startMS || candle.OpenTime > endMS || candle.CloseTime >= asOfMS {
++				continue
++			}
++			if previous, ok := candles[candle.OpenTime]; ok && previous != candle {
++				return nil, fmt.Errorf("conflicting OKX historical candle at %d", candle.OpenTime)
++			}
++			candles[candle.OpenTime] = candle
++		}
++		if oldest >= cursor {
++			return nil, fmt.Errorf("OKX historical pagination did not advance")
++		}
++		cursor = oldest
++	}
++	result := make([]Candle, 0, len(candles))
++	for _, candle := range candles {
++		result = append(result, candle)
++	}
++	sort.Slice(result, func(i, j int) bool { return result[i].OpenTime < result[j].OpenTime })
++	return result, nil
++}
++
++func parseCandle(row []string, duration time.Duration) (Candle, bool, error) {
++	var candle Candle
++	if len(row) < 9 {
++		return candle, false, fmt.Errorf("OKX historical candle has %d fields; expected 9", len(row))
++	}
++	ts, err := strconv.ParseInt(row[0], 10, 64)
++	if err != nil || ts < 0 || ts > math.MaxInt64-duration.Milliseconds() {
++		return candle, false, fmt.Errorf("invalid OKX historical candle timestamp")
++	}
++	candle.OpenTime, candle.CloseTime = ts, ts+duration.Milliseconds()-1
++	if row[8] != "0" && row[8] != "1" {
++		return candle, false, fmt.Errorf("invalid OKX candle confirmation flag")
++	}
++	values := []*float64{&candle.Open, &candle.High, &candle.Low, &candle.Close, &candle.Volume}
++	// volCcy (index 6) is base-asset volume for perpetuals; vol (5) is contracts.
++	for i, index := range []int{1, 2, 3, 4, 6} {
++		value, err := strconv.ParseFloat(row[index], 64)
++		if err != nil || math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || (i < 4 && value == 0) {
++			return candle, false, fmt.Errorf("invalid OKX historical candle numeric field %d", index)
++		}
++		*values[i] = value
++	}
++	if candle.High < max(candle.Open, candle.Close) || candle.Low > min(candle.Open, candle.Close) {
++		return candle, false, fmt.Errorf("invalid OKX historical candle price range")
++	}
++	return candle, row[8] == "1", nil
++}
+diff --git a/market/okxhistory/history_test.go b/market/okxhistory/history_test.go
+new file mode 100644
+index 0000000..a2f1b77
+--- /dev/null
++++ b/market/okxhistory/history_test.go
+@@ -0,0 +1,184 @@
++package okxhistory
++
++import (
++	"encoding/json"
++	"fmt"
++	"io"
++	"net/http"
++	"strconv"
++	"strings"
++	"testing"
++	"time"
++)
++
++type fakeDoer func(*http.Request) (*http.Response, error)
++
++func (f fakeDoer) Do(r *http.Request) (*http.Response, error) { return f(r) }
++
++func row(ts int64, confirm string) []string {
++	return []string{strconv.FormatInt(ts, 10), "100", "110", "90", "105", "700", "7", "735", confirm}
++}
++func response(status int, body string) *http.Response {
++	return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body))}
++}
++func candleResponse(rows [][]string) *http.Response {
++	b, _ := json.Marshal(map[string]any{"code": "0", "data": rows})
++	return response(200, string(b))
++}
++
++func TestRangePaginatesDeduplicatesAndSorts(t *testing.T) {
++	base := time.Unix(1700000000, 0)
++	d := 3 * time.Minute
++	ts := func(i int) int64 { return base.Add(time.Duration(i) * d).UnixMilli() }
++	calls, waits := 0, 0
++	client := fakeDoer(func(r *http.Request) (*http.Response, error) {
++		if r.Method != "GET" || r.URL.Host != "us.okx.com" || r.URL.Path != "/api/v5/market/history-candles" {
++			t.Fatalf("unexpected public endpoint: %s %s", r.Method, r.URL)
++		}
++		if len(r.Header) != 0 || r.Body != nil {
++			t.Fatalf("public reader must not send credentials, headers or body: %v", r.Header)
++		}
++		q := r.URL.Query()
++		if q.Get("instId") != "BTC-USDT-SWAP" || q.Get("bar") != "3m" || q.Get("limit") != "300" {
++			t.Fatalf("bad query: %v", q)
++		}
++		calls++
++		switch calls {
++		case 1:
++			if q.Get("after") != strconv.FormatInt(ts(3)+1, 10) {
++				t.Fatalf("first exclusive cursor: %v", q)
++			}
++			return candleResponse([][]string{row(ts(3), "1"), row(ts(2), "1")}), nil
++		case 2:
++			if q.Get("after") != strconv.FormatInt(ts(2), 10) {
++				t.Fatalf("pagination cursor: %v", q)
++			}
++			return candleResponse([][]string{row(ts(2), "1"), row(ts(1), "1"), row(ts(0), "1")}), nil
++		default:
++			t.Fatal("unexpected extra page")
++			return nil, nil
++		}
++	})
++	got, err := getRange(client, func() { waits++ }, "btcusdt", "3m", base, base.Add(3*d), base.Add(4*d))
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(got) != 4 || calls != 2 || waits != 2 {
++		t.Fatalf("candles=%d calls=%d waits=%d", len(got), calls, waits)
++	}
++	for i, c := range got {
++		if c.OpenTime != ts(i) || c.CloseTime != ts(i+1)-1 || c.Volume != 7 || c.Open != 100 || c.High != 110 || c.Low != 90 || c.Close != 105 {
++			t.Fatalf("candle %d: %+v", i, c)
++		}
++	}
++}
++
++func TestRangeExcludesUnconfirmedOutsideRangeAndFutureCloses(t *testing.T) {
++	base := time.Unix(1700000000, 0)
++	d := 15 * time.Minute
++	ts := func(i int) int64 { return base.Add(time.Duration(i) * d).UnixMilli() }
++	client := fakeDoer(func(r *http.Request) (*http.Response, error) {
++		return candleResponse([][]string{row(ts(4), "1"), row(ts(3), "1"), row(ts(2), "0"), row(ts(1), "1"), row(ts(0), "1"), row(ts(-1), "1")}), nil
++	})
++	got, err := getRange(client, func() {}, "ETHUSDT", "15m", base, base.Add(3*d), base.Add(3*d+d/2))
++	if err != nil {
++		t.Fatal(err)
++	}
++	if len(got) != 2 || got[0].OpenTime != ts(0) || got[1].OpenTime != ts(1) {
++		t.Fatalf("unexpected closed candles: %+v", got)
++	}
++}
++
++func TestMappings(t *testing.T) {
++	for tf, expected := range map[string]string{"1m": "1m", "3m": "3m", "5m": "5m", "15m": "15m", "30m": "30m", "1h": "1H", "2h": "2H", "4h": "4H", "6h": "6Hutc", "12h": "12Hutc", "1d": "1Dutc"} {
++		bar, d, err := barSpec(tf)
++		if err != nil || bar != expected || d <= 0 {
++			t.Fatalf("bar %s: %s %v %v", tf, bar, d, err)
++		}
++	}
++	for _, s := range []string{"BTCUSDT", "ETHUSDT", "SOLUSDT"} {
++		got, err := instrumentID(s)
++		want := strings.TrimSuffix(s, "USDT") + "-USDT-SWAP"
++		if err != nil || got != want {
++			t.Fatalf("instrument %s: %s %v", s, got, err)
++		}
++	}
++	for _, s := range []string{"BTC", "USDT", "BTC-USD", "BTC-USDT-SWAP", "https://example.com", "XYZ:BTCUSDT"} {
++		if _, err := instrumentID(s); err == nil {
++			t.Fatalf("accepted invalid symbol %q", s)
++		}
++	}
++	if _, _, err := barSpec("7m"); err == nil {
++		t.Fatal("accepted invalid timeframe")
++	}
++}
++
++func TestFailuresRemainErrors(t *testing.T) {
++	base := time.Unix(1700000000, 0)
++	for _, tc := range []struct {
++		name   string
++		status int
++		body   string
++	}{
++		{"regional denial", 451, "unavailable"},
++		{"forbidden", 403, "forbidden"},
++		{"redirect", 302, "redirect"},
++		{"rate limit", 429, "slow down"},
++		{"API error", 200, `{"code":"51001","data":[]}`},
++		{"missing API code", 200, `{"data":[]}`},
++		{"bad JSON", 200, `no`},
++		{"short row", 200, `{"code":"0","data":[["1700000000000"]]}`},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			calls := 0
++			client := fakeDoer(func(*http.Request) (*http.Response, error) { calls++; return response(tc.status, tc.body), nil })
++			if _, err := getRange(client, func() {}, "BTCUSDT", "3m", base, base.Add(time.Hour), base.Add(2*time.Hour)); err == nil {
++				t.Fatal("expected error")
++			}
++			if calls != 1 {
++				t.Fatalf("must not retry or use fallback: calls=%d", calls)
++			}
++		})
++	}
++}
++
++func TestMalformedCandles(t *testing.T) {
++	for _, tc := range []struct {
++		index int
++		value string
++	}{{0, "bad"}, {0, "-1"}, {0, "9223372036854775807"}, {1, "NaN"}, {2, "+Inf"}, {3, "-1"}, {4, "0"}, {6, "bad"}, {6, "-1"}, {8, "2"}, {2, "99"}, {3, "101"}} {
++		t.Run(fmt.Sprintf("%d-%s", tc.index, tc.value), func(t *testing.T) {
++			r := row(1700000000000, "1")
++			r[tc.index] = tc.value
++			if _, _, err := parseCandle(r, 4*time.Hour); err == nil {
++				t.Fatal("accepted malformed candle")
++			}
++		})
++	}
++}
++
++func TestPaginationMustAdvance(t *testing.T) {
++	base := time.Unix(1700000000, 0)
++	client := fakeDoer(func(r *http.Request) (*http.Response, error) {
++		cursor, _ := strconv.ParseInt(r.URL.Query().Get("after"), 10, 64)
++		return candleResponse([][]string{row(cursor, "1")}), nil
++	})
++	_, err := getRange(client, func() {}, "BTCUSDT", "3m", base, base.Add(time.Hour), base.Add(2*time.Hour))
++	if err == nil || !strings.Contains(err.Error(), "did not advance") {
++		t.Fatalf("expected progress error, got %v", err)
++	}
++}
++
++func TestConflictingDuplicateRejected(t *testing.T) {
++	base := time.Unix(1700000000, 0)
++	client := fakeDoer(func(*http.Request) (*http.Response, error) {
++		a := row(base.UnixMilli(), "1")
++		b := row(base.UnixMilli(), "1")
++		b[4] = "106"
++		return candleResponse([][]string{a, b}), nil
++	})
++	_, err := getRange(client, func() {}, "BTCUSDT", "3m", base, base.Add(time.Hour), base.Add(2*time.Hour))
++	if err == nil || !strings.Contains(err.Error(), "conflicting") {
++		t.Fatalf("expected duplicate conflict, got %v", err)
++	}
++}
+diff --git a/web/src/components/BacktestPage.tsx b/web/src/components/BacktestPage.tsx
+index 041ae20..bc05d06 100644
+--- a/web/src/components/BacktestPage.tsx
++++ b/web/src/components/BacktestPage.tsx
+@@ -760,6 +760,7 @@ export function BacktestPage() {
+   // Form state
+   const [formState, setFormState] = useState({
+     runId: '',
++    marketDataSource: 'okx_us' as 'okx_us' | 'binance',
+     symbols: 'BTCUSDT,ETHUSDT,SOLUSDT',
+     timeframes: ['3m', '15m', '4h'],
+     decisionTf: '3m',
+@@ -930,6 +931,7 @@ export function BacktestPage() {
+         run_id: formState.runId.trim() || undefined,
+         strategy_id: formState.strategyId || undefined, // Use saved strategy from Strategy Studio
+         symbols: symbolsToSend,
++        market_data_source: formState.marketDataSource,
+         timeframes: formState.timeframes,
+         decision_timeframe: formState.decisionTf,
+         decision_cadence_nbars: formState.cadence,
+@@ -1198,6 +1200,27 @@ export function BacktestPage() {
+                       )}
+                     </div>
+ 
++                    <div>
++                      <label htmlFor="backtest-data-source" className="block text-xs mb-2" style={{ color: '#848E9C' }}>
++                        {language === 'zh' ? '历史行情来源' : 'Historical market data'}
++                      </label>
++                      <select
++                        id="backtest-data-source"
++                        className="w-full p-3 rounded-lg text-sm"
++                        style={{ background: '#0B0E11', border: '1px solid #2B3139', color: '#EAECEF' }}
++                        value={formState.marketDataSource}
++                        onChange={(e) => handleFormChange('marketDataSource', e.target.value as 'okx_us' | 'binance')}
++                      >
++                        <option value="okx_us">OKX US · USDT perpetuals</option>
++                        <option value="binance">Binance · USDT perpetuals</option>
++                      </select>
++                      <p className="text-xs mt-2" style={{ color: '#848E9C' }}>
++                        {language === 'zh'
++                          ? '公开历史行情，无需交易所账户。所有参赛策略请使用相同来源。'
++                          : 'Public historical candles; no exchange account needed. Use the same source for every competitor.'}
++                      </p>
++                    </div>
++
+                     {/* Strategy Selection (Optional) */}
+                     <div>
+                       <label className="block text-xs mb-2" style={{ color: '#848E9C' }}>
+diff --git a/web/src/types.ts b/web/src/types.ts
+index b4f3927..dfb7e83 100644
+--- a/web/src/types.ts
++++ b/web/src/types.ts
+@@ -365,6 +365,7 @@ export interface BacktestMetrics {
+ }
+ 
+ export interface BacktestStartConfig {
++  market_data_source?: 'binance' | 'okx_us';
+   run_id?: string;
+   ai_model_id?: string;
+   strategy_id?: string; // Optional: use saved strategy from Strategy Studio

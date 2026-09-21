@@ -115,3 +115,8 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 ```
 
 Related: [[validation-gates]], [[continuous-improvement]].
+
+Current-main integration refreshes only the active workflow fingerprint; the 97
+legacy analysis identities remain fixed. Run a fresh read-only preview before
+requesting historical deletion. Earlier preview receipts do not authorize this
+updated scope digest.

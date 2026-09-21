@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-postgres-backup-initial
+  namespace: harbor
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: '2'
+    checkov.io/skip1: CKV2_K8S_6=The backup workload is covered by sibling networkpolicy.yaml.
+spec:
+  activeDeadlineSeconds: 600
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: harbor-postgres-backup
+        app.kubernetes.io/part-of: harbor
+    spec:
+      serviceAccountName: harbor
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: backup
+        image: docker.io/library/postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - /scripts/backup.sh
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: script
+          mountPath: /scripts
+          readOnly: true
+        - name: backup
+          mountPath: /backup
+        - name: auth
+          mountPath: /run/secrets/harbor
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: script
+        configMap:
+          name: harbor-backup
+      - name: backup
+        persistentVolumeClaim:
+          claimName: harbor-postgres-backup
+      - name: auth
+        secret:
+          secretName: harbor-secrets
+          defaultMode: 288
+          items:
+          - key: pgpass
+            path: pgpass
+      - name: tmp
+        emptyDir: {}

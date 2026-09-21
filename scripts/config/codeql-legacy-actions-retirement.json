@@ -5,7 +5,7 @@
   "analysis_key": ".github/workflows/codeql.yml:analyze",
   "category": "/language:actions",
   "environment": "{\"build-mode\":\"none\",\"language\":\"actions\"}",
-  "workflow_sha256": "cffd50a1d1062f53b0d7d2e45fdb9d5f10c10587872cbca709fb8ce43c65bbf3",
+  "workflow_sha256": "ee8155465b5afb30c0ee7ee116cf92217b94beee22222b5e1121bd06649b9454",
   "analyses": [
     {
       "analysis_key": ".github/workflows/codeql.yml:analyze",
