@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: memory-capacity
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: memory-capacity
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  groups:
+    - name: homelab.memory
+      rules:
+        # This single-control-plane homelab accepts the node-loss shortfall.
+        # Warn on total capacity overcommit, not the largest-node-loss budget.
+        - alert: KubeMemoryOvercommit
+          expr: |
+            sum by (cluster) (namespace_memory:kube_pod_container_resource_requests:sum)
+            -
+            sum by (cluster) (kube_node_status_allocatable{job="kube-state-metrics",resource="memory"})
+            > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Cluster memory requests exceed total allocatable memory.
+            description: >-
+              Cluster {{ $labels.cluster }} memory requests exceed total
+              allocatable memory by {{ $value | humanize1024 }}B.
+              Reduce workload demand or add capacity. This non-HA policy does
+              not reserve memory for node failure.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/prometheus/README.md#memory-capacity-policy

@@ -576,16 +576,12 @@ alerting:
                       sum by (namespace, pod, container) (
                         increase(prober_probe_total{
                           container="postgres",
-                          namespace=~"affine|automation|media|octelium-storage",
-                          pod=~"affine-postgres-0|media-postgres-local-0|n8n-postgres-0|octelium-postgres-0",
+                          namespace=~"automation|media|octelium-storage",
+                          pod=~"media-postgres-local-0|n8n-postgres-0|octelium-postgres-0",
                           probe_type="Readiness",
                           result="successful"
                         }[2m])
                       ) == 0
-                    )
-                    or
-                    sum by (namespace, pod, container) (
-                      absent(prober_probe_total{namespace="affine",pod="affine-postgres-0",container="postgres",probe_type="Readiness",result="successful"})
                     )
                     or
                     sum by (namespace, pod, container) (

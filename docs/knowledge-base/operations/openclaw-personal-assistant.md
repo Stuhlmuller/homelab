@@ -23,6 +23,26 @@ records acceptance and rollback; complete those before claiming live capability.
 
 See [[workloads/inventory]] and [[operations/openclaw-assistant-2026-09-05]].
 
+September 21 execution-timeout repair: read-only logs showed an interactive
+Discord turn stopped exactly 600 seconds after startup with `codex app-server
+execution budget timed out`; the live default was 600 seconds. The installed
+2026.9.2 deadline handler counts elapsed time even while tools make progress.
+The managed default is now 3600 seconds. Heartbeats remain at 600 seconds and
+the three managed jobs retain 240/180/600 seconds. The upstream deadline code
+with a fake clock reproduced the exact error for an 11-minute turn under the
+old limit and allowed it under the new limit, while retaining the one-hour
+cutoff. The assistant CI check covers installation and background overrides;
+the full static gate and pinned Helm/Kustomize rendering passed locally.
+Live rollout and owner-task completion remain acceptance gates; rollback uses
+the previous default and bundle digest through GitOps.
+
+Separate finding from the same read-only logs: memory indexing repeatedly
+reports the configured OpenAI embedding provider unavailable and refuses an
+FTS-only fallback to protect its existing vector index. This is not the Codex
+execution-deadline error. Follow up by inspecting the file-backed embedding
+credential/provider contract before changing indexing settings; preserve the
+existing index. Source: OpenClaw app logs, September 20-21, 2026 UTC.
+
 Validation: assistant installer/scheduler preservation and idempotence checks,
 Kustomize rendering, and the full `nix develop --command bash scripts/ci/static-checks.sh`
 gate passed locally. Live rollout and account acceptance remain pending.
