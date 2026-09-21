@@ -259,7 +259,7 @@ its global-host authentication failure without changing stored credentials.
 
 If `50119` persists on the correct regional host, use the repository-owned
 checker to distinguish storage-decryption failures from exchange rejection.
-The locked Nix shell supplies Go 1.25, Python, Git, kubectl, and yq. Development
+The locked Nix shell supplies Go 1.25, Python, Git, gh, kubectl, and yq. Development
 checks use synthetic data only:
 
 ```sh
@@ -269,20 +269,25 @@ nix develop --command bash scripts/nofx-credential-check.sh test
 
 For live inspection, use the full main commit from the reviewed PR. Check the
 checkout before entering Nix; the wrapper repeats these checks and requires
-remote main to match the supplied SHA:
+GitHub's main ref to match the supplied SHA. Use the existing authenticated
+GitHub CLI session:
 
 ```sh
 reviewed_main_sha="<full-reviewed-main-commit>"
-test "$(git rev-parse HEAD)" = "$reviewed_main_sha" &&
-  test -z "$(git status --porcelain --untracked-files=all)" &&
+test "$(git --no-replace-objects rev-parse HEAD)" = "$reviewed_main_sha" &&
+  test -z "$(git --no-replace-objects status --porcelain --untracked-files=all)" &&
   nix develop --command bash scripts/nofx-credential-check.sh inspect "$reviewed_main_sha"
 ```
 
 Dirty tracked/untracked files or mismatched revisions stop inspection before
 source preparation, compilation, or cluster access. Build inputs come from
 `git archive` of the reviewed commit, so ignored files and concurrent working
-tree edits cannot add code to the executable. The offline guard regression
-verifies these refusal paths and exclusion of an ignored Go file.
+tree edits cannot add code to the executable. Trusted Git reads disable
+replacement objects, and the main-ref check uses GitHub's fixed-host API rather
+than Git URL configuration. The offline regression checks these refusal paths
+and source-substitution cases. Go runs with a clean environment and fresh module
+and build caches; ambient workspaces, overlays, alternate roots/toolchains, and
+modified dependency caches cannot replace the reviewed inputs.
 
 `test` downloads the checksum-pinned source, applies maintained patches, tests
 synthetic credentials, and builds a static Linux executable. `inspect` repeats

@@ -9,23 +9,24 @@ if ! [[ $mode == test && $# == 1 ]] &&
 fi
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 check_dir="$(mktemp -d /tmp/nofx-credential-check.XXXXXX)"
-trap 'rm -rf -- "$check_dir"' EXIT
+trap 'chmod -R u+w "$check_dir"; rm -rf -- "$check_dir"' EXIT
 if [[ $mode == inspect ]]; then
   reviewed_sha=$2
-  checkout_status="$(git -C "$root" status --porcelain --untracked-files=all)"
+  checkout_status="$(git --no-replace-objects -C "$root" status --porcelain --untracked-files=all)"
   if [[ -n "$checkout_status" ]]; then
     echo 'Inspection requires a clean reviewed checkout, including untracked files' >&2
     exit 1
   fi
-  if [[ "$(git -C "$root" rev-parse HEAD)" != "$reviewed_sha" ||
-    "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main)" != "$reviewed_sha"$'\t'refs/heads/main ]]; then
+  remote_main="$(gh api --hostname github.com repos/Stuhlmuller/homelab/git/ref/heads/main --jq .object.sha)"
+  if [[ "$(git --no-replace-objects -C "$root" rev-parse HEAD)" != "$reviewed_sha" ||
+    "$remote_main" != "$reviewed_sha" ]]; then
     echo 'Inspection requires HEAD and remote main to match REVIEWED_MAIN_SHA' >&2
     exit 1
   fi
   # Build immutable committed inputs; ignored files and concurrent edits cannot
   # add executable code to the helper that receives the backend's environment.
   mkdir "$check_dir/reviewed"
-  git -C "$root" archive "$reviewed_sha" -- builds/nofx scripts/nofx-credential-check \
+  git --no-replace-objects -C "$root" archive "$reviewed_sha" -- builds/nofx scripts/nofx-credential-check \
     clusters/homelab/apps/nofx/deployment.yaml | tar -x -C "$check_dir/reviewed"
   root="$check_dir/reviewed"
   printf '%s\n' "$reviewed_sha" > "$root/builds/nofx/revision.txt"
@@ -33,10 +34,15 @@ fi
 python3 -I "$root/builds/nofx/prepare-source.py" "$check_dir/source"
 cp -R "$root/scripts/nofx-credential-check" "$check_dir/source/upstream/credentialcheck"
 cd "$check_dir/source/upstream"
-go test ./credentialcheck -count=1
+# Use the locked Nix toolchain without ambient overlays/workspaces, alternate
+# roots, or mutable dependency caches substituting unreviewed source.
+go_environment=(env -i "PATH=$PATH" "SSL_CERT_FILE=${SSL_CERT_FILE:-}"
+  GOENV=off GOWORK=off GOFLAGS= GOTOOLCHAIN=local GO111MODULE=on CGO_ENABLED=0
+  "GOPATH=$check_dir/go" "GOMODCACHE=$check_dir/modules" "GOCACHE=$check_dir/go-build")
+"${go_environment[@]}" go test ./credentialcheck -count=1
 
 # The published NOFX images target linux/amd64; compile without a C runtime.
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o "$check_dir/check" ./credentialcheck
+"${go_environment[@]}" GOOS=linux GOARCH=amd64 go build -trimpath -o "$check_dir/check" ./credentialcheck
 [[ $mode == inspect ]] || exit 0
 kube=(kubectl --context admin@homelab --request-timeout=30s -n nofx)
 backend_image="$(yq ea 'select(.kind == "Deployment" and .metadata.name == "nofx-backend") | .spec.template.spec.containers[] | select(.name == "backend") | .image' "$root/clusters/homelab/apps/nofx/deployment.yaml")"

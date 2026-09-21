@@ -285,10 +285,14 @@ values and verify rejected writes with unchanged fixture bytes. See the
 The locked Nix development shell explicitly supplies Go 1.25 and Python for
 this operator path; no ambient language runtime is required.
 Live inspection requires an explicit reviewed main SHA matching local HEAD and
-remote main, plus a clean checkout including untracked files. The helper and
+GitHub's main ref, plus a clean checkout including untracked files. The helper and
 source recipe are built from that commit's archive, excluding ignored files and
 concurrent working-tree edits. An offline guard regression verifies refusals
 before preparation/runtime access and exclusion of an ignored Go file.
+Trusted Git reads disable replacement objects; canonical main is read through
+GitHub's fixed-host API rather than Git URL configuration. Go runs in a clean
+environment with fresh module/build caches, excluding inherited workspace,
+overlay, root/toolchain, and modified-cache substitutions.
 If decryption failure is confirmed, make scanning fail closed while retaining
 the UI's credential-replacement path; the current full-record list would otherwise
 fail before its safe metadata projection. Successful decryption instead requires
