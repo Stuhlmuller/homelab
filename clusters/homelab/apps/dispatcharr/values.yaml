@@ -2,6 +2,10 @@ serviceAccount:
   dispatcharr: {}
 controllers:
   dispatcharr:
+    # Capacity suspension: stop the app before its database; retain the PVC.
+    replicas: 0
+    annotations:
+      argocd.argoproj.io/sync-wave: "-3"
     serviceAccount:
       identifier: dispatcharr
     strategy: Recreate
