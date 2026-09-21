@@ -41,8 +41,9 @@ def main():
     records = json.loads(catalog.stdout)
     if any((item.get("kind"), item.get("metadata", {}).get("name")) in TARGETS for item in records):
         raise RuntimeError("Remove the CI catalog definitions in the reviewed retirement commit first")
-    if (ROOT / ".github/workflows/cordium-check.yml").exists():
-        raise RuntimeError("Remove the dispatch workflow before retiring its identity")
+    for workflow in ("cordium-check.yml", "cordium-login-denial.yml"):
+        if (ROOT / ".github/workflows" / workflow).exists():
+            raise RuntimeError(f"Remove {workflow} before retiring its identity")
     if not args.execute:
         print("Dry run: retire only " + ", ".join(name for _, name in TARGETS))
         return
