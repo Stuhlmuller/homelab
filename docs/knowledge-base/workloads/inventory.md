@@ -128,6 +128,13 @@ can reach the internal Grafana service, where its dedicated login authorizes
 datasource queries. No default Kubernetes context is provided.
 See [[application-notes#OpenClaw]].
 
+Deluge's disabled Gluetun profiling contract uses a chart-owned ConfigMap and
+two read-only files, with a loopback address and private bounded capture helper.
+Activation requires renewed high CPU and a successful latest config backup.
+It introduces no persistent data or external service. See
+[[operations/deluge-cpu-audit-2026-09-05]] for the open diagnosis, live verification,
+and required disable rollout.
+
 ## GitOps Project Boundary
 
 Dispatcharr, OpenClaw, Policy Bot, and Prowlarr use the namespace-limited
