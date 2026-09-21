@@ -148,6 +148,17 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
   generated through the shared SSM parameter module and enables browser-side
   transport encryption without committing key material.
+  Its private maintained images use the read-only Harbor robot through the
+  namespace-scoped `harbor-pull` Secret, referenced only by `imagePullSecrets`.
+  The retained GHCR recovery path uses a separate, externally issued
+  `/homelab/nofx/ghcr-read-token`. The protected `NOFX Registry Credential`
+  workflow validates a dedicated classic PAT with only `read:packages` before
+  updating that exact SecureString. `nofx-registry-auth` refreshes every five
+  minutes and renders a kubelet-only Docker config Secret. A GHCR rollback must
+  switch image references and pull Secret together after authenticated pulls
+  and a fresh successful Secret refresh. Bootstrap
+  PR #1031 retained upstream images while establishing this credential path;
+  see the [private-image runbook](../../nofx-private-images.md).
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
   rendered to the versioned target Secret `octelium-client-auth-v5`. The token
@@ -305,3 +316,38 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - `IaC/live/aws-ssm-parameters`
 - `IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth`
 - `clusters/homelab/apps/external-secrets`
+
+## Dedicated Cordium CI assertion
+
+`homelab-cordium-ci-oidc` accepts GitHub assertions only for the exact repository,
+owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
+separate workload identity with bounded sessions and workspace lifecycle/exec
+permissions; bootstrap management credentials are not shared. A catch-all
+post-authentication denial and priority -4 method denial close upstream
+default allowances. The fixed `scripts/cordium-ci-reconcile.py` path previews
+only these three resources by default. Execution requires clean, exact reviewed
+main, applies Policy before IdentityProvider and User, proves repeated-apply
+convergence, and verifies the declared specifications. It never applies the
+full catalog or creates credentials. A 2026-09-12 authenticated read-only
+preview found all three resources absent; native installation and live OIDC
+acceptance remain pending. See
+[the contract and pending live gates](../../cordium-ci.md).
+
+## NOFX native reconciliation boundary
+
+NOFX anonymous-access removal is applied by the fixed repository operator
+command, independently from Kubernetes Argo CD. It requires an exact reviewed
+main commit, selects only `nofx.default`, proves a second apply is empty, and
+verifies the human-access policy. Existing operator credentials stay private;
+the temporary native transport changes no saved host or client settings.
+See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
+
+## Harbor registry identities
+
+[[../operations/harbor-oci|Harbor]] uses generated SSM secrets under
+`/homelab/harbor/`, file-mounted bootstrap credentials, a private project, and
+separate project robots for pull and publication. NOFX receives only the pull
+credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
+Authorization headers; Harbor authenticates OCI clients. Registration is
+disabled and project creation is admin-only. Never store Harbor bootstrap
+images in Harbor itself.

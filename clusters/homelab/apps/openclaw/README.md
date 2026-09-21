@@ -49,6 +49,15 @@ the [official model definition](https://developers.openai.com/api/docs/models/gp
 Account access must be verified with an actual turn; configuration validation
 alone does not prove Astra entitlement.
 
+Interactive turns have a one-hour execution budget (`agents.defaults.timeoutSeconds:
+3600`). OpenClaw's Codex harness uses an absolute deadline: ongoing tool work
+does not reset it. The former 600-second setting interrupted an active Discord
+turn on September 21, 2026. Heartbeats retain 600 seconds; the morning brief,
+health watch, and daily improvement retain 240, 180, and 600 seconds respectively.
+If the deadline is reached, inspect completed work before retrying; the timeout
+does not undo earlier actions. Roll back the default and bundle digest together
+through GitOps. See the pinned [Codex timeout contract](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/plugins/codex-harness-reference.md#turn-execution-and-settlement).
+
 The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
 official ChatGPT endpoint. This deployment uses its retained subscription OAuth
 profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
@@ -86,7 +95,7 @@ owner's Discord DM:
 
 | Job | Schedule | Behavior |
 | --- | --- | --- |
-| Morning brief | Daily 09:00 | Health, changes, blockers, next step |
+| Morning brief | Daily 09:00 | Calendar, tracked tasks, deals, health, next step |
 | Health watch | :17/:47, 08:00-21:59 | New incidents or recovery |
 | Daily improvement | Daily 14:30 | One verified improvement or PR |
 | Heartbeat | Hourly, 08:00-22:00 | Follow up on tracked work |
@@ -708,3 +717,60 @@ then verify gateway readiness, the Discord channel, and the migration marker.
 Rollback removes the local mount through a reviewed PR; persistent data and
 backup files remain, but the known NAS ownership failure would return unless
 an alternative ownership-compatible storage path is deployed first.
+
+## Container privilege boundary
+
+The gateway, bootstrap, and proxy run as UID/GID 1000, drop all Linux
+capabilities, and deny privilege escalation. The Pod explicitly selects the
+runtime's default seccomp profile. The proxy listens on unprivileged port 8080
+and needs no root identity or network capabilities.
+
+The Nix toolbox init remains a root exception: it copies the shared Nix store
+and assigns UID 1000 ownership before the non-root containers start. This Pod
+therefore does not claim full Restricted Pod Security compliance. Keep the
+exception scoped to that init container; moving installation into a built
+image would permit a separate reduction later.
+
+Validate the rendered contexts and server-side dry run before rollout. After
+Argo CD reconciles, require successful toolbox/bootstrap completion, gateway
+readiness, a read-only Discord credential probe, and operator-tool execution.
+The effective app/proxy process must report `NoNewPrivs: 1`, zero `CapEff`,
+and seccomp filtering in `/proc/self/status`. Revert these Helm values through
+GitOps if a required runtime operation fails; do not patch the live Pod.
+
+## Personal assistant integration status
+
+The managed agreement covers Google Calendar, computer-deal research and
+bounded Marketplace seller outreach, plus private task/deal ledgers. Discord
+remains owner-scoped. Existing homelab fixes retain the PR/CI/GitOps workflow.
+The morning brief includes calendar/tasks/deals when connected; it does not send
+seller messages or create an unrequested shopping schedule.
+
+The toolbox adds gogcli 0.11.0 from the existing pinned nixpkgs revision and
+bootstrap enables the bundled gog skill, preserving unrelated skill settings.
+Google Calendar is the owner's selected provider. This installs capability;
+it does not authorize an account. Follow the version's `gog auth --help` and
+[upstream authentication documentation](https://github.com/steipete/gogcli/tree/v0.11.0)
+for Calendar-only OAuth. Personal account identity, client material, refresh
+tokens, and any keyring unlock secret must stay outside git and Discord.
+A persistent, file-backed credential contract and owner OAuth consent are still
+required before unattended calendar use. Do not add environment-based desired
+state or enable unrelated Google services to work around missing credentials.
+
+Live inspection on September 7 found Discord enabled and the Pod 2/2 Ready,
+but no gog executable, Chromium executable, or configured browser profiles.
+Marketplace therefore also needs a repository-owned private browser backend
+and owner login using OpenClaw's [browser integration](https://docs.openclaw.ai/tools/browser).
+No browser service, public debugging port, Facebook session, or OAuth credential
+is created by this change. The owner still needs to specify hardware targets,
+total budget, pickup area/radius, and shipping preference before outreach.
+
+Acceptance after GitOps rollout: verify `gog --version`, the enabled skill,
+managed workspace sections, and owner Discord request/reply. Google acceptance
+requires a successful bounded event read and an owner-requested event write/readback.
+Marketplace acceptance requires authenticated listing access and a scoped,
+owner-requested seller message verified in its conversation. Keep each blocked
+capability explicit; do not label either integration operational before these pass.
+Rollback through git by reverting the bundle/toolbox changes and digest; preserve
+private task notes and any account credentials, and revoke account grants only
+when explicitly requested.

@@ -24,6 +24,7 @@ data:
         prometheus :9153
 
         rewrite name exact octelium-api.stinkyboi.com octelium-api-ingressgateway.istio-system.svc.cluster.local
+        rewrite name exact harbor.stinkyboi.com istio-ingressgateway.istio-system.svc.cluster.local
         kubernetes cluster.local in-addr.arpa ip6.arpa {
             pods insecure
             fallthrough in-addr.arpa ip6.arpa

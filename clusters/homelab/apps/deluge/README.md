@@ -81,13 +81,18 @@ export. Radarr and Sonarr mount that same claim at `/downloads`, so their
 download-client checks can see the files Deluge creates without remote path
 mappings.
 
-The `media-downloads-migration` Job copies any files from the older
-`deluge-downloads` PVC into `/media/downloads` before Deluge switches to the new
-claim. The job also creates the expected Servarr subdirectories, sets
-write-friendly NFS permissions, and verifies that the target path accepts a
-write from inside the cluster. The older `deluge-downloads` claim remains in
-desired state as the migration source and rollback reference until the copy is
-verified.
+The completed `media-downloads-migration` Job is retired after its verified May
+2026 completion. Its replacement `media-downloads-directories` Job only
+creates required directories and sets their directory permissions. It never
+mounts the retained `deluge-downloads` source or copies old files over active data.
+Only this idempotent Job uses `Force=true,Replace=true`, so image changes
+recreate it without patching immutable Pod templates. Its deadline is two
+minutes; the dedicated deny-all NetworkPolicy is installed first. Argo CD prunes
+the completed legacy Job and its NetworkPolicy; all PVs/PVCs remain declared.
+
+On rollback, preserve the directory Job and claims. Do not restore the legacy
+copy Job: recreating it can overwrite newer media. A historical data restore
+requires a separate reviewed, fenced recovery operation.
 
 Use these Deluge paths:
 

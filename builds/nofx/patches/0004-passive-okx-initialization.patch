@@ -1,0 +1,237 @@
+diff --git a/manager/okx_initialization_test.go b/manager/okx_initialization_test.go
+new file mode 100644
+index 0000000..ea48cba
+--- /dev/null
++++ b/manager/okx_initialization_test.go
+@@ -0,0 +1,78 @@
++package manager
++
++import (
++	"fmt"
++	"io"
++	"net/http"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"nofx/store"
++)
++
++type okxInitializationTransport func(*http.Request) (*http.Response, error)
++
++func (transport okxInitializationTransport) RoundTrip(request *http.Request) (*http.Response, error) {
++	return transport(request)
++}
++
++func TestOKXInitializationLoadsStoppedTraderWithoutAccountWrites(t *testing.T) {
++	for _, initialBalance := range []float64{1000, 0} {
++		t.Run(fmt.Sprint(initialBalance), func(t *testing.T) {
++			st, err := store.New(filepath.Join(t.TempDir(), "fixture.db"))
++			if err != nil {
++				t.Fatal(err)
++			}
++			t.Cleanup(func() { st.Close() })
++			const userID = "passive-okx-fixture"
++			if err := st.User().Create(&store.User{ID: userID, Email: "fixture@example.invalid", PasswordHash: "fixture"}); err != nil {
++				t.Fatal(err)
++			}
++			if err := st.AIModel().Create(userID, "fixture-model", "fixture", "openai", true, "fixture-model-key", "https://example.invalid/api/v1"); err != nil {
++				t.Fatal(err)
++			}
++			exchangeID, err := st.Exchange().Create(userID, "okx", "fixture", true, "fixture-key", "fixture-secret", "fixture-passphrase", false, "", "", "", "", "", "", "", 0)
++			if err != nil {
++				t.Fatal(err)
++			}
++			if err := st.Strategy().Create(&store.Strategy{ID: "fixture-strategy", UserID: userID, Name: "fixture", Config: `{"coin_source":{"source_type":"static","static_coins":["BTCUSDT"]}}`}); err != nil {
++				t.Fatal(err)
++			}
++			if err := st.Trader().Create(&store.Trader{ID: "fixture-trader", UserID: userID, Name: "fixture", AIModelID: "fixture-model", ExchangeID: exchangeID, StrategyID: "fixture-strategy", InitialBalance: initialBalance, IsRunning: false}); err != nil {
++				t.Fatal(err)
++			}
++
++			previous := http.DefaultTransport
++			var requests []string
++			http.DefaultTransport = okxInitializationTransport(func(request *http.Request) (*http.Response, error) {
++				requests = append(requests, request.Method+" "+request.URL.Path)
++				response := `{"code":"0","data":[{"posMode":"net_mode"}]}`
++				if request.URL.Path == "/api/v5/account/balance" {
++					response = `{"code":"0","data":[{"totalEq":"1000","details":[]}]}`
++				}
++				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(response)), Request: request}, nil
++			})
++			t.Cleanup(func() { http.DefaultTransport = previous })
++			manager := NewTraderManager()
++			// Exercise the same store-loading entry point as main startup.
++			if err := manager.LoadTradersFromStore(st); err != nil {
++				t.Fatal(err)
++			}
++			loaded, err := manager.GetTrader("fixture-trader")
++			if err != nil || loaded == nil {
++				t.Fatalf("stopped trader did not load: %v", err)
++			}
++			if running, _ := loaded.GetStatus()["is_running"].(bool); running {
++				t.Fatal("stored stopped trader started during initialization")
++			}
++			want := []string{"GET /api/v5/account/config"}
++			if initialBalance == 0 {
++				want = append(want, "GET /api/v5/account/balance")
++			}
++			if fmt.Sprint(requests) != fmt.Sprint(want) {
++				t.Fatalf("startup must only read exchange data: got %v, want %v", requests, want)
++			}
++		})
++	}
++}
+diff --git a/trader/OKX_INITIALIZATION.md b/trader/OKX_INITIALIZATION.md
+new file mode 100644
+index 0000000..52a294b
+--- /dev/null
++++ b/trader/OKX_INITIALIZATION.md
+@@ -0,0 +1,27 @@
++# Passive OKX initialization
++
++The pinned upstream startup path loads enabled stored traders even when their
++`IsRunning` flag is false. `main` calls `LoadTradersFromStore`, which calls
++`NewAutoTrader` and `NewOKXTrader` before checking the persisted running flag.
++Upstream construction reads `/api/v5/account/config`, then attempts to switch
++non-hedge accounts with `POST /api/v5/account/set-position-mode`.
++
++This patch removes that implicit account mutation. Construction retains the
++read-only account-config lookup and preserves the detected mode. A missing
++initial balance may also trigger a balance GET and save the value in the local
++application database. Neither lookup starts the trader or changes its account.
++
++This does not add net-mode order support: upstream opening/leverage code still
++assumes hedge mode. No position-mode switch is performed automatically, including
++on a later start. Existing persisted running traders retain upstream auto-resume
++behavior; keep traders stopped for simulation-only use.
++
++The regression tests intercept the public constructor and the real store-loading
++entry point with an in-process HTTP transport and fixture credentials. They
++cover both account modes, an empty/failed config response, and stopped startup
++with configured or automatically read initial balance. No external request is
++made and no trader is started.
++
++```sh
++go test -race ./trader ./manager -run '^TestOKXInitialization' -count=1
++```
+diff --git a/trader/okx_initialization_test.go b/trader/okx_initialization_test.go
+new file mode 100644
+index 0000000..07a7392
+--- /dev/null
++++ b/trader/okx_initialization_test.go
+@@ -0,0 +1,44 @@
++package trader
++
++import (
++	"io"
++	"net/http"
++	"strings"
++	"testing"
++)
++
++type okxInitializationTransport func(*http.Request) (*http.Response, error)
++
++func (transport okxInitializationTransport) RoundTrip(request *http.Request) (*http.Response, error) {
++	return transport(request)
++}
++
++func TestOKXInitializationOnlyReadsAccountConfig(t *testing.T) {
++	for _, test := range []struct {
++		name, response, mode string
++	}{
++		{"net", `{"code":"0","data":[{"posMode":"net_mode"}]}`, "net_mode"},
++		{"hedge", `{"code":"0","data":[{"posMode":"long_short_mode"}]}`, "long_short_mode"},
++		{"empty", `{"code":"0","data":[]}`, ""},
++		{"failed", `{"code":"50113","msg":"fixture rejected","data":[]}`, "long_short_mode"},
++	} {
++		t.Run(test.name, func(t *testing.T) {
++			// Intercept the public constructor's transport. No request can leave
++			// the process, including a regressed account mutation.
++			previous := http.DefaultTransport
++			var requests []string
++			http.DefaultTransport = okxInitializationTransport(func(request *http.Request) (*http.Response, error) {
++				requests = append(requests, request.Method+" "+request.URL.Path)
++				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(test.response)), Request: request}, nil
++			})
++			t.Cleanup(func() { http.DefaultTransport = previous })
++			trader := NewOKXTrader("fixture-key", "fixture-secret", "fixture-passphrase")
++			if len(requests) != 1 || requests[0] != "GET /api/v5/account/config" {
++				t.Fatalf("constructor must only read account config, got %v", requests)
++			}
++			if trader.positionMode != test.mode {
++				t.Fatalf("position mode changed: got %q, want %q", trader.positionMode, test.mode)
++			}
++		})
++	}
++}
+diff --git a/trader/okx_trader.go b/trader/okx_trader.go
+index a57322c..4e0ce0e 100644
+--- a/trader/okx_trader.go
++++ b/trader/okx_trader.go
+@@ -32,7 +32,6 @@ const (
+ 	okxAlgoOrderPath     = "/api/v5/trade/order-algo"
+ 	okxCancelAlgoPath    = "/api/v5/trade/cancel-algos"
+ 	okxAlgoPendingPath   = "/api/v5/trade/orders-algo-pending"
+-	okxPositionModePath  = "/api/v5/account/set-position-mode"
+ 	okxAccountConfigPath = "/api/v5/account/config"
+ )
+ 
+@@ -103,7 +102,7 @@ func genOkxClOrdID() string {
+ 	return orderID
+ }
+ 
+-// NewOKXTrader creates OKX trader
++// NewOKXTrader creates an OKX trader without changing exchange account settings.
+ func NewOKXTrader(apiKey, secretKey, passphrase string) *OKXTrader {
+ 	// Use default transport which respects system proxy settings
+ 	// OKX requires proxy in China due to DNS pollution
+@@ -121,19 +120,13 @@ func NewOKXTrader(apiKey, secretKey, passphrase string) *OKXTrader {
+ 		instrumentsCache: make(map[string]*OKXInstrument),
+ 	}
+ 
+-	// Get current position mode first
++	// Construction also happens for stopped traders during application startup
++	// and configuration reloads. Read the existing mode; never switch it here.
+ 	if err := trader.detectPositionMode(); err != nil {
+ 		logger.Infof("⚠️ Failed to detect OKX position mode: %v, assuming dual mode", err)
+ 		trader.positionMode = "long_short_mode"
+ 	}
+ 
+-	// Try to set dual position mode (only if not already)
+-	if trader.positionMode != "long_short_mode" {
+-		if err := trader.setPositionMode(); err != nil {
+-			logger.Infof("⚠️ Failed to set OKX position mode: %v (current mode: %s)", err, trader.positionMode)
+-		}
+-	}
+-
+ 	logger.Infof("✓ OKX trader initialized with position mode: %s", trader.positionMode)
+ 	return trader
+ }
+@@ -161,26 +154,6 @@ func (t *OKXTrader) detectPositionMode() error {
+ 	return nil
+ }
+ 
+-// setPositionMode sets dual position mode
+-func (t *OKXTrader) setPositionMode() error {
+-	body := map[string]string{
+-		"posMode": "long_short_mode", // Dual position mode
+-	}
+-
+-	_, err := t.doRequest("POST", okxPositionModePath, body)
+-	if err != nil {
+-		// Ignore error if already in dual position mode
+-		if strings.Contains(err.Error(), "already") || strings.Contains(err.Error(), "Position mode is not modified") {
+-			logger.Infof("  ✓ OKX account is already in dual position mode")
+-			return nil
+-		}
+-		return err
+-	}
+-
+-	logger.Infof("  ✓ OKX account switched to dual position mode")
+-	return nil
+-}
+-
+ // sign generates OKX API signature
+ func (t *OKXTrader) sign(timestamp, method, requestPath, body string) string {
+ 	preHash := timestamp + method + requestPath + body
