@@ -100,9 +100,24 @@ included in that closed credentialed-workflow inventory. It uses only the
 existing production AWS role and Cloudflare rule-removal secret, with private
 API output withheld. Validate its full definition before updating the hash.
 
+The `NOFX Registry Credential` workflow uses the same reviewed-main and protected
+environment boundaries. Its AWS session can update only the dedicated NOFX
+registry parameter after validating the PAT's owner, exact `read:packages`
+scope, and both pinned image pulls. The static gate runs offline failure and
+secret-handling tests for its helper; the runtime gate validates the dedicated
+ExternalSecret and requires pull-secret references only with the private
+maintained images. See [private-image bootstrap](../../nofx-private-images.md).
+
 The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
 blobs whose working-tree file was removed.
+
+The local Checkov hook scans the full `clusters` directory for Kubernetes YAML
+changes. A changed-files-only scan omits unchanged NetworkPolicies and can
+incorrectly fail `CKV2_K8S_6` for a Deployment. Other files retain the diff scan;
+the dedicated secrets hook still scans every changed file with the upstream
+`--enable-secret-scan-all-files` entry and required `-f` argument. Do not override
+that argument with `-v`, which prints Checkov's version instead of scanning.
 
 Do not require a new Actions context in ruleset `14700233` before the workflow
 that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
@@ -533,7 +548,32 @@ server-side Restricted warnings for that init are expected and must not be
 misreported as full Pod compliance. See the OpenClaw README's container
 privilege boundary for post-rollout process and functionality checks.
 
-## NOFX catalog gate
+## NOFX runtime, image, and catalog gates
+
+The static gate also renders the NOFX workload and runs
+`scripts/ci/nofx-runtime-check.py`. It resolves relative backtest/log writes
+against the effective working directory and most-specific mount, preserving
+the existing SQLite path and claim while requiring an absolute executable and
+read-only image root. A running health endpoint does not test these writes;
+live acceptance additionally requires a short simulated Backtest Lab run.
+
+Changes under `builds/nofx` also require `bash builds/nofx/test.sh` and
+`bash builds/nofx/build.sh` on a Linux Docker host. The tests exercise the actual
+patched backend and frontend build targets. The NOFX Images workflow runs these
+without publishing credentials on PRs. Its main-only publishing job rebuilds
+before registry login, rejects stale or mismatched main SHAs, and records fixed
+GHCR image digest references. Both jobs are included in the closed credentialed
+workflow inventory and the exact normalized workflow hash; actionlint,
+Conftest, and Checkov cover workflow edits.
+
+Image publication and deployment are separate changes. First-time packages
+default to private, so public visibility and anonymous image access must be
+verified before a reviewed PR changes runtime digests. Post-rollout acceptance
+requires a blank-key model edit without trader initialization, a working AGPL
+source download, rejected invalid backtest run IDs, and a completed short
+simulation using the default OKX US public feed. Legacy saved runs retain
+Binance. The September 14 storage rollout was `Synced`/`Healthy` but hit Binance
+HTTP 451 on a new backtest; it did not satisfy this functional gate.
 
 The fixed NOFX reconciliation command defaults to read-only inspection.
 The documented caller verifies exact local/remote reviewed main and a clean
@@ -551,3 +591,18 @@ Tests also cover Linux `sha256sum`, Darwin `shasum`, failed-checksum rejection,
 missing-Service recreation without treating auth failures as absence, and
 live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
+
+## Harbor OCI rollout
+
+Harbor requires chart/Kustomize rendering, bootstrap and transport regression
+tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
+verified TLS, API health, denied anonymous artifact pulls, successful robot
+push/pull, identical migrated image digests, ready consumer Pods and a verified
+logical database backup. See [[harbor-oci]]; a Healthy Application alone does
+not establish successful private package migration.
+
+The full Harbor chart is rendered twice to reject randomly generated state,
+then combined with the owned manifests to validate prerequisite references and
+sync ordering. A narrow policy exception accepts only the six exact empty or
+public-configuration Secret payloads emitted by chart 1.19.2; actual credential
+data or an added field still fails the raw-Secret gate.

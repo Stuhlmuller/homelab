@@ -1,0 +1,847 @@
+diff --git a/api/backtest.go b/api/backtest.go
+index acdfe37..395f0ba 100644
+--- a/api/backtest.go
++++ b/api/backtest.go
+@@ -68,6 +68,10 @@ func (s *Server) handleBacktestStart(c *gin.Context) {
+ 	if cfg.RunID == "" {
+ 		cfg.RunID = "bt_" + time.Now().UTC().Format("20060102_150405")
+ 	}
++	if err := backtest.ValidateRunID(cfg.RunID); err != nil {
++		SafeBadRequest(c, err.Error())
++		return
++	}
+ 	cfg.CustomPrompt = strings.TrimSpace(cfg.CustomPrompt)
+ 	cfg.UserID = normalizeUserID(c.GetString("user_id"))
+ 
+@@ -593,6 +597,9 @@ func normalizeUserID(id string) string {
+ }
+ 
+ func (s *Server) ensureBacktestRunOwnership(runID, userID string) (*backtest.RunMetadata, error) {
++	if err := backtest.ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if s.backtestManager == nil {
+ 		return nil, fmt.Errorf("backtest manager unavailable")
+ 	}
+@@ -618,6 +625,8 @@ func writeBacktestAccessError(c *gin.Context, err error) bool {
+ 		return false
+ 	}
+ 	switch {
++	case errors.Is(err, backtest.ErrInvalidRunID):
++		SafeBadRequest(c, err.Error())
+ 	case errors.Is(err, errBacktestForbidden):
+ 		SafeForbidden(c, "No permission to access this backtest task")
+ 	case errors.Is(err, os.ErrNotExist), errors.Is(err, sql.ErrNoRows):
+diff --git a/api/configuration_safety_test.go b/api/configuration_safety_test.go
+new file mode 100644
+index 0000000..15cd274
+--- /dev/null
++++ b/api/configuration_safety_test.go
+@@ -0,0 +1,142 @@
++package api
++
++import (
++	"bytes"
++	"encoding/json"
++	"net/http"
++	"net/http/httptest"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"nofx/backtest"
++	"nofx/config"
++	"nofx/logger"
++	"nofx/manager"
++	"nofx/store"
++
++	"github.com/gin-gonic/gin"
++)
++
++func configurationTestStore(t *testing.T) *store.Store {
++	t.Helper()
++	st, err := store.New(filepath.Join(t.TempDir(), "test.db"))
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { st.Close() })
++	cfg := config.Get()
++	previous := cfg.TransportEncryption
++	cfg.TransportEncryption = false
++	t.Cleanup(func() { cfg.TransportEncryption = previous })
++	return st
++}
++
++func configurationRequest(t *testing.T, handler gin.HandlerFunc, request any) *httptest.ResponseRecorder {
++	t.Helper()
++	payload, err := json.Marshal(request)
++	if err != nil {
++		t.Fatal(err)
++	}
++	response := httptest.NewRecorder()
++	ctx, _ := gin.CreateTestContext(response)
++	ctx.Set("user_id", "safety-test")
++	ctx.Request = httptest.NewRequest(http.MethodPut, "/api/config", bytes.NewReader(payload))
++	ctx.Request.Header.Set("Content-Type", "application/json")
++	handler(ctx)
++	return response
++}
++
++func TestModelConfigurationSaveIsPassiveAndPreservesKey(t *testing.T) {
++	st := configurationTestStore(t)
++	const key = "test-only-key-not-for-network-use"
++	if err := st.AIModel().Create("safety-test", "openrouter", "OpenRouter", "openai", true, key, "https://example.invalid/responses"); err != nil {
++		t.Fatal(err)
++	}
++	// A configuration-only save must not need a runtime trader manager at all.
++	server := &Server{store: st}
++	defer func() {
++		if value := recover(); value != nil {
++			t.Errorf("model save touched runtime trader manager: %v", value)
++		}
++	}()
++	response := configurationRequest(t, server.handleUpdateModelConfigs, map[string]any{
++		"models": map[string]any{"openrouter": map[string]any{
++			"enabled": true, "api_key": "", "custom_api_url": "https://openrouter.ai/api/v1", "custom_model_name": "openrouter/free",
++		}},
++	})
++	if response.Code != http.StatusOK {
++		t.Fatalf("HTTP %d: %s", response.Code, response.Body.String())
++	}
++	saved, err := st.AIModel().Get("safety-test", "openrouter")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if string(saved.APIKey) != key || saved.CustomAPIURL != "https://openrouter.ai/api/v1" || saved.CustomModelName != "openrouter/free" {
++		t.Fatal("model edit failed to preserve key or save endpoint/model")
++	}
++}
++
++func TestConfigurationHandlersDoNotLogCredentials(t *testing.T) {
++	st := configurationTestStore(t)
++	server := &Server{store: st, traderManager: manager.NewTraderManager()}
++	var logs bytes.Buffer
++	previousOutput := logger.Log.Out
++	logger.Log.SetOutput(&logs)
++	t.Cleanup(func() { logger.Log.SetOutput(previousOutput) })
++	const modelKey = "model-secret-sentinel-7a18"
++	response := configurationRequest(t, server.handleUpdateModelConfigs, map[string]any{
++		"models": map[string]any{"openrouter": map[string]any{"enabled": true, "api_key": modelKey}},
++	})
++	if response.Code != http.StatusOK {
++		t.Fatalf("model HTTP %d", response.Code)
++	}
++	exchangeID, err := st.Exchange().Create("safety-test", "okx", "fixture", false, "", "", "", false, "", "", "", "", "", "", "", 0)
++	if err != nil {
++		t.Fatal(err)
++	}
++	credentials := map[string]any{
++		"enabled":                     false,
++		"api_key":                     "fake-api",
++		"secret_key":                  "fake-secret", // pragma: allowlist secret - synthetic regression fixture
++		"passphrase":                  "fake-pass",
++		"aster_private_key":           "fake-aster",
++		"lighter_private_key":         "fake-lighter",   // pragma: allowlist secret - synthetic regression fixture
++		"lighter_api_key_private_key": "fake-light-api", // pragma: allowlist secret - synthetic regression fixture
++	}
++	response = configurationRequest(t, server.handleUpdateExchangeConfigs, map[string]any{"exchanges": map[string]any{exchangeID: credentials}})
++	if response.Code != http.StatusOK {
++		t.Fatalf("exchange HTTP %d", response.Code)
++	}
++	if strings.Contains(logs.String(), modelKey) {
++		t.Error("model key leaked to logs")
++	}
++	for field, value := range credentials {
++		if secret, ok := value.(string); ok && strings.Contains(logs.String(), secret) {
++			t.Errorf("exchange %s leaked to logs", field)
++		}
++	}
++}
++
++func TestBacktestHTTPRejectsInvalidRunIDs(t *testing.T) {
++	server := &Server{backtestManager: backtest.NewManager(nil)}
++	for name, handler := range map[string]gin.HandlerFunc{
++		"start":  server.handleBacktestStart,
++		"delete": server.handleBacktestDelete,
++		"status": server.handleBacktestStatus,
++		"export": server.handleBacktestExport,
++		"trace":  server.handleBacktestTrace,
++	} {
++		t.Run(name, func(t *testing.T) {
++			response := httptest.NewRecorder()
++			ctx, _ := gin.CreateTestContext(response)
++			ctx.Set("user_id", "safety-test")
++			ctx.Request = httptest.NewRequest(http.MethodPost, "/api/backtest/"+name+"?run_id=..%2Fprotected", strings.NewReader(`{"run_id":"../protected","config":{"run_id":"../protected"}}`))
++			ctx.Request.Header.Set("Content-Type", "application/json")
++			handler(ctx)
++			if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), "run_id must") {
++				t.Fatalf("invalid ID: HTTP %d %s", response.Code, response.Body.String())
++			}
++		})
++	}
++}
+diff --git a/api/server.go b/api/server.go
+index 401d9ef..a8c8ea9 100644
+--- a/api/server.go
++++ b/api/server.go
+@@ -1713,14 +1713,9 @@ func (s *Server) handleUpdateModelConfigs(c *gin.Context) {
+ 		}
+ 	}
+ 
+-	// Reload all traders for this user to make new config take effect immediately
+-	err = s.traderManager.LoadUserTradersFromStore(s.store, userID)
+-	if err != nil {
+-		logger.Infof("⚠️ Failed to reload user traders into memory: %v", err)
+-		// Don't return error here since model config was successfully updated to database
+-	}
+-
+-	logger.Infof("✓ AI model config updated: %+v", req.Models)
++	// Configuration saves are passive. Trader construction can change exchange
++	// account state; apply model changes when the operator explicitly starts a trader.
++	logger.Infof("✓ AI model configuration updated (%d models)", len(req.Models))
+ 	c.JSON(http.StatusOK, gin.H{"message": "Model configuration updated"})
+ }
+ 
+@@ -1840,7 +1835,7 @@ func (s *Server) handleUpdateExchangeConfigs(c *gin.Context) {
+ 		// Don't return error here since exchange config was successfully updated to database
+ 	}
+ 
+-	logger.Infof("✓ Exchange config updated: %+v", req.Exchanges)
++	logger.Infof("✓ Exchange configuration updated (%d exchanges)", len(req.Exchanges))
+ 	c.JSON(http.StatusOK, gin.H{"message": "Exchange configuration updated"})
+ }
+ 
+diff --git a/backtest/config.go b/backtest/config.go
+index 5cb5d09..ebfe261 100644
+--- a/backtest/config.go
++++ b/backtest/config.go
+@@ -64,9 +64,8 @@ func (cfg *BacktestConfig) Validate() error {
+ 	if cfg == nil {
+ 		return fmt.Errorf("config is nil")
+ 	}
+-	cfg.RunID = strings.TrimSpace(cfg.RunID)
+-	if cfg.RunID == "" {
+-		return fmt.Errorf("run_id cannot be empty")
++	if err := ValidateRunID(cfg.RunID); err != nil {
++		return err
+ 	}
+ 	cfg.UserID = strings.TrimSpace(cfg.UserID)
+ 	if cfg.UserID == "" {
+diff --git a/backtest/lock.go b/backtest/lock.go
+index 6f26ed0..8bd6503 100644
+--- a/backtest/lock.go
++++ b/backtest/lock.go
+@@ -29,6 +29,9 @@ func lockFilePath(runID string) string {
+ }
+ 
+ func loadRunLock(runID string) (*RunLockInfo, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	path := lockFilePath(runID)
+ 	data, err := os.ReadFile(path)
+ 	if err != nil {
+@@ -45,10 +48,16 @@ func saveRunLock(info *RunLockInfo) error {
+ 	if info == nil {
+ 		return fmt.Errorf("lock info nil")
+ 	}
++	if err := ValidateRunID(info.RunID); err != nil {
++		return err
++	}
+ 	return writeJSONAtomic(lockFilePath(info.RunID), info)
+ }
+ 
+ func deleteRunLock(runID string) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	err := os.Remove(lockFilePath(runID))
+ 	if err != nil && !errors.Is(err, os.ErrNotExist) {
+ 		return err
+diff --git a/backtest/manager.go b/backtest/manager.go
+index 34ec9ec..d1ff6be 100644
+--- a/backtest/manager.go
++++ b/backtest/manager.go
+@@ -289,6 +289,9 @@ func (m *Manager) UpdateLabel(runID, label string) (*RunMetadata, error) {
+ }
+ 
+ func (m *Manager) Delete(runID string) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	runner, ok := m.GetRunner(runID)
+ 	if ok {
+ 		runner.Stop()
+@@ -312,6 +315,9 @@ func (m *Manager) Delete(runID string) error {
+ }
+ 
+ func (m *Manager) LoadMetadata(runID string) (*RunMetadata, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	runner, ok := m.GetRunner(runID)
+ 	if ok {
+ 		meta := runner.CurrentMetadata()
+diff --git a/backtest/registry.go b/backtest/registry.go
+index 9c0330e..f0e0331 100644
+--- a/backtest/registry.go
++++ b/backtest/registry.go
+@@ -124,6 +124,9 @@ func updateRunIndex(meta *RunMetadata, cfg *BacktestConfig) error {
+ }
+ 
+ func removeFromRunIndex(runID string) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if usingDB() {
+ 		if err := deleteRunDB(runID); err != nil {
+ 			return err
+diff --git a/backtest/retention.go b/backtest/retention.go
+index a9d34d7..667c718 100644
+--- a/backtest/retention.go
++++ b/backtest/retention.go
+@@ -55,6 +55,9 @@ func enforceRetention(maxRuns int) {
+ 	toRemove := len(candidates) - maxRuns
+ 	for i := 0; i < toRemove; i++ {
+ 		runID := candidates[i].entry.RunID
++		if ValidateRunID(runID) != nil {
++			continue
++		}
+ 		if err := os.RemoveAll(runDir(runID)); err != nil {
+ 			logger.Infof("failed to prune run %s: %v", runID, err)
+ 			continue
+@@ -90,6 +93,9 @@ func enforceRetentionDB(maxRuns int) {
+ 		if err := rows.Scan(&runID); err != nil {
+ 			continue
+ 		}
++		if ValidateRunID(runID) != nil {
++			continue
++		}
+ 		if err := deleteRunDB(runID); err != nil {
+ 			logger.Infof("failed to remove run %s: %v", runID, err)
+ 			continue
+diff --git a/backtest/runid.go b/backtest/runid.go
+new file mode 100644
+index 0000000..2f4c35b
+--- /dev/null
++++ b/backtest/runid.go
+@@ -0,0 +1,20 @@
++package backtest
++
++import (
++	"errors"
++	"regexp"
++)
++
++// ErrInvalidRunID prevents untrusted or previously stored IDs from becoming paths.
++var ErrInvalidRunID = errors.New("run_id must be 1-64 ASCII letters, digits, underscores or hyphens, starting with a letter or digit")
++
++var runIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$`)
++
++// ValidateRunID is also required when loading, exporting or deleting old runs.
++// Start-time validation alone cannot protect paths derived from stored records.
++func ValidateRunID(runID string) error {
++	if !runIDPattern.MatchString(runID) {
++		return ErrInvalidRunID
++	}
++	return nil
++}
+diff --git a/backtest/runid_test.go b/backtest/runid_test.go
+new file mode 100644
+index 0000000..7eee415
+--- /dev/null
++++ b/backtest/runid_test.go
+@@ -0,0 +1,155 @@
++package backtest
++
++import (
++	"context"
++	"errors"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"nofx/store"
++)
++
++func TestBacktestRejectsTraversalBeforeFilesystemOrDatabase(t *testing.T) {
++	t.Chdir(t.TempDir())
++	if err := os.Mkdir("protected", 0700); err != nil {
++		t.Fatal(err)
++	}
++	sentinel := filepath.Join("protected", "keep")
++	if err := os.WriteFile(sentinel, []byte("retain"), 0600); err != nil {
++		t.Fatal(err)
++	}
++	st, err := store.New("test.db")
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer st.Close()
++	UseDatabase(st.DB())
++	defer UseDatabase(nil)
++	cases := map[string]func(string) error{
++		"mkdir":            ensureRunDir,
++		"checkpoint-read":  func(id string) error { _, err := LoadCheckpoint(id); return err },
++		"checkpoint-write": func(id string) error { return SaveCheckpoint(id, &Checkpoint{}) },
++		"config-read":      func(id string) error { _, err := LoadConfig(id); return err },
++		"config-write":     func(id string) error { return SaveConfig(id, &BacktestConfig{}) },
++		"metadata-read":    func(id string) error { _, err := LoadRunMetadata(id); return err },
++		"metadata-write":   func(id string) error { return SaveRunMetadata(&RunMetadata{RunID: id}) },
++		"equity-read":      func(id string) error { _, err := LoadEquityPoints(id); return err },
++		"equity-write":     func(id string) error { return appendEquityPoint(id, EquityPoint{}) },
++		"trades-read":      func(id string) error { _, err := LoadTradeEvents(id); return err },
++		"trades-write":     func(id string) error { return appendTradeEvent(id, TradeEvent{}) },
++		"metrics-read":     func(id string) error { _, err := LoadMetrics(id); return err },
++		"metrics-write":    func(id string) error { return PersistMetrics(id, &Metrics{}) },
++		"trace":            func(id string) error { _, err := LoadDecisionTrace(id, 1); return err },
++		"decisions":        func(id string) error { _, err := LoadDecisionRecords(id, 1, 0); return err },
++		"export":           func(id string) error { _, err := CreateRunExport(id); return err },
++		"lock-read":        func(id string) error { _, err := loadRunLock(id); return err },
++		"lock-write":       func(id string) error { return saveRunLock(&RunLockInfo{RunID: id}) },
++		"lock-delete":      deleteRunLock,
++		"delete":           func(id string) error { return NewManager(nil).Delete(id) },
++	}
++	for _, useDB := range []bool{true, false} {
++		if useDB {
++			UseDatabase(st.DB())
++		} else {
++			UseDatabase(nil)
++		}
++		for _, id := range []string{"../protected", "..", "/tmp/protected", "a/b", `a\b`, "", strings.Repeat("x", 65)} {
++			for name, call := range cases {
++				t.Run(name+"/"+id, func(t *testing.T) {
++					err := call(id)
++					if err == nil || !strings.Contains(err.Error(), "run_id must") {
++						t.Errorf("expected invalid run_id rejection, got %v", err)
++					}
++				})
++			}
++		}
++	}
++	if content, err := os.ReadFile(sentinel); err != nil || string(content) != "retain" {
++		t.Fatal("invalid run ID damaged unrelated data")
++	}
++}
++
++func TestBacktestRunIDSlugBoundaries(t *testing.T) {
++	for _, id := range []string{"a", "bt_20260914_120000", "Strategy-42_a", strings.Repeat("x", 64)} {
++		if err := ValidateRunID(id); err != nil {
++			t.Errorf("valid ID %q: %v", id, err)
++		}
++	}
++	for _, id := range []string{" ", " a", "a ", "-a", "_a", ".", "a.b", "中文", "a\x00b", "a\nb", "%2e%2e", strings.Repeat("x", 65)} {
++		if !errors.Is(ValidateRunID(id), ErrInvalidRunID) {
++			t.Errorf("accepted invalid ID %q", id)
++		}
++	}
++	manager := NewManager(nil)
++	called := false
++	manager.SetAIResolver(func(*BacktestConfig) error { called = true; return nil })
++	_, err := manager.Start(context.Background(), BacktestConfig{RunID: "../outside"})
++	if !errors.Is(err, ErrInvalidRunID) || called {
++		t.Fatal("invalid ID reached model resolution")
++	}
++}
++
++func TestBacktestValidFilesystemRunRoundTrip(t *testing.T) {
++	t.Chdir(t.TempDir())
++	UseDatabase(nil)
++	const id = "safe-run_1"
++	if err := ensureRunDir(id); err != nil {
++		t.Fatal(err)
++	}
++	cfg := &BacktestConfig{RunID: id, UserID: "fixture"}
++	if err := SaveConfig(id, cfg); err != nil {
++		t.Fatal(err)
++	}
++	saved, err := LoadConfig(id)
++	if err != nil || saved.RunID != id {
++		t.Fatalf("valid config round trip: %v", err)
++	}
++	if err := SaveRunMetadata(&RunMetadata{RunID: id}); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := LoadRunMetadata(id); err != nil {
++		t.Fatal(err)
++	}
++	if err := saveRunLock(&RunLockInfo{RunID: id}); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := loadRunLock(id); err != nil {
++		t.Fatal(err)
++	}
++	if err := deleteRunLock(id); err != nil {
++		t.Fatal(err)
++	}
++	archive, err := CreateRunExport(id)
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer os.Remove(archive)
++	if info, err := os.Stat(archive); err != nil || info.Size() == 0 {
++		t.Fatal("valid export missing")
++	}
++}
++
++func TestBacktestRetentionRejectsPoisonedHistoricalID(t *testing.T) {
++	t.Chdir(t.TempDir())
++	UseDatabase(nil)
++	if err := os.Mkdir("protected", 0700); err != nil {
++		t.Fatal(err)
++	}
++	sentinel := filepath.Join("protected", "keep")
++	if err := os.WriteFile(sentinel, []byte("retain"), 0600); err != nil {
++		t.Fatal(err)
++	}
++	idx := &RunIndex{Runs: map[string]RunIndexEntry{
++		"../protected": {RunID: "../protected", State: RunStateCompleted, UpdatedAtISO: "2020-01-01T00:00:00Z"},
++		"safe-run":     {RunID: "safe-run", State: RunStateCompleted, UpdatedAtISO: "2026-01-01T00:00:00Z"},
++	}}
++	if err := saveRunIndex(idx); err != nil {
++		t.Fatal(err)
++	}
++	enforceRetention(1)
++	if _, err := os.Stat(sentinel); err != nil {
++		t.Fatal("retention escaped the run directory")
++	}
++}
+diff --git a/backtest/storage.go b/backtest/storage.go
+index 84cbcaa..f90033c 100644
+--- a/backtest/storage.go
++++ b/backtest/storage.go
+@@ -33,6 +33,9 @@ func runDir(runID string) string {
+ }
+ 
+ func ensureRunDir(runID string) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	dir := runDir(runID)
+ 	return os.MkdirAll(dir, 0o755)
+ }
+@@ -134,6 +137,9 @@ func appendJSONLine(path string, payload any) error {
+ 
+ // SaveCheckpoint writes the checkpoint to disk.
+ func SaveCheckpoint(runID string, ckpt *Checkpoint) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if ckpt == nil {
+ 		return fmt.Errorf("checkpoint is nil")
+ 	}
+@@ -145,6 +151,9 @@ func SaveCheckpoint(runID string, ckpt *Checkpoint) error {
+ 
+ // LoadCheckpoint reads the most recent checkpoint.
+ func LoadCheckpoint(runID string) (*Checkpoint, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadCheckpointDB(runID)
+ 	}
+@@ -165,6 +174,9 @@ func SaveRunMetadata(meta *RunMetadata) error {
+ 	if meta == nil {
+ 		return fmt.Errorf("run metadata is nil")
+ 	}
++	if err := ValidateRunID(meta.RunID); err != nil {
++		return err
++	}
+ 	if meta.Version == 0 {
+ 		meta.Version = 1
+ 	}
+@@ -180,6 +192,9 @@ func SaveRunMetadata(meta *RunMetadata) error {
+ 
+ // LoadRunMetadata reads run.json.
+ func LoadRunMetadata(runID string) (*RunMetadata, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadRunMetadataDB(runID)
+ 	}
+@@ -196,6 +211,9 @@ func LoadRunMetadata(runID string) (*RunMetadata, error) {
+ }
+ 
+ func appendEquityPoint(runID string, point EquityPoint) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if usingDB() {
+ 		return appendEquityPointDB(runID, point)
+ 	}
+@@ -203,6 +221,9 @@ func appendEquityPoint(runID string, point EquityPoint) error {
+ }
+ 
+ func appendTradeEvent(runID string, event TradeEvent) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if usingDB() {
+ 		return appendTradeEventDB(runID, event)
+ 	}
+@@ -210,6 +231,9 @@ func appendTradeEvent(runID string, event TradeEvent) error {
+ }
+ 
+ func saveMetrics(runID string, metrics *Metrics) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if metrics == nil {
+ 		return fmt.Errorf("metrics is nil")
+ 	}
+@@ -220,6 +244,9 @@ func saveMetrics(runID string, metrics *Metrics) error {
+ }
+ 
+ func saveProgress(runID string, state *BacktestState, cfg *BacktestConfig) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if state == nil || cfg == nil {
+ 		return fmt.Errorf("state or config nil")
+ 	}
+@@ -248,6 +275,9 @@ func saveProgress(runID string, state *BacktestState, cfg *BacktestConfig) error
+ }
+ 
+ func SaveConfig(runID string, cfg *BacktestConfig) error {
++	if err := ValidateRunID(runID); err != nil {
++		return err
++	}
+ 	if cfg == nil {
+ 		return fmt.Errorf("config is nil")
+ 	}
+@@ -263,6 +293,9 @@ func SaveConfig(runID string, cfg *BacktestConfig) error {
+ }
+ 
+ func LoadConfig(runID string) (*BacktestConfig, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadConfigDB(runID)
+ 	}
+@@ -278,6 +311,9 @@ func LoadConfig(runID string) (*BacktestConfig, error) {
+ }
+ 
+ func LoadEquityPoints(runID string) ([]EquityPoint, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadEquityPointsDB(runID)
+ 	}
+@@ -292,6 +328,9 @@ func LoadEquityPoints(runID string) ([]EquityPoint, error) {
+ }
+ 
+ func LoadTradeEvents(runID string) ([]TradeEvent, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadTradeEventsDB(runID)
+ 	}
+@@ -309,6 +348,9 @@ func LoadTradeEvents(runID string) ([]TradeEvent, error) {
+ }
+ 
+ func LoadMetrics(runID string) (*Metrics, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadMetricsDB(runID)
+ 	}
+@@ -336,7 +378,7 @@ func LoadRunIDs() ([]string, error) {
+ 	}
+ 	runIDs := make([]string, 0, len(entries))
+ 	for _, entry := range entries {
+-		if entry.IsDir() {
++		if entry.IsDir() && ValidateRunID(entry.Name()) == nil {
+ 			runIDs = append(runIDs, entry.Name())
+ 		}
+ 	}
+@@ -381,6 +423,9 @@ func PersistMetrics(runID string, metrics *Metrics) error {
+ }
+ 
+ func LoadDecisionTrace(runID string, cycle int) (*store.DecisionRecord, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if usingDB() {
+ 		return loadDecisionTraceDB(runID, cycle)
+ 	}
+@@ -430,6 +475,9 @@ func LoadDecisionTrace(runID string, cycle int) (*store.DecisionRecord, error) {
+ }
+ 
+ func LoadDecisionRecords(runID string, limit, offset int) ([]*store.DecisionRecord, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return nil, err
++	}
+ 	if limit <= 0 {
+ 		limit = 20
+ 	}
+@@ -493,6 +541,9 @@ func LoadDecisionRecords(runID string, limit, offset int) ([]*store.DecisionReco
+ }
+ 
+ func CreateRunExport(runID string) (string, error) {
++	if err := ValidateRunID(runID); err != nil {
++		return "", err
++	}
+ 	if usingDB() {
+ 		return createRunExportDB(runID)
+ 	}
+diff --git a/web/src/App.tsx b/web/src/App.tsx
+index 07e582e..076e3b9 100644
+--- a/web/src/App.tsx
++++ b/web/src/App.tsx
+@@ -551,6 +551,13 @@ function App() {
+             <p>{t('footerTitle', language)}</p>
+             <p className="mt-1">{t('footerWarning', language)}</p>
+             <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
++              <a
++                href="/nofx-source.tar.gz"
++                className="px-3 py-2 rounded text-sm font-semibold"
++                style={{ color: '#848E9C' }}
++              >
++                Source (AGPL-3.0)
++              </a>
+               {/* GitHub */}
+               <a
+                 href={OFFICIAL_LINKS.github}
+diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITradersPage.tsx
+index 7ce1f1e..ac5f437 100644
+--- a/web/src/components/AITradersPage.tsx
++++ b/web/src/components/AITradersPage.tsx
+@@ -1492,7 +1492,7 @@ export function AITradersPage({ onTraderSelect }: AITradersPageProps) {
+ }
+ 
+ // Model Configuration Modal Component
+-function ModelConfigModal({
++export function ModelConfigModal({
+   allModels,
+   configuredModels,
+   editingModelId,
+@@ -1535,7 +1535,7 @@ function ModelConfigModal({
+ 
+   const handleSubmit = (e: React.FormEvent) => {
+     e.preventDefault()
+-    if (!selectedModelId || !apiKey.trim()) return
++    if (!selectedModel || (!editingModelId && !apiKey.trim())) return
+ 
+     onSave(
+       selectedModelId,
+@@ -1686,14 +1686,20 @@ function ModelConfigModal({
+                     type="password"
+                     value={apiKey}
+                     onChange={(e) => setApiKey(e.target.value)}
+-                    placeholder={t('enterAPIKey', language)}
++                    placeholder={
++                      editingModelId
++                        ? language === 'zh'
++                          ? '留空以保留现有 API Key'
++                          : 'Leave blank to keep the stored API key'
++                        : t('enterAPIKey', language)
++                    }
+                     className="w-full px-3 py-2 rounded"
+                     style={{
+                       background: '#0B0E11',
+                       border: '1px solid #2B3139',
+                       color: '#EAECEF',
+                     }}
+-                    required
++                    required={!editingModelId}
+                   />
+                 </div>
+ 
+@@ -1785,7 +1791,7 @@ function ModelConfigModal({
+             </button>
+             <button
+               type="submit"
+-              disabled={!selectedModel || !apiKey.trim()}
++              disabled={!selectedModel || (!editingModelId && !apiKey.trim())}
+               className="flex-1 px-4 py-2 rounded text-sm font-semibold disabled:opacity-50"
+               style={{ background: '#F0B90B', color: '#000' }}
+             >
+diff --git a/web/src/components/ModelConfigModal.test.tsx b/web/src/components/ModelConfigModal.test.tsx
+new file mode 100644
+index 0000000..35a5a18
+--- /dev/null
++++ b/web/src/components/ModelConfigModal.test.tsx
+@@ -0,0 +1,65 @@
++import { cleanup, fireEvent, render, screen } from '@testing-library/react'
++import { afterEach, describe, expect, it, vi } from 'vitest'
++import { ModelConfigModal } from './AITradersPage'
++import type { AIModel } from '../types'
++
++const model: AIModel = {
++  id: 'openrouter',
++  name: 'OpenRouter',
++  provider: 'openai',
++  enabled: true,
++  customApiUrl: 'https://openrouter.ai/api/v1/responses',
++  customModelName: 'openrouter/free',
++}
++
++afterEach(cleanup)
++
++describe('ModelConfigModal key preservation', () => {
++  it('saves an existing model endpoint without requesting its stored API key', () => {
++    const onSave = vi.fn()
++    render(
++      <ModelConfigModal
++        allModels={[model]}
++        configuredModels={[model]}
++        editingModelId={model.id}
++        onSave={onSave}
++        onDelete={vi.fn()}
++        onClose={vi.fn()}
++        language="en"
++      />
++    )
++    const endpoint = screen.getByDisplayValue(model.customApiUrl!)
++    fireEvent.change(endpoint, {
++      target: { value: 'https://openrouter.ai/api/v1' },
++    })
++    const submit = screen.getByRole('button', { name: /save config/i })
++    expect(submit).toBeEnabled()
++    fireEvent.click(submit)
++    expect(onSave).toHaveBeenCalledWith(
++      model.id,
++      '',
++      'https://openrouter.ai/api/v1',
++      'openrouter/free'
++    )
++  })
++
++  it('still requires a key when adding a new model', () => {
++    const onSave = vi.fn()
++    render(
++      <ModelConfigModal
++        allModels={[model]}
++        configuredModels={[]}
++        editingModelId={null}
++        onSave={onSave}
++        onDelete={vi.fn()}
++        onClose={vi.fn()}
++        language="en"
++      />
++    )
++    fireEvent.change(screen.getByRole('combobox'), {
++      target: { value: model.id },
++    })
++    expect(screen.getByRole('button', { name: /save config/i })).toBeDisabled()
++    expect(onSave).not.toHaveBeenCalled()
++  })
++})
+diff --git a/web/src/components/landing/FooterSection.tsx b/web/src/components/landing/FooterSection.tsx
+index 75c58b4..caa3bd1 100644
+--- a/web/src/components/landing/FooterSection.tsx
++++ b/web/src/components/landing/FooterSection.tsx
+@@ -22,6 +22,7 @@ export default function FooterSection({ language }: FooterSectionProps) {
+       { name: 'Telegram', href: OFFICIAL_LINKS.telegram, icon: Send },
+     ],
+     resources: [
++      { name: 'Source (AGPL-3.0)', href: '/nofx-source.tar.gz' },
+       {
+         name: language === 'zh' ? '文档' : 'Documentation',
+         href: 'https://github.com/NoFxAiOS/nofx/blob/main/README.md',

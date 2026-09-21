@@ -45,8 +45,10 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     serviceMonitorSelector: {}
     serviceMonitorNamespaceSelector:
-      matchLabels:
-        kubernetes.io/metadata.name: monitoring
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values: [monitoring, harbor]
     storageSpec:
       volumeClaimTemplate:
         spec:
