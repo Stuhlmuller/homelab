@@ -110,13 +110,18 @@ closed even when static checks pass.
 
 ## Harbor runtime acceptance
 
-The next rollout targets competition build
-`25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b` from
-[NOFX Images run 35494703264](https://github.com/Stuhlmuller/homelab/actions/runs/35494703264),
-which successfully published and verified both private Harbor images. It adds
-strict historical OpenRouter decisions, an execution-time leverage cap, and a
-factual selected-run comparison table. Runtime acceptance remains separate;
-successful publication does not establish deployment or competition results.
+The shared-account rollout targets source
+`05fcf60be529c063ae9f5fa16494466c3db0f400`, merged in
+[PR #1054](https://github.com/Stuhlmuller/homelab/pull/1054).
+[NOFX Images run 35551197231](https://github.com/Stuhlmuller/homelab/actions/runs/35551197231)
+passed publication and private pull verification; the manifest pins both
+references from its digest artifact. This source preserves parsed leverage caps and hidden
+trader creation, and stops OKX openings when leverage verification or updates fail.
+[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml) owns desired
+image references; publication alone establishes neither deployment nor returns.
+The earlier `25bceceb` competition build was deployed by
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052); retain that evidence
+as history, not acceptance of these additional fixes.
 
 Before merging the image-pin PR:
 
@@ -165,9 +170,13 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md), including a fresh
-[simulation comparison](nofx-agent-competition.md). Image publication and Pod
-readiness do not establish a valid competition result.
+[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0009`
+in the source download and confirm all three shared-account drafts remain
+stopped and hidden after restart. Reproduce parser, visibility-migration, and
+OKX transport checks through the image test target, without live orders. For a
+fresh [simulation comparison](nofx-agent-competition.md), all expected decisions
+must pass before scoring; publication and Pod readiness do not establish a valid
+competition result. Live activation remains a user action.
 
 ## Recovery token rotation and failure modes
 
