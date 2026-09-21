@@ -70,6 +70,41 @@ inspection, validation, and remaining blockers. The broader
 port mapping, image debt, and independent restore proof remain open; older
 observations below retain their original dates.
 
+- **Status:** delivery healthy; reliability follow-ups open
+- **Area:** observability / Discord alert delivery audit, 2026-09-20 PDT
+- **Evidence:** Read-only checks at approximately 19:47 PDT found about 70
+  Discord notification attempts and zero failures over 24 hours; seven days
+  contained about 352 attempts and one failure. Alertmanager logs identify that
+  failure as Discord HTTP 429 at `2026-09-15T14:55:39Z` for the three retained
+  UPnP Job failures. Later delivery counters increased normally, most recently
+  at approximately 19:22 PDT during the initial check. The configured webhook's
+  metadata GET returned HTTP 200; no synthetic message was sent or channel
+  history read. Alertmanager had no silences, and its loaded route matched
+  `clusters/homelab/apps/prometheus/externalsecret.yaml`.
+- **Alert state:** Grafana metrics reported 18 active rules, one paused rule,
+  36 normal instances, no firing/error/no-data instances, and zero evaluation
+  failures over seven days. Grafana attempted eight notifications to
+  Alertmanager during that week. Prometheus currently reported CPU and memory
+  overcommit plus three old UPnP Job failures; media CPU-throttling information
+  alerts were intentionally inhibited. Retained metrics confirmed recent NOFX
+  unhealthy and Harbor OutOfSync alerts. All four nodes and 189 non-terminal
+  Pods were Ready; all 43 Argo CD Applications were Healthy and Synced.
+- **Risk:** Watchdog remains disabled without an independent dead-man receiver
+  (`clusters/homelab/apps/prometheus/README.md`). A monitoring-stack outage can
+  therefore remain silent. Retired UPnP Job failures still generate recurring
+  noise. Authenticated Grafana API inspection returned HTTP 401 using the
+  current `grafana-admin` Secret, so per-rule/API checks were unavailable;
+  aggregate rule/evaluation state above came from scraped Grafana metrics.
+- **Next step:** Add an independently hosted heartbeat receiver through reviewed
+  desired state; make an explicit, narrowly scoped decision about retired UPnP
+  alerts without deleting Job evidence; investigate the Grafana credential/API
+  mismatch before any credential change. Verify the user's expected Discord
+  channel against webhook metadata if channel visibility remains in doubt.
+- **Validation:** Read-only Kubernetes health, Prometheus instant/range queries,
+  Grafana metrics, Alertmanager API/logs, and Discord webhook metadata. No live
+  desired-state changes. Documentation-only update checked with `git diff
+  --check`; infrastructure rendering and rollout checks do not apply.
+
 - **Status:** fixed
 - **Area:** Talos / `zimaboard-2` recovery
 - **Evidence:** On 2026-09-02, the reviewed degraded-recovery gates passed:
