@@ -15,6 +15,16 @@ toolchain/dependencies, and retains both OpenVPN binary paths. The maintained
 identity; 2.6 uses release 2.6.22. Signed offline Alpine SDK installation and
 the two runtime OpenSSL packages keep build tools out of the resulting image.
 
+Input retention remains a blocker for durable from-scratch rebuilds. All 41
+APK pins point to the mutable Alpine `v3.22` mirror; their checksums prevent
+substitution but cannot recover removed packages. The public Nix
+content-addressed mirror had none of those exact hashes on 2026-09-21.
+Before claiming durable reproducibility, declare and retain the exact APK
+blobs at a reviewed content-addressed location accessible to unprivileged CI,
+then verify a clean build without the mutable URLs. No publication or archive
+provisioning is included. The [retention prerequisite](../../../images/gluetun/README.md#input-retention-prerequisite)
+tracks this unresolved review finding separately from repeated-build identity.
+
 Required evidence includes repeated artifact/image identity, selected Go unit
 tests, file setting and pprof controls, firewall denial with a scoped positive
 control, and encrypted static-key traffic through both OpenVPN families.
