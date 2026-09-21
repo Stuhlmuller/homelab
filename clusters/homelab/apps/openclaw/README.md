@@ -86,7 +86,7 @@ owner's Discord DM:
 
 | Job | Schedule | Behavior |
 | --- | --- | --- |
-| Morning brief | Daily 09:00 | Health, changes, blockers, next step |
+| Morning brief | Daily 09:00 | Calendar, tracked tasks, deals, health, next step |
 | Health watch | :17/:47, 08:00-21:59 | New incidents or recovery |
 | Daily improvement | Daily 14:30 | One verified improvement or PR |
 | Heartbeat | Hourly, 08:00-22:00 | Follow up on tracked work |
@@ -720,3 +720,40 @@ readiness, a read-only Discord credential probe, and operator-tool execution.
 The effective app/proxy process must report `NoNewPrivs: 1`, zero `CapEff`,
 and seccomp filtering in `/proc/self/status`. Revert these Helm values through
 GitOps if a required runtime operation fails; do not patch the live Pod.
+
+## Personal assistant integration status
+
+The managed agreement covers Google Calendar, computer-deal research and
+bounded Marketplace seller outreach, plus private task/deal ledgers. Discord
+remains owner-scoped. Existing homelab fixes retain the PR/CI/GitOps workflow.
+The morning brief includes calendar/tasks/deals when connected; it does not send
+seller messages or create an unrequested shopping schedule.
+
+The toolbox adds gogcli 0.11.0 from the existing pinned nixpkgs revision and
+bootstrap enables the bundled gog skill, preserving unrelated skill settings.
+Google Calendar is the owner's selected provider. This installs capability;
+it does not authorize an account. Follow the version's `gog auth --help` and
+[upstream authentication documentation](https://github.com/steipete/gogcli/tree/v0.11.0)
+for Calendar-only OAuth. Personal account identity, client material, refresh
+tokens, and any keyring unlock secret must stay outside git and Discord.
+A persistent, file-backed credential contract and owner OAuth consent are still
+required before unattended calendar use. Do not add environment-based desired
+state or enable unrelated Google services to work around missing credentials.
+
+Live inspection on September 7 found Discord enabled and the Pod 2/2 Ready,
+but no gog executable, Chromium executable, or configured browser profiles.
+Marketplace therefore also needs a repository-owned private browser backend
+and owner login using OpenClaw's [browser integration](https://docs.openclaw.ai/tools/browser).
+No browser service, public debugging port, Facebook session, or OAuth credential
+is created by this change. The owner still needs to specify hardware targets,
+total budget, pickup area/radius, and shipping preference before outreach.
+
+Acceptance after GitOps rollout: verify `gog --version`, the enabled skill,
+managed workspace sections, and owner Discord request/reply. Google acceptance
+requires a successful bounded event read and an owner-requested event write/readback.
+Marketplace acceptance requires authenticated listing access and a scoped,
+owner-requested seller message verified in its conversation. Keep each blocked
+capability explicit; do not label either integration operational before these pass.
+Rollback through git by reverting the bundle/toolbox changes and digest; preserve
+private task notes and any account credentials, and revoke account grants only
+when explicitly requested.
