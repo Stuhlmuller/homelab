@@ -85,3 +85,105 @@ September 7 monitoring Pod identities and admitted requests were unchanged.
 Keep the existing reservations; this observation does not resolve the
 largest-node-loss capacity deficit or monitoring storage recovery work.
 Queries and result receipts remain private.
+
+## September 21 Memory Overcommit Incident
+
+Status: workload reduction and non-HA alert policy prepared; rollout pending.
+
+Authenticated read-only inspection at approximately `2026-09-21T03:13Z`
+reproduced `KubeMemoryOvercommit` firing, active since September 7. Prometheus
+was `Healthy` and `Synced` at `9716e9d9` with chart `85.2.0`; the rule evaluated
+successfully. All four nodes were Ready, with no MemoryPressure or Pending Pods.
+
+| Quantity | GiB |
+| --- | ---: |
+| Active ordinary-container memory requests | 22.862 |
+| Total allocatable memory | 30.402 |
+| Largest node, `acer` | 14.903 |
+| Capacity after largest-node loss | 15.499 |
+| Node-loss shortfall | 7.363 |
+
+The recording-rule total matched deduplicated requests for Running/Pending
+Pods. Each node had one allocatable-memory series. Thus stale terminal Pods
+and duplicate scrapes did not explain the alert. The seven-day request maximum,
+sampled every five minutes, was 22.894 GiB. This is a failover-capacity warning,
+not evidence of current memory pressure.
+
+The chart's expression combines a non-HA total-capacity branch with an ungated
+largest-node-loss branch. The `HA clusters` comment does not establish that
+single-control-plane clusters should be exempt: upstream
+[largest-node-loss rationale](https://github.com/kubernetes-sigs/kubernetes-mixin/pull/646)
+applies to heterogeneous clusters, and the current implementation retains that
+branch. Rodman subsequently chose to adjust the alert so the current level no
+longer notifies. `memory-prometheusrules.yaml` now warns only when requests
+exceed total allocatable memory for 10 minutes, and the chart default is
+disabled. This explicitly accepts the node-loss deficit without repairing it;
+node pressure, actual-use, readiness, and unschedulable-Pod alerts remain active.
+
+Rodman selected Dispatcharr and AFFiNE for suspension. Their combined 3.500 GiB
+reduction projects requests of 19.362 GiB and a remaining 3.863 GiB node-loss
+shortfall. These suspensions alone would not clear the original rule. The
+replacement total-capacity rule is quiet both before and after suspension.
+Full node-loss headroom still requires further demand reduction or capacity,
+but that is no longer this homelab's warning threshold.
+
+Candidate savings below include running app containers and dedicated databases
+at diagnosis, but exclude shared platform services and access proxies. Only the
+two selected apps are configured for suspension; retain their PVCs.
+
+| App | Current requests GiB |
+| --- | ---: |
+| OpenClaw | 2.063 |
+| Dispatcharr and its PostgreSQL | 1.875 |
+| AFFiNE, PostgreSQL, and Redis | 1.625 |
+| Multica frontend, backend, and PostgreSQL | 1.500 |
+| n8n and its PostgreSQL | 0.750 |
+| OctoBot | 0.500 |
+| NOFX frontend and backend | 0.313 |
+
+Express selected suspensions in their repository-owned manifests/Helm values,
+account for scheduled jobs and dependent services, and render before GitOps
+rollout. Removing at least 7.363 GiB satisfies the original node-loss arithmetic;
+init containers, placement constraints, rollout demand, and underrequested
+workloads still require headroom. Seven-day observed working sets exceeded
+requests for the API server, n8n, OctoBot, and Deluge; reducing reservations
+solely to clear the alert would conceal demand. Per-Pod observation windows
+can be shorter than seven days and are not proven peak bounds.
+
+For read-only verification, use the temporary local Prometheus port-forward
+described in `clusters/homelab/apps/prometheus/README.md`, then query
+`/api/v1/alerts` and `/api/v1/rules?type=alert`. Require exactly one healthy
+`KubeMemoryOvercommit` rule in `homelab.memory`, with no duplicate chart rule
+and no pending/firing instance at the measured or projected requests. The
+remaining node-loss shortfall is approximately 3.863 GiB after suspension;
+the policy change must not be reported as restoring failover capacity.
+Recheck the expression's request/capacity inputs, node readiness, pressure,
+remaining workload health, and retained PVCs. No runtime changes were made
+during diagnosis. Verify the selected suspension through Argo CD before marking
+it applied; the remaining deficit must stay visible.
+
+The custom rule uses the same namespace request recording metric and node
+allocatable metric as the chart, preserving cluster labels, warning severity,
+and the 10-minute hold. The static gate's `memory-overcommit-check.py` covers
+current and projected load, exact capacity, true overcommit, the hold, recovery,
+and cluster isolation. Restore the chart rule when accepting an N+1 objective
+again; the Prometheus README documents the paired replacement rollback.
+The revised expression evaluated empty against the live 22.862 GiB requests
+and 30.402 GiB capacity while the original alert still fired. All seven
+Promtool cases, pinned-chart single-rule rendering, the rule's server-side
+dry-run diff, and the full static/Conftest gates passed before rollout.
+
+Before rollout, the full static gate and rendered Conftest policies passed.
+Pinned Dispatcharr and Grafana charts rendered successfully; checks confirmed
+five zero-replica workloads, app-before-database sync waves, and unchanged claim
+definitions. Server-side dry-run diffs passed for both selected apps. Offline
+Prometheus fixtures confirmed that the narrowed Grafana expression omits AFFiNE
+while detecting missing probes for the other three databases. The committed
+AFFiNE suspension probe check covers zero, nonzero, omitted, and invalid replica
+values while retaining other app checks; shell/YAML/whitespace checks passed.
+
+Separate monitoring follow-up: the existing Grafana PostgreSQL query returns
+zero for its `increase(...) == 0` branch, while its threshold requires a value
+greater than zero. Verify stalled-but-present probe series with a dedicated
+fixture and correct that pre-existing detection gap separately; the missing
+probe branch returns one and remains active.
