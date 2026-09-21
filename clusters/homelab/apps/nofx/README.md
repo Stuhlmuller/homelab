@@ -68,8 +68,8 @@ upstream commit
 [source.json](../../../../builds/nofx/source.json) pins the source archive and
 checksum; both Dockerfiles pin their builder and runtime images by digest.
 The preparation script applies the committed patches before Docker builds
-either runtime. The source includes the following repairs; the competition
-additions target build `25bcecebfd6d18f4a2b41f9bbd7640ad742f9e1b` and require the
+either runtime. The source includes the following repairs; the startup-error
+rollout targets build `9716e9d9121a062029c72dc5f03f0d266a166650` and requires the
 publication and rollout acceptance below:
 
 - Key-preserving model edits without submitted-credential logging or trader
@@ -87,6 +87,12 @@ publication and rollout acceptance below:
 - A leverage cap applied to actual simulated fills, plus selected-run comparison
   of equity, return, drawdown, and recorded decision outcomes. Generated run IDs
   include a safe strategy slug; the table does not declare a winner.
+- Preservation of the shared validator's leverage clamp in parsed decisions and
+  explicit hidden visibility when creating traders, including existing databases.
+- OKX cross-margin leverage lookup before openings, one update only when needed,
+  and rejection of openings before order cancellation if lookup or update fails.
+- Failed OKX account-config reads block initialization even with a saved balance.
+  Known `50119` startup errors reach the UI as fixed account/region guidance.
 - A footer download at `/nofx-source.tar.gz` containing the patched upstream,
   license, lock files, patches, and build recipe under AGPL-3.0.
 
@@ -96,6 +102,11 @@ Run the image tests and builds on a Linux Docker host:
 bash builds/nofx/test.sh
 bash builds/nofx/build.sh
 ```
+
+The test target reproduces excess leverage in parsed decisions, explicit hidden
+trader creation against a legacy SQLite schema, and OKX leverage lookup/update
+failures with a mocked transport. Startup regressions cover zero/nonzero saved
+balances and the visible error toast. These checks place no real exchange orders.
 
 The [NOFX Images workflow](../../../../.github/workflows/nofx-images.yml) runs
 these commands on pull requests without publishing credentials. After tests
@@ -116,23 +127,31 @@ it as recovery history. [deployment.yaml](deployment.yaml) declares the current
 desired image references. Both deployments use `harbor-pull` only through
 `imagePullSecrets`; the kubelet credential never enters NOFX containers.
 
-The next image-pin rollout targets
-[build 35494703264](https://github.com/Stuhlmuller/homelab/actions/runs/35494703264),
-which successfully published and verified both private Harbor images. Copy its
-verified digests into the manifest. Before merge, also require a healthy `harbor-pull`
+The startup-error image-pin rollout targets
+[build 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+at revision `9716e9d9121a062029c72dc5f03f0d266a166650`, including the source fix
+from [PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056). Publication and private pull
+verification passed; the manifest pins both references from its digest artifact.
+Before merge, also require a healthy `harbor-pull`
 ExternalSecret and a fresh authenticated check that all live traders are
 stopped. Use the UI or the runbook's read-only database count; an old observation
 does not satisfy this gate.
 Keep all packages private and follow the
 [private-image runbook](../../../../docs/nofx-private-images.md) for credential,
-publication, and rollout checks. Publication and the earlier migration do not
-prove the competition build is deployed.
+publication, and rollout checks. The earlier `25bceceb` deployment in
+[PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052) is historical evidence,
+not proof that these additional fixes are deployed.
 
 Retain the PVC, absolute command, working directory, and read-only root. After
 Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expected
-Harbor digests. Check that a blank-key model edit preserves credentials without
-starting traders, invalid run IDs remain rejected, and the source download
-matches the deployed revision. Then run a fresh short OKX-backed simulation:
+Harbor digests. The image test target covers key-preserving model edits, invalid
+run IDs, and the leverage/visibility regressions without live orders. Verify the
+source download matches the deployed revision, including patches `0007`–`0010`.
+Reload the UI and verify the three shared-account drafts remain stopped and hidden after
+restart. The startup repair changes no credentials, regional routing, or products;
+actual OKX authentication remains unresolved pending account-region confirmation.
+Keep activation manual. For historical workflow changes, also run a
+fresh short OKX-backed simulation:
 inspect valid structured decisions and actual fill leverage, and confirm the
 selected-run table shows recorded successes/failures and missing data accurately.
 
@@ -161,7 +180,7 @@ bounded. The strict historical path makes one provider attempt per cycle,
 including transient failures. Its schema instruction supersedes the earlier
 XML-format prompt mitigation. Inspect each run's return, drawdown, actual fill
 leverage, and recorded decision outcomes; Completed alone is not a valid score.
-The comparison table becomes available after the competition-image rollout.
+The comparison table records outcomes; it does not certify a successful round.
 
 Keep each round uninterrupted by backend restarts. Cold resume does not reliably
 restore the selected strategy snapshot; finish or stop simulations before
@@ -199,10 +218,26 @@ fix. The maintained derivative validates these IDs; keep the existing human
 access policy and verify that validation after each rollout before extending
 access to other users or automation.
 
-The dashboard also labels all HTTP 404 responses as "API Not Found", including
-an existing trader that failed to load into the runtime manager. Check private
-startup logs and the saved strategy/model/exchange configuration before assuming
-an API route or image-version mismatch.
+The upstream dashboard labels all HTTP 404 responses as "API Not Found",
+including an existing trader that failed to load. Read-only inspection on
+September 21 reproduced this after OKX `50119` initialization failures.
+Patch `0011` routes this homelab's confirmed US account through `us.okx.com`,
+as required by the [US API documentation](https://app.okx.com/docs-v5/en/).
+It also returns safe `503 TRADER_UNAVAILABLE` guidance for an owned trader that
+cannot load, reserves 404 for missing/foreign traders, and fixes the UI label.
+All runtime dashboard readers share the lookup; the existing public
+equity-history route reads the database without exchange initialization.
+Authenticated dashboard defaults never fall back to another user's trader.
+
+Source validation is separate from publication and rollout. After deploying
+both verified images, reload the browser and check `/api/positions` for the
+saved stopped trader. Require HTTP 200 on successful exchange initialization,
+or the explicit unavailable guidance if configuration still fails. Confirm
+all traders remain stopped. Do not substitute an empty success for a failed
+exchange read. Changing regions does not add US spot trading: the adapter still
+targets USDT perpetuals, which [OKX excludes for US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Keep the existing rollout gates; rollback restores the previous image pair and
+its global-host authentication failure without changing stored credentials.
 
 Source: pinned upstream
 [runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),
