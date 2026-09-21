@@ -6,18 +6,50 @@ not the scoreboard for these simulations.
 
 ## One OKX account
 
-Multiple NOFX traders using credentials for the same OKX account share its
-balance and positions. Their actions can affect one another, and account-level
-returns cannot identify each persona's performance. Separate API keys for the
-same account do not provide isolation. A trader's Initial Balance is a return
+NOFX supports multiple traders using the same OKX connection. This is the
+user-selected setup; separate accounts are not required to configure the three
+personas. These traders share the account's balance and positions. Their actions
+can affect one another, and account-level returns cannot identify each persona's
+performance. Separate API keys for the same account do not provide isolation.
+A trader's Initial Balance is a return
 calculation baseline, not a capital allocation or spending limit.
 
-Independent live competitors need separate funded OKX accounts or
-[subaccounts](https://www.okx.com/en-us/help/what-is-sub-account), with a
-user-selected capital limit for each. The user must arrange funding and
-activate live trading. Until then, keep live traders stopped and use the
-isolated virtual accounts in Backtest Lab; these simulations do not trade the
-user's OKX portfolio.
+Separate funded OKX accounts or
+[subaccounts](https://www.okx.com/en-us/help/what-is-sub-account) are needed only
+for independent live balances and P&L. The shared-account setup cannot establish
+a winner from per-trader account returns. Backtest Lab remains available for
+isolated virtual comparisons; those simulations do not trade the OKX portfolio.
+
+## Configured live drafts
+
+Trend, Mean Reversion, and Breakout are saved as stopped traders using the same
+existing OKX connection and `openrouter/free`. Each has its own private,
+inactive `Live - <persona>` strategy copied from the matching simulation
+strategy. The copies retain their personas but remove historical-only and
+historical strict-JSON-schema instructions.
+
+Each draft is configured for 1x leverage caps, at most three positions, a 30%
+margin target, a 60-minute scan interval, and hidden leaderboard visibility.
+The margin target is advisory model-prompt text; the execution path does not
+enforce it. These settings do not reserve capital or impose a combined account limit.
+The existing Consensus trader and `Sim - <persona>` strategies are unchanged.
+Live activation remains a user action; no live orders were placed during setup.
+Read-only persisted checks verified `is_running=0` and `show_in_competition=0`
+for all three after using the trader cards' visibility toggles.
+
+Keep the drafts stopped pending runtime verification. In the deployed
+`25bceceb` source, `kernel/engine.go` validates a copied decision, so its live
+leverage clamp does not persist. `store/trader.go` also defaults newly created
+traders to visible despite an explicit false value; the card toggles corrected
+the saved drafts. Configured 1x and a creation-form Hide selection alone therefore
+do not prove enforcement or persisted visibility. The maintained source patches
+`0007-live-leverage-cap.patch` and `0008-trader-visibility.patch` fix those shared
+code paths, with parser and SQLite regression checks in the backend build.
+The visibility migration removes the old column default while preserving saved
+values; omitted API visibility still defaults to true. Roll out verified new
+images before relying on these fixes. Arena's separate
+`ExecuteConsensus` to `ExecuteDecision` path bypasses the shared validator and
+is not used by these drafts.
 
 ## Competitors and shared rules
 

@@ -16,6 +16,12 @@ cycle, including transient errors; failures remain visible. Other models and
 live traders retain their existing request path. The simulator also caps actual
 fill leverage at the configured limit.
 
+Normal trader decision parsing preserves the shared validator's leverage clamp
+in the returned decisions. Trader creation also preserves an explicit hidden
+leaderboard setting; the API retains its visible default when omitted. Focused
+parser and SQLite regressions run in the backend image's test stage. Arena's
+separate consensus execution path does not use this validator.
+
 Backtest Lab compares selected runs using recorded equity, return, drawdown,
 and decision outcomes. The table does not infer a valid score from Completed:
 review decision completeness, matching inputs, and executed leverage as described

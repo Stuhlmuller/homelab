@@ -181,11 +181,29 @@ caps leverage on actual fills. Completed still does not prove that all decisions
 succeeded, and stop-loss/take-profit triggers are not simulated. Require six
 successful decisions and verify every fill's leverage before ranking a round.
 The runbook records failed rounds and the required browser reload after image
-rollout. Multiple live traders sharing one OKX account also share positions and
-account-level returns; Initial Balance does not reserve capital. Independent
-live competitors require separate funded accounts or subaccounts. The runbook
-does not present shared balances or historical simulations as live competition
-results.
+rollout. The user-selected live setup saves Trend, Mean Reversion, and Breakout
+as stopped traders on the same existing OKX connection and `openrouter/free`,
+with separate private `Live - <persona>` strategies configured for 1x leverage.
+Read-only persisted checks confirmed all three stopped and hidden after using
+the trader cards' visibility toggles. The runbook records pending runtime
+verification: live decision validation loses its leverage clamp, and trader
+creation can override explicit hidden visibility. Source patches `0007` and
+`0008` fix both paths with focused backend build regressions; new image
+publication and rollout remain required. Sharing an account is supported, but
+also shares positions and account-level returns; Initial Balance does not reserve
+capital. Separate funded accounts or
+subaccounts are needed only for independent live balances and P&L. The runbook
+records the draft limits without presenting shared balances or historical
+simulations as independent live competition results.
+
+The unused Arena consensus execution path bypasses the shared decision validator;
+do not infer its leverage enforcement from the normal trader fix. A separate
+`store/trader.go` creation default also overrides explicit `IsCrossMargin=false`.
+These drafts retain cross margin; preserving an explicit false value needs a
+focused follow-up before configuring isolated margin through that create path.
+The configured 30% margin target is also advisory: `MaxMarginUsage` appears in
+the model prompt but is not enforced by `trader/auto_trader.go`. Implement an
+execution check before presenting it as a hard account-exposure limit.
 
 The first observed Trend and Breakout simulations reported Completed with two
 and three failed cycles out of six. Missing JSON caused the parser to synthesize
