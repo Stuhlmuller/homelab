@@ -219,7 +219,17 @@ the issued public key is independently read and its fingerprint reviewed. No AWS
 service or transparency-log submission is used. Existing registry credentials
 still follow the SSM/ExternalSecret contract above.
 
-The Job has no API token and only DNS/Istio egress. Temporary imported keys live
+The Job has no API token and declares DNS/Istio egress. That NetworkPolicy is
+not enforced by the current flannel CNI, and Harbor is not mesh-enrolled. A
+compromised signer could exfiltrate its mounted private key and publisher
+credential. This is an open isolation finding, not an enforced key boundary;
+source: `docs/runtime-isolation.md` and the signing Job/NetworkPolicy. Before
+claiming egress isolation, add a repository-owned enforcing dataplane, validate
+DNS/Harbor access, and prove arbitrary external destinations are denied from
+the signer. Pinned code, no API token, and a short lifetime do not replace that
+control.
+
+Temporary imported keys live
 in memory-backed storage; finished Jobs expire after ten minutes. Namespace
 Pod creators and cluster administrators remain trusted. Protect the signing
 Secret in encrypted off-node etcd backups, retain public keys independently,

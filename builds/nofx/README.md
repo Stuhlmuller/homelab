@@ -217,7 +217,13 @@ files. No new SSM parameter or cloud permission is needed.
 
 The pinned upstream Cosign image is independent of Harbor. The Job has no
 Kubernetes API token, runs as non-root with a read-only root filesystem, and
-can reach only cluster DNS and Istio HTTPS. Public signing configuration,
+declares only cluster DNS and Istio HTTPS egress in its NetworkPolicy. The
+current flannel CNI does not enforce that policy, and Harbor is not mesh-enrolled:
+compromised signing code could send the mounted key and publisher credential
+to arbitrary destinations. Treat the pinned signer as trusted code, not as an
+egress-isolated key service. Track enforcement and a denied-egress acceptance
+test in the [Harbor note](../../docs/knowledge-base/operations/harbor-oci.md#private-signing-rollout).
+Public signing configuration,
 transparency-log upload and ambient OIDC signing are explicitly disabled.
 Harbor-compatible signature attachments stay with the private images.
 A 300-second deadline, zero retries and a ten-minute finished-Job TTL bound
