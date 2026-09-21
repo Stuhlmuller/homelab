@@ -16,6 +16,28 @@ cycle, including transient errors; failures remain visible. Other models and
 live traders retain their existing request path. The simulator also caps actual
 fill leverage at the configured limit.
 
+Normal trader decision parsing preserves the shared validator's leverage clamp
+in the returned decisions. Trader creation also preserves an explicit hidden
+leaderboard setting; the API retains its visible default when omitted. Focused
+parser and SQLite regressions run in the backend image's test stage. Before
+opening an OKX position, the adapter reads current cross-margin leverage and
+skips the write when it already matches. Otherwise it makes one instrument-level
+leverage request, following the [OKX API guide](https://www.okx.com/docs-v5/trick_en/).
+Missing or malformed current-leverage data, or failed leverage requests, stop
+opening orders before canceling existing orders. Mocked transport checks cover
+both directions.
+Arena's separate consensus execution path does not use the decision validator.
+
+Patch `0011` routes the OKX adapter through `https://us.okx.com` for this
+homelab's confirmed US account. All signed REST calls share that constant;
+there is no automatic regional fallback. This does not add spot trading or
+establish eligibility for the adapter's USDT perpetuals. Keep traders stopped.
+Dashboard reads return a typed, safe HTTP 503 when an owned saved trader cannot
+load; missing or foreign traders return 404. The UI displays the load guidance
+without claiming the API route is missing. Equity history remains readable
+without initializing the exchange. Handler, transport, and Axios regressions
+run in the existing image test targets.
+
 Backtest Lab compares selected runs using recorded equity, return, drawdown,
 and decision outcomes. The table does not infer a valid score from Completed:
 review decision completeness, matching inputs, and executed leverage as described
