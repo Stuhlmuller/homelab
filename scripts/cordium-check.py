@@ -19,6 +19,8 @@ def main():
     parser.add_argument("--homedir", required=True, help="Private Octelium login directory")
     parser.add_argument("--deadline", required=True, type=int,
                         help="Enclosing CI execution deadline as UTC epoch seconds")
+    parser.add_argument("--mode", choices=("checks", "force-failure"), default="checks",
+                        help="Run the fixed repository gate or deliberate exit-42 cleanup exercise")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.checkout):
         parser.error("--checkout must be a full lowercase commit SHA")
@@ -28,6 +30,8 @@ def main():
     workspace = None
     creation_attempted = False
     result = 1
+    expected_failure = False
+    deletion_verified = False
     # The workflow captures this deadline before Nix and transport setup.
     # Reserve two minutes for deletion/verification and one for wrapper logout.
     work_deadline = time.monotonic() + args.deadline - time.time() - 180
@@ -72,9 +76,18 @@ def main():
                       "git", "rev-parse", "HEAD", capture=True).stdout.strip()
         if actual != args.checkout:
             raise RuntimeError("Remote checkout does not match the reviewed commit")
-        call("exec", workspace, "--no-stdin", "--root", "--workdir", "/workspace/repo", "--",
-             "nix", "--extra-experimental-features", "nix-command flakes", "develop",
-             "--command", "bash", "scripts/ci/static-checks.sh", timeout=1200)
+        if args.mode == "force-failure":
+            try:
+                call("exec", workspace, "--no-stdin", "--workdir", "/workspace/repo", "--",
+                     "/bin/sh", "-c", "exit 42")
+            except subprocess.CalledProcessError as error:
+                expected_failure = error.returncode == 42
+                raise
+            raise RuntimeError("The fixed failure command unexpectedly returned success")
+        else:
+            call("exec", workspace, "--no-stdin", "--root", "--workdir", "/workspace/repo", "--",
+                 "nix", "--extra-experimental-features", "nix-command flakes", "develop",
+                 "--command", "bash", "scripts/ci/static-checks.sh", timeout=1200)
         result = 0
     except subprocess.CalledProcessError as error:
         result = error.returncode if error.returncode > 0 else 1
@@ -97,11 +110,14 @@ def main():
                         break
                     time.sleep(min(2, max(0, deadline - time.monotonic())))
                 print(f"Verified deletion of disposable workspace: {workspace}", flush=True)
+                deletion_verified = True
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError, RuntimeError, TimeoutError) as error:
                 print(f"Cleanup failed for {workspace}: {error}", file=sys.stderr)
                 result = result or 1
         elif creation_attempted:
             print("Creation result unknown; inspect this dedicated CI identity before retrying", file=sys.stderr)
+    if expected_failure and deletion_verified:
+        print("Expected remote exit 42 and disposable workspace deletion verified.", flush=True)
     return result
 
 

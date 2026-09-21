@@ -159,6 +159,13 @@ affinity.
 Use [[inventory]] as the current cross-workload summary and read the named
 source README before changing an application.
 
+The September 6 [[operations/deluge-cpu-audit-2026-09-05]] isolates Gluetun's
+sustained 300m use mostly to its main process while VPN and RPC health remain
+good. Its disabled file-configured loopback profiler and bounded private
+capture helper support diagnosis before changing the cap. Current saturation
+must be revalidated before activation. Activation and
+removal require separate reviewed Recreate rollouts; live profiling is unverified.
+
 ## Prometheus
 
 Prometheus owns the durable notification path from in-cluster alert rules to
