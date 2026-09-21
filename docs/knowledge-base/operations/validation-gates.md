@@ -112,6 +112,13 @@ The local secret hook rejects common plan/state filenames and inspects ZIP
 members or JSON structure for OpenTofu plan/state signatures, including staged
 blobs whose working-tree file was removed.
 
+The local Checkov hook scans the full `clusters` directory for Kubernetes YAML
+changes. A changed-files-only scan omits unchanged NetworkPolicies and can
+incorrectly fail `CKV2_K8S_6` for a Deployment. Other files retain the diff scan;
+the dedicated secrets hook still scans every changed file with the upstream
+`--enable-secret-scan-all-files` entry and required `-f` argument. Do not override
+that argument with `-v`, which prints Checkov's version instead of scanning.
+
 Do not require a new Actions context in ruleset `14700233` before the workflow
 that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
 trusted live-plan PR, and a fork; then add only that context while preserving
@@ -575,3 +582,18 @@ Tests also cover Linux `sha256sum`, Darwin `shasum`, failed-checksum rejection,
 missing-Service recreation without treating auth failures as absence, and
 live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
+
+## Harbor OCI rollout
+
+Harbor requires chart/Kustomize rendering, bootstrap and transport regression
+tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
+verified TLS, API health, denied anonymous artifact pulls, successful robot
+push/pull, identical migrated image digests, ready consumer Pods and a verified
+logical database backup. See [[harbor-oci]]; a Healthy Application alone does
+not establish successful private package migration.
+
+The full Harbor chart is rendered twice to reject randomly generated state,
+then combined with the owned manifests to validate prerequisite references and
+sync ordering. A narrow policy exception accepts only the six exact empty or
+public-configuration Secret payloads emitted by chart 1.19.2; actual credential
+data or an added field still fails the raw-Secret gate.

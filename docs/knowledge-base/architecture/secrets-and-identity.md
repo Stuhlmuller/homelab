@@ -148,12 +148,16 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
   generated through the shared SSM parameter module and enables browser-side
   transport encryption without committing key material.
-  Its private maintained images use a separate, externally issued
+  Its private maintained images use the read-only Harbor robot through the
+  namespace-scoped `harbor-pull` Secret, referenced only by `imagePullSecrets`.
+  The retained GHCR recovery path uses a separate, externally issued
   `/homelab/nofx/ghcr-read-token`. The protected `NOFX Registry Credential`
   workflow validates a dedicated classic PAT with only `read:packages` before
   updating that exact SecureString. `nofx-registry-auth` refreshes every five
-  minutes and renders a kubelet-only Docker config Secret. Bootstrap retains
-  upstream images until authenticated image pulls and secret refresh succeed;
+  minutes and renders a kubelet-only Docker config Secret. A GHCR rollback must
+  switch image references and pull Secret together after authenticated pulls
+  and a fresh successful Secret refresh. Bootstrap
+  PR #1031 retained upstream images while establishing this credential path;
   see the [private-image runbook](../../nofx-private-images.md).
 - Octelium client bridge auth uses the `octelium-client-auth` ExternalSecret in
   `octelium-client`, sourced from `/homelab/octelium/client-auth-token` and
@@ -337,3 +341,13 @@ main commit, selects only `nofx.default`, proves a second apply is empty, and
 verifies the human-access policy. Existing operator credentials stay private;
 the temporary native transport changes no saved host or client settings.
 See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
+
+## Harbor registry identities
+
+[[../operations/harbor-oci|Harbor]] uses generated SSM secrets under
+`/homelab/harbor/`, file-mounted bootstrap credentials, a private project, and
+separate project robots for pull and publication. NOFX receives only the pull
+credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
+Authorization headers; Harbor authenticates OCI clients. Registration is
+disabled and project creation is admin-only. Never store Harbor bootstrap
+images in Harbor itself.

@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+import stat
 import subprocess
 import sys
 import unittest
@@ -120,24 +121,77 @@ class CredentialTests(unittest.TestCase):
                 patch.object(module, "github_user", side_effect=step("user")), \
                 patch.object(module, "parameter_metadata", side_effect=step("parameter")), \
                 patch.object(module, "authenticate_images", side_effect=step("images")), \
-                patch.object(module, "command", return_value='{"Version": 2}') as command, \
+                patch.object(module, "store_credential", return_value={"Version": 2}) as command, \
                 redirect_stdout(output), redirect_stderr(output):
             status = module.main()
         return status, calls, command, output.getvalue()
 
-    def test_success_validates_twice_before_stdin_only_write(self):
+    def test_success_validates_twice_before_write(self):
         status, calls, command, output = self.run_rotation()
         self.assertEqual(status, 0)
         self.assertEqual(calls, ["context", "user", "parameter", "images", "context"])
-        self.assertEqual(command.call_count, 1)
-        self.assertEqual(command.call_args.kwargs["stage"], "ssm-write")
-        self.assertEqual(command.call_args.args[0], [
-            "aws", "ssm", "put-parameter", "--region", "us-west-2",
-            "--cli-input-json", "file:///dev/stdin", "--output", "json",
-        ])
-        payload = json.loads(command.call_args.kwargs["data"])
-        self.assertEqual(payload, {"Name": module.PARAMETER, "Type": "SecureString", "KeyId": "alias/aws/ssm", "Value": TOKEN, "Overwrite": True})
+        command.assert_called_once_with(TOKEN)
         self.assertNotIn(TOKEN, output)
+
+    def inspect_write_payload(self, args, kwargs):
+        self.assertEqual(kwargs, {"stage": "ssm-write"})
+        self.assertEqual(args[:6], ["aws", "ssm", "put-parameter", "--region", "us-west-2", "--cli-input-json"])
+        self.assertTrue(args[6].startswith("file:///"))
+        self.assertEqual(args[7:], ["--output", "json"])
+        self.assertNotIn(TOKEN, " ".join(args))
+        path = Path(args[6].removeprefix("file://"))
+        self.assertTrue(stat.S_ISREG(path.stat().st_mode))
+        self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
+        self.assertEqual(json.loads(path.read_text()), {
+            "Name": module.PARAMETER, "Type": "SecureString", "KeyId": "alias/aws/ssm", "Value": TOKEN, "Overwrite": True,
+        })
+        return path
+
+    def test_private_write_file_removed_on_success_and_failure(self):
+        for succeeds in [True, False]:
+            paths = []
+
+            def command(args, **kwargs):
+                paths.append(self.inspect_write_payload(args, kwargs))
+                if not succeeds:
+                    raise module.Failure("synthetic write failure")
+                return '{"Version": 2}'
+
+            with self.subTest(succeeds=succeeds), patch.object(module, "command", side_effect=command):
+                if succeeds:
+                    self.assertEqual(module.store_credential(TOKEN), {"Version": 2})
+                else:
+                    with self.assertRaises(module.Failure):
+                        module.store_credential(TOKEN)
+            self.assertEqual(len(paths), 1)
+            self.assertFalse(paths[0].exists())
+            self.assertFalse(paths[0].parent.exists())
+
+    def test_actual_aws_cli_accepts_regular_file_offline(self):
+        # This executes AWS's real parameter-file parser with synthetic data.
+        # Output skeleton mode validates input locally and never sends a request.
+        # no-sign-request and isolated environment prevent any credential lookup.
+        paths = []
+
+        def command(args, **kwargs):
+            paths.append(self.inspect_write_payload(args, kwargs))
+            result = subprocess.run(
+                args + ["--generate-cli-skeleton", "output", "--no-sign-request"],
+                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30,
+                env={"PATH": os.environ["PATH"], "AWS_EC2_METADATA_DISABLED": "true",
+                     "AWS_CONFIG_FILE": "/dev/null", "AWS_SHARED_CREDENTIALS_FILE": "/dev/null",
+                     "AWS_PAGER": ""},
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("Version", json.loads(result.stdout))
+            self.assertNotIn(TOKEN, result.stdout + result.stderr)
+            return result.stdout
+
+        with patch.object(module, "command", side_effect=command):
+            module.store_credential(TOKEN)
+        self.assertEqual(len(paths), 1)
+        self.assertFalse(paths[0].parent.exists())
 
     def test_failed_validation_never_writes_ssm(self):
         for stage in ["context", "user", "parameter", "images"]:

@@ -378,3 +378,12 @@ Verify all three applications Synced/Healthy, old Job absence, unchanged bound
 claims and media access after rollout. Fresh bootstrap creates only the required
 directories. Rollback must not recreate the old copy Jobs against active data;
 use a reviewed fenced restore when historical data is actually needed.
+
+## Harbor registry state
+
+[[../operations/harbor-oci|Harbor]] uses a retained local PostgreSQL volume on
+`acer`, retained NFS registry blobs and retained NFS logical database backups.
+Recover the database and corresponding blobs together, retaining the SSM
+encryption key and signing certificate. NFS copies share the QNAP failure
+domain; off-NAS registry backup and an isolated restore drill remain open.
+See `clusters/homelab/apps/harbor/README.md` for the concrete restore contract.

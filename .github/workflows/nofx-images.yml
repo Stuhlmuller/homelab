@@ -7,6 +7,9 @@ on:
     paths:
       - builds/nofx/**
       - .github/workflows/nofx-images.yml
+      - scripts/ci/harbor-publish.sh
+      - scripts/ci/harbor-publish-test.py
+      - scripts/config/harbor-migration.json
       - scripts/ci/static-checks.sh
       - policy/workflows*.rego
   push:
@@ -14,6 +17,9 @@ on:
     paths:
       - builds/nofx/**
       - .github/workflows/nofx-images.yml
+      - scripts/ci/harbor-publish.sh
+      - scripts/ci/harbor-publish-test.py
+      - scripts/config/harbor-migration.json
       - scripts/ci/static-checks.sh
       - policy/workflows*.rego
   workflow_dispatch:
@@ -67,9 +73,17 @@ jobs:
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    concurrency:
+      group: harbor-packages-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
     permissions:
       contents: read
-      packages: write
+      id-token: write
+    outputs:
+      backend: ${{ steps.publication.outputs.backend }}
+      frontend: ${{ steps.publication.outputs.frontend }}
     steps:
       - name: Check Out Repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -78,6 +92,21 @@ jobs:
 
       - name: Build NOFX Images Before Registry Login
         run: bash builds/nofx/build.sh
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Validate Harbor Publication Gates
+        run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
 
       - name: Verify Current Main Commit
         env:
@@ -98,27 +127,62 @@ jobs:
           current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
           test "${ACTUAL_SHA}" = "${current_main_sha}"
 
-      - name: Log In To GHCR
-        env:
-          REGISTRY_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: printf '%s' "${GITHUB_TOKEN}" | docker login ghcr.io --username "${REGISTRY_USER}" --password-stdin
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-harbor-publish-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
 
-      - name: Push Fixed NOFX Image Repositories
+      - name: Publish And Verify Private Harbor Images
+        id: publication
         env:
-          SOURCE_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
           set -euo pipefail
-          docker tag homelab-nofx-backend:build "ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-${SOURCE_SHA}"
-          docker tag homelab-nofx-frontend:build "ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-${SOURCE_SHA}"
-          docker push "ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-${SOURCE_SHA}"
-          docker push "ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-${SOURCE_SHA}"
-          backend_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "ghcr.io/stuhlmuller/homelab-nofx-backend:homelab-${SOURCE_SHA}")"
-          frontend_digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "ghcr.io/stuhlmuller/homelab-nofx-frontend:homelab-${SOURCE_SHA}")"
-          [[ "${backend_digest}" =~ ^ghcr[.]io/stuhlmuller/homelab-nofx-backend@sha256:[0-9a-f]{64}$ ]]
-          [[ "${frontend_digest}" =~ ^ghcr[.]io/stuhlmuller/homelab-nofx-frontend@sha256:[0-9a-f]{64}$ ]]
-          printf '%s\n' "${backend_digest}" "${frontend_digest}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/harbor-publish.sh publish
+          EOF
+          then
+            echo "::error::Harbor publication failed; private transport and registry output withheld."
+            exit 1
+          fi
+          echo "Both private Harbor images published and destination digests verified; private output withheld."
 
-      - name: Log Out Of GHCR
-        if: always()
-        run: docker logout ghcr.io
+  published-digests:
+    name: Report Published NOFX Digests
+    needs: [publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Validate Published References
+        env:
+          BACKEND_REFERENCE: ${{ needs.publish.outputs.backend }}
+          FRONTEND_REFERENCE: ${{ needs.publish.outputs.frontend }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${BACKEND_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          [[ "${FRONTEND_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          set -o noclobber
+          printf '%s\n' "$BACKEND_REFERENCE" "$FRONTEND_REFERENCE" >"${RUNNER_TEMP:?}/nofx-published-images.txt"
+
+      - name: Upload Published References
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: nofx-published-images-${{ github.sha }}
+          path: ${{ runner.temp }}/nofx-published-images.txt
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false

@@ -13,9 +13,11 @@ FROM dependencies AS tests
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
     go test ./api ./backtest ./market/okxhistory -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./market ./kernel -run '^TestHistorical' -count=1 && \
+    go test ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage)' -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./trader ./manager -run '^TestOKXInitialization' -count=1
+    go test ./store -run '^TestTraderCreatePreservesVisibility$' -count=1 && \
+    CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
+    go test ./trader ./manager -run '^TestOKX(Initialization|Leverage|RequestsUseUSRegion)' -count=1
 
 FROM tests AS build
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
