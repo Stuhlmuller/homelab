@@ -15,9 +15,15 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The shared-account rollout targets reviewed source revision
-`05fcf60be529c063ae9f5fa16494466c3db0f400`; `deployment.yaml` declares the desired
-image pair. Publication and runtime acceptance remain separate gates.
+The startup-error rollout targets build revision
+`9716e9d9121a062029c72dc5f03f0d266a166650`, retaining the NOFX source fix from
+[PR #1056](https://github.com/Stuhlmuller/homelab/pull/1056), merged at
+`1c826acdbb16af08cf879ee5fcf4871a0307b45d`.
+[Publication run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
+passed publication and private pull verification. `deployment.yaml` declares
+the verified image pair; publication and runtime acceptance remain separate
+gates. Require the exact build revision,
+patches `0007`–`0010`, and all three drafts stopped and hidden after restart.
 Both deployments reference
 `harbor-pull` only through `imagePullSecrets`. Harbor migration preserved the
 published digests and passed complete read-only pull checks.
@@ -160,9 +166,9 @@ inventory and a reviewed policy change; the image rollout preserves that rule.
 
 The deployed derivative supports key-preserving model edits and removes the
 upstream save handler's credential logging and trader reload.
-The dashboard's generic 404 label can also mean a trader failed to load; it does
-not prove a missing HTTP route. Source evidence, simulation setup, rollback, and
-validation commands are in the
+The upstream dashboard's generic 404 label can also mean a trader failed to load;
+patch `0011` addresses this as described below. Source evidence, simulation
+setup, rollback, and validation commands are in the
 [NOFX README](../../../clusters/homelab/apps/nofx/README.md).
 
 The private credential workflow reports fixed command stages and allowlisted
@@ -202,6 +208,54 @@ capital. Separate funded accounts or
 subaccounts are needed only for independent live balances and P&L. The runbook
 records the draft limits without presenting shared balances or historical
 simulations as independent live competition results.
+
+The first user-initiated starts after the `05fcf60` rollout failed before the
+trading loop: OKX rejected account config/balance reads with code `50119`, so
+the manager could not load the traders. The UI replaced the resulting HTTP 500
+with generic retry guidance. That build hard-codes `https://www.okx.com`.
+[OKX's API FAQ](https://www.okx.com/en-us/help/api-faq) identifies regional-host
+mismatch as a common cause: US accounts use `us.okx.com`, EEA accounts
+`eea.okx.com`. Confirm the account region before changing routing or credentials;
+this error alone does not prove the key is invalid. Regional authentication does
+not establish trading compatibility: the adapter uses `*-USDT-SWAP` perpetuals,
+which [OKX says are unavailable to US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+Validate available account instruments read-only before any activation. Do not
+work around product eligibility by using another regional endpoint.
+Patch `0010` returns fixed HTTP 400 guidance for the known OKX `50119` load
+failure and carries that message through the Start toast. Unknown server errors
+remain generic. It also propagates account-config lookup failures from the shared
+OKX constructor instead of assuming hedge mode. This blocks initialization even
+when a saved Initial Balance skips the later balance lookup. All four constructor
+callers use their existing error paths. Handler and UI regressions use mocked
+exchange/API responses; they verify stopped state with zero and nonzero saved
+balances and error visibility, not live authentication. This
+repair does not change the endpoint, credentials, or exchange product. Actual
+OKX authentication remained unresolved at that rollout; the follow-up below
+addresses routing after account-region confirmation.
+
+On September 21, read-only inspection confirmed an existing stopped trader's
+positions 404s followed OKX `50119` initialization failures; Kubernetes remained
+healthy. The operator confirmed the account is US-registered. Patch `0011`
+changes the shared OKX REST host to `https://us.okx.com`, with no regional
+fallback or credential change. It distinguishes owned-but-unavailable traders
+(safe `503 TRADER_UNAVAILABLE`) from missing/foreign IDs (404), preserves
+database-only equity history, and displays the guidance in the shared HTTP
+client. It also removes the upstream default lookup's cross-user fallback.
+Mocked handler tests reproduce the original 404, verify all ten runtime readers,
+and cover stopped successful reads, ownership, failed initialization, and the
+public history route.
+Transport tests cover signed US GET/POST requests; Axios tests cover error display.
+Publication and live acceptance remain pending; no trader was activated. The
+regional host does not add US spot support or make USDT perpetuals available.
+
+During this trace, `handleOrderFills` was also found to query fills by order ID
+without checking that the order belongs to the resolved trader. The shared
+lookup fixes trader ownership but does not establish order ownership. Before
+expanding access, add a trader-scoped order lookup and a cross-trader regression
+at `api/server.go` / `store/order.go`. The public equity-history single/batch
+routes also accept IDs without enforcing hidden visibility; this patch preserves
+their existing public contract. Add consistent owner-or-public visibility checks
+across both before expanding access; retain the human-only access boundary.
 
 The unused Arena consensus execution path bypasses the shared decision validator;
 do not infer its leverage enforcement from the normal trader fix. A separate

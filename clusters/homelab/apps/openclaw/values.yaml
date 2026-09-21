@@ -26,7 +26,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "56b8e7e5543910ba48110a49d444063be647526ccd9b92bdc6e783976fbe2cb5"
+        homelab.rst.io/openclaw-assistant-sha256: "99ec886dd9946bfc1a02d96217d42dd65b53e28c11581a0c5f01d56f2527a23d"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -227,8 +227,8 @@ controllers:
               had_existing_state=true
             fi
             backup_root=/data/openclaw-backups
-            backup_name=pre-2026.9.2
-            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.2"
+            backup_name=pre-2026.9.5
+            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.5"
             backup_dir="$backup_root/$backup_name"
             backup_staging="$backup_root/.$backup_name.partial"
             backup_archive=openclaw.tar.gz
@@ -242,7 +242,7 @@ controllers:
                 (cd "$1" && sha256sum -c "$backup_checksum")
             }
             if "$had_existing_state" && [ ! -s "$backup_marker" ]; then
-              echo "Creating or verifying offline pre-2026.9.2 OpenClaw backup"
+              echo "Creating or verifying offline pre-2026.9.5 OpenClaw backup"
               (
                 umask 077
                 mkdir -p "$backup_root"
@@ -296,7 +296,7 @@ controllers:
                   mv "$backup_staging" "$backup_dir"
                 fi
                 verify_backup_dir "$backup_dir"
-                printf 'verified pre-2026.9.2 archive\n' > "$backup_marker"
+                printf 'verified pre-2026.9.5 archive\n' > "$backup_marker"
               )
             fi
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"

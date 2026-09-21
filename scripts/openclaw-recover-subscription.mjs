@@ -12,15 +12,16 @@ if (!["--check", "--recover"].includes(mode)) {
 }
 const runtime = JSON.parse(await readFile("/app/package.json", "utf8"));
 const reviewed = {
-  "2026.9.1": { store: "store-CZzbMlii.js", load: "m", state: "usage-state-C0QBjJnZ.js", usage: "usage-CWqpxTil.js" },
-  "2026.9.2": { store: "store-F1B2duCT.js", load: "d", state: "usage-state-CAKmPrwS.js", usage: "usage-_yfLJGtN.js" },
+  "2026.9.1": { store: "store-CZzbMlii.js", load: "m", state: "usage-state-C0QBjJnZ.js", cooldown: "o", reprobe: "s", usage: "usage-CWqpxTil.js" },
+  "2026.9.2": { store: "store-F1B2duCT.js", load: "d", state: "usage-state-CAKmPrwS.js", cooldown: "o", reprobe: "s", usage: "usage-_yfLJGtN.js" },
+  "2026.9.5": { store: "store-runtime-D8__yyKr.mjs", load: "c", state: "order-GFdW5zWC.mjs", cooldown: "h", usage: "usage-CpSyxDN4.mjs", reprobe: "i" },
 }[runtime.version];
 if (!reviewed) {
-  throw new Error("Recovery requires reviewed OpenClaw 2026.9.1 or 2026.9.2 internals");
+  throw new Error("Recovery requires reviewed OpenClaw 2026.9.1, 2026.9.2, or 2026.9.5 internals");
 }
 const { [reviewed.load]: loadStore } = await import(`/app/dist/${reviewed.store}`);
-const { o: inCooldown } = await import(`/app/dist/${reviewed.state}`);
-const { s: reprobe } = await import(`/app/dist/${reviewed.usage}`);
+const { [reviewed.cooldown]: inCooldown } = await import(`/app/dist/${reviewed.state}`);
+const { [reviewed.reprobe]: reprobe } = await import(`/app/dist/${reviewed.usage}`);
 const agentDir = "/data/openclaw/agents/main/agent";
 const model = "gpt-6-astra";
 const store = loadStore(agentDir);
@@ -44,11 +45,14 @@ if (!blocked(store)) {
   }
   // This schedules one bounded upstream recheck. It respects probe intervals,
   // active auth failures, current provider limits, and concurrent state changes.
-  reprobe({ store, profileIds: profiles, agentDir, forModel: model });
+  let probeFailed = false;
+  Promise.resolve(reprobe({ store, profileIds: profiles, agentDir, forModel: model }))
+    .catch(() => { probeFailed = true; });
   const deadline = Date.now() + 30_000;
   let recovered = false;
   while (Date.now() < deadline) {
     await delay(1_000);
+    if (probeFailed) break;
     if (!blocked(loadStore(agentDir))) {
       recovered = true;
       break;

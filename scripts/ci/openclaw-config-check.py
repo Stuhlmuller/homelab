@@ -12,6 +12,12 @@ bootstrap = subprocess.check_output(
     ["yq", "-r", '.controllers.openclaw.initContainers."bootstrap-config".command[2]', values],
     text=True,
 )
+gateway_version = subprocess.check_output(
+    ["yq", "-r", '.controllers.openclaw.containers.app.image.tag', values], text=True,
+).strip().split("@", 1)[0]
+installer = pathlib.Path("clusters/homelab/apps/openclaw/assistant/install-codex.py").read_text()
+assert f'VERSION = "{gateway_version}"' in installer
+assert f"backup_name=pre-{gateway_version}" in bootstrap
 marker = "OPENCLAW_CONFIG_MIGRATION"
 migration = bootstrap.split(f"<<'{marker}'\n", 1)[1].split(f"\n{marker}", 1)[0]
 assert bootstrap.index('verify_backup_dir "$backup_dir"') < bootstrap.index(migration)
@@ -210,8 +216,10 @@ with tempfile.TemporaryDirectory() as directory:
     (state / "state").mkdir(parents=True)
     (state / "agents/main/agent").mkdir(parents=True)
     (state / "state/history").write_text("canonical history")
+    # A previous upgrade marker must not skip this release's archive.
+    (state / ".backup-verified-for-2026.9.2").write_text("previous upgrade")
     backups = root / "openclaw-backups"
-    staging = backups / ".pre-2026.9.2.partial"
+    staging = backups / ".pre-2026.9.5.partial"
     staging.mkdir(parents=True)
     partial = b"truncated gzip fixture"
     (staging / "openclaw.tar.gz").write_bytes(partial)
@@ -222,14 +230,14 @@ with tempfile.TemporaryDirectory() as directory:
         return subprocess.run(["sh", "-ec", harness + gate, "fixture", directory], capture_output=True)
     result = run_backup()
     assert result.returncode == 0, result.stderr
-    preserved = list(backups.glob("pre-2026.9.2.interrupted-*"))
+    preserved = list(backups.glob("pre-2026.9.5.interrupted-*"))
     assert len(preserved) == 1
     assert (preserved[0] / "openclaw.tar.gz").read_bytes() == partial
-    published = backups / "pre-2026.9.2/openclaw.tar.gz"
+    published = backups / "pre-2026.9.5/openclaw.tar.gz"
     archive_bytes = published.read_bytes()
     assert run_backup().returncode == 0
     assert published.read_bytes() == archive_bytes
-    (state / ".backup-verified-for-2026.9.2").unlink()
+    (state / ".backup-verified-for-2026.9.5").unlink()
     published.write_bytes(b"corrupt published backup")
     assert run_backup().returncode != 0
     assert published.read_bytes() == b"corrupt published backup"

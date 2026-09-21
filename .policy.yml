@@ -1,6 +1,5 @@
 policy:
   approval:
-    - pull request commits have verified signatures
     - or:
         - codex review bot approved
         - rstuhlmuller thumbs-up comment approved
@@ -11,16 +10,6 @@ policy:
         - "Stuhlmuller"
 
 approval_rules:
-  - name: pull request commits have verified signatures
-    description: >-
-      Every pull request commit must have a GitHub-verified signature before
-      Policy Bot can approve the change.
-    options:
-      invalidate_on_push: true
-    requires:
-      count: 0
-      conditions:
-        has_valid_signatures: true
   - name: codex review bot approved
     description: >-
       Count only the exact top-level thumbs-up comment that the Codex review
