@@ -11,9 +11,9 @@ file path back to `replicas: 0` in git before Argo CD rolls out placeholder
 config.
 
 Policy Bot looks for a repository-local `.policy.yml` first and falls back to
-`policy.yml` in the shared `.github` repository. The homelab policy requires
-GitHub-verified commit signatures in addition to the normal review approval
-rules. One approval path accepts only the exact top-level `👍` comment from
+`policy.yml` in the shared `.github` repository. The homelab policy uses normal
+review approval rules without requiring commit signatures. One approval path
+accepts only the exact top-level `👍` comment from
 `chatgpt-codex-connector[bot]` that `AGENTS.md` requires after a passing Codex
 review with no P0 or P1 alerts. A later push invalidates that approval. This
 allows auto-merge to remain queued until Policy Bot observes a Codex review pass

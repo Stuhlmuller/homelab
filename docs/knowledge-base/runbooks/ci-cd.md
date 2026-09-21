@@ -10,4 +10,7 @@ exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
 
+Policy Bot accepts its configured Codex, owner, or organization-member review
+approval without requiring a commit signature.
+
 See [[../operations/validation-gates]] and [[../architecture/gitops-flow]].
