@@ -1,0 +1,153 @@
+diff --git a/trader/okx_trader.go b/trader/okx_trader.go
+--- a/trader/okx_trader.go
++++ b/trader/okx_trader.go
+@@ -208,7 +208,7 @@
+ 
+ 	// code=1 indicates partial success, need to check specific results in data
+ 	// code=2 indicates complete failure
+-	if okxResp.Code != "0" && okxResp.Code != "1" {
++	if okxResp.Code != "0" && (okxResp.Code != "1" || path == okxLeveragePath) {
+ 		return nil, fmt.Errorf("OKX API error: code=%s, msg=%s", okxResp.Code, okxResp.Msg)
+ 	}
+ 
+@@ -534,11 +534,7 @@
+ 
+ 		_, err := t.doRequest("POST", okxLeveragePath, body)
+ 		if err != nil {
+-			// Ignore if already at target leverage
+-			if strings.Contains(err.Error(), "same") {
+-				continue
+-			}
+-			logger.Infof("  ⚠️ Failed to set %s %s leverage: %v", symbol, posSide, err)
++			return fmt.Errorf("failed to set %s %s leverage: %w", symbol, posSide, err)
+ 		}
+ 	}
+ 
+@@ -548,13 +544,13 @@
+ 
+ // OpenLong opens long position
+ func (t *OKXTrader) OpenLong(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
++	// Confirm leverage before canceling existing orders or opening a position.
++	if err := t.SetLeverage(symbol, leverage); err != nil {
++		return nil, err
++	}
++
+ 	// Cancel old orders
+ 	t.CancelAllOrders(symbol)
+-
+-	// Set leverage
+-	if err := t.SetLeverage(symbol, leverage); err != nil {
+-		logger.Infof("  ⚠️ Failed to set leverage: %v", err)
+-	}
+ 
+ 	instId := t.convertSymbol(symbol)
+ 
+@@ -625,13 +621,13 @@
+ 
+ // OpenShort opens short position
+ func (t *OKXTrader) OpenShort(symbol string, quantity float64, leverage int) (map[string]interface{}, error) {
++	// Confirm leverage before canceling existing orders or opening a position.
++	if err := t.SetLeverage(symbol, leverage); err != nil {
++		return nil, err
++	}
++
+ 	// Cancel old orders
+ 	t.CancelAllOrders(symbol)
+-
+-	// Set leverage
+-	if err := t.SetLeverage(symbol, leverage); err != nil {
+-		logger.Infof("  ⚠️ Failed to set leverage: %v", err)
+-	}
+ 
+ 	instId := t.convertSymbol(symbol)
+ 
+diff --git a/trader/okx_leverage_test.go b/trader/okx_leverage_test.go
+new file mode 100644
+--- /dev/null
++++ b/trader/okx_leverage_test.go
+@@ -0,0 +1,85 @@
++package trader
++
++import (
++	"encoding/json"
++	"fmt"
++	"io"
++	"net/http"
++	"strings"
++	"testing"
++	"time"
++)
++
++func TestOKXLeverageFailurePreventsOrder(t *testing.T) {
++	for _, direction := range []struct {
++		name, side string
++		open       func(*OKXTrader, string, float64, int) (map[string]interface{}, error)
++	}{
++		{"long", "buy", (*OKXTrader).OpenLong},
++		{"short", "sell", (*OKXTrader).OpenShort},
++	} {
++		for _, result := range []struct{ failedSide, code string }{
++			{"long", "51000"}, {"short", "51000"},
++			{"long", "1"}, {"short", "1"}, {"", "0"},
++		} {
++			failedSide := result.failedSide
++			name := failedSide + "-" + result.code
++			if failedSide == "" {
++				name = "success"
++			}
++			t.Run(direction.name+"/"+name, func(t *testing.T) {
++				leverageRequests, otherRequests, orders := 0, 0, 0
++				transport := okxInitializationTransport(func(request *http.Request) (*http.Response, error) {
++					response := `{"code":"0","data":[]}`
++					if request.URL.Path != okxLeveragePath {
++						otherRequests++
++					}
++					switch request.URL.Path {
++					case okxLeveragePath:
++						leverageRequests++
++						var body map[string]string
++						if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
++							t.Fatal(err)
++						}
++						if body["lever"] != "1" {
++							t.Fatalf("requested leverage %q, want 1", body["lever"])
++						}
++						if body["posSide"] == failedSide {
++							// An arbitrary error containing "same" must still fail closed.
++							response = fmt.Sprintf(`{"code":%q,"msg":"fixture rejected same-account leverage change","data":[]}`, result.code)
++						}
++					case okxPendingOrdersPath, okxAlgoPendingPath:
++					case okxOrderPath:
++						orders++
++						var body map[string]string
++						if err := json.NewDecoder(request.Body).Decode(&body); err != nil {
++							t.Fatal(err)
++						}
++						if request.Method != http.MethodPost || body["side"] != direction.side || body["posSide"] != direction.name {
++							t.Fatalf("unexpected order: %s %v", request.Method, body)
++						}
++						response = `{"code":"0","data":[{"ordId":"fixture-order","sCode":"0"}]}`
++					default:
++						t.Fatalf("unexpected request: %s %s", request.Method, request.URL.Path)
++					}
++					return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(response)), Request: request}, nil
++				})
++				trader := &OKXTrader{
++					httpClient: &http.Client{Transport: transport},
++					instrumentsCache: map[string]*OKXInstrument{
++						"BTC-USDT-SWAP": {CtVal: 0.01, LotSz: 1},
++					},
++					instrumentsCacheTime: time.Now(),
++				}
++				order, err := direction.open(trader, "BTCUSDT", 0.01, 1)
++				if failedSide != "" {
++					if err == nil || order != nil || orders != 0 || otherRequests != 0 {
++						t.Fatalf("failed leverage must stop before canceling or placing orders: err=%v order=%v orders=%d otherRequests=%d", err, order, orders, otherRequests)
++					}
++				} else if err != nil || order["orderId"] != "fixture-order" || orders != 1 || leverageRequests != 2 {
++					t.Fatalf("successful leverage must preserve order placement: err=%v order=%v orders=%d leverageRequests=%d", err, order, orders, leverageRequests)
++				}
++			})
++		}
++	}
++}
