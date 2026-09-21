@@ -3,52 +3,19 @@ image:
   tag: main-v1.80.8-stable@sha256:3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8
 environmentSecrets:
   - litellm-provider-keys
-serviceAccount:
-  create: true
-  name: litellm
-  automount: false
 service:
   type: ClusterIP
   port: 4000
-envVars:
-  LANGFUSE_OTEL_HOST: http://langfuse-web.langfuse.svc.cluster.local:3000
-  LITELLM_LOG: INFO
-podAnnotations:
-  homelab.stuhlmuller.dev/app-identity-revision: "1"
-volumes:
-  - name: app-identity
-    configMap:
-      name: litellm-app-identity
-  - name: app-keys
-    secret:
-      secretName: litellm-app-keys
-volumeMounts:
-  - name: app-identity
-    mountPath: /etc/litellm-hooks
-    readOnly: true
-  - name: app-keys
-    mountPath: /var/run/secrets/litellm-apps
-    readOnly: true
 masterkeySecretName: litellm-provider-keys
 masterkeySecretKey: LITELLM_MASTER_KEY
 proxy_config:
   general_settings:
     master_key: os.environ/LITELLM_MASTER_KEY
-    custom_auth: /etc/litellm-hooks/app_identity.authenticate
-  litellm_settings:
-    set_verbose: false
-    log_raw_request_response: false
-    callbacks:
-      - /etc/litellm-hooks/app_identity.attribution
-      - langfuse_otel
   model_list:
     - model_name: openai-default
       litellm_params:
         model: openai/gpt-4.1-mini
         api_key: os.environ/OPENAI_API_KEY
-    - model_name: openrouter/free
-      litellm_params:
-        model: openrouter/openrouter/free
 db:
   deployStandalone: false
 migrationJob:

@@ -105,8 +105,10 @@ Langfuse is not ready until its ExternalSecret is Ready, its three retained
 `nfs-default` claims are Bound, PostgreSQL, Valkey, and ClickHouse are Healthy,
 the S3 credential parameters exist, and the protected UI responds through
 Octelium. LiteLLM registration follows Langfuse, but that does not gate runtime
-readiness; verify the initialized project before treating first-rollout callback
-records as complete. A small number of early callback events can be lost.
+readiness. Existing caller runtime remains unchanged while these prerequisites
+reconcile. Activate telemetry only in a follow-up after the
+[caller readiness gates](../clusters/homelab/apps/langfuse/README.md#caller-activation)
+pass.
 
 ## Registration Provider
 

@@ -1,8 +1,10 @@
 # AI observability
 
 Langfuse is the intended operator UI for prompts, outputs, errors and token
-usage. LiteLLM supplies the shared inference endpoint and authenticates callers
-with distinct app keys. See the [gateway contract](../../../clusters/homelab/apps/litellm/README.md)
+usage. The service and distinct app-key producers are staged first; current
+OpenClaw/LiteLLM runtime configuration and the existing OpenClaw master-key
+alias remain unchanged. The off-graph activation patch adds gateway app
+authentication and direct OpenClaw OTLP only after prerequisite readiness. See the [gateway contract](../../../clusters/homelab/apps/litellm/README.md)
 and [Langfuse deployment](../../../clusters/homelab/apps/langfuse/README.md).
 
 ## Rollout evidence
@@ -28,7 +30,21 @@ Langfuse generation with expected app identity, model, input/output and token
 usage. A healthy gateway, chart render or synthetic attribute test alone does
 not satisfy that gate. Record any provider limitation explicitly.
 
+## Staging boundary
+
+[The activation runbook](../../../clusters/homelab/apps/langfuse/README.md#caller-activation)
+requires SSM/S3 reconciliation, Ready Secrets and initialized Langfuse before
+caller changes merge. `scripts/ci/langfuse-staging-check.py` proves existing
+caller credentials remain unchanged and applies the pending patch in scratch
+before exercising the OpenClaw fixtures. Overlapping OpenClaw changes must
+refresh that artifact; it must preserve the current provider, model, image and
+execution budgets. The distinct future OpenClaw key is
+`/homelab/openclaw/litellm-app-token`, leaving the live token alias untouched.
+
 ## Validation
+
+The CI dependency check uses the GitHub runner's system Python because PyPI
+native wheels require system libraries not provided by Nix's Python loader.
 
 The pinned LiteLLM test exercises real auth types and exporter attribute
 mapping, including caller spoofing, denied administration routes, key rotation,

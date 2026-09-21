@@ -1,14 +1,22 @@
 # LiteLLM app attribution
 
-LiteLLM forwards inference to configured providers and sends requests, outputs,
-usage and errors to the homelab Langfuse project through `langfuse_otel`.
+LiteLLM currently retains its existing provider and master-key configuration.
+The Langfuse callback and app authentication are staged in the
+[pending activation patch](../../../../docs/examples/langfuse/activate-callers.patch),
+outside the active Helm values. Apply only through a reviewed follow-up after
+the [readiness gates](../langfuse/README.md#caller-activation) pass.
+
+The pending configuration sends requests, outputs, usage and errors to the
+homelab Langfuse project through `langfuse_otel`.
 Langfuse owns the observability UI; LiteLLM does not need another database just
 to label callers.
 
 `app_identity.py` uses LiteLLM's custom-auth and pre-call callback interfaces.
-Separate generated `/homelab/<app>/litellm-token` parameters identify OpenClaw,
-NOFX, n8n and Multica. The `litellm-app-keys` ExternalSecret mounts those keys
-as files. App keys permit model discovery and inference only; the master key
+Separate generated `/homelab/<app>/litellm-token` parameters identify NOFX,
+n8n and Multica; OpenClaw uses `/homelab/openclaw/litellm-app-token`. Its existing
+`litellm-token` remains the master-key alias until activation switches the
+consumer. The `litellm-app-keys` ExternalSecret mounts those keys
+for later file mounting. After activation, app keys permit model discovery and inference only; the master key
 is reserved for the operator. Incoming identity labels are replaced with the
 authenticated app name in Langfuse `userId`, trace name, metadata and `app:*`
 tags. A caller's session ID is retained.

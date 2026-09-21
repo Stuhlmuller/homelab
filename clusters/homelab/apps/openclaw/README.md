@@ -74,14 +74,21 @@ per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
 plugin is installed and checked at the exact gateway version during bootstrap.
 
-### Langfuse direct telemetry
+### Pending Langfuse direct telemetry
+
+The exporter is staged in the
+[pending activation patch](../../../../docs/examples/langfuse/activate-callers.patch).
+Current bootstrap and runtime do not load it or require Langfuse credentials.
+The unconsumed `openclaw-langfuse-otel` ExternalSecret can reconcile separately.
+Follow the [caller activation gates](../langfuse/README.md#caller-activation)
+before enabling the behavior described below.
 
 OpenClaw remains on the ChatGPT/Codex OAuth transport; it is not routed through
 LiteLLM. The configured LiteLLM upstream API key is not a valid replacement for
 that subscription route. This is therefore a telemetry-only integration and a
 known gateway-routing gap.
 
-Bootstrap installs the official `@openclaw/diagnostics-otel` package at the
+After activation, bootstrap installs the official `@openclaw/diagnostics-otel` package at the
 exact OpenClaw image version and verifies the installed package before enabling
 it. The exporter sends OTLP/HTTP protobuf **traces** to Langfuse at
 `/api/public/otel`, with the Langfuse v4 real-time-ingestion header. Its Basic

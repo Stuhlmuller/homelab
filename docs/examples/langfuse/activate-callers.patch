@@ -1,0 +1,357 @@
+diff --git a/clusters/homelab/apps/openclaw/assistant/bootstrap.py b/clusters/homelab/apps/openclaw/assistant/bootstrap.py
+--- a/clusters/homelab/apps/openclaw/assistant/bootstrap.py
++++ b/clusters/homelab/apps/openclaw/assistant/bootstrap.py
+@@ -75,6 +75,10 @@
+     bundled = config.get("skills", {}).get("allowBundled")
+     if isinstance(bundled, list) and "gog" not in bundled:
+         bundled.append("gog")
++    # An existing plugin allow-list must admit the managed diagnostics exporter.
++    plugin_allow = config.get("plugins", {}).get("allow")
++    if isinstance(plugin_allow, list) and "diagnostics-otel" not in plugin_allow:
++        plugin_allow.append("diagnostics-otel")
+     merge(config, patch)
+     updates = []
+     for name in FILES:
+diff --git a/clusters/homelab/apps/openclaw/assistant/config.json b/clusters/homelab/apps/openclaw/assistant/config.json
+--- a/clusters/homelab/apps/openclaw/assistant/config.json
++++ b/clusters/homelab/apps/openclaw/assistant/config.json
+@@ -54,7 +54,28 @@
+             "command": "/toolbox/codex/codex"
+           }
+         }
++      },
++      "diagnostics-otel": {
++        "enabled": true
+       }
++    }
++  },
++  "diagnostics": {
++    "enabled": true,
++    "otel": {
++      "enabled": true,
++      "endpoint": "http://langfuse-web.langfuse.svc.cluster.local:3000/api/public/otel",
++      "protocol": "http/protobuf",
++      "serviceName": "openclaw",
++      "headers": {
++        "Authorization": "${LANGFUSE_OTEL_AUTHORIZATION}",
++        "x-langfuse-ingestion-version": "4"
++      },
++      "traces": true,
++      "metrics": false,
++      "logs": false,
++      "sampleRate": 1,
++      "captureContent": true
+     }
+   },
+   "cron": {
+diff --git a/clusters/homelab/apps/openclaw/values.yaml b/clusters/homelab/apps/openclaw/values.yaml
+--- a/clusters/homelab/apps/openclaw/values.yaml
++++ b/clusters/homelab/apps/openclaw/values.yaml
+@@ -26,11 +26,12 @@
+                   - key: octelium.com/node-mode-dataplane
+                     operator: DoesNotExist
+       annotations:
+-        homelab.rst.io/openclaw-assistant-sha256: "56b8e7e5543910ba48110a49d444063be647526ccd9b92bdc6e783976fbe2cb5"
++        homelab.rst.io/openclaw-assistant-sha256: "59290ed25c9fcf2b8f19d3920a67a751bf63fe552f0fade91822d03108dd1ac3"
+         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
+         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
+         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
+         homelab.rst.io/openclaw-github-app-credentials-ssm-version: "1"
++        homelab.rst.io/openclaw-langfuse-project-keys-ssm-version: "1"
+     initContainers:
+       00-operator-toolbox:
+         image:
+@@ -186,6 +187,11 @@
+               secretKeyRef:
+                 name: openclaw-secrets
+                 key: APP_SECRET
++          LANGFUSE_OTEL_AUTHORIZATION:
++            valueFrom:
++              secretKeyRef:
++                name: openclaw-langfuse-otel
++                key: LANGFUSE_OTEL_AUTHORIZATION
+           DISCORD_BOT_TOKEN:
+             valueFrom:
+               secretKeyRef:
+@@ -430,6 +436,51 @@
+               }
+             fi
+             verify_discord_plugin installed
++
++            verify_diagnostics_otel_plugin() {
++              openclaw plugins inspect diagnostics-otel --runtime --json |
++                python3 -c '
++            import json
++            import pathlib
++            import sys
++
++            expected_version, expected_status = sys.argv[1:]
++            report = json.load(sys.stdin)
++            plugin = report["plugin"]
++            install = report.get("install") or {}
++            root = pathlib.Path(plugin["rootDir"])
++            package = json.loads((root / "package.json").read_text())
++            valid = (
++                plugin.get("id") == "diagnostics-otel"
++                and plugin.get("origin") == "global"
++                and install.get("source") == "npm"
++                and install.get("spec") == f"@openclaw/diagnostics-otel@{expected_version}"
++                and install.get("version") == expected_version
++                and package.get("name") == "@openclaw/diagnostics-otel"
++                and package.get("version") == expected_version
++                and (expected_status != "loaded" or plugin.get("status") == "loaded")
++            )
++            valid or sys.exit("OpenTelemetry external runtime verification failed")
++            ' "$openclaw_version" "$1"
++            }
++            if ! verify_diagnostics_otel_plugin installed; then
++              otel_installed=false
++              for delay in 0 5 15 30; do
++                [ "$delay" -eq 0 ] || sleep "$delay"
++                echo "Installing OpenTelemetry diagnostics plugin (retry delay ${delay}s)"
++                if openclaw plugins install \
++                  "npm:@openclaw/diagnostics-otel@${openclaw_version}" \
++                  --pin --force --accept-capabilities; then
++                  otel_installed=true
++                  break
++                fi
++              done
++              "$otel_installed" || {
++                echo "Exact OpenTelemetry diagnostics plugin install failed after bounded retries" >&2
++                exit 1
++              }
++            fi
++            verify_diagnostics_otel_plugin installed
+             python3 /etc/openclaw-assistant/install-codex.py
+
+             session_sqlite() {
+@@ -604,6 +655,10 @@
+             python3 /etc/openclaw-assistant/bootstrap.py
+             openclaw config validate
+
++            openclaw plugins enable diagnostics-otel --accept-capabilities
++            verify_diagnostics_otel_plugin loaded
++            openclaw config validate
++
+             openclaw config set --strict-json \
+               agents.defaults.sandbox.mode \
+               '"off"'
+@@ -693,6 +748,11 @@
+               secretKeyRef:
+                 name: openclaw-secrets
+                 key: APP_SECRET
++          LANGFUSE_OTEL_AUTHORIZATION:
++            valueFrom:
++              secretKeyRef:
++                name: openclaw-langfuse-otel
++                key: LANGFUSE_OTEL_AUTHORIZATION
+           GITHUB_APP_PRIVATE_KEY_PATH: /var/run/secrets/openclaw/github-app/private-key.pem
+           LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
+           LITELLM_TOKEN:
+diff --git a/clusters/homelab/apps/openclaw/externalsecret.yaml b/clusters/homelab/apps/openclaw/externalsecret.yaml
+--- a/clusters/homelab/apps/openclaw/externalsecret.yaml
++++ b/clusters/homelab/apps/openclaw/externalsecret.yaml
+@@ -4,7 +4,7 @@
+   name: openclaw-secrets
+   namespace: ai
+   annotations:
+-    homelab.stuhlmuller.dev/generated-secret-revision: "v1"
++    homelab.stuhlmuller.dev/generated-secret-revision: "v2"
+ spec:
+   refreshPolicy: OnChange
+   secretStoreRef:
+@@ -23,7 +23,7 @@
+         metadataPolicy: None
+     - secretKey: LITELLM_TOKEN
+       remoteRef:
+-        key: /homelab/openclaw/litellm-token
++        key: /homelab/openclaw/litellm-app-token
+         conversionStrategy: Default
+         decodingStrategy: None
+         metadataPolicy: None
+diff --git a/clusters/homelab/apps/litellm/values.yaml b/clusters/homelab/apps/litellm/values.yaml
+--- a/clusters/homelab/apps/litellm/values.yaml
++++ b/clusters/homelab/apps/litellm/values.yaml
+@@ -3,19 +3,52 @@
+   tag: main-v1.80.8-stable@sha256:3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8
+ environmentSecrets:
+   - litellm-provider-keys
++serviceAccount:
++  create: true
++  name: litellm
++  automount: false
+ service:
+   type: ClusterIP
+   port: 4000
++envVars:
++  LANGFUSE_OTEL_HOST: http://langfuse-web.langfuse.svc.cluster.local:3000
++  LITELLM_LOG: INFO
++podAnnotations:
++  homelab.stuhlmuller.dev/app-identity-revision: "1"
++volumes:
++  - name: app-identity
++    configMap:
++      name: litellm-app-identity
++  - name: app-keys
++    secret:
++      secretName: litellm-app-keys
++volumeMounts:
++  - name: app-identity
++    mountPath: /etc/litellm-hooks
++    readOnly: true
++  - name: app-keys
++    mountPath: /var/run/secrets/litellm-apps
++    readOnly: true
+ masterkeySecretName: litellm-provider-keys
+ masterkeySecretKey: LITELLM_MASTER_KEY
+ proxy_config:
+   general_settings:
+     master_key: os.environ/LITELLM_MASTER_KEY
++    custom_auth: /etc/litellm-hooks/app_identity.authenticate
++  litellm_settings:
++    set_verbose: false
++    log_raw_request_response: false
++    callbacks:
++      - /etc/litellm-hooks/app_identity.attribution
++      - langfuse_otel
+   model_list:
+     - model_name: openai-default
+       litellm_params:
+         model: openai/gpt-4.1-mini
+         api_key: os.environ/OPENAI_API_KEY
++    - model_name: openrouter/free
++      litellm_params:
++        model: openrouter/openrouter/free
+ db:
+   deployStandalone: false
+ migrationJob:
+diff --git a/clusters/homelab/apps/litellm/externalsecret.yaml b/clusters/homelab/apps/litellm/externalsecret.yaml
+--- a/clusters/homelab/apps/litellm/externalsecret.yaml
++++ b/clusters/homelab/apps/litellm/externalsecret.yaml
+@@ -4,7 +4,7 @@
+   name: litellm-provider-keys
+   namespace: ai
+   annotations:
+-    homelab.stuhlmuller.dev/generated-secret-revision: "v1"
++    homelab.stuhlmuller.dev/generated-secret-revision: "v2"
+ spec:
+   refreshPolicy: OnChange
+   secretStoreRef:
+@@ -24,6 +24,19 @@
+     - secretKey: OPENAI_API_KEY
+       remoteRef:
+         key: /homelab/litellm/openai-api-key
++        conversionStrategy: Default
++        decodingStrategy: None
++        metadataPolicy: None
++    - secretKey: LANGFUSE_PUBLIC_KEY
++      remoteRef:
++        key: /homelab/langfuse/project-public-key
++        conversionStrategy: Default
++        decodingStrategy: None
++        metadataPolicy: None
++    # checkov:skip=CKV_SECRET_6: Public environment key name, not secret material.
++    - secretKey: LANGFUSE_SECRET_KEY
++      remoteRef:
++        key: /homelab/langfuse/project-secret-key
+         conversionStrategy: Default
+         decodingStrategy: None
+         metadataPolicy: None
+diff --git a/scripts/ci/openclaw-assistant-check.py b/scripts/ci/openclaw-assistant-check.py
+--- a/scripts/ci/openclaw-assistant-check.py
++++ b/scripts/ci/openclaw-assistant-check.py
+@@ -29,6 +29,7 @@
+                             "modelPolicy": {"allow": ["openai/gpt-5.5"]}}},
+     "skills": {"allowBundled": ["existing-skill"],
+                "entries": {"existing-skill": {"enabled": False}, "gog": {"enabled": False}}},
++    "plugins": {"allow": ["discord"]},
+     "channels": {"discord": {"enabled": True, "allowFrom": ["123456789012345678"],
+                              "token": {"source": "env", "provider": "default", "id": "TOKEN"}}},
+ }
+@@ -47,6 +48,7 @@
+     assert result["skills"]["allowBundled"] == ["existing-skill", "gog"]
+     assert result["skills"]["entries"]["existing-skill"] == {"enabled": False}
+     assert result["skills"]["entries"]["gog"] == {"enabled": True}
++    assert result["plugins"]["allow"] == ["discord", "diagnostics-otel"]
+     assert result["channels"] == fixture["channels"]
+     assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
+         "openai/gpt-5.5", "openai/gpt-6-astra"]
+diff --git a/scripts/ci/openclaw-config-check.py b/scripts/ci/openclaw-config-check.py
+--- a/scripts/ci/openclaw-config-check.py
++++ b/scripts/ci/openclaw-config-check.py
+@@ -8,6 +8,26 @@
+ import tempfile
+
+ values = "clusters/homelab/apps/openclaw/values.yaml"
++managed = json.loads(pathlib.Path("clusters/homelab/apps/openclaw/assistant/config.json").read_text())
++assert managed["models"]["providers"]["openai"]["baseUrl"] == "https://chatgpt.com/backend-api/codex"
++assert managed["models"]["providers"]["openai"]["api"] == "openai-chatgpt-responses"
++assert managed["plugins"]["entries"]["diagnostics-otel"]["enabled"] is True
++otel = managed["diagnostics"]["otel"]
++assert otel == {
++    "enabled": True,
++    "endpoint": "http://langfuse-web.langfuse.svc.cluster.local:3000/api/public/otel",
++    "protocol": "http/protobuf",
++    "serviceName": "openclaw",
++    "headers": {
++        "Authorization": "${LANGFUSE_OTEL_AUTHORIZATION}",
++        "x-langfuse-ingestion-version": "4",
++    },
++    "traces": True,
++    "metrics": False,
++    "logs": False,
++    "sampleRate": 1,
++    "captureContent": True,
++}
+ bootstrap = subprocess.check_output(
+     ["yq", "-r", '.controllers.openclaw.initContainers."bootstrap-config".command[2]', values],
+     text=True,
+diff --git a/scripts/ci/static-checks.sh b/scripts/ci/static-checks.sh
+--- a/scripts/ci/static-checks.sh
++++ b/scripts/ci/static-checks.sh
+@@ -1233,7 +1233,7 @@
+ fi
+ echo "::endgroup::"
+
+-echo "::group::OpenClaw Discord plugin"
++echo "::group::OpenClaw plugins and telemetry"
+ python3 scripts/ci/langfuse-staging-check.py
+ python3 scripts/ci/openclaw-config-check.py
+ python3 scripts/ci/openclaw-assistant-check.py
+@@ -1256,6 +1256,14 @@
+ rg -Fq 'for delay in 0 5 15 30' "$openclaw_values"
+ rg -Fq 'verify_discord_plugin installed' "$openclaw_values"
+ rg -Fq 'verify_discord_plugin loaded' "$openclaw_values"
++rg -Fq '"npm:@openclaw/diagnostics-otel@${openclaw_version}"' "$openclaw_values"
++rg -Fq 'openclaw plugins enable diagnostics-otel --accept-capabilities' "$openclaw_values"
++rg -Fq 'openclaw plugins inspect diagnostics-otel --runtime --json |' "$openclaw_values"
++rg -Fq 'plugin.get("id") == "diagnostics-otel"' "$openclaw_values"
++rg -Fq 'install.get("spec") == f"@openclaw/diagnostics-otel@{expected_version}"' "$openclaw_values"
++rg -Fq 'package.get("name") == "@openclaw/diagnostics-otel"' "$openclaw_values"
++rg -Fq 'verify_diagnostics_otel_plugin installed' "$openclaw_values"
++rg -Fq 'verify_diagnostics_otel_plugin loaded' "$openclaw_values"
+ rg -Fq 'tar --one-file-system' "$openclaw_values"
+ rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
+ rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
+@@ -1271,9 +1279,9 @@
+   exit 1
+ fi
+ rg -Fq '"maxConcurrent": 4' clusters/homelab/apps/openclaw/assistant/config.json
+-if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
+-  rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
+-  echo "OpenClaw Discord bootstrap must use only the exact external plugin version" >&2
++if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 2 ]] ||
++  rg -q 'falling back|current_discord_plugin_spec|current_diagnostics_otel_plugin_spec|clawhub:@openclaw/(discord|diagnostics-otel)|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
++  echo "OpenClaw bootstrap must use only exact Discord and OpenTelemetry external plugin versions" >&2
+   exit 1
+ fi
+ if ! awk '
+@@ -1294,7 +1302,7 @@
+       inspect_after < config_validate)
+   }
+ ' "$openclaw_values"; then
+-  echo "OpenClaw must back up, install Discord, migrate, then validate persisted state" >&2
++  echo "OpenClaw must back up, install managed plugins, migrate, then validate persisted state" >&2
+   exit 1
+ fi
+ yq -e '

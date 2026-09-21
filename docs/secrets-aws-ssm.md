@@ -156,7 +156,9 @@ cluster CA is intentionally rotated.
 | grafana | `grafana-admin` | `grafana-admin` | `/homelab/grafana/admin-user`, `/homelab/grafana/admin-password` |
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
-| litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, exact Langfuse project keys |
+| litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
+| litellm (staged) | `litellm-app-keys` | unmounted `litellm-app-keys` | `/homelab/litellm/master-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,n8n,multica}/litellm-token` |
+| openclaw (staged) | `openclaw-langfuse-otel` | unconsumed `openclaw-langfuse-otel` | `/homelab/langfuse/project-public-key`, `/homelab/langfuse/project-secret-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
@@ -199,15 +201,18 @@ Terragrunt-generated internal values:
 - `/homelab/n8n/postgres-admin-password`
 - `/homelab/n8n/postgres-app-password`
 - `/homelab/openclaw/app-secret`
-- `/homelab/openclaw/litellm-token`
+- `/homelab/openclaw/litellm-token` (existing master-key alias)
+- `/homelab/openclaw/litellm-app-token` (staged distinct app key)
 - `/homelab/policy-bot/github-app/webhook-secret`
 - `/homelab/policy-bot/sessions-key`
 
 `/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
-until a repository-managed LiteLLM virtual-key workflow exists.
+during staging; the pending activation switches its consumer to the distinct
+`/homelab/openclaw/litellm-app-token` only after gateway readiness.
 
-The Langfuse project keys are consumed only by `langfuse-secrets` and LiteLLM's
-callback environment. `IaC/live/langfuse-blob-storage` creates the distinct S3
+The Langfuse project keys are consumed by `langfuse-secrets` and the unmounted
+`openclaw-langfuse-otel` Secret. LiteLLM receives them only after the pending
+activation patch enables its callback. `IaC/live/langfuse-blob-storage` creates the distinct S3
 runtime credential pair under the same prefix; External Secrets receives exact
 additional reader names instead of a wildcard IAM grant.
 
