@@ -292,6 +292,59 @@ test_rejects_private_log_reprint if {
 	contains(msg, "withhold sensitive command output")
 }
 
+test_allows_exact_plan_stage_classifier if {
+	violations := deny with input as workflow_with_live_run(classified_live_run)
+	count(violations) == 0
+}
+
+test_rejects_unverified_plan_stage_classifier if {
+	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
+	violations := deny with input as workflow_with_live_run(run)
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
+test_rejects_modified_plan_stage_guard if {
+	every replacement in [
+		replace(plan_stage_guard, "3cd2b496a448cdd8116cdd653b2da2aca2f2a42d519115f1822993fb7b7d23f6", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(plan_stage_guard, "sha256sum --check --status", "true"),
+		replace(plan_stage_guard, "sha256sum", "shasum"),
+		replace(plan_stage_guard, "if sha256sum", "if ! sha256sum"),
+		replace(plan_stage_guard, " --check", ""),
+		replace(plan_stage_guard, " --status", ""),
+		replace(plan_stage_guard, "stage.sh", "other.sh"),
+		replace(plan_stage_guard, " 2>/dev/null", ""),
+		replace(plan_stage_guard, "; then", " || true; then"),
+		sprintf("%s\n  echo extra", [plan_stage_guard]),
+	] {
+		run := replace(classified_live_run, plan_stage_guard, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_plan_stage_classifier if {
+	every replacement in [
+		`sh scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`bash scripts/ci/other.sh <"$private_log"`,
+		`bash ./scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`bash scripts/ci/terragrunt-plan-stage.sh --verbose <"$private_log"`,
+		`bash scripts/ci/terragrunt-plan-stage.sh "$private_log"`,
+		`bash scripts/ci/terragrunt-plan-stage.sh <"$other_log"`,
+		`bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"; cat "$private_log"`,
+		`cat "$private_log"`,
+		`echo "$private_log details withheld"`,
+		`echo "$line details withheld"`,
+		sprintf("%s\n  echo extra", [plan_stage_call]),
+	] {
+		run := replace(classified_live_run, plan_stage_call, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_rejects_wrapped_live_command_and_write_all if {
 	base := workflow_with_live_run("nix develop --command bash scripts/ci/install-kubeconfig.sh")
 	workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {
@@ -371,6 +424,12 @@ then
   exit 1
 fi
 echo "success details withheld"`
+
+plan_stage_call := `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+
+plan_stage_guard := `if sha256sum --check --status <<<'3cd2b496a448cdd8116cdd653b2da2aca2f2a42d519115f1822993fb7b7d23f6  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+
+classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
 
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT

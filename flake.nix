@@ -42,6 +42,7 @@
             gnugrep
             gnused
             gnutar
+            go_1_25
             gzip
             jq
             k9s
@@ -56,6 +57,7 @@
             openssl
             pre-commit
             prometheus.cli
+            python3
             ripgrep
             shellcheck
             shfmt
