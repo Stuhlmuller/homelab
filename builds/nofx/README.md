@@ -17,7 +17,7 @@ cycle, including transient errors; failures remain visible. Other models and
 live traders retain their existing request path. The simulator also caps actual
 fill leverage at the configured limit.
 
-Patch `0012-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
+Patch `0013-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
 configuration and routes only `openrouter/free` through LiteLLM when the fixed
 mounted JSON config exists. It reads the gateway bearer from the declared token
 file, sends the original provider key only in the gateway request body, and uses
@@ -171,7 +171,7 @@ The live NOFX overlay is intentionally inert until
 [`activate-nofx.patch`](../../docs/examples/langfuse/activate-nofx.patch) is
 applied. Before applying it, require activated LiteLLM, a Ready `nofx-litellm`
 ExternalSecret with its target Secret present, and a reviewed `main` publication
-of an image containing `0012-litellm-runtime-routing.patch`. Then pin that
+of an image containing `0013-litellm-runtime-routing.patch`. Then pin that
 verified backend digest in a separate rollout; do not change the current digest
 as part of staging. Afterward, run a short historical
 `openrouter/free` simulation through LiteLLM and inspect the result for one

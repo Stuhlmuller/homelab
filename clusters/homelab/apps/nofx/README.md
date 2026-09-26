@@ -44,7 +44,7 @@ file token for gateway authentication, and rejects any other configured model.
 This staging deliberately preserves the current image digest. Do not apply the
 activation patch until LiteLLM is activated, `nofx-litellm` is Ready and its target
 Secret exists, and a reviewed `main` image containing
-`0012-litellm-runtime-routing.patch` has published a verified backend digest.
+`0013-litellm-runtime-routing.patch` has published a verified backend digest.
 Use a separate reviewed digest-pin follow-up, then prove a short historical
 `openrouter/free` run reaches LiteLLM with one structured provider attempt and no
 raw provider or gateway credentials in application logs.
@@ -188,7 +188,7 @@ Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expect
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
 source download matches the deployed revision, including patches `0007`–`0011`.
-Verify `0012` as well after the separately gated gateway activation.
+Verify `0013` as well after the separately gated gateway activation.
 Freshly verify every persisted trader is stopped before opening the dashboard;
 runtime loading can auto-start a trader saved as running. Reload the
 authenticated UI, select **AI Traders → View**, and inspect its account/positions

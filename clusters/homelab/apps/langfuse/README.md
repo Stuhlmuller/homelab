@@ -114,7 +114,7 @@ Before a follow-up activation PR:
 6. Activate NOFX separately using its
    [image and routing gates](../nofx/README.md#deferred-litellm-routing).
    Its prepared `activate-nofx.patch` does not select an image: pair it with the
-   verified published backend digest containing source patch `0012` only after
+   verified published backend digest containing source patch `0013` only after
    LiteLLM and `nofx-litellm` are Ready. Preserve the original provider/model and
    require a real correlated trace without credential leakage.
 

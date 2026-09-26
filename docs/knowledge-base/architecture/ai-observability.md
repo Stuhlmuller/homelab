@@ -85,7 +85,12 @@ The distinct future OpenClaw key is
 NOFX similarly stages its ServiceAccount, hashed routing ConfigMap and dedicated
 token Secret without changing the active backend Pod spec. Its separate
 `docs/examples/langfuse/activate-nofx.patch` requires an activated gateway,
-Ready token Secret and published image containing source patch `0012`.
+Ready token Secret and published image containing source patch `0013`, applied
+after the owned-spot competition patch `0012`.
+The September 26 main integration replayed all 13 patches against the pinned
+source. Native Go historical gateway tests passed with `-race`, and focused
+spot/ownership/lifecycle tests passed. Pinned Linux backend/frontend build
+acceptance remains an exact-head CI gate; no local Docker binary was available.
 
 ## Admission blocker and validation
 
