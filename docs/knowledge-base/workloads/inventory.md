@@ -116,9 +116,10 @@ Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
 
-OpenClaw also mounts a repository-managed Astra assistant bundle: owner Discord
+OpenClaw also mounts a repository-managed assistant bundle using OpenRouter's
+`openrouter/free` router: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved
-personal memory. Interactive Codex turns allow one hour; heartbeats and managed
+personal memory. Interactive turns allow one hour; heartbeats and managed
 jobs keep their separate shorter budgets. Its personal-assistant extension installs the pinned Google
 CLI and enables the Calendar skill, with scoped Marketplace outreach and private
 task/deal tracking. Google OAuth and a private Facebook browser/login remain
@@ -233,6 +234,8 @@ gateway/Discord recovery remains pending.
 ## Private OCI Packages
 
 Harbor owns the private `homelab` project and NOFX custom image publication.
+New builds use a local signing Job and the cert-manager-owned
+`harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
 networking, migration and acceptance boundaries. Live readiness remains subject

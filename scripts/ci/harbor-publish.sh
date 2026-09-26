@@ -22,6 +22,14 @@ cd "$repository_root"
 [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
 [[ "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" == "$GITHUB_SHA" ]]
 
+# Enroll the independently checked public key through review before publication.
+if [[ "$mode" == publish ]]; then
+  signing_fingerprint="$(jq -er '.public_key_sha256 | strings | select(test("^[0-9a-f]{64}$"))' scripts/config/harbor-signing.json)" || {
+    echo 'Enroll the Harbor signing public-key fingerprint before publishing.' >&2
+    exit 1
+  }
+fi
+
 # Validate every migration input before installing credentials or contacting AWS.
 manifest=scripts/config/harbor-migration.json
 jq --exit-status '
@@ -165,6 +173,41 @@ done < <(jq --raw-output --arg mode "$mode" --arg revision "$GITHUB_SHA" '
     [$revision, $name, ""] | @tsv
   end
 ' "$manifest")
+
+if [[ "$mode" == publish ]]; then
+  # Only verified, allowlisted digests enter the repository-owned Job template.
+  signing_references=()
+  while IFS=@ read -r tagged_repository digest; do
+    signing_references+=("${tagged_repository%:*}@${digest}")
+  done <"$scratch/verified-digests"
+  [[ "${#signing_references[@]}" -eq 2 ]]
+  yq -o=json '.' clusters/homelab/apps/harbor/signing-job.yaml |
+    jq --arg backend "${signing_references[0]}" --arg frontend "${signing_references[1]}" \
+      'del(.metadata.name) | .metadata.generateName = "harbor-sign-" |
+       .spec.template.spec.initContainers[1].args += [$backend, $frontend]' >"$scratch/signing-job.json"
+  kubectl --namespace harbor create -f "$scratch/signing-job.json" -o json >"$scratch/created-job.json"
+  signing_job="$(jq -er '.metadata.name' "$scratch/created-job.json")"
+  signing_uid="$(jq -er '.metadata.uid' "$scratch/created-job.json")"
+  [[ "$signing_job" =~ ^harbor-sign-[a-z0-9]+$ && "$signing_uid" =~ ^[a-f0-9-]{36}$ ]]
+  kubectl --namespace harbor wait --for=condition=complete --timeout=360s "job/${signing_job}"
+  # Pod status contains only the public key emitted by the successful signer.
+  # CI never GETs the signing Secret or receives the private key.
+  kubectl --namespace harbor get pods -l "batch.kubernetes.io/controller-uid=${signing_uid}" -o json |
+    jq -er --arg uid "$signing_uid" '
+      .items | select(length == 1) | .[0] |
+      select(any(.metadata.ownerReferences[]; .uid == $uid and .kind == "Job")) |
+      .status.containerStatuses[] | select(.name == "public-key" and .state.terminated.exitCode == 0) |
+      .state.terminated.message | rtrimstr("\n")' >"$scratch/signing.pub"
+  [[ "$(sha256sum "$scratch/signing.pub" | cut -d ' ' -f 1)" == "$signing_fingerprint" ]] || {
+    echo 'Harbor signing identity differs from the reviewed fingerprint.' >&2
+    exit 1
+  }
+  for reference in "${signing_references[@]}"; do
+    DOCKER_CONFIG="$scratch/docker" cosign verify \
+      --key "$scratch/signing.pub" --insecure-ignore-tlog \
+      --new-bundle-format=false "$reference" >"$scratch/signature-verification.json"
+  done
+fi
 
 if [[ "$mode" == migrate ]]; then
   # Independently exercise the namespace-scoped pull credential and every blob.
