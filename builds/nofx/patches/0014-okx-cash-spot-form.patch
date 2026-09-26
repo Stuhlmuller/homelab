@@ -1,0 +1,352 @@
+diff --git a/web/src/components/TraderConfigModal.spot.test.tsx b/web/src/components/TraderConfigModal.spot.test.tsx
+new file mode 100644
+index 0000000..d0e8839
+--- /dev/null
++++ b/web/src/components/TraderConfigModal.spot.test.tsx
+@@ -0,0 +1,169 @@
++import {
++  cleanup,
++  fireEvent,
++  render,
++  screen,
++  waitFor,
++} from '@testing-library/react'
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
++import { httpClient } from '../lib/httpClient'
++import type { AIModel, Exchange, TraderConfigData } from '../types'
++import { TraderConfigModal } from './TraderConfigModal'
++
++vi.mock('../lib/httpClient', () => ({
++  httpClient: { get: vi.fn() },
++}))
++vi.mock('../contexts/LanguageContext', () => ({
++  useLanguage: () => ({ language: 'en' }),
++}))
++vi.mock('sonner', () => ({
++  toast: { promise: (value: Promise<unknown>) => value, success: vi.fn() },
++}))
++
++const models: AIModel[] = [
++  { id: 'model', name: 'OpenRouter', provider: 'openai', enabled: true },
++]
++const exchanges: Exchange[] = [
++  {
++    id: 'old-okx',
++    exchange_type: 'okx',
++    account_name: 'Shared account',
++    name: 'OKX Futures',
++    type: 'cex',
++    enabled: true,
++  },
++  {
++    id: 'other-exchange',
++    exchange_type: 'binance',
++    account_name: 'Separate account',
++    name: 'Binance Futures',
++    type: 'cex',
++    enabled: true,
++  },
++]
++const legacyTrader: TraderConfigData = {
++  trader_id: 'agent',
++  trader_name: 'Trend',
++  ai_model: 'model',
++  exchange_id: 'old-okx',
++  initial_balance: 123,
++  is_cross_margin: true,
++  show_in_competition: false,
++  scan_interval_minutes: 5,
++  is_running: false,
++}
++
++beforeEach(() => {
++  vi.clearAllMocks()
++  vi.mocked(httpClient.get).mockImplementation(async (path) => ({
++    success: true,
++    data:
++      path === '/api/strategies' ? { strategies: [] } : { total_equity: 77 },
++  }))
++})
++afterEach(cleanup)
++
++describe('Trader cash-spot configuration', () => {
++  it.each([true, false])(
++    'uses explicit allocations without legacy capital or margin fields (edit=%s)',
++    async (isEditMode) => {
++      const onSave = vi.fn().mockResolvedValue(undefined)
++      render(
++        <TraderConfigModal
++          isOpen
++          isEditMode={isEditMode}
++          traderData={isEditMode ? legacyTrader : null}
++          availableModels={models}
++          availableExchanges={exchanges}
++          onSave={onSave}
++          onClose={vi.fn()}
++        />
++      )
++      await screen.findByText(/Configure the shared capital cap/)
++      expect(
++        screen.getByRole('option', {
++          name: 'OKX US Cash Spot - Shared account',
++        })
++      ).toBeInTheDocument()
++      expect(screen.queryByText(/OKX FUTURES/i)).not.toBeInTheDocument()
++      expect(screen.queryByText('保证金模式')).not.toBeInTheDocument()
++      expect(screen.queryByText('初始余额 ($)')).not.toBeInTheDocument()
++      expect(
++        screen.queryByRole('button', { name: '获取当前余额' })
++      ).not.toBeInTheDocument()
++      expect(
++        screen.queryByText('系统将自动获取您的账户净值作为初始余额')
++      ).not.toBeInTheDocument()
++      expect(
++        screen.getByText(/Spot allocations on the exchange card/)
++      ).toBeInTheDocument()
++      if (!isEditMode) {
++        fireEvent.change(screen.getByPlaceholderText('请输入交易员名称'), {
++          target: { value: 'New agent' },
++        })
++      }
++      fireEvent.click(
++        screen.getByRole('button', {
++          name: isEditMode ? '保存修改' : '创建交易员',
++        })
++      )
++      await waitFor(() => expect(onSave).toHaveBeenCalledOnce())
++      const [payload] = onSave.mock.calls[0]
++      expect(payload.exchange_id).toBe('old-okx')
++      expect(payload).not.toHaveProperty('initial_balance')
++      expect(payload).not.toHaveProperty('is_cross_margin')
++      expect(httpClient.get).toHaveBeenCalledExactlyOnceWith('/api/strategies')
++    }
++  )
++
++  it('restores non-OKX controls and balance fetch after switching back to the saved exchange', async () => {
++    const onSave = vi.fn().mockResolvedValue(undefined)
++    const savedTrader = { ...legacyTrader, exchange_id: 'other-exchange' }
++    render(
++      <TraderConfigModal
++        isOpen
++        isEditMode
++        traderData={savedTrader}
++        availableModels={models}
++        availableExchanges={exchanges}
++        onSave={onSave}
++        onClose={vi.fn()}
++      />
++    )
++    const option = await screen.findByRole('option', {
++      name: 'OKX US Cash Spot - Shared account',
++    })
++    fireEvent.change(option.closest('select')!, {
++      target: { value: 'old-okx' },
++    })
++    expect(
++      screen.getByText(/Spot allocations on the exchange card/)
++    ).toBeInTheDocument()
++    expect(screen.queryByText('保证金模式')).not.toBeInTheDocument()
++    expect(screen.queryByText('初始余额 ($)')).not.toBeInTheDocument()
++    expect(
++      screen.queryByRole('button', { name: '获取当前余额' })
++    ).not.toBeInTheDocument()
++    expect(httpClient.get).toHaveBeenCalledExactlyOnceWith('/api/strategies')
++    fireEvent.change(option.closest('select')!, {
++      target: { value: 'other-exchange' },
++    })
++    expect(screen.getByText('保证金模式')).toBeInTheDocument()
++    expect(screen.getByText('初始余额 ($)')).toBeInTheDocument()
++    expect(
++      screen.queryByText(/Spot allocations on the exchange card/)
++    ).not.toBeInTheDocument()
++    expect(screen.getByDisplayValue('123')).toBeInTheDocument()
++    fireEvent.click(screen.getByRole('button', { name: '逐仓' }))
++    fireEvent.click(screen.getByRole('button', { name: '获取当前余额' }))
++    await screen.findByDisplayValue('77')
++    expect(httpClient.get).toHaveBeenCalledWith('/api/account?trader_id=agent')
++    fireEvent.click(screen.getByRole('button', { name: '保存修改' }))
++    await waitFor(() => expect(onSave).toHaveBeenCalledOnce())
++    expect(onSave.mock.calls[0][0]).toMatchObject({
++      exchange_id: 'other-exchange',
++      is_cross_margin: false,
++      initial_balance: 77,
++    })
++  })
++})
+diff --git a/web/src/components/TraderConfigModal.tsx b/web/src/components/TraderConfigModal.tsx
+index 328bf3c..3d1b14b 100644
+--- a/web/src/components/TraderConfigModal.tsx
++++ b/web/src/components/TraderConfigModal.tsx
+@@ -117,6 +117,11 @@ export function TraderConfigModal({
+     }
+   }, [traderData, isEditMode, availableModels, availableExchanges])
+ 
++  const isOKXSpot =
++    availableExchanges.find(
++      (exchange) => exchange.id === formData.exchange_id
++    )?.exchange_type === 'okx'
++
+   if (!isOpen) return null
+ 
+   const handleInputChange = (field: keyof FormState, value: any) => {
+@@ -124,6 +129,7 @@ export function TraderConfigModal({
+   }
+ 
+   const handleFetchCurrentBalance = async () => {
++    if (isOKXSpot) return
+     if (!isEditMode || !traderData?.trader_id) {
+       setBalanceFetchError('只有在编辑模式下才能获取当前余额')
+       return
+@@ -164,14 +170,16 @@ export function TraderConfigModal({
+         ai_model_id: formData.ai_model,
+         exchange_id: formData.exchange_id,
+         strategy_id: formData.strategy_id,
+-        is_cross_margin: formData.is_cross_margin,
+         show_in_competition: formData.show_in_competition,
+         scan_interval_minutes: formData.scan_interval_minutes,
+       }
+ 
+-      // 只在编辑模式时包含initial_balance
+-      if (isEditMode && formData.initial_balance !== undefined) {
+-        saveData.initial_balance = formData.initial_balance
++      // OKX cash mode and its baseline come from the explicit spot allocation.
++      if (!isOKXSpot) {
++        saveData.is_cross_margin = formData.is_cross_margin
++        if (isEditMode && formData.initial_balance !== undefined) {
++          saveData.initial_balance = formData.initial_balance
++        }
+       }
+ 
+       await toast.promise(onSave(saveData), {
+@@ -280,7 +288,9 @@ export function TraderConfigModal({
+                   >
+                     {availableExchanges.map((exchange) => (
+                       <option key={exchange.id} value={exchange.id}>
+-                        {getShortName(exchange.name || exchange.exchange_type || exchange.id).toUpperCase()}
++                        {exchange.exchange_type === 'okx'
++                          ? 'OKX US Cash Spot'
++                          : getShortName(exchange.name || exchange.exchange_type || exchange.id).toUpperCase()}
+                         {exchange.account_name ? ` - ${exchange.account_name}` : ''}
+                       </option>
+                     ))}
+@@ -372,7 +382,7 @@ export function TraderConfigModal({
+                         selectedStrategy.config.coin_source.source_type === 'oi_top' ? 'OI Top' : '混合'}
+                     </div>
+                     <div>
+-                      保证金上限: {((selectedStrategy.config.risk_control?.max_margin_usage || 0.9) * 100).toFixed(0)}%
++                      {isOKXSpot ? (language === 'zh' ? '现金使用上限' : 'Cash utilization limit') : '保证金上限'}: {((selectedStrategy.config.risk_control?.max_margin_usage || 0.9) * 100).toFixed(0)}%
+                     </div>
+                   </div>
+                 </div>
+@@ -386,38 +396,49 @@ export function TraderConfigModal({
+               <span className="text-[#F0B90B]">3</span> 交易参数
+             </h3>
+             <div className="space-y-4">
+-              <div className="grid grid-cols-2 gap-4">
+-                <div>
+-                  <label className="text-sm text-[#EAECEF] block mb-2">
+-                    保证金模式
+-                  </label>
+-                  <div className="flex gap-2">
+-                    <button
+-                      type="button"
+-                      onClick={() => handleInputChange('is_cross_margin', true)}
+-                      className={`flex-1 px-3 py-2 rounded text-sm ${
+-                        formData.is_cross_margin
+-                          ? 'bg-[#F0B90B] text-black'
+-                          : 'bg-[#0B0E11] text-[#848E9C] border border-[#2B3139]'
+-                      }`}
+-                    >
+-                      全仓
+-                    </button>
+-                    <button
+-                      type="button"
+-                      onClick={() =>
+-                        handleInputChange('is_cross_margin', false)
+-                      }
+-                      className={`flex-1 px-3 py-2 rounded text-sm ${
+-                        !formData.is_cross_margin
+-                          ? 'bg-[#F0B90B] text-black'
+-                          : 'bg-[#0B0E11] text-[#848E9C] border border-[#2B3139]'
+-                      }`}
+-                    >
+-                      逐仓
+-                    </button>
++              {isOKXSpot && (
++                <p className="text-sm text-[#848E9C]">
++                  {language === 'zh'
++                    ? 'OKX US 仅支持现金现货，不做空、不加杠杆。请通过交易所卡片上的“现货资金配置”设置共用资金上限和交易员分配金额。此表单不会设置或重置资金分配。'
++                    : 'OKX US uses cash spot only, without shorting or leverage. Configure the shared capital cap and trader allocation through Spot allocations on the exchange card. This form does not set or reset allocations.'}
++                </p>
++              )}
++              <div
++                className={`grid ${isOKXSpot ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}
++              >
++                {!isOKXSpot && (
++                  <div>
++                    <label className="text-sm text-[#EAECEF] block mb-2">
++                      保证金模式
++                    </label>
++                    <div className="flex gap-2">
++                      <button
++                        type="button"
++                        onClick={() => handleInputChange('is_cross_margin', true)}
++                        className={`flex-1 px-3 py-2 rounded text-sm ${
++                          formData.is_cross_margin
++                            ? 'bg-[#F0B90B] text-black'
++                            : 'bg-[#0B0E11] text-[#848E9C] border border-[#2B3139]'
++                        }`}
++                      >
++                        全仓
++                      </button>
++                      <button
++                        type="button"
++                        onClick={() =>
++                          handleInputChange('is_cross_margin', false)
++                        }
++                        className={`flex-1 px-3 py-2 rounded text-sm ${
++                          !formData.is_cross_margin
++                            ? 'bg-[#F0B90B] text-black'
++                            : 'bg-[#0B0E11] text-[#848E9C] border border-[#2B3139]'
++                        }`}
++                      >
++                        逐仓
++                      </button>
++                    </div>
+                   </div>
+-                </div>
++                )}
+                 <div>
+                   <label className="text-sm text-[#EAECEF] block mb-2">
+                     {t('aiScanInterval', language)}
+@@ -478,7 +499,7 @@ export function TraderConfigModal({
+               </div>
+ 
+               {/* Initial Balance (Edit mode only) */}
+-              {isEditMode && (
++              {isEditMode && !isOKXSpot && (
+                 <div>
+                   <div className="flex items-center justify-between mb-2">
+                     <label className="text-sm text-[#EAECEF]">
+@@ -518,7 +539,7 @@ export function TraderConfigModal({
+               )}
+ 
+               {/* Create mode info */}
+-              {!isEditMode && (
++              {!isEditMode && !isOKXSpot && (
+                 <div className="p-3 bg-[#1E2329] border border-[#2B3139] rounded flex items-center gap-2">
+                   <svg
+                     xmlns="http://www.w3.org/2000/svg"
+diff --git a/web/src/components/traders/ExchangeConfigModal.tsx b/web/src/components/traders/ExchangeConfigModal.tsx
+index d492ac7..15abde3 100644
+--- a/web/src/components/traders/ExchangeConfigModal.tsx
++++ b/web/src/components/traders/ExchangeConfigModal.tsx
+@@ -20,7 +20,7 @@ import { getShortName } from './utils'
+ const SUPPORTED_EXCHANGE_TEMPLATES = [
+   { exchange_type: 'binance', name: 'Binance Futures', type: 'cex' as const },
+   { exchange_type: 'bybit', name: 'Bybit Futures', type: 'cex' as const },
+-  { exchange_type: 'okx', name: 'OKX Futures', type: 'cex' as const },
++  { exchange_type: 'okx', name: 'OKX US Cash Spot', type: 'cex' as const },
+   { exchange_type: 'bitget', name: 'Bitget Futures', type: 'cex' as const },
+   { exchange_type: 'hyperliquid', name: 'Hyperliquid', type: 'dex' as const },
+   { exchange_type: 'aster', name: 'Aster DEX', type: 'dex' as const },
