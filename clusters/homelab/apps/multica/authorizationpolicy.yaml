@@ -34,6 +34,7 @@ spec:
         - source:
             principals:
               - cluster.local/ns/ai/sa/default
+              - cluster.local/ns/ai/sa/multica-runtime
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
