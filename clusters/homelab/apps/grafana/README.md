@@ -151,6 +151,7 @@ The provisioned rules cover:
 - Repository-owned PostgreSQL readiness probes missing or no longer succeeding
   for approximately 5 minutes.
 - Deluge, Radarr, Sonarr, media PostgreSQL, or Octelium PostgreSQL backups
+  and the isolated Octelium PostgreSQL restore drill
   older than 30 hours, including an established CronJob with no recorded success.
   The rule retains UID `homelab-media-backup-stale` to update existing provisioning.
 - Kubernetes Deployments with desired replicas but no available replicas for 5
