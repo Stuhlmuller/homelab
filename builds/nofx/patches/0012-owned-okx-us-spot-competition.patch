@@ -6577,10 +6577,10 @@ index 0000000..b1a08ef
 +}
 diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
 new file mode 100644
-index 0000000..4fb0131
+index 0000000..83d4f62
 --- /dev/null
 +++ b/trader/okx_spot_execution.go
-@@ -0,0 +1,496 @@
+@@ -0,0 +1,499 @@
 +package trader
 +
 +import (
@@ -6723,6 +6723,9 @@ index 0000000..4fb0131
 +	}
 +	units, _ := budget.QuoRem(limit.Mul(inst.LotSize), 0)
 +	quantity := units.Mul(inst.LotSize)
++	if quantity.Mul(limit).LessThan(decimal.NewFromFloat(risk.MinPositionSize)) {
++		return nil, errors.New("quantized spot order is below minimum position size")
++	}
 +	reserve := quantity.Mul(limit).Mul(decimal.NewFromInt(1).Add(rate))
 +	// Quote fees lower post-trade equity; a base fee can only reduce holdings.
 +	// Enforce utilization against the conservative post-fee denominator too.
@@ -7079,10 +7082,10 @@ index 0000000..4fb0131
 +}
 diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.go
 new file mode 100644
-index 0000000..f081262
+index 0000000..09ba81c
 --- /dev/null
 +++ b/trader/okx_spot_execution_test.go
-@@ -0,0 +1,318 @@
+@@ -0,0 +1,336 @@
 +package trader
 +
 +import (
@@ -7134,6 +7137,7 @@ index 0000000..f081262
 +	nextID := 100
 +	posts := 0
 +	coarseTick := false
++	lotSize := "0.001"
 +	var canceled []string
 +	c := spotFixture(t, func(w http.ResponseWriter, r *http.Request) {
 +		q := r.URL.Query()
@@ -7191,7 +7195,7 @@ index 0000000..f081262
 +				spotReply(w, `[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":"1","minSz":"1","tickSz":"1","maxLmtSz":"100","groupId":"12"}]`)
 +				return
 +			}
-+			spotReply(w, `[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":"0.001","minSz":"0.01","tickSz":"0.1","maxLmtSz":"5","groupId":"12"}]`)
++			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":%q,"minSz":"0.01","tickSz":"0.1","maxLmtSz":"5","groupId":"12"}]`, lotSize))
 +		case "/api/v5/account/trade-fee":
 +			if coarseTick {
 +				spotReply(w, `[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":"0","taker":"0"}]}]`)
@@ -7259,6 +7263,23 @@ index 0000000..f081262
 +		}
 +	}
 +	coarseTick = false
++	// A budget of 12 clears the strategy minimum of 11, but lot flooring at
++	// price 100 leaves an executable quantity of 0.1 and notional of only 10.
++	lotSize = "0.05"
++	minimumDecision, minimumRisk := decision, risk
++	minimumDecision.PositionSizeUSD = 12
++	minimumRisk.MinPositionSize = 11
++	if _, err := a.ExecuteSpotDecision(minimumDecision, minimumRisk, []string{"BTCUSDT"}); err == nil || !strings.Contains(err.Error(), "minimum position size") || posts != 0 {
++		t.Fatalf("rounded notional bypassed entry minimum: %v; POSTs=%d", err, posts)
++	}
++	unchanged, err := st.Spot().Snapshot("owner", "ex", "a")
++	must(err)
++	intentsBeforeEntry, err := st.Spot().Intents("owner", "ex")
++	must(err)
++	if unchanged.Cash != "40" || unchanged.ReservedQuote != "0" || len(unchanged.Inventory) != 0 || len(intentsBeforeEntry) != 0 {
++		t.Fatalf("rejected undersized entry changed ledger: %+v; intents=%d", unchanged, len(intentsBeforeEntry))
++	}
++	lotSize = "0.001"
 +	for _, tc := range []struct {
 +		name, wantError   string
 +		stop, take, ratio float64
