@@ -359,3 +359,12 @@ credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
 disabled and project creation is admin-only. Never store Harbor bootstrap
 images in Harbor itself.
+
+Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
+`harbor-image-signing` Kubernetes Secret, with key rotation disabled during
+certificate renewal. The protected in-cluster signing Job mounts that key;
+CI receives only its public half through Pod status and verifies signatures.
+No AWS signing resource or public transparency log is used. Namespace Pod
+creators and cluster administrators can access the key: keep those permissions
+restricted, back up etcd to encrypted off-node storage, and retain trusted public
+keys independently. See [[../operations/harbor-oci]] for rollout acceptance.

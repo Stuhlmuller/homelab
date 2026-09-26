@@ -234,6 +234,8 @@ gateway/Discord recovery remains pending.
 ## Private OCI Packages
 
 Harbor owns the private `homelab` project and NOFX custom image publication.
+New builds use a local signing Job and the cert-manager-owned
+`harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
 networking, migration and acceptance boundaries. Live readiness remains subject
