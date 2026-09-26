@@ -61,7 +61,7 @@ def install(bundle, state, config_path):
         raise ValueError("main workspace must be inside persistent OpenClaw state")
     patch = json.loads((bundle / "config.json").read_text())
     model = patch["agents"]["defaults"]["model"]["primary"]
-    # A migrated allowlist must include Astra; an empty list means unrestricted.
+    # A migrated allowlist must include the managed default; empty means unrestricted.
     allowed = defaults.get("modelPolicy", {}).get("allow")
     if allowed and model not in allowed:
         allowed.append(model)

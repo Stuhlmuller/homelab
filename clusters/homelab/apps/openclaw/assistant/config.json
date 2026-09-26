@@ -2,10 +2,13 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "openai/gpt-6-astra",
+        "primary": "openrouter/free",
         "fallbacks": []
       },
       "models": {
+        "openrouter/free": {
+          "alias": "free"
+        },
         "openai/gpt-6-astra": {
           "alias": "astra",
           "agentRuntime": {
@@ -18,7 +21,7 @@
       "timeoutSeconds": 3600,
       "heartbeat": {
         "every": "1h",
-        "model": "openai/gpt-6-astra",
+        "model": "openrouter/free",
         "target": "owner",
         "activeHours": {
           "start": "08:00",
