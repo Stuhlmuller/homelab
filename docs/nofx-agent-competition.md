@@ -1,24 +1,79 @@
 # NOFX agent competition
 
+<!-- markdownlint-configure-file { "MD013": { "tables": false } } -->
+
 Use Backtest Lab for an isolated historical round. Each run has its own virtual
 account and AI cache. The live Competition page ranks exchange traders; it is
 not the scoreboard for these simulations.
 
 ## One OKX account
 
-NOFX supports multiple traders using the same OKX connection. This is the
-user-selected setup; separate accounts are not required to configure the three
-personas. These traders share the account's balance and positions. Their actions
-can affect one another, and account-level returns cannot identify each persona's
-performance. Separate API keys for the same account do not provide isolation.
-A trader's Initial Balance is a return
-calculation baseline, not a capital allocation or spending limit.
+The prepared cash-spot build (patch `0012`) lets the three personas reuse one
+OKX US connection. Its ledger separates each trader's allocated quote cash, orders,
+fills, fees, holdings, and returns. Other account holdings are not imported.
+Multiple connections with the same authenticated OKX account UID share one
+capital cap; extra API keys cannot multiply that cap.
+The cap bounds outstanding buy reservations plus owned acquisition cost across
+agents. Market appreciation can exceed it; the cap does not guarantee a maximum
+loss. Agent cash and strategy entry limits also apply.
 
-Separate funded OKX accounts or
-[subaccounts](https://www.okx.com/en-us/help/what-is-sub-account) are needed only
-for independent live balances and P&L. The shared-account setup cannot establish
-a winner from per-trader account returns. Backtest Lab remains available for
-isolated virtual comparisons; those simulations do not trade the OKX portfolio.
+This feature has not been published, deployed, or activated by this source
+change. Follow the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
+using the exact tested source and reported private Harbor digests. Verify the
+served source includes patch `0012`, both workloads are ready, all traders are
+stopped, and no simulation is active before configuring it in the UI.
+
+On **AI Traders**, open **Spot competition** for the saved OKX connection.
+Enter the quote currency, total capital limit, and explicit amounts for Trend,
+Mean Reversion, and Breakout. No amount is prefilled. Allocations must fit the
+cap and available quote cash; this form does not fund the account. Leave
+Consensus unallocated unless the operator explicitly includes it. Saving
+requires all affected traders stopped, including unverified OKX aliases.
+Capital and allocations become immutable after the first persisted order
+intent, preserving the competition baseline.
+
+Configure the three saved strategies with identical eligible static spot pairs,
+risk limits, timeframes, and scan cadence, keeping their different personas.
+Use the account-authenticated spot catalog and the saved quote currency; a public
+listing does not establish account eligibility. Automatic borrowing must be
+explicitly disabled. The adapter uses `tdMode=cash` only, accepts leverage 1,
+and rejects shorts, derivatives, margin changes, and external Arena execution.
+Keep every agent on provider OpenAI, base URL `https://openrouter.ai/api/v1`,
+and model `openrouter/free`. The free router may choose different underlying
+models; competition compares the saved personas, not fixed model identities.
+
+Entries and explicit exits use limit IOC orders at the fresh quoted price,
+rounded to the instrument tick without chasing prices. They may fill partly or
+not at all. Every entry requires saved stop-loss and take-profit prices; native
+OCO sell orders protect only that trader's owned quantity. Protective prices
+align to exchange ticks before the bracket and reward/risk checks. Both legs
+are limit orders, so a trigger does not guarantee a fill. Reconciliation verifies
+terminal parent/child status and cumulative fills before releasing reservations.
+Uncertain submissions keep funds reserved and prevent new orders.
+
+While running, the existing one-minute monitor restores missing protection from
+persisted entry intent. Dashboard reads never submit orders. Small residual dust
+remains owned and may join that trader's next entry under its new saved stops.
+A manual account sale or withdrawal that leaves the wallet below ledger ownership
+makes balances unavailable and blocks execution; it does not reset allocations.
+
+The Competition page ranks percentage returns from current marked equity
+relative to the trader's original allocation, including actual fill fees and
+rebates. Unavailable or stale data has no rank. Legacy whole-account equity
+history is withheld for cash-spot
+traders rather than relabeled as independent results. Live activation remains
+an operator action after deployment and stopped-state acceptance.
+
+Run exactly one backend execution process. Reconciliation and submission share
+a process lock, while SQLite transactions reserve funds before HTTP. Additional
+processes require a durable execution lease first. For rollback, stop traders
+and simulations, review unresolved submissions and native protective orders,
+and retain the PVC, allocation tables, intents, and fill history. Earlier images
+cannot reconcile owned spot state; keep all OKX traders stopped on those images.
+
+The deployed pre-`0012` adapter shares whole-account futures positions and P&L.
+Its Initial Balance field is only a calculation baseline, not an allocation or
+spending limit. Do not infer isolated competition from that earlier build.
 
 ## Configured live drafts
 
@@ -30,8 +85,10 @@ historical strict-JSON-schema instructions.
 
 Each draft is configured for 1x leverage caps, at most three positions, a 30%
 margin target, a 60-minute scan interval, and hidden leaderboard visibility.
-The margin target is advisory model-prompt text; the execution path does not
-enforce it. These settings do not reserve capital or impose a combined account limit.
+In the pre-`0012` futures runtime, that margin target is advisory prompt text.
+The prepared spot executor enforces the saved utilization limit against owned
+marked equity before entry. These draft settings alone still reserve no capital;
+the explicit allocation form and shared cap are required after rollout.
 The existing Consensus trader and `Sim - <persona>` strategies are unchanged.
 Live activation remains a user action; no live orders were placed during setup.
 Read-only persisted checks verified `is_running=0` and `show_in_competition=0`
@@ -44,8 +101,8 @@ traders to visible despite an explicit false value; the card toggles corrected
 the saved drafts. Configured 1x and a creation-form Hide selection alone therefore
 do not prove enforcement or persisted visibility. Reviewed source
 `05fcf60be529c063ae9f5fa16494466c3db0f400` includes patches
-`0007-live-leverage-cap.patch` and `0008-trader-visibility.patch`, which fix those shared
-code paths, with parser and SQLite regression checks in the backend build.
+`0007-live-leverage-cap.patch` and `0008-trader-visibility.patch`, which fix those
+shared code paths, with parser and SQLite regression checks in the backend build.
 `0009-okx-leverage-failure.patch` reads current OKX cross-margin leverage,
 skips writes when it already matches, and otherwise sends one instrument-level
 request. Invalid lookup data or failed leverage requests stop openings before
@@ -56,9 +113,9 @@ values; omitted API visibility still defaults to true. Follow the
 [runtime acceptance checks](nofx-private-images.md#harbor-runtime-acceptance)
 before relying on these fixes; `deployment.yaml` owns the desired image pair.
 After restart, reload the UI and verify all three drafts remain stopped and
-hidden. Arena's separate
-`ExecuteConsensus` to `ExecuteDecision` path bypasses the shared validator and
-is not used by these drafts.
+hidden. The legacy Arena `ExecuteConsensus` to `ExecuteDecision` path bypasses
+the shared validator. Patch `0012` rejects that path for cash spot; these drafts
+use their own saved strategies.
 
 ## Competitors and shared rules
 
@@ -165,9 +222,10 @@ The earlier competition features shipped in reviewed source
 [PR #1052](https://github.com/Stuhlmuller/homelab/pull/1052). Read-only inspection
 on 2026-09-20 found Argo CD Synced/Healthy at
 `047d26f088b6733dcd8b9c48dcec9cdca393c10f`, both deployments ready `1/1`, and
-running image IDs matching the declared backend `58c274ba93e0…` and frontend
-`92542955d244…` digests. No live traders were running. Full image references
-remain in `clusters/homelab/apps/nofx/deployment.yaml`.
+running image IDs matching the then-declared backend `58c274ba93e0…` and frontend
+`92542955d244…` digests. No live traders were running. Current desired image
+references are in `clusters/homelab/apps/nofx/deployment.yaml`; those historical
+digests do not establish acceptance of patch `0012`.
 
 Reload an already-open Backtest Lab tab after deployment and verify the OKX US
 data-source selector before starting fresh runs. An old tab still executing

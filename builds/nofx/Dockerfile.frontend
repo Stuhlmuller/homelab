@@ -8,7 +8,11 @@ FROM dependencies AS tests
 RUN npm test -- --run src/components/ModelConfigModal.test.tsx \
     src/components/BacktestComparison.test.tsx \
     src/components/AITradersPage.start.test.tsx \
-    src/lib/httpClient.test.ts
+    src/lib/httpClient.test.ts \
+    src/components/SpotCompetitionModal.test.tsx \
+    src/components/CompetitionPage.test.tsx \
+    src/components/CompetitionPage.availability.test.tsx \
+    src/components/ComparisonChart.availability.test.tsx
 
 FROM tests AS build
 RUN npm run build
@@ -16,7 +20,7 @@ RUN npm run build
 FROM ghcr.io/nofxaios/nofx/nofx-frontend:stable@sha256:6c1e56336433e82eb5e750034d2991a8dbebd89a6b19119c4b12601ef1842887 AS final
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="AGPL-3.0" \
-      org.opencontainers.image.description="NOFX pinned release with key-preserving model edits and OKX US historical simulation"
+      org.opencontainers.image.description="NOFX pinned release with explicit spot allocations and measured agent competition"
 COPY --from=build /src/dist /usr/share/nginx/html
 COPY --chmod=0644 nofx-source.tar.gz /usr/share/nginx/html/nofx-source.tar.gz
 COPY upstream/LICENSE /usr/share/licenses/nofx/LICENSE
