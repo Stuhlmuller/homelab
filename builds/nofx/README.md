@@ -74,6 +74,12 @@ The shared cap limits outstanding buy reservations plus owned inventory's
 acquisition cost; it is not a ceiling on marked market value or a loss guarantee.
 Each trader is also limited by its own remaining quote cash and strategy limits.
 
+Patch `0014` makes the trader form match that cash-spot contract. Existing OKX
+records display **OKX US Cash Spot** even when their saved exchange name says
+Futures. The form omits margin and Initial Balance controls and payload fields;
+capital is configured only through **Spot allocations** on the exchange card.
+Other exchange forms retain their existing controls.
+
 This is prepared source, not a verified cash-spot deployment. Publish the exact
 reviewed main commit to private Harbor, pin its reported backend/frontend
 digests through a separate rollout PR, then verify readiness, served source,
