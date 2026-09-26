@@ -17,6 +17,18 @@ cycle, including transient errors; failures remain visible. Other models and
 live traders retain their existing request path. The simulator also caps actual
 fill leverage at the configured limit.
 
+Patch `0013-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
+configuration and routes only `openrouter/free` through LiteLLM when the fixed
+mounted JSON config exists. It reads the gateway bearer from the declared token
+file, sends the original provider key only in the gateway request body, and uses
+no environment-variable routing inputs. The source change is inert until a
+reviewed `main` build publishes an exact backend image digest; do not change the
+active deployment digest as part of the configuration-only rollout.
+Routed calls validate both the configured model and the final request model:
+an empty override defaults to `openrouter/free`, while any other explicit
+model is rejected before HTTP/retries. Unrouted clients retain their original
+model-override behavior.
+
 Normal trader decision parsing preserves the shared validator's leverage clamp
 in the returned decisions. Trader creation also preserves an explicit hidden
 leaderboard setting; the API retains its visible default when omitted. Focused
@@ -158,6 +170,18 @@ The report is generated only from verified publication outputs; it never uploads
 registry authfiles, transport logs, or the publisher workspace. The existing
 Actions step summary remains available. Artifact expiry does not delete images;
 a missing report is not permission to infer digests from mutable tags.
+
+The live NOFX overlay is intentionally inert until
+[`activate-nofx.patch`](../../docs/examples/langfuse/activate-nofx.patch) is
+applied. Before applying it, require activated LiteLLM, a Ready `nofx-litellm`
+ExternalSecret with its target Secret present, and a reviewed `main` publication
+of an image containing `0013-litellm-runtime-routing.patch`. Then pin that
+verified backend digest in a separate rollout; do not change the current digest
+as part of staging. Afterward, run a short historical
+`openrouter/free` simulation through LiteLLM and inspect the result for one
+structured provider attempt and no credential-bearing log output.
+That activation follow-up also consumes the patch, removes its scratch apply
+check, and makes `nofx-runtime-check.py` validate the active route directly.
 
 The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
 Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves

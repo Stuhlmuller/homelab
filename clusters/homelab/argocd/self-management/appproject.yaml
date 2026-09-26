@@ -27,6 +27,7 @@ spec:
     - https://prometheus-community.github.io/helm-charts
     - ghcr.io/adinhodovic/charts
     - ghcr.io/berriai
+    - ghcr.io/langfuse/langfuse-k8s/charts
     - ghcr.io/multica-ai/charts
   destinations:
     - server: https://kubernetes.default.svc
@@ -57,6 +58,8 @@ spec:
       namespace: istio-system
     - server: https://kubernetes.default.svc
       namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: langfuse
     - server: https://kubernetes.default.svc
       namespace: media
     - server: https://kubernetes.default.svc

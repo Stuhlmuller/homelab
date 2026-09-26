@@ -205,6 +205,12 @@ echo "::group::Terragrunt deleted-unit providers"
 echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
+if TERRAGRUNT_ARGOCD_APP=langfuse bash scripts/ci/terragrunt-apply.sh; then
+  echo "Langfuse accepted an Application-only apply that skips its AWS dependencies" >&2
+  exit 1
+else
+  [[ "$?" == 2 ]]
+fi
 (
   cd IaC/live/argocd-apps
   terragrunt_stack_changed() { return 0; }
@@ -1244,6 +1250,7 @@ python3 scripts/ci/gluetun-cpu-profile-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
+python3 scripts/ci/langfuse-staging-check.py
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
 python3 scripts/ci/openclaw-runtime-storage-check.py

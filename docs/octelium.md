@@ -99,7 +99,7 @@ They create:
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native

@@ -67,7 +67,7 @@ only use the `us-east-1` state key will still fail during provider refresh with
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `media`, `monitoring`, `octelium-client`, `octelium-public`,
-`octelium-storage`, and `tailscale`. Add a namespace to that allow-list in the
+`octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
 ## External Secrets AWS Auth Bootstrap
@@ -157,10 +157,12 @@ cluster CA is intentionally rotated.
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
+| litellm (staged) | `litellm-app-keys` | unmounted `litellm-app-keys` | `/homelab/litellm/master-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
+| langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
@@ -188,6 +190,9 @@ Terragrunt-generated internal values:
 - `/homelab/affine/redis-password`
 - `/homelab/affine/private-key` (P-256 ECDSA PEM)
 - `/homelab/litellm/master-key`
+- `/homelab/langfuse/salt`, `/homelab/langfuse/encryption-key`, `/homelab/langfuse/nextauth-secret`
+- `/homelab/langfuse/postgres-password`, `/homelab/langfuse/redis-password`, `/homelab/langfuse/clickhouse-password`
+- `/homelab/langfuse/project-public-key`, `/homelab/langfuse/project-secret-key`, `/homelab/langfuse/init-user-password`
 - `/homelab/media-postgres/app-password`
 - `/homelab/multica/jwt-secret`
 - `/homelab/multica/postgres-password`
@@ -196,12 +201,21 @@ Terragrunt-generated internal values:
 - `/homelab/n8n/postgres-admin-password`
 - `/homelab/n8n/postgres-app-password`
 - `/homelab/openclaw/app-secret`
-- `/homelab/openclaw/litellm-token`
+- `/homelab/openclaw/litellm-token` (existing master-key alias)
+- `/homelab/openclaw/litellm-app-token` (staged distinct app key)
 - `/homelab/policy-bot/github-app/webhook-secret`
 - `/homelab/policy-bot/sessions-key`
 
 `/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
-until a repository-managed LiteLLM virtual-key workflow exists.
+during staging; a separate activation PR must switch its consumer to the distinct
+`/homelab/openclaw/litellm-app-token` only after gateway readiness.
+
+The Langfuse project keys are consumed only by `langfuse-secrets` in this
+foundation. LiteLLM receives them only after a separately reviewed activation
+implements safe request admission and telemetry. No direct OpenClaw OTLP
+credential is provisioned. `IaC/live/langfuse-blob-storage` creates the distinct S3
+runtime credential pair under the same prefix; External Secrets receives exact
+additional reader names instead of a wildcard IAM grant.
 
 AFFiNE receives separate generated PostgreSQL and Redis passwords plus a
 generated P-256 ECDSA private key. The signing key is stored as a KMS-encrypted

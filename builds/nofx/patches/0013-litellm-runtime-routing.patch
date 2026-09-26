@@ -1,0 +1,545 @@
+diff --git a/mcp/client.go b/mcp/client.go
+index 345a8cab..2a78c832 100644
+--- a/mcp/client.go
++++ b/mcp/client.go
+@@ -6,12 +6,15 @@ import (
+ 	"fmt"
+ 	"io"
+ 	"net/http"
++	"os"
+ 	"strings"
+ 	"time"
+ )
+ 
+ const (
+-	ProviderCustom = "custom"
++	ProviderCustom              = "custom"
++	LiteLLMOpenRouterFreeModel = "openrouter/free"
++	liteLLMRoutingConfigDefault = "/etc/nofx/litellm-routing.json"
+ 
+ 	MCPClientTemperature = 0.5
+ )
+@@ -34,6 +37,9 @@ var (
+ 
+ 	// TokenUsageCallback is called after each AI request with token usage info
+ 	TokenUsageCallback func(usage TokenUsage)
++
++	// liteLLMRoutingConfigPath is overridden only by package tests.
++	liteLLMRoutingConfigPath = liteLLMRoutingConfigDefault
+ )
+ 
+ // TokenUsage represents token usage from AI API response
+@@ -58,6 +64,11 @@ type Client struct {
+ 	logger     Logger // Logger (replaceable)
+ 	config     *Config // Config object (stores all configurations)
+ 
++	// These fields exist only on a request-local copy returned by
++	// routedRequestClient. The persisted client retains its provider config.
++	litellmRouting        bool
++	litellmProviderAPIKey string
++
+ 	// hooks are used to implement dynamic dispatch (polymorphism)
+ 	// When DeepSeekClient embeds Client, hooks point to DeepSeekClient
+ 	// This way methods called in call() are automatically dispatched to the overridden version in subclass
+@@ -145,40 +156,115 @@ func (client *Client) SetTimeout(timeout time.Duration) {
+ 	client.httpClient.Timeout = timeout
+ }
+ 
++type liteLLMRoutingConfig struct {
++	BaseURL   string `json:"base_url"`
++	TokenFile string `json:"token_file"`
++}
++
++// routedRequestClient returns the original client when no mounted routing
++// configuration exists. When it does, it configures only a request-local copy
++// so concurrent users cannot overwrite each other's provider credentials.
++func (client *Client) routedRequestClient() (*Client, error) {
++	routed := *client
++	if err := routed.configureLiteLLMRouting(); err != nil {
++		return nil, err
++	}
++	if !routed.litellmRouting {
++		return client, nil
++	}
++	return &routed, nil
++}
++
++// configureLiteLLMRouting switches the request-local client to LiteLLM's
++// OpenAI-compatible chat endpoint. A missing mount retains upstream behavior;
++// malformed or incomplete mounted configuration never falls back direct.
++func (client *Client) configureLiteLLMRouting() error {
++	configBytes, err := os.ReadFile(liteLLMRoutingConfigPath)
++	if os.IsNotExist(err) {
++		return nil
++	}
++	if err != nil {
++		return fmt.Errorf("failed to read LiteLLM routing config: %w", err)
++	}
++	var routingConfig liteLLMRoutingConfig
++	if err := json.Unmarshal(configBytes, &routingConfig); err != nil {
++		return fmt.Errorf("failed to parse LiteLLM routing config: %w", err)
++	}
++	baseURL := strings.TrimRight(strings.TrimSpace(routingConfig.BaseURL), "/")
++	tokenFile := strings.TrimSpace(routingConfig.TokenFile)
++	if baseURL == "" || tokenFile == "" {
++		return fmt.Errorf("LiteLLM routing config requires base_url and token_file")
++	}
++	if client.Model != LiteLLMOpenRouterFreeModel {
++		return fmt.Errorf("LiteLLM routing does not permit configured model %q; add its gateway alias before using it", client.Model)
++	}
++
++	tokenBytes, err := os.ReadFile(tokenFile)
++	if err != nil {
++		return fmt.Errorf("failed to read LiteLLM routing token: %w", err)
++	}
++	gatewayToken := strings.TrimSpace(string(tokenBytes))
++	if gatewayToken == "" {
++		return fmt.Errorf("LiteLLM routing token is empty")
++	}
++	if strings.TrimSpace(client.APIKey) == "" {
++		return fmt.Errorf("LiteLLM routing requires a configured provider API key")
++	}
++
++	client.litellmProviderAPIKey = client.APIKey
++	client.Provider = ProviderCustom
++	client.APIKey = gatewayToken
++	client.BaseURL = baseURL
++	client.UseFullURL = false
++	client.hooks = client
++	client.litellmRouting = true
++	return nil
++}
++
++func (client *Client) addLiteLLMProviderAPIKey(requestBody map[string]any) {
++	if client.litellmRouting {
++		requestBody["api_key"] = client.litellmProviderAPIKey
++	}
++}
++
+ // CallWithMessages template method - fixed retry flow (cannot be overridden)
+ func (client *Client) CallWithMessages(systemPrompt, userPrompt string) (string, error) {
+-	if client.APIKey == "" {
++	requestClient, err := client.routedRequestClient()
++	if err != nil {
++		return "", err
++	}
++	if requestClient.APIKey == "" {
+ 		return "", fmt.Errorf("AI API key not set, please call SetAPIKey first")
+ 	}
+ 
+ 	// Fixed retry flow
+ 	var lastErr error
+-	maxRetries := client.config.MaxRetries
++	maxRetries := requestClient.config.MaxRetries
+ 
+ 	for attempt := 1; attempt <= maxRetries; attempt++ {
+ 		if attempt > 1 {
+-			client.logger.Warnf("⚠️  AI API call failed, retrying (%d/%d)...", attempt, maxRetries)
++			requestClient.logger.Warnf("⚠️  AI API call failed, retrying (%d/%d)...", attempt, maxRetries)
+ 		}
+ 
+ 		// Call the fixed single-call flow
+-		result, err := client.hooks.call(systemPrompt, userPrompt)
++		result, err := requestClient.hooks.call(systemPrompt, userPrompt)
+ 		if err == nil {
+ 			if attempt > 1 {
+-				client.logger.Infof("✓ AI API retry succeeded")
++				requestClient.logger.Infof("✓ AI API retry succeeded")
+ 			}
+ 			return result, nil
+ 		}
+ 
+ 		lastErr = err
+ 		// Check if error is retryable via hooks (supports custom retry strategy in subclass)
+-		if !client.hooks.isRetryableError(err) {
++		if !requestClient.hooks.isRetryableError(err) {
+ 			return "", err
+ 		}
+ 
+ 		// Wait before retry
+ 		if attempt < maxRetries {
+-			waitTime := client.config.RetryWaitBase * time.Duration(attempt)
+-			client.logger.Infof("⏳ Waiting %v before retry...", waitTime)
++			waitTime := requestClient.config.RetryWaitBase * time.Duration(attempt)
++			requestClient.logger.Infof("⏳ Waiting %v before retry...", waitTime)
+ 			time.Sleep(waitTime)
+ 		}
+ 	}
+@@ -219,6 +305,7 @@ func (client *Client) buildMCPRequestBody(systemPrompt, userPrompt string) map[s
+ 	} else {
+ 		requestBody["max_tokens"] = client.MaxTokens
+ 	}
++	client.addLiteLLMProviderAPIKey(requestBody)
+ 	return requestBody
+ }
+ 
+@@ -294,7 +381,7 @@ func (client *Client) call(systemPrompt, userPrompt string) (string, error) {
+ 	// Print current AI configuration
+ 	client.logger.Infof("📡 [%s] Request AI Server: BaseURL: %s", client.String(), client.BaseURL)
+ 	client.logger.Debugf("[%s] UseFullURL: %v", client.String(), client.UseFullURL)
+-	if len(client.APIKey) > 8 {
++	if !client.litellmRouting && len(client.APIKey) > 8 {
+ 		client.logger.Debugf("[%s]   API Key: %s...%s", client.String(), client.APIKey[:4], client.APIKey[len(client.APIKey)-4:])
+ 	}
+ 
+@@ -332,6 +419,9 @@ func (client *Client) call(systemPrompt, userPrompt string) (string, error) {
+ 
+ 	// Step 7: Check HTTP status code (fixed logic)
+ 	if resp.StatusCode != http.StatusOK {
++		if client.litellmRouting {
++			return "", fmt.Errorf("LiteLLM request failed (HTTP %d)", resp.StatusCode)
++		}
+ 		return "", fmt.Errorf("API returned error (status %d): %s", resp.StatusCode, string(body))
+ 	}
+ 
+@@ -381,43 +471,50 @@ func (client *Client) isRetryableError(err error) bool {
+ //       Build()
+ //   result, err := client.CallWithRequest(request)
+ func (client *Client) CallWithRequest(req *Request) (string, error) {
+-	if client.APIKey == "" {
++	requestClient, err := client.routedRequestClient()
++	if err != nil {
++		return "", err
++	}
++	if requestClient.APIKey == "" {
+ 		return "", fmt.Errorf("AI API key not set, please call SetAPIKey first")
+ 	}
+ 
+ 	// If Model is not set in Request, use Client's Model
+ 	if req.Model == "" {
+-		req.Model = client.Model
++		req.Model = requestClient.Model
++	}
++	if requestClient.litellmRouting && req.Model != LiteLLMOpenRouterFreeModel {
++		return "", fmt.Errorf("LiteLLM routing does not permit requested model %q; add its gateway alias before using it", req.Model)
+ 	}
+ 
+ 	// Fixed retry flow
+ 	var lastErr error
+-	maxRetries := client.config.MaxRetries
++	maxRetries := requestClient.config.MaxRetries
+ 
+ 	for attempt := 1; attempt <= maxRetries; attempt++ {
+ 		if attempt > 1 {
+-			client.logger.Warnf("⚠️  AI API call failed, retrying (%d/%d)...", attempt, maxRetries)
++			requestClient.logger.Warnf("⚠️  AI API call failed, retrying (%d/%d)...", attempt, maxRetries)
+ 		}
+ 
+ 		// Call single request
+-		result, err := client.callWithRequest(req)
++		result, err := requestClient.callWithRequest(req)
+ 		if err == nil {
+ 			if attempt > 1 {
+-				client.logger.Infof("✓ AI API retry succeeded")
++				requestClient.logger.Infof("✓ AI API retry succeeded")
+ 			}
+ 			return result, nil
+ 		}
+ 
+ 		lastErr = err
+ 		// Check if error is retryable
+-		if !client.hooks.isRetryableError(err) {
++		if !requestClient.hooks.isRetryableError(err) {
+ 			return "", err
+ 		}
+ 
+ 		// Wait before retry
+ 		if attempt < maxRetries {
+-			waitTime := client.config.RetryWaitBase * time.Duration(attempt)
+-			client.logger.Infof("⏳ Waiting %v before retry...", waitTime)
++			waitTime := requestClient.config.RetryWaitBase * time.Duration(attempt)
++			requestClient.logger.Infof("⏳ Waiting %v before retry...", waitTime)
+ 			time.Sleep(waitTime)
+ 		}
+ 	}
+@@ -465,6 +562,9 @@ func (client *Client) callWithRequest(req *Request) (string, error) {
+ 
+ 	// Check HTTP status code
+ 	if resp.StatusCode != http.StatusOK {
++		if client.litellmRouting {
++			return "", fmt.Errorf("LiteLLM request failed (HTTP %d)", resp.StatusCode)
++		}
+ 		if req.ResponseFormat != nil {
+ 			// Provider bodies may echo request content; retain status without logging it.
+ 			return "", fmt.Errorf("structured AI request failed (HTTP %d)", resp.StatusCode)
+@@ -557,6 +657,7 @@ func (client *Client) buildRequestBodyFromRequest(req *Request) map[string]any {
+ 	if req.Provider != nil {
+ 		requestBody["provider"] = req.Provider
+ 	}
++	client.addLiteLLMProviderAPIKey(requestBody)
+ 
+ 	return requestBody
+ }
+diff --git a/mcp/historical_structured_test.go b/mcp/historical_structured_test.go
+index d383451e..d8e3e5e5 100644
+--- a/mcp/historical_structured_test.go
++++ b/mcp/historical_structured_test.go
+@@ -5,7 +5,11 @@ import (
+ 	"errors"
+ 	"io"
+ 	"net/http"
++	"net/http/httptest"
++	"os"
++	"path/filepath"
+ 	"strings"
++	"sync"
+ 	"testing"
+ )
+ 
+@@ -62,6 +66,256 @@ func TestHistoricalStructuredRequestWire(t *testing.T) {
+ 	}
+ }
+ 
++type liteLLMFixtureRequest struct {
++	authorization string
++	providerKey   string
++	model         string
++	structured    bool
++}
++
++func useLiteLLMRoutingConfig(t *testing.T, baseURL, tokenFile string) {
++	t.Helper()
++	configPath := filepath.Join(t.TempDir(), "routing.json")
++	configBytes, err := json.Marshal(liteLLMRoutingConfig{BaseURL: baseURL, TokenFile: tokenFile})
++	if err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(configPath, configBytes, 0o600); err != nil {
++		t.Fatal(err)
++	}
++	previousPath := liteLLMRoutingConfigPath
++	liteLLMRoutingConfigPath = configPath
++	t.Cleanup(func() { liteLLMRoutingConfigPath = previousPath })
++}
++
++func TestHistoricalLiteLLMRoutingEnforcesFinalRequestModel(t *testing.T) {
++	previousPath := liteLLMRoutingConfigPath
++	liteLLMRoutingConfigPath = filepath.Join(t.TempDir(), "absent-routing.json")
++	t.Cleanup(func() { liteLLMRoutingConfigPath = previousPath })
++	tokenFile := filepath.Join(t.TempDir(), "token")
++	if err := os.WriteFile(tokenFile, []byte("gateway-fixture"), 0o600); err != nil {
++		t.Fatal(err)
++	}
++
++	for _, tc := range []struct {
++		name, model, wantModel string
++		routed, reject         bool
++	}{
++		{name: "routed override rejected", model: "other-model", routed: true, reject: true},
++		{name: "routed default", wantModel: "openrouter/free", routed: true},
++		{name: "routed explicit free", model: "openrouter/free", wantModel: "openrouter/free", routed: true},
++		{name: "direct override allowed", model: "other-model", wantModel: "other-model"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			if tc.routed {
++				useLiteLLMRoutingConfig(t, "https://gateway.invalid", tokenFile)
++			}
++			calls := 0
++			transport := structuredFixtureTransport(func(r *http.Request) (*http.Response, error) {
++				calls++
++				var body map[string]any
++				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
++					t.Fatal(err)
++				}
++				if !tc.reject && body["model"] != tc.wantModel {
++					t.Fatalf("wire model=%v, want %q", body["model"], tc.wantModel)
++				}
++				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"choices":[{"finish_reason":"stop","message":{"content":"fixture"}}]}`)), Header: make(http.Header)}, nil
++			})
++			client := NewClient(WithProvider(ProviderCustom), WithAPIKey("fixture"),
++				WithBaseURL("https://provider.invalid/v1"), WithModel("openrouter/free"),
++				WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: transport}))
++			_, err := client.CallWithRequest(&Request{Model: tc.model, Messages: []Message{NewUserMessage("fixture")}})
++			if tc.reject {
++				if err == nil || !strings.Contains(err.Error(), "does not permit requested model") || calls != 0 {
++					t.Fatalf("unsupported routed model must fail before HTTP: err=%v calls=%d", err, calls)
++				}
++			} else if err != nil || calls != 1 {
++				t.Fatalf("allowed model request failed: err=%v calls=%d", err, calls)
++			}
++		})
++	}
++}
++
++func TestHistoricalLiteLLMRoutingUsesRequestLocalGatewayState(t *testing.T) {
++	tokenFile := filepath.Join(t.TempDir(), "token")
++	if err := os.WriteFile(tokenFile, []byte("gateway-first\n"), 0o600); err != nil {
++		t.Fatal(err)
++	}
++
++	var mu sync.Mutex
++	var requests []liteLLMFixtureRequest
++	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++		if r.URL.Path != "/chat/completions" {
++			t.Errorf("wrong gateway path: %s", r.URL.Path)
++		}
++		if r.Header.Get("x-api-key") != "" {
++			t.Error("provider header bypassed LiteLLM")
++		}
++		var body map[string]any
++		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
++			t.Error(err)
++		}
++		format, structured := body["response_format"].(map[string]any)
++		if structured && format["type"] != "json_schema" {
++			t.Error("structured response format changed")
++		}
++		mu.Lock()
++		requests = append(requests, liteLLMFixtureRequest{
++			authorization: r.Header.Get("Authorization"),
++			providerKey:   body["api_key"].(string),
++			model:         body["model"].(string),
++			structured:    structured,
++		})
++		mu.Unlock()
++		w.Header().Set("Content-Type", "application/json")
++		_, _ = w.Write([]byte(`{"choices":[{"finish_reason":"stop","message":{"content":"fixture"}}]}`))
++	}))
++	defer server.Close()
++	useLiteLLMRoutingConfig(t, server.URL, tokenFile)
++
++	client := NewClaudeClientWithOptions(
++		WithAPIKey("persisted-provider-key"),
++		WithBaseURL("https://provider.invalid/v1"),
++		WithModel(LiteLLMOpenRouterFreeModel),
++		WithMaxRetries(1),
++		WithHTTPClient(server.Client()),
++	).(*ClaudeClient)
++	if _, err := client.CallWithMessages("system", "fixture"); err != nil {
++		t.Fatal(err)
++	}
++	mu.Lock()
++	first := requests[0]
++	mu.Unlock()
++	if first.authorization != "Bearer gateway-first" || first.providerKey != "persisted-provider-key" || first.model != LiteLLMOpenRouterFreeModel || first.structured {
++		t.Fatalf("first routed request changed: %#v", first)
++	}
++	if client.Provider != ProviderClaude || client.APIKey != "persisted-provider-key" || client.BaseURL != "https://provider.invalid/v1" {
++		t.Fatal("routing mutated the persisted client")
++	}
++
++	if err := os.WriteFile(tokenFile, []byte("gateway-rotated\n"), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := client.CallWithRequest(&Request{
++		Messages: []Message{NewUserMessage("fixture")},
++		ResponseFormat: &ResponseFormat{Type: "json_schema", JSONSchema: JSONSchema{
++			Name: "fixture", Strict: true, Schema: map[string]any{"type": "object"},
++		}},
++		Provider: &ProviderPreferences{RequireParameters: true},
++	}); err != nil {
++		t.Fatal(err)
++	}
++	mu.Lock()
++	second := requests[1]
++	mu.Unlock()
++	if second.authorization != "Bearer gateway-rotated" || second.providerKey != "persisted-provider-key" || !second.structured {
++		t.Fatalf("structured routed request changed: %#v", second)
++	}
++
++	client.SetAPIKey("updated-provider-key", "https://ignored.invalid/v1", LiteLLMOpenRouterFreeModel)
++	if _, err := client.CallWithMessages("system", "fixture"); err != nil {
++		t.Fatal(err)
++	}
++	mu.Lock()
++	third := requests[2]
++	mu.Unlock()
++	if third.authorization != "Bearer gateway-rotated" || third.providerKey != "updated-provider-key" {
++		t.Fatalf("updated persisted provider key was not forwarded: %#v", third)
++	}
++	if client.Provider != ProviderClaude || client.APIKey != "updated-provider-key" || client.BaseURL != "https://ignored.invalid/v1" {
++		t.Fatal("routing mutated the updated persisted client")
++	}
++
++	var wg sync.WaitGroup
++	errs := make(chan error, 8)
++	for range 8 {
++		wg.Add(1)
++		go func() {
++			defer wg.Done()
++			_, err := client.CallWithMessages("system", "fixture")
++			errs <- err
++		}()
++	}
++	wg.Wait()
++	close(errs)
++	for err := range errs {
++		if err != nil {
++			t.Fatal(err)
++		}
++	}
++	mu.Lock()
++	concurrent := append([]liteLLMFixtureRequest(nil), requests[3:]...)
++	mu.Unlock()
++	if len(concurrent) != 8 {
++		t.Fatalf("concurrent request count=%d", len(concurrent))
++	}
++	for _, request := range concurrent {
++		if request.authorization != "Bearer gateway-rotated" || request.providerKey != "updated-provider-key" || request.model != LiteLLMOpenRouterFreeModel {
++			t.Fatalf("concurrent request changed: %#v", request)
++		}
++	}
++
++	withoutProviderKey := NewClient(WithProvider(ProviderCustom), WithModel(LiteLLMOpenRouterFreeModel), WithMaxRetries(1), WithHTTPClient(server.Client()))
++	if _, err := withoutProviderKey.CallWithMessages("system", "fixture"); err == nil || !strings.Contains(err.Error(), "routing requires a configured provider API key") {
++		t.Fatalf("missing provider key did not fail closed: %v", err)
++	}
++	unsupportedModel := NewClient(WithProvider(ProviderCustom), WithAPIKey("fixture"), WithModel("not-gateway-allowed"), WithMaxRetries(1), WithHTTPClient(server.Client()))
++	if _, err := unsupportedModel.CallWithMessages("system", "fixture"); err == nil || !strings.Contains(err.Error(), `does not permit configured model "not-gateway-allowed"`) {
++		t.Fatalf("unsupported model did not fail closed: %v", err)
++	}
++	if err := os.Remove(tokenFile); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := client.CallWithMessages("system", "fixture"); err == nil || !strings.Contains(err.Error(), "read LiteLLM routing token") {
++		t.Fatalf("missing routing token did not fail closed: %v", err)
++	}
++	mu.Lock()
++	gotRequests := len(requests)
++	mu.Unlock()
++	if gotRequests != 11 {
++		t.Fatalf("failed route made a request: %d", gotRequests)
++	}
++}
++
++func TestHistoricalLiteLLMRoutingErrorsDoNotEchoGatewayBody(t *testing.T) {
++	tokenFile := filepath.Join(t.TempDir(), "token")
++	if err := os.WriteFile(tokenFile, []byte("gateway-token\n"), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++		var body map[string]any
++		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
++			t.Error(err)
++		}
++		if body["api_key"] != "test-provider-key" { // checkov:skip=CKV_SECRET_6: Inert credential leak-detection fixture.
++			t.Fatal("provider credential was not sent to LiteLLM")
++		}
++		http.Error(w, "gateway-body-must-not-echo test-provider-key", http.StatusTooManyRequests)
++	}))
++	defer server.Close()
++	useLiteLLMRoutingConfig(t, server.URL, tokenFile)
++	client := NewClient(
++		WithProvider(ProviderCustom),
++		WithAPIKey("test-provider-key"),
++		WithBaseURL("https://provider.invalid/v1"),
++		WithModel(LiteLLMOpenRouterFreeModel),
++		WithMaxRetries(1),
++		WithHTTPClient(server.Client()),
++	)
++	for _, call := range []func() (string, error){
++		func() (string, error) { return client.CallWithMessages("system", "fixture") },
++		func() (string, error) {
++			return client.CallWithRequest(&Request{Messages: []Message{NewUserMessage("fixture")}})
++		},
++	} {
++		_, err := call()
++		if err == nil || !strings.Contains(err.Error(), "HTTP 429") || strings.Contains(err.Error(), "test-provider-key") || strings.Contains(err.Error(), "gateway-body-must-not-echo") {
++			t.Fatalf("gateway body leaked in error: %v", err)
++		}
++	}
++}
++
+ func TestHistoricalStructuredResponseFailures(t *testing.T) {
+ 	cases := map[string]string{
+ 		"refused":   `{"choices":[{"finish_reason":"stop","message":{"content":"{}","refusal":"fixture refusal"}}]}`,

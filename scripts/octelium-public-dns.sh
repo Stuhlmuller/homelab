@@ -170,6 +170,7 @@ hostnames=(
   "kiali.${domain}"
   "kubernetes-api-ci.${domain}"
   "litellm.${domain}"
+  "langfuse.${domain}"
   "multica.${domain}"
   "n8n.${domain}"
   "n8n-webhook.${domain}"

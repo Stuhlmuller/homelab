@@ -19,9 +19,37 @@ The backend stores its SQLite database and logs on the `nofx-data` NFS PVC at
 - `/homelab/nofx/ghcr-read-token` is an externally issued, read-only registry
   recovery credential. Its dedicated `nofx-registry-auth` ExternalSecret renders a
   `kubernetes.io/dockerconfigjson` Secret; it is not exposed to NOFX containers.
+- `/homelab/nofx/litellm-token` is the generated inference-only gateway key.
+  `nofx-litellm` reserves it for the activation patch as a backend-only read-only
+  `/var/run/secrets/nofx/litellm/token` file; it is never an environment variable
+  or a frontend mount. Because this ExternalSecret uses `OnChange`, increment its
+  `generated-secret-revision` annotation after rotating the SSM value.
 
 Rollout depends on External Secrets, Istio ambient, Octelium,
 `octelium-public`, and the `nfs-default` storage class.
+
+## Deferred LiteLLM routing
+
+The active overlay declares the fixed file-backed route, token Secret, and
+dedicated ServiceAccount but deliberately makes no backend Pod-spec change.
+[`activate-nofx.patch`](../../../../docs/examples/langfuse/activate-nofx.patch)
+is the reviewed follow-up that adds the route at `/etc/nofx/litellm-routing.json`,
+the read-only token file, and the backend ServiceAccount. The route points only to
+`http://litellm.ai.svc.cluster.local:4000`; there are no routing environment
+variables. The existing encrypted database continues to own the OpenRouter provider key, Base URL
+`https://openrouter.ai/api/v1`, and model `openrouter/free`. The patched client
+forwards that original provider key in its request body to LiteLLM while using the
+file token for gateway authentication, and rejects any other configured model.
+
+This staging deliberately preserves the current image digest. Do not apply the
+activation patch until LiteLLM is activated, `nofx-litellm` is Ready and its target
+Secret exists, and a reviewed `main` image containing
+`0013-litellm-runtime-routing.patch` has published a verified backend digest.
+Use a separate reviewed digest-pin follow-up, then prove a short historical
+`openrouter/free` run reaches LiteLLM with one structured provider attempt and no
+raw provider or gateway credentials in application logs.
+That follow-up must consume this patch, remove the scratch activation check, and
+switch `nofx-runtime-check.py` to `active=True` for the now-active render.
 
 ## Runtime storage and backtests
 
@@ -84,6 +112,9 @@ Require the publication and rollout acceptance below:
 - Strict JSON-schema decisions for historical `openrouter/free` requests to
   `https://openrouter.ai/api/v1`, with one provider attempt per cycle. Refused,
   truncated, or malformed output remains a failed cycle.
+- File-backed LiteLLM routing for `openrouter/free`, preserving the encrypted
+  provider configuration while using the backend-only gateway token mount. This
+  remains inactive until an image built from the patch is published and pinned.
 - A leverage cap applied to actual simulated fills, plus selected-run comparison
   of equity, return, drawdown, and recorded decision outcomes. Generated run IDs
   include a safe strategy slug; the table does not declare a winner.
@@ -157,6 +188,7 @@ Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expect
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
 source download matches the deployed revision, including patches `0007`–`0011`.
+Verify `0013` as well after the separately gated gateway activation.
 Freshly verify every persisted trader is stopped before opening the dashboard;
 runtime loading can auto-start a trader saved as running. Reload the
 authenticated UI, select **AI Traders → View**, and inspect its account/positions

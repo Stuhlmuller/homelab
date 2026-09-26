@@ -1,0 +1,131 @@
+langfuse:
+  replicas: 1
+  serviceAccount:
+    create: true
+    name: langfuse
+    automountServiceAccountToken: false
+  salt:
+    secretKeyRef:
+      name: langfuse-secrets
+      key: salt
+  encryptionKey:
+    secretKeyRef:
+      name: langfuse-secrets
+      key: encryption-key
+  nextauth:
+    url: https://langfuse.stinkyboi.com
+    secret:
+      secretKeyRef:
+        name: langfuse-secrets
+        key: nextauth-secret
+  features:
+    telemetryEnabled: false
+    signUpDisabled: true
+  image:
+    repository: docker.io/langfuse/langfuse
+    tag: 4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd
+    pullPolicy: IfNotPresent
+  web:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    pod:
+      additionalEnv:
+        - name: LANGFUSE_INIT_ORG_ID
+          value: homelab
+        - name: LANGFUSE_INIT_ORG_NAME
+          value: Homelab
+        - name: LANGFUSE_INIT_PROJECT_ID
+          value: homelab
+        - name: LANGFUSE_INIT_PROJECT_NAME
+          value: Homelab
+        - name: LANGFUSE_INIT_PROJECT_RETENTION
+          value: "30"
+        - name: LANGFUSE_INIT_USER_EMAIL
+          value: operator@stinkyboi.com
+        - name: LANGFUSE_INIT_USER_NAME
+          value: Homelab operator
+        - name: LANGFUSE_INIT_PROJECT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: project-public-key
+        - name: LANGFUSE_INIT_PROJECT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: project-secret-key
+        - name: LANGFUSE_INIT_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-secrets
+              key: init-user-password
+  worker:
+    image:
+      repository: docker.io/langfuse/langfuse-worker
+      tag: 4.35.0@sha256:5e35e625a214dd868bb22adad90fc52e8f83cc856c3750e47f9a922622c207fb
+      pullPolicy: IfNotPresent
+    replicas: 1
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+postgresql:
+  deploy: false
+  host: langfuse-postgres.langfuse.svc.cluster.local
+  port: 5432
+  auth:
+    username: langfuse
+    # checkov:skip=CKV_SECRET_6: Public Kubernetes Secret name, not secret material.
+    existingSecret: langfuse-secrets
+    secretKeys:
+      # checkov:skip=CKV_SECRET_6: Public key in the referenced Kubernetes Secret.
+      userPasswordKey: postgres-password
+    database: langfuse
+redis:
+  deploy: false
+  host: langfuse-valkey.langfuse.svc.cluster.local
+  port: 6379
+  auth:
+    username: default
+    existingSecret: langfuse-secrets
+    # checkov:skip=CKV_SECRET_6: Public key in the referenced Kubernetes Secret.
+    existingSecretPasswordKey: redis-password
+    database: 0
+clickhouse:
+  deploy: false
+  host: langfuse-clickhouse.langfuse.svc.cluster.local
+  httpPort: 8123
+  nativePort: 9000
+  database: default
+  auth:
+    username: default
+    existingSecret: langfuse-secrets
+    # checkov:skip=CKV_SECRET_6: Public key in the referenced Kubernetes Secret.
+    existingSecretKey: clickhouse-password
+  cluster:
+    enabled: false
+  migration:
+    autoMigrate: true
+s3:
+  deploy: false
+  storageProvider: s3
+  bucket: homelab-langfuse-716182248480-us-west-2
+  region: us-west-2
+  forcePathStyle: false
+  accessKeyId:
+    secretKeyRef:
+      name: langfuse-secrets
+      key: s3-access-key-id
+  secretAccessKey:
+    secretKeyRef:
+      name: langfuse-secrets
+      key: s3-secret-access-key
