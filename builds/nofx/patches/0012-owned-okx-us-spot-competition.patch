@@ -6577,10 +6577,10 @@ index 0000000..b1a08ef
 +}
 diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
 new file mode 100644
-index 0000000..31a070d
+index 0000000..4fb0131
 --- /dev/null
 +++ b/trader/okx_spot_execution.go
-@@ -0,0 +1,490 @@
+@@ -0,0 +1,496 @@
 +package trader
 +
 +import (
@@ -6666,6 +6666,10 @@ index 0000000..31a070d
 +	}
 +	stop, _ := spotAmount(d.StopLoss)
 +	take, _ := spotAmount(d.TakeProfit)
++	// Long sell protection triggers earlier when rounded toward the current
++	// price. Validate and persist these executable prices, not the model values.
++	stop = spotCeilStep(stop, inst.TickSize)
++	take = spotFloorStep(take, inst.TickSize)
 +	if !stop.LessThan(price) || !take.GreaterThan(price) {
 +		return nil, errors.New("spot stop/take prices must bracket the current price")
 +	}
@@ -6723,11 +6727,13 @@ index 0000000..31a070d
 +	// Quote fees lower post-trade equity; a base fee can only reduce holdings.
 +	// Enforce utilization against the conservative post-fee denominator too.
 +	postEquity := equity.Sub(quantity.Mul(limit).Mul(rate))
-+	postHolding := quantity.Mul(limit)
++	// A coarse tick can make limit cost much lower than current marked exposure.
++	entryValue := quantity.Mul(price)
++	postHolding := entryValue
 +	if dust, ok := snapshot.Inventory[inst.BaseCurrency]; ok {
 +		postHolding = postHolding.Add(decimal.RequireFromString(dust).Mul(price))
 +	}
-+	if !postEquity.IsPositive() || postHolding.GreaterThan(postEquity.Mul(maxRatio)) || invested.Add(quantity.Mul(limit)).GreaterThan(postEquity.Mul(maxUsage)) {
++	if !postEquity.IsPositive() || postHolding.GreaterThan(postEquity.Mul(maxRatio)) || invested.Add(entryValue).GreaterThan(postEquity.Mul(maxUsage)) {
 +		return nil, errors.New("spot buy plus fees exceeds position or cash utilization limit")
 +	}
 +	if reserve.GreaterThan(decimal.RequireFromString(snapshot.AvailableQuote)) {
@@ -7073,10 +7079,10 @@ index 0000000..31a070d
 +}
 diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.go
 new file mode 100644
-index 0000000..4bd4866
+index 0000000..f081262
 --- /dev/null
 +++ b/trader/okx_spot_execution_test.go
-@@ -0,0 +1,256 @@
+@@ -0,0 +1,318 @@
 +package trader
 +
 +import (
@@ -7127,6 +7133,7 @@ index 0000000..4bd4866
 +	algos := map[string]algoFixture{}
 +	nextID := 100
 +	posts := 0
++	coarseTick := false
 +	var canceled []string
 +	c := spotFixture(t, func(w http.ResponseWriter, r *http.Request) {
 +		q := r.URL.Query()
@@ -7164,6 +7171,9 @@ index 0000000..4bd4866
 +				if body["ordType"] != "oco" || body["side"] != "sell" || body["tpOrdPx"] == "-1" || body["slOrdPx"] == "-1" {
 +					t.Fatal("unbounded protection")
 +				}
++				if body["slTriggerPx"] != "90" || body["slOrdPx"] != "90" || body["tpTriggerPx"] != "120" || body["tpOrdPx"] != "120" {
++					t.Fatalf("protection prices were not quantized toward current price: %#v", body)
++				}
 +				algos[body["algoClOrdId"]] = algoFixture{id, body["algoClOrdId"], body["sz"], "live"}
 +				spotReply(w, fmt.Sprintf(`[{"sCode":"0","algoId":%q,"algoClOrdId":%q}]`, id, body["algoClOrdId"]))
 +			default:
@@ -7177,10 +7187,22 @@ index 0000000..4bd4866
 +		case okxAccountPath:
 +			spotReply(w, `[{"details":[{"ccy":"USDT","cashBal":"1000","availBal":"1000","liab":"0"},{"ccy":"BTC","cashBal":"20","availBal":"20","liab":"0"}]}]`)
 +		case "/api/v5/account/instruments":
++			if coarseTick {
++				spotReply(w, `[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":"1","minSz":"1","tickSz":"1","maxLmtSz":"100","groupId":"12"}]`)
++				return
++			}
 +			spotReply(w, `[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":"0.001","minSz":"0.01","tickSz":"0.1","maxLmtSz":"5","groupId":"12"}]`)
 +		case "/api/v5/account/trade-fee":
++			if coarseTick {
++				spotReply(w, `[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":"0","taker":"0"}]}]`)
++				return
++			}
 +			spotReply(w, `[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":"-0.001","taker":"-0.001"}]}]`)
 +		case okxTickerPath:
++			if coarseTick {
++				spotReply(w, `[{"instId":"BTC-USDT","last":"1.9","ts":"28800000"}]`)
++				return
++			}
 +			spotReply(w, `[{"instId":"BTC-USDT","last":"100","ts":"28800000"}]`)
 +		case okxOrderPath:
 +			o, ok := orders[q.Get("clOrdId")]
@@ -7214,7 +7236,50 @@ index 0000000..4bd4866
 +	b := *a
 +	b.traderID = "b"
 +	risk := store.RiskControlConfig{MaxPositions: 3, MinPositionSize: 1, MinConfidence: 50, MinRiskRewardRatio: 1, BTCETHMaxPositionValueRatio: 1, AltcoinMaxPositionValueRatio: 1, MaxMarginUsage: 1}
-+	decision := kernel.Decision{Symbol: "BTCUSDT", Action: "open_long", Leverage: 1, PositionSizeUSD: 10, StopLoss: 90, TakeProfit: 120, Confidence: 80}
++	decision := kernel.Decision{Symbol: "BTCUSDT", Action: "open_long", Leverage: 1, PositionSizeUSD: 10, StopLoss: 89.95, TakeProfit: 120.09, Confidence: 80}
++	// With equity 40, budget 12, mark 1.9 and tick 1, twelve units cost 12
++	// but mark at 22.8. Cost alone fits 30%; marked exposure exceeds it.
++	coarseTick = true
++	coarseDecision := decision
++	coarseDecision.PositionSizeUSD, coarseDecision.StopLoss, coarseDecision.TakeProfit = 12, 1, 3
++	for _, limit := range []string{"position", "utilization"} {
++		bounded := risk
++		if limit == "position" {
++			bounded.BTCETHMaxPositionValueRatio = 0.3
++		} else {
++			bounded.MaxMarginUsage = 0.3
++		}
++		if _, err := a.ExecuteSpotDecision(coarseDecision, bounded, []string{"BTCUSDT"}); err == nil || posts != 0 {
++			t.Fatalf("coarse tick bypassed marked %s limit: %v; POSTs=%d", limit, err, posts)
++		}
++		unchanged, err := st.Spot().Snapshot("owner", "ex", "a")
++		must(err)
++		if unchanged.Cash != "40" || unchanged.ReservedQuote != "0" || len(unchanged.Inventory) != 0 {
++			t.Fatalf("rejected coarse-tick decision changed holdings: %+v", unchanged)
++		}
++	}
++	coarseTick = false
++	for _, tc := range []struct {
++		name, wantError   string
++		stop, take, ratio float64
++	}{
++		{"stop reaches mark", "bracket", 99.95, 120, 1},
++		{"take reaches mark", "bracket", 90, 100.05, 1},
++		{"rounded reward shrinks", "reward/risk", 90, 120.09, 2.005},
++	} {
++		invalid := decision
++		invalid.StopLoss, invalid.TakeProfit = tc.stop, tc.take
++		bounded := risk
++		bounded.MinRiskRewardRatio = tc.ratio
++		if _, err := a.ExecuteSpotDecision(invalid, bounded, []string{"BTCUSDT"}); err == nil || !strings.Contains(err.Error(), tc.wantError) || posts != 0 {
++			t.Fatalf("%s not rejected before submission: %v; POSTs=%d", tc.name, err, posts)
++		}
++		intents, err := st.Spot().Intents("owner", "ex")
++		must(err)
++		if len(intents) != 0 {
++			t.Fatal("invalid rounded protection created an order intent")
++		}
++	}
 +	// Ten quote units are exactly 25% before fees, but exceed 25% of the
 +	// conservative post-fee equity. Both hard limits must reject before any POST.
 +	for _, limit := range []string{"position", "utilization"} {
@@ -7241,6 +7306,9 @@ index 0000000..4bd4866
 +	must(err)
 +	bAlgo := ""
 +	for _, i := range intents {
++		if i.Side == "buy" && (i.StopLoss != "90" || i.TakeProfit != "120") {
++			t.Fatalf("entry persisted unquantized protection: stop=%s take=%s", i.StopLoss, i.TakeProfit)
++		}
 +		if i.TraderID == "b" && i.IsProtection {
 +			bAlgo = i.AlgoID
 +		}

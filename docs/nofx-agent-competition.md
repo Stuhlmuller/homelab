@@ -45,7 +45,8 @@ models; competition compares the saved personas, not fixed model identities.
 Entries and explicit exits use limit IOC orders at the fresh quoted price,
 rounded to the instrument tick without chasing prices. They may fill partly or
 not at all. Every entry requires saved stop-loss and take-profit prices; native
-OCO sell orders protect only that trader's owned quantity. Both protective legs
+OCO sell orders protect only that trader's owned quantity. Protective prices
+align to exchange ticks before the bracket and reward/risk checks. Both legs
 are limit orders, so a trigger does not guarantee a fill. Reconciliation verifies
 terminal parent/child status and cumulative fills before releasing reservations.
 Uncertain submissions keep funds reserved and prevent new orders.
