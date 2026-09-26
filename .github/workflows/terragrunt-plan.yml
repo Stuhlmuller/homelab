@@ -145,11 +145,17 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
+          echo "::group::Kubeconfig setup"
           bash scripts/ci/install-kubeconfig.sh
+          echo "::group::Kubernetes API check"
           kubectl --request-timeout=15s version >/dev/null
+          echo "::group::Argo CD bootstrap plan"
           bash scripts/ci/terragrunt-plan.sh
           EOF
           then
+            if sha256sum --check --status <<<'3cd2b496a448cdd8116cdd653b2da2aca2f2a42d519115f1822993fb7b7d23f6  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then
+              bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"
+            fi
             echo "::error::Live plan failed; detailed output was withheld because this is a public repository. Reproduce it locally."
             exit 1
           fi

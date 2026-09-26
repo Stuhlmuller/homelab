@@ -18,6 +18,7 @@ python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 scripts/ci/terragrunt-plan-stage-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
@@ -876,7 +877,7 @@ done <<'EOF'
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
-.github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
+.github/workflows/terragrunt-plan.yml d00b7110d61c6cd5d8b927382129d2b2f33627b94f20aea0af4af77caa146e51
 EOF
 echo "::endgroup::"
 
