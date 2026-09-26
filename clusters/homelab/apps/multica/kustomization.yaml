@@ -5,3 +5,12 @@ resources:
   - postgres.yaml
   - authorizationpolicy.yaml
   - virtualservice.yaml
+  - runtime-storage.yaml
+  - runtime.yaml
+configMapGenerator:
+  - name: multica-runtime-config
+    namespace: ai
+    files:
+      - runtime/bootstrap.py
+      - runtime/settings.json
+      - runtime/codex.toml

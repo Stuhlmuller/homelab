@@ -1,0 +1,43 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: multica-runtime-local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: multica-runtime-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: multica-runtime
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  claimRef:
+    name: multica-runtime-local
+    namespace: ai
+  hostPath:
+    path: /var/lib/multica-runtime
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - acer
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: multica-runtime-local
+  volumeMode: Filesystem
