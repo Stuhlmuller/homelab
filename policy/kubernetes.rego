@@ -19,6 +19,7 @@ required_pod_security_labels := {
 deny contains msg if {
 	input.kind == "Secret"
 	not harmless_harbor_chart_secret
+	not harmless_langfuse_chart_secret
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("raw Kubernetes Secret %q must not be committed; use ExternalSecret, encrypted secret material, or a CI-injected secret path", [name])
 }
@@ -45,6 +46,18 @@ harmless_harbor_chart_secret if {
 	input.type == "Opaque"
 	object.get(input, "stringData", {}) == {}
 	object.get(input, "data", null) == harbor_public_secret_data[input.metadata.name]
+}
+
+# Langfuse 2.1.1 always renders this retained Secret shell. The chart emits no
+# data when SALT, ENCRYPTION_KEY, and NEXTAUTH_SECRET all come from ESO.
+harmless_langfuse_chart_secret if {
+	input.kind == "Secret"
+	metadata := object.get(input, "metadata", {})
+	metadata.name == "langfuse-app"
+	metadata.namespace == "langfuse"
+	object.get(input, "type", "") == "Opaque"
+	object.get(input, "data", null) == null
+	object.get(input, "stringData", {}) == {}
 }
 
 deny contains msg if {
@@ -337,13 +350,14 @@ public_external_route if {
 }
 
 external_secret_allowed_prefixes := {
-	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/grafana/openclaw-alert-hook-token"},
+	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
 	"affine": {"/homelab/affine/"},
 	"argocd": {"/homelab/argocd/"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
 	"cert-manager": {"/homelab/cert-manager/"},
 	"github-actions-runner": {"/homelab/github-actions-runner/"},
 	"harbor": {"/homelab/harbor/"},
+	"langfuse": {"/homelab/langfuse/"},
 	"media": {"/homelab/deluge/", "/homelab/media-postgres/"},
 	"monitoring": {"/homelab/grafana/"},
 	"nofx": {"/homelab/nofx/"},

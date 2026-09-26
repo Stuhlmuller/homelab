@@ -18,6 +18,8 @@ in the same change.
   cluster.
 - [[architecture/storage-and-state]] tracks durable state and backup gates.
 - [[architecture/secrets-and-identity]] records secret and identity boundaries.
+- [[architecture/ai-observability]] tracks caller routing, Langfuse attribution
+  and the outstanding live acceptance gates.
 - [[workloads/inventory]] lists app ownership, paths, dependencies, and state.
 - [[workloads/application-notes]] points to workload READMEs and keeps only
   shared cross-application rules.

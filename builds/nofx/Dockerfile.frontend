@@ -10,6 +10,7 @@ RUN npm test -- --run src/components/ModelConfigModal.test.tsx \
     src/components/AITradersPage.start.test.tsx \
     src/lib/httpClient.test.ts \
     src/components/SpotCompetitionModal.test.tsx \
+    src/components/TraderConfigModal.spot.test.tsx \
     src/components/CompetitionPage.test.tsx \
     src/components/CompetitionPage.availability.test.tsx \
     src/components/ComparisonChart.availability.test.tsx
