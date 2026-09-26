@@ -41,7 +41,7 @@ def command(job, destination):
         "--declaration-key", "homelab:assistant:v1:" + job["key"],
         "--name", job["name"], "--agent", "main", "--session", "isolated",
         "--cron", job["schedule"], "--tz", "America/Los_Angeles",
-        "--model", "openai/gpt-6-astra", "--thinking", "medium",
+        "--model", "openrouter/free", "--thinking", "medium",
         "--fallbacks", "", "--timeout-seconds", str(job["timeoutSeconds"]),
         "--message", job["message"], "--announce", "--channel", "discord",
         "--to", destination, "--timeout", "20000",
