@@ -1,0 +1,126 @@
+# Template instantiated only by the protected publisher; not an Argo resource.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-sign-template
+  namespace: harbor
+  annotations:
+    checkov.io/skip2: CKV_K8S_35=Cosign requires COSIGN_PASSWORD for noninteractive key import; this CI credential comes from a Secret while private keys and registry auth stay file-mounted.
+    checkov.io/skip1: CKV2_K8S_6=The signing workload is covered by sibling networkpolicy.yaml.
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 300
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: harbor-image-signing
+        app.kubernetes.io/part-of: harbor
+    spec:
+      serviceAccountName: harbor
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: import-key
+          image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+          imagePullPolicy: IfNotPresent
+          args: [import-key-pair, --key, /key/tls.key, --output-key-prefix, /work/cosign]
+          workingDir: /work
+          env:
+            - name: COSIGN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-secrets
+                  key: robot-push-password
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: key, mountPath: /key, readOnly: true}
+            - {name: work, mountPath: /work}
+        - name: sign
+          image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+          imagePullPolicy: IfNotPresent
+          # The publisher appends exactly the two verified NOFX digest references.
+          args:
+            - sign
+            - --yes
+            - --key=/work/cosign.key
+            - --tlog-upload=false
+            - --use-signing-config=false
+            - --new-bundle-format=false
+            - --oidc-disable-ambient-providers
+          workingDir: /work
+          env:
+            - name: DOCKER_CONFIG
+              value: /registry
+            - name: COSIGN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-secrets
+                  key: robot-push-password
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: work, mountPath: /work, readOnly: true}
+            - {name: registry, mountPath: /registry, readOnly: true}
+      containers:
+        - name: public-key
+          image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+          imagePullPolicy: IfNotPresent
+          args: [public-key, --key, /work/cosign.key, --outfile, /dev/termination-log]
+          workingDir: /work
+          env:
+            - name: COSIGN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: harbor-secrets
+                  key: robot-push-password
+          # Only the public key is returned through Pod status, never the Secret.
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - {name: work, mountPath: /work, readOnly: true}
+      volumes:
+        - name: key
+          secret:
+            secretName: harbor-image-signing
+            defaultMode: 0440
+            items:
+              - {key: tls.key, path: tls.key}
+        - name: registry
+          secret:
+            secretName: harbor-secrets
+            defaultMode: 0440
+            items:
+              - {key: signing-docker-config, path: config.json}
+        - name: work
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi

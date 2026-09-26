@@ -33,6 +33,7 @@
             cloudflared
             conftest
             coreutils
+            cosign
             curl
             findutils
             gh
@@ -53,6 +54,7 @@
             nixVersions.latest
             opentofu
             openssh
+            openssl
             pre-commit
             prometheus.cli
             python3
