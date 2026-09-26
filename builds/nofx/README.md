@@ -1,10 +1,11 @@
 # Maintained NOFX images
 
 This recipe rebuilds the pinned NOFX release with passive, key-preserving model
-configuration, validated backtest run IDs, and OKX US public historical candles
-for new simulations. Historical decisions exclude current quant/ranking feeds
-and use the simulated clock for position age. OKX construction reads account
-mode without trying to change it. It does not enable live traders. Deployment
+configuration, validated backtest run IDs, OKX US public historical candles,
+and the allocated cash-spot executor described below. Historical decisions
+exclude current quant/ranking feeds and use the simulated clock for position
+age. OKX construction reads account mode without trying to change it.
+Preparing or building these images does not enable live traders. Deployment
 and operational acceptance are documented in the
 [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
@@ -27,24 +28,26 @@ active deployment digest as part of the configuration-only rollout.
 Normal trader decision parsing preserves the shared validator's leverage clamp
 in the returned decisions. Trader creation also preserves an explicit hidden
 leaderboard setting; the API retains its visible default when omitted. Focused
-parser and SQLite regressions run in the backend image's test stage. Before
-opening an OKX position, the adapter reads current cross-margin leverage and
+parser and SQLite regressions run in the backend image's test stage. The legacy
+OKX futures adapter from patch `0009` reads current cross-margin leverage and
 skips the write when it already matches. Otherwise it makes one instrument-level
 leverage request, following the [OKX API guide](https://www.okx.com/docs-v5/trick_en/).
 Missing or malformed current-leverage data, or failed leverage requests, stop
 opening orders before canceling existing orders. Mocked transport checks cover
 both directions.
-Arena's separate consensus execution path does not use the decision validator.
+Those futures paths remain in the source for regression coverage; patch `0012`
+replaces every runtime OKX construction with cash spot. Arena's separate
+consensus execution path is rejected by the cash-spot adapter.
 
 Patch `0011` routes the OKX adapter through `https://us.okx.com` for this
 homelab's confirmed US account. All signed REST calls share that constant;
-there is no automatic regional fallback. This does not add spot trading or
-establish eligibility for the adapter's USDT perpetuals. Keep traders stopped.
+there is no automatic regional fallback. Patch `0011` alone does not add spot
+trading or establish eligibility for USDT perpetuals. Keep traders stopped.
 Dashboard reads return a typed, safe HTTP 503 when an owned saved trader cannot
 load; missing or foreign traders return 404. The UI displays the load guidance
-without claiming the API route is missing. Equity history remains readable
-without initializing the exchange. Handler, transport, and Axios regressions
-run in the existing image test targets.
+without claiming the API route is missing. Patch `0012` withholds legacy OKX
+whole-account equity history; other equity history remains database-only.
+Handler, transport, and Axios regressions run in the existing image test targets.
 
 Backtest Lab compares selected runs using recorded equity, return, drawdown,
 and decision outcomes. The table does not infer a valid score from Completed:
@@ -53,6 +56,38 @@ in the [competition runbook](../../docs/nofx-agent-competition.md). Newly genera
 run IDs include a safe strategy slug. Keep rounds uninterrupted: cold resume
 still does not reliably restore the selected strategy snapshot, so start fresh
 matched runs after a backend restart.
+
+## OKX US cash-spot competition
+
+Patch `0012` replaces this installation's OKX runtime construction with the
+cash-spot adapter and adds a stopped-only capital-allocation form. The
+[regional API contract](https://app.okx.com/docs-v5/en/) defines its US host,
+cash orders, account fee currency, and native OCO protocol. It uses one
+server-verified account identity across connection aliases. Decimal reservations
+and append-only fills own each agent's cash, inventory, fees, and cost basis;
+legacy account positions and balances cannot become competition performance.
+The shared cap limits outstanding buy reservations plus owned inventory's
+acquisition cost; it is not a ceiling on marked market value or a loss guarantee.
+Each trader is also limited by its own remaining quote cash and strategy limits.
+
+This is prepared source, not a verified cash-spot deployment. Publish the exact
+reviewed main commit to private Harbor, pin its reported backend/frontend
+digests through a separate rollout PR, then verify readiness, served source,
+and stopped-state acceptance. Explicit capital amounts remain an operator input;
+this change neither chooses them nor starts a trader.
+
+The existing single backend replica is the execution boundary: a process lock
+serializes account reconciliation and submission; database transactions reserve
+funds before HTTP. More than one execution process requires a durable execution
+lease first. Do not increase backend replicas without that change.
+
+Mocked protocol, SQLite concurrency, restart/replay, lifecycle, and UI checks run
+in the image test stages. Manager checks cover unavailable scores and bounded
+refresh; lifecycle and recovery tests cover stopped execution and saved OCO
+ownership. Tests use synthetic credentials and mocked exchange transports;
+they send no live orders. No dependencies are changed by patch `0012`.
+See the [competition runbook](../../docs/nofx-agent-competition.md#one-okx-account)
+for execution limits, current-data ranking, and operator activation.
 
 ## Source and build contract
 
@@ -210,9 +245,13 @@ new UI runs select `okx_us`, while older saved runs without a source keep Binanc
 
 To revert a build change, revert its recipe/patch commit through a PR and publish
 the resulting new commit tag. To roll back deployment, stop simulations and
-restore the previous reviewed image digests while retaining `nofx-data` and the
-absolute executable/working-directory configuration. Returning to upstream
-images restores their model-save side effects and Binance dependency.
+all live traders, review unresolved submissions and native protective orders,
+then restore the previous reviewed image digests through GitOps. Retain
+`nofx-data`, including the additive spot tables and append-only fill history,
+and the absolute executable/working-directory configuration. Never reset the
+ledger to make a rollback load. Earlier images cannot reconcile that ledger;
+keep every OKX trader stopped while running them. Returning to upstream also
+restores its model-save side effects and Binance dependency.
 
 ## Private image signing
 
