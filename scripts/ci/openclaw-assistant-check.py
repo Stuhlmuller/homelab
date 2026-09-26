@@ -25,8 +25,12 @@ def module(name):
 bootstrap = module("bootstrap")
 reconcile = module("reconcile")
 fixture = {
-    "agents": {"defaults": {"models": {"openai/gpt-5.5": {}},
-                            "modelPolicy": {"allow": ["openai/gpt-5.5"]}}},
+    "agents": {
+        "defaults": {"models": {"openai/gpt-5.5": {}},
+                     "modelPolicy": {"allow": ["openai/gpt-5.5"]}},
+        "entries": {"main": {"model": "openai/gpt-6-astra",
+                             "modelPolicy": {"allow": ["openai/gpt-6-astra"]}}},
+    },
     "skills": {"allowBundled": ["existing-skill"],
                "entries": {"existing-skill": {"enabled": False}, "gog": {"enabled": False}}},
     "channels": {"discord": {"enabled": True, "allowFrom": ["123456789012345678"],
@@ -53,6 +57,10 @@ with tempfile.TemporaryDirectory() as directory:
     assert result["channels"] == fixture["channels"]
     assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
         "openai/gpt-5.5", "openrouter/free"]
+    assert result["agents"]["entries"]["main"]["model"] == {
+        "primary": "openrouter/free", "fallbacks": []}
+    assert result["agents"]["entries"]["main"]["modelPolicy"]["allow"] == [
+        "openai/gpt-6-astra", "openrouter/free"]
     assert "Existing personal identity." in soul.read_text()
     assert memory.read_text() == "Private memory must survive.\n"
     assert (root / "assistant-backups/v1/SOUL.md").read_text() == "Existing personal identity.\n"
