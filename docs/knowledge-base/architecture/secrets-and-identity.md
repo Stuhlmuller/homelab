@@ -273,17 +273,16 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - Langfuse keeps application, datastore, project and headless-init credentials
   under `/homelab/langfuse/`; its namespace consumes `langfuse-secrets`.
   `IaC/live/langfuse-blob-storage` owns the distinct S3 runtime credential pair.
-  The staged `openclaw-langfuse-otel` ExternalSecret renders project keys as
-  OTLP Basic authentication but no current OpenClaw container consumes it.
 - Future LiteLLM app keys are generated separately for NOFX and Multica at
   `/homelab/<app>/litellm-token`; OpenClaw's future key uses
   `/homelab/openclaw/litellm-app-token`. The existing OpenClaw `litellm-token`
   stays an alias of the master key during staging. Neither the current gateway
   provider Secret nor the current caller Pods depend on new Langfuse keys.
-  [The activation patch](../../../docs/examples/langfuse/activate-callers.patch)
-  switches the OpenClaw consumer, mounts app keys in LiteLLM, and enables
-  authenticated attribution/direct OTLP after the prerequisite readiness gates.
-  The native exporter preserves ChatGPT OAuth but may not expose token usage.
+  Caller activation is deferred to a separate implementation PR after the
+  [readiness gates](../../../clusters/homelab/apps/langfuse/README.md#caller-activation).
+  No activation hook/template or direct OpenClaw OTLP credential is included:
+  the candidate gateway admission boundary failed an offline security audit.
+  See [[ai-observability]] for the required pre-auth guard and accounting scope.
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It

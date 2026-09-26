@@ -89,30 +89,23 @@ Before a follow-up activation PR:
    not bypass SHA or environment gates or edit DNS in the provider console.
 3. Verify the Langfuse Application is Synced/Healthy, all three PVCs are Bound,
    the project is initialized, and the authenticated UI opens through Octelium.
-   Verify `langfuse-secrets`, `litellm-app-keys` and `openclaw-langfuse-otel`
+   Verify `langfuse-secrets` and `litellm-app-keys`
    ExternalSecrets are Ready without printing their values.
    Run `nix develop --command python3 scripts/octelium-tunnel-check.py` and
    `scripts/octelium-e2e-check.sh`; DNS/catalog/backend or login failures block
    caller activation. An unauthenticated redirect alone is not UI acceptance.
-4. Prepare the existing caller changes in a fresh branch:
-
-   ```sh
-   nix develop --command python3 scripts/ci/langfuse-staging-check.py
-   git apply --check docs/examples/langfuse/activate-callers.patch
-   git apply docs/examples/langfuse/activate-callers.patch
-   ```
-
-   The staging check applies the patch only to scratch and exercises both
-   OpenClaw telemetry/config fixtures. It fails on stale patch context or an
-   outdated assistant checksum. Refresh the patch after overlapping changes;
-   preserve newer image, timeout and agent settings. Its OpenClaw portion stages
-   direct OTLP, not the newer free-model gateway route. Replace that portion
-   with the tested gateway-only route before activation: native OpenClaw exports
-   overlapping per-call and run-total usage, so enabling it alongside gateway
-   capture would not provide a single token-accounting source. In the activation PR,
-   remove the consumed patch and staging check (including its static-gate
-   invocation), then run the full static gate and pinned LiteLLM attribution
-   test. Review the live plan and render/diff the affected workloads.
+4. Implement caller activation in a separate PR. This foundation intentionally
+   contains no activation patch or gateway callback implementation: the prior
+   candidate allowed request-level logging overrides before the pre-call hook
+   and on authentication failures. Require production-matched regressions for
+   the complete admission/startup path before enabling app authentication or
+   callbacks. Preserve newer image, timeout, provider and agent settings.
+   Use gateway-only export for routed OpenClaw inference: its native plugin
+   emits overlapping per-call and run-total token usage. Remove the
+   prerequisites-only staging check and its static-gate invocation when the
+   reviewed activation supersedes those invariants; add the actual runtime
+   regressions instead. Run the full static gate, review the live plan and
+   render/diff affected workloads.
 5. After activation, verify one real OpenClaw free-model turn and gateway request
    produce correlated traces with expected provider/model, content and available
    usage. Preserve `openrouter/free` for interactive turns, heartbeat and
@@ -125,6 +118,7 @@ Before a follow-up activation PR:
    LiteLLM and `nofx-litellm` are Ready. Preserve the original provider/model and
    require a real correlated trace without credential leakage.
 
-Rollback the activation commit through GitOps; retain Langfuse data and keys.
+The activation PR must document rollback of any persisted caller settings,
+not just a Helm revert; retain Langfuse data and keys.
 The staging merge does not establish inference coverage or a datastore restore
 drill. Those acceptance gaps remain in the knowledge base.

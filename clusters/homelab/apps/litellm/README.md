@@ -1,56 +1,49 @@
 # LiteLLM app attribution
 
 LiteLLM currently retains its existing provider and master-key configuration.
-The Langfuse callback and app authentication are staged in the
-[pending activation patch](../../../../docs/examples/langfuse/activate-callers.patch),
-outside the active Helm values. Apply only through a reviewed follow-up after
+Langfuse integration and app authentication are deferred to a separate
+implementation PR. Activate only through a reviewed follow-up after
 the [readiness gates](../langfuse/README.md#caller-activation) pass.
 
-The pending configuration sends requests, outputs, usage and errors to the
-homelab Langfuse project through a thin wrapper around LiteLLM's native
-Langfuse OTLP exporter.
-Langfuse owns the observability UI; LiteLLM does not need another database just
-to label callers.
+The intended integration sends requests, outputs, usage and safe errors to
+the homelab Langfuse project. Langfuse owns the observability UI; LiteLLM does
+not need another database just to label callers.
 
-`app_identity.py` uses LiteLLM's custom-auth and pre-call callback interfaces.
 Separate generated `/homelab/<app>/litellm-token` parameters identify NOFX
-and Multica; OpenClaw uses `/homelab/openclaw/litellm-app-token`. Its existing
+and Multica; OpenClaw's future key uses `/homelab/openclaw/litellm-app-token`. Its existing
 `litellm-token` remains the master-key alias until activation switches the
-consumer. The `litellm-app-keys` ExternalSecret mounts those keys
-for later file mounting. After activation, app keys permit model discovery and inference only; the master key
-is reserved for the operator. Incoming identity labels are replaced with the
-authenticated app name in Langfuse `userId`, trace name, metadata and `app:*`
-tags. A caller's session ID is retained.
+consumer. The `litellm-app-keys` ExternalSecret produces those keys for later
+file mounting; no current gateway container consumes them. The activation
+contract requires inference-only app keys, operator-only administration,
+trusted app attribution and preservation of caller session IDs.
 
-The `openrouter/free` alias preserves NOFX's current provider model. Its
-maintained client can forward the original provider key separately from its
-gateway bearer key. The pre-call hook removes credentials from LiteLLM's saved
-request copy before telemetry; INFO logging and disabled raw-request capture
-are required. The provider client still needs the original key in memory.
-Failure spans retain error type/status only: provider error bodies and
-tracebacks can echo credentials, so neither is exported. Successful request,
-response and usage capture remains unchanged.
-Verify new callbacks against the credential-marker regression before enabling
-them; never serialize the full inference argument dictionary.
+The pinned LiteLLM 1.80.8 SDK extracts request-level callbacks and dynamic
+exporter credentials before pre-call hooks. Authentication failures can also
+reprocess the original body before custom authentication runs. An offline
+regression reproduced caller-selected Langfuse credentials on both paths.
+The incomplete hook and activation template were removed from this foundation
+change; they are not a safe activation recipe. The follow-up must enforce
+admission before these paths and prove rejected requests cannot initialize
+callbacks or redirect telemetry.
 
-In Langfuse, filter by `app:nofx` (or another app), inspect traces for prompts,
-responses and failures, and group token usage by user. Provider-reported token
-counts and price availability determine token/cost completeness; subscription
-OAuth traffic is not the same as billable OpenAI API traffic.
+Preserve each app's original provider/model and credentials. Strip credentials
+from request snapshots and headers before export, retain safe error type/status
+only, and preserve successful prompt/output/usage capture. INFO logging and
+disabled raw-request logging are required. Never serialize the full inference
+argument dictionary or arbitrary provider error bodies/tracebacks.
 
-Keys reload on each request from the Secret volume. After rotating an SSM
-value, update both consuming ExternalSecret revisions because they use
-`OnChange`. Increment `app-identity-revision` in `values.yaml` when editing the
-hook; the fixed ConfigMap name is shared with the Helm source.
+After activation, Langfuse must support filtering and grouping by authenticated
+app identity. Provider-reported usage and price availability determine token
+and cost completeness; subscription OAuth traffic is not billable OpenAI API
+traffic. Key rotation must account for the `OnChange` ExternalSecrets.
 
 ## Validation and rollout
 
-Run `scripts/ci/litellm-attribution-check.py` with `litellm[proxy]==1.80.8` and
-`opentelemetry-api==1.45.0` installed. It tests real LiteLLM types, plugin
-loading, denied keys/admin routes, rotation, metadata spoofing and Langfuse
-attribute extraction. An
-offline provider-error fixture checks credential exclusion from both SDK
-failure spans and proxy-parent spans.
+Run `nix develop --command python3 scripts/ci/langfuse-staging-check.py` to
+verify this foundation leaves callers unchanged and contains no activation
+hook/template. The activation PR must supply production-matched offline
+checks covering native startup, authentication failures, callback admission,
+credential redaction, streaming and exact provider usage.
 Render both the pinned Helm chart and Kustomize overlay, then evaluate them
 with `conftest test --policy policy` (the namespace is `main`).
 

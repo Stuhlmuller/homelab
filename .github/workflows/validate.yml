@@ -46,19 +46,5 @@ jobs:
       - name: Check whitespace
         run: git diff --check
 
-      - name: Set Up Python For LiteLLM SDK Checks
-        # actions/setup-python@v6
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
-        with:
-          python-version: "3.12"
-
-      - name: Verify LiteLLM Authentication And Attribution
-        run: |
-          # PyPI native wheels need system libraries, not Nix's Python loader.
-          python -m venv "${RUNNER_TEMP}/litellm-test"
-          source "${RUNNER_TEMP}/litellm-test/bin/activate"
-          python -m pip install 'litellm[proxy]==1.80.8' 'opentelemetry-api==1.45.0'
-          python scripts/ci/litellm-attribution-check.py
-
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh

@@ -3,8 +3,8 @@
 Langfuse is the intended operator UI for prompts, outputs, errors and token
 usage. The service and distinct app-key producers are staged first; current
 OpenClaw/LiteLLM runtime configuration and the existing OpenClaw master-key
-alias remain unchanged. The off-graph activation patch adds gateway app
-authentication and direct OpenClaw OTLP only after prerequisite readiness. See the [gateway contract](../../../clusters/homelab/apps/litellm/README.md)
+alias remain unchanged. Caller activation is a separate implementation PR;
+this foundation contains no activation template or gateway hook. See the [gateway contract](../../../clusters/homelab/apps/litellm/README.md)
 and [Langfuse deployment](../../../clusters/homelab/apps/langfuse/README.md).
 
 ## Rollout evidence
@@ -51,15 +51,11 @@ caller changes merge. Its UI gate also requires the separate authenticated
 Octelium catalog apply and protected `octelium-public-tunnel.yml` DNS workflow;
 Terragrunt alone does not publish the route. Use the same reviewed current-main
 SHA and verify the authenticated route before activating callers.
-`scripts/ci/langfuse-staging-check.py` proves existing
-caller credentials remain unchanged and applies the pending patch in scratch
-before exercising the OpenClaw fixtures. Overlapping OpenClaw changes must
-refresh that artifact; it must preserve the current provider, model, image and
-execution budgets. The activation fixture includes the existing batched CLI
-ordering and failure checks, including telemetry-plugin enable/verification.
-It preserves the September 26 `openrouter/free` selection for interactive,
-heartbeat and scheduled work; Astra's retained metadata is not the active
-default.
+`scripts/ci/langfuse-staging-check.py` proves existing caller credentials remain
+unchanged and the incomplete activation hook/template is absent. A follow-up
+must preserve current provider, model, image, bootstrap ordering and execution
+budgets, including the September 26 `openrouter/free` defaults for interactive,
+heartbeat and scheduled work. Astra's retained metadata is not the default.
 Pinned OpenClaw 2026.9.2 and LiteLLM 1.80.8 source also establish a proposed
 no-migration gateway path for the new free model: retain the PVC-backed
 OpenRouter key in `Authorization`, send the separate mounted app key through
@@ -69,10 +65,8 @@ September 26 offline proof exercised real FastAPI/SDK authentication, parsed-bod
 transfer and OpenRouter translation against a mock transport: provider bearer
 and `openrouter/free` survived, gateway credentials stayed out of provider
 requests/spans, and prompt/output plus 8/1 token counts were preserved. This is
-not implemented or live-verified; streaming, actual OpenClaw configuration and
-full proxy/router selection remain untested. Preserve the free model and
-redact success/error telemetry. Replace the staged
-native OTLP activation with gateway-only export for routed OpenClaw inference:
+not part of this foundation or live-verified. Preserve the free model and
+redact success/error telemetry. Use gateway-only export for routed OpenClaw inference:
 the pinned native plugin exports both
 [per-call](https://github.com/openclaw/openclaw/blob/v2026.9.2/extensions/diagnostics-otel/src/service-recorders-model.ts)
 and [run-total](https://github.com/openclaw/openclaw/blob/v2026.9.2/extensions/diagnostics-otel/src/service-recorders-usage.ts)
@@ -93,31 +87,33 @@ token Secret without changing the active backend Pod spec. Its separate
 `docs/examples/langfuse/activate-nofx.patch` requires an activated gateway,
 Ready token Secret and published image containing source patch `0012`.
 
-## Validation
+## Admission blocker and validation
 
-The CI dependency check uses pinned Python 3.12 through `setup-python` because PyPI
-native wheels require system libraries not provided by Nix's Python loader.
+The September 26 offline audit reproduced caller-selected Langfuse credentials
+in LiteLLM 1.80.8: `function_setup` extracts dynamic callback fields before the
+pre-call hook. The native authentication-failure path also calls it on the
+original request body, including failures before custom authentication runs.
+Clearing a later parsed-body copy or merely rejecting in custom authentication
+does not close both paths. Source: `proxy/common_request_processing.py`,
+`proxy/auth/auth_exception_handler.py` and `proxy/utils.py` in the pinned SDK.
+No live exposure was established. The unsafe staged hook, ConfigMap, activation
+patch and its incomplete SDK fixture were removed from this prerequisites PR;
+isolated activation work must prove a complete pre-auth admission boundary
+before publication/enablement. This foundation introduces no testing-only
+dependency override or SDK monkeypatch.
 
-The pinned LiteLLM test exercises real auth types and exporter attribute
-mapping, including caller spoofing, denied administration routes, key rotation,
-token fields, and provider-credential redaction from stored request snapshots.
-An offline September 26 failure-path test also found that the native exporter
-copies provider-echoed credentials into exception events and `error.message`.
-The staged exporter must retain only safe failure type/status, never arbitrary
-provider error bodies or traceback text, while preserving successful
-prompt/output/usage capture. Its regression covers SDK and proxy-parent spans.
-Native preprocessing also keeps a separate `metadata.headers` copy containing
-gateway keys. The shared hook now applies the SDK's credential-header filter to
-both stored copies. The regression confirms raw-key removal before native
-standard-metadata filtering; this header-retention issue did not reproduce
-actual Langfuse export leakage in the offline fixture.
-Provider keys remain available to the in-process inference client; do not
-enable DEBUG, raw request logging, or unreviewed callbacks that serialize the
-whole request. App request/response bodies are intentionally captured by
-Langfuse and access is restricted through Octelium and Istio.
+The future SDK check must match the deployed Python 3.13 / LiteLLM 1.80.8 /
+OpenAI 2.8.0 / HTTPX 0.28.1 / OpenTelemetry SDK 1.25.0 packages verified on
+September 26. Exercise actual startup, accepted and rejected requests,
+credential-marker redaction, streaming and exact provider usage. Native
+failure spans can include provider-echoed credentials, so retain only safe
+error type/status; exclude arbitrary provider bodies and tracebacks. Clean
+both request snapshots and `metadata.headers`. Keep INFO logging, disable
+raw-request logging and do not serialize full inference arguments. Captured
+prompt/output content must remain behind Octelium and Istio access controls.
 
 The protected full apply owns the S3 plan and apply because Application-only
-filters omit that sibling unit; targeted `langfuse` apply is rejected. Local state-backed AWS planning was blocked by
-expired SSO during this inspection. Source and offline validation do not prove
+filters omit that sibling unit; targeted `langfuse` apply is rejected.
+Source and offline validation do not prove
 that those resources exist. See [[gitops-flow]] and
 [[../operations/validation-gates]].

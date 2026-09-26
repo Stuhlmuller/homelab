@@ -157,7 +157,6 @@ cluster CA is intentionally rotated.
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
-| openclaw (staged) | `openclaw-langfuse-otel` | unconsumed `openclaw-langfuse-otel` | `/homelab/langfuse/project-public-key`, `/homelab/langfuse/project-secret-key` |
 | litellm (staged) | `litellm-app-keys` | unmounted `litellm-app-keys` | `/homelab/litellm/master-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
@@ -208,12 +207,13 @@ Terragrunt-generated internal values:
 - `/homelab/policy-bot/sessions-key`
 
 `/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
-during staging; the pending activation switches its consumer to the distinct
+during staging; a separate activation PR must switch its consumer to the distinct
 `/homelab/openclaw/litellm-app-token` only after gateway readiness.
 
-The Langfuse project keys are consumed by `langfuse-secrets` and the unmounted
-`openclaw-langfuse-otel` Secret. LiteLLM receives them only after the pending
-activation patch enables its callback. `IaC/live/langfuse-blob-storage` creates the distinct S3
+The Langfuse project keys are consumed only by `langfuse-secrets` in this
+foundation. LiteLLM receives them only after a separately reviewed activation
+implements safe request admission and telemetry. No direct OpenClaw OTLP
+credential is provisioned. `IaC/live/langfuse-blob-storage` creates the distinct S3
 runtime credential pair under the same prefix; External Secrets receives exact
 additional reader names instead of a wildcard IAM grant.
 
