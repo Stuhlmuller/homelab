@@ -1,0 +1,11 @@
+model = "openai-default"
+model_provider = "litellm"
+
+[model_providers.litellm]
+name = "Homelab LiteLLM"
+base_url = "http://litellm.ai.svc.cluster.local:4000/v1"
+wire_api = "responses"
+
+[model_providers.litellm.auth]
+command = "/bin/cat"
+args = ["/run/multica-model/key"]
