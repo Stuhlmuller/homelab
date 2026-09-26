@@ -72,6 +72,20 @@ reachable; no node-scoped evidence established an NFS outage. Eviction started
 replacement PVC workloads on `acer`, so only a confirmed reset and new boot ID
 fence the old writers. Restarting kubelet or networking is unsafe.
 
+On 2026-09-26 at about 21:56 UTC, `kubectl get node zimaboard-1` again reported
+`Ready=Unknown` with `NodeStatusUnknown: Kubelet stopped posting node status`.
+The OpenClaw Pod still showed both containers running with zero restarts, but
+its Pod `Ready` condition was false, the Deployment had `0/1` Ready replicas,
+and kubelet-backed logs and exec requests timed out. This interrupted the final
+live `openrouter/free` response probe after OpenRouter OAuth had completed and
+stored its profile; it does not invalidate the merged configuration or prove
+the model route can serve traffic. Preserve the node and single-writer PVC
+state. With authenticated Talos access, inspect kubelet, kernel/OOM, memory,
+I/O-pressure, and boot-ID evidence before any recovery. After the node is Ready,
+require OpenClaw `1/1` Deployment readiness, exact Argo revision, an OAuth-ready
+`openrouter/free` model status, and one successful response before closing the
+rollout.
+
 After its earlier recovery, the scheduler placed several zero-request Argo CD
 controllers and Prometheus on the 1.28 GiB-allocatable `zimaboard-2`; it then
 fell below 82 MiB available memory and stopped heartbeating. That worker later

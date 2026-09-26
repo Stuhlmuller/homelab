@@ -148,6 +148,7 @@ echo "::endgroup::"
 render_plan_json_if_present "IaC/bootstrap/argocd" || true
 
 echo "IaC/live/aws-ssm-parameters is intentionally excluded from PR plans because it manages KMS, IAM, and secret declarations that require the protected production apply role."
+echo "IaC/live/langfuse-blob-storage is also excluded: its state includes the runtime S3 key. The protected full apply plans and policy-checks it before application registration."
 
 echo "::group::Argo CD Application registration plan"
 (

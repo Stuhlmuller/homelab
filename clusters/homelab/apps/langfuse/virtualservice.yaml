@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: langfuse-octelium
+  namespace: langfuse
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - langfuse.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: langfuse-web.langfuse.svc.cluster.local
+            port:
+              number: 3000

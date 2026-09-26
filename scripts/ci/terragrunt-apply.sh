@@ -2,6 +2,11 @@
 set -euo pipefail
 umask 077
 
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" ]]; then
+  echo "Langfuse requires a full apply to reconcile SSM and S3 before Application registration." >&2
+  exit 2
+fi
+
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
@@ -212,6 +217,21 @@ echo "::group::AWS SSM parameter declaration plan and apply"
   terragrunt --log-disable show -json plan.out >plan.json
   conftest test --policy ../../../policy --output github plan.json
   terragrunt apply -no-color plan.out
+)
+echo "::endgroup::"
+
+echo "::group::Langfuse blob storage plan and apply"
+# Application filters do not include sibling AWS units. Reconcile this secret-
+# bearing dependency explicitly under the protected production credentials.
+langfuse_plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-langfuse-plan.XXXXXX")"
+cleanup_dirs+=("$langfuse_plan_dir")
+(
+  cd IaC/live/langfuse-blob-storage
+  terragrunt init -no-color
+  terragrunt plan -out "$langfuse_plan_dir/plan.out" -no-color
+  terragrunt --log-disable show -json "$langfuse_plan_dir/plan.out" >"$langfuse_plan_dir/plan.json"
+  conftest test --policy ../../../policy --output github "$langfuse_plan_dir/plan.json"
+  terragrunt apply -no-color "$langfuse_plan_dir/plan.out"
 )
 echo "::endgroup::"
 

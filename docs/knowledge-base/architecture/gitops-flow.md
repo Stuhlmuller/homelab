@@ -142,6 +142,14 @@ prove runtime readiness. A dependency is ready only when Argo CD reports the
 upstream Application registered, synced, and healthy, or an exception is
 recorded in `docs/validation-runbook.md`.
 
+Langfuse adds a secret-bearing sibling AWS unit,
+`IaC/live/langfuse-blob-storage`. Application-only filters do not execute it.
+The protected full apply explicitly plans it, checks the saved plan with
+Conftest, and applies that plan before registering Applications. Like shared
+SSM state, it is excluded from PR plans. Targeted `langfuse` Application
+dispatches are rejected before any mutation; use the full path to reconcile
+its bucket and credentials before registering the Application.
+
 ## Provider Scope
 
 `IaC/root.hcl` owns shared state and inputs, but it does not inject workload

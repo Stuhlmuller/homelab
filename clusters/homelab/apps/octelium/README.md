@@ -56,7 +56,7 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the
   existing app hostnames such as `https://grafana.stinkyboi.com`.
 - `affine` is an anonymous Octelium app Service. AFFiNE signup is closed after
@@ -362,7 +362,7 @@ To remove the external Octelium resources:
 for service in \
   affine.homelab argocd.homelab compass.homelab deluge.homelab \
   dispatcharr.homelab grafana.homelab homelab-demo.homelab \
-  kiali.homelab kubernetes-api.homelab litellm.homelab n8n.homelab \
+  kiali.homelab kubernetes-api.homelab litellm.homelab langfuse.homelab n8n.homelab \
   octobot.homelab openclaw.homelab policy-bot.homelab \
   prowlarr.homelab radarr.homelab sonarr.homelab; do
   octeliumctl delete svc "${service}"
