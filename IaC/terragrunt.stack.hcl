@@ -1777,6 +1777,7 @@ unit "argocd_apps_multica" {
       "external-secrets",
       "cert-manager",
       "istio",
+      "litellm",
       "platform-storage"
     ]
     manifest = {
