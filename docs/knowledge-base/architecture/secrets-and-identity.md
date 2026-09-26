@@ -151,6 +151,17 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   holders with access can impersonate existing Multica users. Keep this limited
   to trusted operators; restore production mode and a real email/OAuth provider
   before regular multi-user use. See the [Multica runbook](../../../clusters/homelab/apps/multica/README.md).
+  The server runtime uses only the fixed-code key in an init container to
+  bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
+  local PVC. The daemon renews it; revoked or expired tokens fail startup
+  rather than silently creating a replacement. Main-container mounts expose
+  only its own profile and the LiteLLM master-key field, not the backend JWT,
+  database password, fixed code, or provider OpenAI key. This remains a trusted
+  operator runtime: tasks can read that profile and model credential. Its
+  LiteLLM master key also grants gateway administration; replace it with a
+  model-scoped virtual key once a repository-owned issuance path exists.
+  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
+  Istio access to the Multica backend and LiteLLM.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
