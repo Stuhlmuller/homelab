@@ -1307,11 +1307,11 @@ if ! awk '
   exit 1
 fi
 yq -e '
-  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
   .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "01-runtime-storage" and
   .controllers.openclaw.initContainers."00-operator-toolbox" != null and
-  .controllers.openclaw.containers.app.image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
-  .controllers.openclaw.containers.proxy.image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
+  .controllers.openclaw.containers.app.image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
   .controllers.openclaw.strategy == "Recreate" and
   .controllers.openclaw.pod.nodeSelector."kubernetes.io/hostname" == "zimaboard-1" and
   .persistence."runtime-state".existingClaim == "openclaw-runtime-local" and

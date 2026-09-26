@@ -26,7 +26,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "93ae75d35e5c08c9ed447bf76b397a721c591c6173cd1b7b1bef7d785c506019"
+        homelab.rst.io/openclaw-assistant-sha256: "6ebff0ec41e1874a3e7e9b388b1415fe134b07476c41351a5e5bc99718e85757"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -132,7 +132,7 @@ controllers:
         dependsOn: 00-operator-toolbox
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         securityContext:
           runAsUser: 1000
           runAsGroup: 1000
@@ -162,7 +162,7 @@ controllers:
         dependsOn: 01-runtime-storage
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         resources:
           requests:
             cpu: 500m
@@ -227,8 +227,8 @@ controllers:
               had_existing_state=true
             fi
             backup_root=/data/openclaw-backups
-            backup_name=pre-2026.9.2
-            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.2"
+            backup_name=pre-2026.9.5
+            backup_marker="$OPENCLAW_STATE_DIR/.backup-verified-for-2026.9.5"
             backup_dir="$backup_root/$backup_name"
             backup_staging="$backup_root/.$backup_name.partial"
             backup_archive=openclaw.tar.gz
@@ -242,7 +242,7 @@ controllers:
                 (cd "$1" && sha256sum -c "$backup_checksum")
             }
             if "$had_existing_state" && [ ! -s "$backup_marker" ]; then
-              echo "Creating or verifying offline pre-2026.9.2 OpenClaw backup"
+              echo "Creating or verifying offline pre-2026.9.5 OpenClaw backup"
               (
                 umask 077
                 mkdir -p "$backup_root"
@@ -296,7 +296,7 @@ controllers:
                   mv "$backup_staging" "$backup_dir"
                 fi
                 verify_backup_dir "$backup_dir"
-                printf 'verified pre-2026.9.2 archive\n' > "$backup_marker"
+                printf 'verified pre-2026.9.5 archive\n' > "$backup_marker"
               )
             fi
             mkdir -p "$OPENCLAW_STATE_DIR" "$OPENCLAW_WORKSPACE_DIR"
@@ -687,7 +687,7 @@ controllers:
             drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         env:
           OPENCLAW_HOME: /data/openclaw
           OPENCLAW_CONFIG_PATH: /data/openclaw/config/openclaw.json
@@ -785,7 +785,7 @@ controllers:
             drop: [ALL]
         image:
           repository: ghcr.io/openclaw/openclaw
-          tag: "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+          tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         command:
           - python3
           - -u

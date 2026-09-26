@@ -49,7 +49,7 @@ chooses a currently available free model that supports each request. Account
 access must be verified with an actual turn; configuration validation alone
 does not prove OpenRouter authentication or free-model availability. See the
 [OpenRouter free-model router](https://openrouter.ai/collections/free-models/)
-and the pinned [OpenClaw model reference](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/concepts/models.md).
+and the pinned [OpenClaw model reference](https://github.com/openclaw/openclaw/blob/v2026.9.5/docs/concepts/models.md).
 
 Interactive turns have a one-hour execution budget (`agents.defaults.timeoutSeconds:
 3600`). OpenClaw uses an absolute deadline: ongoing tool work does not reset
@@ -71,15 +71,34 @@ architecture's SHA-256 for both the CLI and its code-mode host, and exposes
 OpenClaw Codex plugin. The sibling `codex-code-mode-host` executable is required
 for native tool execution; text-only inference does not test its presence. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
 added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
-OpenClaw is pinned to `2026.9.2`, which includes hidden models when discovering
+OpenClaw is pinned to `2026.9.5`, retaining hidden models when discovering
 the Codex catalog. This matters because Astra's initial catalog entry is hidden
 from the interactive picker. Bootstrap takes a verified offline
-`pre-2026.9.2` archive before touching runtime state; older migration markers
+`pre-2026.9.5` archive before touching runtime state; older migration markers
 remain intact. The explicit app-server command preserves the existing OAuth
 account and
 per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
 plugin is installed and checked at the exact gateway version during bootstrap.
+
+The [2026.9.5 release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.5)
+includes Doctor/history and Codex startup fixes. Bootstrap pins both external
+Discord and Codex plugins to the gateway version; the config check rejects
+plugin or backup-version drift. The retained 2026.9.2 checkpoint still protects
+the original local-storage cutover, while this upgrade creates its own full
+archive. Preserve both. For rollback, restore the 2026.9.2 image, Codex plugin
+pin, and assistant checksum through GitOps. If state migration prevents the old
+runtime from starting, restore the verified pre-2026.9.5 archive while stopped;
+an image revert alone does not undo state migrations.
+
+The pinned container's config and plugin schemas were checked with the retained
+Astra recovery model, 3600-second interactive timeout, gateway, and hook
+configuration. Its exact
+compiled auth-store, cooldown, and provider-reprobe exports were reviewed for
+the subscription helper; async probe failures remain bounded and fail closed.
+After sync, verify plugin versions, readiness, a real Discord turn routed through
+`openrouter/free`, and scheduled-job completion. Local validation cannot prove
+account access.
 
 The behavior is conversational and evidence-driven: remember corrections,
 follow through on requested work, keep unchanged checks silent, and report
@@ -162,7 +181,7 @@ the transaction and verifies unchanged credentials and block generation;
 provider denial, active authentication failures, and probe throttling retain
 the block. It never spends a usage-reset credit, replaces credentials, edits
 SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
-profile and the reviewed 2026.9.1 or 2026.9.2 runtime; re-review its internal imports before
+profile and a reviewed 2026.9.1, 2026.9.2, or 2026.9.5 runtime; re-review its internal imports before
 an upgrade. If it fails, inspect provider availability and auth diagnostics;
 do not erase the block or repeatedly force probes.
 
@@ -345,7 +364,7 @@ gateway is unavailable.
 Initialization precedes those app probes. Two measured successful starts took
 about 23 minutes, exceeding the default ten-minute Deployment progress deadline;
 the pinned chart has no supported value for changing that field. Bootstrap uses
-OpenClaw 2026.9.2's validated batches within existing configuration phases to
+OpenClaw 2026.9.5's validated batches within existing configuration phases to
 reduce repeated CLI invocations and writes. Private temporary batch files are
 cleaned on exit. See the [startup measurements and rollout checks](../../../../docs/knowledge-base/operations/openclaw-bootstrap-batching.md);
 actual improvement requires measurement after rollout.

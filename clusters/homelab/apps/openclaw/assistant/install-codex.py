@@ -5,7 +5,7 @@ import subprocess
 import time
 from pathlib import Path
 
-VERSION = "2026.9.2"
+VERSION = "2026.9.5"
 SPEC = f"@openclaw/codex@{VERSION}"
 
 
