@@ -381,6 +381,15 @@ inputs = {
       description   = "OpenClaw GitHub App private key PEM."
       initial_value = local.placeholder
     }
+    "/homelab/multica/dev-verification-code" = {
+      description = "Multica fixed email verification code; access remains gated by Octelium."
+      generated = {
+        length  = 6
+        lower   = false
+        special = false
+        upper   = false
+      }
+    }
     "/homelab/multica/jwt-secret" = {
       description = "Multica JWT signing secret."
       generated = {

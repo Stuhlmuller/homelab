@@ -37,11 +37,12 @@ role, and consumers move together.
    history or logs, then exec into the PostgreSQL pod while the old Secret still
    works and run `ALTER USER multica WITH PASSWORD '<new-password>';` through
    `psql` as the database superuser.
-5. Bump `homelab.stuhlmuller.dev/generated-secret-revision` on
-   `clusters/homelab/apps/multica/externalsecret.yaml` so External Secrets
-   refreshes `multica-secrets` from SSM.
-6. Confirm the target Secret contains the new version, then restart the backend
-   and PostgreSQL pods so both read the refreshed Secret.
+5. Bump `homelab.stuhlmuller.dev/generated-secret-revision` on both
+   ExternalSecrets in `clusters/homelab/apps/multica/externalsecret.yaml` so
+   External Secrets refreshes `multica-secrets` and `multica-backend-secrets`.
+6. Confirm both target Secrets contain the new version, then roll the backend
+   and PostgreSQL through repository-owned pod-template changes. Argo CD's Helm
+   render cannot use the chart's live Secret checksum to trigger a restart.
 7. Verify backend readiness, login/signup, and a simple workspace read/write
    before reopening writes.
 

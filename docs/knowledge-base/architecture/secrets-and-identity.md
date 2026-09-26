@@ -129,11 +129,14 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
   remain operator-configured and must not be committed.
-- Multica uses generated `/homelab/multica/jwt-secret` and
-  `/homelab/multica/postgres-password` values. The `multica-secrets`
-  ExternalSecret in the `ai` namespace renders both parameters into the target
-  Secret `multica-secrets` with `refreshPolicy: OnChange` and
-  `deletionPolicy: Retain`. Rotate generated JWT and PostgreSQL values through
+- Multica uses generated `/homelab/multica/jwt-secret`,
+  `/homelab/multica/postgres-password`, and six-digit
+  `/homelab/multica/dev-verification-code` values. ExternalSecrets in `ai`
+  render the database credentials into `multica-secrets` and backend credentials
+  plus the fixed code into `multica-backend-secrets`, both with
+  `refreshPolicy: OnChange` and `deletionPolicy: Retain`. The new backend Secret
+  prevents starting before the fixed code is present; PostgreSQL retains its
+  original Secret. Rotate generated JWT and PostgreSQL values through
   the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
   catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack;
   do not hand-edit
@@ -142,7 +145,12 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   the database-role procedure in [[runbooks/secrets-aws-ssm]] before rolling
   consumers, since changing SSM alone does not update the retained PostgreSQL
   role on an initialized PVC. Preserve the target Secret and PostgreSQL PVC
-  during rollback unless intentionally rebuilding the instance.
+  during rollback unless intentionally rebuilding the instance. The backend
+  uses `APP_ENV=development` to accept the private fixed code without email
+  delivery; the code-entry screen remains. Octelium gates access, but code
+  holders with access can impersonate existing Multica users. Keep this limited
+  to trusted operators; restore production mode and a real email/OAuth provider
+  before regular multi-user use. See the [Multica runbook](../../../clusters/homelab/apps/multica/README.md).
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key

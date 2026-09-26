@@ -160,7 +160,7 @@ cluster CA is intentionally rotated.
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
-| multica | `multica-secrets` | `multica-secrets` | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password` |
+| multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
@@ -191,6 +191,7 @@ Terragrunt-generated internal values:
 - `/homelab/media-postgres/app-password`
 - `/homelab/multica/jwt-secret`
 - `/homelab/multica/postgres-password`
+- `/homelab/multica/dev-verification-code` (six digits; private fixed sign-in code behind Octelium)
 - `/homelab/n8n/encryption-key`
 - `/homelab/n8n/postgres-admin-password`
 - `/homelab/n8n/postgres-app-password`

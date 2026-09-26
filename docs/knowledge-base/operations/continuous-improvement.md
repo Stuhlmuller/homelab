@@ -70,6 +70,41 @@ inspection, validation, and remaining blockers. The broader
 port mapping, image debt, and independent restore proof remain open; older
 observations below retain their original dates.
 
+- **Status:** delivery healthy; reliability follow-ups open
+- **Area:** observability / Discord alert delivery audit, 2026-09-20 PDT
+- **Evidence:** Read-only checks at approximately 19:47 PDT found about 70
+  Discord notification attempts and zero failures over 24 hours; seven days
+  contained about 352 attempts and one failure. Alertmanager logs identify that
+  failure as Discord HTTP 429 at `2026-09-15T14:55:39Z` for the three retained
+  UPnP Job failures. Later delivery counters increased normally, most recently
+  at approximately 19:22 PDT during the initial check. The configured webhook's
+  metadata GET returned HTTP 200; no synthetic message was sent or channel
+  history read. Alertmanager had no silences, and its loaded route matched
+  `clusters/homelab/apps/prometheus/externalsecret.yaml`.
+- **Alert state:** Grafana metrics reported 18 active rules, one paused rule,
+  36 normal instances, no firing/error/no-data instances, and zero evaluation
+  failures over seven days. Grafana attempted eight notifications to
+  Alertmanager during that week. Prometheus currently reported CPU and memory
+  overcommit plus three old UPnP Job failures; media CPU-throttling information
+  alerts were intentionally inhibited. Retained metrics confirmed recent NOFX
+  unhealthy and Harbor OutOfSync alerts. All four nodes and 189 non-terminal
+  Pods were Ready; all 43 Argo CD Applications were Healthy and Synced.
+- **Risk:** Watchdog remains disabled without an independent dead-man receiver
+  (`clusters/homelab/apps/prometheus/README.md`). A monitoring-stack outage can
+  therefore remain silent. Retired UPnP Job failures still generate recurring
+  noise. Authenticated Grafana API inspection returned HTTP 401 using the
+  current `grafana-admin` Secret, so per-rule/API checks were unavailable;
+  aggregate rule/evaluation state above came from scraped Grafana metrics.
+- **Next step:** Add an independently hosted heartbeat receiver through reviewed
+  desired state; make an explicit, narrowly scoped decision about retired UPnP
+  alerts without deleting Job evidence; investigate the Grafana credential/API
+  mismatch before any credential change. Verify the user's expected Discord
+  channel against webhook metadata if channel visibility remains in doubt.
+- **Validation:** Read-only Kubernetes health, Prometheus instant/range queries,
+  Grafana metrics, Alertmanager API/logs, and Discord webhook metadata. No live
+  desired-state changes. Documentation-only update checked with `git diff
+  --check`; infrastructure rendering and rollout checks do not apply.
+
 - **Status:** fixed
 - **Area:** Talos / `zimaboard-2` recovery
 - **Evidence:** On 2026-09-02, the reviewed degraded-recovery gates passed:
@@ -103,7 +138,7 @@ observations below retain their original dates.
 - **Next step:** Complete the remaining image inventory and add the smallest
   continuous scan and exception-expiry gate under issue `#791`.
 
-- **Status:** mitigation pending rollout and observation
+- **Status:** fixed
 - **Area:** Istio ambient / ztunnel readiness
 - **Evidence:** Read-only inspection on 2026-08-28 found the `zimaboard-0`
   ztunnel returning 13,872 readiness HTTP 500 responses over 36 hours. Its
@@ -115,20 +150,26 @@ observations below retain their original dates.
   in both CNI and ztunnel, forces the CNI DaemonSet to roll, and explicitly
   enrolls the connector pod so its replacement receives a fresh network
   namespace.
-- **Risk:** The connector remains reachable without ambient redirection, but
-  its Istio workload identity and policy telemetry are absent. Ztunnel
-  readiness on `zimaboard-1` and `zimaboard-2` cannot recover while those nodes
-  remain NotReady.
-- **Next step:** Merge and apply the committed state, then recover both NotReady
-  nodes under issue `#775`. The live CNI DaemonSet already has two unavailable
-  nodes against `maxUnavailable=1`, so its Ready-node rollout can complete only
-  after node recovery. Close `#778` only after all four ztunnel pods run the new
-  template and are Ready, Argo CD reports Istio
-  `Synced/Healthy`, every active connector reports redirection `enabled`, and
-  ztunnel records no readiness HTTP 500 or IPv6 bind/route errors for 24 hours.
-  Roll back by reverting these desired-state settings and letting Argo CD
-  reconcile; do not opt the connector out of ambient because protected
-  workloads depend on its service-account principal.
+- **Validation:** Read-only verification on 2026-09-05 met the recovery gates
+  for `#778`: CNI and ztunnel were fully updated and Ready on all four nodes,
+  live IPv6 settings were disabled, Istio was `Synced/Healthy`, and every active
+  connector reported redirection `enabled`. Prometheus recorded uninterrupted
+  ztunnel readiness and no failed CNI or ztunnel readiness probes for 24 hours.
+  Current and retained rotated logs covered that window without readiness
+  HTTP 500 or IPv6 bind/route errors. September 6 revalidation found one later,
+  unclassified CNI probe miss with continuous Pod readiness and no matching IPv6
+  signature; this does not establish recurrence of the original defect. A full
+  repeat at September 6 23:01 UTC passed the 24-hour acceptance gate, including
+  exact Pod-UID series, complete scrape coverage, zero failed probes, and
+  current/rotated log coverage without error signatures. The acceptance hold is
+  closed; the earlier transient's cause remains unknown. See [[audit-2026-09-04]].
+- **Risk:** Future node recovery can interrupt ambient enrollment. Protected
+  workloads depend on the connector's Istio service-account principal.
+- **Next step:** After future node recovery, repeat
+  [[validation-gates#Istio Ambient Recovery]] and classify any further probe
+  failure. Roll back by reverting the desired-state settings
+  and letting Argo CD reconcile;
+  do not opt the connector out of ambient to bypass readiness failures.
 
 - **Status:** fixed
 - **Area:** observability / Grafana startup and security
