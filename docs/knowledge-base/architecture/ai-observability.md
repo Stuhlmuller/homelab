@@ -28,7 +28,7 @@ free-model runtime and telemetry still need live acceptance.
 
 | Caller | Observed configuration | Remaining acceptance |
 | --- | --- | --- |
-| OpenClaw | Desired `openrouter/free` for interactive turns, heartbeat and schedules; Astra OAuth retained for recovery | Verify real free-model turn content/usage through direct Langfuse OTLP. Preserve the selected free model and recovery metadata. Opaque Codex recovery turns may omit token counts. |
+| OpenClaw | Desired `openrouter/free` for interactive turns, heartbeat and schedules; Astra OAuth retained for recovery | Verify real free-model turn content/usage through LiteLLM to Langfuse as the sole usage exporter. Preserve the selected model and recovery metadata. Direct Astra recovery is not covered by gateway-only telemetry. |
 | NOFX | Provider/model credentials held in encrypted application state | Publish/test the maintained gateway-routing image, preserve provider/model and prove no provider-key leakage into telemetry. |
 | n8n | Active workflow `s1JVSbnvnmHMCbty` uses AWS Bedrock Claude 3 Sonnet in `us-west-2` | Explicitly excluded by the operator on September 20. Leave its model, encrypted AWS credential and workflow unchanged; n8n is not covered by Langfuse in this rollout. |
 | AFFiNE | Copilot and BYOK explicitly disabled | No AI traffic to migrate; route through the gateway if enabled later. |
@@ -62,11 +62,19 @@ default.
 Pinned OpenClaw 2026.9.2 and LiteLLM 1.80.8 source also establish a proposed
 no-migration gateway path for the new free model: retain the PVC-backed
 OpenRouter key in `Authorization`, send the separate mounted app key through
-secret-backed `x-litellm-api-key`, and have the authenticated OpenClaw hook
-forward only the upstream bearer as in-memory inference `api_key`. This is not
+secret-backed `x-litellm-api-key`, and forward only the upstream bearer as
+in-memory inference `api_key` through authenticated OpenClaw handling. This is not
 implemented or live-verified. Before activation, test both keys end to end,
-preserve the free model, redact success/error telemetry, and prevent duplicate
-token accounting between native and gateway traces. OpenRouter account
+preserve the free model and redact success/error telemetry. Replace the staged
+native OTLP activation with gateway-only export for routed OpenClaw inference:
+the pinned native plugin exports both
+[per-call](https://github.com/openclaw/openclaw/blob/v2026.9.2/extensions/diagnostics-otel/src/service-recorders-model.ts)
+and [run-total](https://github.com/openclaw/openclaw/blob/v2026.9.2/extensions/diagnostics-otel/src/service-recorders-usage.ts)
+token usage, with no supported model-span filter. Sending those plus gateway
+generations risks overcounting; disabling native metrics alone does not remove
+span usage. Gateway-only omits native agent/tool lifecycle spans and direct
+Astra recovery calls. Verify actual Langfuse totals against one request before
+claiming accounting coverage. OpenRouter account
 `/credits` and `/key` views would not work through the gateway. Do not copy the
 OpenRouter-issued key into SSM; see the existing
 [credential contract](../../../clusters/homelab/apps/openclaw/README.md) and

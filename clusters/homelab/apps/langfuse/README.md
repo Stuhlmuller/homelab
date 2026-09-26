@@ -105,7 +105,11 @@ Before a follow-up activation PR:
    The staging check applies the patch only to scratch and exercises both
    OpenClaw telemetry/config fixtures. It fails on stale patch context or an
    outdated assistant checksum. Refresh the patch after overlapping changes;
-   preserve newer image, timeout and agent settings. In the activation PR,
+   preserve newer image, timeout and agent settings. Its OpenClaw portion stages
+   direct OTLP, not the newer free-model gateway route. Replace that portion
+   with the tested gateway-only route before activation: native OpenClaw exports
+   overlapping per-call and run-total usage, so enabling it alongside gateway
+   capture would not provide a single token-accounting source. In the activation PR,
    remove the consumed patch and staging check (including its static-gate
    invocation), then run the full static gate and pinned LiteLLM attribution
    test. Review the live plan and render/diff the affected workloads.

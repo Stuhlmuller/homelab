@@ -51,8 +51,8 @@ diff --git a/clusters/homelab/apps/openclaw/values.yaml b/clusters/homelab/apps/
                    - key: octelium.com/node-mode-dataplane
                      operator: DoesNotExist
        annotations:
--        homelab.rst.io/openclaw-assistant-sha256: "49a747488c3568b49be149253ca3aa7527474db9ad58793a926cbaf9a7c9ea2f"
-+        homelab.rst.io/openclaw-assistant-sha256: "c9985101cdca681fcd369a7dc6a862e8753c9bce66d5d8c61c1e51fe03ed1a16"
+-        homelab.rst.io/openclaw-assistant-sha256: "93ae75d35e5c08c9ed447bf76b397a721c591c6173cd1b7b1bef7d785c506019"
++        homelab.rst.io/openclaw-assistant-sha256: "b387ac8d3f0c27d08157cee22cf1bfe478b4e7893b4f5ca5cf390f04325b007f"
          homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
          homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
          homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -260,8 +260,8 @@ diff --git a/clusters/homelab/apps/litellm/externalsecret.yaml b/clusters/homela
 diff --git a/scripts/ci/openclaw-assistant-check.py b/scripts/ci/openclaw-assistant-check.py
 --- a/scripts/ci/openclaw-assistant-check.py
 +++ b/scripts/ci/openclaw-assistant-check.py
-@@ -29,6 +29,7 @@
-                             "modelPolicy": {"allow": ["openai/gpt-5.5"]}}},
+@@ -33,6 +33,7 @@
+     },
      "skills": {"allowBundled": ["existing-skill"],
                 "entries": {"existing-skill": {"enabled": False}, "gog": {"enabled": False}}},
 +    "plugins": {"allow": ["discord"]},

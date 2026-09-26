@@ -65,6 +65,9 @@ def install(bundle, state, config_path):
     allowed = defaults.get("modelPolicy", {}).get("allow")
     if allowed and model not in allowed:
         allowed.append(model)
+    main_allowed = main.get("modelPolicy", {}).get("allow")
+    if main_allowed and model not in main_allowed:
+        main_allowed.append(model)
     if "model" in main:
         main["model"] = patch["agents"]["defaults"]["model"]
     if "heartbeat" in main:
