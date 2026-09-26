@@ -214,6 +214,18 @@ Multica PostgreSQL now follows the recovered NFS database probe pattern:
 shutdown grace. Its image, credentials, scheduling, and PVC are unchanged.
 This prevents short liveness windows from interrupting recovery; it does not
 resolve the underlying NFS reliability or backup risks.
+
+The Multica runtime declares an independent 10 Gi retained static volume at
+`/var/lib/multica-runtime` on `acer` for CLI identity, agent state, and workspaces.
+`clusters/homelab/platform/storage/multica-runtime.yaml` owns its StorageClass
+and PV; `clusters/homelab/apps/multica/runtime-storage.yaml` owns the
+`ai/multica-runtime-local` claim. Local storage preserves private file ownership
+and locking without sharing OpenClaw state. `Retain` and Argo CD
+`Prune=false,Delete=false` preserve the claim and data through application
+removal, but provide neither off-node backup nor automatic failover. The 10 Gi
+capacity is a scheduling declaration, not a filesystem quota. Back up the
+runtime independently before relying on recovery from node or disk failure.
+
 The latest rscstore recovery preserves the unreplayable 2026-08-26 DuckDB WAL
 by renaming it on the retained PVC before starting from the last valid
 checkpoint. A new completion marker leaves the earlier 2026-08-21 recovery

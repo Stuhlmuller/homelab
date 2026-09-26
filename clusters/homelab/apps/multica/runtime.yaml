@@ -1,0 +1,212 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: multica-runtime
+  namespace: ai
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: multica-runtime
+  namespace: ai
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=UID 1000 owns this runtime's private retained profile and workspaces.
+    checkov.io/skip2: CKV_K8S_25=Only volume initialization receives CHOWN and FOWNER; agent execution drops all capabilities.
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: multica-runtime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: multica-runtime
+        app.kubernetes.io/part-of: multica
+    spec:
+      serviceAccountName: multica-runtime
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: acer
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: install-multica
+          image: ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
+          imagePullPolicy: IfNotPresent
+          command: [/bin/sh, -ec]
+          args:
+            - |
+              cp /app/multica /tools/multica
+              chown 1000:1000 /tools/multica /tools /home/multica
+              chmod 700 /home/multica
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, FOWNER]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          volumeMounts:
+            - name: tools
+              mountPath: /tools
+            - name: home
+              mountPath: /home/multica
+        - name: configure-runtime
+          image: docker.io/library/python:3.13-bookworm@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea
+          imagePullPolicy: IfNotPresent
+          command: [/bin/bash, -euc]
+          args:
+            - |
+              curl --fail --location --retry 3 --max-time 180 \
+                https://github.com/openai/codex/releases/download/rust-v0.153.2/codex-x86_64-unknown-linux-musl.tar.gz -o /tmp/codex.tar.gz
+              echo 'e8cd1160071f725d2a10cab81073dd6818fc8b096372125d27ef6e66fdf0979e  /tmp/codex.tar.gz' | sha256sum --check --strict
+              tar -xzf /tmp/codex.tar.gz -C /tools
+              mv /tools/codex-x86_64-unknown-linux-musl /tools/codex
+              curl --fail --location --retry 3 --max-time 180 \
+                https://github.com/openai/codex/releases/download/rust-v0.153.2/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz -o /tmp/codex-host.tar.gz
+              echo '177a4507b9cc7f97f113ac034697b39f6a71a876a8bd508ff6d7f52f342ebe4a  /tmp/codex-host.tar.gz' | sha256sum --check --strict
+              tar -xzf /tmp/codex-host.tar.gz -C /tools
+              mv /tools/codex-code-mode-host-x86_64-unknown-linux-musl /tools/codex-code-mode-host
+              /tools/codex --version
+              mkdir -p /home/multica/.codex /home/multica/workspaces
+              cp /etc/multica-runtime/codex.toml /home/multica/.codex/config.toml
+              python3 /etc/multica-runtime/bootstrap.py
+          env:
+            - name: HOME
+              value: /home/multica
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: tools
+              mountPath: /tools
+            - name: home
+              mountPath: /home/multica
+            - name: config
+              mountPath: /etc/multica-runtime
+              readOnly: true
+            - name: bootstrap-code
+              mountPath: /run/multica-bootstrap
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: daemon
+          image: docker.io/library/python:3.13-bookworm@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea
+          imagePullPolicy: IfNotPresent
+          command: [/tools/multica, daemon, start, --foreground]
+          workingDir: /home/multica
+          env:
+            - name: HOME
+              value: /home/multica
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          startupProbe:
+            exec:
+              command: [python3, -c, "import json,urllib.request; assert json.load(urllib.request.urlopen('http://127.0.0.1:19514/health',timeout=3))['status']=='running'"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: [python3, -c, "import json,urllib.request; h=json.load(urllib.request.urlopen('http://127.0.0.1:19514/health',timeout=3)); assert h['status']=='running' and any(w['runtimes'] for w in h['workspaces'])"]
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: [python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:19514/health',timeout=3).close()"]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          volumeMounts:
+            - name: tools
+              mountPath: /tools
+              readOnly: true
+            - name: tools
+              mountPath: /usr/local/bin/codex
+              subPath: codex
+              readOnly: true
+            - name: tools
+              mountPath: /usr/local/bin/codex-code-mode-host
+              subPath: codex-code-mode-host
+              readOnly: true
+            - name: home
+              mountPath: /home/multica
+            - name: model-key
+              mountPath: /run/multica-model
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tools
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 2Gi
+        - name: home
+          persistentVolumeClaim:
+            claimName: multica-runtime-local
+        - name: config
+          configMap:
+            name: multica-runtime-config
+        - name: bootstrap-code
+          secret:
+            secretName: multica-backend-secrets
+            items:
+              - key: MULTICA_DEV_VERIFICATION_CODE
+                path: code
+        - name: model-key
+          secret:
+            secretName: litellm-provider-keys
+            items:
+              - key: LITELLM_MASTER_KEY
+                path: key
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: multica-runtime
+  namespace: ai
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: multica-runtime
+  policyTypes: [Ingress]
+  ingress: []
