@@ -108,9 +108,18 @@ credentials stay scoped to the one live step.
 The live plan's sole diagnostic exception checks the classifier's SHA-256 pinned
 inside the hashed workflow before reading private output. A changed or missing
 helper is not executed; only the fixed withheld error remains. The verified helper
-reports a fixed last-recognized-stage label, not a verified cause: misleading
-markers can change the label but cannot expose their text. Raw output, plans, and
-credentials remain withheld and deleted.
+reports a fixed last-recognized-stage label and the first recognized error hint
+(`aws-auth`, `kubernetes-auth`, `network`, `provider`, `policy`, or `unknown`).
+These are not verified causes: misleading private text can change a label but
+cannot expose its text. Raw output, plans, and credentials remain withheld and
+deleted.
+
+On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
+declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
+AzureAD was skipped without local credentials. Protected CI run `36272981407`
+failed at the app stage. Its cause remains unknown; the fixed hints improve the
+next failure report without changing plan behavior or proving a CI fix. Local
+operator credentials, transport, and provider cache differ from CI.
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the
