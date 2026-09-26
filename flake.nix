@@ -33,6 +33,7 @@
             cloudflared
             conftest
             coreutils
+            cosign
             curl
             findutils
             gh
@@ -41,6 +42,7 @@
             gnugrep
             gnused
             gnutar
+            go_1_25
             gzip
             jq
             k9s
@@ -52,8 +54,10 @@
             nixVersions.latest
             opentofu
             openssh
+            openssl
             pre-commit
             prometheus.cli
+            python3
             ripgrep
             shellcheck
             shfmt

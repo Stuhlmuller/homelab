@@ -365,6 +365,9 @@ controllers:
                 ("plugins", "bundledDiscovery"),
             ):
                 config.get(section, {}).pop(key, None)
+            plugin_allow = config.get("plugins", {}).get("allow")
+            if isinstance(plugin_allow, list) and plugin_allow and "openrouter" not in plugin_allow:
+                plugin_allow.append("openrouter")
             defaults = config.get("agents", {}).get("defaults", {})
             models = defaults.get("models", {})
             migrated = config.get("meta", {}).get("migrations", {}).get("modelPolicyAllowlist")
@@ -606,7 +609,8 @@ controllers:
             config_batch <<'OPENCLAW_PLUGIN_BATCH'
             [
               {"path":"plugins.entries.codex.enabled","value":true},
-              {"path":"plugins.entries.memory-wiki.enabled","value":true}
+              {"path":"plugins.entries.memory-wiki.enabled","value":true},
+              {"path":"plugins.entries.openrouter.enabled","value":true}
             ]
             OPENCLAW_PLUGIN_BATCH
 

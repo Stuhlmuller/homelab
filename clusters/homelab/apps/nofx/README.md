@@ -255,6 +255,61 @@ targets USDT perpetuals, which [OKX excludes for US residents](https://www.okx.c
 Keep the existing rollout gates; rollback restores the previous image pair and
 its global-host authentication failure without changing stored credentials.
 
+### Read-only credential diagnosis
+
+If `50119` persists on the correct regional host, use the repository-owned
+checker to distinguish storage-decryption failures from exchange rejection.
+The locked Nix shell supplies Go 1.25, Python, Git, gh, kubectl, and yq. Development
+checks use synthetic data only:
+
+```sh
+nix develop --command python3 -I scripts/nofx-credential-check-test.py
+nix develop --command bash scripts/nofx-credential-check.sh test
+```
+
+For live inspection, use the full main commit from the reviewed PR. Check the
+checkout before entering Nix; the wrapper repeats these checks and requires
+GitHub's main ref to match the supplied SHA. Use the existing authenticated
+GitHub CLI session:
+
+```sh
+reviewed_main_sha="<full-reviewed-main-commit>"
+test "$(git --no-replace-objects rev-parse HEAD)" = "$reviewed_main_sha" &&
+  test -z "$(git --no-replace-objects status --porcelain --untracked-files=all)" &&
+  nix develop --command bash scripts/nofx-credential-check.sh inspect "$reviewed_main_sha"
+```
+
+Dirty tracked/untracked files or mismatched revisions stop inspection before
+source preparation, compilation, or cluster access. Build inputs come from
+`git archive` of the reviewed commit, so ignored files and concurrent working
+tree edits cannot add code to the executable. Trusted Git reads disable
+replacement objects, and the main-ref check uses GitHub's fixed-host API rather
+than Git URL configuration. The offline regression checks these refusal paths
+and source-substitution cases. Go runs with a clean environment and fresh module
+and build caches; ambient workspaces, overlays, alternate roots/toolchains, and
+modified dependency caches cannot replace the reviewed inputs.
+
+`test` downloads the checksum-pinned source, applies maintained patches, tests
+synthetic credentials, and builds a static Linux executable. `inspect` repeats
+those checks, requires ready pods at the declared image pair, and
+compares their served encryption source and Go dependencies with the build.
+It runs the checker temporarily in the backend's `/tmp`, using that container's
+existing encryption service. Only the temporary executable is written and
+removed; SQLite opens the fixed database with `mode=ro`. No exchange requests,
+trader activation, credential updates, or application migrations occur.
+
+Output contains seven aggregate integer counters: accounts, present fields,
+encrypted fields, decryption failures, decrypted empty strings, nested encrypted
+values, and API keys with surrounding whitespace. For fully populated encrypted
+connections, present/encrypted fields each equal three times accounts; the four
+error counters should be zero. Absent storage is excluded from decrypted-empty
+counts. Setup/query failures return a fixed error and nonzero exit. No credential
+values, hashes, lengths, account IDs, or raw errors leave the container.
+Passing this check establishes readable storage, not OKX authentication. Preserve
+the database and encryption key during diagnosis; verify the saved key's account
+and live/demo status through the account owner's UI if storage passes. Never use
+**Start** as a connection test.
+
 Source: pinned upstream
 [runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),
 [backtest runner](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/backtest/runner.go),

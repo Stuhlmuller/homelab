@@ -36,11 +36,13 @@ expected = copy.deepcopy(legacy)
 for section, key in (("meta", "lastTouchedAt"), ("commands", "ownerDisplay"),
                      ("hooks", "maxBodyBytes"), ("plugins", "bundledDiscovery")):
     del expected[section][key]
+expected["plugins"]["allow"].append("openrouter")
 expected["agents"]["defaults"]["modelPolicy"] = {"allow": ["openai/gpt-5.5"]}
 
 with tempfile.TemporaryDirectory() as directory:
     path = pathlib.Path(directory) / "openclaw.json"
-    for original in (legacy, expected, {}, {"agents": {"defaults": {
+    for original in (legacy, expected, {}, {"plugins": {"allow": []}},
+        {"plugins": {"allow": ["discord", "openrouter"]}}, {"agents": {"defaults": {
         "models": {"openai/gpt-5.5": {}}, "modelPolicy": {"allow": []}}}},
         {"meta": {"migrations": {"modelPolicyAllowlist": True}},
          "agents": {"defaults": {"models": {"openai/gpt-5.5": {}}}}}):
@@ -251,6 +253,8 @@ elif args == ["config", "unset", "hooks.token"]:
 elif args == ["assistant"]:
     assert state["plugins"]["entries"]["codex"]["enabled"] is True
     assert state["plugins"]["entries"]["memory-wiki"]["enabled"] is True
+    assert state["plugins"]["entries"]["openrouter"]["enabled"] is True
+    assert state["plugins"]["allow"] == ["discord", "openrouter"]
     state["assistantPreserved"] = True
 elif args not in (["config", "validate"], ["plugins", "enable", "discord", "--accept-capabilities"],
                   ["verify_discord_plugin", "loaded"]):
@@ -258,7 +262,8 @@ elif args not in (["config", "validate"], ["plugins", "enable", "discord", "--ac
 config.write_text(json.dumps(state))
 '''
 expected_events = ["batch:gateway.mode", "batch:hooks.enabled", "config unset hooks.token",
-                   "batch:hooks.token", "batch:plugins.entries.codex.enabled", "assistant",
+                   "batch:hooks.token", "batch:plugins.entries.codex.enabled",
+                   "assistant",
                    "config validate", "batch:agents.defaults.sandbox.mode",
                    "plugins enable discord --accept-capabilities", "verify_discord_plugin loaded",
                    "batch:channels.discord.enabled"]
@@ -281,6 +286,7 @@ verify_discord_plugin() { openclaw verify_discord_plugin "$@"; }
 original = {"hooks": {"token": "${GRAFANA_ALERT_HOOK_TOKEN}", "unrelated": "retained"},
             "gateway": {"unrelated": ["retained"]}, "channels": {"discord": {"unrelated": True}},
             "agents": {"defaults": {"model": "fixture/model"}},
+            "plugins": {"allow": ["discord", "openrouter"]},
             "skills": {"allowBundled": ["fixture"]}}
 # Both conditionals are independent; weird characters remain data, not shell code.
 credential = 'fixture-"quote"\n$(exit 99)`exit 99`\\token'

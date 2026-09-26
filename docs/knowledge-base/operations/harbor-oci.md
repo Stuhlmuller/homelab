@@ -205,3 +205,37 @@ Static rendering did not catch either runtime validation issue.
 - [[../architecture/storage-and-state]]
 - [[../architecture/secrets-and-identity]]
 - [[../architecture/gitops-flow]]
+
+## Private Signing Rollout
+
+New publications use the local P-256 key in the cert-manager-owned
+`harbor-image-signing` Secret. `rotationPolicy: Never` preserves signer identity
+through certificate renewal. `scripts/ci/harbor-publish.sh` creates the fixed
+`signing-job.yaml` template for its two verified image digests. The Job mounts
+the key inside the cluster; CI reads only its public key from successful Pod
+status, checks its SHA-256 against `scripts/config/harbor-signing.json`,
+and verifies both signatures. Initial enrollment is fail-closed (`null`) until
+the issued public key is independently read and its fingerprint reviewed. No AWS signing resource, public signing
+service or transparency-log submission is used. Existing registry credentials
+still follow the SSM/ExternalSecret contract above.
+
+The Job has no API token and declares DNS/Istio egress. That NetworkPolicy is
+not enforced by the current flannel CNI, and Harbor is not mesh-enrolled. A
+compromised signer could exfiltrate its mounted private key and publisher
+credential. This is an open isolation finding, not an enforced key boundary;
+source: `docs/runtime-isolation.md` and the signing Job/NetworkPolicy. Before
+claiming egress isolation, add a repository-owned enforcing dataplane, validate
+DNS/Harbor access, and prove arbitrary external destinations are denied from
+the signer. Pinned code, no API token, and a short lifetime do not replace that
+control.
+
+Temporary imported keys live
+in memory-backed storage; finished Jobs expire after ten minutes. Namespace
+Pod creators and cluster administrators remain trusted. Protect the signing
+Secret in encrypted off-node etcd backups, retain public keys independently,
+and restore the Secret before cert-manager after a disaster. PostgreSQL backups
+do not cover the signing key. See `builds/nofx/README.md` for recovery and rollback.
+
+Status: revised implementation prepared; Argo reconciliation, fresh key backup,
+first signed publication and independent live verification are pending.
+Historical artifacts and pull/admission enforcement remain unchanged.

@@ -13,11 +13,11 @@ FROM dependencies AS tests
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
     go test ./api ./backtest ./market/okxhistory -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage)' -count=1 && \
+    go test ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage|Spot)' -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./store -run '^TestTraderCreatePreservesVisibility$' -count=1 && \
+    go test ./store -run '^Test(TraderCreatePreservesVisibility|Spot)' -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./trader ./manager -run '^TestOKX(Initialization|Leverage|RequestsUseUSRegion)' -count=1
+    go test ./trader ./manager -run '^Test(OKX(Initialization|Leverage|RequestsUseUSRegion|Spot)|AutoTrader|Competition|Spot)' -count=1
 
 FROM tests AS build
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
@@ -26,7 +26,7 @@ RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
 FROM runtime AS final
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="AGPL-3.0" \
-      org.opencontainers.image.description="NOFX pinned release with passive model configuration and public historical simulation fixes"
+      org.opencontainers.image.description="NOFX pinned release with owned OKX US cash-spot trading and historical simulation fixes"
 COPY --from=build /out/nofx /app/nofx
 COPY upstream/LICENSE /usr/share/licenses/nofx/LICENSE
 USER 10000:10000
