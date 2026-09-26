@@ -232,3 +232,92 @@ and the absolute executable/working-directory configuration. Never reset the
 ledger to make a rollback load. Earlier images cannot reconcile that ledger;
 keep every OKX trader stopped while running them. Returning to upstream also
 restores its model-save side effects and Binance dependency.
+
+## Private image signing
+
+New publications run the repository-owned
+[signing Job](../../clusters/homelab/apps/harbor/signing-job.yaml) inside the
+homelab. cert-manager generates a dedicated P-256 key in `harbor-image-signing`;
+`rotationPolicy: Never` retains it across certificate renewals. This key is
+separate from Harbor's authentication-token signing key. No AWS signing key or
+public transparency log is used.
+
+The protected publisher verifies both pushed digests, instantiates the fixed
+Job template with those references, and waits for successful completion. The
+Job imports the mounted PKCS8 key into Cosign's format in a memory-backed
+volume, signs both digests, and returns only the public key through Pod status.
+CI checks that public key against the reviewed SHA-256 fingerprint in
+`scripts/config/harbor-signing.json`, then verifies both stored signatures;
+it does not read the signing Secret. The existing publisher robot password
+protects the temporary Cosign key and authenticates registry writes. Cosign
+requires its password through `COSIGN_PASSWORD`; this CI Job injects that
+credential from a Secret, while the key and registry credentials remain mounted
+files. No new SSM parameter or cloud permission is needed.
+
+The pinned upstream Cosign image is independent of Harbor. The Job has no
+Kubernetes API token, runs as non-root with a read-only root filesystem, and
+declares only cluster DNS and Istio HTTPS egress in its NetworkPolicy. The
+current flannel CNI does not enforce that policy, and Harbor is not mesh-enrolled:
+compromised signing code could send the mounted key and publisher credential
+to arbitrary destinations. Treat the pinned signer as trusted code, not as an
+egress-isolated key service. Track enforcement and a denied-egress acceptance
+test in the [Harbor note](../../docs/knowledge-base/operations/harbor-oci.md#private-signing-rollout).
+Public signing configuration,
+transparency-log upload and ambient OIDC signing are explicitly disabled.
+Harbor-compatible signature attachments stay with the private images.
+A 300-second deadline, zero retries and a ten-minute finished-Job TTL bound
+execution and remove temporary key material with the Pod.
+
+After merging, wait for Argo to reconcile the Certificate, registry credential
+projection and network policy before publication. A failed Job or signature
+verification fails CI and withholds success; images already pushed may remain
+unsigned. Retry the protected publication after correcting the cause. Historical
+images are not retroactively signed, and signature enforcement is not enabled.
+
+### Public key, backup and recovery
+
+Initial enrollment is deliberately staged: the committed fingerprint is `null`,
+which blocks publication before credentials or image pushes. After Argo issues
+the Certificate, use the read-only extraction below on the trusted cluster.
+Run `shasum -a 256 /tmp/harbor-signing.pub` and commit that fingerprint as
+`public_key_sha256` in `scripts/config/harbor-signing.json` through a reviewed PR.
+The hash covers the exact PEM public-key file, including its final newline.
+Then dispatch the protected publisher at the enrolled main commit. Never enroll
+from a failed signing Job: independently check the retained key first.
+A replacement key fails verification even if its signatures are valid. Planned
+rotation requires a separately reviewed fingerprint update; accidental loss
+requires restoring the original Secret, not accepting its replacement.
+
+An operator can extract the public key locally from the certificate, then use
+it for independent verification (requires `kubectl`, `openssl`, and Harbor login):
+
+```sh
+kubectl -n harbor get secret harbor-image-signing \
+  -o 'jsonpath={.data.tls\.crt}' | base64 --decode |
+  openssl x509 -pubkey -noout > /tmp/harbor-signing.pub
+nix develop --command cosign verify --key /tmp/harbor-signing.pub \
+  --insecure-ignore-tlog --new-bundle-format=false \
+  'harbor.stinkyboi.com/homelab/homelab-nofx-backend@sha256:<digest>'
+```
+
+The operator command's Kubernetes client receives the Secret; run it only on a
+trusted operator host. CI uses Pod status instead. Keep a trusted copy of the
+public key outside the cluster for historical verification. The transparency-log
+flag skips only the intentionally absent public log; signature, digest and TLS
+verification stay enabled. Signing does not prove an image is vulnerability-free.
+
+The private key is recoverable secret material, so Kubernetes administrators and
+any principal allowed to create Pods in `harbor` can use it. Do not delegate
+those permissions to untrusted users. Include the Secret in the existing
+[encrypted off-node etcd backup](../../docs/talos-etcd-backup.md) recovery set,
+and verify a fresh backup after the first key is issued. Harbor's PostgreSQL
+dump does **not** contain this key. Restore the original Secret before resuming
+cert-manager/signing after disaster recovery; deletion otherwise generates a
+new key and changes signer identity. Key loss prevents future signatures under
+the old identity, but retained public keys still verify existing signatures.
+
+Rotate through a reviewed new Secret/Certificate and explicit trust-key update;
+retain old public keys and signatures. To stop new signing, revert the publishing
+change while retaining the Secret and its backup. Do not delete the key as
+rollback cleanup. Live backup and signature acceptance are tracked in the
+[Harbor knowledge-base note](../../docs/knowledge-base/operations/harbor-oci.md).
