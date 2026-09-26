@@ -81,6 +81,13 @@ otherwise Terragrunt can initialize the real S3 backend before running them.
 
 ## GitHub Workflow Checks
 
+A September 26 protected squash was blocked by an unsigned ancestor despite a
+verified tip. Check GitHub's verification for every PR-introduced commit.
+Authorized signed-history repair must preserve a backup ref and exact content,
+use `--force-with-lease=<ref>:<expected-old-head>`, then rerun exact-head CI and
+obtain fresh approval; never bypass protection. See
+[GitHub's signed-commit rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-signed-commits).
+
 Cordium identity retirement requires removing both `cordium-check.yml` and
 `cordium-login-denial.yml` in the reviewed retirement commit. The offline
 retirement check rejects either remaining dispatch before any client access.
