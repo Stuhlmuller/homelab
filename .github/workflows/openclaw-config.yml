@@ -1,0 +1,37 @@
+---
+name: OpenClaw native config
+on:
+  pull_request:
+    paths:
+      - clusters/homelab/apps/openclaw/values.yaml
+      - scripts/ci/openclaw-config-check.py
+      - scripts/ci/openclaw-batch-native-check.py
+      - .github/workflows/openclaw-config.yml
+      - flake.nix
+      - flake.lock
+  push:
+    branches: [main]
+    paths:
+      - clusters/homelab/apps/openclaw/values.yaml
+      - scripts/ci/openclaw-config-check.py
+      - scripts/ci/openclaw-batch-native-check.py
+      - .github/workflows/openclaw-config.yml
+      - flake.nix
+      - flake.lock
+permissions:
+  contents: read
+jobs:
+  native-batch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+      - name: Install locked toolchain
+        uses: cachix/install-nix-action@b97f05dcb019ddea06450a50ef6203d2fdc19fee
+      - name: Prove pinned vendor batch semantics on disposable state
+        run: >-
+          nix develop --command python3
+          scripts/ci/openclaw-batch-native-check.py

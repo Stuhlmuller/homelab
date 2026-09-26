@@ -4,6 +4,16 @@ name: Cordium Workspace Checks
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        description: Fixed check or acceptance case; never accepts arbitrary commands
+        required: true
+        default: checks
+        type: choice
+        options:
+          - checks
+          - force-failure
+          - forbidden-method
+          - deny-ref
       expected_sha:
         description: Exact reviewed main commit to execute inside Cordium
         required: true
@@ -17,7 +27,9 @@ concurrency:
 
 jobs:
   check:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' ||
+      (github.ref == 'refs/heads/codex/cordium-oidc-denial' && inputs.mode == 'deny-ref')
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     # Keep the branch OIDC subject; an environment would change its identity.
@@ -31,8 +43,17 @@ jobs:
           ACTUAL_REF: ${{ github.ref }}
           ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CHECK_MODE: ${{ inputs.mode }}
         run: |
-          test "${ACTUAL_REF}" = "refs/heads/main"
+          case "${CHECK_MODE}" in
+            checks | force-failure | forbidden-method)
+              test "${ACTUAL_REF}" = "refs/heads/main"
+              ;;
+            deny-ref)
+              test "${ACTUAL_REF}" = "refs/heads/codex/cordium-oidc-denial"
+              ;;
+            *) exit 1 ;;
+          esac
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 
       - name: Check Out Repository
@@ -55,14 +76,31 @@ jobs:
 
       - name: Execute Checks In Cordium
         timeout-minutes: 38
+        env:
+          CHECK_MODE: ${{ inputs.mode }}
         run: |
           # Capture before Nix setup; the helper reserves three minutes for cleanup.
           execution_deadline=$(( $(date +%s) + 36 * 60 ))
           private_log="$(mktemp "${RUNNER_TEMP}/cordium-check.XXXXXX")"
           chmod 600 "$private_log"
           trap 'rm -f -- "$private_log"' EXIT
-          if ! nix develop --command bash scripts/ci/cordium-ci.sh "$execution_deadline" >"$private_log" 2>&1; then
+          result=0
+          nix develop --command bash scripts/ci/cordium-ci.sh "$execution_deadline" "$CHECK_MODE" >"$private_log" 2>&1 || result=$?
+          if [[ "$CHECK_MODE" == force-failure ]]; then
+            if [[ "$result" == 42 ]] &&
+              grep -Fxq 'Expected remote exit 42 and disposable workspace deletion verified.' "$private_log"; then
+              echo "::notice::Expected remote exit 42 and disposable workspace deletion verified."
+              exit 42
+            fi
+            echo "::error::Expected remote failure and verified cleanup were not both established."
+            exit 1
+          fi
+          if [[ "$result" != 0 ]]; then
             echo "::error::Cordium execution or cleanup failed; private output withheld. Inspect the dedicated CI identity before retrying."
             exit 1
           fi
-          echo "Reviewed main passed checks inside Cordium; disposable workspace deletion verified."
+          if [[ "$CHECK_MODE" == checks ]]; then
+            echo "Reviewed main passed checks inside Cordium; disposable workspace deletion verified."
+          else
+            echo "Observed the expected server rejection; correlate the authenticated audit record."
+          fi

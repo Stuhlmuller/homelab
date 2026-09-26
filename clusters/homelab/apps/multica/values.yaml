@@ -16,7 +16,7 @@ images:
     pullPolicy: IfNotPresent
 
 # checkov:skip=CKV_SECRET_6: Kubernetes Secret name, not secret material.
-existingSecret: multica-secrets
+existingSecret: multica-backend-secrets
 
 postgres:
   external:
@@ -43,7 +43,8 @@ backend:
       accessModes:
         - ReadWriteOnce
   config:
-    appEnv: production
+    # Fixed-code sign-in is available only outside production; Octelium gates access.
+    appEnv: development
     appUrl: https://multica.stinkyboi.com
     frontendOrigin: https://multica.stinkyboi.com
     corsAllowedOrigins: ""

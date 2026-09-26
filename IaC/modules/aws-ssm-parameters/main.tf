@@ -112,8 +112,10 @@ resource "random_password" "generated" {
   for_each = local.random_generated_parameters
 
   length           = each.value.generated.length
+  lower            = each.value.generated.lower
   override_special = each.value.generated.override_special
   special          = each.value.generated.special
+  upper            = each.value.generated.upper
 }
 
 resource "tls_private_key" "generated" {
