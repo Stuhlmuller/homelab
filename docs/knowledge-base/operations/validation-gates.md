@@ -81,6 +81,13 @@ otherwise Terragrunt can initialize the real S3 backend before running them.
 
 ## GitHub Workflow Checks
 
+A September 26 protected squash was blocked by an unsigned ancestor despite a
+verified tip. Check GitHub's verification for every PR-introduced commit.
+Authorized signed-history repair must preserve a backup ref and exact content,
+use `--force-with-lease=<ref>:<expected-old-head>`, then rerun exact-head CI and
+obtain fresh approval; never bypass protection. See
+[GitHub's signed-commit rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches#require-signed-commits).
+
 Cordium identity retirement requires removing both `cordium-check.yml` and
 `cordium-login-denial.yml` in the reviewed retirement commit. The offline
 retirement check rejects either remaining dispatch before any client access.
@@ -108,9 +115,18 @@ credentials stay scoped to the one live step.
 The live plan's sole diagnostic exception checks the classifier's SHA-256 pinned
 inside the hashed workflow before reading private output. A changed or missing
 helper is not executed; only the fixed withheld error remains. The verified helper
-reports a fixed last-recognized-stage label, not a verified cause: misleading
-markers can change the label but cannot expose their text. Raw output, plans, and
-credentials remain withheld and deleted.
+reports a fixed last-recognized-stage label and the first recognized error hint
+(`aws-auth`, `kubernetes-auth`, `network`, `provider`, `policy`, or `unknown`).
+These are not verified causes: misleading private text can change a label but
+cannot expose its text. Raw output, plans, and credentials remain withheld and
+deleted.
+
+On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
+declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
+AzureAD was skipped without local credentials. Protected CI run `36272981407`
+failed at the app stage. Its cause remains unknown; the fixed hints improve the
+next failure report without changing plan behavior or proving a CI fix. Local
+operator credentials, transport, and provider cache differ from CI.
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the
@@ -135,6 +151,8 @@ incorrectly fail `CKV2_K8S_6` for a Deployment. Other files retain the diff scan
 the dedicated secrets hook still scans every changed file with the upstream
 `--enable-secret-scan-all-files` entry and required `-f` argument. Do not override
 that argument with `-v`, which prints Checkov's version instead of scanning.
+The file-based secrets hook skips an empty selection, including conflict-free
+merges, because `-f` requires at least one filename.
 
 Do not require a new Actions context in ruleset `14700233` before the workflow
 that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
@@ -847,6 +865,36 @@ Source: pinned upstream
 [managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
 [cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
 and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
+
+## Octelium PostgreSQL Restore Drill
+
+`scripts/ci/octelium-restore-drill-test.py` exercises the candidate shell entry
+point against disposable PostgreSQL 14 fixtures using the pinned Nix toolchain.
+It requires actual globals/database restore, preserved backup source, private
+output, and actual globals-triggered shell and PostgreSQL `COPY TO PROGRAM`
+regressions that cannot write synthetic private markers through inherited log
+descriptors. Both programs must execute, and all normal output must stay in
+scratch. Success and failure both require empty public streams; Job exit status
+is the completion signal. The render guard rejects a console-bearing entry-point
+wrapper or a shared/host PID namespace. It also requires failure on corrupt or
+stale newest archives, invalid checksum paths,
+empty required tables, missing encrypted-resource keys, and previous-day-only
+backups. A current invalid set fails even when a valid previous-day set exists.
+Rendered timing guards include the backup's late-start and execution deadlines
+plus a 15-minute margin. Rendered guards
+require only the read-only backup PVC plus bounded scratch, no credentials, and
+no additive NetworkPolicy allow selecting the drill. The full static gate runs
+this check; `postgresql_14` is a validation dependency in `flake.nix`.
+
+The live application excludes the resources in
+`clusters/homelab/apps/octelium-storage/restore-drill-candidate/`. The render
+fixture asserts that exclusion and the candidate CronJob's secondary suspension.
+Only a separate reviewed activation after image/launcher and Talos runtime proof
+may add it to GitOps and lift suspension. Post-activation acceptance
+requires its scheduled Job success and `lastSuccessfulTime`, plus the shared
+30-hour staleness alert. Static fixtures alone do not prove live restoration.
+See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
+rollback, and the limits of this PostgreSQL-only drill.
 
 ## OpenClaw container privilege gate
 
