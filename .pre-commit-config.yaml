@@ -50,6 +50,7 @@ repos:
         entry: checkov -d clusters --framework kubernetes
         files: ^clusters/.*\.ya?ml$
       - id: checkov_secrets
+        always_run: false
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
     # v1.22.0

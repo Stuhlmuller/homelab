@@ -135,6 +135,8 @@ incorrectly fail `CKV2_K8S_6` for a Deployment. Other files retain the diff scan
 the dedicated secrets hook still scans every changed file with the upstream
 `--enable-secret-scan-all-files` entry and required `-f` argument. Do not override
 that argument with `-v`, which prints Checkov's version instead of scanning.
+The file-based secrets hook skips an empty selection, including conflict-free
+merges, because `-f` requires at least one filename.
 
 Do not require a new Actions context in ruleset `14700233` before the workflow
 that emits it is merged. First observe `Terragrunt Gate` on a no-live-plan PR, a
@@ -834,6 +836,36 @@ Source: pinned upstream
 [managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
 [cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
 and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
+
+## Octelium PostgreSQL Restore Drill
+
+`scripts/ci/octelium-restore-drill-test.py` exercises the candidate shell entry
+point against disposable PostgreSQL 14 fixtures using the pinned Nix toolchain.
+It requires actual globals/database restore, preserved backup source, private
+output, and actual globals-triggered shell and PostgreSQL `COPY TO PROGRAM`
+regressions that cannot write synthetic private markers through inherited log
+descriptors. Both programs must execute, and all normal output must stay in
+scratch. Success and failure both require empty public streams; Job exit status
+is the completion signal. The render guard rejects a console-bearing entry-point
+wrapper or a shared/host PID namespace. It also requires failure on corrupt or
+stale newest archives, invalid checksum paths,
+empty required tables, missing encrypted-resource keys, and previous-day-only
+backups. A current invalid set fails even when a valid previous-day set exists.
+Rendered timing guards include the backup's late-start and execution deadlines
+plus a 15-minute margin. Rendered guards
+require only the read-only backup PVC plus bounded scratch, no credentials, and
+no additive NetworkPolicy allow selecting the drill. The full static gate runs
+this check; `postgresql_14` is a validation dependency in `flake.nix`.
+
+The live application excludes the resources in
+`clusters/homelab/apps/octelium-storage/restore-drill-candidate/`. The render
+fixture asserts that exclusion and the candidate CronJob's secondary suspension.
+Only a separate reviewed activation after image/launcher and Talos runtime proof
+may add it to GitOps and lift suspension. Post-activation acceptance
+requires its scheduled Job success and `lastSuccessfulTime`, plus the shared
+30-hour staleness alert. Static fixtures alone do not prove live restoration.
+See `clusters/homelab/apps/octelium-storage/README.md` for private diagnostics,
+rollback, and the limits of this PostgreSQL-only drill.
 
 ## OpenClaw container privilege gate
 

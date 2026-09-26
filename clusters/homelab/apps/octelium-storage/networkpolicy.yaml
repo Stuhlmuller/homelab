@@ -4,7 +4,13 @@ metadata:
   name: octelium-storage
   namespace: octelium-storage
 spec:
-  podSelector: {}
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - octelium-postgres
+          - octelium-redis
   policyTypes:
     - Ingress
   ingress:
@@ -37,3 +43,13 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: octelium-storage-default-deny
+  namespace: octelium-storage
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

@@ -1,0 +1,107 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: octelium-postgres-restore-drill
+  namespace: octelium-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    app.kubernetes.io/name: octelium-postgres-restore-drill
+    app.kubernetes.io/component: restore-drill
+    app.kubernetes.io/part-of: octelium
+spec:
+  # Secondary hold: activation requires a separately reviewed image/runtime proof.
+  suspend: true
+  schedule: "45 4 * * *"
+  timeZone: Etc/UTC
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: octelium-postgres-restore-drill
+        app.kubernetes.io/component: restore-drill
+        app.kubernetes.io/part-of: octelium
+    spec:
+      activeDeadlineSeconds: 1800
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 3600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: octelium-postgres-restore-drill
+            app.kubernetes.io/component: restore-drill
+            app.kubernetes.io/part-of: octelium
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 60
+          securityContext:
+            fsGroup: 65534
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: restore-drill
+              image: postgres:14.23-bookworm@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa
+              imagePullPolicy: Always
+              # Kubelet mounts a writable file; its root-only parent blocks the restore UID.
+              terminationMessagePath: /root/restore-termination-log
+              terminationMessagePolicy: File
+              command:
+                - /bin/sh
+                - /scripts/restore-drill.sh
+                - /backup/logical-backups
+                - /work
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 128Mi
+                  ephemeral-storage: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+                  ephemeral-storage: 3Gi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
+                - name: backup
+                  mountPath: /backup
+                  readOnly: true
+                - name: scratch
+                  mountPath: /work
+          volumes:
+            - name: script
+              configMap:
+                name: octelium-postgres-restore-drill
+            - name: backup
+              persistentVolumeClaim:
+                claimName: octelium-postgres-backup
+                readOnly: true
+            - name: scratch
+              emptyDir:
+                sizeLimit: 2Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: octelium-postgres-restore-drill
+  namespace: octelium-storage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: octelium-postgres-restore-drill
+  policyTypes:
+    - Ingress
+    - Egress
