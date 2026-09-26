@@ -382,6 +382,19 @@ The shared cap bounds outstanding quote reservations plus owned acquisition
 cost, while each agent has its own remaining cash and strategy limits. It is
 not a marked-value ceiling or guaranteed loss limit.
 
+Prepared patch `0014` removes misleading legacy futures controls from the OKX
+trader form. The backend already ignores its margin and Initial Balance inputs;
+the form now omits both and directs capital changes to **Spot allocations** on
+the exchange card. It labels existing OKX records as cash spot without rewriting
+stored names. Focused form tests cover create/edit payloads and switching to a
+non-OKX exchange. This UI repair does not allocate funds or start traders.
+
+Existing non-OKX form finding: `TraderConfigModal.handleFetchCurrentBalance`
+queries the persisted trader ID even after an unsaved exchange selection.
+Save and reopen before fetching the new exchange's balance. A follow-up should
+reject that fetch while the selected and persisted exchange IDs differ, with a
+regression proving no account request occurs. OKX no longer exposes that control.
+
 SQLite remains on the existing NOFX PVC. The additive spot tables and immutable
 fill history must remain in backups; never remove them to reset a competition.
 Rollback to an earlier image must keep all OKX traders stopped: that image would

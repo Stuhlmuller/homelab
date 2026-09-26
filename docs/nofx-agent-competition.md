@@ -20,10 +20,11 @@ loss. Agent cash and strategy entry limits also apply.
 This feature has not been published, deployed, or activated by this source
 change. Follow the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
 using the exact tested source and reported private Harbor digests. Verify the
-served source includes patch `0012`, both workloads are ready, all traders are
-stopped, and no simulation is active before configuring it in the UI.
+served source includes patches `0012`–`0014`, both workloads are ready,
+all traders are stopped, and no simulation is active before configuring it in
+the UI.
 
-On **AI Traders**, open **Spot competition** for the saved OKX connection.
+On **AI Traders**, open **Spot allocations** for the saved OKX connection.
 Enter the quote currency, total capital limit, and explicit amounts for Trend,
 Mean Reversion, and Breakout. No amount is prefilled. Allocations must fit the
 cap and available quote cash; this form does not fund the account. Leave
@@ -31,6 +32,9 @@ Consensus unallocated unless the operator explicitly includes it. Saving
 requires all affected traders stopped, including unverified OKX aliases.
 Capital and allocations become immutable after the first persisted order
 intent, preserving the competition baseline.
+
+The OKX trader form displays **OKX US Cash Spot** and has no margin or Initial
+Balance controls. Editing a trader does not set or reset its capital allocation.
 
 Configure the three saved strategies with identical eligible static spot pairs,
 risk limits, timeframes, and scan cadence, keeping their different personas.
