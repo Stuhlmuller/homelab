@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-21
+updated: 2026-09-26
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -25,6 +25,9 @@ patches `0007`–`0011`, and read-only authenticated dashboard checks after
 rollout. All traders must remain stopped and the three drafts hidden.
 Publication alone does not establish authentication, spot support, or
 independent returns.
+Patch `0012` is a prepared source change; its cash-spot implementation below
+has not been published, deployed, or activated by this change. Historical
+acceptance evidence in this note describes earlier images, not that feature.
 The prior startup-error build `9716e9d9121a062029c72dc5f03f0d266a166650` from
 successful
 [run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
@@ -207,10 +210,11 @@ also checks current OKX cross-margin leverage, skips matching settings, and uses
 one instrument-level update when needed. Leverage errors stop openings before
 canceling existing orders, with a mocked transport regression. Verify exact
 published digests, source patches, and persisted stopped/hidden flags after
-rollout before accepting the runtime. Sharing an account is supported, but
-also shares positions and account-level returns; Initial Balance does not reserve
-capital. Separate funded accounts or
-subaccounts are needed only for independent live balances and P&L. The runbook
+rollout before accepting the runtime. The pre-`0012` runtime shares positions
+and account-level returns; Initial Balance does not reserve capital. Independent
+live balances then required separate funded accounts or subaccounts. The prepared
+cash-spot ledger below provides owned accounting within one physical account.
+The runbook
 records the draft limits without presenting shared balances or historical
 simulations as independent live competition results.
 
@@ -260,7 +264,7 @@ the three drafts hidden afterward; never use Start as an authentication test.
 The regional host does not add US spot support or make USDT perpetuals
 available.
 
-The remaining US execution gap is concrete: in the
+The pre-`0012` US execution gap is concrete: in the
 [pinned OKX adapter](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go),
 `convertSymbol` creates `*-USDT-SWAP` IDs and `GetPositions` requests `SWAP`.
 It has no cash spot-order path. Shared-account ownership also needs an execution
@@ -272,7 +276,8 @@ enforced shared exposure limits, then test that one persona cannot cancel or
 close another's allocation. The
 [competition runbook](../../nofx-agent-competition.md#one-okx-account) records
 why shared account equity and Initial Balance cannot establish independent
-returns; this rollout does not resolve that gap.
+returns. The patch `0011` rollout did not resolve that gap; prepared patch `0012`
+addresses it below, with separate rollout and activation gates.
 
 During this trace, `handleOrderFills` was also found to query fills by order ID
 without checking that the order belongs to the resolved trader. The shared
@@ -283,14 +288,17 @@ routes also accept IDs without enforcing hidden visibility; this patch preserves
 their existing public contract. Add consistent owner-or-public visibility checks
 across both before expanding access; retain the human-only access boundary.
 
-The unused Arena consensus execution path bypasses the shared decision validator;
+In the pre-`0012` runtime, the unused Arena consensus execution path bypasses
+the shared decision validator;
 do not infer its leverage enforcement from the normal trader fix. A separate
 `store/trader.go` creation default also overrides explicit `IsCrossMargin=false`.
 These drafts retain cross margin; preserving an explicit false value needs a
 focused follow-up before configuring isolated margin through that create path.
 The configured 30% margin target is also advisory: `MaxMarginUsage` appears in
 the model prompt but is not enforced by `trader/auto_trader.go`. Implement an
-execution check before presenting it as a hard account-exposure limit.
+execution check before presenting it as a hard account-exposure limit. Patch
+`0012` rejects Arena execution for spot, saves cash margin explicitly, and
+enforces the saved utilization limit in the owned spot entry path.
 
 The first observed Trend and Breakout simulations reported Completed with two
 and three failed cycles out of six. Missing JSON caused the parser to synthesize
@@ -313,3 +321,48 @@ after launching a runner. Counting only database `running` rows can therefore
 miss a first decision in progress. The rollout runbook combines read-only state
 counts with absence of heartbeat lock files; unknown activity leaves the gate
 closed. A future runtime fix should persist the post-start state consistently.
+
+## Cash-spot competition implementation
+
+The prepared patch `0012` addresses the shared-account execution gap above.
+It adds authenticated OKX US spot metadata and candles, per-trader decimal
+allocations and fill ownership, durable reservations, native owned OCO orders,
+and recovery from persisted entry intent. The UI requires explicit amounts with
+all relevant traders stopped. Account aliases share a canonical UID and cap.
+Existing manual holdings never become agent inventory. See the
+[operator contract](../../nofx-agent-competition.md#one-okx-account).
+The shared cap bounds outstanding quote reservations plus owned acquisition
+cost, while each agent has its own remaining cash and strategy limits. It is
+not a marked-value ceiling or guaranteed loss limit.
+
+SQLite remains on the existing NOFX PVC. The additive spot tables and immutable
+fill history must remain in backups; never remove them to reset a competition.
+Rollback to an earlier image must keep all OKX traders stopped: that image would
+use whole-account futures semantics and would not reconcile the spot ledger.
+Native pending orders require explicit operator review before any rollback.
+One backend execution process is required until a durable execution lease exists.
+
+The leaderboard marks failed/timeout/nonfinite account reads unavailable and
+uses original allocation for owned returns. Previous whole-account equity curves
+are not presented as per-agent history. A missing configuration or rejected
+account authentication remains an operational blocker, not a zero-return score.
+
+This code is prepared independently of live activation. No trader was started,
+no funds moved, and no winner established by the implementation tests.
+Build-test coverage includes mocked protocol/ownership, SQLite reservation and
+replay, entry-protection recovery, lifecycle shutdown, unavailable-score handling,
+bounded competition refresh, and the allocation UI. Publication still requires
+the protected workflow, followed by a reviewed digest-pin rollout and fresh
+stopped-state/source/readiness checks. Harbor and retained GHCR images stay private.
+
+An existing credential-log finding remains outside this feature:
+`mcp/openai_client.go:SetAPIKey` logs the first and last four characters of
+keys longer than eight characters. The earlier model-save patch removed raw
+submitted-key logging but did not remove these runtime fragments. Do not copy
+raw backend logs into public issues; follow up by removing credential-derived
+log fields and add a regression using a synthetic key. No key fragments are
+recorded here.
+
+The pinned frontend dependency audit reports 25 existing advisories (2 low,
+6 moderate, 16 high, 1 critical). Dependency remediation needs a separate pinned
+upgrade with frontend regression checks; this feature changes no dependencies.
