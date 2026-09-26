@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: multica-runtime-local
+  namespace: ai
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-2"
+  labels:
+    app.kubernetes.io/name: multica-runtime
+    app.kubernetes.io/part-of: homelab-ai
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: multica-runtime-local
+  volumeMode: Filesystem
+  volumeName: multica-runtime-local
