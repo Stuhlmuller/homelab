@@ -85,6 +85,21 @@ class Retirement(unittest.TestCase):
     def test_catalog_removal_is_required(self):
         self.assertEqual(self.exercise(declared=True), (False, []))
 
+    def test_either_dispatch_workflow_blocks_retirement(self):
+        for workflow in ("cordium-check.yml", "cordium-login-denial.yml"):
+            with self.subTest(workflow=workflow), tempfile.TemporaryDirectory() as directory:
+                root = pathlib.Path(directory)
+                dispatch = root / ".github/workflows" / workflow
+                dispatch.parent.mkdir(parents=True)
+                dispatch.touch()
+                with patch.object(retire, "ROOT", root), \
+                        patch.object(sys, "argv", ["retire", "--homedir", "/unused"]), \
+                        patch.object(retire.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "[]", "")), \
+                        patch.object(retire.native, "verified_client") as client:
+                    with self.assertRaisesRegex(RuntimeError, workflow):
+                        retire.main()
+                    client.assert_not_called()
+
     def test_dry_run_never_deletes(self):
         self.assertEqual(self.exercise(execute=False), (True, []))
         self.assertEqual(self.native_calls, [])
