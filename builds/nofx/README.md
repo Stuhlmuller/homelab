@@ -1,10 +1,11 @@
 # Maintained NOFX images
 
 This recipe rebuilds the pinned NOFX release with passive, key-preserving model
-configuration, validated backtest run IDs, and OKX US public historical candles
-for new simulations. Historical decisions exclude current quant/ranking feeds
-and use the simulated clock for position age. OKX construction reads account
-mode without trying to change it. It does not enable live traders. Deployment
+configuration, validated backtest run IDs, OKX US public historical candles,
+and the allocated cash-spot executor described below. Historical decisions
+exclude current quant/ranking feeds and use the simulated clock for position
+age. OKX construction reads account mode without trying to change it.
+Preparing or building these images does not enable live traders. Deployment
 and operational acceptance are documented in the
 [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
@@ -19,24 +20,26 @@ fill leverage at the configured limit.
 Normal trader decision parsing preserves the shared validator's leverage clamp
 in the returned decisions. Trader creation also preserves an explicit hidden
 leaderboard setting; the API retains its visible default when omitted. Focused
-parser and SQLite regressions run in the backend image's test stage. Before
-opening an OKX position, the adapter reads current cross-margin leverage and
+parser and SQLite regressions run in the backend image's test stage. The legacy
+OKX futures adapter from patch `0009` reads current cross-margin leverage and
 skips the write when it already matches. Otherwise it makes one instrument-level
 leverage request, following the [OKX API guide](https://www.okx.com/docs-v5/trick_en/).
 Missing or malformed current-leverage data, or failed leverage requests, stop
 opening orders before canceling existing orders. Mocked transport checks cover
 both directions.
-Arena's separate consensus execution path does not use the decision validator.
+Those futures paths remain in the source for regression coverage; patch `0012`
+replaces every runtime OKX construction with cash spot. Arena's separate
+consensus execution path is rejected by the cash-spot adapter.
 
 Patch `0011` routes the OKX adapter through `https://us.okx.com` for this
 homelab's confirmed US account. All signed REST calls share that constant;
-there is no automatic regional fallback. This does not add spot trading or
-establish eligibility for the adapter's USDT perpetuals. Keep traders stopped.
+there is no automatic regional fallback. Patch `0011` alone does not add spot
+trading or establish eligibility for USDT perpetuals. Keep traders stopped.
 Dashboard reads return a typed, safe HTTP 503 when an owned saved trader cannot
 load; missing or foreign traders return 404. The UI displays the load guidance
-without claiming the API route is missing. Equity history remains readable
-without initializing the exchange. Handler, transport, and Axios regressions
-run in the existing image test targets.
+without claiming the API route is missing. Patch `0012` withholds legacy OKX
+whole-account equity history; other equity history remains database-only.
+Handler, transport, and Axios regressions run in the existing image test targets.
 
 Backtest Lab compares selected runs using recorded equity, return, drawdown,
 and decision outcomes. The table does not infer a valid score from Completed:
@@ -45,6 +48,38 @@ in the [competition runbook](../../docs/nofx-agent-competition.md). Newly genera
 run IDs include a safe strategy slug. Keep rounds uninterrupted: cold resume
 still does not reliably restore the selected strategy snapshot, so start fresh
 matched runs after a backend restart.
+
+## OKX US cash-spot competition
+
+Patch `0012` replaces this installation's OKX runtime construction with the
+cash-spot adapter and adds a stopped-only capital-allocation form. The
+[regional API contract](https://app.okx.com/docs-v5/en/) defines its US host,
+cash orders, account fee currency, and native OCO protocol. It uses one
+server-verified account identity across connection aliases. Decimal reservations
+and append-only fills own each agent's cash, inventory, fees, and cost basis;
+legacy account positions and balances cannot become competition performance.
+The shared cap limits outstanding buy reservations plus owned inventory's
+acquisition cost; it is not a ceiling on marked market value or a loss guarantee.
+Each trader is also limited by its own remaining quote cash and strategy limits.
+
+This is prepared source, not a verified cash-spot deployment. Publish the exact
+reviewed main commit to private Harbor, pin its reported backend/frontend
+digests through a separate rollout PR, then verify readiness, served source,
+and stopped-state acceptance. Explicit capital amounts remain an operator input;
+this change neither chooses them nor starts a trader.
+
+The existing single backend replica is the execution boundary: a process lock
+serializes account reconciliation and submission; database transactions reserve
+funds before HTTP. More than one execution process requires a durable execution
+lease first. Do not increase backend replicas without that change.
+
+Mocked protocol, SQLite concurrency, restart/replay, lifecycle, and UI checks run
+in the image test stages. Manager checks cover unavailable scores and bounded
+refresh; lifecycle and recovery tests cover stopped execution and saved OCO
+ownership. Tests use synthetic credentials and mocked exchange transports;
+they send no live orders. No dependencies are changed by patch `0012`.
+See the [competition runbook](../../docs/nofx-agent-competition.md#one-okx-account)
+for execution limits, current-data ranking, and operator activation.
 
 ## Source and build contract
 
@@ -190,6 +225,99 @@ new UI runs select `okx_us`, while older saved runs without a source keep Binanc
 
 To revert a build change, revert its recipe/patch commit through a PR and publish
 the resulting new commit tag. To roll back deployment, stop simulations and
-restore the previous reviewed image digests while retaining `nofx-data` and the
-absolute executable/working-directory configuration. Returning to upstream
-images restores their model-save side effects and Binance dependency.
+all live traders, review unresolved submissions and native protective orders,
+then restore the previous reviewed image digests through GitOps. Retain
+`nofx-data`, including the additive spot tables and append-only fill history,
+and the absolute executable/working-directory configuration. Never reset the
+ledger to make a rollback load. Earlier images cannot reconcile that ledger;
+keep every OKX trader stopped while running them. Returning to upstream also
+restores its model-save side effects and Binance dependency.
+
+## Private image signing
+
+New publications run the repository-owned
+[signing Job](../../clusters/homelab/apps/harbor/signing-job.yaml) inside the
+homelab. cert-manager generates a dedicated P-256 key in `harbor-image-signing`;
+`rotationPolicy: Never` retains it across certificate renewals. This key is
+separate from Harbor's authentication-token signing key. No AWS signing key or
+public transparency log is used.
+
+The protected publisher verifies both pushed digests, instantiates the fixed
+Job template with those references, and waits for successful completion. The
+Job imports the mounted PKCS8 key into Cosign's format in a memory-backed
+volume, signs both digests, and returns only the public key through Pod status.
+CI checks that public key against the reviewed SHA-256 fingerprint in
+`scripts/config/harbor-signing.json`, then verifies both stored signatures;
+it does not read the signing Secret. The existing publisher robot password
+protects the temporary Cosign key and authenticates registry writes. Cosign
+requires its password through `COSIGN_PASSWORD`; this CI Job injects that
+credential from a Secret, while the key and registry credentials remain mounted
+files. No new SSM parameter or cloud permission is needed.
+
+The pinned upstream Cosign image is independent of Harbor. The Job has no
+Kubernetes API token, runs as non-root with a read-only root filesystem, and
+declares only cluster DNS and Istio HTTPS egress in its NetworkPolicy. The
+current flannel CNI does not enforce that policy, and Harbor is not mesh-enrolled:
+compromised signing code could send the mounted key and publisher credential
+to arbitrary destinations. Treat the pinned signer as trusted code, not as an
+egress-isolated key service. Track enforcement and a denied-egress acceptance
+test in the [Harbor note](../../docs/knowledge-base/operations/harbor-oci.md#private-signing-rollout).
+Public signing configuration,
+transparency-log upload and ambient OIDC signing are explicitly disabled.
+Harbor-compatible signature attachments stay with the private images.
+A 300-second deadline, zero retries and a ten-minute finished-Job TTL bound
+execution and remove temporary key material with the Pod.
+
+After merging, wait for Argo to reconcile the Certificate, registry credential
+projection and network policy before publication. A failed Job or signature
+verification fails CI and withholds success; images already pushed may remain
+unsigned. Retry the protected publication after correcting the cause. Historical
+images are not retroactively signed, and signature enforcement is not enabled.
+
+### Public key, backup and recovery
+
+Initial enrollment is deliberately staged: the committed fingerprint is `null`,
+which blocks publication before credentials or image pushes. After Argo issues
+the Certificate, use the read-only extraction below on the trusted cluster.
+Run `shasum -a 256 /tmp/harbor-signing.pub` and commit that fingerprint as
+`public_key_sha256` in `scripts/config/harbor-signing.json` through a reviewed PR.
+The hash covers the exact PEM public-key file, including its final newline.
+Then dispatch the protected publisher at the enrolled main commit. Never enroll
+from a failed signing Job: independently check the retained key first.
+A replacement key fails verification even if its signatures are valid. Planned
+rotation requires a separately reviewed fingerprint update; accidental loss
+requires restoring the original Secret, not accepting its replacement.
+
+An operator can extract the public key locally from the certificate, then use
+it for independent verification (requires `kubectl`, `openssl`, and Harbor login):
+
+```sh
+kubectl -n harbor get secret harbor-image-signing \
+  -o 'jsonpath={.data.tls\.crt}' | base64 --decode |
+  openssl x509 -pubkey -noout > /tmp/harbor-signing.pub
+nix develop --command cosign verify --key /tmp/harbor-signing.pub \
+  --insecure-ignore-tlog --new-bundle-format=false \
+  'harbor.stinkyboi.com/homelab/homelab-nofx-backend@sha256:<digest>'
+```
+
+The operator command's Kubernetes client receives the Secret; run it only on a
+trusted operator host. CI uses Pod status instead. Keep a trusted copy of the
+public key outside the cluster for historical verification. The transparency-log
+flag skips only the intentionally absent public log; signature, digest and TLS
+verification stay enabled. Signing does not prove an image is vulnerability-free.
+
+The private key is recoverable secret material, so Kubernetes administrators and
+any principal allowed to create Pods in `harbor` can use it. Do not delegate
+those permissions to untrusted users. Include the Secret in the existing
+[encrypted off-node etcd backup](../../docs/talos-etcd-backup.md) recovery set,
+and verify a fresh backup after the first key is issued. Harbor's PostgreSQL
+dump does **not** contain this key. Restore the original Secret before resuming
+cert-manager/signing after disaster recovery; deletion otherwise generates a
+new key and changes signer identity. Key loss prevents future signatures under
+the old identity, but retained public keys still verify existing signatures.
+
+Rotate through a reviewed new Secret/Certificate and explicit trust-key update;
+retain old public keys and signatures. To stop new signing, revert the publishing
+change while retaining the Secret and its backup. Do not delete the key as
+rollback cleanup. Live backup and signature acceptance are tracked in the
+[Harbor knowledge-base note](../../docs/knowledge-base/operations/harbor-oci.md).
