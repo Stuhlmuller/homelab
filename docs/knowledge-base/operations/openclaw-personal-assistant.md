@@ -2,6 +2,10 @@
 
 Source: `clusters/homelab/apps/openclaw/README.md` and `assistant/`.
 
+September 26 model routing: interactive turns, heartbeat, and managed jobs use
+OpenRouter's `openrouter/free` router with no fallback. OpenRouter credentials
+remain in the PVC-backed auth profile; repository configuration contains no key.
+
 September 7 owner request expands Claw from homelab operations to a natural
 Discord assistant, Google Calendar, and computer shopping on Facebook Marketplace.
 Managed instructions define private task/deal tracking, Calendar readback and

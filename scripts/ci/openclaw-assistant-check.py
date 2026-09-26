@@ -44,7 +44,7 @@ with tempfile.TemporaryDirectory() as directory:
     memory.write_text("Private memory must survive.\n")
     bootstrap.install(BUNDLE, root, config)
     result = json.loads(config.read_text())
-    # Interactive Codex work can exceed ten minutes; background work stays bounded.
+    # Interactive work can exceed ten minutes; background work stays bounded.
     assert result["agents"]["defaults"]["timeoutSeconds"] == 3600
     assert result["agents"]["defaults"]["heartbeat"]["timeoutSeconds"] == 600
     assert result["skills"]["allowBundled"] == ["existing-skill", "gog"]
@@ -52,7 +52,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert result["skills"]["entries"]["gog"] == {"enabled": True}
     assert result["channels"] == fixture["channels"]
     assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
-        "openai/gpt-5.5", "openai/gpt-6-astra"]
+        "openai/gpt-5.5", "openrouter/free"]
     assert "Existing personal identity." in soul.read_text()
     assert memory.read_text() == "Private memory must survive.\n"
     assert (root / "assistant-backups/v1/SOUL.md").read_text() == "Existing personal identity.\n"
@@ -98,7 +98,7 @@ for job in jobs:
     assert argv[argv.index("--channel") + 1] == "discord"
     assert "--disabled" not in argv  # Let declarative reconciliation preserve pauses.
     assert "--best-effort-deliver" not in argv  # Delivery failure must remain visible.
-    assert argv[argv.index("--model") + 1] == "openai/gpt-6-astra"
+    assert argv[argv.index("--model") + 1] == "openrouter/free"
     assert argv[argv.index("--timeout-seconds") + 1] == str(job["timeoutSeconds"])
 
 retired = json.loads((BUNDLE / "retired-jobs.json").read_text())
