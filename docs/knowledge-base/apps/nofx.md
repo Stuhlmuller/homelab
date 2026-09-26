@@ -250,7 +250,16 @@ Mocked handler tests reproduce the original 404, verify all ten runtime readers,
 and cover stopped successful reads, ownership, failed initialization, and the
 public history route.
 Transport tests cover signed US GET/POST requests; Axios tests cover error display.
-Publication passed; live acceptance remains pending. No trader was activated.
+Publication passed. The image-pin rollout merged in
+[PR #1069](https://github.com/Stuhlmuller/homelab/pull/1069), commit
+`31f58dca93e3118fe729e2bf0384f1f813b99357`. Read-only September 21 checks
+confirmed Argo CD `Synced`/`Healthy`, both containers ready at the published
+digests, and the served source archive byte-identical to the prepared source
+(SHA-256 `c1d4ff37a512c59666a59fb75b5a44b40b372d13e676205eb55032f98c3e7815`).
+All traders remained stopped; the three competitors remained hidden. The new
+backend still reported OKX `50119`, with no successful initialization or balance
+read. Authentication remains unresolved. Browser refresh returned to login, so
+authenticated UI acceptance is pending. No trader was activated.
 After rollout, freshly verify every persisted trader is stopped before using
 **AI Traders → View**; runtime loading can auto-start saved running traders.
 Read-only account/positions requests must return 200 on successful exchange
@@ -259,6 +268,44 @@ The latter leaves authentication unresolved. Recheck all traders stopped and
 the three drafts hidden afterward; never use Start as an authentication test.
 The regional host does not add US spot support or make USDT perpetuals
 available.
+
+Credential diagnosis found a possible masking defect in pinned
+`crypto/crypto.go`: `EncryptedString.Scan` suppresses storage-decryption errors
+and returns the original ciphertext. `manager/trader_manager.go` passes those
+values into the exchange client, so decryption failure can resemble an invalid
+OKX key. Initialization order and field mapping are correct. This is not yet
+proven to cause the live rejection. The repository-owned
+[`nofx-credential-check.sh`](../../../scripts/nofx-credential-check.sh) compares
+the deployed encryption source and dependencies, then inspects the fixed SQLite
+database read-only inside the existing backend. Its temporary executable reports
+aggregate counters only; no credential material leaves the container. Synthetic
+tests cover successful, corrupt, wrong-key, legacy, empty, nested, and whitespace
+values and verify rejected writes with unchanged fixture bytes. See the
+[operator commands](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis).
+The locked Nix development shell explicitly supplies Go 1.25 and Python for
+this operator path; no ambient language runtime is required.
+Live inspection requires an explicit reviewed main SHA matching local HEAD and
+GitHub's main ref, plus a clean checkout including untracked files. The helper and
+source recipe are built from that commit's archive, excluding ignored files and
+concurrent working-tree edits. An offline guard regression verifies refusals
+before preparation/runtime access and exclusion of an ignored Go file.
+Trusted Git reads disable replacement objects; canonical main is read through
+GitHub's fixed-host API rather than Git URL configuration. Go runs in a clean
+environment with fresh module/build caches, excluding inherited workspace,
+overlay, root/toolchain, and modified-cache substitutions.
+If decryption failure is confirmed, make scanning fail closed while retaining
+the UI's credential-replacement path; the current full-record list would otherwise
+fail before its safe metadata projection. Successful decryption instead requires
+checking the saved key's account and live/demo status in OKX and NOFX. Do not
+infer that another regional host or credential rotation is the required fix.
+The September 21 live diagnostic passed: every saved OKX credential field
+decrypted successfully, with no empty results, nested envelopes, or surrounding
+API-key whitespace. This rules out those storage defects for that inspection;
+the exchange rejection and browser login remain unresolved. A separate scratch
+reproduction observed `EncryptedString.Scan` returning ciphertext without an
+error for wrong-key/corrupt input. The committed checker suite tests direct
+decryption, not `Scan`; retain that separate fail-open finding for repair with
+its own regression.
 
 The remaining US execution gap is concrete: in the
 [pinned OKX adapter](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go),

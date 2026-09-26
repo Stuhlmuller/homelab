@@ -5,6 +5,7 @@ resources:
   - serviceaccount.yaml
   - externalsecret.yaml
   - token-certificate.yaml
+  - image-signing-certificate.yaml
   - local-storage.yaml
   - pvc.yaml
   - postgres.yaml

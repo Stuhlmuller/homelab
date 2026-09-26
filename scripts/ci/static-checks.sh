@@ -18,6 +18,7 @@ python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 scripts/ci/terragrunt-plan-stage-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
@@ -873,7 +874,7 @@ done <<'EOF'
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
-.github/workflows/nofx-images.yml 198c98b7a5229418eb8485b6431e1e29b5cf982a65245e7e3aa6821ab8fd9155
+.github/workflows/nofx-images.yml 72150105fa32ea3bd3868a289c4016cb9622192ed13fb128395051e4cbf227ae
 .github/workflows/nofx-registry-credential.yml 3d4c7528601d89062f169b3b6a7e4e2b159e0013150f097b0d710c7c85fff6db
 .github/workflows/octelium-cloudflare-origin-port-remove.yml 2ea507d0bb5bb2480a19686953a3a7b12d22d9c2eff1fca6b32311824a04e037
 .github/workflows/octelium-cloudflare-origin-port.yml 96c01bb92f5cb6e756eb420ffeecbb1c75f0b0c168b4c7952c51152f81f7699b
@@ -882,7 +883,7 @@ done <<'EOF'
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
-.github/workflows/terragrunt-plan.yml 5aa71d2d401f4e6677184e5e8ad3581e4cdcef1f832d4ec7685389faffa4a240
+.github/workflows/terragrunt-plan.yml d00b7110d61c6cd5d8b927382129d2b2f33627b94f20aea0af4af77caa146e51
 EOF
 echo "::endgroup::"
 
