@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import shutil
 import socket
+import sys
 import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -15,7 +16,9 @@ from fastapi import HTTPException, Request
 import httpx
 import litellm
 from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
+from litellm.litellm_core_utils.litellm_logging import StandardLoggingPayloadSetup
 from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+from litellm.proxy.litellm_pre_call_utils import add_litellm_data_to_request
 from litellm.proxy.types_utils.utils import get_instance_fn
 from litellm.utils import get_optional_params
 
@@ -116,8 +119,10 @@ async def check_failure_telemetry():
         assert logger._error_summary(error) == {"error_class": "Exception"}
 
 
-def request(path="/v1/chat/completions", method="POST"):
-    return Request({"type": "http", "path": path, "method": method, "headers": []})
+def request(path="/v1/chat/completions", method="POST", headers=None):
+    return Request({"type": "http", "path": path, "method": method,
+                    "headers": [(key.encode(), value.encode()) for key, value in (headers or {}).items()],
+                    "query_string": b"", "scheme": "http", "server": ("fixture", 80)})
 
 
 async def denied(awaitable, status):
@@ -165,14 +170,22 @@ async def check():
                     metadata_key: {"trace_user_id": "spoofed", "session_id": "session-1",
                                    "user_api_key": user.api_key, "user_api_key_hash": user.api_key,
                                    "user_api_key_auth": user.model_dump(mode="json")},
-                    "proxy_server_request": {
-                        "headers": {"langfuse_trace_user_id": "spoofed", "authorization": marker},
-                        "body": {"api_key": marker},
-                    },
                 }
+                # SDK ingestion keeps a second, separately copied metadata.headers.
+                incoming = request("/v1/responses" if call_type == "aresponses" else "/v1/chat/completions", headers={
+                    "authorization": marker, "x-litellm-api-key": token, "api-key": token,
+                    "x-api-key": token, "x-goog-api-key": token, "ocp-apim-subscription-key": token,
+                    "x-mcp-auth": token, "langfuse_trace_user_id": "spoofed", "x-request-id": "fixture-request",
+                })
+                with patch.dict(sys.modules, {"litellm.proxy.proxy_server": SimpleNamespace(
+                        llm_router=None, premium_user=False, open_telemetry_logger=None)}):
+                    data = await add_litellm_data_to_request(data, incoming, user, SimpleNamespace(), {}, "fixture")
+                assert data[metadata_key]["headers"]["x-litellm-api-key"] == token
                 result = await identity.attribution.async_pre_call_hook(user, None, data, call_type)
                 metadata = result[metadata_key]
                 assert metadata["session_id"] == "session-1"
+                assert metadata["headers"] == {"x-request-id": "fixture-request"}, "Raw gateway key retained in SDK metadata snapshot"
+                assert result["proxy_server_request"]["headers"] == {"x-request-id": "fixture-request"}
                 exported = LangfuseOtelLogger._extract_langfuse_metadata({"litellm_params": {
                     "metadata": metadata, "proxy_server_request": result["proxy_server_request"],
                 }})
@@ -180,13 +193,14 @@ async def check():
                 assert exported["trace_metadata"] == {"app": app}
                 assert exported["tags"] == [f"app:{app}"]
                 assert result["api_key"] == marker, "Provider auth must survive for inference"
-                assert marker not in json.dumps(result["proxy_server_request"])
+                assert marker not in json.dumps(result["proxy_server_request"], default=str)
                 span = Span()
                 response = {"choices": [{"message": {"role": "assistant", "content": "OK"}}],
                             "usage": {"prompt_tokens": 8, "completion_tokens": 1, "total_tokens": 9}}
                 LangfuseOtelLogger.set_langfuse_otel_attributes(span, {
                     "model": "test", "messages": [{"role": "user", "content": "Reply OK"}],
-                    "standard_logging_object": {"call_type": call_type, "metadata": metadata,
+                    "standard_logging_object": {"call_type": call_type,
+                                                "metadata": StandardLoggingPayloadSetup.get_standard_logging_metadata(metadata),
                                                 "model_parameters": {}},
                     "litellm_params": {"api_key": marker, "metadata": metadata,
                                        "proxy_server_request": result["proxy_server_request"]},

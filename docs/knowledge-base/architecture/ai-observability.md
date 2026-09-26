@@ -22,18 +22,19 @@ The September 20 inspection found LiteLLM's OpenAI credential was `REPLACE_ME`;
 provider usability has not been reverified. A Ready ExternalSecret alone does
 not establish a usable provider.
 
-The caller inventory below is the September 20 runtime audit, with OpenClaw's
-desired state updated from the September 26 default-branch change. Its new
-free-model runtime and telemetry still need live acceptance.
+The caller inventory combines the September 20 runtime audit with a read-only
+September 26 refresh (18:48-18:52 UTC) of AFFiNE, Multica, OctoBot and Cordium.
+OpenClaw's desired state reflects the September 26 default-branch change; its
+new free-model runtime and telemetry still need live acceptance.
 
 | Caller | Observed configuration | Remaining acceptance |
 | --- | --- | --- |
 | OpenClaw | Desired `openrouter/free` for interactive turns, heartbeat and schedules; Astra OAuth retained for recovery | Verify real free-model turn content/usage through LiteLLM to Langfuse as the sole usage exporter. Preserve the selected model and recovery metadata. Direct Astra recovery is not covered by gateway-only telemetry. |
 | NOFX | Provider/model credentials held in encrypted application state | Publish/test the maintained gateway-routing image, preserve provider/model and prove no provider-key leakage into telemetry. |
 | n8n | Active workflow `s1JVSbnvnmHMCbty` uses AWS Bedrock Claude 3 Sonnet in `us-west-2` | Explicitly excluded by the operator on September 20. Leave its model, encrypted AWS credential and workflow unchanged; n8n is not covered by Langfuse in this rollout. |
-| AFFiNE | Copilot and BYOK explicitly disabled | No AI traffic to migrate; route through the gateway if enabled later. |
-| Multica | Three Ready app pods; server assist has no provider/model credentials or model-client process | No configured server inference. User-owned agent runtimes require their own inventory before claiming coverage. |
-| OctoBot | Live `daily_trading` profile; AI evaluators disabled and provider credentials absent | No active AI calls to migrate. Dormant `ai_trading`/`gpt_trading` profiles and installed AI tentacles do not establish usage. |
+| AFFiNE | App/PostgreSQL/Redis suspended at zero replicas; Copilot and BYOK disabled | No active AI workload; route through the gateway if enabled later. |
+| Multica | Three Ready pods; server assist unconfigured; zero agent, runtime, daemon-connection and queued-task rows in read-only DB counts | No configured server inference or registered user runtime. Unregistered external agents remain outside this evidence. |
+| OctoBot | Live `daily_trading` profile; all three AI evaluators and AIIndexTradingMode disabled | No configured active AI evaluator. Installed AI service/agent flags do not establish usage; credentials and actual traffic were not rechecked. |
 | Cordium | One Ready workspace, visible supervisor/Podman processes only; no model flags | Nested user workloads remain unverified: read-only `podman ps` fails on overlay-on-overlay storage. Do not change its storage driver merely to expand this audit. |
 
 Except for the explicitly deferred n8n workflow, the migration is incomplete
@@ -63,9 +64,14 @@ Pinned OpenClaw 2026.9.2 and LiteLLM 1.80.8 source also establish a proposed
 no-migration gateway path for the new free model: retain the PVC-backed
 OpenRouter key in `Authorization`, send the separate mounted app key through
 secret-backed `x-litellm-api-key`, and forward only the upstream bearer as
-in-memory inference `api_key` through authenticated OpenClaw handling. This is not
-implemented or live-verified. Before activation, test both keys end to end,
-preserve the free model and redact success/error telemetry. Replace the staged
+in-memory inference `api_key` through authenticated OpenClaw handling. A
+September 26 offline proof exercised real FastAPI/SDK authentication, parsed-body
+transfer and OpenRouter translation against a mock transport: provider bearer
+and `openrouter/free` survived, gateway credentials stayed out of provider
+requests/spans, and prompt/output plus 8/1 token counts were preserved. This is
+not implemented or live-verified; streaming, actual OpenClaw configuration and
+full proxy/router selection remain untested. Preserve the free model and
+redact success/error telemetry. Replace the staged
 native OTLP activation with gateway-only export for routed OpenClaw inference:
 the pinned native plugin exports both
 [per-call](https://github.com/openclaw/openclaw/blob/v2026.9.2/extensions/diagnostics-otel/src/service-recorders-model.ts)
@@ -100,6 +106,11 @@ copies provider-echoed credentials into exception events and `error.message`.
 The staged exporter must retain only safe failure type/status, never arbitrary
 provider error bodies or traceback text, while preserving successful
 prompt/output/usage capture. Its regression covers SDK and proxy-parent spans.
+Native preprocessing also keeps a separate `metadata.headers` copy containing
+gateway keys. The shared hook now applies the SDK's credential-header filter to
+both stored copies. The regression confirms raw-key removal before native
+standard-metadata filtering; this header-retention issue did not reproduce
+actual Langfuse export leakage in the offline fixture.
 Provider keys remain available to the in-process inference client; do not
 enable DEBUG, raw request logging, or unreviewed callbacks that serialize the
 whole request. App request/response bodies are intentionally captured by

@@ -9,6 +9,7 @@ from litellm.integrations.custom_logger import CustomLogger
 from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
 from litellm.integrations.opentelemetry import OpenTelemetryConfig
 from litellm.proxy._types import LitellmUserRoles, UserAPIKeyAuth
+from litellm.proxy.litellm_pre_call_utils import clean_headers
 
 KEY_DIRECTORY = Path("/var/run/secrets/litellm-apps")
 APPS = ("openclaw", "nofx", "multica")
@@ -63,13 +64,13 @@ class AppAttribution(CustomLogger):
         if isinstance(body, dict):
             for key in ("api_key", "aws_access_key_id", "aws_secret_access_key", "aws_session_token"):
                 body.pop(key, None)
-        # LiteLLM's Langfuse integration lets these headers override metadata.
-        headers = snapshot.get("headers", {})
-        for key in list(headers):
-            if key.lower().startswith("langfuse_") or key.lower() in {
-                "authorization", "x-api-key", "x-litellm-api-key", "api-key",
-            }:
-                del headers[key]
+        # The SDK keeps separate header copies in the request and metadata.
+        # Reuse its auth-header filter; also prohibit Langfuse identity overrides.
+        for stored in (snapshot, metadata):
+            stored["headers"] = {
+                key: value for key, value in clean_headers(stored.get("headers", {})).items()
+                if not key.lower().startswith("langfuse_")
+            }
         return data
 
 
