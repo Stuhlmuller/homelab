@@ -6,6 +6,8 @@ from secrets import compare_digest
 
 from fastapi import HTTPException, Request
 from litellm.integrations.custom_logger import CustomLogger
+from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
+from litellm.integrations.opentelemetry import OpenTelemetryConfig
 from litellm.proxy._types import LitellmUserRoles, UserAPIKeyAuth
 
 KEY_DIRECTORY = Path("/var/run/secrets/litellm-apps")
@@ -71,4 +73,38 @@ class AppAttribution(CustomLogger):
         return data
 
 
+class SafeLangfuseLogger(LangfuseOtelLogger):
+    def __init__(self):
+        config = self.get_langfuse_otel_config()
+        super().__init__(
+            config=OpenTelemetryConfig(exporter=config.protocol, headers=config.otlp_auth_headers),
+            callback_name="langfuse_otel",
+        )
+
+    @staticmethod
+    def _error_summary(error):
+        # Provider error bodies can echo credentials. Keep only type and HTTP status.
+        summary = {"error_class": type(error).__name__}
+        status = getattr(error, "status_code", None)
+        if type(status) is int and 100 <= status <= 599:
+            summary["error_code"] = str(status)
+        return summary
+
+    def _record_exception_on_span(self, span, kwargs):
+        super()._record_exception_on_span(span, {"standard_logging_object": {
+            "error_information": self._error_summary(kwargs.get("exception")),
+        }})
+
+    async def async_post_call_failure_hook(
+        self, request_data, original_exception, user_api_key_dict, traceback_str=None,
+    ):
+        summary = self._error_summary(original_exception)
+        # A new, unraised exception has no original context, cause or traceback.
+        safe_error = Exception(" ".join(summary.values()))
+        await super().async_post_call_failure_hook(
+            request_data, safe_error, user_api_key_dict, traceback_str=None,
+        )
+
+
 attribution = AppAttribution()
+langfuse = SafeLangfuseLogger()

@@ -7,7 +7,8 @@ outside the active Helm values. Apply only through a reviewed follow-up after
 the [readiness gates](../langfuse/README.md#caller-activation) pass.
 
 The pending configuration sends requests, outputs, usage and errors to the
-homelab Langfuse project through `langfuse_otel`.
+homelab Langfuse project through a thin wrapper around LiteLLM's native
+Langfuse OTLP exporter.
 Langfuse owns the observability UI; LiteLLM does not need another database just
 to label callers.
 
@@ -26,6 +27,9 @@ maintained client can forward the original provider key separately from its
 gateway bearer key. The pre-call hook removes credentials from LiteLLM's saved
 request copy before telemetry; INFO logging and disabled raw-request capture
 are required. The provider client still needs the original key in memory.
+Failure spans retain error type/status only: provider error bodies and
+tracebacks can echo credentials, so neither is exported. Successful request,
+response and usage capture remains unchanged.
 Verify new callbacks against the credential-marker regression before enabling
 them; never serialize the full inference argument dictionary.
 
@@ -41,9 +45,12 @@ hook; the fixed ConfigMap name is shared with the Helm source.
 
 ## Validation and rollout
 
-Run `scripts/ci/litellm-attribution-check.py` with `litellm[proxy]==1.80.8`
-installed. It tests real LiteLLM types, plugin loading, denied keys/admin
-routes, rotation, metadata spoofing and Langfuse attribute extraction.
+Run `scripts/ci/litellm-attribution-check.py` with `litellm[proxy]==1.80.8` and
+`opentelemetry-api==1.45.0` installed. It tests real LiteLLM types, plugin
+loading, denied keys/admin routes, rotation, metadata spoofing and Langfuse
+attribute extraction. An
+offline provider-error fixture checks credential exclusion from both SDK
+failure spans and proxy-parent spans.
 Render both the pinned Helm chart and Kustomize overlay, then evaluate them
 with `conftest test --policy policy` (the namespace is `main`).
 

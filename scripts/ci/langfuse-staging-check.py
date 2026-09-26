@@ -21,7 +21,9 @@ controller = openclaw["controllers"]["openclaw"]
 for containers in (controller["containers"], controller["initContainers"]):
     assert all("LANGFUSE_OTEL_AUTHORIZATION" not in item.get("env", {}) for item in containers.values())
 assert "custom_auth" not in litellm["proxy_config"]["general_settings"]
-assert "langfuse_otel" not in litellm["proxy_config"].get("litellm_settings", {}).get("callbacks", [])
+assert not {"langfuse_otel", "/etc/litellm-hooks/app_identity.langfuse"}.intersection(
+    litellm["proxy_config"].get("litellm_settings", {}).get("callbacks", [])
+)
 assert "LANGFUSE_" not in (ROOT / "clusters/homelab/apps/litellm/externalsecret.yaml").read_text()
 config_path = "clusters/homelab/apps/openclaw/assistant/config.json"
 config = json.loads((ROOT / config_path).read_text())

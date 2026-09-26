@@ -57,7 +57,7 @@ jobs:
           # PyPI native wheels need system libraries, not Nix's Python loader.
           python -m venv "${RUNNER_TEMP}/litellm-test"
           source "${RUNNER_TEMP}/litellm-test/bin/activate"
-          python -m pip install 'litellm[proxy]==1.80.8'
+          python -m pip install 'litellm[proxy]==1.80.8' 'opentelemetry-api==1.45.0'
           python scripts/ci/litellm-attribution-check.py
 
       - name: Secret scan

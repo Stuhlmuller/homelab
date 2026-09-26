@@ -9,11 +9,18 @@ and [Langfuse deployment](../../../clusters/homelab/apps/langfuse/README.md).
 
 ## Rollout evidence
 
-Read-only inspection on 2026-09-20 found no Langfuse Argo CD Application.
-LiteLLM was healthy, but its OpenAI credential was `REPLACE_ME`. A Ready
-ExternalSecret therefore did not establish a usable provider. Node memory use
-was approximately 58%, 80%, 81% and 74%; validate scheduling and actual
-datastore/web/worker memory before expanding this deployment.
+Read-only inspection on 2026-09-26 found no Langfuse namespace, Application,
+PVCs or staged caller Secrets. Existing LiteLLM, OpenClaw and NOFX Applications
+were Synced/Healthy. All four nodes were Ready without MemoryPressure. The
+proposed 1,350m CPU / 2,816Mi memory requests fit on `acer` alone; actual node
+memory use was 58%, 74%, 85% and 70% (`acer`, `zimaboard-0/1/2`). Scheduling
+feasibility does not prove runtime stability: existing limits overcommit every
+node. The healthy NFS provisioner and an existing QNAP mount reported about
+904Gi free for the proposed 128Gi of claims. Recheck capacity before rollout.
+
+The September 20 inspection found LiteLLM's OpenAI credential was `REPLACE_ME`;
+provider usability has not been reverified. A Ready ExternalSecret alone does
+not establish a usable provider.
 
 | Caller   | Observed configuration                                                                        | Remaining acceptance                                                                                                                                                   |
 | -------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -56,6 +63,11 @@ native wheels require system libraries not provided by Nix's Python loader.
 The pinned LiteLLM test exercises real auth types and exporter attribute
 mapping, including caller spoofing, denied administration routes, key rotation,
 token fields, and provider-credential redaction from stored request snapshots.
+An offline September 26 failure-path test also found that the native exporter
+copies provider-echoed credentials into exception events and `error.message`.
+The staged exporter must retain only safe failure type/status, never arbitrary
+provider error bodies or traceback text, while preserving successful
+prompt/output/usage capture. Its regression covers SDK and proxy-parent spans.
 Provider keys remain available to the in-process inference client; do not
 enable DEBUG, raw request logging, or unreviewed callbacks that serialize the
 whole request. App request/response bodies are intentionally captured by

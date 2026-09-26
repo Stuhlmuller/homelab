@@ -1,4 +1,4 @@
-"""Run with the gateway's pinned litellm[proxy]==1.80.8 Python environment."""
+"""Run with litellm[proxy]==1.80.8 and opentelemetry-api==1.45.0."""
 
 import asyncio
 from hashlib import sha256
@@ -6,10 +6,16 @@ import importlib.util
 import json
 from pathlib import Path
 import shutil
+import socket
 import tempfile
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from fastapi import HTTPException, Request
+import httpx
+import litellm
 from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
+from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 from litellm.proxy.types_utils.utils import get_instance_fn
 from litellm.utils import get_optional_params
 
@@ -20,7 +26,94 @@ spec = importlib.util.spec_from_file_location(
     "app_identity", ROOT / "clusters/homelab/apps/litellm/app_identity.py"
 )
 identity = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(identity)
+# Import-time exporter setup needs runtime credentials; no collector in this check.
+fixture_config = SimpleNamespace(protocol="otlp_http", otlp_auth_headers="Basic fixture")
+with patch.object(LangfuseOtelLogger, "get_langfuse_otel_config", return_value=fixture_config), \
+        patch.object(LangfuseOtelLogger, "__init__", return_value=None) as initialize:
+    spec.loader.exec_module(identity)
+assert initialize.call_args.kwargs["callback_name"] == "langfuse_otel"
+assert initialize.call_args.kwargs["config"].headers == fixture_config.otlp_auth_headers
+assert initialize.call_args.kwargs["config"].exporter == fixture_config.protocol
+
+
+class Span:
+    def __init__(self):
+        self.attributes = {}
+        self.exceptions = []
+    def set_attribute(self, key, value):
+        self.attributes[key] = value
+    def record_exception(self, error):
+        self.exceptions.append(str(error))
+    def set_status(self, status):
+        self.status = status
+    def end(self, **kwargs):
+        pass
+
+
+async def check_failure_telemetry():
+    marker = "test-provider-key-must-not-be-exported"
+    data = {"api_key": marker, "metadata": {}, "proxy_server_request": {
+        "headers": {"authorization": marker}, "body": {"api_key": marker},
+    }}
+    await identity.attribution.async_pre_call_hook(SimpleNamespace(key_alias="nofx"), None, data, "acompletion")
+    spans, attempts, captured = [], [], {}
+    finished = asyncio.Event()
+    logger = identity.langfuse
+    logger.config = initialize.call_args.kwargs["config"]
+    logger.callback_name = "langfuse_otel"
+    def start_span(**kwargs):
+        span = Span()
+        spans.append(span)
+        return span
+    logger.tracer = SimpleNamespace(start_span=start_span)
+    native_failure = logger.async_log_failure_event
+    async def failure(**kwargs):
+        captured.update(kwargs)
+        await native_failure(**kwargs)
+        finished.set()
+    def respond(request):
+        attempts.append(request)
+        assert request.headers["authorization"] == f"Bearer {marker}"
+        return httpx.Response(400, json={"error": {"message": marker, "code": 400}}, request=request)
+    # Real provider translation and logging; only the transport/exporter are inert.
+    client = AsyncHTTPHandler.__new__(AsyncHTTPHandler)
+    client.client = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+    client.client_alias, client.timeout, client.event_hooks = "fixture", httpx.Timeout(2), None
+    with patch.object(litellm, "callbacks", [logger]), \
+            patch.object(socket.socket, "connect", side_effect=AssertionError("Network forbidden")), \
+            patch.object(logger, "async_log_failure_event", side_effect=failure):
+        try:
+            await litellm.acompletion(
+                model="openrouter/openrouter/free", messages=[{"role": "user", "content": "Reply OK"}],
+                client=client, num_retries=0, **data,
+            )
+        except litellm.BadRequestError as error:
+            original = error
+        else:
+            raise AssertionError("Expected the mock provider failure")
+        await asyncio.wait_for(finished.wait(), 5)
+    await client.close()
+    assert len(attempts) == 1
+    assert marker in str(original), "Do not alter the exception returned to the caller"
+    assert captured["kwargs"]["exception"] is original
+    assert marker in captured["kwargs"]["standard_logging_object"]["error_information"]["error_message"]
+    logger.log_failure_event(**captured)  # Sync and async share the same protected path.
+    assert len(spans) == 2
+    for span in spans:
+        assert span.attributes["error.type"] == "BadRequestError"
+        assert span.attributes["error.code"] == "400"
+        assert "error.message" not in span.attributes and "error.stack_trace" not in span.attributes
+        assert not span.exceptions
+    await logger.async_post_call_failure_hook(
+        data, original, SimpleNamespace(parent_otel_span=Span()), traceback_str=marker,
+    )
+    assert spans[-1].attributes["exception"] == "BadRequestError 400"
+    assert marker not in json.dumps([span.attributes for span in spans])
+    assert marker in str(original) and original.__traceback__ is not None
+    for status in (True, "400", 99, 600, None):
+        error = Exception(marker)
+        error.status_code = status
+        assert logger._error_summary(error) == {"error_class": "Exception"}
 
 
 def request(path="/v1/chat/completions", method="POST"):
@@ -49,8 +142,11 @@ async def check():
         # Like the container mount, the module path must not contain dots.
         shutil.copyfile(identity.__file__, Path(directory) / "app_identity.py")
         module_path = str(Path(directory) / "app_identity")
-        assert callable(get_instance_fn(module_path + ".authenticate", config_file_path="/etc/litellm/config.yaml"))
-        assert hasattr(get_instance_fn(module_path + ".attribution", config_file_path="/etc/litellm/config.yaml"), "async_pre_call_hook")
+        with patch.object(LangfuseOtelLogger, "get_langfuse_otel_config", return_value=fixture_config), \
+                patch.object(LangfuseOtelLogger, "__init__", return_value=None):
+            assert callable(get_instance_fn(module_path + ".authenticate", config_file_path="/etc/litellm/config.yaml"))
+            assert hasattr(get_instance_fn(module_path + ".attribution", config_file_path="/etc/litellm/config.yaml"), "async_pre_call_hook")
+            assert isinstance(get_instance_fn(module_path + ".langfuse", config_file_path="/etc/litellm/config.yaml"), LangfuseOtelLogger)
         identity.KEY_DIRECTORY = Path(directory)
         for app in (*identity.APPS, "operator"):
             (identity.KEY_DIRECTORY / app).write_text(f"sk-{app}-" + "x" * 48)
@@ -85,13 +181,6 @@ async def check():
                 assert exported["tags"] == [f"app:{app}"]
                 assert result["api_key"] == marker, "Provider auth must survive for inference"
                 assert marker not in json.dumps(result["proxy_server_request"])
-                class Span:
-                    def __init__(self):
-                        self.attributes = {}
-                    def set_attribute(self, key, value):
-                        self.attributes[key] = value
-                    def record_exception(self, error):
-                        raise AssertionError("Langfuse exporter failed") from error
                 span = Span()
                 response = {"choices": [{"message": {"role": "assistant", "content": "OK"}}],
                             "usage": {"prompt_tokens": 8, "completion_tokens": 1, "total_tokens": 9}}
@@ -108,6 +197,7 @@ async def check():
                 assert "OK" in json.dumps(span.attributes)
                 assert span.attributes["llm.token_count.prompt"] == 8
                 assert span.attributes["llm.token_count.completion"] == 1
+                assert not span.exceptions
             await denied(identity.attribution.async_pre_call_hook(user, None, {"no-log": True}, "acompletion"), 400)
         await denied(identity.authenticate(request(), "wrong"), 401)
         await denied(identity.authenticate(request(), None), 401)
@@ -125,7 +215,8 @@ async def check():
         await denied(identity.authenticate(request(), old), 401)
         (identity.KEY_DIRECTORY / "openclaw").write_text("REPLACE_ME")
         await denied(identity.authenticate(request(), old), 503)
-    print("LiteLLM app authentication, rotation, route isolation and Langfuse attribution passed")
+    await check_failure_telemetry()
+    print("LiteLLM app authentication, rotation, route isolation and safe Langfuse success/failure telemetry passed")
 
 
 if __name__ == "__main__":

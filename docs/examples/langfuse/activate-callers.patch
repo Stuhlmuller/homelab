@@ -187,7 +187,7 @@ diff --git a/clusters/homelab/apps/litellm/values.yaml b/clusters/homelab/apps/l
 +  LANGFUSE_OTEL_HOST: http://langfuse-web.langfuse.svc.cluster.local:3000
 +  LITELLM_LOG: INFO
 +podAnnotations:
-+  homelab.stuhlmuller.dev/app-identity-revision: "1"
++  homelab.stuhlmuller.dev/app-identity-revision: "2"
 +volumes:
 +  - name: app-identity
 +    configMap:
@@ -213,7 +213,7 @@ diff --git a/clusters/homelab/apps/litellm/values.yaml b/clusters/homelab/apps/l
 +    log_raw_request_response: false
 +    callbacks:
 +      - /etc/litellm-hooks/app_identity.attribution
-+      - langfuse_otel
++      - /etc/litellm-hooks/app_identity.langfuse
    model_list:
      - model_name: openai-default
        litellm_params:
