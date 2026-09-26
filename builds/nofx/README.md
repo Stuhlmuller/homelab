@@ -24,6 +24,10 @@ file, sends the original provider key only in the gateway request body, and uses
 no environment-variable routing inputs. The source change is inert until a
 reviewed `main` build publishes an exact backend image digest; do not change the
 active deployment digest as part of the configuration-only rollout.
+Routed calls validate both the configured model and the final request model:
+an empty override defaults to `openrouter/free`, while any other explicit
+model is rejected before HTTP/retries. Unrouted clients retain their original
+model-override behavior.
 
 Normal trader decision parsing preserves the shared validator's leverage clamp
 in the returned decisions. Trader creation also preserves an explicit hidden

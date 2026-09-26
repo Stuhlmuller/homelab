@@ -1,5 +1,5 @@
 diff --git a/mcp/client.go b/mcp/client.go
-index 345a8cab..a8c8afb2 100644
+index 345a8cab..2a78c832 100644
 --- a/mcp/client.go
 +++ b/mcp/client.go
 @@ -6,12 +6,15 @@ import (
@@ -192,7 +192,7 @@ index 345a8cab..a8c8afb2 100644
  		return "", fmt.Errorf("API returned error (status %d): %s", resp.StatusCode, string(body))
  	}
  
-@@ -381,43 +471,47 @@ func (client *Client) isRetryableError(err error) bool {
+@@ -381,43 +471,50 @@ func (client *Client) isRetryableError(err error) bool {
  //       Build()
  //   result, err := client.CallWithRequest(request)
  func (client *Client) CallWithRequest(req *Request) (string, error) {
@@ -209,6 +209,9 @@ index 345a8cab..a8c8afb2 100644
  	if req.Model == "" {
 -		req.Model = client.Model
 +		req.Model = requestClient.Model
++	}
++	if requestClient.litellmRouting && req.Model != LiteLLMOpenRouterFreeModel {
++		return "", fmt.Errorf("LiteLLM routing does not permit requested model %q; add its gateway alias before using it", req.Model)
  	}
  
  	// Fixed retry flow
@@ -249,7 +252,7 @@ index 345a8cab..a8c8afb2 100644
  			time.Sleep(waitTime)
  		}
  	}
-@@ -465,6 +559,9 @@ func (client *Client) callWithRequest(req *Request) (string, error) {
+@@ -465,6 +562,9 @@ func (client *Client) callWithRequest(req *Request) (string, error) {
  
  	// Check HTTP status code
  	if resp.StatusCode != http.StatusOK {
@@ -259,7 +262,7 @@ index 345a8cab..a8c8afb2 100644
  		if req.ResponseFormat != nil {
  			// Provider bodies may echo request content; retain status without logging it.
  			return "", fmt.Errorf("structured AI request failed (HTTP %d)", resp.StatusCode)
-@@ -557,6 +654,7 @@ func (client *Client) buildRequestBodyFromRequest(req *Request) map[string]any {
+@@ -557,6 +657,7 @@ func (client *Client) buildRequestBodyFromRequest(req *Request) map[string]any {
  	if req.Provider != nil {
  		requestBody["provider"] = req.Provider
  	}
@@ -268,7 +271,7 @@ index 345a8cab..a8c8afb2 100644
  	return requestBody
  }
 diff --git a/mcp/historical_structured_test.go b/mcp/historical_structured_test.go
-index d383451e..12fdbbfa 100644
+index d383451e..d8e3e5e5 100644
 --- a/mcp/historical_structured_test.go
 +++ b/mcp/historical_structured_test.go
 @@ -5,7 +5,11 @@ import (
@@ -283,7 +286,7 @@ index d383451e..12fdbbfa 100644
  	"testing"
  )
  
-@@ -62,6 +66,207 @@ func TestHistoricalStructuredRequestWire(t *testing.T) {
+@@ -62,6 +66,256 @@ func TestHistoricalStructuredRequestWire(t *testing.T) {
  	}
  }
  
@@ -307,6 +310,55 @@ index d383451e..12fdbbfa 100644
 +	previousPath := liteLLMRoutingConfigPath
 +	liteLLMRoutingConfigPath = configPath
 +	t.Cleanup(func() { liteLLMRoutingConfigPath = previousPath })
++}
++
++func TestHistoricalLiteLLMRoutingEnforcesFinalRequestModel(t *testing.T) {
++	previousPath := liteLLMRoutingConfigPath
++	liteLLMRoutingConfigPath = filepath.Join(t.TempDir(), "absent-routing.json")
++	t.Cleanup(func() { liteLLMRoutingConfigPath = previousPath })
++	tokenFile := filepath.Join(t.TempDir(), "token")
++	if err := os.WriteFile(tokenFile, []byte("gateway-fixture"), 0o600); err != nil {
++		t.Fatal(err)
++	}
++
++	for _, tc := range []struct {
++		name, model, wantModel string
++		routed, reject         bool
++	}{
++		{name: "routed override rejected", model: "other-model", routed: true, reject: true},
++		{name: "routed default", wantModel: "openrouter/free", routed: true},
++		{name: "routed explicit free", model: "openrouter/free", wantModel: "openrouter/free", routed: true},
++		{name: "direct override allowed", model: "other-model", wantModel: "other-model"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			if tc.routed {
++				useLiteLLMRoutingConfig(t, "https://gateway.invalid", tokenFile)
++			}
++			calls := 0
++			transport := structuredFixtureTransport(func(r *http.Request) (*http.Response, error) {
++				calls++
++				var body map[string]any
++				if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
++					t.Fatal(err)
++				}
++				if !tc.reject && body["model"] != tc.wantModel {
++					t.Fatalf("wire model=%v, want %q", body["model"], tc.wantModel)
++				}
++				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"choices":[{"finish_reason":"stop","message":{"content":"fixture"}}]}`)), Header: make(http.Header)}, nil
++			})
++			client := NewClient(WithProvider(ProviderCustom), WithAPIKey("fixture"),
++				WithBaseURL("https://provider.invalid/v1"), WithModel("openrouter/free"),
++				WithMaxRetries(1), WithHTTPClient(&http.Client{Transport: transport}))
++			_, err := client.CallWithRequest(&Request{Model: tc.model, Messages: []Message{NewUserMessage("fixture")}})
++			if tc.reject {
++				if err == nil || !strings.Contains(err.Error(), "does not permit requested model") || calls != 0 {
++					t.Fatalf("unsupported routed model must fail before HTTP: err=%v calls=%d", err, calls)
++				}
++			} else if err != nil || calls != 1 {
++				t.Fatalf("allowed model request failed: err=%v calls=%d", err, calls)
++			}
++		})
++	}
 +}
 +
 +func TestHistoricalLiteLLMRoutingUsesRequestLocalGatewayState(t *testing.T) {

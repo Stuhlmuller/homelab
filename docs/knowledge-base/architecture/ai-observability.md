@@ -91,6 +91,10 @@ The September 26 main integration replayed all 13 patches against the pinned
 source. Native Go historical gateway tests passed with `-race`, and focused
 spot/ownership/lifecycle tests passed. Pinned Linux backend/frontend build
 acceptance remains an exact-head CI gate; no local Docker binary was available.
+The request-model review found that validating only the configured client model
+missed `CallWithRequest` overrides. Gateway patch `0013` also validates the final
+model after defaulting and before network/retries. Its regression requires zero
+HTTP attempts for unsupported routed models and preserves direct overrides.
 
 ## Admission blocker and validation
 
