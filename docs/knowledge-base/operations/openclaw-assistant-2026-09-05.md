@@ -37,6 +37,12 @@ Exact retired identities are in the app's `assistant/retired-jobs.json`.
   verified backups and session-preservation gates; do not interrupt migration
   or patch live state to obtain a green readiness signal.
 
+The September 6 measurements in [[openclaw-bootstrap-batching]] record two
+successful starts near 23 minutes and a mismatch with the default 600-second
+Deployment progress deadline. The pinned chart cannot declare that field.
+The follow-up batches existing CLI assignments within their existing phases.
+Live speed improvement is unverified; the deadline limitation remains open.
+
 ## Acceptance evidence
 
 Confirmed before rollout: pinned OpenClaw config validation, installer and

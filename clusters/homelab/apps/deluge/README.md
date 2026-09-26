@@ -204,6 +204,67 @@ in a `postStart` hook. This follows the upstream Kubernetes recovery for
 `adding IPv6 rule ... file exists`, where an abrupt container exit can leave a
 pod-shared rule behind before the restartable sidecar starts again.
 
+## Gluetun CPU Profiling
+
+The `gluetun-profiling` ConfigMap keeps the pinned Gluetun Go profiler disabled
+with `pprof_enabled: "off"` and declares `127.0.0.1:6060` for later activation. Individual read-only files override the image's
+wildcard address default without covering its writable `/gluetun/servers.json`.
+The chart checksum rolls the Pod when those values change. Existing Service
+ports, firewall rules, capabilities, CPU limits, and storage stay as declared.
+Other containers in this Pod share its loopback network and can reach the
+listener; it is not an authenticated service.
+
+Installing these disabled settings, activation, and disabling each stop the
+singleton through its Recreate strategy. Before activation, confirm the latest
+`deluge-config-backup` Job succeeded and renew the CPU evidence: three
+consecutive five-minute windows above 285m with comparable traffic and healthy
+VPN/Deluge RPC. The September audit alone does not establish a current need.
+Then change `configMaps.gluetun-profiling.data.pprof_enabled` to `"on"` in a
+reviewed PR, preserving the loopback address. The static gate accepts either
+committed state and still requires the exact loopback address; the capture
+helper requires committed `"on"` settings before any live inspection. After
+Argo sync, wait for stable
+Pod, VPN, and Deluge RPC health and require the same sustained high CPU again.
+A restart can change the busy condition; a quiet profile would not explain
+earlier saturation. Without renewed saturation, restore `"off"` without capture.
+
+Use the repository helper from a clean, committed checkout matching the reviewed
+profiling configuration:
+
+```sh
+nix develop --command python3 scripts/gluetun-cpu-profile.py check
+nix develop --command python3 scripts/gluetun-cpu-profile.py capture
+```
+
+The helper requires the current kubeconfig to select the authenticated direct
+API at `https://10.1.0.199:6443`, then pins that TLS endpoint for all inspections
+and forwarding. Other cluster contexts and insecure TLS configuration are
+rejected before cluster access. It resolves the Deployment's one Ready Pod,
+verifies the pinned Gluetun image and loopback-only listener, then collects a
+30-second CPU profile through
+an owned local port-forward. It uses a deadline and size limit and rejects a
+capture if Pod identity, Gluetun restart state, or readiness changes. Output is
+a private temporary directory outside the repository. Treat profiles as private
+runtime data; do not attach them to a public issue or PR.
+
+The profile samples the serving Go process. It does not account for every child
+process or kernel operation charged to the container. Compare it with process
+CPU, container CPU/throttling, VPN/RPC health, and traffic over the same interval
+before attributing a cause or changing the limit.
+
+After capture, or if the high-CPU condition does not recur, change
+`configMaps.gluetun-profiling.data.pprof_enabled` to `"off"` in a reviewed PR.
+Leave the address override in place. The checksum triggers another Recreate
+rollout; verify its new healthy Pod and listener removal:
+
+```sh
+nix develop --command python3 scripts/gluetun-cpu-profile.py check-disabled
+```
+
+Do not manually restart the container or mutate its files. See the
+[CPU audit and evidence](../../../../docs/knowledge-base/operations/deluge-cpu-audit-2026-09-05.md).
+Runtime binding, profiling overhead, and the CPU cause require live verification.
+
 ## Troubleshooting
 
 If the Pod is `Ready` and Gluetun is healthy but Deluge is not usable, check

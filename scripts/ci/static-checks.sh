@@ -7,6 +7,7 @@ source "${script_dir}/terragrunt-filter-base.sh"
 terragrunt_generate_stack
 
 python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-ci-acceptance-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
@@ -17,6 +18,8 @@ python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 scripts/ci/istio-ambient-log-check-test.py
+python3 scripts/ci/istio-ambient-probe-check.py
 python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
@@ -819,6 +822,7 @@ expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/cordium-login-denial.yml:deny' \
     '.github/workflows/harbor-migrate.yml:migrate' \
     '.github/workflows/harbor-migrate.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -857,7 +861,8 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml 2ce28169a5ba980488e4360ad081c76849dda63c8e9253a66c2f086011119786
+.github/workflows/cordium-check.yml 3f9c9f1a6a53e91cc0a2a1740e82e2e5a8309e371b6636635242b6355cfd590a
+.github/workflows/cordium-login-denial.yml c1f86f5c218661938000b441dec9ba3dbb38e1fa292486a67d4b6dfbe71e1111
 .github/workflows/codeql.yml 9fab359f6fa412a340f4bbd6d140ec840fdd592336266f3e7c2cc94a26510cbe
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
@@ -878,6 +883,7 @@ echo "::endgroup::"
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
+  '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -1230,6 +1236,10 @@ if [[ -n "$tag_only_images" ]]; then
   printf '%s\n' "$tag_only_images" >&2
   exit 1
 fi
+echo "::endgroup::"
+
+echo "::group::Gluetun CPU capture"
+python3 scripts/ci/gluetun-cpu-profile-check.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"
