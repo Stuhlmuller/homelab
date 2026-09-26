@@ -59,11 +59,42 @@ Before a follow-up activation PR:
 1. Complete the protected full `Terragrunt Apply`, which plans/policy-checks the
    SSM/S3 producers before registering Langfuse. An Application-only dispatch
    cannot provision these dependencies.
-2. Verify the Langfuse Application is Synced/Healthy, all three PVCs are Bound,
+2. Reconcile the separate Octelium catalog and public DNS paths. Terragrunt does
+   not apply either. From a clean checkout of the reviewed current `main`,
+   verify the exact commit before using the existing authenticated operator
+   [catalog path](../../../../docs/octelium.md):
+
+   ```sh
+   (
+   set -e
+   git fetch origin main
+   test -z "$(git status --porcelain)"
+   test "$(git rev-parse HEAD)" = '<reviewed-main-sha>'
+   test "$(git rev-parse origin/main)" = '<reviewed-main-sha>'
+   octeliumctl apply --domain stinkyboi.com --include ClusterConfig docs/examples/octelium/homelab-services.yaml
+   octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
+   )
+   ```
+
+   Use authenticated operator access; never add `--prune`. Stop on any reported
+   apply failure. Wait for Argo CD's `octelium-public` Application to be
+   Synced/Healthy with the new tunnel pod revision before dispatching DNS:
+
+   ```sh
+   gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
+   ```
+
+   Obtain normal `homelab-production` approval and require that exact run to
+   succeed. If `main` changed, review the new commit before redispatching; do
+   not bypass SHA or environment gates or edit DNS in the provider console.
+3. Verify the Langfuse Application is Synced/Healthy, all three PVCs are Bound,
    the project is initialized, and the authenticated UI opens through Octelium.
    Verify `langfuse-secrets`, `litellm-app-keys` and `openclaw-langfuse-otel`
    ExternalSecrets are Ready without printing their values.
-3. Prepare the existing caller changes in a fresh branch:
+   Run `nix develop --command python3 scripts/octelium-tunnel-check.py` and
+   `scripts/octelium-e2e-check.sh`; DNS/catalog/backend or login failures block
+   caller activation. An unauthenticated redirect alone is not UI acceptance.
+4. Prepare the existing caller changes in a fresh branch:
 
    ```sh
    nix develop --command python3 scripts/ci/langfuse-staging-check.py
@@ -78,10 +109,12 @@ Before a follow-up activation PR:
    remove the consumed patch and staging check (including its static-gate
    invocation), then run the full static gate and pinned LiteLLM attribution
    test. Review the live plan and render/diff the affected workloads.
-4. After activation, verify one real OpenClaw OAuth turn and gateway request
+5. After activation, verify one real OpenClaw free-model turn and gateway request
    produce correlated traces with expected provider/model, content and available
-   usage. Keep the working ChatGPT subscription and n8n Bedrock workflow.
-5. Activate NOFX separately using its
+   usage. Preserve `openrouter/free` for interactive turns, heartbeat and
+   schedules, along with the retained Astra OAuth recovery metadata. Keep the
+   n8n Bedrock workflow unchanged.
+6. Activate NOFX separately using its
    [image and routing gates](../nofx/README.md#deferred-litellm-routing).
    Its prepared `activate-nofx.patch` does not select an image: pair it with the
    verified published backend digest containing source patch `0012` only after

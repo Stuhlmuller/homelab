@@ -51,8 +51,8 @@ diff --git a/clusters/homelab/apps/openclaw/values.yaml b/clusters/homelab/apps/
                    - key: octelium.com/node-mode-dataplane
                      operator: DoesNotExist
        annotations:
--        homelab.rst.io/openclaw-assistant-sha256: "70d432cc5b4a5a894afdfa87e56ef2d4e28f115e23c016a89f08156149d19182"
-+        homelab.rst.io/openclaw-assistant-sha256: "b0813b67ab806fef6da31ffdb7572b8d0631aa73c1a52c9e4d538dbf52cb63fb"
+-        homelab.rst.io/openclaw-assistant-sha256: "49a747488c3568b49be149253ca3aa7527474db9ad58793a926cbaf9a7c9ea2f"
++        homelab.rst.io/openclaw-assistant-sha256: "c9985101cdca681fcd369a7dc6a862e8753c9bce66d5d8c61c1e51fe03ed1a16"
          homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
          homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
          homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -275,7 +275,7 @@ diff --git a/scripts/ci/openclaw-assistant-check.py b/scripts/ci/openclaw-assist
 +    assert result["plugins"]["allow"] == ["discord", "diagnostics-otel"]
      assert result["channels"] == fixture["channels"]
      assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
-         "openai/gpt-5.5", "openai/gpt-6-astra"]
+         "openai/gpt-5.5", "openrouter/free"]
 diff --git a/scripts/ci/openclaw-config-check.py b/scripts/ci/openclaw-config-check.py
 --- a/scripts/ci/openclaw-config-check.py
 +++ b/scripts/ci/openclaw-config-check.py
