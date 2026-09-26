@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Deliberately absent from the live application's resource graph.
+resources:
+  - restore-drill-cronjob.yaml
+configMapGenerator:
+  - name: octelium-postgres-restore-drill
+    namespace: octelium-storage
+    files:
+      - restore-drill.sh
