@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ensure private plan output can produce only fixed stage labels."""
+"""Ensure private plan output can produce only fixed diagnostic labels."""
 from pathlib import Path
 import os
 import subprocess
@@ -21,13 +21,14 @@ MARKERS = {
 
 
 class PrivatePlanStageTest(unittest.TestCase):
-    def assert_stage(self, private_output, stage):
+    def assert_stage(self, private_output, stage, reason="unknown"):
         result = subprocess.run(["bash", str(HELPER)], input=private_output,
                                 text=True, capture_output=True, timeout=5, check=False)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stderr, "")
         self.assertEqual(result.stdout,
-                         f"Live plan last recognized stage: {stage}; details withheld.\n")
+                         f"Live plan last recognized stage: {stage}; details withheld.\n"
+                         f"Live plan failure hint: {reason}; details withheld.\n")
 
     def test_only_fixed_labels_leave_private_output(self):
         secret = "SYNTHETIC_PRIVATE_VALUE_DO_NOT_EMIT"
@@ -39,6 +40,34 @@ class PrivatePlanStageTest(unittest.TestCase):
                            "\x1b[31m" + marker, marker + "$(echo " + secret + ")"):
                 self.assert_stage(forged, "nix")
         self.assert_stage("\n".join(MARKERS), "policy")
+
+    def test_only_fixed_reasons_leave_private_output(self):
+        secret = "SYNTHETIC_PRIVATE_VALUE_DO_NOT_EMIT"
+        fragments = {
+            "AccessDenied": "aws-auth",
+            "ExpiredToken": "aws-auth",
+            "InvalidClientTokenId": "aws-auth",
+            "the server has asked for the client to provide credentials": "kubernetes-auth",
+            "Error from server (Unauthorized)": "kubernetes-auth",
+            "Error from server (Forbidden)": "kubernetes-auth",
+            "TLS handshake timeout": "network",
+            "i/o timeout": "network",
+            "context deadline exceeded": "network",
+            "connection refused": "network",
+            "Plugin did not respond": "provider",
+            "Failed to load plugin schemas": "provider",
+            "Failed to query available provider packages": "provider",
+            "Failed to install provider": "provider",
+        }
+        for fragment, reason in fragments.items():
+            with self.subTest(fragment=fragment):
+                self.assert_stage(f"{secret}\n::group::Argo CD Application registration plan\n"
+                                  f"{secret} {fragment} {secret}\n", "app", reason)
+        self.assert_stage(f"::group::Terraform plan Conftest policies\n"
+                          f"::error file={secret},line=1::{secret}", "policy", "policy")
+        self.assert_stage(f"::error file={secret},line=1::{secret}", "nix")
+        # First recognized fragment wins; arbitrary text never becomes a label.
+        self.assert_stage(f"i/o timeout\nAccessDenied\n{secret}", "nix", "network")
 
     def test_workflow_tail_executes_only_the_verified_helper(self):
         # Execute the actual failure tail; no Nix, credentials, or live commands.
@@ -72,7 +101,8 @@ class PrivatePlanStageTest(unittest.TestCase):
                     text=True, capture_output=True, timeout=5, check=False)
                 expected = withheld_error
                 if helper_source == original:
-                    expected = "Live plan last recognized stage: api; details withheld.\n" + expected
+                    expected = ("Live plan last recognized stage: api; details withheld.\n"
+                                "Live plan failure hint: unknown; details withheld.\n" + expected)
                 self.assertEqual(result.returncode, 1)
                 self.assertEqual(result.stdout, expected)
                 self.assertEqual(result.stderr, "")
