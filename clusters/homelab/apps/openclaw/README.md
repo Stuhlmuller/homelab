@@ -81,6 +81,25 @@ per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
 plugin is installed and checked at the exact gateway version during bootstrap.
 
+### Deferred Langfuse integration
+
+This foundation leaves OpenClaw runtime and credentials unchanged. Its desired
+default is `openrouter/free`; Astra OAuth remains available for recovery.
+Follow the [caller activation gates](../langfuse/README.md#caller-activation)
+before implementing a gateway route. Preserve the PVC-backed OpenRouter key
+and use the distinct `/homelab/openclaw/litellm-app-token` only for gateway
+authentication. Do not migrate the OpenRouter key into SSM.
+
+Use Langfuse export at the gateway as the sole token-accounting source for
+routed inference. The native OpenClaw plugin emits both per-call and run-total
+usage, so enabling both would risk double counting. Gateway-only capture does
+not cover direct Astra recovery or native agent/tool lifecycle spans. The
+activation PR must prove real free-model streaming usage and document rollback
+of PVC-persisted routing settings. No direct OTLP Secret or activation template
+is included in this foundation.
+
+### Assistant behavior
+
 The behavior is conversational and evidence-driven: remember corrections,
 follow through on requested work, keep unchanged checks silent, and report
 what was actually validated or deployed. Existing owner authorization for

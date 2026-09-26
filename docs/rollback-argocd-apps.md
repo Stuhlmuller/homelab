@@ -17,17 +17,18 @@ handling is clear.
 8. Prowlarr
 9. media-postgres
 10. LiteLLM
-11. Deluge
-12. Kiali
-13. Grafana
-14. Descheduler
-15. Prometheus
-16. platform-storage
-17. Tailscale
-18. Istio
-19. cert-manager
-20. external-secrets
-21. platform-dns
+11. Langfuse
+12. Deluge
+13. Kiali
+14. Grafana
+15. Descheduler
+16. Prometheus
+17. platform-storage
+18. Tailscale
+19. Istio
+20. cert-manager
+21. external-secrets
+22. platform-dns
 
 ## cert-manager v1.20.3
 
@@ -79,6 +80,12 @@ removes legacy permission and subscription database structures during
 migration. Do not run `0.26.x` against a database migrated by `0.27`; restore
 the pre-upgrade PostgreSQL dump and coordinated blob/config backup before
 restoring the older image.
+
+For Langfuse, stop LiteLLM callbacks first, preserve the PostgreSQL, Valkey,
+and ClickHouse claims, and retain the S3 bucket. Reverting the chart does not
+roll back database migrations or recover raw event bodies already expired by
+the 30-day lifecycle; restore the three stores from a coordinated NAS backup
+before returning to an older Langfuse release.
 
 n8n public webhook exposure is independent of its stored workflow data. Remove
 `n8n-webhook-octelium`, its `octelium-public` tunnel/DNS hostname, and the

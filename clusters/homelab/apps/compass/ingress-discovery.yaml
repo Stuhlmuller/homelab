@@ -207,6 +207,34 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: compass-discovery-langfuse
+  namespace: monitoring
+  labels:
+    compass.adinhodovic.com/enabled: "true"
+  annotations:
+    compass.adinhodovic.com/name: Langfuse
+    compass.adinhodovic.com/urls: "Langfuse=https://langfuse.stinkyboi.com"
+    compass.adinhodovic.com/description: LLM tracing, token usage, and prompt logs.
+    compass.adinhodovic.com/icon: lucide:activity
+    compass.adinhodovic.com/primary-tag: kubernetes
+    compass.adinhodovic.com/tags: ai,observability
+spec:
+  ingressClassName: compass-discovery
+  rules:
+    - host: langfuse.stinkyboi.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: compass
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: compass-discovery-affine
   namespace: monitoring
   labels:

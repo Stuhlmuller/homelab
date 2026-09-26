@@ -36,6 +36,8 @@ inputs = {
     "/homelab/grafana/azuread/auth-url",
     "/homelab/grafana/azuread/token-url",
     "/homelab/grafana/azuread/allowed-organizations",
+    "/homelab/langfuse/s3-access-key-id",
+    "/homelab/langfuse/s3-secret-access-key",
   ]
 
   parameters = {
@@ -265,6 +267,96 @@ inputs = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder
     }
+    "/homelab/nofx/litellm-token" = {
+      description = "NOFX inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
+    }
+    "/homelab/multica/litellm-token" = {
+      description = "Multica inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
+    }
+    "/homelab/langfuse/salt" = {
+      description = "Langfuse application salt."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/encryption-key" = {
+      description = "Langfuse 64-character hexadecimal encryption key."
+      generated = {
+        kind   = "hex"
+        length = 32
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/nextauth-secret" = {
+      description = "Langfuse web-session signing secret."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/postgres-password" = {
+      description = "Langfuse PostgreSQL password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/redis-password" = {
+      description = "Langfuse Valkey password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/clickhouse-password" = {
+      description = "Langfuse ClickHouse password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/project-public-key" = {
+      description = "Langfuse Homelab project public ingestion key."
+      generated = {
+        length  = 48
+        prefix  = "pk-lf-"
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/project-secret-key" = {
+      description = "Langfuse Homelab project secret ingestion key."
+      generated = {
+        length  = 48
+        prefix  = "sk-lf-"
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/langfuse/init-user-password" = {
+      description = "Initial Langfuse operator password. Rotate in Langfuse after first login."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/deluge/vpn/wireguard-private-key" = {
       description   = "Deluge AirVPN WireGuard private key."
       initial_value = local.placeholder
@@ -354,6 +446,15 @@ inputs = {
       description = "OpenClaw token for LiteLLM access."
       generated = {
         source_parameter = "/homelab/litellm/master-key"
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw/litellm-app-token" = {
+      description = "Staged OpenClaw inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
       }
       initial_value = local.placeholder
     }
