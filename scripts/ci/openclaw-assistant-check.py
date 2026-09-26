@@ -173,6 +173,7 @@ for path in sorted(BUNDLE.iterdir()):
         digest.update(path.name.encode() + b"\0" + path.read_bytes())
 values = Path("clusters/homelab/apps/openclaw/values.yaml").read_text()
 assert f'homelab.rst.io/openclaw-assistant-sha256: "{digest.hexdigest()}"' in values
+assert '{"path":"plugins.entries.openrouter.enabled","value":true}' in values
 # A new backup must not suppress import when restoring pre-SQLite session state.
 guard = re.search(r'(if "\$had_existing_state"[^\n]+)\n\s+echo "Migrating session state',
                   values).group(1)
