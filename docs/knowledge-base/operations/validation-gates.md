@@ -105,6 +105,10 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+The live plan's sole diagnostic exception reads private output through the exact
+stage-classifier call and emits only a fixed label. It reports the last recognized
+marker, not a verified cause: misleading markers can change the label but cannot
+expose their text. Raw output, plans, and credentials remain withheld and deleted.
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the

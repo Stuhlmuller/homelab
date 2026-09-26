@@ -307,6 +307,17 @@ private_live_tail(tail) if {
 	safe_withheld_echo(lines[4])
 }
 
+private_live_tail(tail) if {
+	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
+	count(lines) == 6
+	lines[0] == "then"
+	lines[1] == `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+	safe_withheld_echo(lines[2])
+	lines[3] == "exit 1"
+	lines[4] == "fi"
+	safe_withheld_echo(lines[5])
+}
+
 safe_withheld_echo(line) if {
 	startswith(line, `echo "`)
 	endswith(line, `"`)
