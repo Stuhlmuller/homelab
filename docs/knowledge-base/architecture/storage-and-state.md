@@ -406,3 +406,10 @@ Recover the database and corresponding blobs together, retaining the SSM
 encryption key and signing certificate. NFS copies share the QNAP failure
 domain; off-NAS registry backup and an isolated restore drill remain open.
 See `clusters/homelab/apps/harbor/README.md` for the concrete restore contract.
+
+Harbor image signing adds the `harbor-image-signing` Kubernetes Secret to the
+etcd recovery set. Its private key is absent from Harbor PostgreSQL dumps and
+registry storage. Preserve a fresh encrypted off-node etcd backup after key
+creation and restore that Secret before cert-manager can regenerate it. Keep
+the public key independently for historical signature verification. See
+[[../operations/harbor-oci]] for the pending signing acceptance gates.

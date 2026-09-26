@@ -42,30 +42,28 @@ Authoritative SQLite state and native threads use `openclaw-runtime-local`.
 ## Claw's assistant configuration
 
 `assistant/` owns Claw's homelab personality, operating agreement, tool notes,
-heartbeat checklist, model configuration, and scheduled work. The default is
-`openai/gpt-6-astra` through the existing Codex OAuth harness, with medium
-reasoning and no silent model fallback. `astra` is the selection alias. See
-the [official model definition](https://developers.openai.com/api/docs/models/gpt-6-astra).
-Account access must be verified with an actual turn; configuration validation
-alone does not prove Astra entitlement.
+heartbeat checklist, model configuration, and scheduled work. Interactive
+turns, heartbeat, and managed jobs use OpenRouter's `openrouter/free` router,
+with medium reasoning and no silent fallback. `free` is the selection alias. The router
+chooses a currently available free model that supports each request. Account
+access must be verified with an actual turn; configuration validation alone
+does not prove OpenRouter authentication or free-model availability. See the
+[OpenRouter free-model router](https://openrouter.ai/collections/free-models/)
+and the pinned [OpenClaw model reference](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/concepts/models.md).
 
 Interactive turns have a one-hour execution budget (`agents.defaults.timeoutSeconds:
-3600`). OpenClaw's Codex harness uses an absolute deadline: ongoing tool work
-does not reset it. The former 600-second setting interrupted an active Discord
+3600`). OpenClaw uses an absolute deadline: ongoing tool work does not reset
+it. The former 600-second setting interrupted an active Discord
 turn on September 21, 2026. Heartbeats retain 600 seconds; the morning brief,
 health watch, and daily improvement retain 240, 180, and 600 seconds respectively.
 If the deadline is reached, inspect completed work before retrying; the timeout
 does not undo earlier actions. Roll back the default and bundle digest together
-through GitOps. See the pinned [Codex timeout contract](https://github.com/openclaw/openclaw/blob/v2026.9.2/docs/plugins/codex-harness-reference.md#turn-execution-and-settlement).
+through GitOps.
 
-The OpenAI provider explicitly selects `openai-chatgpt-responses` at the
-official ChatGPT endpoint. This deployment uses its retained subscription OAuth
-profile. Without that route, OpenClaw 2026.9.1 can recognize Astra in the native
-catalog but select API-key authentication because Astra is newer than its
-default dual-route model list. An explicit Astra model row supplies subscription transport metadata for
-OpenClaw 2026.9.1, whose authenticated fallback builder predates Astra. Codex
-still owns native model availability and account authorization. The endpoint
-is `https://chatgpt.com/backend-api/codex`.
+OpenRouter authentication is stored in OpenClaw's PVC-backed auth profile; no
+OpenRouter key belongs in git. The existing explicit OpenAI provider and Codex
+OAuth profile remain available as an operator-selected recovery route, but are
+not a default or fallback.
 
 The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
 architecture's SHA-256 for both the CLI and its code-mode host, and exposes
@@ -106,7 +104,8 @@ Bootstrap adds managed sections to SOUL.md, AGENTS.md, and TOOLS.md and
 replaces the old heartbeat checklist so its legacy polling does not duplicate
 the new jobs. It preserves IDENTITY.md, USER.md, MEMORY.md, daily notes,
 existing tool additions, credentials, and unrelated config. It extends any
-restricted model policy to allow Astra. The first pre-change files and config
+restricted model policy to allow the OpenRouter free router. The first
+pre-change files and config
 are retained privately under `/data/openclaw/assistant-backups/v1`; this is a
 same-volume rollback checkpoint, not an independent backup.
 
@@ -140,9 +139,9 @@ See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 
 ### Stale subscription limit recovery
 
-If heartbeat reports `agent-runner-failure` and gateway logs say the Astra
-auth profile is temporarily unavailable, inspect `openclaw models status
---json`. A saved subscription block can outlive a provider usage reset:
+If an operator-selected Astra recovery session reports `agent-runner-failure`
+and gateway logs say its auth profile is temporarily unavailable, inspect
+`openclaw models status --json`. A saved subscription block can outlive a provider usage reset:
 the native Codex path in 2026.9.1 and 2026.9.2 may reject auth before reaching OpenClaw's
 normal background usage recheck. A valid OAuth expiry alone does not clear it.
 
@@ -219,7 +218,8 @@ kubectl -n ai exec deploy/openclaw -c app -- openclaw automations list --all --j
 
 Confirm one instance of each managed declaration, the intended Discord route,
 and successful execution/delivery in automation run history. Send an owner
-Discord message and verify the actual session model is Astra and the reply is
+Discord message and verify the actual session model is
+`openrouter/free` and the reply is
 natural. Existing sessions with explicit model overrides must be inspected and
 changed through an owner-authorized session/model operation; do not rewrite
 session databases. Check monitoring/GitHub access using bounded read-only
@@ -477,21 +477,16 @@ After replacing any GitHub App SSM placeholder, bump
 to the resulting SSM parameter version so Argo CD rolls the pod and reloads the
 environment variables.
 
-## ChatGPT Pro And Codex
+## OpenRouter Free And Codex Recovery
 
-Do not store ChatGPT passwords, browser cookies, or OpenAI API keys in this
-repo for OpenClaw. ChatGPT Pro subscription access is separate from API-key
-billing, but OpenAI Codex can sign in with a ChatGPT plan and store local
-credentials on the OpenClaw PVC.
+Do not store OpenRouter keys, ChatGPT passwords, browser cookies, or OpenAI API
+keys in this repo. Authenticate OpenRouter through its OAuth flow; OpenClaw
+stores the issued credential on the persistent volume.
 
-The pod startup bootstrap enables the bundled `codex` plugin and sets the
-default agent model to `openai/gpt-6-astra` with model-scoped
-`agentRuntime.id: "codex"`. OpenClaw 2026.6.10 routes canonical `openai/gpt-*`
-agent refs through the Codex app-server harness when that runtime policy is
-selected, so the PVC-backed Codex OAuth profile supplies the ChatGPT Pro auth
-without storing an API key in SSM or git. The older `openai-codex/gpt-*` and
-`codex/gpt-*` refs are compatibility routes, not the desired bootstrap default
-for this deployment.
+The pod startup bootstrap sets `openrouter/free` as the default and
+keeps fallbacks empty. Existing sessions pinned to another model remain pinned
+until the owner selects the default. The bundled `codex` plugin, explicit Astra
+metadata, and retained ChatGPT OAuth profile remain for manual recovery only.
 
 Keep OpenClaw at `2026.8.2` or newer while the Codex plugin is enabled.
 `2026.7.1` can leave timed-out native hook relay processes orphaned until the
@@ -574,33 +569,30 @@ preservation remains mandatory after every migration step. Bootstrap also pins
 required for the container-managed gateway process. External-supervisor mode
 makes Kubernetes the only lifecycle and image-update authority.
 
-Run the interactive login after connecting through Octelium and exporting the
-kubeconfig generated by `octelium config kubernetes-api.homelab`:
+After connecting through Octelium and exporting the kubeconfig generated by
+`octelium config kubernetes-api.homelab`, authenticate OpenRouter:
+
+Bootstrap enables the bundled OpenRouter provider plugin before login.
 
 ```sh
 kubectl -n ai exec -it deploy/openclaw -c app -- \
-  openclaw models auth login --provider openai --set-default
+  openclaw models auth login --provider openrouter --method oauth
 ```
 
-For a headless terminal or callback-hostile network, use the device-code flow:
-
-```sh
-kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models auth login --provider openai --device-code --set-default
-```
-
-Then verify the default model and plugin-backed runtime:
+Then verify the default model and direct provider route:
 
 ```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
   openclaw models status --json
 
 kubectl -n ai exec deploy/openclaw -c app -- \
-  openclaw models list --provider openai
+  openclaw models list --provider openrouter
 ```
 
-Those OAuth credentials persist on the `/data/openclaw` volume and should not be
-copied into SSM. If the PVC is replaced, repeat the interactive Codex login.
+The issued credential persists on `/data/openclaw` and should not be copied into
+SSM. If the PVC is replaced, repeat the OpenRouter login. Use the separately
+documented OpenAI login only when intentionally restoring the Codex recovery
+route.
 
 ## Durable runtime state and recovery
 

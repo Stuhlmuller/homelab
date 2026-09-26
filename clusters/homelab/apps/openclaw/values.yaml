@@ -26,7 +26,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "70d432cc5b4a5a894afdfa87e56ef2d4e28f115e23c016a89f08156149d19182"
+        homelab.rst.io/openclaw-assistant-sha256: "93ae75d35e5c08c9ed447bf76b397a721c591c6173cd1b7b1bef7d785c506019"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -365,6 +365,9 @@ controllers:
                 ("plugins", "bundledDiscovery"),
             ):
                 config.get(section, {}).pop(key, None)
+            plugin_allow = config.get("plugins", {}).get("allow")
+            if isinstance(plugin_allow, list) and plugin_allow and "openrouter" not in plugin_allow:
+                plugin_allow.append("openrouter")
             defaults = config.get("agents", {}).get("defaults", {})
             models = defaults.get("models", {})
             migrated = config.get("meta", {}).get("migrations", {}).get("modelPolicyAllowlist")
@@ -606,7 +609,8 @@ controllers:
             config_batch <<'OPENCLAW_PLUGIN_BATCH'
             [
               {"path":"plugins.entries.codex.enabled","value":true},
-              {"path":"plugins.entries.memory-wiki.enabled","value":true}
+              {"path":"plugins.entries.memory-wiki.enabled","value":true},
+              {"path":"plugins.entries.openrouter.enabled","value":true}
             ]
             OPENCLAW_PLUGIN_BATCH
 

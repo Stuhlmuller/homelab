@@ -9,7 +9,13 @@ for render in first second; do
     --values clusters/homelab/apps/harbor/values.yaml >"$rendered_dir/${render}.yaml"
 done
 cmp "$rendered_dir/first.yaml" "$rendered_dir/second.yaml"
-kubectl kustomize clusters/homelab/apps/harbor >"$rendered_dir/resources.yaml"
+{
+  kubectl kustomize clusters/homelab/apps/harbor
+  printf '\n---\n'
+  # The CI-created Job participates in prerequisite/policy checks without
+  # becoming a periodically recreated Argo application resource.
+  cat clusters/homelab/apps/harbor/signing-job.yaml
+} >"$rendered_dir/resources.yaml"
 conftest test --policy policy "$rendered_dir/first.yaml" "$rendered_dir/resources.yaml"
 yq ea -o=json -I=0 '[.]' "$rendered_dir/first.yaml" "$rendered_dir/resources.yaml" |
   python3 -I scripts/ci/harbor-render-check.py

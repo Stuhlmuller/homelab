@@ -8,8 +8,10 @@ on:
       - builds/nofx/**
       - .github/workflows/nofx-images.yml
       - scripts/ci/harbor-publish.sh
+      - clusters/homelab/apps/harbor/signing-job.yaml
       - scripts/ci/harbor-publish-test.py
       - scripts/config/harbor-migration.json
+      - scripts/config/harbor-signing.json
       - scripts/ci/static-checks.sh
       - policy/workflows*.rego
   push:
@@ -18,8 +20,10 @@ on:
       - builds/nofx/**
       - .github/workflows/nofx-images.yml
       - scripts/ci/harbor-publish.sh
+      - clusters/homelab/apps/harbor/signing-job.yaml
       - scripts/ci/harbor-publish-test.py
       - scripts/config/harbor-migration.json
+      - scripts/config/harbor-signing.json
       - scripts/ci/static-checks.sh
       - policy/workflows*.rego
   workflow_dispatch:
@@ -156,7 +160,7 @@ jobs:
             echo "::error::Harbor publication failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Both private Harbor images published and destination digests verified; private output withheld."
+          echo "Both private Harbor images published, signed, and verified; private output withheld."
 
   published-digests:
     name: Report Published NOFX Digests

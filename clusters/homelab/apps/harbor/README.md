@@ -54,6 +54,20 @@ After rollout, verify the Trivy Pod is Ready and a newly pushed image shows a
 completed vulnerability report in Harbor. Bootstrap success proves the project
 setting, not successful database downloads or an image scan.
 
+## Local image signing
+
+The protected NOFX publisher creates `signing-job.yaml` for two verified image
+digests. This template is deliberately excluded from Kustomize: it runs once
+per publication. cert-manager owns the separate `harbor-image-signing` P-256
+key Secret, with `rotationPolicy: Never`. The key stays inside the cluster;
+only its public key returns to CI for verification. Signatures remain private
+in Harbor. See [the signing and recovery runbook](../../../../builds/nofx/README.md#private-image-signing).
+
+The signing NetworkPolicy records desired egress only: the current flannel CNI
+does not enforce it. Compromised signing code could exfiltrate its mounted key
+and publisher credential; Harbor is not mesh-enrolled. The runbook and knowledge
+base track the enforcing-dataplane and denied-egress acceptance work.
+
 ## Secrets and reconciliation
 
 `harbor-secrets` is an `OnChange` ExternalSecret backed by these generated
