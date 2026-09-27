@@ -214,10 +214,10 @@ through certificate renewal. `scripts/ci/harbor-publish.sh` creates the fixed
 `signing-job.yaml` template for its two verified image digests. The Job mounts
 the key inside the cluster; CI reads only its public key from successful Pod
 status, checks its SHA-256 against `scripts/config/harbor-signing.json`,
-and verifies both signatures. Initial enrollment is fail-closed (`null`) until
-the issued public key is independently read and its fingerprint reviewed. No AWS signing resource, public signing
-service or transparency-log submission is used. Existing registry credentials
-still follow the SSM/ExternalSecret contract above.
+and verifies both signatures. The enrolled fingerprint pins the independently
+retained public key; an unset (`null`) fingerprint still fails closed. No AWS
+signing resource, public signing service or transparency-log submission is used.
+Existing registry credentials still follow the SSM/ExternalSecret contract above.
 
 The Job has no API token and declares DNS/Istio egress. That NetworkPolicy is
 not enforced by the current flannel CNI, and Harbor is not mesh-enrolled. A
@@ -236,6 +236,8 @@ Secret in encrypted off-node etcd backups, retain public keys independently,
 and restore the Secret before cert-manager after a disaster. PostgreSQL backups
 do not cover the signing key. See `builds/nofx/README.md` for recovery and rollback.
 
-Status: revised implementation prepared; Argo reconciliation, fresh key backup,
-first signed publication and independent live verification are pending.
+Status: the retained signer's fingerprint is enrolled. Backup verification
+receipts and the independently retained public key stay in private operator
+storage. First signed publication and independent live image verification
+remain pending.
 Historical artifacts and pull/admission enforcement remain unchanged.

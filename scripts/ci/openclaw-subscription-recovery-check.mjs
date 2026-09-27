@@ -25,7 +25,7 @@ async function run(options = {}) {
     } },
   });
   const modules = {
-    "node:fs/promises": { readFile: async () => JSON.stringify({ version: options.version ?? "2026.9.2" }) },
+    "node:fs/promises": { readFile: async () => JSON.stringify({ version: options.version ?? "2026.9.5" }) },
     "node:timers/promises": { setTimeout: async (ms) => {
       now += ms;
       if (probes && options.available) blocked = false;
@@ -39,6 +39,12 @@ async function run(options = {}) {
       return { stdout: '{"ok":true}' };
     } },
     "node:util": { promisify: (fn) => fn },
+    "/app/dist/store-runtime-D8__yyKr.mjs": { c: loadStore },
+    "/app/dist/order-GFdW5zWC.mjs": { h: (store) => store.blocked },
+    "/app/dist/usage-CpSyxDN4.mjs": { i: async () => {
+      probes++;
+      if (options.probeFails) throw new Error("private diagnostic must stay private");
+    } },
     "/app/dist/store-F1B2duCT.js": { d: loadStore },
     "/app/dist/usage-state-CAKmPrwS.js": { o: (store) => store.blocked },
     "/app/dist/usage-_yfLJGtN.js": { s: () => { probes++; } },
@@ -74,6 +80,13 @@ assert.equal(legacy.error, undefined);
 assert.equal(legacy.code, 0);
 assert.equal(legacy.probes, 1);
 assert.equal(legacy.reloads, 1);
+const previous = await run({ version: "2026.9.2", available: true });
+assert.equal(previous.error, undefined);
+assert.equal(previous.code, 0);
+const failedProbe = await run({ probeFails: true });
+assert.equal(failedProbe.code, 1);
+assert.equal(failedProbe.reloads, 0);
+assert.ok(failedProbe.output.every((line) => !line.includes("private diagnostic")));
 const check = await run({ mode: "--check" });
 assert.equal(check.code, 1);
 assert.equal(check.probes + check.reloads, 0);
