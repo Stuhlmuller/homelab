@@ -703,7 +703,12 @@ Production Argo CD Application registration saves each affected plan, evaluates
 the Terraform policy JSON, rejects manifest replacement/deletion, then applies
 that exact plan. A protected manual dispatch may set one exact `argocd_app` unit
 name to reconcile committed desired state without widening the run to its group
-or running any unrelated production apply phase. Manual production and
+or running any unrelated production apply phase. Langfuse also reconciles its
+shared SSM and S3 producers first, with pre-write platform readiness checks;
+see [[../architecture/gitops-flow]]. The offline
+`scripts/ci/terragrunt-apply-test.py` regression checks prerequisite ordering,
+saved-plan policy gates and failure-before-downstream-write behavior without
+cloud or cluster access. Manual production and
 diagnostic dispatches reject every ref except `refs/heads/main`; the production
 environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at

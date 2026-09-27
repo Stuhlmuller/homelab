@@ -149,7 +149,13 @@ contract for Grafana.
   or dispatch whose run name starts with `Full @` as the checkpoint; targeted
   dispatches use `Targeted <app> @ <sha>` and never advance it. A targeted Argo
   dispatch instead plans and applies its exact named unit regardless of the
-  affected range, then exits before unrelated phases. When that exact unit is
+  affected range, then exits before unrelated phases. The Langfuse target first
+  reconciles the entire shared SSM unit and Langfuse S3 through their existing
+  policy-checked saved-plan path. It requires the existing platform to be ready
+  before any state repair/import/apply; review the shared SSM plan for unrelated
+  updates before production approval. See the
+  [Langfuse dispatch contract](../clusters/homelab/apps/langfuse/README.md#validation).
+  When that exact unit is
   confirmed tainted, the same
   protected dispatch may set `repair_argocd_app_state=true`; the workflow
   requires `argocd_app`, untaints only `kubernetes_manifest.this`, then runs the
