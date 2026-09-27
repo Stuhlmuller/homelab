@@ -306,9 +306,10 @@ images are not retroactively signed, and signature enforcement is not enabled.
 
 ### Public key, backup and recovery
 
-Initial enrollment is deliberately staged: the committed fingerprint is `null`,
-which blocks publication before credentials or image pushes. After Argo issues
-the Certificate, use the read-only extraction below on the trusted cluster.
+The committed fingerprint pins the independently verified retained signer.
+An unset (`null`) fingerprint blocks publication before credentials or image
+pushes. For initial enrollment or planned rotation, wait for Argo to issue the
+Certificate, then use the read-only extraction below on the trusted cluster.
 Run `shasum -a 256 /tmp/harbor-signing.pub` and commit that fingerprint as
 `public_key_sha256` in `scripts/config/harbor-signing.json` through a reviewed PR.
 The hash covers the exact PEM public-key file, including its final newline.

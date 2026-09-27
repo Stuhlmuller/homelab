@@ -88,11 +88,18 @@ steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
 ## OpenClaw
 
+The `2026.9.5` upgrade pins the external Codex and Discord plugins to the gateway
+release and creates a new verified `pre-2026.9.5` archive. Keep the earlier
+local-storage migration checkpoint. The pinned container's configuration and
+plugin schemas, managed one-hour timeout, and compiled subscription-recovery
+exports were checked; account-backed Discord/OpenRouter and scheduler acceptance
+remain post-sync checks. See the app README for state-aware rollback.
+
 [[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
 remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
 
 Claw's reviewed assistant bundle lives in
-`clusters/homelab/apps/openclaw/assistant/`: Astra via Codex OAuth, managed
+`clusters/homelab/apps/openclaw/assistant/`: the OpenRouter free router, managed
 personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
 09:00 briefing, twice-hourly daytime health watch, and one bounded daily
 improvement session. Stable automation declaration keys preserve history and
@@ -105,7 +112,8 @@ ambiguous routing defers scheduling without breaking gateway startup. Verify
 Bootstrap retains original files privately and
 preserves personal memory. The Pod annotation hashes the full bundle so GitOps
 changes take effect on restart. See the app README for validation and rollback;
-configured Astra is not proof of account access until a real turn succeeds.
+configured `openrouter/free` is not proof of account access until a real turn
+succeeds. Astra via Codex OAuth remains an operator-selected recovery route.
 
 OpenClaw persists runtime state on the `openclaw` PVC under `/data/openclaw`.
 The `operator-toolbox` init container installs the operator command set with

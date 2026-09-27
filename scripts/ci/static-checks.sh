@@ -867,7 +867,7 @@ while read -r workflow expected_hash; do
 done <<'EOF'
 .github/workflows/cordium-check.yml 3f9c9f1a6a53e91cc0a2a1740e82e2e5a8309e371b6636635242b6355cfd590a
 .github/workflows/cordium-login-denial.yml c1f86f5c218661938000b441dec9ba3dbb38e1fa292486a67d4b6dfbe71e1111
-.github/workflows/codeql.yml 47888029f4da891dd068328b56c59f7d95e934ba350ffa79ae4c6711ae093736
+.github/workflows/codeql.yml 9fab359f6fa412a340f4bbd6d140ec840fdd592336266f3e7c2cc94a26510cbe
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
@@ -1311,11 +1311,11 @@ if ! awk '
   exit 1
 fi
 yq -e '
-  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
+  .controllers.openclaw.initContainers."bootstrap-config".image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
   .controllers.openclaw.initContainers."bootstrap-config".dependsOn == "01-runtime-storage" and
   .controllers.openclaw.initContainers."00-operator-toolbox" != null and
-  .controllers.openclaw.containers.app.image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
-  .controllers.openclaw.containers.proxy.image.tag == "2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" and
+  .controllers.openclaw.containers.app.image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
+  .controllers.openclaw.containers.proxy.image.tag == "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218" and
   .controllers.openclaw.strategy == "Recreate" and
   .controllers.openclaw.pod.nodeSelector."kubernetes.io/hostname" == "zimaboard-1" and
   .persistence."runtime-state".existingClaim == "openclaw-runtime-local" and
