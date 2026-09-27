@@ -80,6 +80,12 @@ Futures. The form omits margin and Initial Balance controls and payload fields;
 capital is configured only through **Spot allocations** on the exchange card.
 Other exchange forms retain their existing controls.
 
+Patch `0015` checks both protective quantity bounds before a spot buy reserves
+cash or submits an order. The upper bound includes the agent's residual holdings
+and reported positive fee rates; the lower bound retains the conservative base
+fee deduction. Reported rebates also count toward marked exposure limits.
+Mocked execution checks cover rejected overflow and accepted lot-rounded limits.
+
 This is prepared source, not a verified cash-spot deployment. Publish the exact
 reviewed main commit to private Harbor, pin its reported backend/frontend
 digests through a separate rollout PR, then verify readiness, served source,

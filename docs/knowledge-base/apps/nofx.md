@@ -389,6 +389,15 @@ the exchange card. It labels existing OKX records as cash spot without rewriting
 stored names. Focused form tests cover create/edit payloads and switching to a
 non-OKX exchange. This UI repair does not allocate funds or start traders.
 
+Prepared patch `0015` fixes the entry protection bound reported after PR #1077
+merged. Recovery protects the full owned holding, so a new buy must account for
+existing dust and reported base rebates before reservation or submission.
+Both fee-adjusted quantity bounds must fit the instrument's protective-order
+limits; possible rebates also count toward marked exposure. The existing mocked
+execution test covers rejection without POSTs or ledger changes and acceptance
+at the lot-rounded maximum. This source fix requires newly published images;
+images built before it do not resolve the finding.
+
 Existing non-OKX form finding: `TraderConfigModal.handleFetchCurrentBalance`
 queries the persisted trader ID even after an unsaved exchange selection.
 Save and reopen before fetching the new exchange's balance. A follow-up should
