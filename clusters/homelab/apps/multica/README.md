@@ -87,39 +87,15 @@ access can sign in as any existing Multica email. Do not expose this setup
 without Octelium or treat the code as per-user identity verification. HTTPS
 cookies remain secure because `FRONTEND_ORIGIN` is HTTPS.
 
-The native desktop app has no clientless browser session. From a clean checkout,
-run the repository helper to open the Cloudflare carrier, authenticate the
-workstation, and publish only the Multica Service to localhost:
-
-```sh
-python3 -I scripts/multica-desktop-connect.py
-```
-
-Keep the foreground helper running while using the desktop app. It reuses the
-repository's TLS-preserving, hostname-scoped CONNECT proxy, so an off-LAN
-workstation needs no privileged port or global hosts-file change. It also avoids
-Octelium v0.35.0 detached mode, which does not preserve a non-empty `--publish`
-value on macOS.
-
-Configure `~/.multica/desktop.json` to send native API and WebSocket traffic to
-that local Octelium listener while leaving browser links on the public app URL:
-
-```json
-{
-  "schemaVersion": 1,
-  "apiUrl": "http://127.0.0.1:18080",
-  "appUrl": "https://multica.stinkyboi.com",
-  "wsUrl": "ws://127.0.0.1:18080/ws"
-}
-```
-
-The local listener still traverses the existing port 80 `multica` WEB Service
-and its authenticated human CLIENT policy. The Service preserves Multica's
-`Authorization` header so authenticated API and WebSocket requests retain the
-application JWT. An unauthenticated request to the public hostname returns HTTP
-401 at Octelium and never reaches Multica. Do not bypass Octelium for `/auth`,
-`/api`, or `/ws`; the shared development code is safe only behind this
-access boundary.
+The native desktop app has no clientless browser session. A desktop connection
+therefore requires an Octelium CLIENT session with data-plane reachability. The
+public Cloudflare carrier reaches only Octelium's control-plane API; it does not
+carry WireGuard or QUIC traffic to private Services. Native desktop access from
+outside the LAN remains unsupported and returns HTTP 401 at the public hostname.
+Do not bypass Octelium for `/auth`, `/api`, or `/ws`; the shared development code
+is safe only behind this access boundary. The Service preserves Multica's
+`Authorization` header for authenticated CLIENT sessions so application JWTs
+reach the backend.
 
 Apply the generated SSM parameter through the normal Terragrunt workflow before
 the GitOps rollout. The new backend Secret syncs first; switching the chart's

@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 python3 -I scripts/ci/multica-runtime-check.py
-python3 -I scripts/ci/multica-desktop-connect-check.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
