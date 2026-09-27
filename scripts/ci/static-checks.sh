@@ -207,12 +207,7 @@ echo "::group::Terragrunt deleted-unit providers"
 echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
-if TERRAGRUNT_ARGOCD_APP=langfuse bash scripts/ci/terragrunt-apply.sh; then
-  echo "Langfuse accepted an Application-only apply that skips its AWS dependencies" >&2
-  exit 1
-else
-  [[ "$?" == 2 ]]
-fi
+python3 scripts/ci/terragrunt-apply-test.py
 (
   cd IaC/live/argocd-apps
   terragrunt_stack_changed() { return 0; }
