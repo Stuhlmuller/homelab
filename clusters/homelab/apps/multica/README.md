@@ -94,10 +94,14 @@ localhost:
 
 ```sh
 octelium login --domain stinkyboi.com
-octelium connect --detach --domain stinkyboi.com \
+octelium connect --domain stinkyboi.com \
   --implementation gvisor --no-dns \
   --publish multica:127.0.0.1:18080
 ```
+
+Keep that foreground command running while using the desktop app. Octelium
+v0.35.0 detached mode does not preserve a non-empty `--publish` value on
+macOS.
 
 Configure `~/.multica/desktop.json` to send native API and WebSocket traffic to
 that local Octelium listener while leaving browser links on the public app URL:
