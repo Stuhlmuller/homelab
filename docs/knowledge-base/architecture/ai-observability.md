@@ -121,8 +121,11 @@ both request snapshots and `metadata.headers`. Keep INFO logging, disable
 raw-request logging and do not serialize full inference arguments. Captured
 prompt/output content must remain behind Octelium and Istio access controls.
 
-The protected full apply owns the S3 plan and apply because Application-only
-filters omit that sibling unit; targeted `langfuse` apply is rejected.
+The protected full apply and dependency-aware `argocd_app=langfuse` dispatch
+reconcile shared SSM and Langfuse S3 before registration. The target requires
+the existing platform to be ready and includes the entire shared SSM unit;
+review its private plan before production approval. It skips unrelated AzureAD
+reconciliation without weakening the full-apply credential gate.
 Source and offline validation do not prove
 that those resources exist. See [[gitops-flow]] and
 [[../operations/validation-gates]].
