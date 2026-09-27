@@ -2,11 +2,6 @@
 set -euo pipefail
 umask 077
 
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" ]]; then
-  echo "Langfuse requires a full apply to reconcile SSM and S3 before Application registration." >&2
-  exit 2
-fi
-
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
 
@@ -121,6 +116,37 @@ adopt_existing_ssm_parameters() {
   done
 }
 
+plan_and_apply_langfuse_prerequisites() {
+  local langfuse_plan_dir
+
+  echo "::group::AWS SSM parameter declaration plan and apply"
+  (
+    cd IaC/live/aws-ssm-parameters
+    rm -f plan.out plan.json
+    adopt_existing_ssm_parameters
+    terragrunt plan -out plan.out -no-color
+    terragrunt --log-disable show -json plan.out >plan.json
+    conftest test --policy ../../../policy --output github plan.json
+    terragrunt apply -no-color plan.out
+  )
+  echo "::endgroup::"
+
+  echo "::group::Langfuse blob storage plan and apply"
+  # Application filters omit this sibling AWS unit. Keep its private saved-plan
+  # policy gate and apply ahead of Langfuse registration, including targeted runs.
+  langfuse_plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-langfuse-plan.XXXXXX")"
+  cleanup_dirs+=("$langfuse_plan_dir")
+  (
+    cd IaC/live/langfuse-blob-storage
+    terragrunt init -no-color
+    terragrunt plan -out "$langfuse_plan_dir/plan.out" -no-color
+    terragrunt --log-disable show -json "$langfuse_plan_dir/plan.out" >"$langfuse_plan_dir/plan.json"
+    conftest test --policy ../../../policy --output github "$langfuse_plan_dir/plan.json"
+    terragrunt apply -no-color "$langfuse_plan_dir/plan.out"
+  )
+  echo "::endgroup::"
+}
+
 plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
@@ -167,6 +193,30 @@ repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
   terragrunt_argocd_app_state_repair_unit
 )"
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" ]]; then
+  # This path skips bootstrap/platform reconciliation. Fail before any state
+  # repair, import or apply if those existing prerequisites are not ready.
+  (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
+  echo "::group::Langfuse targeted apply prerequisites"
+  kubectl -n argocd get appproject homelab -o json | jq -e '
+    .spec |
+    (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and
+    (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null) and
+    any(.destinations[]; .namespace == "langfuse" and .server == "https://kubernetes.default.svc") and
+    any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace")
+  ' >/dev/null
+  kubectl -n argocd get applications external-secrets cert-manager istio platform-storage -o json | jq -e '
+    (.items | length == 4) and
+    all(.items[]; .status.sync.status == "Synced" and .status.health.status == "Healthy")
+  ' >/dev/null
+  kubectl wait --for=condition=Established --timeout=0s \
+    crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io \
+    crd/authorizationpolicies.security.istio.io crd/virtualservices.networking.istio.io
+  kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
+  kubectl get storageclass nfs-default -o name >/dev/null
+  echo "::endgroup::"
+fi
+
 if [[ -n "$repair_argocd_app_state_unit" ]]; then
   echo "::group::Targeted Argo CD Application state repair"
   (
@@ -178,6 +228,9 @@ if [[ -n "$repair_argocd_app_state_unit" ]]; then
 fi
 
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
+    plan_and_apply_langfuse_prerequisites
+  fi
   echo "::group::Targeted Argo CD Application registration apply"
   plan_and_apply_argocd_apps
   echo "::endgroup::"
@@ -208,32 +261,7 @@ echo "::group::Argo CD bootstrap apply"
 )
 echo "::endgroup::"
 
-echo "::group::AWS SSM parameter declaration plan and apply"
-(
-  cd IaC/live/aws-ssm-parameters
-  rm -f plan.out plan.json
-  adopt_existing_ssm_parameters
-  terragrunt plan -out plan.out -no-color
-  terragrunt --log-disable show -json plan.out >plan.json
-  conftest test --policy ../../../policy --output github plan.json
-  terragrunt apply -no-color plan.out
-)
-echo "::endgroup::"
-
-echo "::group::Langfuse blob storage plan and apply"
-# Application filters do not include sibling AWS units. Reconcile this secret-
-# bearing dependency explicitly under the protected production credentials.
-langfuse_plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-langfuse-plan.XXXXXX")"
-cleanup_dirs+=("$langfuse_plan_dir")
-(
-  cd IaC/live/langfuse-blob-storage
-  terragrunt init -no-color
-  terragrunt plan -out "$langfuse_plan_dir/plan.out" -no-color
-  terragrunt --log-disable show -json "$langfuse_plan_dir/plan.out" >"$langfuse_plan_dir/plan.json"
-  conftest test --policy ../../../policy --output github "$langfuse_plan_dir/plan.json"
-  terragrunt apply -no-color "$langfuse_plan_dir/plan.out"
-)
-echo "::endgroup::"
+plan_and_apply_langfuse_prerequisites
 
 echo "::group::Kubernetes node label apply"
 (
