@@ -110,17 +110,26 @@ closed even when static checks pass.
 
 ## Harbor runtime acceptance
 
-The US connection and dashboard rollout targets source revision
+The cash-spot rollout targets reviewed source
+`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d` from
+[NOFX Images run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462).
+Its build, private publication, signature verification, and digest report all
+passed. Both manifest references come from that report. Patches `0012` and
+`0014` add owned cash-spot accounting and the matching allocation UI. Patch
+`0013` is present but its LiteLLM route remains unmounted and inactive.
+Runtime readiness and functional acceptance are still required below.
+
+The earlier US connection and dashboard rollout used source revision
 `689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
 [PR #1066](https://github.com/Stuhlmuller/homelab/pull/1066).
 [NOFX Images run 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
-passed publication and private pull verification. Both manifest references
-come from its verified digest report.
+passed publication and private pull verification. Retain that pair as recovery
+history.
 Patch `0011` routes signed REST calls through `us.okx.com` for the confirmed US
 account and distinguishes unavailable owned traders from missing/foreign IDs.
 It preserves database-only equity history and shows safe dashboard guidance.
-This changes no credential and adds neither spot execution nor independent
-agent returns. Live authentication still requires read-only runtime
+That earlier build changes no credential and adds neither spot execution nor
+independent agent returns. Live authentication still requires read-only runtime
 verification.
 
 The prior startup-error build `9716e9d9121a062029c72dc5f03f0d266a166650` from
@@ -189,20 +198,26 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0011`
+[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0014`
 in the source download and confirm all traders remain stopped and the three
-shared-account drafts remain hidden after restart. Reload the authenticated UI
+shared-account drafts retain their saved visibility settings after restart.
+Reload the authenticated UI
 only after a fresh persisted stopped-state check, because runtime loading can
 auto-start saved running traders. Select **AI Traders → View** and inspect its
-read-only account/positions requests. Require HTTP 200 from successful exchange
-reads; a safe `503 TRADER_UNAVAILABLE` verifies
-error handling but leaves authentication unresolved. Missing/foreign IDs must
+read-only account/positions requests. Without explicit capital and allocations,
+cash-spot traders must remain unavailable and unscored; this state alone does
+not establish an authentication failure. Verify **Spot allocations** has no
+prefilled amounts and the OKX trader form has no margin or Initial Balance
+controls. Do not invent allocations to obtain a successful dashboard response.
+After operator-supplied allocations are saved while stopped, require HTTP 200
+from successful exchange reads. A safe `503 TRADER_UNAVAILABLE` verifies error
+handling but leaves that functional check unresolved. Missing/foreign IDs must
 remain 404. Recheck all traders stopped afterward. Do not press Start or replace
 failed reads with empty successes.
 Reproduce parser, visibility-migration, startup, signed US transport, dashboard
 ownership, public-history, and Axios regressions through the image test target.
-These checks use mocks and place no live orders. Successful authentication does
-not add US spot support, product eligibility, or independent agent returns.
+These checks use mocks and place no live orders. Successful authentication alone
+does not establish instrument eligibility or a valid competition result.
 For a fresh
 [simulation comparison](nofx-agent-competition.md), all expected decisions
 must pass before scoring; publication and Pod readiness do not establish a valid
@@ -230,7 +245,10 @@ configuration, command responses, or parameter values to diagnose it.
 
 If startup or functional acceptance fails, restore the prior reviewed Harbor
 backend/frontend pair through a PR, retaining `harbor-pull`, the PVC, and the
-working-directory configuration. The prior `9716e9d9` pair retains the startup
+working-directory configuration. Follow the
+[cash-spot rollback limits](nofx-agent-competition.md#one-okx-account): retain the
+ledger and keep all OKX traders stopped on earlier images, which cannot reconcile
+owned spot state. The prior `9716e9d9` pair retains the startup
 error guidance but restores global-host routing and the old dashboard lookup.
 The initial `f76c278` pair is recorded in
 [PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036); restoring it also

@@ -80,11 +80,13 @@ Futures. The form omits margin and Initial Balance controls and payload fields;
 capital is configured only through **Spot allocations** on the exchange card.
 Other exchange forms retain their existing controls.
 
-This is prepared source, not a verified cash-spot deployment. Publish the exact
-reviewed main commit to private Harbor, pin its reported backend/frontend
-digests through a separate rollout PR, then verify readiness, served source,
-and stopped-state acceptance. Explicit capital amounts remain an operator input;
-this change neither chooses them nor starts a trader.
+For a cash-spot rollout, publish the exact reviewed main commit to private
+Harbor and pin its reported backend/frontend digests through a separate PR.
+Then verify readiness, served source, and stopped-state acceptance. The
+[private-image runbook](../../docs/nofx-private-images.md#harbor-runtime-acceptance)
+records publication provenance. Explicit capital amounts and live activation
+remain operator actions. Startup can resume saved running traders, so verify
+stopped state immediately before rollout.
 
 The existing single backend replica is the execution boundary: a process lock
 serializes account reconciliation and submission; database transactions reserve

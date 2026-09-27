@@ -238,6 +238,10 @@ do not cover the signing key. See `builds/nofx/README.md` for recovery and rollb
 
 Status: the retained signer's fingerprint is enrolled. Backup verification
 receipts and the independently retained public key stay in private operator
-storage. First signed publication and independent live image verification
-remain pending.
+storage. [NOFX Images run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462)
+completed the first signed publication and verified both stored signatures
+against the enrolled fingerprint for source
+`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d`. Runtime rollout acceptance remains
+separate from publication; independent operator signature verification remains
+pending.
 Historical artifacts and pull/admission enforcement remain unchanged.

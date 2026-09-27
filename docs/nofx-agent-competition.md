@@ -8,7 +8,7 @@ not the scoreboard for these simulations.
 
 ## One OKX account
 
-The prepared cash-spot build (patch `0012`) lets the three personas reuse one
+The cash-spot build (patch `0012`) lets the three personas reuse one
 OKX US connection. Its ledger separates each trader's allocated quote cash, orders,
 fills, fees, holdings, and returns. Other account holdings are not imported.
 Multiple connections with the same authenticated OKX account UID share one
@@ -17,9 +17,11 @@ The cap bounds outstanding buy reservations plus owned acquisition cost across
 agents. Market appreciation can exceed it; the cap does not guarantee a maximum
 loss. Agent cash and strategy entry limits also apply.
 
-This feature has not been published, deployed, or activated by this source
-change. Follow the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
-using the exact tested source and reported private Harbor digests. Verify the
+Reviewed source `f0a60ec70b43e5e5b5a9691b4f59358d13089b7d` passed signed private
+publication in [run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462).
+Deployment and functional acceptance remain separate from publication. Follow
+the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
+using its reported Harbor digests. Verify the
 served source includes patches `0012`–`0014`, both workloads are ready,
 all traders are stopped, and no simulation is active before configuring it in
 the UI.
@@ -45,6 +47,13 @@ and rejects shorts, derivatives, margin changes, and external Arena execution.
 Keep every agent on provider OpenAI, base URL `https://openrouter.ai/api/v1`,
 and model `openrouter/free`. The free router may choose different underlying
 models; competition compares the saved personas, not fixed model identities.
+
+Check the account's [current free-model quota](https://openrouter.ai/docs/api_reference/limits)
+before choosing cadence. OpenRouter documents a default of
+[50 free requests per day](https://openrouter.ai/blog/tutorials/how-to-get-the-lowest-cost-llm-inference-on-openrouter/),
+including failed attempts. Three hourly agents need at least 72 requests per day;
+two-hour scans need 36 before retries or other usage. The actual account tier is
+an operator check; do not assume a larger quota or switch to a paid model.
 
 Entries and explicit exits use limit IOC orders at the fresh quoted price,
 rounded to the instrument tick without chasing prices. They may fill partly or
@@ -75,7 +84,7 @@ and simulations, review unresolved submissions and native protective orders,
 and retain the PVC, allocation tables, intents, and fill history. Earlier images
 cannot reconcile owned spot state; keep all OKX traders stopped on those images.
 
-The deployed pre-`0012` adapter shares whole-account futures positions and P&L.
+The earlier pre-`0012` adapter shares whole-account futures positions and P&L.
 Its Initial Balance field is only a calculation baseline, not an allocation or
 spending limit. Do not infer isolated competition from that earlier build.
 
@@ -87,16 +96,19 @@ inactive `Live - <persona>` strategy copied from the matching simulation
 strategy. The copies retain their personas but remove historical-only and
 historical strict-JSON-schema instructions.
 
-Each draft is configured for 1x leverage caps, at most three positions, a 30%
+During the original setup, each draft was configured for 1x leverage caps,
+at most three positions, a 30%
 margin target, a 60-minute scan interval, and hidden leaderboard visibility.
 In the pre-`0012` futures runtime, that margin target is advisory prompt text.
-The prepared spot executor enforces the saved utilization limit against owned
+The spot executor enforces the saved utilization limit against owned
 marked equity before entry. These draft settings alone still reserve no capital;
 the explicit allocation form and shared cap are required after rollout.
 The existing Consensus trader and `Sim - <persona>` strategies are unchanged.
 Live activation remains a user action; no live orders were placed during setup.
-Read-only persisted checks verified `is_running=0` and `show_in_competition=0`
-for all three after using the trader cards' visibility toggles.
+At that setup check, read-only queries verified `is_running=0` and
+`show_in_competition=0` for all three after using the visibility toggles.
+Those historical flags do not establish current state; verify saved visibility
+and stopped state afresh during rollout.
 
 Keep the drafts stopped pending runtime verification. In the earlier
 `25bceceb` runtime, `kernel/engine.go` validates a copied decision, so its live
@@ -117,7 +129,8 @@ values; omitted API visibility still defaults to true. Follow the
 [runtime acceptance checks](nofx-private-images.md#harbor-runtime-acceptance)
 before relying on these fixes; `deployment.yaml` owns the desired image pair.
 After restart, reload the UI and verify all three drafts remain stopped and
-hidden. The legacy Arena `ExecuteConsensus` to `ExecuteDecision` path bypasses
+retain their saved visibility settings. The legacy Arena `ExecuteConsensus` to
+`ExecuteDecision` path bypasses
 the shared validator. Patch `0012` rejects that path for cash spot; these drafts
 use their own saved strategies.
 

@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-26
+updated: 2026-09-27
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,19 +15,26 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The US connection and dashboard rollout targets source revision
+The cash-spot rollout targets source revision
+`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d`.
+[Publication run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462)
+passed all three jobs: test/build, private signed publication, and digest
+reporting. `deployment.yaml` owns the image pair from that verified report.
+Deployment and cash-spot UI acceptance remain pending. Require ready containers
+at both exact digests and the matching served build revision with patches
+`0012`–`0014`. All traders must remain stopped; verify saved visibility settings
+after reload. Explicit capital and allocations remain user input, and no
+independent returns are established by publication.
+Patch `0013` is included in the image but its gateway route and token remain
+unmounted. Gateway activation requires its separate reviewed prerequisites.
+
+The earlier US connection and dashboard release used source revision
 `689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
 [PR #1066](https://github.com/Stuhlmuller/homelab/pull/1066).
 [Publication run 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
-passed publication and private pull verification.
-`deployment.yaml` owns the image pair. Require the exact build revision,
-patches `0007`–`0011`, and read-only authenticated dashboard checks after
-rollout. All traders must remain stopped and the three drafts hidden.
-Publication alone does not establish authentication, spot support, or
-independent returns.
-Patch `0012` is a prepared source change; its cash-spot implementation below
-has not been published, deployed, or activated by this change. Historical
-acceptance evidence in this note describes earlier images, not that feature.
+passed publication and private pull verification. Retain that pair as recovery
+history. Its acceptance evidence below describes the earlier runtime, not the
+new cash-spot build.
 The prior startup-error build `9716e9d9121a062029c72dc5f03f0d266a166650` from
 successful
 [run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
@@ -126,8 +133,8 @@ workflow before relying on that diagnostic path; do not reuse the CI identity.
 
 OpenRouter's OpenAI-compatible Base URL must be `https://openrouter.ai/api/v1`,
 with model `openrouter/free`. NOFX appends `/chat/completions`; the observed
-`/responses` suffix is invalid. The existing OKX trader remains stopped;
-three private simulation strategies are saved inactive. No live OKX trading
+`/responses` suffix is invalid. The existing OKX trader was stopped;
+three private simulation strategies were saved inactive. No live OKX trading
 was activated. The original upstream OKX adapter has no demo mode and can change
 position mode during client construction; the deployed derivative removes that
 construction side effect.
@@ -209,11 +216,12 @@ focused backend build regressions. Patch `0009`
 also checks current OKX cross-margin leverage, skips matching settings, and uses
 one instrument-level update when needed. Leverage errors stop openings before
 canceling existing orders, with a mocked transport regression. Verify exact
-published digests, source patches, and persisted stopped/hidden flags after
+published digests, source patches, persisted stopped state, and saved visibility after
 rollout before accepting the runtime. The pre-`0012` runtime shares positions
 and account-level returns; Initial Balance does not reserve capital. Independent
-live balances then required separate funded accounts or subaccounts. The prepared
-cash-spot ledger below provides owned accounting within one physical account.
+live balances then required separate funded accounts or subaccounts. The
+published cash-spot ledger below provides owned accounting within one physical
+account.
 The runbook
 records the draft limits without presenting shared balances or historical
 simulations as independent live competition results.
@@ -262,16 +270,12 @@ digests, and the served source archive byte-identical to the prepared source
 (SHA-256 `c1d4ff37a512c59666a59fb75b5a44b40b372d13e676205eb55032f98c3e7815`).
 All traders remained stopped; the three competitors remained hidden. The new
 backend still reported OKX `50119`, with no successful initialization or balance
-read. Authentication remains unresolved. Browser refresh returned to login, so
-authenticated UI acceptance is pending. No trader was activated.
-After rollout, freshly verify every persisted trader is stopped before using
-**AI Traders → View**; runtime loading can auto-start saved running traders.
-Read-only account/positions requests must return 200 on successful exchange
-reads, or safe `503 TRADER_UNAVAILABLE` guidance when initialization fails.
-The latter leaves authentication unresolved. Recheck all traders stopped and
-the three drafts hidden afterward; never use Start as an authentication test.
-The regional host does not add US spot support or make USDT perpetuals
-available.
+read. Authentication remained unresolved at that inspection. Browser refresh
+returned to login, leaving authenticated UI acceptance pending. No trader was
+activated. That regional repair alone did not add US spot support or make USDT
+perpetuals available. The cash-spot rollout uses the allocation-aware acceptance
+checks below; do not carry its predecessor's account-200 requirement into an
+unallocated spot trader or use Start as an authentication test.
 
 Credential diagnosis found a possible masking defect in pinned
 `crypto/crypto.go`: `EncryptedString.Scan` suppresses storage-decryption errors
@@ -305,8 +309,8 @@ infer that another regional host or credential rotation is the required fix.
 The September 21 live diagnostic passed: every saved OKX credential field
 decrypted successfully, with no empty results, nested envelopes, or surrounding
 API-key whitespace. This rules out those storage defects for that inspection;
-the exchange rejection and browser login remain unresolved. A separate scratch
-reproduction observed `EncryptedString.Scan` returning ciphertext without an
+the exchange rejection and browser login were unresolved then. A separate
+scratch reproduction observed `EncryptedString.Scan` returning ciphertext without an
 error for wrong-key/corrupt input. The committed checker suite tests direct
 decryption, not `Scan`; retain that separate fail-open finding for repair with
 its own regression.
@@ -323,8 +327,8 @@ enforced shared exposure limits, then test that one persona cannot cancel or
 close another's allocation. The
 [competition runbook](../../nofx-agent-competition.md#one-okx-account) records
 why shared account equity and Initial Balance cannot establish independent
-returns. The patch `0011` rollout did not resolve that gap; prepared patch `0012`
-addresses it below, with separate rollout and activation gates.
+returns. The patch `0011` rollout did not resolve that gap; published patch
+`0012` addresses it below, with separate rollout and activation gates.
 
 During this trace, `handleOrderFills` was also found to query fills by order ID
 without checking that the order belongs to the resolved trader. The shared
@@ -371,7 +375,7 @@ closed. A future runtime fix should persist the post-start state consistently.
 
 ## Cash-spot competition implementation
 
-The prepared patch `0012` addresses the shared-account execution gap above.
+Published patch `0012` addresses the shared-account execution gap above.
 It adds authenticated OKX US spot metadata and candles, per-trader decimal
 allocations and fill ownership, durable reservations, native owned OCO orders,
 and recovery from persisted entry intent. The UI requires explicit amounts with
@@ -382,12 +386,21 @@ The shared cap bounds outstanding quote reservations plus owned acquisition
 cost, while each agent has its own remaining cash and strategy limits. It is
 not a marked-value ceiling or guaranteed loss limit.
 
-Prepared patch `0014` removes misleading legacy futures controls from the OKX
+Published patch `0014` removes misleading legacy futures controls from the OKX
 trader form. The backend already ignores its margin and Initial Balance inputs;
 the form now omits both and directs capital changes to **Spot allocations** on
 the exchange card. It labels existing OKX records as cash spot without rewriting
 stored names. Focused form tests cover create/edit payloads and switching to a
 non-OKX exchange. This UI repair does not allocate funds or start traders.
+
+Use the runbook's fresh zero-trader/zero-active-backtest counts and successful
+no-lock check immediately before merge. After GitOps readiness and source
+checks, verify **OKX US Cash Spot**, preserved account labels, and no margin or Initial
+Balance controls. **Spot allocations** must leave unconfigured money inputs
+blank; do not infer amounts. Before allocation, expect unavailable/unscored
+states rather than requiring HTTP 200 account reads. Missing allocation is not
+an authentication failure or a zero-return score. Recheck stopped state and
+saved visibility settings after UI reload. Gateway patch `0013` stays unmounted.
 
 Existing non-OKX form finding: `TraderConfigModal.handleFetchCurrentBalance`
 queries the persisted trader ID even after an unsaved exchange selection.
@@ -407,13 +420,14 @@ uses original allocation for owned returns. Previous whole-account equity curves
 are not presented as per-agent history. A missing configuration or rejected
 account authentication remains an operational blocker, not a zero-return score.
 
-This code is prepared independently of live activation. No trader was started,
-no funds moved, and no winner established by the implementation tests.
+The signed image publication is complete; deployment and live activation remain
+separate gates. No trader was started, no funds moved, and no winner established
+by the implementation tests.
 Build-test coverage includes mocked protocol/ownership, SQLite reservation and
 replay, entry-protection recovery, lifecycle shutdown, unavailable-score handling,
-bounded competition refresh, and the allocation UI. Publication still requires
-the protected workflow, followed by a reviewed digest-pin rollout and fresh
-stopped-state/source/readiness checks. Harbor and retained GHCR images stay private.
+bounded competition refresh, and the allocation UI. The next gate is the
+reviewed digest-pin rollout with fresh stopped-state/source/readiness checks. Harbor and
+retained GHCR images stay private.
 
 An existing credential-log finding remains outside this feature:
 `mcp/openai_client.go:SetAPIKey` logs the first and last four characters of
