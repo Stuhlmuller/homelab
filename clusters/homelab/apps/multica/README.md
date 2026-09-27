@@ -87,17 +87,32 @@ access can sign in as any existing Multica email. Do not expose this setup
 without Octelium or treat the code as per-user identity verification. HTTPS
 cookies remain secure because `FRONTEND_ORIGIN` is HTTPS.
 
-The native desktop app has no clientless browser session. Authenticate the
-workstation and start the detached Octelium client before opening Multica:
+The native desktop app has no clientless browser session. Complete the native
+client transport setup in the [Octelium public ingress runbook](../octelium-public/README.md),
+then authenticate the workstation and start the detached client:
 
 ```sh
+octelium login --domain stinkyboi.com
 octelium connect --detach --domain stinkyboi.com --ip-mode v4
 ```
 
-The existing `multica` WEB Service accepts that authenticated human CLIENT
-session. An unauthenticated desktop request returns HTTP 401 at Octelium and
-never reaches Multica. Do not bypass Octelium for `/auth`, `/api`, or `/ws`;
-the shared development code is safe only behind this access boundary.
+Configure `~/.multica/desktop.json` to send native API and WebSocket traffic to
+the private name while leaving browser links on the public app URL:
+
+```json
+{
+  "schemaVersion": 1,
+  "apiUrl": "http://multica.local.stinkyboi.com",
+  "appUrl": "https://multica.stinkyboi.com",
+  "wsUrl": "ws://multica.local.stinkyboi.com/ws"
+}
+```
+
+The existing port 80 `multica` WEB Service accepts that authenticated human
+CLIENT session. An unauthenticated request to the public hostname returns HTTP
+401 at Octelium and never reaches Multica. Do not bypass Octelium for `/auth`,
+`/api`, or `/ws`; the shared development code is safe only behind this
+access boundary.
 
 Apply the generated SSM parameter through the normal Terragrunt workflow before
 the GitOps rollout. The new backend Secret syncs first; switching the chart's

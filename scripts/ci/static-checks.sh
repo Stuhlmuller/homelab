@@ -686,6 +686,7 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $multica[0].spec.isPublic == true and
     ($multica[0].spec.isAnonymous // false) == false and
     $multica[0].spec.mode == "WEB" and
+    $multica[0].spec.port == 80 and
     $multica[0].spec.authorization.policies == ["homelab-human-web-access"] and
     ($policies | length) == 1 and
     $policies[0].spec.rules == [{
