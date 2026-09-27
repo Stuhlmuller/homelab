@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 python3 -I scripts/ci/multica-runtime-check.py
+python3 -I scripts/ci/multica-desktop-connect-check.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
@@ -688,6 +689,7 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $multica[0].spec.mode == "WEB" and
     $multica[0].spec.port == 80 and
     $multica[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $multica[0].spec.config.http.header.authorizationMode == "PASS" and
     ($policies | length) == 1 and
     $policies[0].spec.rules == [{
       "name": "kubernetes-api-service",

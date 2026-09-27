@@ -591,6 +591,7 @@ spec:
       insecureSkipVerify: true
     http:
       header:
+        authorizationMode: PASS
         forwardedMode: TRANSPARENT
         host:
           value: multica.stinkyboi.com
