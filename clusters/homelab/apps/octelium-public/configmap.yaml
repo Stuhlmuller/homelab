@@ -95,12 +95,6 @@ data:
         originRequest:
           httpHostHeader: langfuse.stinkyboi.com
       - hostname: multica.stinkyboi.com
-        path: ^/(api|auth|ws)(/.*)?$
-        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
-        originRequest:
-          originServerName: multica.stinkyboi.com
-          httpHostHeader: multica.stinkyboi.com
-      - hostname: multica.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: multica.stinkyboi.com

@@ -4,10 +4,10 @@ Multica runs in the shared `ai` namespace as the upstream OCI Helm chart
 `ghcr.io/multica-ai/charts/multica`. The release includes the Multica frontend,
 backend API/WebSocket server, and a dedicated pgvector PostgreSQL instance.
 
-Human frontend access is through Octelium at `https://multica.stinkyboi.com`.
-The public tunnel sends only `/api`, `/auth`, and `/ws` directly through Istio
-to the backend so the native desktop app can authenticate without an Octelium
-browser cookie. All other paths keep using the Octelium-protected frontend.
+Human access is through Octelium at `https://multica.stinkyboi.com`, routed to
+the frontend service. The frontend proxies API, auth, upload, and WebSocket
+traffic to the in-cluster backend service, so the backend does not have a
+separate browser-facing hostname.
 
 ## Server agent runtime
 
@@ -81,12 +81,23 @@ operator session and keep it private. Enter your email, request a code, then
 enter that fixed code; the request still expires after ten minutes and must be
 repeated after use. Email delivery is unnecessary, but the code prompt remains.
 
-This is a trusted-operator deployment. Octelium remains the outer boundary for
-the frontend, but the native desktop API, auth, and WebSocket paths are public
-and rely on Multica tokens plus the fixed code. Anyone with the fixed code can
-sign in as any existing Multica email. Keep the code private and do not treat
-it as per-user identity verification. HTTPS cookies remain secure because
-`FRONTEND_ORIGIN` is HTTPS.
+This is a trusted-operator deployment: Octelium's `homelab-human-web-access`
+policy remains the outer access boundary. Anyone with the fixed code and app
+access can sign in as any existing Multica email. Do not expose this setup
+without Octelium or treat the code as per-user identity verification. HTTPS
+cookies remain secure because `FRONTEND_ORIGIN` is HTTPS.
+
+The native desktop app has no clientless browser session. Authenticate the
+workstation and start the detached Octelium client before opening Multica:
+
+```sh
+octelium connect --detach --domain stinkyboi.com --ip-mode v4
+```
+
+The existing `multica` WEB Service accepts that authenticated human CLIENT
+session. An unauthenticated desktop request returns HTTP 401 at Octelium and
+never reaches Multica. Do not bypass Octelium for `/auth`, `/api`, or `/ws`;
+the shared development code is safe only behind this access boundary.
 
 Apply the generated SSM parameter through the normal Terragrunt workflow before
 the GitOps rollout. The new backend Secret syncs first; switching the chart's
@@ -94,8 +105,7 @@ the GitOps rollout. The new backend Secret syncs first; switching the chart's
 PostgreSQL keeps its existing Secret. Verify:
 
 ```sh
-kubectl -n ai wait --for=condition=Ready \
-  externalsecret/multica-backend-secrets --timeout=2m
+kubectl -n ai wait --for=condition=Ready externalsecret/multica-backend-secrets --timeout=2m
 kubectl -n ai rollout status deployment/multica-backend --timeout=5m
 ```
 

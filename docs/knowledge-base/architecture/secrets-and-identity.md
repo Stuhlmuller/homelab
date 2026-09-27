@@ -147,12 +147,13 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   role on an initialized PVC. Preserve the target Secret and PostgreSQL PVC
   during rollback unless intentionally rebuilding the instance. The backend
   uses `APP_ENV=development` to accept the private fixed code without email
-  delivery; the code-entry screen remains. Octelium gates the frontend, while
-  the native desktop `/api`, `/auth`, and `/ws` paths bypass Octelium and rely
-  on Multica tokens plus the fixed code. Code holders can impersonate existing
-  Multica users. Keep this limited to trusted operators; restore production
-  mode and a real email/OAuth provider before regular multi-user use. See the
-  [Multica runbook](../../../clusters/homelab/apps/multica/README.md).
+  delivery; the code-entry screen remains. Octelium gates access, but code
+  holders with access can impersonate existing Multica users. Keep this limited
+  to trusted operators; restore production mode and a real email/OAuth provider
+  before regular multi-user use. See the [Multica runbook](../../../clusters/homelab/apps/multica/README.md).
+  Native desktop access requires an authenticated Octelium CLIENT session;
+  exposing Multica auth or API paths outside Octelium would make the shared code
+  an unsafe public credential.
   The server runtime uses only the fixed-code key in an init container to
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The daemon renews it; revoked or expired tokens fail startup

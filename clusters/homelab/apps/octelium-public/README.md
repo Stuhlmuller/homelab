@@ -57,9 +57,6 @@ original Host headers. Octelium uses that public FQDN to select the matching
 `WEB` Service and then proxy to the existing Istio app route. The Services
 enforce login except for AFFiNE's reviewed anonymous transport, which lets its
 native client connect. NOFX requires Octelium login before its application login.
-Multica routes only `/api`, `/auth`, and `/ws` directly to Istio so its native
-desktop app can authenticate without an Octelium browser cookie; all other
-Multica paths remain behind Octelium.
 `cloudflared` reads this routing table only when the pod starts. Whenever
 `configmap.yaml` changes, update the
 `homelab.rst.io/cloudflared-config-revision` pod-template annotation in
