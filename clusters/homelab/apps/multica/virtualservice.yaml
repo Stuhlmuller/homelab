@@ -12,6 +12,18 @@ spec:
   gateways:
     - istio-system/tailnet-gateway
   http:
+    - match:
+        - uri:
+            prefix: /api
+        - uri:
+            prefix: /auth
+        - uri:
+            prefix: /ws
+      route:
+        - destination:
+            host: multica-backend.ai.svc.cluster.local
+            port:
+              number: 8080
     - route:
         - destination:
             host: multica-frontend.ai.svc.cluster.local

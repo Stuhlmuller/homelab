@@ -35,6 +35,7 @@ spec:
             principals:
               - cluster.local/ns/ai/sa/default
               - cluster.local/ns/ai/sa/multica-runtime
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
 ---
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
