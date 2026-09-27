@@ -144,11 +144,19 @@ recorded in `docs/validation-runbook.md`.
 
 Langfuse adds a secret-bearing sibling AWS unit,
 `IaC/live/langfuse-blob-storage`. Application-only filters do not execute it.
-The protected full apply explicitly plans it, checks the saved plan with
-Conftest, and applies that plan before registering Applications. Like shared
-SSM state, it is excluded from PR plans. Targeted `langfuse` Application
-dispatches are rejected before any mutation; use the full path to reconcile
-its bucket and credentials before registering the Application.
+The protected full apply and targeted `argocd_app=langfuse` dispatch reuse the
+same ordered shared-SSM and S3 plan/Conftest/saved-plan apply blocks before
+registration. Both secret-bearing units remain excluded from PR plans. The
+target reconciles the entire shared SSM unit, including existing parameter
+adoption; review its private plan for unrelated updates before production
+approval. It is not a Langfuse-only secret update.
+
+The scoped path skips bootstrap and requires existing AppProject permissions,
+Synced/Healthy platform dependencies, established CRDs, Ready secret store and
+storage class before any repair/import/apply. It selects only the exact
+Langfuse Application; it does not widen the Terragrunt filter or advance the
+full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
+[deployment and readiness gates](../../../clusters/homelab/apps/langfuse/README.md#validation).
 
 ## Provider Scope
 

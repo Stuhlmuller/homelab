@@ -30,8 +30,66 @@ Treat state recovery as unverified until a restore procedure and drill exist.
 
 ## Validation
 
-Use the protected full Terragrunt apply, not an Application-only dispatch;
-it provisions SSM and S3 before Application registration. Initial login is
+Use the protected full Terragrunt apply or its dependency-aware
+`argocd_app=langfuse` dispatch. Both reconcile the **entire shared SSM unit**
+(including its existing parameter adoption), then Langfuse S3, then Application
+registration, with policy-checked saved plans. Review the private SSM plan for
+unrelated changes before approving production; this is not a Langfuse-only
+secret update. PR plans exclude both secret-bearing AWS units.
+
+The targeted path requires the existing `homelab` AppProject destination,
+sources and Namespace permission, Synced/Healthy external-secrets, cert-manager,
+Istio and platform-storage Applications, established workload CRDs, Ready
+`aws-ssm` ClusterSecretStore and `nfs-default` StorageClass. It checks these
+before state repair or prerequisite writes. If a check fails, reconcile the
+platform through its declared path first; do not bypass the check. It skips
+bootstrap, node labels, AzureAD, other Application registrations and Kubernetes
+Secret materialization, and never advances the full-apply checkpoint.
+
+Before production approval, use an authenticated operator AWS session from a
+clean checkout of the reviewed current `main`. In `nix develop`, generate and
+privately review both plans without importing state or applying anything:
+
+```sh
+(
+set -euo pipefail
+umask 077
+git fetch origin main
+test -z "$(git status --porcelain)"
+test "$(git rev-parse HEAD)" = '<reviewed-main-sha>'
+test "$(git rev-parse origin/main)" = '<reviewed-main-sha>'
+plan_dir="$(mktemp -d /tmp/homelab-langfuse-review.XXXXXX)"
+printf 'Private plan directory: %s\n' "$plan_dir"
+(cd IaC && terragrunt stack generate)
+for unit in aws-ssm-parameters langfuse-blob-storage; do
+  (
+    cd "IaC/live/$unit"
+    terragrunt run --download-dir "$plan_dir/cache/$unit" -- init -no-color >"$plan_dir/$unit.log" 2>&1
+    terragrunt run --download-dir "$plan_dir/cache/$unit" -- plan -out "$plan_dir/$unit.plan" -no-color >>"$plan_dir/$unit.log" 2>&1
+    terragrunt --log-disable run --download-dir "$plan_dir/cache/$unit" -- show -json "$plan_dir/$unit.plan" >"$plan_dir/$unit.json" 2>>"$plan_dir/$unit.log"
+  )
+  conftest test --policy policy "$plan_dir/$unit.json" >"$plan_dir/$unit.policy.log" 2>&1
+done
+)
+```
+
+The plan files, backend metadata and logs can contain secrets; their download
+cache stays inside the private directory, outside the checkout. Keep it private.
+Review all shared SSM changes, including reader IAM policies and generated
+secrets. If existing parameters require adoption, resolve their ownership
+through the documented full path before proceeding. CI **replans** against
+live state, checks policy and immediately applies its own saved plans; it does
+not pause for another plan approval. Recheck if the commit or live state changes.
+
+After reviewing the exact current `main` commit and private plans:
+
+```sh
+gh workflow run terragrunt-apply.yml --ref main \
+  -f expected_sha='<reviewed-main-sha>' -f argocd_app=langfuse
+```
+
+Obtain normal `homelab-production` approval and require that exact run to
+succeed. Do not treat registration as runtime readiness. Initial login is
 `operator@stinkyboi.com`, with the generated password at
 `/homelab/langfuse/init-user-password` in SSM (`us-west-2`). Retrieve it only
 through authenticated private secret access; never paste it into PRs or logs.
@@ -48,7 +106,7 @@ scripts/octelium-e2e-check.sh
 ## Caller activation
 
 This change stages Langfuse and its credentials first. Existing OpenClaw and
-LiteLLM runtime configuration stays unchanged: an asynchronous protected full
+LiteLLM runtime configuration stays unchanged: an asynchronous protected
 apply must not race a caller restart requiring credentials that do not exist.
 The old OpenClaw gateway token still aliases the operator master key; the new
 `/homelab/openclaw/litellm-app-token` is provisioned independently. Do not rotate
@@ -56,9 +114,9 @@ the old parameter during staging.
 
 Before a follow-up activation PR:
 
-1. Complete the protected full `Terragrunt Apply`, which plans/policy-checks the
-   SSM/S3 producers before registering Langfuse. An Application-only dispatch
-   cannot provision these dependencies.
+1. Complete the protected full `Terragrunt Apply` or its dependency-aware
+   `argocd_app=langfuse` dispatch described above. Both plan/policy-check and
+   apply SSM/S3 producers before registering Langfuse.
 2. Reconcile the separate Octelium catalog and public DNS paths. Terragrunt does
    not apply either. From a clean checkout of the reviewed current `main`,
    verify the exact commit before using the existing authenticated operator
