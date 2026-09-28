@@ -45,3 +45,18 @@ resource "kubernetes_labels" "nodes" {
   field_manager = "terragrunt"
   force         = true
 }
+
+resource "kubernetes_annotations" "nodes" {
+  for_each = var.node_annotations
+
+  api_version = "v1"
+  kind        = "Node"
+  annotations = each.value
+
+  metadata {
+    name = each.key
+  }
+
+  field_manager = "terragrunt"
+  force         = true
+}
