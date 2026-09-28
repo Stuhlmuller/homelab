@@ -4,7 +4,7 @@ metadata:
   name: openclaw-runtime-backup
   namespace: ai
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "0"
     checkov.io/skip1: CKV_K8S_40=UID 1000 reads private OpenClaw databases without weakening their permissions.
   labels:
     app.kubernetes.io/name: openclaw-runtime-backup
