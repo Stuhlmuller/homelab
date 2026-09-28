@@ -109,7 +109,9 @@ def reconcile(node, execute, expected, rollback):
             verify_copies(expected)
     client = ["talosctl", "--endpoints", "10.1.0.199", "--nodes", node]
     # Recovery must work while Harbor-dependent Kubernetes components are down.
-    check_boot = lambda: talos_boot(client) if rollback else ready(node)
+    def check_boot():
+        return talos_boot(client) if rollback else ready(node)
+
     boot = check_boot()
     patch = ROOT / (".talos/patches/harbor-mirrors-rollback.yaml" if rollback else
                     ".talos/patches/harbor-mirrors.yaml")
