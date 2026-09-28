@@ -95,8 +95,10 @@ shared queue can extend total latency beyond the individual HTTP timeout.
 
 Patch `0017` awaits the underlying API operations before refreshing trader
 state or closing configuration dialogs. Sonner's toast identifier is not a
-promise. Failed saves remain open, and a pending Start/Stop request disables
-that trader's toggle and rejects duplicate clicks.
+promise. Failed persistence keeps the form open. Successful create/edit saves
+close the form while the list refresh runs with a rejection handler; a pending
+or unexpectedly rejected refresh does not invite another save. A pending
+Start/Stop request disables that trader's toggle and rejects duplicate clicks.
 
 Patch `0018` reuses the historical structured-output client and strict local
 decoder for OKX cash-spot calls to the exact official `openrouter/free` route.

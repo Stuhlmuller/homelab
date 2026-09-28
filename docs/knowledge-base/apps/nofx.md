@@ -449,11 +449,15 @@ Its mocked regression covers four clients, fresh responses/signatures, one
 
 Pinned Sonner 1.7.4 returns a toast identifier from `toast.promise`, so awaiting
 that value refreshed trader state and closed forms before API completion.
-Patch `0017` awaits the actual operation, propagates failed saves to the modal,
-and guards each pending Start/Stop request against duplicate clicks. Deferred
-promise regressions reproduce the early refresh/close and repeated-toggle
-paths. Deploy these source patches through private signed publication and a
-separate reviewed image pin; source validation alone is not runtime acceptance.
+Patch `0017` awaits the actual operation, propagates failed persistence to the
+modal, and guards each pending Start/Stop request against duplicate clicks.
+Create/edit completion is independent of the subsequent list refresh, whose
+rejection is explicitly handled. This prevents a pending or unexpectedly
+rejected refresh from leaving an already-saved form available for resubmission.
+Ordinary SWR fetch errors are generally handled internally; this fixes the
+save-promise contract, not a demonstrated production fetch failure. Deferred
+regressions cover persistence and refresh separately. Deploy through private
+signed publication and a separate reviewed image pin; source validation alone is not runtime acceptance.
 
 The UI inspection also found a minimum trade larger than its allocation and a
 Consensus symbol malformed by the editor's automatic `USDT` suffix. Correct

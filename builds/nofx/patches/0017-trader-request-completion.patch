@@ -16,7 +16,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
  
    // Toggle wallet address visibility for a trader
    const toggleTraderAddressVisibility = (traderId: string) => {
-@@ -336,26 +338,19 @@
+@@ -336,26 +338,21 @@
        const exchange = allExchanges?.find((e) => e.id === data.exchange_id)
  
        if (!model?.enabled) {
@@ -35,11 +35,14 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
 -        loading: '正在创建…',
 -        success: '创建成功',
 -        error: '创建失败',
--      })
--      setShowCreateModal(false)
 +      await api.createTrader(data)
-       // Immediately refresh traders list for better UX
-       await mutateTraders()
++      // Refresh failure must not turn a persisted save into a retryable failure.
++      void mutateTraders().catch((error) => {
++        console.error('Failed to refresh traders after save:', error)
+       })
+-      setShowCreateModal(false)
+-      // Immediately refresh traders list for better UX
+-      await mutateTraders()
      } catch (error) {
        console.error('Failed to create trader:', error)
 -      toast.error(t('createTraderFailed', language))
@@ -47,7 +50,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
      }
    }
  
-@@ -372,20 +367,18 @@
+@@ -372,20 +369,18 @@
  
    const handleSaveEditTrader = async (data: CreateTraderRequest) => {
      console.log('🔥🔥🔥 handleSaveEditTrader CALLED with data:', data)
@@ -71,7 +74,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
        }
  
        const request = {
-@@ -403,18 +396,12 @@
+@@ -403,18 +398,14 @@
        console.log('🔥 handleSaveEditTrader - data.strategy_id:', data.strategy_id)
        console.log('🔥 handleSaveEditTrader - request:', request)
  
@@ -79,12 +82,15 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
 -        loading: '正在保存…',
 -        success: '保存成功',
 -        error: '保存失败',
--      })
++      await api.updateTrader(editingTrader.trader_id, request)
++      // Refresh failure must not turn a persisted save into a retryable failure.
++      void mutateTraders().catch((error) => {
++        console.error('Failed to refresh traders after save:', error)
+       })
 -      setShowEditModal(false)
 -      setEditingTrader(null)
-+      await api.updateTrader(editingTrader.trader_id, request)
-       // Immediately refresh traders list for better UX
-       await mutateTraders()
+-      // Immediately refresh traders list for better UX
+-      await mutateTraders()
      } catch (error) {
        console.error('Failed to update trader:', error)
 -      toast.error(t('updateTraderFailed', language))
@@ -92,7 +98,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
      }
    }
  
-@@ -425,11 +412,13 @@
+@@ -425,11 +416,13 @@
      }
  
      try {
@@ -107,7 +113,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
  
        // Immediately refresh traders list for better UX
        await mutateTraders()
-@@ -440,38 +429,49 @@
+@@ -440,38 +433,49 @@
    }
  
    const handleToggleTrader = async (traderId: string, running: boolean) => {
@@ -161,7 +167,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
  
        // Immediately refresh traders list to update status
        await mutateTraders()
-@@ -534,11 +534,13 @@
+@@ -534,11 +538,13 @@
          ) || []
  
        const request = config.buildRequest(updatedItems)
@@ -176,7 +182,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
  
        // 重新获取用户配置以确保数据同步
        const refreshedItems = await config.refreshApi()
-@@ -653,11 +655,13 @@
+@@ -653,11 +659,13 @@
          ),
        }
  
@@ -191,7 +197,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
  
        // 重新获取用户配置以确保数据同步
        const refreshedModels = await api.getModelConfigs()
-@@ -686,11 +690,13 @@
+@@ -686,11 +694,13 @@
      if (!ok) return
  
      try {
@@ -206,7 +212,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
  
        // 重新获取用户配置以确保数据同步
        const refreshedExchanges = await api.getExchangeConfigs()
-@@ -750,11 +756,13 @@
+@@ -750,11 +760,13 @@
            },
          }
  
@@ -221,7 +227,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
        } else {
          // 创建新账户
          const createRequest = {
-@@ -775,11 +783,13 @@
+@@ -775,11 +787,13 @@
            lighter_api_key_index: lighterApiKeyIndex || 0,
          }
  
@@ -236,7 +242,7 @@ diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITraders
        }
  
        // 重新获取用户配置以确保数据同步
-@@ -1361,7 +1371,8 @@
+@@ -1361,7 +1375,8 @@
                            trader.is_running || false
                          )
                        }
@@ -279,7 +285,7 @@ diff --git a/web/src/components/AITradersPage.requests.test.tsx b/web/src/compon
 new file mode 100644
 --- /dev/null
 +++ b/web/src/components/AITradersPage.requests.test.tsx
-@@ -0,0 +1,258 @@
+@@ -0,0 +1,299 @@
 +import {
 +  act,
 +  cleanup,
@@ -493,6 +499,47 @@ new file mode 100644
 +    }
 +    expect(request).toHaveBeenCalledOnce()
 +    expect(toastPromise).toHaveBeenCalledOnce()
++  }
++)
++
++it.each([false, true])(
++  'closes a persisted save even if refreshing the list rejects (edit=%s)',
++  async (edit) => {
++    const operation = deferred()
++    const refresh = deferred()
++    const request = edit ? requests.updateTrader : requests.createTrader
++    request.mockReturnValue(operation.promise)
++    state.mutate.mockReturnValue(refresh.promise)
++    await show()
++    fireEvent.click(
++      screen.getByRole('button', { name: edit ? 'Edit' : 'Create Trader' })
++    )
++    const name = await screen.findByPlaceholderText('请输入交易员名称')
++    fireEvent.change(name, { target: { value: 'Persisted name' } })
++    const save = screen.getByRole('button', {
++      name: edit ? '保存修改' : '创建交易员',
++    })
++    fireEvent.click(save)
++    expect(save).toBeDisabled()
++    expect(name).toBeInTheDocument()
++    expect(state.mutate).not.toHaveBeenCalled()
++
++    await act(async () => operation.resolve())
++    expect(state.mutate).toHaveBeenCalledOnce()
++    expect(
++      screen.queryByPlaceholderText('请输入交易员名称')
++    ).not.toBeInTheDocument()
++    await expect(toastPromise.mock.calls[0][0]).resolves.toBeUndefined()
++    await act(async () => refresh.reject(new Error('List refresh failed')))
++    await waitFor(() =>
++      expect(
++        screen.queryByPlaceholderText('请输入交易员名称')
++      ).not.toBeInTheDocument()
++    )
++    expect(request).toHaveBeenCalledOnce()
++    expect(toastPromise).toHaveBeenCalledOnce()
++    await expect(toastPromise.mock.calls[0][0]).resolves.toBeUndefined()
++    expect(toastError).not.toHaveBeenCalled()
 +  }
 +)
 +
