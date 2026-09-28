@@ -329,7 +329,10 @@ state at `/app/data`. Its backend working directory is also `/app/data`, so
 upstream's relative backtest writes persist at `/app/data/backtests` and new
 logs at `/app/data/data`; the absolute SQLite path remains `/app/data/data.db`.
 Back up the whole claim, including simulation traces and caches, as one private
-recovery set. The root filesystem remains read-only. See [[apps/nofx]].
+recovery set. Cash-spot allocations, order intents, and append-only fills share
+that database; retain them during rollback and keep OKX traders stopped on
+earlier images that cannot reconcile owned spot state. The root filesystem
+remains read-only. See [[apps/nofx]].
 The first rollout is registered as stateful but should
 stay in the stateful workload gate until PVC smoke testing and backup/restore
 expectations are recorded in `docs/storage-nfs.md`.

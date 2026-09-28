@@ -39,7 +39,7 @@ spec:
             value: "0"
       containers:
         - name: backend
-          image: harbor.stinkyboi.com/homelab/homelab-nofx-backend:homelab-689df14c755c43dfdfc744316f7a526081d7a2c6@sha256:8ef17adb9a010a2471ff3ccb855ae625c64f1899330ccc317a84d7f9b2bcc219
+          image: harbor.stinkyboi.com/homelab/homelab-nofx-backend:homelab-e7014c8b9644a6c13d909373eda3c572c1cdba00@sha256:6dfec7dd502b15613a1fa633bec0915ef16cff2e0bc1cfea7e406bb45dfaa949
           imagePullPolicy: IfNotPresent
           # NOFX writes relative backtest and log paths; keep them on the PVC.
           workingDir: /app/data
@@ -142,7 +142,7 @@ spec:
             value: "0"
       containers:
         - name: frontend
-          image: harbor.stinkyboi.com/homelab/homelab-nofx-frontend:homelab-689df14c755c43dfdfc744316f7a526081d7a2c6@sha256:4f2d00ef0324876d495e052aab10a7b396068b5ec70a17275941b3529c999484
+          image: harbor.stinkyboi.com/homelab/homelab-nofx-frontend:homelab-e7014c8b9644a6c13d909373eda3c572c1cdba00@sha256:210a1bd9ca7e41b7cc3f1cd30464fbd0f89f465c03aead4473c4e6f141f3a9c7
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

@@ -86,11 +86,13 @@ and the reported positive taker rate; the lower bound retains the conservative b
 fee deduction. Reported rebates also count toward marked exposure limits.
 Mocked execution checks cover rejected overflow and accepted lot-rounded limits.
 
-This is prepared source, not a verified cash-spot deployment. Publish the exact
-reviewed main commit to private Harbor, pin its reported backend/frontend
-digests through a separate rollout PR, then verify readiness, served source,
-and stopped-state acceptance. Explicit capital amounts remain an operator input;
-this change neither chooses them nor starts a trader.
+For a cash-spot rollout, publish the exact reviewed main commit to private
+Harbor and pin its reported backend/frontend digests through a separate PR.
+Then verify readiness, served source, and stopped-state acceptance. The
+[private-image runbook](../../docs/nofx-private-images.md#harbor-runtime-acceptance)
+records publication provenance. Explicit capital amounts and live activation
+remain operator actions. Startup can resume saved running traders, so verify
+stopped state immediately before rollout.
 
 The existing single backend replica is the execution boundary: a process lock
 serializes account reconciliation and submission; database transactions reserve
@@ -265,8 +267,8 @@ all live traders, review unresolved submissions and native protective orders,
 then restore the previous reviewed image digests through GitOps. Retain
 `nofx-data`, including the additive spot tables and append-only fill history,
 and the absolute executable/working-directory configuration. Never reset the
-ledger to make a rollback load. Earlier images cannot reconcile that ledger;
-keep every OKX trader stopped while running them. Returning to upstream also
+ledger to make a rollback load. Pre-cash-spot images cannot reconcile that ledger;
+keep every OKX trader stopped on recovery images. Returning to upstream also
 restores its model-save side effects and Binance dependency.
 
 ## Private image signing
