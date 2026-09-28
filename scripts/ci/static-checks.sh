@@ -666,6 +666,8 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
+    [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
     ($users | length) == 1 and
     $users[0].spec.type == "WORKLOAD" and
@@ -675,6 +677,18 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
     $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
+    ($human | length) == 1 and
+    ($human[0].spec.rules[0].condition.all.of | any(.any.of == [
+      {"match": "ctx.session.status.type == \"CLIENT\""},
+      {"match": "ctx.session.status.type == \"CLIENTLESS\" && ctx.session.status.isBrowser"}
+    ])) and
+    ($multica | length) == 1 and
+    $multica[0].spec.isPublic == true and
+    ($multica[0].spec.isAnonymous // false) == false and
+    $multica[0].spec.mode == "WEB" and
+    $multica[0].spec.port == 80 and
+    $multica[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $multica[0].spec.config.http.header.authorizationMode == "PASS" and
     ($policies | length) == 1 and
     $policies[0].spec.rules == [{
       "name": "kubernetes-api-service",

@@ -151,6 +151,9 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   holders with access can impersonate existing Multica users. Keep this limited
   to trusted operators; restore production mode and a real email/OAuth provider
   before regular multi-user use. See the [Multica runbook](../../../clusters/homelab/apps/multica/README.md).
+  Native desktop access requires an authenticated Octelium CLIENT session;
+  exposing Multica auth or API paths outside Octelium would make the shared code
+  an unsafe public credential.
   The server runtime uses only the fixed-code key in an init container to
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The daemon renews it; revoked or expired tokens fail startup

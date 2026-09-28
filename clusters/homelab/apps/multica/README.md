@@ -87,6 +87,16 @@ access can sign in as any existing Multica email. Do not expose this setup
 without Octelium or treat the code as per-user identity verification. HTTPS
 cookies remain secure because `FRONTEND_ORIGIN` is HTTPS.
 
+The native desktop app has no clientless browser session. A desktop connection
+therefore requires an Octelium CLIENT session with data-plane reachability. The
+public Cloudflare carrier reaches only Octelium's control-plane API; it does not
+carry WireGuard or QUIC traffic to private Services. Native desktop access from
+outside the LAN remains unsupported and returns HTTP 401 at the public hostname.
+Do not bypass Octelium for `/auth`, `/api`, or `/ws`; the shared development code
+is safe only behind this access boundary. The Service preserves Multica's
+`Authorization` header for authenticated CLIENT sessions so application JWTs
+reach the backend.
+
 Apply the generated SSM parameter through the normal Terragrunt workflow before
 the GitOps rollout. The new backend Secret syncs first; switching the chart's
 `existingSecret` makes the backend wait for that Secret and rolls its pod.
