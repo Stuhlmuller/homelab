@@ -1,7 +1,7 @@
 diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
 --- a/trader/okx_spot_execution.go
 +++ b/trader/okx_spot_execution.go
-@@ -22,16 +22,17 @@
+@@ -22,16 +22,18 @@
  	return decimal.NewFromFloat(value), nil
  }
  
@@ -17,7 +17,8 @@ diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
 -		return decimal.Zero, errors.New("invalid spot fee bound")
 -	}
 -	return cost, nil
-+	credit := decimal.Max(decimal.Zero, fees.Maker, fees.Taker)
++	// IOC fills take liquidity and cannot receive a maker rebate.
++	credit := decimal.Max(decimal.Zero, fees.Taker)
 +	if decimal.Max(cost, credit).GreaterThanOrEqual(decimal.NewFromInt(1)) {
 +		return decimal.Zero, decimal.Zero, errors.New("invalid spot fee bound")
 +	}
@@ -25,7 +26,7 @@ diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
  }
  
  // ExecuteSpotDecision is the entry path with both protective prices available.
-@@ -73,7 +74,11 @@
+@@ -73,7 +75,11 @@
  	if !allowed {
  		return nil, errors.New("spot buy is outside the explicit candidate list")
  	}
@@ -38,7 +39,7 @@ diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
  		return nil, errors.New("close this agent's existing holding before another buy")
  	}
  	budget, _ := spotAmount(d.PositionSizeUSD)
-@@ -130,7 +135,7 @@
+@@ -130,7 +136,7 @@
  	if take.Sub(price).LessThan(price.Sub(stop).Mul(decimal.NewFromFloat(risk.MinRiskRewardRatio))) {
  		return nil, errors.New("spot decision does not meet reward/risk limit")
  	}
@@ -47,7 +48,7 @@ diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
  	if err != nil {
  		return nil, err
  	}
-@@ -144,15 +149,13 @@
+@@ -144,15 +150,13 @@
  		return nil, errors.New("quantized spot order is below minimum position size")
  	}
  	reserve := quantity.Mul(limit).Mul(decimal.NewFromInt(1).Add(rate))
@@ -67,7 +68,7 @@ diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
  	if !postEquity.IsPositive() || postHolding.GreaterThan(postEquity.Mul(maxRatio)) || invested.Add(entryValue).GreaterThan(postEquity.Mul(maxUsage)) {
  		return nil, errors.New("spot buy plus fees exceeds position or cash utilization limit")
  	}
-@@ -162,11 +165,15 @@
+@@ -162,11 +166,15 @@
  	if err := inst.ValidateOrder(quantity, limit); err != nil {
  		return nil, err
  	}
@@ -108,15 +109,16 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  	type algoFixture struct{ ID, ClientID, Quantity, State string }
  	orders := map[string]orderFixture{}
  	algos := map[string]algoFixture{}
-@@ -50,6 +51,7 @@
+@@ -50,6 +51,8 @@
  	posts := 0
  	coarseTick := false
  	lotSize := "0.001"
 +	maxLimitSize, feeRate := "5", "-0.001"
++	makerRate := feeRate
  	var canceled []string
  	c := spotFixture(t, func(w http.ResponseWriter, r *http.Request) {
  		q := r.URL.Query()
-@@ -81,7 +83,11 @@
+@@ -81,7 +84,11 @@
  				if body["ordType"] != "ioc" {
  					t.Fatal("unbounded order")
  				}
@@ -129,7 +131,7 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  				spotReply(w, fmt.Sprintf(`[{"sCode":"0","ordId":%q,"clOrdId":%q}]`, id, body["clOrdId"]))
  			case okxAlgoOrderPath:
  				if body["ordType"] != "oco" || body["side"] != "sell" || body["tpOrdPx"] == "-1" || body["slOrdPx"] == "-1" {
-@@ -107,13 +113,13 @@
+@@ -107,13 +114,13 @@
  				spotReply(w, `[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":"1","minSz":"1","tickSz":"1","maxLmtSz":"100","groupId":"12"}]`)
  				return
  			}
@@ -141,11 +143,11 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  				return
  			}
 -			spotReply(w, `[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":"-0.001","taker":"-0.001"}]}]`)
-+			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":%q,"taker":%q}]}]`, feeRate, feeRate))
++			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":%q,"taker":%q}]}]`, makerRate, feeRate))
  		case okxTickerPath:
  			if coarseTick {
  				spotReply(w, `[{"instId":"BTC-USDT","last":"1.9","ts":"28800000"}]`)
-@@ -125,7 +131,7 @@
+@@ -125,7 +132,7 @@
  			if !ok {
  				t.Fatal("read unowned regular order")
  			}
@@ -154,7 +156,7 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  		case "/api/v5/trade/fills-history":
  			if q.Get("after") != "" {
  				spotReply(w, `[]`)
-@@ -133,7 +139,7 @@
+@@ -133,7 +140,7 @@
  			}
  			for _, o := range orders {
  				if o.ID == q.Get("ordId") {
@@ -163,7 +165,7 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  					return
  				}
  			}
-@@ -226,8 +232,48 @@
+@@ -226,8 +233,50 @@
  			t.Fatalf("post-fee %s limit did not reject before submission: %v", limit, err)
  		}
  	}
@@ -200,7 +202,9 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
 +	seedDust("dustEntry", "0.001")
 +	maxLimitSize = "0.1"
 +	rejectUnprotectable("residual dust plus new buy", "invalid spot order quantity", decision, risk)
-+	maxLimitSize = "0.101"
++	// IOC cannot earn the maker rebate. Counting it would incorrectly require
++	// a 0.10102 OCO, rejecting this exactly protectable 0.101 holding.
++	maxLimitSize, lotSize, makerRate = "0.101", "0.00001", "0.0002"
  	_, err = a.ExecuteSpotDecision(decision, risk, []string{"BTCUSDT"})
  	must(err)
 +	atMaximum, err := st.Spot().Snapshot("owner", "ex", "a")
@@ -208,17 +212,17 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
 +	if atMaximum.Inventory["BTC"] != "0.101" || atMaximum.AvailableInventory["BTC"] != "0" {
 +		t.Fatalf("exact-maximum combined inventory was not fully protected: %+v", atMaximum)
 +	}
-+	maxLimitSize = "5"
++	maxLimitSize, lotSize, makerRate = "5", "0.001", feeRate
  	_, err = b.ExecuteSpotDecision(decision, risk, []string{"BTCUSDT"})
  	must(err)
  	beforeB, err := st.Spot().Snapshot("owner", "ex", "b")
-@@ -261,6 +307,33 @@
+@@ -261,6 +310,33 @@
  			t.Fatal("first agent canceled second agent protection")
  		}
  	}
 +	// Positive signed fees credit base inventory even without previous dust.
 +	// The full 0.1 fill plus its 1% rebate needs protection for 0.101.
-+	maxLimitSize, feeRate = "0.1", "0.01"
++	maxLimitSize, feeRate, makerRate = "0.1", "0.01", "0.01"
 +	rejectUnprotectable("base rebate plus new buy", "invalid spot order quantity", decision, risk)
 +	maxLimitSize = "5"
 +	for _, limit := range []string{"position", "utilization"} {
@@ -230,7 +234,7 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
 +		}
 +		rejectUnprotectable("base rebate exceeds "+limit, "spot buy plus fees exceeds position or cash utilization limit", decision, bounded)
 +	}
-+	maxLimitSize, feeRate = "5", "-0.001"
++	maxLimitSize, feeRate, makerRate = "5", "-0.001", "-0.001"
 +	seedDust("fractionalDust", "0.0005")
 +	maxLimitSize = "0.1"
 +	_, err = a.ExecuteSpotDecision(decision, risk, []string{"BTCUSDT"})
@@ -246,7 +250,7 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  	before := posts
  	invalid := decision
  	invalid.Action = "open_short"
-@@ -280,7 +353,7 @@
+@@ -280,7 +356,7 @@
  	}
  	// A valid ticker can expire while other account checks run. Reject the
  	// unsent reservation locally; never submit against its stale limit.
@@ -255,7 +259,7 @@ diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.
  	must(err)
  	if err := a.submitIOC(*expired, spotInstrument(), spotD("100"), c.now().Add(-2*time.Minute)); err == nil {
  		t.Fatal("expired price submitted")
-@@ -314,7 +387,7 @@
+@@ -314,7 +390,7 @@
  		fmt.Fprint(w, `{"code":"1","data":[{"sCode":"51008","ordId":"123","OrdId":"","clOrdId":"ambiguous"}]}`)
  	})
  	must(st.Spot().SetReconciled("owner", "ex", true))

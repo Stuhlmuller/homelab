@@ -391,7 +391,7 @@ non-OKX exchange. This UI repair does not allocate funds or start traders.
 
 Prepared patch `0015` fixes the entry protection bound reported after PR #1077
 merged. Recovery protects the full owned holding, so a new buy must account for
-existing dust and reported base rebates before reservation or submission.
+existing dust and reported taker rebates before reservation or submission.
 Both fee-adjusted quantity bounds must fit the instrument's protective-order
 limits; possible rebates also count toward marked exposure. The existing mocked
 execution test covers rejection without POSTs or ledger changes and acceptance
