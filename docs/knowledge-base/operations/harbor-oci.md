@@ -32,7 +32,7 @@ upstream server name/CA and remove this bypass across the service catalog.
 
 ## Identity And State
 
-SSM in `us-west-2` generates ten Harbor secrets. `harbor-secrets` materializes
+SSM in `us-west-2` generates eleven Harbor secrets. `harbor-secrets` materializes
 administrator, internal service, encryption and database secrets as well as
 pre-generated project robot passwords. The bootstrap Job creates only the
 private `homelab` project and its `pull` and `publisher` robots, plus the public
@@ -256,7 +256,9 @@ The [mirror runbook](../../harbor-image-mirroring.md) owns copying, cutover and
 recovery. `scripts/config/harbor-images.json` captures public upstream digests
 from repository declarations, rendered charts and live Pods/system images. The
 protected `harbor-mirror.yml` workflow copies all platforms into the normal
-public-read `mirror` project and verifies complete anonymous pulls. Private
+public-read `mirror` project and verifies complete anonymous pulls. Its publisher
+uses a separate generated `/homelab/harbor/mirror-robot-push-password`; apply
+the reviewed shared SSM plan before expecting the new bootstrap to complete. Private
 `homelab` artifacts retain their existing authentication/signing contract.
 
 `.talos/patches/harbor-mirrors.yaml` and the validated
@@ -272,5 +274,8 @@ OpenClaw had unready app/proxy containers before this change. The 145 catalog
 entries passed anonymous upstream manifest/digest verification. All four current
 Talos configurations passed strict mirror-patch validation. Harbor registry NFS
 reported about 901 GiB available (shared filesystem capacity, not a PVC quota);
-no storage expansion was needed for this preflight. Image transfer
+no storage expansion was needed for this preflight. The shared SSM plan includes
+pending AI secrets; the [targeted secret plan](../../harbor-image-mirroring.md#initial-secret-plan-scope)
+limits publication to the new mirror credential and documents shared IAM/random
+state dependencies requiring explicit operator approval. Image transfer
 and node cutover remain pending; source verification is not migration evidence.

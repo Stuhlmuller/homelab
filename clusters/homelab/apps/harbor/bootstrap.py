@@ -28,7 +28,11 @@ PROJECTS = {
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
 ROBOTS = {"pull": ("pull",), "publisher": ("pull", "push")}
-SECRET_FILES = {"pull": "robot-pull-password", "publisher": "robot-push-password"}
+SECRET_FILES = {
+    ("homelab", "pull"): "robot-pull-password",
+    ("homelab", "publisher"): "robot-push-password",
+    ("mirror", "publisher"): "mirror-robot-push-password",
+}
 MAX_RESPONSE_BYTES = 1024 * 1024
 
 
@@ -261,7 +265,7 @@ def reconcile(client, robot_passwords):
             validate_robot(robot, name, project_name, identifier)
             if not robot_matches(robot, desired):
                 client.request("PUT", path, desired, json_response=False)
-            client.request("PATCH", path, {"secret": robot_passwords[name]})
+            client.request("PATCH", path, {"secret": robot_passwords[(project_name, name)]})
             verified, _ = client.request("GET", path)
             validate_robot(verified, name, project_name, identifier)
             if not robot_matches(verified, desired):
@@ -290,6 +294,8 @@ def main():
     try:
         admin_password = read_secret("admin-password")
         passwords = {name: read_secret(filename) for name, filename in SECRET_FILES.items()}
+        if passwords[("homelab", "publisher")] == passwords[("mirror", "publisher")]:
+            raise BootstrapError("Harbor publishers require separate credentials")
         client = Client(admin_password)
         # Retry only transient reads. Auth/schema/write failures never trigger a
         # fallback identity or a retry that might duplicate a created resource.

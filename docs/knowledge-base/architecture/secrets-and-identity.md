@@ -385,8 +385,8 @@ separate project robots for pull and publication. NOFX receives only the pull
 credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
 disabled and project creation is admin-only. Public upstream copies use the
-separate public-read `mirror` project; `robot$mirror+publisher` reuses the CI
-publisher password but is scoped only to that project. Nodes need no new secret.
+separate public-read `mirror` project; `robot$mirror+publisher` uses its own generated
+`/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
 Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
 see [the image mirror runbook](../../harbor-image-mirroring.md).
 

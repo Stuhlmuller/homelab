@@ -87,7 +87,8 @@ base track the enforcing-dataplane and denied-egress acceptance work.
 | `registry-password` | Internal registry controller credential; ESO renders bcrypt htpasswd |
 | `database-password` | PostgreSQL password; `password` is the chart-required key alias |
 | `robot-pull-password` | Project pull robot credential |
-| `robot-push-password` | Project publisher robot credential |
+| `robot-push-password` | Private homelab project publisher robot credential |
+| `mirror-robot-push-password` | Independent public mirror publisher credential |
 
 The chart uses stable secret references instead of Helm-generated random
 credentials. cert-manager owns the RSA token-signing certificate and key in

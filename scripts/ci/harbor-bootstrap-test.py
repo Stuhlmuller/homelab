@@ -21,7 +21,9 @@ SPEC = importlib.util.spec_from_file_location("harbor_bootstrap", ROOT / "cluste
 bootstrap = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bootstrap)
 ADMIN = "TestAdmin1-do-not-log"
-PASSWORDS = {"pull": "TestPull1-do-not-log", "publisher": "TestPush1-do-not-log"}
+PASSWORDS = {("homelab", "pull"): "TestPull1-do-not-log",
+             ("homelab", "publisher"): "TestPush1-do-not-log",
+             ("mirror", "publisher"): "TestMirrorPush1-do-not-log"}
 
 
 class HarborAPI:
@@ -177,7 +179,8 @@ class BootstrapTest(unittest.TestCase):
                 robot = next(robot for robot in original.values()
                              if robot["name"] == bootstrap.robot_name(name, project_name))
                 self.assertEqual(robot["permissions"], bootstrap.permissions(name, project_name))
-                self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[name])
+                self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[(project_name, name)])
+        self.assertNotEqual(self.api.passwords[2], self.api.passwords[3])
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots, original)
@@ -315,6 +318,11 @@ class BootstrapTest(unittest.TestCase):
             (200, b"", {}) if method == "PUT" and path == "/projects/homelab" else None)
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.robots, {})
+
+    def test_shared_publisher_secret_fails_before_network(self):
+        with patch.dict(PASSWORDS, {("mirror", "publisher"): PASSWORDS[("homelab", "publisher")]}):
+            self.assertEqual(self.main()[0], 1)
+        self.assertEqual(self.api.requests, [])
 
     def test_invalid_secret_fails_without_network_or_leak(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -142,8 +142,10 @@ done
 
 # Credentials stay in restrictive temporary files; transfer output is withheld
 # by the workflow. Harbor validates its normal public hostname and certificate.
+publisher_parameter=/homelab/harbor/robot-push-password
+[[ "$mode" != mirror ]] || publisher_parameter=/homelab/harbor/mirror-robot-push-password
 aws ssm get-parameter --region us-west-2 \
-  --name /homelab/harbor/robot-push-password --with-decryption \
+  --name "$publisher_parameter" --with-decryption \
   --query Parameter.Value --output text >"$scratch/harbor-password"
 [[ -s "$scratch/harbor-password" ]]
 publisher="robot\$homelab+publisher"

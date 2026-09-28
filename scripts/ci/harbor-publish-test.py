@@ -387,7 +387,8 @@ class HarborPublicationGates(unittest.TestCase):
             self.assertIn("--src-no-creds", args)
             self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "anonymous-auth.json")
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
-        self.assertEqual(len(self.calls_for("aws")), 1)
+        parameters = [args[args.index("--name") + 1] for args in self.calls_for("aws")]
+        self.assertEqual(parameters, ["/homelab/harbor/mirror-robot-push-password"])
         self.assertEqual(self.calls_for("docker"), [])
         self.assertEqual(self.calls_for("cosign"), [])
         self.assert_cleaned()
@@ -552,6 +553,8 @@ class HarborPublicationGates(unittest.TestCase):
         self.env["GITHUB_EVENT_NAME"] = "push"
         result = self.run_helper(mode="publish")
         self.assertEqual(result.returncode, 0, result.stderr)
+        parameters = [args[args.index("--name") + 1] for args in self.calls_for("aws")]
+        self.assertEqual(parameters, ["/homelab/harbor/robot-push-password"])
         pushes = [args[-1] for args in self.calls_for("docker") if "push" in args]
         self.assertEqual(pushes, [
             f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}"

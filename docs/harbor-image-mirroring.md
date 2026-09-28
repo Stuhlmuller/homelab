@@ -14,7 +14,7 @@ Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 read access is public, including through the existing public Harbor hostname.
 The separate `robot$mirror+publisher` can pull/push only within `mirror` and
-reuses the existing CI publisher password. Nodes need no new credentials.
+uses its own generated `/homelab/harbor/mirror-robot-push-password`. Nodes need no new credentials.
 
 The normal project retains copied artifacts independently of upstream tags or
 deletion. It is deliberately not a proxy cache. The protected
@@ -28,8 +28,12 @@ retain registry blobs together with Harbor database/encryption-key backups.
 ## Delivery
 
 1. Merge the bootstrap, inventory, publisher and unapplied Talos patches through
-   normal signed-commit, review and CI gates. Wait for Harbor to be
-   Synced/Healthy and its PostSync bootstrap to finish.
+   normal signed-commit, review and CI gates. Apply the reviewed
+   `IaC/live/aws-ssm-parameters` saved plan through the existing
+   [Harbor rollout path](knowledge-base/operations/harbor-oci.md#rollout-and-acceptance),
+   inspecting it for unrelated changes first. This creates the independent mirror
+   publisher secret. Wait for Harbor secrets to reconcile and its PostSync
+   bootstrap to finish Synced/Healthy before publication.
 2. Run the protected copy workflow against exact reviewed current `main`:
 
    ```sh
@@ -71,6 +75,32 @@ The registry and artifacts are hosted in the cluster, but node traffic still
 traverses Cloudflare/Octelium. Pod-only CoreDNS split resolution does not change
 host/containerd DNS. A private node-to-registry route is a separate networking
 change; do not claim network isolation or air-gapped operation.
+
+## Initial secret plan scope
+
+The 2026-09-28 shared SSM plan also contained pending AI secret creation.
+For this migration, plan only the new parameter and its declared dependencies:
+
+```sh
+cd IaC/live/aws-ssm-parameters
+terragrunt plan \
+  -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-push-password"]' \
+  -out /path/to/private/mirror-secret.plan
+terragrunt --log-disable show -json /path/to/private/mirror-secret.plan \
+  > /path/to/private/mirror-secret.json
+conftest test --policy ../../../policy /path/to/private/mirror-secret.json
+```
+
+Keep both files private. Review the saved plan before applying that exact plan
+from clean reviewed `main`. The inspected plan creates only the Harbor SSM
+parameter, with its independent password. Shared dependencies create 12 other
+pending random values in encrypted state and add 14 already-declared AI secret
+paths to the External Secrets reader policies; they do not create those SSM
+parameters, rotate existing values, or delete resources. Those shared changes
+require explicit operator approval; do not silently treat them as Harbor-only.
+Reject any further change or replan/review if state advances. This is a one-time
+scope limit, not the steady-state bootstrap command; normal full Terragrunt
+apply still owns the whole declared stack.
 
 ## Updates and coverage
 
