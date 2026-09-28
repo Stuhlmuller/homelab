@@ -18,6 +18,9 @@ python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
+python3 -I scripts/ci/harbor-images-check-test.py
+python3 -I scripts/ci/harbor-images-check.py
+python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
@@ -843,6 +846,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-login-denial.yml:deny' \
     '.github/workflows/harbor-migrate.yml:migrate' \
     '.github/workflows/harbor-migrate.yml:static-policy' \
+    '.github/workflows/harbor-mirror.yml:mirror' \
+    '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/nofx-images.yml:publish' \
@@ -883,6 +888,7 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml c1f86f5c218661938000b441dec9ba3dbb38e1fa292486a67d4b6dfbe71e1111
 .github/workflows/codeql.yml 9fab359f6fa412a340f4bbd6d140ec840fdd592336266f3e7c2cc94a26510cbe
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
+.github/workflows/harbor-mirror.yml e46a206a452a06bcb2685df5709789586c4c1a7f2e8c8d58d3fe05ad8abf8a34
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/nofx-images.yml 72150105fa32ea3bd3868a289c4016cb9622192ed13fb128395051e4cbf227ae
@@ -904,6 +910,7 @@ for workflow_job in \
   '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/harbor-migrate.yml:static-policy' \
+  '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \

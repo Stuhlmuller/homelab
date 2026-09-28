@@ -178,5 +178,7 @@ files represent real module dependencies.
 [[../operations/harbor-oci|Harbor]] is registered through the explicit stack.
 Its PostSync Job reconciles private projects and robot credentials through the
 Harbor API. CI publishes custom NOFX images only after testing and exact-main
-checks; runtime digest changes remain reviewed GitOps changes. Public upstream
-Harbor and platform images preserve a registry-independent bootstrap path.
+checks; runtime digest changes remain reviewed GitOps changes. Upstream image references preserve a registry-independent bootstrap path.
+The [Talos mirror rollout](../../harbor-image-mirroring.md) redirects node pulls
+after publication; its recovery patch restores upstream transport. Publish new
+catalog digests before merging their consuming image or chart changes.

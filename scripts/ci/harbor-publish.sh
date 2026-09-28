@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == migrate) ]] || {
-  echo 'Usage: harbor-publish.sh publish|migrate' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == migrate || "$1" == mirror) ]] || {
+  echo 'Usage: harbor-publish.sh publish|migrate|mirror' >&2
   exit 2
 }
 mode="$1"
@@ -31,6 +31,19 @@ if [[ "$mode" == publish ]]; then
 fi
 
 # Validate every migration input before installing credentials or contacting AWS.
+if [[ "$mode" == mirror ]]; then
+  manifest=scripts/config/harbor-images.json
+  jq --exit-status '
+    (keys == ["images"]) and
+    (.images | type == "array" and length > 0 and length <= 1000) and
+    ([.images[].source] | unique | length) == (.images | length) and
+    ([.images[].source | split("@")[0] | select(contains(":"))] |
+      (unique | length) == length) and
+    all(.images[];
+      keys == ["source"] and
+      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
+  ' "$manifest" >/dev/null
+else
 manifest=scripts/config/harbor-migration.json
 jq --exit-status '
   (keys | sort) == ["releases"] and
@@ -49,6 +62,7 @@ jq --exit-status '
       (keys | sort) == ["digest", "name"] and
       (.digest | type == "string" and test("^sha256:[0-9a-f]{64}$"))))
 ' "$manifest" >/dev/null
+fi
 
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
 if [[ "$mode" == publish ]]; then
@@ -99,7 +113,9 @@ kubectl --request-timeout=15s version >/dev/null
 cp "$(command -v kubectl)" "$scratch/kubectl"
 chmod 700 "$scratch/kubectl"
 sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
-timeout --signal=TERM --kill-after=5s 2400 \
+forward_timeout=2400
+[[ "$mode" != mirror ]] || forward_timeout=19800
+timeout --signal=TERM --kill-after=5s "$forward_timeout" \
   "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
   --namespace istio-system port-forward --address 127.0.0.1 \
   service/istio-ingressgateway 443:443 >"$scratch/port-forward.log" 2>&1 &
@@ -130,19 +146,61 @@ aws ssm get-parameter --region us-west-2 \
   --name /homelab/harbor/robot-push-password --with-decryption \
   --query Parameter.Value --output text >"$scratch/harbor-password"
 [[ -s "$scratch/harbor-password" ]]
-skopeo login --authfile "$scratch/auth.json" --username "robot\$homelab+publisher" \
+publisher="robot\$homelab+publisher"
+[[ "$mode" != mirror ]] || publisher="robot\$mirror+publisher"
+skopeo login --authfile "$scratch/auth.json" --username "$publisher" \
   --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
 if [[ "$mode" == migrate ]]; then
   printf '%s' "$GITHUB_TOKEN" |
     skopeo login --authfile "$scratch/auth.json" --username "$GITHUB_ACTOR" \
       --password-stdin ghcr.io >/dev/null
   unset GITHUB_TOKEN
-else
+elif [[ "$mode" == publish ]]; then
   mkdir "$scratch/docker"
   docker --config "$scratch/docker" login --username "robot\$homelab+publisher" \
     --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
 fi
 rm -f -- "$scratch/harbor-password"
+
+if [[ "$mode" == mirror ]]; then
+  # Only anonymous upstream reads may populate this public project. Publish real
+  # artifacts, not proxy-cache entries that remain dependent on upstream state.
+  printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
+  while IFS= read -r source; do
+    source_digest="${source##*@}"
+    source_repository="${source%@*}"
+    source_repository="${source_repository%:*}"
+    destination="harbor.stinkyboi.com/mirror/${source_repository}"
+    tag="${source_digest#sha256:}"
+    skopeo copy --all --preserve-digests --src-no-creds \
+      --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
+      "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}"
+    skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+      "docker://${destination}:${tag}" >"$scratch/manifest.json"
+    [[ "sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    tagged_source="${source%@*}"
+    if [[ "$tagged_source" == *:* ]]; then
+      # Operators and chart defaults may request tags rather than digests.
+      source_tag="${tagged_source##*:}"
+      skopeo copy --all --preserve-digests --src-no-creds \
+        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
+        "docker://${source_repository}@${source_digest}" "docker://${destination}:${source_tag}"
+      skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json"
+      [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    fi
+    pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
+    skopeo copy --all --preserve-digests --src-no-creds \
+      --src-authfile "$scratch/anonymous-auth.json" \
+      "docker://${destination}@${source_digest}" "dir:${pull_directory}"
+    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
+    [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    rm -rf -- "$pull_directory"
+    printf '%s:%s@%s\n' "$destination" "$tag" "$source_digest" >>"$scratch/verified-digests"
+  done < <(jq --raw-output '.images[].source' "$manifest")
+  cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"
+  exit 0
+fi
 
 while IFS=$'\t' read -r revision name source_digest; do
   tag="homelab-${revision}"

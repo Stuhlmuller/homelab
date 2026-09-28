@@ -1,0 +1,117 @@
+# Kubernetes images in Harbor
+
+Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
+project. Repository and Pod image names retain upstream provenance; their bytes
+come from `harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>`.
+This covers Helm defaults, init containers, hooks, injected sidecars,
+operator-created Pods, Kubernetes static Pods, pause, kubelet and etcd without
+adding an admission webhook or rewriting controller-generated resources.
+
+`scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
+It includes repository declarations, rendered Helm charts and the observed
+cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
+Private custom NOFX artifacts remain in the private `homelab` project.
+Only anonymously readable public upstream artifacts enter `mirror`; its
+read access is public, including through the existing public Harbor hostname.
+The separate `robot$mirror+publisher` can pull/push only within `mirror` and
+reuses the existing CI publisher password. Nodes need no new credentials.
+
+The normal project retains copied artifacts independently of upstream tags or
+deletion. It is deliberately not a proxy cache. The protected
+`harbor-mirror.yml` workflow copies all platforms with digest preservation,
+keeps a digest-named tag for each entry, maintains reviewed source-tag aliases,
+and downloads every image anonymously into a fresh temporary directory.
+Harbor retains the existing scan-on-push policy and NFS registry storage.
+No retention/delete job is introduced. Size NFS for the additional images and
+retain registry blobs together with Harbor database/encryption-key backups.
+
+## Delivery
+
+1. Merge the bootstrap, inventory, publisher and unapplied Talos patches through
+   normal signed-commit, review and CI gates. Wait for Harbor to be
+   Synced/Healthy and its PostSync bootstrap to finish.
+2. Run the protected copy workflow against exact reviewed current `main`:
+
+   ```sh
+   reviewed_sha=$(git rev-parse HEAD)
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha"
+   ```
+
+   Require a successful run, including complete anonymous downloads. A running
+   Harbor UI or successful manifest request alone does not prove complete copies.
+3. From that clean checkout, render and strictly validate each existing machine
+   configuration. The helper defaults to inspection; use Talos client 1.11.3:
+
+   ```sh
+   for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
+     python3 -I scripts/talos-harbor-mirrors.py --node "$node"
+   done
+   ```
+
+4. Apply one node at a time, workers first and the sole control plane last:
+
+   ```sh
+   python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 \
+     --execute --expected-sha "$reviewed_sha"
+   ```
+
+   Repeat for `.201`, `.200`, then `.199` only after the preceding node passes.
+   The helper requires successful publication at that SHA, verifies destination
+   manifests, preserves the full persistent machine configuration, allows only
+   registry-mirror differences, validates with `--mode metal --strict`, and
+   applies with `--mode no-reboot`. It checks configuration readback and node
+   readiness/boot identity. It never drains, restarts or deletes workloads.
+5. Verify every node's `registryconfigs` resource contains the committed
+   endpoints and `skipFallback: true`. Observe a fresh image pull and Harbor
+   access evidence before claiming live migration. Existing cached layers and
+   unchanged Pod image strings are not evidence of an upstream pull.
+
+Talos host DNS currently reaches the existing public Harbor HTTPS route.
+The registry and artifacts are hosted in the cluster, but node traffic still
+traverses Cloudflare/Octelium. Pod-only CoreDNS split resolution does not change
+host/containerd DNS. A private node-to-registry route is a separate networking
+change; do not claim network isolation or air-gapped operation.
+
+## Updates and coverage
+
+Add new image digests to the catalog in a prerequisite PR, publish/verify them,
+then merge the consuming image or chart upgrade. Never combine first publication
+and a new consuming reference in one rollout: Argo follows `main` immediately.
+Run `scripts/harbor-image-inventory.py` and the coverage check when changing
+charts, generated-image settings or Talos versions. Include live Pod images and
+Talos system images; images created dynamically outside declared configuration
+must be inventoried before use. Strict mirrors intentionally reject missing
+artifacts instead of silently contacting upstream.
+
+Resolve source digests anonymously with `skopeo inspect --raw --no-creds` and
+hash the exact manifest bytes. For `tag@sha256` references pass `repo@sha256`
+to Skopeo; it rejects combined tag/digest addresses. Preserve historical pinned
+digests when a mutable tag has moved. Each repository/tag has one catalog alias;
+additional old digests use digest-only sources. Never import private artifacts
+into the public mirror project.
+
+## Bootstrap and recovery
+
+An in-cluster registry cannot cold-start from itself on empty nodes. Fresh
+bootstrap uses upstream image names without the steady-state mirror patch.
+Bring up networking, DNS, secret management, ingress, Harbor and its retained
+storage, restore or republish the catalog, verify complete pulls, then enable
+strict mirrors. Preserve upstream references and recovery material.
+
+For an unavailable Harbor, the reviewed rollback patch restores direct upstream
+endpoints without requiring Harbor or a successful publication run:
+
+```sh
+python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 --rollback
+python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 --rollback \
+  --execute --expected-sha "$reviewed_sha"
+```
+
+Rollback authenticates directly to Talos and verifies its boot identity; it
+does not require Kubernetes API availability or a Ready node. Exact-main
+verification still requires GitHub access. Apply only through this validated
+repository-owned path. Retain mirrored blobs;
+rollback changes image transport, not workload versions or stored data.
+
+Sources: [Talos 1.11 Harbor mirror configuration](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/images-container-runtime/pull-through-cache),
+[Harbor proxy-cache behavior and retention](https://goharbor.io/docs/2.14.0/administration/configure-proxy-cache/).

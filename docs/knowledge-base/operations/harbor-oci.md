@@ -6,8 +6,9 @@ Tags: #harbor #oci #packages #gitops
 
 Harbor is declared in `IaC/terragrunt.stack.hcl` and
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
-(Harbor `2.15.2`); upstream component images remain public, digest-pinned
-bootstrap dependencies. Harbor must not depend on images stored in itself.
+(Harbor `2.15.2`). Upstream component references remain digest-pinned; the
+Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
+bootstrap and registry recovery use the reviewed upstream rollback path.
 
 `https://harbor.stinkyboi.com` uses Cloudflare Tunnel, the Octelium `harbor`
 WEB Service, and the shared Istio gateway. Octelium transport is anonymous and
@@ -34,7 +35,8 @@ upstream server name/CA and remove this bypass across the service catalog.
 SSM in `us-west-2` generates ten Harbor secrets. `harbor-secrets` materializes
 administrator, internal service, encryption and database secrets as well as
 pre-generated project robot passwords. The bootstrap Job creates only the
-private `homelab` project and its `pull` and `publisher` robots; publisher has
+private `homelab` project and its `pull` and `publisher` robots, plus the public
+upstream-only `mirror` project and its own scoped `publisher` robot; publisher has
 pull/push permissions and no artifact deletion. Source-controlled bootstrap
 credentials stay outside this public repository.
 
@@ -92,8 +94,7 @@ for runtime evidence and `clusters/homelab/apps/nofx/deployment.yaml` for curren
 desired references. Later source builds require a separate functional rollout.
 Registry-origin cutover is required only for an actual custom-image consumer:
 first verify copies and read-only pulls, then preserve that consumer's exact
-digest while changing its registry through GitOps. No third-party images are
-mirrored by this task.
+digest while changing its registry through GitOps. The later cluster-wide mirror rollout below extends this to third-party images.
 
 ## Rollout And Acceptance
 
@@ -248,3 +249,28 @@ published and verified the follow-up source
 Runtime rollout acceptance remains separate from publication; independent
 operator signature verification remains pending.
 Historical artifacts and pull/admission enforcement remain unchanged.
+
+## Cluster-wide Image Mirror
+
+The [mirror runbook](../../harbor-image-mirroring.md) owns copying, cutover and
+recovery. `scripts/config/harbor-images.json` captures public upstream digests
+from repository declarations, rendered charts and live Pods/system images. The
+protected `harbor-mirror.yml` workflow copies all platforms into the normal
+public-read `mirror` project and verifies complete anonymous pulls. Private
+`homelab` artifacts retain their existing authentication/signing contract.
+
+`.talos/patches/harbor-mirrors.yaml` and the validated
+`scripts/talos-harbor-mirrors.py` path redirect containerd for all inventoried
+registries, covering controller-generated Pods and Talos system images.
+`skipFallback: true` prevents silent upstream pulls. Apply only after publication;
+new image/chart versions need a prerequisite catalog publication. The rollback
+patch restores upstream access for cold bootstrap or Harbor recovery. Existing
+public DNS transport remains; this does not establish network isolation.
+
+Initial inspection on 2026-09-28 UTC: all four nodes Ready, Harbor Synced/Healthy;
+OpenClaw had unready app/proxy containers before this change. The 145 catalog
+entries passed anonymous upstream manifest/digest verification. All four current
+Talos configurations passed strict mirror-patch validation. Harbor registry NFS
+reported about 901 GiB available (shared filesystem capacity, not a PVC quota);
+no storage expansion was needed for this preflight. Image transfer
+and node cutover remain pending; source verification is not migration evidence.

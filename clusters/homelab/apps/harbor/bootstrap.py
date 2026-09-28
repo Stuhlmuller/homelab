@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reconcile the fixed homelab Harbor project and project-scoped robots.
+"""Reconcile the fixed Harbor projects and project-scoped robots.
 
 Run only as the repository-owned PostSync Job. Credentials come from mounted
 Secret files; desired state is code, never process environment or CLI input.
@@ -21,9 +21,11 @@ from pathlib import Path
 
 ENDPOINT = "http://harbor-core.harbor.svc.cluster.local"
 SECRET_DIRECTORY = Path("/secrets")
-PROJECT = "homelab"
 PREFIX = "robot$"
-PROJECT_METADATA = {"public": "false", "auto_scan": "true"}
+PROJECTS = {
+    "homelab": {"metadata": {"public": "false", "auto_scan": "true"}, "robots": ("pull", "publisher")},
+    "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("publisher",)},
+}
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
 ROBOTS = {"pull": ("pull",), "publisher": ("pull", "push")}
 SECRET_FILES = {"pull": "robot-pull-password", "publisher": "robot-push-password"}
@@ -110,21 +112,23 @@ def config_values(document):
     return values
 
 
-def read_project(client):
-    project, _ = client.request("GET", f"/projects/{PROJECT}", expected=(200, 404))
+def read_project(client, project_name):
+    project, _ = client.request("GET", f"/projects/{project_name}", expected=(200, 404))
     if project is None:
         return None
-    if not isinstance(project, dict) or project.get("name") != PROJECT:
+    if not isinstance(project, dict) or project.get("name") != project_name:
         raise BootstrapError("Harbor returned the wrong project")
     positive_id(project.get("project_id"))
+    if project.get("registry_id") not in (None, 0):
+        raise BootstrapError("Harbor project must not be a proxy cache")
     metadata = project.get("metadata")
     if not isinstance(metadata, dict) or metadata.get("public") not in ("true", "false"):
         raise BootstrapError("Harbor project lacks a valid privacy setting")
     return project
 
 
-def robot_name(name):
-    return f"{PREFIX}{PROJECT}+{name}"
+def robot_name(name, project_name):
+    return f"{PREFIX}{project_name}+{name}"
 
 
 def read_robots(client, project_id):
@@ -165,14 +169,14 @@ def read_robots(client, project_id):
     raise BootstrapError("Harbor robot listing exceeded its bounded limit")
 
 
-def permissions(name):
-    return [{"kind": "project", "namespace": PROJECT,
+def permissions(name, project_name):
+    return [{"kind": "project", "namespace": project_name,
              "access": [{"resource": "repository", "action": action, "effect": "allow"}
                         for action in ROBOTS[name]]}]
 
 
-def validate_robot(robot, name, identifier=None):
-    if not isinstance(robot, dict) or robot.get("name") != robot_name(name):
+def validate_robot(robot, name, project_name, identifier=None):
+    if not isinstance(robot, dict) or robot.get("name") != robot_name(name, project_name):
         raise BootstrapError("Harbor returned the wrong robot name")
     actual_id = positive_id(robot.get("id"))
     if identifier is not None and actual_id != identifier:
@@ -182,7 +186,7 @@ def validate_robot(robot, name, identifier=None):
     scopes = robot.get("permissions")
     if not isinstance(scopes, list) or len(scopes) != 1 or not isinstance(scopes[0], dict):
         raise BootstrapError("Harbor robot has an ambiguous permission scope")
-    if scopes[0].get("kind") != "project" or scopes[0].get("namespace") != PROJECT:
+    if scopes[0].get("kind") != "project" or scopes[0].get("namespace") != project_name:
         raise BootstrapError("Harbor robot belongs to a different permission scope")
     access = scopes[0].get("access")
     if not isinstance(access, list) or any(not isinstance(item, dict) for item in access):
@@ -190,10 +194,10 @@ def validate_robot(robot, name, identifier=None):
     return actual_id
 
 
-def desired_robot(name):
-    return {"name": robot_name(name), "level": "project", "duration": -1,
-            "description": f"Repository-managed homelab {name} robot", "disable": False,
-            "permissions": permissions(name)}
+def desired_robot(name, project_name):
+    return {"name": robot_name(name, project_name), "level": "project", "duration": -1,
+            "description": f"Repository-managed {project_name} {name} robot", "disable": False,
+            "permissions": permissions(name, project_name)}
 
 
 def robot_matches(robot, desired):
@@ -212,53 +216,62 @@ def reconcile(client, robot_passwords):
     # Finish the relevant read-only identity and schema checks before writing.
     config, _ = client.request("GET", "/configurations")
     current = config_values(config)
-    project = read_project(client)
-    robots = read_robots(client, project["project_id"]) if project else {}
-    for name in ROBOTS:
-        robot = robots.get(robot_name(name))
-        if robot:
-            validate_robot(robot, name)
+    projects = {}
+    project_robots = {}
+    for project_name, settings in PROJECTS.items():
+        project = read_project(client, project_name)
+        projects[project_name] = project
+        robots = read_robots(client, project["project_id"]) if project else {}
+        project_robots[project_name] = robots
+        for name in settings["robots"]:
+            robot = robots.get(robot_name(name, project_name))
+            if robot:
+                validate_robot(robot, name, project_name)
 
     changes = {key: value for key, value in SETTINGS.items() if current[key] != value}
     if changes:
         client.request("PUT", "/configurations", changes, json_response=False)
-    if project is None:
-        client.request("POST", "/projects", {"project_name": PROJECT, "metadata": PROJECT_METADATA},
-                       expected=(201,), json_response=False)
-    elif any(project["metadata"].get(key) != value for key, value in PROJECT_METADATA.items()):
-        client.request("PUT", f"/projects/{PROJECT}", {"metadata": PROJECT_METADATA},
-                       json_response=False)
-    project = read_project(client)
-    if project is None or any(project["metadata"].get(key) != value for key, value in PROJECT_METADATA.items()):
-        raise BootstrapError("Harbor project privacy or automatic scanning verification failed")
+    for project_name, settings in PROJECTS.items():
+        project = projects[project_name]
+        metadata = settings["metadata"]
+        if project is None:
+            client.request("POST", "/projects", {"project_name": project_name, "metadata": metadata},
+                           expected=(201,), json_response=False)
+        elif any(project["metadata"].get(key) != value for key, value in metadata.items()):
+            client.request("PUT", f"/projects/{project_name}", {"metadata": metadata},
+                           json_response=False)
+        project = read_project(client, project_name)
+        if project is None or any(project["metadata"].get(key) != value for key, value in metadata.items()):
+            raise BootstrapError("Harbor project privacy or automatic scanning verification failed")
 
-    for name in ROBOTS:
-        desired = desired_robot(name)
-        robot = robots.get(robot_name(name))
-        if robot is None:
-            created, _ = client.request("POST", "/robots", {**desired, "name": name}, expected=(201,))
-            if not isinstance(created, dict) or created.get("name") != robot_name(name):
-                raise BootstrapError("Harbor created an unexpected robot")
-            identifier = positive_id(created.get("id"))
-        else:
-            identifier = validate_robot(robot, name)
-        path = f"/robots/{identifier}"
-        # Re-read by immutable ID before mutating credentials or permissions.
-        robot, _ = client.request("GET", path)
-        validate_robot(robot, name, identifier)
-        if not robot_matches(robot, desired):
-            client.request("PUT", path, desired, json_response=False)
-        client.request("PATCH", path, {"secret": robot_passwords[name]})
-        verified, _ = client.request("GET", path)
-        validate_robot(verified, name, identifier)
-        if not robot_matches(verified, desired):
-            raise BootstrapError("Harbor robot desired-state verification failed")
+        robots = project_robots[project_name]
+        for name in settings["robots"]:
+            desired = desired_robot(name, project_name)
+            robot = robots.get(robot_name(name, project_name))
+            if robot is None:
+                created, _ = client.request("POST", "/robots", {**desired, "name": name}, expected=(201,))
+                if not isinstance(created, dict) or created.get("name") != robot_name(name, project_name):
+                    raise BootstrapError("Harbor created an unexpected robot")
+                identifier = positive_id(created.get("id"))
+            else:
+                identifier = validate_robot(robot, name, project_name)
+            path = f"/robots/{identifier}"
+            # Re-read by immutable ID before mutating credentials or permissions.
+            robot, _ = client.request("GET", path)
+            validate_robot(robot, name, project_name, identifier)
+            if not robot_matches(robot, desired):
+                client.request("PUT", path, desired, json_response=False)
+            client.request("PATCH", path, {"secret": robot_passwords[name]})
+            verified, _ = client.request("GET", path)
+            validate_robot(verified, name, project_name, identifier)
+            if not robot_matches(verified, desired):
+                raise BootstrapError("Harbor robot desired-state verification failed")
 
     config, _ = client.request("GET", "/configurations")
     current = config_values(config)
     if any(current[key] != value for key, value in SETTINGS.items()):
         raise BootstrapError("Harbor configuration verification failed")
-    print("Harbor homelab project is private; pull and publisher robots reconciled.")
+    print("Harbor homelab is private, mirror is public; project-scoped robots reconciled.")
 
 
 def read_secret(name):

@@ -1,0 +1,439 @@
+{
+  "images": [
+    {
+      "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
+    },
+    {
+      "source": "docker.io/adinhodovic/compass:0.9.0@sha256:f8f99955b60d3b5d0f2747d5a911d1b03c8ca1aff8f6aa592d1cc7fa2d8020c0"
+    },
+    {
+      "source": "docker.io/clickhouse/clickhouse-server:26.4@sha256:c7796a1335d14385c052f10061cf719f4a368a908432ec25980860b1333e9ccd"
+    },
+    {
+      "source": "docker.io/cloudflare/cloudflared:2026.9.1@sha256:b269e8abd07a5bf6f3f4be65d5050b2174eca89c56a0241a8ff32a16aec454e4"
+    },
+    {
+      "source": "docker.io/curlimages/curl:8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13"
+    },
+    {
+      "source": "docker.io/curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777"
+    },
+    {
+      "source": "docker.io/drakkarsoftware/octobot:2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
+    },
+    {
+      "source": "docker.io/envoyproxy/envoy:v1.38.0@sha256:8146b97ee61a42cd216514709e4e3198af75f014974e3d9f310aef9c901fcbdf"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-core:v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-exporter:v2.15.2@sha256:e1b0a248f61aad5084c5d1612d5f1da89f99c23ce743eaf8cba913d6d00c0547"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-jobservice:v2.15.2@sha256:f71a4452a095bcd2a8f0683648a3ae28415432df87ccfb00ec7625f3e340a598"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-portal:v2.15.2@sha256:b811b67f7a7f6f1614e4bdf7478b207d13e8aa3f815ff6ad84f216a5098d213d"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-registryctl:v2.15.2@sha256:223d5cb49d5dbf0ba4ae022e7dd9775fa459904112dc12084d3aaa36c1408362"
+    },
+    {
+      "source": "docker.io/goharbor/nginx-photon:v2.15.2@sha256:0ccc1eca228ecea120d7ad9e4386b8e86ced200212f00060a9abc753dbe7f17f"
+    },
+    {
+      "source": "docker.io/goharbor/registry-photon:v2.15.2@sha256:c4ebef61ceb50a3d8bc21d149bc280422db20a1e69df317b64b74098c3615855"
+    },
+    {
+      "source": "docker.io/goharbor/trivy-adapter-photon:v2.15.2@sha256:215c07b71c37fc7fc16e02d9185d936dcb8884a80e810817c2cd058bbd7c4e98"
+    },
+    {
+      "source": "docker.io/goharbor/valkey-photon:v2.15.2@sha256:7337783e8148f01a25b113f5c7b1d640f78b1860fcaf80a33d0dbb294f7b99d0"
+    },
+    {
+      "source": "docker.io/grafana/grafana:13.2.0@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b"
+    },
+    {
+      "source": "docker.io/istio/install-cni:1.27.3-distroless@sha256:cfe35258547be35aed2f3c94b56949d5460c0dd3810b94a16d3310c7e9337e62"
+    },
+    {
+      "source": "docker.io/istio/pilot:1.27.3-distroless@sha256:70f4f8ccf75ba51187f0920b3f40a6517ba98c068b1b88399a342cbd5e31b857"
+    },
+    {
+      "source": "docker.io/istio/proxyv2:1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1"
+    },
+    {
+      "source": "docker.io/istio/ztunnel:1.27.3-distroless@sha256:3837029816e78cb6fc88d928dc5c6c58522ab9346772a1409b7f7da00d9de4ce"
+    },
+    {
+      "source": "docker.io/langfuse/langfuse-worker:4.35.0@sha256:5e35e625a214dd868bb22adad90fc52e8f83cc856c3750e47f9a922622c207fb"
+    },
+    {
+      "source": "docker.io/langfuse/langfuse:4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd"
+    },
+    {
+      "source": "docker.io/library/busybox:1.28@sha256:141c253bc4c3fd0a201d32dc1f493bcf3fff003b6df416dea4f41046e0f37d47"
+    },
+    {
+      "source": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
+    },
+    {
+      "source": "docker.io/library/busybox:latest@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
+    },
+    {
+      "source": "docker.io/library/busybox@sha256:fd8d9aa63ba2f0982b5304e1ee8d3b90a210bc1ffb5314d980eb6962f1a9715d"
+    },
+    {
+      "source": "docker.io/library/nginx:latest@sha256:abe47724e466aeab9a345d8e46a221c2fa8953c7848bb4a3bd9976a7199f8cf2"
+    },
+    {
+      "source": "docker.io/library/postgres:14.23-bookworm@sha256:f819dd96de74db3de87d13f0a4fbcdfbdc4f4ca37ed6e0807bf73848170eae3d"
+    },
+    {
+      "source": "docker.io/library/postgres:17.5-bookworm@sha256:fbcea1bd13b6a882cd6caa6b58db3ae5c102efe50ec625b3e2a5cbc50db5bfe4"
+    },
+    {
+      "source": "docker.io/library/postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382"
+    },
+    {
+      "source": "docker.io/library/postgres:18.6-bookworm@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+    },
+    {
+      "source": "docker.io/library/postgres@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af"
+    },
+    {
+      "source": "docker.io/library/postgres@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa"
+    },
+    {
+      "source": "docker.io/library/python:3.13-bookworm@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea"
+    },
+    {
+      "source": "docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d"
+    },
+    {
+      "source": "docker.io/library/redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499"
+    },
+    {
+      "source": "docker.io/library/redis:8.10.1-alpine@sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79"
+    },
+    {
+      "source": "docker.io/library/redis:8.2.1-bookworm@sha256:5fa2edb1e408fa8235e6db8fab01d1afaaae96c9403ba67b70feceb8661e8621"
+    },
+    {
+      "source": "docker.io/library/redis@sha256:520775a41a63e77e06c73e35d2fd9cc15921a609516818796b4ecbb813078bc7"
+    },
+    {
+      "source": "docker.io/library/redis@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff"
+    },
+    {
+      "source": "docker.io/library/redis@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576"
+    },
+    {
+      "source": "docker.io/nixos/nix:2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c"
+    },
+    {
+      "source": "docker.io/palantirtechnologies/policy-bot:1.41.1@sha256:1babe4d474db1ed7184146fbd2d332138c30121b2f860451347d9dbb825f5a20"
+    },
+    {
+      "source": "docker.io/palantirtechnologies/policy-bot:1.41.2@sha256:a35545fe6ac75e2429352e6f8d4baa92ce16d4e524b10a3711031c2ff79841a5"
+    },
+    {
+      "source": "docker.io/pgvector/pgvector:0.8.1-pg16-bookworm@sha256:33198da2828a14c30348d2ccb4750833d5ed9a44c88d840a0e523d7417120337"
+    },
+    {
+      "source": "docker.io/pgvector/pgvector:pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f"
+    },
+    {
+      "source": "docker.io/pgvector/pgvector@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782"
+    },
+    {
+      "source": "docker.io/queeup/upnpc-container:v2.3.3-r2@sha256:2d8a0d395f4e653943abd87324096842eb884409bb31f2a8d743a871592dcb87"
+    },
+    {
+      "source": "docker.io/queeup/upnpc-container@sha256:5bf14ccbe1cac2994e34c01bc6a677010e68e28705c6176a9ef7b3ebfbf5bec6"
+    },
+    {
+      "source": "docker.io/rancher/local-path-provisioner:v0.0.36@sha256:1eba82e9c386038b4af6d69cca7519fac738c28c42735ed48ce70c882ad0d80f"
+    },
+    {
+      "source": "docker.io/tailscale/k8s-operator:v1.102.3@sha256:d86a8be7ad9d38714968f5d4e010ba8dad30c8f672736ef94eda9b250febeb12"
+    },
+    {
+      "source": "docker.io/tailscale/tailscale:v1.102.3@sha256:8c42c4574ab066384fcb72f69e086a2ff1dd3652eb6f56856cee34bcf0d2f680"
+    },
+    {
+      "source": "docker.io/valkey/valkey:8.0@sha256:4436c94fc34ce4af0354b9379d433a1f258998fb955f995c89822f98c14a8cab"
+    },
+    {
+      "source": "docker.io/valkey/valkey@sha256:dbb2de90cb7a60c4f3f7e8d73fcaab69a94c557bb08a064108fa5d5b1814086e"
+    },
+    {
+      "source": "docker.langfuse.com/langfuse/langfuse:4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd"
+    },
+    {
+      "source": "ecr-public.aws.com/docker/library/redis:8.2.3-alpine@sha256:08ad0b1d280850169a790dba1393ff7a90aef951fc19632cf4d3ce4f78e679ba"
+    },
+    {
+      "source": "gcr.io/etcd-development/etcd:v3.6.5@sha256:042ef9c02799eb9303abf1aa99b09f09d94b8ee3ba0c2dd3f42dc4e1d3dce534"
+    },
+    {
+      "source": "ghcr.io/berriai/litellm-database:main-v1.80.8-stable@sha256:3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8"
+    },
+    {
+      "source": "ghcr.io/dexidp/dex:v2.45.1@sha256:8499afd690c437f52301efd2b05b2455da5bd2dfc20332cd697dc9937f808462"
+    },
+    {
+      "source": "ghcr.io/dispatcharr/dispatcharr:latest@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f"
+    },
+    {
+      "source": "ghcr.io/external-secrets/external-secrets:v2.0.1@sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f"
+    },
+    {
+      "source": "ghcr.io/jkroepke/kube-webhook-certgen:1.8.2@sha256:e133b64c08377a107298ac3352504bd3cd21f13282bc2aac099a88a7888b3f54"
+    },
+    {
+      "source": "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9"
+    },
+    {
+      "source": "ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66"
+    },
+    {
+      "source": "ghcr.io/multica-ai/multica-web:v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n:stable@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
+    },
+    {
+      "source": "ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7"
+    },
+    {
+      "source": "ghcr.io/nofxaios/nofx/nofx-frontend:stable@sha256:6c1e56336433e82eb5e750034d2991a8dbebd89a6b19119c4b12601ef1842887"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-apiserver:0.12.7@sha256:6db3978fd7bc577d4f84f486546eb3220fa5e94817f7f8b5ecada7471e81a3e2"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-genesis:0.12.7@sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-nocturne:0.12.7@sha256:ad2636539bcf7bb64653fe21f3ebb0f1bc78fd814495db49b3d9143b5a9a77bc"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-portal:0.12.7@sha256:f3fe77690cd66b1f0285b55070ef855f9b649764824c1db7f22bf303f2b29f36"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-rscserver:0.12.7@sha256:5ceb4882408874f167963de03b4b2d81d5efec9b522f0aedf5f81a8c1d65a957"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-supervisor:0.12.7@sha256:5052b794d3b9e43520d3ca170d6aae0898f7cca02f8e4d2bd7a819b9868f181f"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium-vigil:0.12.7@sha256:a1bbe1f7f64c20dd91c4efd8f84a43cc634a93846b18cee6af8a6b7313c06de5"
+    },
+    {
+      "source": "ghcr.io/octelium/cordium:0.12.7@sha256:4d6728bd8d20d4b0ef2092221721c345f4739b88b1f2b263458f02283ee46eea"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-apiserver:0.35.0@sha256:007ac8a0ef2ef9fde486e7cc30811ce250345db9ad62e45774127075035e8ad1"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-authserver:0.35.0@sha256:9c1231dd2d9cca799b4fba36a8abee19185c76ba8b0c883481eefdc29822333e"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-dnsserver:0.35.0@sha256:388c4738e48787a60e9ef02a262cd9177fcd274920a268d1820616b335198e8b"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-genesis:0.35.0@sha256:c8bb94c38171bcb134405b7bf151260d88d6f08a847dcebd6b724d2b3ed2e72f"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-gwagent:0.35.0@sha256:e8708809455b8964c97d4ff0cba60792f382f82409793daa18733cbc34e834a7"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-ingress:0.35.0@sha256:fb951434573959f7c01a0783f0942824e22c898f0358ba43f66b472d4e727792"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-nocturne:0.35.0@sha256:7a6c0d7bc62452928c724f11b0219a7e2a8e3d4ec9e0c741ca87e66625225cfe"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-nodeinit:0.35.0@sha256:1a357d50bd35862b57cd2b4663ff90db803cb9646f92e80723c2ef27cef6b229"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-octovigil:0.35.0@sha256:907e4c87e6e3923d52bb14143c2a5156afc6f56c7001994034f232396182fb99"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-portal:0.35.0@sha256:1d34d4ee148cca5b858303c0487b881248a49d7ce3e027971c221f31937d076c"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-rscserver:0.35.0@sha256:654ff671aff7439672157eb7281ff7ee5bdae08704f7e40555d59e30d61ba3f9"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390"
+    },
+    {
+      "source": "ghcr.io/octelium/octelium:0.35.0@sha256:37bf93b69a6fb42d94909d840bc68542c13de5a60bf8d516ef80975daab053cb"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-apiserver:0.22.0@sha256:7f05db4fd9b463c134c90e076ec8cd8698c35bb4efc3d7a638a1f73aff15ff94"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-cloudman:0.22.0@sha256:66cccf10e7fc91ca2979212bad6e56e72f29fab3c88eafdf2e9d8600c7c1669b"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-clusterman:0.22.0@sha256:b35f44142b3201a2446ec43a98066e81762c3e9652b5bc2aab6a4fab0d2071c1"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-collector:0.22.0@sha256:e4497f2029c9ed35af8e8652464a332fd04bd8fd133b14cd5922c5ba03ef6382"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-dirsync:0.22.0@sha256:20946aba4ccf6a22d8f9e28a92db054fd70a31609f737843b6d9852a7ccac4b0"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-genesis:0.22.0@sha256:f8978d6373bd11a0bb5c6f5c5c57375e110bc1ab2842056f55a3153c77428e92"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-logstore:0.22.0@sha256:4f8cf484cdc0416649efb52ba184465923ef42e8bda280153146316c798e1406"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-metricstore:0.22.0@sha256:d026839d818634aab28850ded68420a4def0752d0f75cc2b816405ef9a49c3ff"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-nocturne:0.22.0@sha256:102c907933ed10b992d213a7392a60d9eaa1eac589593d153b6662b9e4c4f201"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-policyportal:0.22.0@sha256:fb77c65f2f0fc4dab9c1835a55083633e847683f3380bf24b0d849d4d7740a4a"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-publicserver:0.22.0@sha256:096c5fdc761e6663f9a52b976056d03e1d0fdb287ad971596c6f66dccc57aa38"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-rscserver:0.22.0@sha256:7021192b770ae6edf97e7ea4ed09da3f42708869765ea4818f001185de9f1447"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-rscstore:0.22.0@sha256:c7d56cc2cc56422f051be8176e7f3220523e9ff1249dbd711e633542ed82e358"
+    },
+    {
+      "source": "ghcr.io/octelium/octeliumee-secretman:0.22.0@sha256:e863e39c0234cd8ee1e69bcc220230d0abb9ea8ff24aa91cccf9444938a32a2f"
+    },
+    {
+      "source": "ghcr.io/openclaw/openclaw:2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250"
+    },
+    {
+      "source": "ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
+    },
+    {
+      "source": "ghcr.io/qdm12/gluetun:v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027"
+    },
+    {
+      "source": "ghcr.io/siderolabs/flannel:v0.27.4@sha256:0490e475f3e2f66cce10ff77bc2ce6efb20b61ea3ce0bee638556ddfdaf7be82"
+    },
+    {
+      "source": "ghcr.io/siderolabs/kubelet:v1.34.11@sha256:d30a104cc43649aff40f94b00a935b75c4f0a17ae2317f5fabf43974c7055616"
+    },
+    {
+      "source": "ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00"
+    },
+    {
+      "source": "ghcr.io/stefanprodan/podinfo:6.9.3@sha256:0c73d438b0fe28c1d52bac0d6aafa04efe2023910378c4b436e234f56b6e9b99"
+    },
+    {
+      "source": "ghcr.io/toeverything/affine:0.27.0@sha256:cc309913620e153f7aaea47cd40d1eff993030cf2b2df8f88270663459db37c9"
+    },
+    {
+      "source": "ghcr.io/toeverything/affine@sha256:93e7a89e6bcc29dd28c528138f50333d0952795ceb1a69e4ceceff2a7f3a612f"
+    },
+    {
+      "source": "lscr.io/linuxserver/deluge:18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9"
+    },
+    {
+      "source": "lscr.io/linuxserver/prowlarr:2.5.2@sha256:aaa16ba7d66e413db6d0358d3b6c68d833578ba7f176f24a51807181e7637fce"
+    },
+    {
+      "source": "lscr.io/linuxserver/radarr:6.3.0@sha256:fe051413dfd91b383ba04910552e83fb0306895fefee275c48dafe7bb90807dc"
+    },
+    {
+      "source": "lscr.io/linuxserver/sonarr:4.0.19@sha256:82172b363f9eddc02aca544f880a044f2ceb9aaf190bc87e4454e2f705eb91d0"
+    },
+    {
+      "source": "quay.io/argoproj/argocd:v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-acmesolver@sha256:d8d948a9fa0fb9eeb9fd2432dee4945cc202c840ee25a733f0b238fd89fe5cbb"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-cainjector@sha256:06ad347fe0dc2eb84cc355c26f6752e05e87dceb6447f5cd29b963dd66dfd8bd"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-controller@sha256:6c13d61e0348a5bc3477f8ea9a928624300b30d19b1c72a7d2b90372fc713db4"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-startupapicheck@sha256:b0c9a2c18d02f3c40a9e091a6fe9afdf39cbf7fb2d9acc18c9881c21c625f2dc"
+    },
+    {
+      "source": "quay.io/jetstack/cert-manager-webhook@sha256:a61e817632cebed3bb59a189327e786fa3fdd7597167d994a1848d98fd55848f"
+    },
+    {
+      "source": "quay.io/kiali/kiali-operator:v2.26.0@sha256:ca2e4c356e946849883f42e9c9fe41080145cb442f93200cfca4e55a89a62039"
+    },
+    {
+      "source": "quay.io/kiali/kiali:v2.26.0@sha256:59cce98a9811ce53ff3da771225d1df00f0ca4ae0819311291ae7316349a13e9"
+    },
+    {
+      "source": "quay.io/prometheus-operator/prometheus-config-reloader:v0.90.1@sha256:693faa0b87243cddca2cffb13586e4e2778b0cdf319cb2e601ba7af3fd19ef7d"
+    },
+    {
+      "source": "quay.io/prometheus-operator/prometheus-operator:v0.90.1@sha256:52a6a92d915ea2fa94314748d99db7a94922e3fe63274f6182fc033b9126b573"
+    },
+    {
+      "source": "quay.io/prometheus/alertmanager:v0.32.1@sha256:51a825c2a40acc3e338fdd00d622e01ec090f72be2b3ea46be0839cd47a4d286"
+    },
+    {
+      "source": "quay.io/prometheus/prometheus:v3.11.3-distroless@sha256:cff72a3f49918f41c4b5c8a6174dd8433036bebf7878120da538b3720ba3fa0d"
+    },
+    {
+      "source": "quay.io/thanos/thanos:v0.41.0@sha256:cf3e9b292e4302ad4a4955b56379703aea39516607d382a57604a3d003c35d10"
+    },
+    {
+      "source": "registry.k8s.io/coredns/coredns:v1.12.4@sha256:986f04c2e15e147d00bdd51e8c51bcef3644b13ff806be7d2ff1b261d6dfbae1"
+    },
+    {
+      "source": "registry.k8s.io/descheduler/descheduler:v0.33.0@sha256:de38c88dcb1e7d822c4bd320551cc55e541c160c6ba380d99772949b0c967ab0"
+    },
+    {
+      "source": "registry.k8s.io/kube-apiserver:v1.34.11@sha256:c7aac63a5f4154da416802b1ecb3f5349d9eade8f3cc3dcf57efb5ed0f685e69"
+    },
+    {
+      "source": "registry.k8s.io/kube-controller-manager:v1.34.11@sha256:cbb63968eb76f6a167b075a12132d690bb2be11a25088fc0ac549d6aa6f8035f"
+    },
+    {
+      "source": "registry.k8s.io/kube-proxy:v1.34.11@sha256:ab8219b43a5ddbafad58bf901509c29994e79fcd7e3b6c47f67f0af790328d89"
+    },
+    {
+      "source": "registry.k8s.io/kube-scheduler:v1.34.11@sha256:54d5f94040d210a6482e53c9bfeabda7be07e961d7667cff34eb469df3b5c658"
+    },
+    {
+      "source": "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.18.0@sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e"
+    },
+    {
+      "source": "registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250"
+    },
+    {
+      "source": "registry.k8s.io/metrics-server/metrics-server:v0.8.1@sha256:b2d2efaf5ac3b366ed0f839d2412a2c4279d4fc2a2a733f12c52133faed36c41"
+    },
+    {
+      "source": "registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+    },
+    {
+      "source": "registry.k8s.io/sig-storage/nfs-subdir-external-provisioner:v4.0.2@sha256:63d5e04551ec8b5aae83b6f35938ca5ddc50a88d85492d9731810c31591fa4c9"
+    },
+    {
+      "source": "xpkg.crossplane.io/crossplane/crossplane:v2.3.3@sha256:f1c88a98f113a5cb78d75c7e94e2a7fefdf86ffb3353c63f01697dc5ad855b19"
+    }
+  ]
+}
