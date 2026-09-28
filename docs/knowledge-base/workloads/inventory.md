@@ -237,7 +237,10 @@ gateway/Discord recovery remains pending.
 
 ## Private OCI Packages
 
-Harbor owns the private `homelab` project and NOFX custom image publication.
+Harbor owns private `homelab` custom images and the public upstream-only
+`mirror` project. The [Talos mirror rollout](../../harbor-image-mirroring.md)
+covers Helm/operator-generated workloads and system images; publication must
+precede node cutover or new consumer versions.
 New builds use a local signing Job and the cert-manager-owned
 `harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical

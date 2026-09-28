@@ -1,0 +1,50 @@
+# Apply through scripts/talos-harbor-mirrors.py after copying and verifying images.
+# Recovery/bootstrap uses the rollback patch until Harbor and its ingress are ready.
+machine:
+  registries:
+    mirrors:
+      docker.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/docker.io
+        overridePath: true
+        skipFallback: true
+      ghcr.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/ghcr.io
+        overridePath: true
+        skipFallback: true
+      quay.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/quay.io
+        overridePath: true
+        skipFallback: true
+      registry.k8s.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/registry.k8s.io
+        overridePath: true
+        skipFallback: true
+      gcr.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/gcr.io
+        overridePath: true
+        skipFallback: true
+      ecr-public.aws.com:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/ecr-public.aws.com
+        overridePath: true
+        skipFallback: true
+      lscr.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/lscr.io
+        overridePath: true
+        skipFallback: true
+      xpkg.crossplane.io:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/xpkg.crossplane.io
+        overridePath: true
+        skipFallback: true
+      docker.langfuse.com:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/docker.langfuse.com
+        overridePath: true
+        skipFallback: true

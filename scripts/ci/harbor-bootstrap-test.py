@@ -21,7 +21,9 @@ SPEC = importlib.util.spec_from_file_location("harbor_bootstrap", ROOT / "cluste
 bootstrap = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bootstrap)
 ADMIN = "TestAdmin1-do-not-log"
-PASSWORDS = {"pull": "TestPull1-do-not-log", "publisher": "TestPush1-do-not-log"}
+PASSWORDS = {("homelab", "pull"): "TestPull1-do-not-log",
+             ("homelab", "publisher"): "TestPush1-do-not-log",
+             ("mirror", "publisher"): "TestMirrorPush1-do-not-log"}
 
 
 class HarborAPI:
@@ -29,7 +31,7 @@ class HarborAPI:
         self.config = {"self_registration": {"value": True},
                        "project_creation_restriction": {"value": "everyone"},
                        "robot_name_prefix": {"value": "robot$"}}
-        self.project = None
+        self.projects = {}
         self.robots = {}
         self.passwords = {}
         self.requests = []
@@ -48,26 +50,34 @@ class HarborAPI:
                 return 200, b"", {}
             return 200, self.config, {}
         if path == "/projects" and method == "POST":
-            if self.project:
+            name = body["project_name"]
+            if name in self.projects:
                 return 409, {"error": "already exists"}, {}
-            self.project = {"name": body["project_name"], "project_id": 7,
-                            "metadata": copy.deepcopy(body["metadata"])}
+            self.projects[name] = {"name": name, "project_id": len(self.projects) + 7,
+                                  "metadata": copy.deepcopy(body["metadata"])}
             return 201, b"", {}
-        if path == "/projects/homelab":
-            if not self.project:
+        if path.startswith("/projects/"):
+            project = self.projects.get(path.rsplit("/", 1)[1])
+            if not project:
                 return 404, {}, {}
             if method == "PUT":
-                self.project["metadata"].update(body["metadata"])
+                project["metadata"].update(body["metadata"])
                 return 200, b"", {}
-            return 200, self.project, {}
+            return 200, project, {}
         if path.startswith("/robots?"):
             query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
-            if query.get("q") != ["Level=project,ProjectID=7"]:
+            project = next((project for project in self.projects.values() if query.get("q") ==
+                            [f"Level=project,ProjectID={project['project_id']}"]), None)
+            if project is None:
                 return 400, {"error": "incorrect project robot query"}, {}
-            return 200, list(self.robots.values()) or None, {"X-Total-Count": str(len(self.robots))}
+            # Scope fixture robots by name so malformed permissions remain visible
+            # to the identity checks exercised below.
+            robots = [robot for robot in self.robots.values()
+                      if robot["name"].startswith(f"robot${project['name']}+")]
+            return 200, robots or None, {"X-Total-Count": str(len(robots))}
         if path == "/robots" and method == "POST":
             identifier = max(self.robots, default=0) + 1
-            name = bootstrap.robot_name(body["name"])
+            name = bootstrap.robot_name(body["name"], body["permissions"][0]["namespace"])
             if any(robot["name"] == name for robot in self.robots.values()):
                 return 409, {"error": "already exists"}, {}
             self.robots[identifier] = {**copy.deepcopy(body), "id": identifier, "name": name, "editable": True}
@@ -158,24 +168,28 @@ class BootstrapTest(unittest.TestCase):
 
     def test_initial_bootstrap_and_repeat_preserve_identities_and_least_privilege(self):
         self.assertEqual(self.main()[0], 0)
-        self.assertEqual(self.api.project["metadata"], {"public": "false", "auto_scan": "true"})
+        self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true"})
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
-        self.assertEqual(len(original), 2)
-        for name in bootstrap.ROBOTS:
-            robot = next(robot for robot in original.values() if robot["name"] == bootstrap.robot_name(name))
-            self.assertEqual(robot["permissions"], bootstrap.permissions(name))
-            self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[name])
+        self.assertEqual(len(original), 3)
+        self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
+        for project_name, settings in bootstrap.PROJECTS.items():
+            for name in settings["robots"]:
+                robot = next(robot for robot in original.values()
+                             if robot["name"] == bootstrap.robot_name(name, project_name))
+                self.assertEqual(robot["permissions"], bootstrap.permissions(name, project_name))
+                self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[(project_name, name)])
+        self.assertNotEqual(self.api.passwords[2], self.api.passwords[3])
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots, original)
         self.assertEqual([(method, path) for method, path, _ in self.mutations()],
-                         [("PATCH", "/robots/1"), ("PATCH", "/robots/2")])
+                         [("PATCH", "/robots/1"), ("PATCH", "/robots/2"), ("PATCH", "/robots/3")])
 
     def test_reconciles_public_project_and_robot_drift_without_touching_other_robots(self):
         self.reconcile()
-        self.api.project["metadata"].update(public="true", auto_scan="true")
+        self.api.projects["homelab"]["metadata"].update(public="true", auto_scan="true")
         self.api.robots[1]["disable"] = True
         self.api.robots[1]["permissions"][0]["access"].append(
             {"resource": "repository", "action": "delete", "effect": "allow"})
@@ -185,23 +199,49 @@ class BootstrapTest(unittest.TestCase):
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots[30], other)
-        self.assertEqual(self.api.project["metadata"], {"public": "false", "auto_scan": "true"})
-        self.assertEqual(self.api.robots[1]["permissions"], bootstrap.permissions("pull"))
+        self.assertEqual(self.api.projects["homelab"]["metadata"], {"public": "false", "auto_scan": "true"})
+        self.assertEqual(self.api.robots[1]["permissions"], bootstrap.permissions("pull", "homelab"))
         self.assertFalse(self.api.robots[1]["disable"])
         self.assertFalse(any(method == "DELETE" for method, _, _ in self.mutations()))
+
+    def test_mirror_repair_preserves_private_project_and_rejects_cross_project_scope(self):
+        self.reconcile()
+        self.api.projects["mirror"]["metadata"].update(public="false", auto_scan="false")
+        homelab = copy.deepcopy(self.api.projects["homelab"])
+        private_robots = copy.deepcopy({key: self.api.robots[key] for key in (1, 2)})
+        self.reconcile()
+        self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
+        self.assertEqual(self.api.projects["homelab"], homelab)
+        self.assertEqual({key: self.api.robots[key] for key in (1, 2)}, private_robots)
+        mirror_robot = self.api.robots[3]
+        self.assertEqual(mirror_robot["name"], "robot$mirror+publisher")
+        self.assertEqual(mirror_robot["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
+            {"resource": "repository", "action": "pull", "effect": "allow"},
+            {"resource": "repository", "action": "push", "effect": "allow"}]}])
+        mirror_robot["permissions"][0]["namespace"] = "homelab"
+        self.api.requests.clear()
+        self.assertEqual(self.main()[0], 1)
+        self.assertEqual(self.mutations(), [])
+
+    def test_existing_proxy_cache_project_fails_before_mutation(self):
+        self.reconcile()
+        self.api.projects["mirror"]["registry_id"] = 12
+        self.api.requests.clear()
+        self.assertEqual(self.main()[0], 1)
+        self.assertEqual(self.mutations(), [])
 
     def test_enables_missing_or_disabled_scanning_and_preserves_other_metadata(self):
         for metadata in ({"public": "false"}, {"public": "false", "auto_scan": "false"}):
             with self.subTest(metadata=metadata):
-                self.api.project = {"project_id": 7, "name": "homelab",
-                                    "metadata": {**metadata, "severity": "high"}}
+                self.api.projects["homelab"] = {"project_id": 7, "name": "homelab",
+                                                 "metadata": {**metadata, "severity": "high"}}
                 self.reconcile()
-                self.assertEqual(self.api.project["metadata"],
+                self.assertEqual(self.api.projects["homelab"]["metadata"],
                                  {"public": "false", "auto_scan": "true", "severity": "high"})
 
     def test_ignored_scanning_update_fails_verification(self):
-        self.api.project = {"project_id": 7, "name": "homelab",
-                            "metadata": {"public": "false", "auto_scan": "false"}}
+        self.api.projects["homelab"] = {"project_id": 7, "name": "homelab",
+                                         "metadata": {"public": "false", "auto_scan": "false"}}
         self.api.override = lambda method, path, body: (
             (200, b"", {}) if method == "PUT" and path == "/projects/homelab" else None)
         self.assertEqual(self.main()[0], 1)
@@ -254,10 +294,10 @@ class BootstrapTest(unittest.TestCase):
     def test_wrong_project_or_robot_scope_fails_before_mutation(self):
         self.reconcile()
         self.api.requests.clear()
-        self.api.project["name"] = "another-project"
+        self.api.projects["homelab"]["name"] = "another-project"
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.mutations(), [])
-        self.api.project["name"] = "homelab"
+        self.api.projects["homelab"]["name"] = "homelab"
         self.api.robots[1]["permissions"][0]["namespace"] = "another-project"
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.mutations(), [])
@@ -273,11 +313,16 @@ class BootstrapTest(unittest.TestCase):
                 self.assertEqual(self.mutations(), [])
 
     def test_project_privacy_is_verified_before_robot_creation(self):
-        self.api.project = {"project_id": 7, "name": "homelab", "metadata": {"public": "true"}}
+        self.api.projects["homelab"] = {"project_id": 7, "name": "homelab", "metadata": {"public": "true"}}
         self.api.override = lambda method, path, body: (
             (200, b"", {}) if method == "PUT" and path == "/projects/homelab" else None)
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.robots, {})
+
+    def test_shared_publisher_secret_fails_before_network(self):
+        with patch.dict(PASSWORDS, {("mirror", "publisher"): PASSWORDS[("homelab", "publisher")]}):
+            self.assertEqual(self.main()[0], 1)
+        self.assertEqual(self.api.requests, [])
 
     def test_invalid_secret_fails_without_network_or_leak(self):
         with tempfile.TemporaryDirectory() as directory:

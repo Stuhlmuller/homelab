@@ -36,16 +36,19 @@ The PostSync bootstrap creates the private `homelab` project and reconciles:
 | --- | --- | --- |
 | `robot$homelab+pull` | Pull repository | Kubernetes `imagePullSecrets` |
 | `robot$homelab+publisher` | Pull/push repository | Protected image publishing and migration |
+| `robot$mirror+publisher` | Pull/push within public `mirror` only | Public upstream image copies |
 
-Bootstrap and Harbor's own images stay on upstream registries to avoid a
-recovery dependency on the service being recovered. Keep original migration
+Bootstrap and Harbor image references retain upstream names. After verified
+copies, Talos redirects pulls to the public upstream-only `mirror` project.
+Fresh bootstrap and registry recovery use the upstream rollback patch; see
+[the cluster-wide mirror runbook](../../../../docs/harbor-image-mirroring.md). Keep original migration
 sources until independent pulls and workload rollouts succeed. Do not delete
 old GHCR artifacts as part of migration.
 
 ## Image scanning
 
 Trivy is enabled in `values.yaml`, with a retained 5 Gi database/cache PVC.
-The PostSync bootstrap reconciles `homelab` project metadata `auto_scan: "true"`
+The PostSync bootstrap reconciles `homelab` and `mirror` project metadata `auto_scan: "true"`
 so newly pushed images receive vulnerability scans. It verifies the setting
 on readback and repairs drift on subsequent syncs. Existing artifacts are not
 retroactively scanned by enabling scan-on-push.
@@ -84,7 +87,8 @@ base track the enforcing-dataplane and denied-egress acceptance work.
 | `registry-password` | Internal registry controller credential; ESO renders bcrypt htpasswd |
 | `database-password` | PostgreSQL password; `password` is the chart-required key alias |
 | `robot-pull-password` | Project pull robot credential |
-| `robot-push-password` | Project publisher robot credential |
+| `robot-push-password` | Private homelab project publisher robot credential |
+| `mirror-robot-push-password` | Independent public mirror publisher credential |
 
 The chart uses stable secret references instead of Helm-generated random
 credentials. cert-manager owns the RSA token-signing certificate and key in

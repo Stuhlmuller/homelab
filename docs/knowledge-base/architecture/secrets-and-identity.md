@@ -384,8 +384,11 @@ See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
 separate project robots for pull and publication. NOFX receives only the pull
 credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
-disabled and project creation is admin-only. Never store Harbor bootstrap
-images in Harbor itself.
+disabled and project creation is admin-only. Public upstream copies use the
+separate public-read `mirror` project; `robot$mirror+publisher` uses its own generated
+`/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
+Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
+see [the image mirror runbook](../../harbor-image-mirroring.md).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during
