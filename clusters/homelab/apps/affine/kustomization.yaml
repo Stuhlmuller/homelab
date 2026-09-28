@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - externalsecret.yaml
+  - pvc.yaml
+  - service.yaml
+  - deployment.yaml
+  - authorizationpolicy.yaml
+  - networkpolicy.yaml
+  - gateway-funnel.yaml
+  - ingress-funnel.yaml
+  - virtualservice.yaml
+images:
+  - name: ghcr.io/toeverything/affine
+    newName: ghcr.io/toeverything/affine
+    newTag: stable
+  - name: pgvector/pgvector
+    newName: pgvector/pgvector
+    newTag: pg16
+  - name: redis
+    newName: redis
+    newTag: 8.2-bookworm

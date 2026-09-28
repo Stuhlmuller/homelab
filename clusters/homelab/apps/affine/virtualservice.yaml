@@ -1,0 +1,22 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: affine
+  namespace: collaboration
+  annotations:
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-funnel-reviewed: "true"
+    homelab.rst.io/public-funnel-purpose: "Public AFFiNE web UI requested for external workspace access."
+spec:
+  hosts:
+    - affine.stinkyboi.com
+    - affine.tail67beb.ts.net
+  gateways:
+    - istio-system/tailnet-gateway
+    - istio-system/affine-funnel
+  http:
+    - route:
+        - destination:
+            host: affine.collaboration.svc.cluster.local
+            port:
+              number: 3010

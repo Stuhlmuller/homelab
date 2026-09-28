@@ -1,0 +1,18 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: openbot
+  namespace: ai
+  annotations:
+    homelab.rst.io/public-funnel: "false"
+spec:
+  hosts:
+    - openbot.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - route:
+        - destination:
+            host: openbot.ai.svc.cluster.local
+            port:
+              number: 3001

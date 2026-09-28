@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: affine-funnel
+  namespace: istio-system
+  annotations:
+    tailscale.com/funnel: "true"
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-funnel-reviewed: "true"
+    homelab.rst.io/public-funnel-purpose: "Public AFFiNE web UI requested for external workspace access."
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - affine
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  name: http2

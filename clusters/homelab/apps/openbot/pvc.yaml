@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openbot-data
+  namespace: ai
+  labels:
+    app.kubernetes.io/name: openbot
+    app.kubernetes.io/part-of: openbot
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 20Gi

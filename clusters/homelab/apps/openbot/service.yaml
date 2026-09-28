@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: openbot
+  namespace: ai
+  labels:
+    app.kubernetes.io/name: openbot
+    app.kubernetes.io/part-of: openbot
+spec:
+  selector:
+    app.kubernetes.io/name: openbot
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http

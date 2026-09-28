@@ -10,7 +10,8 @@ shared platform services. `platform-dns` owns CoreDNS resolver policy,
 `platform-storage` owns the QNAP NFS provisioner and default StorageClass
 desired state, and `media-postgres` owns the shared PostgreSQL instance for
 Sonarr, Radarr, and Prowlarr. `n8n-postgres` owns the dedicated PostgreSQL
-instance for n8n. These support apps are not counted as requested workloads;
+instance for n8n. `affine-postgres` and `affine-redis` own AFFiNE's database
+and cache services. These support apps are not counted as requested workloads;
 they exist so dependency state is still delivered through Argo CD.
 
 ## Conventions

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: affine
+  namespace: collaboration
+  labels:
+    app.kubernetes.io/name: affine
+    app.kubernetes.io/part-of: affine
+spec:
+  selector:
+    app.kubernetes.io/name: affine
+  ports:
+    - name: http
+      port: 3010
+      targetPort: http

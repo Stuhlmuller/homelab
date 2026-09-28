@@ -1,0 +1,15 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: affine-allow-ingressgateway
+  namespace: collaboration
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: affine
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway

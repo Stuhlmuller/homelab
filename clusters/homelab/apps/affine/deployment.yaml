@@ -1,0 +1,211 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affine
+  namespace: collaboration
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=The upstream self-host image stores state under /root/.affine; NFS root squash maps writes to the NAS guest identity.
+    checkov.io/skip2: CKV_K8S_22=AFFiNE requires writable image-managed runtime paths; durable storage is isolated under /root/.affine.
+    checkov.io/skip3: CKV_K8S_43=The stable self-host image tag follows AFFiNE release assets; Image Updater manages review PRs.
+    checkov.io/skip4: CKV2_K8S_6=affine is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
+  labels:
+    app.kubernetes.io/name: affine
+    app.kubernetes.io/part-of: affine
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: affine
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: affine
+        app.kubernetes.io/part-of: affine
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-postgres
+          image: pgvector/pgvector:pg16
+          imagePullPolicy: Always
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: affine-postgres-client
+                  key: DB_PASSWORD
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              for attempt in $(seq 1 60); do
+                if psql \
+                  "host=affine-postgres.collaboration.svc.cluster.local port=5432 user=affine dbname=affine connect_timeout=5" \
+                  -c 'select 1' >/dev/null; then
+                  exit 0
+                fi
+
+                echo "waiting for affine-postgres to accept authenticated connections (${attempt}/60)" >&2
+                sleep 2
+              done
+
+              echo "affine-postgres did not become ready in time" >&2
+              exit 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: wait-for-redis
+          image: redis:8.2-bookworm
+          imagePullPolicy: Always
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              for attempt in $(seq 1 60); do
+                if redis-cli -h affine-redis.collaboration.svc.cluster.local ping >/dev/null; then
+                  exit 0
+                fi
+
+                echo "waiting for affine-redis to accept connections (${attempt}/60)" >&2
+                sleep 2
+              done
+
+              echo "affine-redis did not become ready in time" >&2
+              exit 1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: migrate
+          image: ghcr.io/toeverything/affine:stable
+          imagePullPolicy: Always
+          env:
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.collaboration.svc.cluster.local
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: affine-postgres-client
+                  key: DATABASE_URL
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.tail67beb.ts.net
+            - name: AFFINE_CONFIG_PATH
+              value: /root/.affine/config
+            - name: AFFINE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: AFFINE_PRIVATE_KEY
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              node ./scripts/self-host-predeploy.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /root/.affine/storage
+              subPath: storage
+            - name: data
+              mountPath: /root/.affine/config
+              subPath: config
+      containers:
+        - name: affine
+          image: ghcr.io/toeverything/affine:stable
+          imagePullPolicy: Always
+          env:
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.collaboration.svc.cluster.local
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: affine-postgres-client
+                  key: DATABASE_URL
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.tail67beb.ts.net
+            - name: AFFINE_CONFIG_PATH
+              value: /root/.affine/config
+            - name: AFFINE_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: affine-secrets
+                  key: AFFINE_PRIVATE_KEY
+          ports:
+            - name: http
+              containerPort: 3010
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /root/.affine/storage
+              subPath: storage
+            - name: data
+              mountPath: /root/.affine/config
+              subPath: config
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: affine-data

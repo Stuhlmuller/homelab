@@ -11,23 +11,26 @@ handling is clear.
 2. Policy Bot
 3. OpenClaw
 4. OctoBot
-5. n8n
-6. n8n-postgres
-7. Radarr and Sonarr
-8. Prowlarr
-9. media-postgres
-10. LiteLLM
-11. Deluge
-12. Kiali
-13. Grafana
-14. Descheduler
-15. Prometheus
-16. platform-storage
-17. Tailscale
-18. Istio
-19. cert-manager
-20. external-secrets
-21. platform-dns
+5. AFFiNE
+6. affine-redis
+7. affine-postgres
+8. n8n
+9. n8n-postgres
+10. Radarr and Sonarr
+11. Prowlarr
+12. media-postgres
+13. LiteLLM
+14. Deluge
+15. Kiali
+16. Grafana
+17. Descheduler
+18. Prometheus
+19. platform-storage
+20. Tailscale
+21. Istio
+22. cert-manager
+23. external-secrets
+24. platform-dns
 
 ## Persistent Data
 
@@ -48,6 +51,13 @@ n8n public webhook exposure is independent of its stored workflow data. Remove
 `n8n-webhook-funnel`, the `n8n-webhook-funnel` Gateway, and the public
 `WEBHOOK_URL` first, then roll back the app while preserving both n8n PVCs
 unless intentionally rebuilding from exports.
+
+AFFiNE public exposure is the full web UI. Remove `affine-funnel`, the
+`affine-funnel` Gateway, and the public `AFFINE_SERVER_EXTERNAL_URL` first if
+external access needs to stop. Take a PostgreSQL logical dump before rollback
+whenever AFFiNE has users, workspaces, or documents, and preserve both the
+AFFiNE storage PVC and affine-postgres PVC unless intentionally rebuilding from
+exports.
 
 Policy Bot is stateless. Roll back its public exposure by removing the
 `policy-bot-hook-funnel` Ingress first, then roll back the Deployment and
