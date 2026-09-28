@@ -3,14 +3,14 @@ set -euo pipefail
 
 mode=${1:-}
 if ! [[ $mode == test && $# == 1 ]] &&
-  ! [[ $mode == inspect && $# == 2 && ${2:-} =~ ^[a-f0-9]{40}$ ]]; then
-  echo 'Usage: bash scripts/nofx-credential-check.sh test | inspect REVIEWED_MAIN_SHA' >&2
+  ! [[ ( $mode == inspect || $mode == inspect-account ) && $# == 2 && ${2:-} =~ ^[a-f0-9]{40}$ ]]; then
+  echo 'Usage: bash scripts/nofx-credential-check.sh test | {inspect|inspect-account} REVIEWED_MAIN_SHA' >&2
   exit 2
 fi
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 check_dir="$(mktemp -d /tmp/nofx-credential-check.XXXXXX)"
 trap 'chmod -R u+w "$check_dir"; rm -rf -- "$check_dir"' EXIT
-if [[ $mode == inspect ]]; then
+if [[ $mode != test ]]; then
   reviewed_sha=$2
   checkout_status="$(git --no-replace-objects -C "$root" status --porcelain --untracked-files=all)"
   if [[ -n "$checkout_status" ]]; then
@@ -43,7 +43,7 @@ go_environment=(env -i "PATH=$PATH" "SSL_CERT_FILE=${SSL_CERT_FILE:-}"
 
 # The published NOFX images target linux/amd64; compile without a C runtime.
 "${go_environment[@]}" GOOS=linux GOARCH=amd64 go build -trimpath -o "$check_dir/check" ./credentialcheck
-[[ $mode == inspect ]] || exit 0
+[[ $mode != test ]] || exit 0
 kube=(kubectl --context admin@homelab --request-timeout=30s -n nofx)
 backend_image="$(yq ea 'select(.kind == "Deployment" and .metadata.name == "nofx-backend") | .spec.template.spec.containers[] | select(.name == "backend") | .image' "$root/clusters/homelab/apps/nofx/deployment.yaml")"
 frontend_image="$(yq ea 'select(.kind == "Deployment" and .metadata.name == "nofx-frontend") | .spec.template.spec.containers[] | select(.name == "frontend") | .image' "$root/clusters/homelab/apps/nofx/deployment.yaml")"
@@ -65,17 +65,21 @@ print(pods[0])' "$2" "$1"
 backend_pod="$(ready_pod backend "$backend_image")"
 frontend_pod="$(ready_pod frontend "$frontend_image")"
 "${kube[@]}" exec "$frontend_pod" -c frontend -- wget -qO- http://127.0.0.1/nofx-source.tar.gz > "$check_dir/live-source.tar.gz"
-python3 -I - "$check_dir/live-source.tar.gz" <<'PY'
+python3 -I - "$check_dir/live-source.tar.gz" "$mode" <<'PY'
 import pathlib, sys, tarfile
 with tarfile.open(sys.argv[1]) as archive:
-    for name in ("crypto/crypto.go", "go.mod", "go.sum"):
+    sources = ["crypto/crypto.go", "go.mod", "go.sum"]
+    if sys.argv[2] == "inspect-account":
+        sources += ["trader/okx_spot_client.go", "trader/okx_trader.go"]
+    for name in sources:
         member = archive.extractfile("nofx/" + name)
         if member is None or member.read() != pathlib.Path(name).read_bytes():
-            sys.exit("Deployed NOFX encryption source/dependencies differ; inspection refused")
+            sys.exit("Deployed NOFX diagnostic source/dependencies differ; inspection refused")
 PY
 
 # Only the temporary executable is written. The helper opens SQLite mode=ro,
-# uses the pod's existing encryption service inputs, and makes no API requests.
+# uses the pod's existing encryption service inputs. Only inspect-account makes
+# the fixed signed, read-only account-config request; inspect stays offline.
 # Variables in the remote shell and its cleanup trap must expand inside the pod.
 # shellcheck disable=SC2016
 "${kube[@]}" exec -i "$backend_pod" -c backend -- sh -c '
@@ -85,5 +89,9 @@ diagnostic_dir="$(mktemp -d /tmp/nofx-credential-check.XXXXXX)"
 trap '\''rm -f -- "$diagnostic_dir/check"; rmdir -- "$diagnostic_dir"'\'' EXIT
 cat > "$diagnostic_dir/check"
 chmod 700 "$diagnostic_dir/check"
-"$diagnostic_dir/check"
-' < "$check_dir/check"
+if [ "$1" = inspect-account ]; then
+  "$diagnostic_dir/check" inspect-account
+else
+  "$diagnostic_dir/check"
+fi
+' sh "$mode" < "$check_dir/check"

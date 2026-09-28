@@ -370,6 +370,22 @@ the database and encryption key during diagnosis; verify the saved key's account
 and live/demo status through the account owner's UI if storage passes. Never use
 **Start** as a connection test.
 
+If **Spot allocations** cannot verify the account, use the separate account mode
+with the same reviewed-main and deployed-source checks:
+
+```sh
+nix develop --command bash scripts/nofx-credential-check.sh inspect-account "$reviewed_main_sha"
+```
+
+This retains the storage counters and adds `account_checks` without account IDs.
+Each usable connection gets one signed GET to the US account-config endpoint,
+using the production proxy/TLS settings, without redirects or application retries.
+Unusable credentials are skipped. Output contains only HTTP status, a validated
+numeric OKX code, counts, and validation booleans; it excludes response text,
+account identifiers, and credentials. A transport failure does not prove that
+credentials are invalid. This mode does not read balances, place orders, or
+change account settings. The original `inspect` mode remains storage-only.
+
 Source: pinned upstream
 [runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),
 [backtest runner](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/backtest/runner.go),
