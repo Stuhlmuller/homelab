@@ -99,8 +99,8 @@ upstream commit
 [source.json](../../../../builds/nofx/source.json) pins the source archive and
 checksum; both Dockerfiles pin their builder and runtime images by digest.
 The preparation script applies the committed patches before Docker builds
-either runtime. The published cash-spot build contains the following repairs;
-deployment and live acceptance remain pending as described below:
+either runtime. The deployed cash-spot build contains the following repairs;
+functional acceptance remains pending as described below:
 
 - Key-preserving model edits without submitted-credential logging or trader
   initialization during configuration save.
@@ -176,9 +176,16 @@ The cash-spot rollout targets source
 `e7014c8b9644a6c13d909373eda3c572c1cdba00` from
 [run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
 All three jobs succeeded: test/build, private signed publication, and digest
-reporting. The manifest pair comes from that report. Runtime deployment and
-cash-spot UI acceptance remain pending; publication is not a live trading
-result.
+reporting. [PR #1086](https://github.com/Stuhlmuller/homelab/pull/1086) deployed
+that pair. At 2026-09-28 02:45:06 UTC, Argo was synced to the merge commit;
+both containers were ready at the published digests, the served source matched
+this build with patch `0015`, and all traders were stopped.
+Argo remains `Degraded` because the inactive, unmounted `nofx-litellm`
+ExternalSecret lacks SSM reader permission. Reconcile the declared shared
+`aws-ssm-parameters` IAM through a reviewed full protected Terragrunt Apply,
+then verify ESO readiness and Argo health. UI/account acceptance awaits
+NOFX sign-in and explicit allocations; no live trading result is established.
+See the [dated rollout evidence](../../../../docs/knowledge-base/apps/nofx.md).
 
 The earlier US connection and dashboard release used
 [build 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
