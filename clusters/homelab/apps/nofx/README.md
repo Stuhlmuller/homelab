@@ -173,6 +173,14 @@ desired image references. Both deployments use `harbor-pull` only through
 `imagePullSecrets`; the kubelet credential never enters NOFX containers.
 
 The cash-spot rollout targets source
+`b78cc47ddd5bb9bdace4912b47886e799a9d5efd` from successful
+[run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505).
+This pair includes shared account-read pacing, awaited trader API actions, and
+strict free-model JSON decisions in patches `0016`–`0018`.
+Publication verified private pulls and signatures;
+deployment and stopped-state functional acceptance remain separate gates.
+
+The previous cash-spot rollout used source
 `e7014c8b9644a6c13d909373eda3c572c1cdba00` from
 [run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
 All three jobs succeeded: test/build, private signed publication, and digest
@@ -212,7 +220,9 @@ Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expect
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
 source download matches the published build revision, including patches
-`0012`–`0015`, including the entry protection bounds in `0015`. Patch `0013`
+`0012`–`0018`, including the entry protection bounds in `0015`, account-read
+pacing in `0016`, completed-request UI state in `0017`, and strict free-model
+JSON decisions in `0018`. Patch `0013`
 remains inactive with no route or token mount.
 Freshly verify every persisted trader is stopped before opening the dashboard;
 startup can resume a trader saved as running. Reload the authenticated UI and
