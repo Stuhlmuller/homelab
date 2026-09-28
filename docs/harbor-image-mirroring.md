@@ -44,7 +44,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    Require a successful run, including complete anonymous downloads. A running
    Harbor UI or successful manifest request alone does not prove complete copies.
 3. From that clean checkout, render and strictly validate each existing machine
-   configuration. The helper defaults to inspection; use Talos client 1.11.3:
+   configuration. The helper defaults to inspection; use Talos client 1.11.3.
+   Restore the private client config at `.talos/talosconfig`, or pass an existing
+   private file explicitly with `--talosconfig /path/to/private/talosconfig` on
+   every command below. It never falls back to the user config or `TALOSCONFIG`;
+   an absent selected file stops before any network call. Never commit this file.
 
    ```sh
    for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
@@ -64,10 +68,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    manifests, preserves the full persistent machine configuration, allows only
    registry-mirror differences, validates with `--mode metal --strict`, and
    applies with `--mode no-reboot`. It checks configuration readback and node
-   readiness/boot identity. It never drains, restarts or deletes workloads.
+   readiness/boot identity, then requests `registry.k8s.io/pause:3.10` through
+   Talos's native `image pull --namespace cri` using the selected client config.
+   Rollback and dry-run do not pull images. It never drains, restarts or deletes workloads.
 5. Verify every node's `registryconfigs` resource contains the committed
-   endpoints and `skipFallback: true`. Observe a fresh image pull and Harbor
-   access evidence before claiming live migration. Existing cached layers and
+   endpoints and `skipFallback: true`. Correlate each native pause pull with
+   Harbor manifest access logs from that node before claiming live migration.
+   Successful pulls alone can reuse cached layers; existing cached layers and
    unchanged Pod image strings are not evidence of an upstream pull.
 
 Talos host DNS currently reaches the existing public Harbor HTTPS route.
@@ -137,7 +144,8 @@ python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 --rollback \
   --execute --expected-sha "$reviewed_sha"
 ```
 
-Rollback authenticates directly to Talos and verifies its boot identity; it
+Rollback uses the same explicit `--talosconfig` selection (default
+`.talos/talosconfig`), authenticates directly to Talos and verifies its boot identity; it
 does not require Kubernetes API availability or a Ready node. Exact-main
 verification still requires GitHub access. Apply only through this validated
 repository-owned path. Retain mirrored blobs;

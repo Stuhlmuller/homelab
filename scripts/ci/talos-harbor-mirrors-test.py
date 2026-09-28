@@ -28,11 +28,15 @@ ORIGINAL = [{"version": "v1alpha1", "machine": {"type": "worker"},
 class RolloutTest(unittest.TestCase):
     def test_dry_run_execution_and_fail_closed_gates(self):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
-                         "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot"):
+                         "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "scripts/config").mkdir(parents=True)
                 (root / ".talos/patches").mkdir(parents=True)
+                talosconfig = root / ("private-talosconfig" if scenario == "custom-config" else ".talos/talosconfig")
+                if scenario != "missing-config":
+                    talosconfig.write_text("private test fixture")
+                config_argument = talosconfig if scenario == "custom-config" else None
                 (root / "scripts/config/harbor-images.json").write_text(json.dumps(
                     {"images": [{"source": f"docker.io/library/alpine:3.22@sha256:{DIGEST}"}]}))
                 wanted = copy.deepcopy(MIRRORS)
@@ -47,6 +51,9 @@ class RolloutTest(unittest.TestCase):
                 def run(*command, binary=False):
                     nonlocal current, applied
                     calls.append(command)
+                    if command[0] == "talosctl" and any(action in command for action in ("get", "read", "apply-config", "image")):
+                        self.assertIn("--talosconfig", command)
+                        self.assertEqual(command[command.index("--talosconfig") + 1], str(talosconfig.resolve()))
                     if command[:2] == ("git", "status"):
                         return " M unsafe\n" if scenario == "dirty" else ""
                     if command[:2] in (("git", "rev-parse"), ("git", "ls-remote")):
@@ -94,6 +101,14 @@ class RolloutTest(unittest.TestCase):
                     if command[:2] == ("talosctl", "validate"):
                         self.assertEqual(command[-3:], ("--mode", "metal", "--strict"))
                         return ""
+                    if "image" in command:
+                        self.assertEqual(command[-5:], ("image", "pull", "--namespace", "cri", "registry.k8s.io/pause:3.10"))
+                        self.assertTrue(applied)
+                        self.assertEqual(len(captures), 3, "Pull follows persistent configuration readback")
+                        self.assertEqual(calls[-2][:2], ("kubectl", "get"), "Pull follows node health check")
+                        if scenario == "pull-failure":
+                            raise RuntimeError("Native image pull failed")
+                        return ""
                     if "apply-config" in command:
                         self.assertIn("no-reboot", command)
                         applied = True
@@ -105,13 +120,16 @@ class RolloutTest(unittest.TestCase):
                 output = io.StringIO()
                 with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
                         contextlib.redirect_stdout(output):
-                    if scenario in ("dry", "apply", "rollback"):
-                        rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"))
+                    if scenario in ("dry", "apply", "rollback", "custom-config"):
+                        rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"), config_argument)
                     else:
                         with self.assertRaises(RuntimeError):
-                            rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"))
+                            rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"), config_argument)
                 self.assertNotIn("PrivateSecret", output.getvalue())
-                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot"))
+                if scenario == "missing-config":
+                    self.assertEqual(calls, [])
+                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure"))
+                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure"))
                 if scenario in ("dry", "rollback", "rollback-reboot"):
                     self.assertFalse(any(call[0] in ("gh", "skopeo") for call in calls))
                 if scenario.startswith("rollback"):

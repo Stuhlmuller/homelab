@@ -264,6 +264,8 @@ the reviewed shared SSM plan before expecting the new bootstrap to complete. Pri
 `.talos/patches/harbor-mirrors.yaml` and the validated
 `scripts/talos-harbor-mirrors.py` path redirect containerd for all inventoried
 registries, covering controller-generated Pods and Talos system images.
+Authenticated Talos calls explicitly select the private `.talos/talosconfig` or
+the operator-provided `--talosconfig` path; absent files fail before networking.
 `skipFallback: true` prevents silent upstream pulls. Apply only after publication;
 new image/chart versions need a prerequisite catalog publication. The rollback
 patch restores upstream access for cold bootstrap or Harbor recovery. Existing

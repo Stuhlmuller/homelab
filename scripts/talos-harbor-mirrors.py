@@ -100,14 +100,17 @@ def talos_boot(client):
     return boot
 
 
-def reconcile(node, execute, expected, rollback):
+def reconcile(node, execute, expected, rollback, talosconfig=None):
+    talosconfig = Path(talosconfig or ROOT / ".talos/talosconfig").expanduser().resolve()
+    if not talosconfig.is_file():
+        raise RuntimeError("The selected Talos client configuration is unavailable")
     if not re.search(r"^Talos v1\.11\.3$", run("talosctl", "version", "--client", "--short"), re.MULTILINE):
         raise RuntimeError("This rollout requires talosctl 1.11.3")
     if execute:
         verify_main(expected)
         if not rollback:
             verify_copies(expected)
-    client = ["talosctl", "--endpoints", "10.1.0.199", "--nodes", node]
+    client = ["talosctl", "--talosconfig", str(talosconfig), "--endpoints", "10.1.0.199", "--nodes", node]
     # Recovery must work while Harbor-dependent Kubernetes components are down.
     def check_boot():
         return talos_boot(client) if rollback else ready(node)
@@ -158,19 +161,23 @@ def reconcile(node, execute, expected, rollback):
             run("talosctl", "machineconfig", "patch", str(original), "--patch", "[]", "--output", str(normalized))
             if documents(normalized) != after or check_boot() != boot:
                 raise RuntimeError("Post-apply configuration or no-reboot verification failed")
+            if not rollback:
+                run(*client, "image", "pull", "--namespace", "cri", "registry.k8s.io/pause:3.10")
     print(f"{NODES[node]}: {'config applied; no reboot verified' if execute else 'config validated only'} Harbor {'rollback' if rollback else 'mirrors'}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--node", required=True, choices=NODES)
+    parser.add_argument("--talosconfig", type=Path, default=ROOT / ".talos/talosconfig",
+                        help="Private Talos client config (default: repository .talos/talosconfig)")
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--expected-sha")
     parser.add_argument("--rollback", action="store_true")
     args = parser.parse_args()
     os.umask(0o077)
     signal.signal(signal.SIGTERM, lambda signum, _: sys.exit(128 + signum))
-    reconcile(args.node, args.execute, args.expected_sha, args.rollback)
+    reconcile(args.node, args.execute, args.expected_sha, args.rollback, args.talosconfig)
 
 
 if __name__ == "__main__":
