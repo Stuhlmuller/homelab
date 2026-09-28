@@ -373,7 +373,8 @@ spawning probe processes inside the containers while requiring the proxy to
 connect to the gateway and relay a successful HTTP response.
 
 The app container also owns startup and liveness probes. Startup allows up to
-two minutes for the gateway to load persisted state and plugins. After startup,
+six minutes for the gateway to load persisted state, plugins, and channels.
+After startup,
 36 consecutive failed liveness checks restart only the app container after
 about six minutes without an HTTP response through the proxy. Readiness removes
 the pod from the Service after two failures. A TCP-only check is not sufficient
