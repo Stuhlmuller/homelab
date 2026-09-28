@@ -18,6 +18,7 @@ hostnames.
 
 Most routes are tailnet-only. Public Funnel is limited to reviewed webhook
 exceptions such as n8n's webhook prefixes and Policy Bot's `/api/github/hook`.
+AFFiNE is a deliberate exception requested as a full public web UI.
 
 ## Platform DNS
 
@@ -39,6 +40,27 @@ The cluster-local `homelab-managed-images` ImageUpdater manages repo-declared
 workload images from a central CR and opens GitHub pull requests through Git
 write-back. The `argocd-image-updater-git` ExternalSecret must resolve before
 updates can be pushed.
+
+## AFFiNE
+
+AFFiNE runs in the `collaboration` namespace as a public workspace UI at
+`https://affine.tail67beb.ts.net` plus the tailnet route
+`https://affine.stinkyboi.com`. The app follows the official self-host compose
+shape verified from AFFiNE's `v0.26.3` release assets on 2026-07-12:
+`ghcr.io/toeverything/affine:stable`, PostgreSQL through `DATABASE_URL`, Redis
+through `REDIS_SERVER_HOST`, persistent `/root/.affine/storage` and
+`/root/.affine/config`, and `node ./scripts/self-host-predeploy.js` before the
+server starts.
+
+`affine-postgres` is a dedicated PostgreSQL 16 plus pgvector support app. It
+creates the `affine` role/database and `vector` extension from generated SSM
+passwords at `/homelab/affine/postgres-admin-password` and
+`/homelab/affine/postgres-app-password`. AFFiNE receives only the application
+connection string through `affine-postgres-client`. `affine-redis` is cache and
+queue state only; do not rely on Redis persistence for durable workspace data.
+
+The full UI is public by Tailscale Funnel. Verify admin setup, account policy,
+and backup coverage immediately after first sync.
 
 ## Deluge
 

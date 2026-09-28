@@ -218,6 +218,30 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/affine/private-key" = {
+      description = "AFFiNE private key used for signed tokens and encrypted application data."
+      generated = {
+        length  = 64
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/affine/postgres-admin-password" = {
+      description = "AFFiNE dedicated PostgreSQL admin password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
+    "/homelab/affine/postgres-app-password" = {
+      description = "AFFiNE dedicated PostgreSQL application user password."
+      generated = {
+        length  = 40
+        special = false
+      }
+      initial_value = local.placeholder
+    }
     "/homelab/policy-bot/github-app/integration-id" = {
       description   = "Policy Bot GitHub App integration ID."
       initial_value = local.placeholder

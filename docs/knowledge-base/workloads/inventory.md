@@ -19,6 +19,8 @@ trading workload with a tailnet-only UI.
 | `platform-storage` | support | cluster-scoped | `clusters/homelab/platform/storage` | `IaC/live/argocd-apps/platform-storage` | QNAP NFS export |
 | `media-postgres` | support | `media` | `clusters/homelab/apps/media-postgres` | `IaC/live/argocd-apps/media-postgres` | external-secrets, platform-storage |
 | `n8n-postgres` | support | `automation` | `clusters/homelab/apps/n8n-postgres` | `IaC/live/argocd-apps/n8n-postgres` | external-secrets, platform-storage |
+| `affine-postgres` | support | `collaboration` | `clusters/homelab/apps/affine-postgres` | `IaC/live/argocd-apps/affine-postgres` | external-secrets, platform-storage |
+| `affine-redis` | support | `collaboration` | `clusters/homelab/apps/affine-redis` | `IaC/live/argocd-apps/affine-redis` | collaboration namespace |
 
 ## Requested Applications
 
@@ -42,6 +44,7 @@ trading workload with a tailnet-only UI.
 | `litellm` | `ai` | `clusters/homelab/apps/litellm` | `IaC/live/argocd-apps/litellm` | optional persistent config or DB state | external-secrets, cert-manager, istio, tailscale, platform-storage |
 | `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | persistent runtime state, SSM-backed gateway auth, Discord channel config, SSM-backed GitHub App credentials, Codex OAuth credentials on PVC, and explicit agent resource profile | external-secrets, cert-manager, istio, tailscale, litellm, platform-storage |
 | `n8n` | `automation` | `clusters/homelab/apps/n8n` | `IaC/live/argocd-apps/n8n` | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; public Funnel is limited to webhook prefixes | external-secrets, cert-manager, istio, tailscale, platform-storage, n8n-postgres |
+| `affine` | `collaboration` | `clusters/homelab/apps/affine` | `IaC/live/argocd-apps/affine` | persistent workspace blobs and config on `nfs-default`, durable metadata in affine-postgres, cache/job state in affine-redis; full public UI exposed by reviewed Tailscale Funnel | external-secrets, cert-manager, istio, tailscale, platform-storage, affine-postgres, affine-redis |
 | `policy-bot` | `automation` | `clusters/homelab/apps/policy-bot` | `IaC/live/argocd-apps/policy-bot` | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced | external-secrets, cert-manager, istio, tailscale |
 | `octobot` | `finance` | `clusters/homelab/apps/octobot` | `IaC/live/argocd-apps/octobot` | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, and tailnet-only UI route | cert-manager, istio, tailscale, platform-storage |
 
@@ -60,6 +63,10 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   NetworkPolicy yet. The namespace is not default-denied because Policy Bot
   Funnel traffic and database source-identity validation still need live
   validation after rollout.
+- `collaboration` runs AFFiNE, `affine-postgres`, and `affine-redis` in ambient
+  mode. AFFiNE allows only the Istio ingressgateway, while NetworkPolicies
+  document AFFiNE-only access to Postgres and Redis. The full AFFiNE UI is a
+  reviewed public Funnel route.
 - `monitoring` restricts Grafana, Prometheus, Alertmanager, and
   kube-state-metrics by service account. Compass allows only the tailnet gateway
   and Prometheus scraper. The Prometheus operator remains unselected until its
