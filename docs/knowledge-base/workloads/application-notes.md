@@ -100,6 +100,9 @@ after 87 seconds but remained event-loop-blocked while starting Discord, so the
 two-minute startup probe terminated it before startup settled. The startup
 budget is now six minutes; readiness still removes an unresponsive pod quickly,
 and the existing six-minute liveness budget still bounds a later hang.
+The recovered pod then exceeded its `6Gi` aggregate ephemeral-storage limit and
+was evicted. Desired state now requests `8Gi` and limits `10Gi`; the worker had
+about `17Gi` free and no disk pressure when measured.
 
 [[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
 remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
