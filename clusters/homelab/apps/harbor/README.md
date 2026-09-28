@@ -50,12 +50,14 @@ old GHCR artifacts as part of migration.
 Trivy is enabled in `values.yaml`, with a retained 5 Gi database/cache PVC.
 The PostSync bootstrap reconciles `homelab` and `mirror` project metadata `auto_scan: "true"`
 so newly pushed images receive vulnerability scans. It verifies the setting
-on readback and repairs drift on subsequent syncs. Existing artifacts are not
-retroactively scanned by enabling scan-on-push.
+on readback and repairs drift on subsequent syncs. Enabling scan-on-push alone
+does not scan existing artifacts. Bootstrap also submits missing scans for
+retained image artifacts in the private `homelab` project. Existing reports and
+queued/running scans are left alone; signatures and attestations are excluded.
 
 After rollout, verify the Trivy Pod is Ready and a newly pushed image shows a
 completed vulnerability report in Harbor. Bootstrap success proves the project
-setting, not successful database downloads or an image scan.
+setting and scan submission, not successful database downloads or completed scans.
 
 ## Local image signing
 

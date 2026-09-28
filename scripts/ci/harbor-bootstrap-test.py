@@ -34,6 +34,8 @@ class HarborAPI:
         self.projects = {}
         self.robots = {}
         self.passwords = {}
+        self.repositories = []
+        self.artifacts = {}
         self.requests = []
         self.override = None
 
@@ -56,6 +58,24 @@ class HarborAPI:
             self.projects[name] = {"name": name, "project_id": len(self.projects) + 7,
                                   "metadata": copy.deepcopy(body["metadata"])}
             return 201, b"", {}
+        if path.startswith("/projects/homelab/repositories"):
+            parsed = urllib.parse.urlsplit(path)
+            query = urllib.parse.parse_qs(parsed.query)
+            parts = parsed.path.split("/")
+            if len(parts) == 4:
+                objects = self.repositories
+            else:
+                name = urllib.parse.unquote(urllib.parse.unquote(parts[4]))
+                objects = self.artifacts.get(name, [])
+                if len(parts) > 6:
+                    artifact = next(item for item in objects if item["digest"] == parts[6])
+                    if method == "POST" and parts[-1] == "scan":
+                        artifact["scan_overview"] = {"vulnerability": {"scan_status": "Pending"}}
+                        return 202, b"", {}
+                    return 200, artifact, {}
+            page = int(query.get("page", ["1"])[0])
+            size = int(query.get("page_size", ["100"])[0])
+            return 200, objects[(page - 1) * size:page * size], {"X-Total-Count": str(len(objects))}
         if path.startswith("/projects/"):
             project = self.projects.get(path.rsplit("/", 1)[1])
             if not project:
@@ -246,6 +266,67 @@ class BootstrapTest(unittest.TestCase):
             (200, b"", {}) if method == "PUT" and path == "/projects/homelab" else None)
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.robots, {})
+
+    def image(self, identifier, **changes):
+        return {"id": identifier, "type": "IMAGE", "digest": f"sha256:{identifier:064x}",
+                "media_type": "application/vnd.oci.image.config.v1+json",
+                "extra_attrs": {"os": "linux", "architecture": "amd64"}, **changes}
+
+    def test_backfill_only_missing_private_image_scans_and_repeat_skips_pending(self):
+        self.api.repositories = [{"id": 1, "name": "homelab/nested/app"}]
+        artifacts = [self.image(1), self.image(2, scan_overview={}),
+                     self.image(3, scan_overview=None, media_type="application/vnd.docker.container.image.v1+json")]
+        artifacts += [self.image(index, scan_overview={"vulnerability": {"scan_status": status}})
+                      for index, status in enumerate(("Success", "Running", "Pending", "Error"), 4)]
+        artifacts += [self.image(8, type="CHART"),
+                      self.image(9, media_type="application/vnd.oci.image.index.v1+json"),
+                      self.image(10, media_type="application/vnd.in-toto+json"),
+                      self.image(11, extra_attrs={"os": "unknown", "architecture": "unknown"}),
+                      self.image(12, extra_attrs={}), self.image(13),
+                      self.image(14, accessories=[{"artifact_id": 13}],
+                                 scan_overview={"vulnerability": {"scan_status": "Success"}})]
+        self.api.artifacts["nested/app"] = artifacts
+        self.reconcile()
+        scans = [(path, body) for method, path, body in self.api.requests if path.endswith("/scan")]
+        self.assertEqual(scans, [(f"/projects/homelab/repositories/nested%252Fapp/artifacts/sha256:{i:064x}/scan",
+                                 {"scan_type": "vulnerability"}) for i in (1, 2, 3)])
+        self.assertFalse(any(path.startswith("/projects/mirror/repositories") for _, path, _ in self.api.requests))
+        self.api.requests.clear()
+        self.reconcile()
+        self.assertFalse(any(path.endswith("/scan") for _, path, _ in self.api.requests))
+
+    def test_backfill_paginates_repositories_and_artifacts(self):
+        self.api.repositories = [{"id": i, "name": f"homelab/app{i}"} for i in range(1, 102)]
+        self.api.artifacts["app101"] = [self.image(i, scan_overview={"vulnerability": {"scan_status": "Success"}})
+                                        for i in range(1, 101)] + [self.image(101)]
+        bootstrap.backfill_scans(self.client)
+        scans = [path for _, path, _ in self.api.requests if path.endswith("/scan")]
+        self.assertEqual(scans, [f"/projects/homelab/repositories/app101/artifacts/sha256:{101:064x}/scan"])
+        self.assertTrue(any(path.startswith("/projects/homelab/repositories?") and "page=2" in path
+                            for _, path, _ in self.api.requests))
+        self.assertTrue(any("/app101/artifacts?" in path and "page=2" in path
+                            for _, path, _ in self.api.requests))
+
+    def test_backfill_rechecks_reports_before_requesting_scan(self):
+        self.api.repositories = [{"id": 1, "name": "homelab/app"}]
+        self.api.artifacts["app"] = [self.image(1)]
+        self.api.override = lambda method, path, body: (
+            (200, self.image(1, scan_overview={"vulnerability": {"scan_status": "Running"}}), {})
+            if "?with_scan_overview=true" in path else None)
+        bootstrap.backfill_scans(self.client)
+        self.assertEqual(self.mutations(), [])
+
+    def test_backfill_rejects_incomplete_inventory_before_scanning(self):
+        self.api.repositories = [{"id": 1, "name": "homelab/app"}]
+        for document, count in (([self.image(1)], "2"), ([self.image(1), self.image(1)], "2"),
+                                ([], "invalid"), ([], "1001")):
+            with self.subTest(count=count):
+                self.api.requests.clear()
+                self.api.override = lambda method, path, body: (
+                    (200, document, {"X-Total-Count": count}) if "/artifacts?" in path else None)
+                with self.assertRaises(bootstrap.BootstrapError):
+                    bootstrap.backfill_scans(self.client)
+                self.assertEqual(self.mutations(), [])
 
     def test_denied_admin_and_unexpected_response_never_log_credentials(self):
         for status in (401, 403, 500):
