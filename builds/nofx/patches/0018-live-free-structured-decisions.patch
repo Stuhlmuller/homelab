@@ -1,0 +1,557 @@
+diff --git a/backtest/ai_client.go b/backtest/ai_client.go
+--- a/backtest/ai_client.go
++++ b/backtest/ai_client.go
+@@ -10,9 +10,9 @@
+ // configureMCPClient creates/clones an MCP client based on configuration (returns mcp.AIClient interface).
+ // Note: mcp.New() returns an interface type; here we convert to concrete implementation before copying to avoid concurrent shared state.
+ func configureMCPClient(cfg BacktestConfig, base mcp.AIClient) (mcp.AIClient, error) {
+-	// Only historical runners construct this adapter. Never alter shared/live clients.
+-	if isHistoricalFreeRouter(cfg.AICfg) {
+-		return newHistoricalFreeRouterClient(cfg.AICfg), nil
++	// Construct a request-local strict client without changing shared clients.
++	if mcp.IsFreeRouter(cfg.AICfg.Model, cfg.AICfg.BaseURL) {
++		return mcp.NewStructuredFreeRouterClient(cfg.AICfg.APIKey, mcp.WithTemperature(cfg.AICfg.Temperature)), nil
+ 	}
+ 	provider := strings.ToLower(strings.TrimSpace(cfg.AICfg.Provider))
+ 
+diff --git a/backtest/structured_client.go b/backtest/structured_client.go
+deleted file mode 100644
+--- a/backtest/structured_client.go
++++ /dev/null
+@@ -1,41 +0,0 @@
+-package backtest
+-
+-import (
+-	"net/url"
+-	"strings"
+-
+-	"nofx/mcp"
+-)
+-
+-// The exact free router at its official origin is opt-in only for historical runs.
+-// Do not infer support from a model name alone or alter clients used by live traders.
+-func isHistoricalFreeRouter(cfg AIConfig) bool {
+-	if cfg.Model != "openrouter/free" {
+-		return false
+-	}
+-	u, err := url.Parse(cfg.BaseURL)
+-	return err == nil && u.Scheme == "https" && u.Host == "openrouter.ai" &&
+-		u.User == nil && u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" &&
+-		u.RawPath == "" && strings.TrimRight(u.Path, "/") == "/api/v1"
+-}
+-
+-type historicalFreeRouterClient struct{ mcp.AIClient }
+-
+-func newHistoricalFreeRouterClient(cfg AIConfig) mcp.AIClient {
+-	return &historicalFreeRouterClient{AIClient: mcp.NewClient(
+-		mcp.WithProvider(mcp.ProviderCustom), mcp.WithAPIKey(cfg.APIKey),
+-		mcp.WithBaseURL("https://openrouter.ai/api/v1"), mcp.WithModel("openrouter/free"),
+-		mcp.WithTemperature(cfg.Temperature), mcp.WithMaxRetries(1),
+-	)}
+-}
+-
+-func (c *historicalFreeRouterClient) CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error) {
+-	return c.AIClient.CallWithRequest(&mcp.Request{
+-		Model:    "openrouter/free",
+-		Messages: []mcp.Message{mcp.NewSystemMessage(systemPrompt), mcp.NewUserMessage(userPrompt)},
+-		ResponseFormat: &mcp.ResponseFormat{Type: "json_schema", JSONSchema: mcp.JSONSchema{
+-			Name: "historical_decisions", Strict: true, Schema: schema,
+-		}},
+-		Provider: &mcp.ProviderPreferences{RequireParameters: true},
+-	})
+-}
+diff --git a/backtest/historical_structured_test.go b/backtest/historical_structured_test.go
+--- a/backtest/historical_structured_test.go
++++ b/backtest/historical_structured_test.go
+@@ -40,28 +40,6 @@
+ 				t.Fatalf("structured=%v want=%v", got, tc.want)
+ 			}
+ 		})
+-	}
+-}
+-
+-type historicalRequestCapture struct {
+-	mcp.AIClient
+-	request *mcp.Request
+-}
+-
+-func (c *historicalRequestCapture) CallWithRequest(req *mcp.Request) (string, error) {
+-	c.request = req
+-	return "fixture", nil
+-}
+-func TestHistoricalFreeRouterRequest(t *testing.T) {
+-	capture := &historicalRequestCapture{}
+-	client := &historicalFreeRouterClient{AIClient: capture}
+-	_, err := client.CallWithStructuredOutput("system", "user", map[string]any{"type": "object"})
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	req := capture.request
+-	if req.Model != "openrouter/free" || req.ResponseFormat.Type != "json_schema" || !req.ResponseFormat.JSONSchema.Strict || !req.Provider.RequireParameters || len(req.Messages) != 2 {
+-		t.Fatal("incomplete structured request")
+ 	}
+ }
+ 
+diff --git a/mcp/free_router.go b/mcp/free_router.go
+new file mode 100644
+--- /dev/null
++++ b/mcp/free_router.go
+@@ -0,0 +1,39 @@
++package mcp
++
++import (
++	"net/url"
++	"strings"
++)
++
++// IsFreeRouter opts in only the exact free model at its official API origin.
++func IsFreeRouter(model, baseURL string) bool {
++	if model != "openrouter/free" {
++		return false
++	}
++	u, err := url.Parse(baseURL)
++	return err == nil && u.Scheme == "https" && u.Host == "openrouter.ai" &&
++		u.User == nil && u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" &&
++		u.RawPath == "" && strings.TrimRight(u.Path, "/") == "/api/v1"
++}
++
++type structuredFreeRouterClient struct{ AIClient }
++
++// NewStructuredFreeRouterClient shares the strict, one-attempt decision contract.
++// Fixed routing options follow caller options so they cannot enable paid models or retries.
++func NewStructuredFreeRouterClient(apiKey string, opts ...ClientOption) AIClient {
++	opts = append(opts, WithProvider(ProviderCustom), WithAPIKey(apiKey),
++		WithBaseURL("https://openrouter.ai/api/v1"), WithModel("openrouter/free"),
++		WithMaxRetries(1), WithUseFullURL(false))
++	return &structuredFreeRouterClient{AIClient: NewClient(opts...)}
++}
++
++func (c *structuredFreeRouterClient) CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error) {
++	return c.AIClient.CallWithRequest(&Request{
++		Model:    "openrouter/free",
++		Messages: []Message{NewSystemMessage(systemPrompt), NewUserMessage(userPrompt)},
++		ResponseFormat: &ResponseFormat{Type: "json_schema", JSONSchema: JSONSchema{
++			Name: "trading_decisions", Strict: true, Schema: schema,
++		}},
++		Provider: &ProviderPreferences{RequireParameters: true},
++	})
++}
+diff --git a/mcp/free_router_test.go b/mcp/free_router_test.go
+new file mode 100644
+--- /dev/null
++++ b/mcp/free_router_test.go
+@@ -0,0 +1,25 @@
++package mcp
++
++import "testing"
++
++type historicalRequestCapture struct {
++	AIClient
++	request *Request
++}
++
++func (c *historicalRequestCapture) CallWithRequest(req *Request) (string, error) {
++	c.request = req
++	return "fixture", nil
++}
++func TestHistoricalFreeRouterRequest(t *testing.T) {
++	capture := &historicalRequestCapture{}
++	client := &structuredFreeRouterClient{AIClient: capture}
++	_, err := client.CallWithStructuredOutput("system", "user", map[string]any{"type": "object"})
++	if err != nil {
++		t.Fatal(err)
++	}
++	req := capture.request
++	if req.Model != "openrouter/free" || req.ResponseFormat.Type != "json_schema" || !req.ResponseFormat.JSONSchema.Strict || !req.Provider.RequireParameters || len(req.Messages) != 2 {
++		t.Fatal("incomplete structured request")
++	}
++}
+diff --git a/mcp/interface.go b/mcp/interface.go
+--- a/mcp/interface.go
++++ b/mcp/interface.go
+@@ -13,8 +13,8 @@
+ 	CallWithRequest(req *Request) (string, error) // Builder pattern API (supports advanced features)
+ }
+ 
+-// StructuredOutputClient is an optional capability used by historical simulations.
+-// Normal AI clients and live decision calls retain their existing request format.
++// StructuredOutputClient is an opt-in capability for strict historical and cash-spot decisions.
++// Generic AI clients retain their existing request format.
+ type StructuredOutputClient interface {
+ 	AIClient
+ 	CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error)
+diff --git a/mcp/structured_response.go b/mcp/structured_response.go
+--- a/mcp/structured_response.go
++++ b/mcp/structured_response.go
+@@ -7,7 +7,7 @@
+ )
+ 
+ // Only requests explicitly opting into JSON schema use these checks. A refusal,
+-// incomplete generation, or error response must not become a simulated wait.
++// incomplete generation, or error response must not become a synthetic wait.
+ func validateStructuredCompletion(body []byte) error {
+ 	var response struct {
+ 		Choices []struct {
+diff --git a/kernel/engine.go b/kernel/engine.go
+--- a/kernel/engine.go
++++ b/kernel/engine.go
+@@ -302,10 +302,10 @@
+ 	// 4. Call AI API
+ 	aiCallStart := time.Now()
+ 	structuredClient, supportsStructured := mcpClient.(mcp.StructuredOutputClient)
+-	historicalStructured := ctx.SimulationTimeMS > 0 && supportsStructured
++	structuredOutput := supportsStructured && (ctx.SimulationTimeMS > 0 || ctx.CashSpot)
+ 	var aiResponse string
+ 	var err error
+-	if historicalStructured {
++	if structuredOutput {
+ 		systemPrompt += historicalStructuredOutputInstruction
+ 		schema := historicalDecisionSchema(ctx)
+ 		if ctx.CashSpot {
+@@ -325,7 +325,7 @@
+ 
+ 	// 5. Parse AI response
+ 	var decision *FullDecision
+-	if historicalStructured {
++	if structuredOutput {
+ 		decision, err = parseHistoricalStructuredDecision(aiResponse, ctx)
+ 		if err == nil && !ctx.CashSpot {
+ 			err = validateDecisions(decision.Decisions, ctx.Account.TotalEquity,
+diff --git a/kernel/historical_structured.go b/kernel/historical_structured.go
+--- a/kernel/historical_structured.go
++++ b/kernel/historical_structured.go
+@@ -10,7 +10,7 @@
+ 
+ const historicalStructuredOutputInstruction = `
+ 
+-Historical simulation output contract: return ONLY the JSON object defined by the supplied schema, containing a non-empty decisions array. This replaces earlier XML, markdown, or free-text output formatting instructions. Use zero for numeric fields irrelevant to an action. Each reasoning field must contain one brief explanation; do not include a reasoning trace. Use an explicit wait decision for a configured symbol when taking no action.`
++Trading decision output contract: return ONLY the JSON object defined by the supplied schema, containing a non-empty decisions array. This replaces earlier XML, markdown, or free-text output formatting instructions. Use zero for numeric fields irrelevant to an action. Each reasoning field must contain one brief explanation; do not include a reasoning trace. Use an explicit wait decision for a configured symbol when taking no action.`
+ 
+ var historicalDecisionActions = []string{"open_long", "open_short", "close_long", "close_short", "hold", "wait"}
+ var historicalDecisionFields = []string{"symbol", "action", "leverage", "position_size_usd", "stop_loss", "take_profit", "confidence", "risk_usd", "reasoning"}
+@@ -30,7 +30,7 @@
+ 		"take_profit":       map[string]any{"type": "number", "minimum": 0},
+ 		"confidence":        map[string]any{"type": "integer", "minimum": 0, "maximum": 100},
+ 		"risk_usd":          map[string]any{"type": "number", "minimum": 0},
+-		"reasoning":         map[string]any{"type": "string", "minLength": 1, "description": "One brief explanation of the simulation action."},
++		"reasoning":         map[string]any{"type": "string", "minLength": 1, "description": "One brief explanation of the action."},
+ 	}
+ 	return map[string]any{
+ 		"type": "object", "additionalProperties": false, "required": []string{"decisions"},
+@@ -64,7 +64,7 @@
+ 	}
+ 	var rawDecisions []json.RawMessage
+ 	if json.Unmarshal(envelopeFields["decisions"], &rawDecisions) != nil {
+-		return nil, fmt.Errorf("historical decision response requires a decisions array")
++		return nil, fmt.Errorf("structured decision response requires a decisions array")
+ 	}
+ 	for _, raw := range rawDecisions {
+ 		if _, err := historicalUniqueObject(raw, historicalDecisionFields); err != nil {
+@@ -77,21 +77,21 @@
+ 	decoder := json.NewDecoder(strings.NewReader(response))
+ 	decoder.DisallowUnknownFields()
+ 	if err := decoder.Decode(&envelope); err != nil {
+-		return nil, fmt.Errorf("historical decision response does not match JSON schema")
++		return nil, fmt.Errorf("structured decision response does not match JSON schema")
+ 	}
+ 	if err := decoder.Decode(new(any)); err != io.EOF {
+-		return nil, fmt.Errorf("historical decision response contains trailing content")
++		return nil, fmt.Errorf("structured decision response contains trailing content")
+ 	}
+ 	if len(envelope.Decisions) == 0 {
+-		return nil, fmt.Errorf("historical decision response requires a non-empty decisions array")
++		return nil, fmt.Errorf("structured decision response requires a non-empty decisions array")
+ 	}
+ 	result := &FullDecision{Decisions: make([]Decision, 0, len(envelope.Decisions))}
+ 	for i, wire := range envelope.Decisions {
+ 		if wire.Symbol == nil || wire.Action == nil || wire.Leverage == nil || wire.PositionSizeUSD == nil || wire.StopLoss == nil || wire.TakeProfit == nil || wire.Confidence == nil || wire.RiskUSD == nil || wire.Reasoning == nil {
+-			return nil, fmt.Errorf("historical decision #%d has missing or null fields", i+1)
++			return nil, fmt.Errorf("structured decision #%d has missing or null fields", i+1)
+ 		}
+ 		if _, allowed := ctx.MarketDataMap[*wire.Symbol]; !allowed {
+-			return nil, fmt.Errorf("historical decision #%d uses an unconfigured symbol", i+1)
++			return nil, fmt.Errorf("structured decision #%d uses an unconfigured symbol", i+1)
+ 		}
+ 		allowedAction := false
+ 		for _, action := range historicalDecisionActions {
+@@ -101,10 +101,10 @@
+ 			}
+ 		}
+ 		if !allowedAction {
+-			return nil, fmt.Errorf("historical decision #%d has an invalid action", i+1)
++			return nil, fmt.Errorf("structured decision #%d has an invalid action", i+1)
+ 		}
+ 		if *wire.Leverage < 0 || *wire.PositionSizeUSD < 0 || *wire.StopLoss < 0 || *wire.TakeProfit < 0 || *wire.RiskUSD < 0 || *wire.Confidence < 0 || *wire.Confidence > 100 || strings.TrimSpace(*wire.Reasoning) == "" {
+-			return nil, fmt.Errorf("historical decision #%d has invalid schema values", i+1)
++			return nil, fmt.Errorf("structured decision #%d has invalid schema values", i+1)
+ 		}
+ 		result.Decisions = append(result.Decisions, Decision{Symbol: *wire.Symbol, Action: *wire.Action, Leverage: *wire.Leverage, PositionSizeUSD: *wire.PositionSizeUSD, StopLoss: *wire.StopLoss, TakeProfit: *wire.TakeProfit, Confidence: *wire.Confidence, RiskUSD: *wire.RiskUSD, Reasoning: *wire.Reasoning})
+ 	}
+@@ -117,7 +117,7 @@
+ 	decoder := json.NewDecoder(strings.NewReader(string(data)))
+ 	token, err := decoder.Token()
+ 	if err != nil || token != json.Delim('{') {
+-		return nil, fmt.Errorf("historical decision response requires JSON objects")
++		return nil, fmt.Errorf("structured decision response requires JSON objects")
+ 	}
+ 	allowed := make(map[string]bool, len(allowedFields))
+ 	for _, field := range allowedFields {
+@@ -128,22 +128,22 @@
+ 		token, err := decoder.Token()
+ 		field, ok := token.(string)
+ 		if err != nil || !ok || !allowed[field] {
+-			return nil, fmt.Errorf("historical decision response has a non-schema field name")
++			return nil, fmt.Errorf("structured decision response has a non-schema field name")
+ 		}
+ 		if _, duplicate := fields[field]; duplicate {
+-			return nil, fmt.Errorf("historical decision response has a duplicate field")
++			return nil, fmt.Errorf("structured decision response has a duplicate field")
+ 		}
+ 		var value json.RawMessage
+ 		if decoder.Decode(&value) != nil {
+-			return nil, fmt.Errorf("historical decision response contains invalid JSON")
++			return nil, fmt.Errorf("structured decision response contains invalid JSON")
+ 		}
+ 		fields[field] = value
+ 	}
+ 	if token, err := decoder.Token(); err != nil || token != json.Delim('}') {
+-		return nil, fmt.Errorf("historical decision response contains invalid JSON")
++		return nil, fmt.Errorf("structured decision response contains invalid JSON")
+ 	}
+ 	if _, err := decoder.Token(); err != io.EOF {
+-		return nil, fmt.Errorf("historical decision response contains trailing content")
++		return nil, fmt.Errorf("structured decision response contains trailing content")
+ 	}
+ 	return fields, nil
+ }
+diff --git a/kernel/spot_test.go b/kernel/spot_test.go
+--- a/kernel/spot_test.go
++++ b/kernel/spot_test.go
+@@ -70,11 +70,10 @@
+ 				// The historical schema requires zero fields too; Decision uses omitempty.
+ 				wire := map[string]any{"symbol": d.Symbol, "action": d.Action, "leverage": d.Leverage, "position_size_usd": d.PositionSizeUSD, "stop_loss": d.StopLoss, "take_profit": d.TakeProfit, "confidence": d.Confidence, "risk_usd": d.RiskUSD, "reasoning": d.Reasoning}
+ 				array, _ := json.Marshal([]any{wire})
+-				client := &spotFixtureClient{response: "<decision>" + string(array) + "</decision>"}
++				client := &spotFixtureClient{response: `{"decisions":` + string(array) + `}`}
+ 				ctx := spotContextFixture()
+ 				if historical {
+ 					ctx.SimulationTimeMS = 1
+-					client.response = `{"decisions":` + string(array) + `}`
+ 				}
+ 				cfg := store.GetDefaultStrategyConfig("en")
+ 				cfg.RiskControl.BTCETHMaxLeverage, cfg.RiskControl.AltcoinMaxLeverage = 1, 1
+@@ -88,11 +87,9 @@
+ 				if name == "leveraged" && fd.Decisions[0].Leverage != 20 {
+ 					t.Fatal("invalid leverage was silently clamped")
+ 				}
+-				if historical {
+-					schema, _ := json.Marshal(client.schema)
+-					if strings.Contains(string(schema), "open_short") || !strings.Contains(string(schema), `"maximum":1`) {
+-						t.Fatal("spot schema advertised shorts or uncapped leverage")
+-					}
++				schema, _ := json.Marshal(client.schema)
++				if strings.Contains(string(schema), "open_short") || !strings.Contains(string(schema), `"maximum":1`) {
++					t.Fatal("spot schema advertised shorts or uncapped leverage")
+ 				}
+ 			})
+ 		}
+diff --git a/trader/auto_trader.go b/trader/auto_trader.go
+--- a/trader/auto_trader.go
++++ b/trader/auto_trader.go
+@@ -147,6 +147,7 @@
+ 
+ 	// Initialize AI client based on provider
+ 	var mcpClient mcp.AIClient
++	modelAPIKey := config.CustomAPIKey
+ 	aiModel := config.AIModel
+ 	if config.UseQwen && aiModel == "" {
+ 		aiModel = "qwen"
+@@ -184,6 +185,7 @@
+ 		if apiKey == "" {
+ 			apiKey = config.CustomAPIKey
+ 		}
++		modelAPIKey = apiKey
+ 		mcpClient.SetAPIKey(apiKey, config.CustomAPIURL, config.CustomModelName)
+ 		logger.Infof("🤖 [%s] Using Alibaba Cloud Qwen AI", config.Name)
+ 
+@@ -198,8 +200,13 @@
+ 		if apiKey == "" {
+ 			apiKey = config.CustomAPIKey
+ 		}
++		modelAPIKey = apiKey
+ 		mcpClient.SetAPIKey(apiKey, config.CustomAPIURL, config.CustomModelName)
+ 		logger.Infof("🤖 [%s] Using DeepSeek AI", config.Name)
++	}
++
++	if config.Exchange == "okx" && mcp.IsFreeRouter(config.CustomModelName, config.CustomAPIURL) {
++		mcpClient = mcp.NewStructuredFreeRouterClient(modelAPIKey)
+ 	}
+ 
+ 	if config.CustomAPIURL != "" || config.CustomModelName != "" {
+diff --git a/trader/live_free_output_test.go b/trader/live_free_output_test.go
+new file mode 100644
+--- /dev/null
++++ b/trader/live_free_output_test.go
+@@ -0,0 +1,162 @@
++package trader
++
++import (
++	"encoding/json"
++	"errors"
++	"io"
++	"net/http"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"gorm.io/driver/sqlite"
++	"gorm.io/gorm"
++	"gorm.io/gorm/logger"
++	"nofx/kernel"
++	"nofx/market"
++	"nofx/mcp"
++	"nofx/store"
++)
++
++func TestSpotLiveFreeOutputIntegration(t *testing.T) {
++	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "live.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++	if err != nil {
++		t.Fatal(err)
++	}
++	st, err := store.NewFromGorm(db)
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { _ = st.Close() })
++	must := func(err error) {
++		t.Helper()
++		if err != nil {
++			t.Fatal(err)
++		}
++	}
++	for _, sql := range []string{
++		`CREATE TABLE exchanges (id TEXT PRIMARY KEY,user_id TEXT,exchange_type TEXT)`,
++		`INSERT INTO exchanges VALUES ('ex','owner','okx')`,
++		`CREATE TABLE traders (id TEXT PRIMARY KEY,user_id TEXT,exchange_id TEXT)`,
++		`INSERT INTO traders VALUES ('a','owner','ex')`,
++	} {
++		must(db.Exec(sql).Error)
++	}
++	must(db.AutoMigrate(&store.DecisionRecordDB{}))
++	must(st.Spot().InitTables())
++	must(st.Spot().Configure(store.SpotPolicy{UserID: "owner", AccountUID: "123", QuoteCurrency: "USD", CapitalCap: "100"}, []string{"ex"}, map[string]string{"a": "100"}))
++	strategy := store.GetDefaultStrategyConfig("en")
++	strategy.CoinSource = store.CoinSourceConfig{SourceType: "static", StaticCoins: []string{"BTCUSD"}}
++	cfg := AutoTraderConfig{ID: "a", ExchangeID: "ex", Exchange: "okx", AIModel: "openai", InitialBalance: 100,
++		OKXAPIKey: "synthetic", OKXSecretKey: "synthetic", OKXPassphrase: "synthetic",
++		CustomAPIKey: "fixture", CustomAPIURL: "https://openrouter.ai/api/v1", CustomModelName: "openrouter/free", StrategyConfig: &strategy}
++	wait := `{"decisions":[{"symbol":"BTCUSD","action":"wait","leverage":0,"position_size_usd":0,"stop_loss":0,"take_profit":0,"confidence":80,"risk_usd":0,"reasoning":"No signal."}]}`
++	buy := strings.NewReplacer(`"action":"wait"`, `"action":"open_long"`, `"leverage":0`, `"leverage":1`, `"position_size_usd":0`, `"position_size_usd":10`, `"stop_loss":0`, `"stop_loss":90`, `"take_profit":0`, `"take_profit":130`).Replace(wait)
++	for _, tc := range []struct {
++		name, content, finish, refusal string
++		valid, networkError            bool
++	}{
++		{"wait", wait, "stop", "", true, false},
++		{"buy", buy, "stop", "", true, false},
++		{"prose", "No signal today.", "stop", "", false, false},
++		{"empty", "", "stop", "", false, false},
++		{"empty_decisions", `{"decisions":[]}`, "stop", "", false, false},
++		{"truncated", wait, "length", "", false, false},
++		{"refused", wait, "stop", "Refused.", false, false},
++		{"unknown_symbol", strings.ReplaceAll(wait, "BTCUSD", "ETHUSD"), "stop", "", false, false},
++		{"short", strings.ReplaceAll(buy, "open_long", "open_short"), "stop", "", false, false},
++		{"leverage", strings.ReplaceAll(buy, `"leverage":1`, `"leverage":2`), "stop", "", false, false},
++		{"network_error", "", "", "", false, true},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			previous := http.DefaultTransport
++			t.Cleanup(func() { http.DefaultTransport = previous })
++			accountReads, aiCalls := 0, 0
++			http.DefaultTransport = okxInitializationTransport(func(r *http.Request) (*http.Response, error) {
++				body := ""
++				switch {
++				case r.Method == http.MethodGet && r.URL.String() == "https://us.okx.com/api/v5/account/config":
++					accountReads++
++					body = `{"code":"0","data":[{"uid":"123","acctLv":"1","feeType":"0","perm":"read_only,trade","autoLoan":false,"enableSpotBorrow":false}]}`
++				case r.Method == http.MethodPost && r.URL.String() == "https://openrouter.ai/api/v1/chat/completions":
++					aiCalls++
++					var request struct {
++						Model          string                   `json:"model"`
++						ResponseFormat *mcp.ResponseFormat      `json:"response_format"`
++						Provider       *mcp.ProviderPreferences `json:"provider"`
++					}
++					if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
++						t.Fatal(err)
++					}
++					if request.Model != "openrouter/free" || request.ResponseFormat == nil || request.ResponseFormat.Type != "json_schema" || !request.ResponseFormat.JSONSchema.Strict || request.Provider == nil || !request.Provider.RequireParameters {
++						t.Fatal("live request lost exact free model or strict provider contract")
++					}
++					schema, _ := json.Marshal(request.ResponseFormat.JSONSchema.Schema)
++					if !strings.Contains(string(schema), `"enum":["BTCUSD"]`) || !strings.Contains(string(schema), `"minItems":1`) || !strings.Contains(string(schema), `"maximum":1,`) || strings.Contains(string(schema), "open_short") {
++						t.Fatalf("wrong live spot schema: %s", schema)
++					}
++					if tc.networkError {
++						return nil, errors.New("fixture connection reset")
++					}
++					encoded, _ := json.Marshal(map[string]any{"choices": []any{map[string]any{"finish_reason": tc.finish, "message": map[string]any{"content": tc.content, "refusal": tc.refusal}}}})
++					body = string(encoded)
++				default:
++					t.Fatalf("unexpected network request (including exchange writes): %s %s", r.Method, r.URL)
++				}
++				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
++			})
++			at, err := NewAutoTrader(cfg, st, "owner")
++			if err != nil {
++				t.Fatal(err)
++			}
++			ctx := &kernel.Context{CashSpot: true, QuoteCurrency: "USD", Account: kernel.AccountInfo{TotalEquity: 100, AvailableBalance: 100},
++				CandidateCoins: []kernel.CandidateCoin{{Symbol: "BTCUSD"}}, MarketDataMap: map[string]*market.Data{"BTCUSD": {Symbol: "BTCUSD", CurrentPrice: 100}}}
++			fd, err := kernel.GetFullDecisionWithStrategy(ctx, at.mcpClient, at.strategyEngine, "balanced")
++			if (err == nil) != tc.valid || aiCalls != 1 || accountReads != 1 || at.GetStatus()["is_running"] != false {
++				t.Fatalf("valid=%t err=%v AI calls=%d account reads=%d", tc.valid, err, aiCalls, accountReads)
++			}
++			if tc.valid && (fd == nil || len(fd.Decisions) != 1 || fd.Decisions[0].Symbol != "BTCUSD" || fd.RawResponse != tc.content) {
++				t.Fatal("valid live decision was not preserved")
++			}
++			if tc.valid && ((tc.name == "wait" && fd.Decisions[0].Action != "wait") || (tc.name == "buy" && (fd.Decisions[0].Action != "open_long" || fd.Decisions[0].Leverage != 1 || fd.Decisions[0].PositionSizeUSD != 10))) {
++				t.Fatal("valid live action or size changed")
++			}
++			if fd != nil {
++				for _, d := range fd.Decisions {
++					if d.Symbol == "ALL" {
++						t.Fatal("invalid response synthesized ALL wait")
++					}
++				}
++			}
++		})
++	}
++	for _, name := range []string{"other_origin", "other_model", "non_okx"} {
++		t.Run(name, func(t *testing.T) {
++			other := cfg
++			switch name {
++			case "other_origin":
++				other.CustomAPIURL = "https://provider.invalid/v1"
++			case "other_model":
++				other.CustomModelName = "other/model"
++			case "non_okx":
++				other.Exchange = "bybit" // Passive constructor; Binance changes position mode.
++			}
++			previous := http.DefaultTransport
++			t.Cleanup(func() { http.DefaultTransport = previous })
++			http.DefaultTransport = spotFixtureTransport{t, func(w http.ResponseWriter, r *http.Request) {
++				if other.Exchange != "okx" || r.Method != http.MethodGet || r.URL.Path != okxAccountConfigPath {
++					t.Fatalf("unexpected construction request: %s %s", r.Method, r.URL)
++				}
++				spotReply(w, `[{"uid":"123","acctLv":"1","feeType":"0","perm":"read_only,trade","autoLoan":false,"enableSpotBorrow":false}]`)
++			}}
++			at, err := NewAutoTrader(other, st, "owner")
++			if err != nil {
++				t.Fatal(err)
++			}
++			client, generic := at.mcpClient.(*mcp.OpenAIClient)
++			if _, structured := at.mcpClient.(mcp.StructuredOutputClient); structured || !generic || client.Model != other.CustomModelName || client.BaseURL != other.CustomAPIURL {
++				t.Fatal("unrelated live client changed")
++			}
++		})
++	}
++}

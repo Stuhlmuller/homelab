@@ -75,6 +75,14 @@ those fixes are deployed, avoid repeated toggle clicks and verify persisted
 stopped state using the rollout gate; a badge or toast alone can precede the
 completed request. Neither fix activates traders.
 
+Patch `0018` extends the existing strict historical JSON contract to OKX
+cash-spot calls using the exact official `openrouter/free` route. It requires
+provider support for the supplied schema and makes one provider attempt per
+cycle. Invalid or empty replies remain failures instead of synthetic
+`ALL/wait` decisions. Configured symbols and all spot execution limits still
+apply. Free-model availability and timeouts can still cause failed cycles;
+the request contract does not establish successful trading or returns.
+
 Entries and explicit exits use limit IOC orders at the fresh quoted price,
 rounded to the instrument tick without chasing prices. They may fill partly or
 not at all. Every entry requires saved stop-loss and take-profit prices; native

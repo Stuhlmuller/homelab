@@ -9,13 +9,13 @@ Preparing or building these images does not enable live traders. Deployment
 and operational acceptance are documented in the
 [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
-Historical runs using `openrouter/free` at the official OpenRouter API request
-strict structured decisions and require a provider that supports those request
-parameters. Malformed responses remain failed cycles instead of becoming
+Historical runs and OKX cash-spot traders using `openrouter/free` at the official
+OpenRouter API request strict structured decisions and require a provider
+that supports those request parameters. Malformed responses remain failed cycles instead of becoming
 synthetic `ALL` wait decisions. This strict path makes one provider attempt per
 cycle, including transient errors; failures remain visible. Other models and
-live traders retain their existing request path. The simulator also caps actual
-fill leverage at the configured limit.
+other live exchanges retain their existing request path. The simulator also
+caps actual fill leverage at the configured limit.
 
 Patch `0013-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
 configuration and routes only `openrouter/free` through LiteLLM when the fixed
@@ -97,6 +97,14 @@ Patch `0017` awaits the underlying API operations before refreshing trader
 state or closing configuration dialogs. Sonner's toast identifier is not a
 promise. Failed saves remain open, and a pending Start/Stop request disables
 that trader's toggle and rejects duplicate clicks.
+
+Patch `0018` reuses the historical structured-output client and strict local
+decoder for OKX cash-spot calls to the exact official `openrouter/free` route.
+It requests JSON-schema support and retains one provider attempt. The spot
+schema allows only configured symbols, long/close/hold/wait actions, and at
+most 1x leverage. Local spot validation and execution limits remain in force.
+Missing JSON, empty completions, refusals, and provider errors remain failures;
+the live path no longer fabricates an `ALL/wait` decision from missing JSON.
 
 For a cash-spot rollout, publish the exact reviewed main commit to private
 Harbor and pin its reported backend/frontend digests through a separate PR.
