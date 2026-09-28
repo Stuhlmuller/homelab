@@ -37,11 +37,29 @@ def verify_main(expected):
 
 def verify_copies(expected):
     runs = json.loads(run("gh", "run", "list", "--repo", REPOSITORY, "--workflow", "harbor-mirror.yml",
-                          "--commit", expected, "--branch", "main", "--event", "workflow_dispatch",
-                          "--json", "headSha,status,conclusion", "--limit", "20"))
-    if not any(item["headSha"] == expected and item["status"] == "completed" and
-               item["conclusion"] == "success" for item in runs):
-        raise RuntimeError("No successful Harbor mirror workflow for this revision")
+                          "--branch", "main", "--event", "workflow_dispatch",
+                          "--json", "headSha,headBranch,event,status,conclusion", "--limit", "20"))
+    published = False
+    for item in runs:
+        if (not isinstance(item, dict) or item.get("headBranch") != "main" or
+                item.get("event") != "workflow_dispatch" or item.get("status") != "completed" or
+                item.get("conclusion") != "success" or not isinstance(item.get("headSha"), str) or
+                not re.fullmatch(r"[0-9a-f]{40}", item["headSha"])):
+            continue
+        revision = item["headSha"]
+        try:
+            run("git", "merge-base", "--is-ancestor", revision, expected)
+            published = all(run("git", "show", f"{revision}:{path}", binary=True) ==
+                            run("git", "show", f"{expected}:{path}", binary=True) for path in (
+                                "scripts/config/harbor-images.json", ".github/workflows/harbor-mirror.yml",
+                                "scripts/ci/harbor-publish.sh", "scripts/ci/install-kubeconfig.sh",
+                                "flake.nix", "flake.lock"))
+        except subprocess.CalledProcessError:
+            continue  # Missing local history or blobs cannot establish publication provenance.
+        if published:
+            break
+    if not published:
+        raise RuntimeError("No successful Harbor mirror workflow for this publication bundle")
     images = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
     if not images:
         raise RuntimeError("Mirror inventory is empty")

@@ -41,8 +41,15 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha"
    ```
 
-   Require a successful run, including complete anonymous downloads. A running
-   Harbor UI or successful manifest request alone does not prove complete copies.
+   Require a successful run, including complete anonymous downloads. A completed
+   successful `main` dispatch on an ancestor is reusable only when its publication
+   bundle is byte-identical to current reviewed `main`: `scripts/config/harbor-images.json`,
+   `.github/workflows/harbor-mirror.yml`, `scripts/ci/harbor-publish.sh`,
+   `scripts/ci/install-kubeconfig.sh`, `flake.nix`, and `flake.lock`.
+   Missing commit history or blobs cannot establish that evidence. Probe or docs
+   changes alone therefore do not require another full image copy. New workflow
+   dispatches and credential access still require exact current `main`.
+   A running Harbor UI or manifest request alone does not prove complete copies.
 3. From that clean checkout, render and strictly validate each existing machine
    configuration. The helper defaults to inspection; use Talos client 1.11.3.
    Restore the private client config at `.talos/talosconfig`, or pass an existing
@@ -64,7 +71,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    ```
 
    Repeat for `.201`, `.200`, then `.199` only after the preceding node passes.
-   The helper requires successful publication at that SHA, verifies destination
+   The helper requires successful publication of the same bundle, verifies destination
    manifests, preserves the full persistent machine configuration, allows only
    registry-mirror differences, validates with `--mode metal --strict`, and
    applies with `--mode no-reboot`. It checks configuration readback and node
@@ -94,7 +101,8 @@ otherwise return the unreachable Istio ClusterIP. Requests retain the Harbor
 hostname and TLS verification; no system DNS, hosts file, or environment override
 is changed. Anonymous Bearer tokens stay in a private temporary header file and
 are removed on exit. Every digest-named tag and source-tag alias must return the
-catalog's exact manifest bytes after the successful same-revision copy workflow.
+catalog's exact manifest bytes after a successful copy workflow for the same
+publication bundle. Rollout still requires a clean checkout of exact current `main`.
 
 Talos host DNS currently reaches the existing public Harbor HTTPS route.
 The registry and artifacts are hosted in the cluster, but node traffic still
