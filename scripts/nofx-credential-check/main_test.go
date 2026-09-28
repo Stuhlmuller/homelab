@@ -2,20 +2,26 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"nofx/crypto"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -242,7 +248,7 @@ func TestAccountDiagnosticClassifiesWithoutLeaking(t *testing.T) {
 				}
 			}
 			var metadata map[string]any
-			if json.Unmarshal(data, &metadata) != nil || len(metadata) != 13 {
+			if json.Unmarshal(data, &metadata) != nil || len(metadata) != 14 {
 				t.Fatal("unexpected output schema")
 			}
 			for _, value := range metadata {
@@ -305,5 +311,94 @@ func TestAccountDiagnosticBoundsResponse(t *testing.T) {
 		if got.HTTPStatus != 200 || got.ResponseReadable || got.JSONValid || got.AccountAccepted {
 			t.Fatal("unreadable or oversized response accepted")
 		}
+	}
+}
+
+func TestAccountDiagnosticRejectsInvalidAuthHeaders(t *testing.T) {
+	for _, field := range []int{0, 2} {
+		for value := 0; value < 256; value++ {
+			fields := [3]string{"synthetic-key", "synthetic-secret", "synthetic-pass"}
+			fields[field] = "synthetic-before" + string([]byte{byte(value)}) + "synthetic-after"
+			valid := (value >= 0x20 || value == '\t') && value != 0x7f
+			calls := 0
+			client := newAccountClient()
+			client.Transport = diagnosticTransport(func(r *http.Request) (*http.Response, error) {
+				calls++
+				assertAccountRequest(t, r)
+				return nil, errors.New("synthetic-secret")
+			})
+			got := inspectAccount(client, fields)
+			output, _ := json.Marshal(got)
+			var metadata map[string]any
+			if json.Unmarshal(output, &metadata) != nil {
+				t.Fatal("invalid report")
+			}
+			wantCalls, category := 0, "invalid_auth_header"
+			if valid {
+				wantCalls, category = 1, "other"
+			}
+			if calls != wantCalls || got.Attempted != valid || metadata["auth_headers_valid"] != valid || metadata["request_error"] != category || got.HTTPStatus != 0 {
+				t.Fatalf("incorrect header-byte classification: field=%d byte=%d", field, value)
+			}
+			if strings.Contains(string(output), "synthetic") {
+				t.Fatal("header value leaked")
+			}
+		}
+	}
+	// The signing secret never appears as an HTTP header and must not be checked
+	// against the header predicate; its bytes remain valid HMAC input.
+	client := newAccountClient()
+	calls := 0
+	client.Transport = diagnosticTransport(func(r *http.Request) (*http.Response, error) {
+		calls++
+		return diagnosticResponse(200, `{"code":"0","data":[]}`), nil
+	})
+	inspectAccount(client, [3]string{"synthetic-key", "synthetic-secret\x00\r\n", "synthetic-pass"})
+	if calls != 1 {
+		t.Fatal("HMAC input incorrectly rejected as a header")
+	}
+}
+
+func TestAccountDiagnosticRequestErrorCategories(t *testing.T) {
+	for _, test := range []struct {
+		name, category string
+		err            error
+	}{
+		{"dns", "dns", &net.DNSError{Err: "synthetic-secret", Name: "synthetic-host"}},
+		{"dns-timeout", "dns", &net.DNSError{Err: "synthetic-secret", IsTimeout: true}},
+		{"timeout", "timeout", context.DeadlineExceeded},
+		{"certificate", "tls", &tls.CertificateVerificationError{Err: errors.New("synthetic-secret")}},
+		{"unknown-authority", "tls", x509.UnknownAuthorityError{}},
+		{"hostname", "tls", x509.HostnameError{Certificate: &x509.Certificate{}, Host: "synthetic-host"}},
+		{"invalid-certificate", "tls", x509.CertificateInvalidError{Cert: &x509.Certificate{}, Reason: x509.Expired}},
+		{"system-roots", "tls", x509.SystemRootsError{Err: errors.New("synthetic-secret")}},
+		{"tls-record", "tls", tls.RecordHeaderError{Msg: "synthetic-secret"}},
+		{"tls-alert", "tls", tls.AlertError(40)},
+		{"eof", "network_io", io.EOF},
+		{"unexpected-eof", "network_io", io.ErrUnexpectedEOF},
+		{"reset", "network_io", syscall.ECONNRESET},
+		{"refused", "network_io", syscall.ECONNREFUSED},
+		{"broken-pipe", "network_io", syscall.EPIPE},
+		{"network-operation", "network_io", &net.OpError{Op: "read", Net: "tcp", Err: errors.New("synthetic-secret")}},
+		{"other", "other", errors.New("synthetic-secret")},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			client := newAccountClient()
+			calls := 0
+			client.Transport = diagnosticTransport(func(r *http.Request) (*http.Response, error) {
+				calls++
+				assertAccountRequest(t, r)
+				return nil, &url.Error{Op: "synthetic-secret", URL: "https://synthetic-secret.invalid", Err: test.err}
+			})
+			got := inspectAccount(client, [3]string{"synthetic-key", "synthetic-secret", "synthetic-pass"})
+			output, _ := json.Marshal(got)
+			var metadata map[string]any
+			if json.Unmarshal(output, &metadata) != nil || metadata["request_error"] != test.category || metadata["auth_headers_valid"] != true || calls != 1 || !got.Attempted || got.HTTPStatus != 0 || got.AccountAccepted {
+				t.Fatal("incorrect safe request-error category")
+			}
+			if strings.Contains(string(output), "synthetic") || strings.Contains(string(output), "https:") {
+				t.Fatal("request error or URL leaked")
+			}
+		})
 	}
 }

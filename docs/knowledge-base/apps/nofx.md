@@ -335,8 +335,16 @@ checks. The generic UI error cannot distinguish a transport failure, exchange
 rejection, or account-schema mismatch. The separate `inspect-account` operator
 mode preserves the reviewed-main and deployed-source checks while reporting only
 status codes, counts, and validation booleans from that fixed read-only request.
-It does not change credentials, account settings, or trading state. Live account
-inspection remains pending; use the
+It does not change credentials, account settings, or trading state. Inspection
+from reviewed main `e338548a` found one connection with three successfully
+decrypted credential fields, no empty/nested values or surrounding key
+whitespace, and no HTTP response from the signed request. A credential-free
+backend probe resolved the US hostname and received HTTP 200 from its public
+time endpoint; standard CA files were readable and no proxy/TLS environment
+overrides were set. Those results do not establish an invalid OKX key: local
+header rejection and Go transport failures both occur before an HTTP status.
+The checker now distinguishes invalid header bytes and reports only a fixed,
+allowlisted request-error category, never raw errors. Use the
 [operator runbook](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis)
 before choosing a repair.
 

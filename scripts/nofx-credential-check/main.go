@@ -4,18 +4,22 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"nofx/crypto"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unicode"
 
@@ -131,19 +135,21 @@ const accountConfigURL = "https://us.okx.com/api/v5/account/config"
 
 // Output is an allowlist of metadata; never encode a request, response, or error.
 type accountCheck struct {
-	Attempted          bool `json:"attempted"`
-	HTTPStatus         int  `json:"http_status"`
-	ResponseReadable   bool `json:"response_readable"`
-	JSONValid          bool `json:"json_valid"`
-	EnvelopeValid      bool `json:"envelope_valid"`
-	Code               *int `json:"code"`
-	DataArray          bool `json:"data_array"`
-	ItemStatusesValid  bool `json:"item_statuses_valid"`
-	AccountRows        int  `json:"account_rows"`
-	AccountFieldsValid bool `json:"account_fields_valid"`
-	UIDValid           bool `json:"uid_valid"`
-	AccountLevelValid  bool `json:"account_level_valid"`
-	AccountAccepted    bool `json:"account_accepted"`
+	Attempted          bool   `json:"attempted"`
+	AuthHeadersValid   bool   `json:"auth_headers_valid"`
+	RequestError       string `json:"request_error,omitempty"`
+	HTTPStatus         int    `json:"http_status"`
+	ResponseReadable   bool   `json:"response_readable"`
+	JSONValid          bool   `json:"json_valid"`
+	EnvelopeValid      bool   `json:"envelope_valid"`
+	Code               *int   `json:"code"`
+	DataArray          bool   `json:"data_array"`
+	ItemStatusesValid  bool   `json:"item_statuses_valid"`
+	AccountRows        int    `json:"account_rows"`
+	AccountFieldsValid bool   `json:"account_fields_valid"`
+	UIDValid           bool   `json:"uid_valid"`
+	AccountLevelValid  bool   `json:"account_level_valid"`
+	AccountAccepted    bool   `json:"account_accepted"`
 }
 
 func newAccountClient() *http.Client {
@@ -162,12 +168,24 @@ var numericCode = regexp.MustCompile(`^(0|[1-9][0-9]{0,5})$`)
 var accountUID = regexp.MustCompile(`^[0-9]{1,40}$`)
 
 func inspectAccount(client *http.Client, fields [3]string) accountCheck {
-	result := accountCheck{Attempted: true}
+	result := accountCheck{}
+	// Match net/http's field-value byte predicate. The secret is HMAC input,
+	// not a header; only the API key and passphrase are sent verbatim.
+	for _, value := range []string{fields[0], fields[2]} {
+		for i := 0; i < len(value); i++ {
+			if (value[i] < 0x20 && value[i] != '\t') || value[i] == 0x7f {
+				result.RequestError = "invalid_auth_header"
+				return result
+			}
+		}
+	}
+	result.AuthHeadersValid = true
 	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 	mac := hmac.New(sha256.New, []byte(fields[1]))
 	mac.Write([]byte(timestamp + "GET/api/v5/account/config"))
 	req, err := http.NewRequest(http.MethodGet, accountConfigURL, nil)
 	if err != nil {
+		result.RequestError = requestErrorCategory(err)
 		return result
 	}
 	req.Header.Set("OK-ACCESS-KEY", fields[0])
@@ -176,8 +194,10 @@ func inspectAccount(client *http.Client, fields [3]string) accountCheck {
 	req.Header.Set("OK-ACCESS-PASSPHRASE", fields[2])
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-simulated-trading", "0")
+	result.Attempted = true
 	resp, err := client.Do(req)
 	if err != nil {
+		result.RequestError = requestErrorCategory(err)
 		return result
 	}
 	defer resp.Body.Close()
@@ -240,6 +260,34 @@ func inspectAccount(client *http.Client, fields [3]string) accountCheck {
 	}
 	result.AccountAccepted = result.HTTPStatus == http.StatusOK && envelope.Code == "0" && result.ItemStatusesValid && result.UIDValid && result.AccountLevelValid
 	return result
+}
+
+// Only typed/known errors become fixed categories. An untyped TLS failure may
+// remain network_io or other; neither category rules out TLS or invalid credentials.
+func requestErrorCategory(err error) string {
+	var dns *net.DNSError
+	if errors.As(err, &dns) {
+		return "dns"
+	}
+	var verification *tls.CertificateVerificationError
+	var authority x509.UnknownAuthorityError
+	var hostname x509.HostnameError
+	var invalid x509.CertificateInvalidError
+	var roots x509.SystemRootsError
+	var record tls.RecordHeaderError
+	var alert tls.AlertError
+	if errors.As(err, &verification) || errors.As(err, &authority) || errors.As(err, &hostname) || errors.As(err, &invalid) || errors.As(err, &roots) || errors.As(err, &record) || errors.As(err, &alert) {
+		return "tls"
+	}
+	var timeout net.Error
+	if errors.As(err, &timeout) && timeout.Timeout() {
+		return "timeout"
+	}
+	var network *net.OpError
+	if errors.As(err, &network) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.EPIPE) {
+		return "network_io"
+	}
+	return "other"
 }
 
 func diagnosticValidateJSON(data []byte) error {
