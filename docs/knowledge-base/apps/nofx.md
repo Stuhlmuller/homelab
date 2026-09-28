@@ -20,13 +20,26 @@ The cash-spot rollout targets source revision
 [Publication run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201)
 passed all three jobs: test/build, private signed publication, and digest
 reporting. `deployment.yaml` owns the image pair from that verified report.
-Deployment and cash-spot UI acceptance remain pending. Require ready containers
+Cash-spot functional acceptance remains pending. Require ready containers
 at both exact digests and the matching served build revision with patches
 `0012`–`0015`. All traders must remain stopped; verify saved visibility settings
 after reload. Explicit capital and allocations remain user input, and no
 independent returns are established by publication.
 Patch `0013` is included in the image but its gateway route and token remain
 unmounted. Gateway activation requires its separate reviewed prerequisites.
+
+[PR #1086](https://github.com/Stuhlmuller/homelab/pull/1086) merged
+`5dbaa5641b47342864092123a76020ae480b91bb`. At 2026-09-28 02:45:06 UTC,
+Argo was `Synced` to that commit; both ready image IDs matched the report.
+The served `e7014c8b` build included `0015` with verified SHA-256
+`d95bdac77ee547b29e658592e5e7f65df6cb24e3b9eef46f519c761e91d1ba79`.
+All traders were stopped. UI/account acceptance awaits NOFX sign-in and
+explicit allocations. Argo remains `Degraded`: inactive, unmounted
+`nofx-litellm` is `Ready=False`; `ssm:GetParameter` lacks identity-policy access.
+The existing `aws-ssm-parameters` unit owns this token and reader IAM.
+Follow its separately reviewed full protected
+[Terragrunt Apply](../../ci-cd.md) path, then check ESO and Argo health.
+Do not patch IAM ad hoc or activate gateway routing to clear this finding.
 
 The earlier US connection and dashboard release used source revision
 `689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
@@ -430,14 +443,14 @@ uses original allocation for owned returns. Previous whole-account equity curves
 are not presented as per-agent history. A missing configuration or rejected
 account authentication remains an operational blocker, not a zero-return score.
 
-The signed image publication is complete; deployment and live activation remain
-separate gates. No trader was started, no funds moved, and no winner established
-by the implementation tests.
+Signed publication and image rollout are complete; functional acceptance and
+live activation remain separate gates. No trader was started, no funds moved,
+and no winner established by the implementation tests.
 Build-test coverage includes mocked protocol/ownership, SQLite reservation and
 replay, entry-protection recovery, lifecycle shutdown, unavailable-score handling,
-bounded competition refresh, and the allocation UI. The next gate is the
-reviewed digest-pin rollout with fresh stopped-state/source/readiness checks. Harbor and
-retained GHCR images stay private.
+bounded competition refresh, and the allocation UI. Full Argo health and fresh
+stopped UI/account acceptance remain required. Harbor and retained GHCR images
+stay private.
 
 An existing credential-log finding remains outside this feature:
 `mcp/openai_client.go:SetAPIKey` logs the first and last four characters of
