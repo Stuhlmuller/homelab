@@ -77,6 +77,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
    Successful pulls alone can reuse cached layers; existing cached layers and
    unchanged Pod image strings are not evidence of an upstream pull.
 
+The operator helper verifies destination manifests with curl using the fixed
+`https://1.1.1.1/dns-query` DNS-over-HTTPS resolver. Workstation split DNS can
+otherwise return the unreachable Istio ClusterIP. Requests retain the Harbor
+hostname and TLS verification; no system DNS, hosts file, or environment override
+is changed. Anonymous Bearer tokens stay in a private temporary header file and
+are removed on exit. Every digest-named tag and source-tag alias must return the
+catalog's exact manifest bytes after the successful same-revision copy workflow.
+
 Talos host DNS currently reaches the existing public Harbor HTTPS route.
 The registry and artifacts are hosted in the cluster, but node traffic still
 traverses Cloudflare/Octelium. Pod-only CoreDNS split resolution does not change
