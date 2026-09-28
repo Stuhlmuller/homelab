@@ -468,6 +468,23 @@ leverage caps, 30% utilization, and a positive minimum that fits its allocation.
 Consensus uses a copy; the original Default strategy remains unchanged. This
 records saved configuration, not successful live cycles or investment returns.
 
+### Live free-model JSON contract
+
+On September 28, read-only decision inspection found six failed cycles where
+the legacy parser replaced missing JSON with synthetic `ALL/wait`, then spot
+validation rejected that unconfigured symbol. Two responses were empty.
+An offline regression reproduced both cases through the real live decision
+caller with mocked HTTP. Historical free-model requests already used a strict
+JSON contract, while live calls omitted it.
+
+Patch `0018` shares that existing client, schema, and local decoder with OKX
+cash-spot calls to the exact official `openrouter/free` route. It requires
+structured-output support and keeps one provider attempt. Invalid responses
+remain failed cycles; configured symbols, 1x leverage, and execution limits
+remain enforced. Other models and live exchanges retain their existing path.
+Publish and pin reviewed images before treating this source fix as deployed.
+Neither the mocked regression nor deployment proves returns or a winning agent.
+
 Published patch `0012` addresses the shared-account execution gap above.
 It adds authenticated OKX US spot metadata and candles, per-trader decimal
 allocations and fill ownership, durable reservations, native owned OCO orders,
