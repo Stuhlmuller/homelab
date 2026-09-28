@@ -1,0 +1,270 @@
+diff --git a/trader/okx_spot_execution.go b/trader/okx_spot_execution.go
+--- a/trader/okx_spot_execution.go
++++ b/trader/okx_spot_execution.go
+@@ -22,16 +22,18 @@
+ 	return decimal.NewFromFloat(value), nil
+ }
+ 
+-func (t *OKXSpotTrader) feeBound(inst OKXSpotInstrument) (decimal.Decimal, error) {
++func (t *OKXSpotTrader) feeBounds(inst OKXSpotInstrument) (decimal.Decimal, decimal.Decimal, error) {
+ 	fees, err := t.client.FeeRates(inst)
+ 	if err != nil {
+-		return decimal.Zero, err
++		return decimal.Zero, decimal.Zero, err
+ 	}
+ 	cost := decimal.Max(decimal.Zero, fees.Maker.Neg(), fees.Taker.Neg())
+-	if cost.GreaterThanOrEqual(decimal.NewFromInt(1)) {
+-		return decimal.Zero, errors.New("invalid spot fee bound")
+-	}
+-	return cost, nil
++	// IOC fills take liquidity and cannot receive a maker rebate.
++	credit := decimal.Max(decimal.Zero, fees.Taker)
++	if decimal.Max(cost, credit).GreaterThanOrEqual(decimal.NewFromInt(1)) {
++		return decimal.Zero, decimal.Zero, errors.New("invalid spot fee bound")
++	}
++	return cost, credit, nil
+ }
+ 
+ // ExecuteSpotDecision is the entry path with both protective prices available.
+@@ -73,7 +75,11 @@
+ 	if !allowed {
+ 		return nil, errors.New("spot buy is outside the explicit candidate list")
+ 	}
+-	if existing, ok := snapshot.Inventory[inst.BaseCurrency]; ok && decimal.RequireFromString(existing).GreaterThanOrEqual(inst.minimumQuantity()) {
++	existing := decimal.Zero
++	if amount, ok := snapshot.Inventory[inst.BaseCurrency]; ok {
++		existing = decimal.RequireFromString(amount)
++	}
++	if existing.GreaterThanOrEqual(inst.minimumQuantity()) {
+ 		return nil, errors.New("close this agent's existing holding before another buy")
+ 	}
+ 	budget, _ := spotAmount(d.PositionSizeUSD)
+@@ -130,7 +136,7 @@
+ 	if take.Sub(price).LessThan(price.Sub(stop).Mul(decimal.NewFromFloat(risk.MinRiskRewardRatio))) {
+ 		return nil, errors.New("spot decision does not meet reward/risk limit")
+ 	}
+-	rate, err := t.feeBound(inst)
++	rate, credit, err := t.feeBounds(inst)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+@@ -144,15 +150,13 @@
+ 		return nil, errors.New("quantized spot order is below minimum position size")
+ 	}
+ 	reserve := quantity.Mul(limit).Mul(decimal.NewFromInt(1).Add(rate))
+-	// Quote fees lower post-trade equity; a base fee can only reduce holdings.
++	// Use the reported cost and credit rates conservatively for either currency.
+ 	// Enforce utilization against the conservative post-fee denominator too.
+ 	postEquity := equity.Sub(quantity.Mul(limit).Mul(rate))
+ 	// A coarse tick can make limit cost much lower than current marked exposure.
+-	entryValue := quantity.Mul(price)
+-	postHolding := entryValue
+-	if dust, ok := snapshot.Inventory[inst.BaseCurrency]; ok {
+-		postHolding = postHolding.Add(decimal.RequireFromString(dust).Mul(price))
+-	}
++	maximumAcquired := quantity.Mul(decimal.NewFromInt(1).Add(credit))
++	entryValue := maximumAcquired.Mul(price)
++	postHolding := maximumAcquired.Add(existing).Mul(price)
+ 	if !postEquity.IsPositive() || postHolding.GreaterThan(postEquity.Mul(maxRatio)) || invested.Add(entryValue).GreaterThan(postEquity.Mul(maxUsage)) {
+ 		return nil, errors.New("spot buy plus fees exceeds position or cash utilization limit")
+ 	}
+@@ -162,11 +166,15 @@
+ 	if err := inst.ValidateOrder(quantity, limit); err != nil {
+ 		return nil, err
+ 	}
+-	// Verify a conservative post-fee amount can be protected before buying.
+-	protected := spotFloorStep(quantity.Mul(decimal.NewFromInt(1).Sub(rate)), inst.LotSize)
+-	for _, px := range []decimal.Decimal{stop, take} {
+-		if err := inst.ValidateOrder(protected, px); err != nil {
+-			return nil, err
++	// Recovery protects the combined holding, including dust and base rebates.
++	// Check both quantity bounds before reserving cash or submitting the buy.
++	minimumProtected := spotFloorStep(quantity.Mul(decimal.NewFromInt(1).Sub(rate)), inst.LotSize)
++	maximumProtected := spotFloorStep(maximumAcquired.Add(existing), inst.LotSize)
++	for _, protected := range []decimal.Decimal{minimumProtected, maximumProtected} {
++		for _, px := range []decimal.Decimal{stop, take} {
++			if err := inst.ValidateOrder(protected, px); err != nil {
++				return nil, err
++			}
+ 		}
+ 	}
+ 	id := newSpotClientID()
+diff --git a/trader/okx_spot_execution_test.go b/trader/okx_spot_execution_test.go
+--- a/trader/okx_spot_execution_test.go
++++ b/trader/okx_spot_execution_test.go
+@@ -6,6 +6,7 @@
+ 	"fmt"
+ 	"net/http"
+ 	"path/filepath"
++	"reflect"
+ 	"strings"
+ 	"testing"
+ 	"time"
+@@ -42,7 +43,7 @@
+ 	must(db.Exec(`INSERT INTO traders VALUES ('a','owner','ex'),('b','owner','ex')`).Error)
+ 	must(st.Spot().InitTables())
+ 	must(st.Spot().Configure(store.SpotPolicy{UserID: "owner", AccountUID: "123", QuoteCurrency: "USDT", CapitalCap: "100"}, []string{"ex"}, map[string]string{"a": "40", "b": "60"}))
+-	type orderFixture struct{ ID, ClientID, Side, Quantity, Price string }
++	type orderFixture struct{ ID, ClientID, Side, Quantity, Price, Fee string }
+ 	type algoFixture struct{ ID, ClientID, Quantity, State string }
+ 	orders := map[string]orderFixture{}
+ 	algos := map[string]algoFixture{}
+@@ -50,6 +51,8 @@
+ 	posts := 0
+ 	coarseTick := false
+ 	lotSize := "0.001"
++	maxLimitSize, feeRate := "5", "-0.001"
++	makerRate := feeRate
+ 	var canceled []string
+ 	c := spotFixture(t, func(w http.ResponseWriter, r *http.Request) {
+ 		q := r.URL.Query()
+@@ -81,7 +84,11 @@
+ 				if body["ordType"] != "ioc" {
+ 					t.Fatal("unbounded order")
+ 				}
+-				orders[body["clOrdId"]] = orderFixture{id, body["clOrdId"], body["side"], body["sz"], body["px"]}
++				fee := decimal.Zero
++				if body["side"] == "buy" {
++					fee = spotD(body["sz"]).Mul(decimal.Max(decimal.Zero, spotD(feeRate)))
++				}
++				orders[body["clOrdId"]] = orderFixture{id, body["clOrdId"], body["side"], body["sz"], body["px"], fee.String()}
+ 				spotReply(w, fmt.Sprintf(`[{"sCode":"0","ordId":%q,"clOrdId":%q}]`, id, body["clOrdId"]))
+ 			case okxAlgoOrderPath:
+ 				if body["ordType"] != "oco" || body["side"] != "sell" || body["tpOrdPx"] == "-1" || body["slOrdPx"] == "-1" {
+@@ -107,13 +114,13 @@
+ 				spotReply(w, `[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":"1","minSz":"1","tickSz":"1","maxLmtSz":"100","groupId":"12"}]`)
+ 				return
+ 			}
+-			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":%q,"minSz":"0.01","tickSz":"0.1","maxLmtSz":"5","groupId":"12"}]`, lotSize))
++			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","baseCcy":"BTC","quoteCcy":"USDT","state":"live","lotSz":%q,"minSz":"0.01","tickSz":"0.1","maxLmtSz":%q,"groupId":"12"}]`, lotSize, maxLimitSize))
+ 		case "/api/v5/account/trade-fee":
+ 			if coarseTick {
+ 				spotReply(w, `[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":"0","taker":"0"}]}]`)
+ 				return
+ 			}
+-			spotReply(w, `[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":"-0.001","taker":"-0.001"}]}]`)
++			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","feeGroup":[{"groupId":"12","maker":%q,"taker":%q}]}]`, makerRate, feeRate))
+ 		case okxTickerPath:
+ 			if coarseTick {
+ 				spotReply(w, `[{"instId":"BTC-USDT","last":"1.9","ts":"28800000"}]`)
+@@ -125,7 +132,7 @@
+ 			if !ok {
+ 				t.Fatal("read unowned regular order")
+ 			}
+-			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","ordId":%q,"clOrdId":%q,"tdMode":"cash","side":%q,"state":"filled","ordType":"ioc","sz":%q,"accFillSz":%q,"avgPx":%q,"px":%q,"fee":"0","rebate":"0"}]`, o.ID, o.ClientID, o.Side, o.Quantity, o.Quantity, o.Price, o.Price))
++			spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","ordId":%q,"clOrdId":%q,"tdMode":"cash","side":%q,"state":"filled","ordType":"ioc","sz":%q,"accFillSz":%q,"avgPx":%q,"px":%q,"fee":%q,"feeCcy":"BTC","rebate":"0"}]`, o.ID, o.ClientID, o.Side, o.Quantity, o.Quantity, o.Price, o.Price, o.Fee))
+ 		case "/api/v5/trade/fills-history":
+ 			if q.Get("after") != "" {
+ 				spotReply(w, `[]`)
+@@ -133,7 +140,7 @@
+ 			}
+ 			for _, o := range orders {
+ 				if o.ID == q.Get("ordId") {
+-					spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","ordId":%q,"clOrdId":%q,"billId":%q,"tradeId":%q,"side":%q,"fillPx":%q,"fillSz":%q,"fee":"0","rebate":"0","fillTime":"28800000"}]`, o.ID, o.ClientID, o.ID, o.ID, o.Side, o.Price, o.Quantity))
++					spotReply(w, fmt.Sprintf(`[{"instType":"SPOT","instId":"BTC-USDT","ordId":%q,"clOrdId":%q,"billId":%q,"tradeId":%q,"side":%q,"fillPx":%q,"fillSz":%q,"fee":%q,"feeCcy":"BTC","rebate":"0","fillTime":"28800000"}]`, o.ID, o.ClientID, o.ID, o.ID, o.Side, o.Price, o.Quantity, o.Fee))
+ 					return
+ 				}
+ 			}
+@@ -226,8 +233,50 @@
+ 			t.Fatalf("post-fee %s limit did not reject before submission: %v", limit, err)
+ 		}
+ 	}
++	rejectUnprotectable := func(name, wantError string, candidate kernel.Decision, limits store.RiskControlConfig) {
++		t.Helper()
++		before, err := a.snapshot()
++		must(err)
++		intentsBefore, err := st.Spot().Intents("owner", "ex")
++		must(err)
++		postsBefore := posts
++		_, decisionErr := a.ExecuteSpotDecision(candidate, limits, []string{"BTCUSDT"})
++		after, err := st.Spot().Snapshot("owner", "ex", "a")
++		must(err)
++		intentsAfter, err := st.Spot().Intents("owner", "ex")
++		must(err)
++		if decisionErr == nil || !strings.Contains(decisionErr.Error(), wantError) || posts != postsBefore || !reflect.DeepEqual(before, after) || len(intentsAfter) != len(intentsBefore) {
++			t.Fatalf("%s was not rejected before mutation: err=%v POSTs=%d before=%+v after=%+v intents=%d->%d", name, decisionErr, posts-postsBefore, before, after, len(intentsBefore), len(intentsAfter))
++		}
++	}
++	minimumProtected := decision
++	minimumProtected.PositionSizeUSD = 1
++	rejectUnprotectable("post-fee quantity below minimum", "invalid spot order quantity", minimumProtected, risk)
++	seedDust := func(id, quantity string) {
++		t.Helper()
++		_, err := st.Spot().Reserve(store.SpotReserve{UserID: "owner", ExchangeID: "ex", TraderID: "a", ClientOrderID: id, InstrumentID: "BTC-USDT", BaseCurrency: "BTC", Side: "buy", Quantity: "0.01", MinQuantity: "0.01", QuoteReserve: "1.01", BaseReserve: "0", StopLoss: "90", TakeProfit: "120"})
++		must(err)
++		must(st.Spot().SetIntentState("owner", id, "", "SUBMITTED"))
++		must(st.Spot().SetIntentState("owner", id, id+"Order", "OPEN"))
++		must(st.Spot().ApplyFill("owner", store.SpotFill{ExchangeID: "ex", ClientOrderID: id, ExchangeOrderID: id + "Order", FillID: id + "Fill", Quantity: quantity, QuoteQuantity: spotD(quantity).Mul(spotD("100")).String(), Fee: "0", Rebate: "0"}))
++		must(st.Spot().Finish("owner", id, "CANCELED", quantity))
++	}
++	// Gross quantity is the upper bound even when the fee quote is negative:
++	// fees can settle in quote or be waived. Dust plus 0.1 needs a 0.101 OCO.
++	seedDust("dustEntry", "0.001")
++	maxLimitSize = "0.1"
++	rejectUnprotectable("residual dust plus new buy", "invalid spot order quantity", decision, risk)
++	// IOC cannot earn the maker rebate. Counting it would incorrectly require
++	// a 0.10102 OCO, rejecting this exactly protectable 0.101 holding.
++	maxLimitSize, lotSize, makerRate = "0.101", "0.00001", "0.0002"
+ 	_, err = a.ExecuteSpotDecision(decision, risk, []string{"BTCUSDT"})
+ 	must(err)
++	atMaximum, err := st.Spot().Snapshot("owner", "ex", "a")
++	must(err)
++	if atMaximum.Inventory["BTC"] != "0.101" || atMaximum.AvailableInventory["BTC"] != "0" {
++		t.Fatalf("exact-maximum combined inventory was not fully protected: %+v", atMaximum)
++	}
++	maxLimitSize, lotSize, makerRate = "5", "0.001", feeRate
+ 	_, err = b.ExecuteSpotDecision(decision, risk, []string{"BTCUSDT"})
+ 	must(err)
+ 	beforeB, err := st.Spot().Snapshot("owner", "ex", "b")
+@@ -261,6 +310,33 @@
+ 			t.Fatal("first agent canceled second agent protection")
+ 		}
+ 	}
++	// Positive signed fees credit base inventory even without previous dust.
++	// The full 0.1 fill plus its 1% rebate needs protection for 0.101.
++	maxLimitSize, feeRate, makerRate = "0.1", "0.01", "0.01"
++	rejectUnprotectable("base rebate plus new buy", "invalid spot order quantity", decision, risk)
++	maxLimitSize = "5"
++	for _, limit := range []string{"position", "utilization"} {
++		bounded := risk
++		if limit == "position" {
++			bounded.BTCETHMaxPositionValueRatio = 0.25
++		} else {
++			bounded.MaxMarginUsage = 0.25
++		}
++		rejectUnprotectable("base rebate exceeds "+limit, "spot buy plus fees exceeds position or cash utilization limit", decision, bounded)
++	}
++	maxLimitSize, feeRate, makerRate = "5", "-0.001", "-0.001"
++	seedDust("fractionalDust", "0.0005")
++	maxLimitSize = "0.1"
++	_, err = a.ExecuteSpotDecision(decision, risk, []string{"BTCUSDT"})
++	must(err)
++	fractional, err := st.Spot().Snapshot("owner", "ex", "a")
++	must(err)
++	if fractional.Inventory["BTC"] != "0.1005" || fractional.AvailableInventory["BTC"] != "0.0005" {
++		t.Fatalf("sub-lot dust prevented exact-maximum protection: %+v", fractional)
++	}
++	_, err = a.CloseLong("BTCUSDT", 0)
++	must(err)
++	maxLimitSize = "5"
+ 	before := posts
+ 	invalid := decision
+ 	invalid.Action = "open_short"
+@@ -280,7 +356,7 @@
+ 	}
+ 	// A valid ticker can expire while other account checks run. Reject the
+ 	// unsent reservation locally; never submit against its stale limit.
+-	expired, err := st.Spot().Reserve(store.SpotReserve{UserID: "owner", ExchangeID: "ex", TraderID: "a", ClientOrderID: "expired", InstrumentID: "BTC-USDT", BaseCurrency: "BTC", Side: "buy", Quantity: "0.01", QuoteReserve: "1.01", BaseReserve: "0"})
++	expired, err := st.Spot().Reserve(store.SpotReserve{UserID: "owner", ExchangeID: "ex", TraderID: "a", ClientOrderID: "expired", InstrumentID: "BTC-USDT", BaseCurrency: "BTC", Side: "buy", Quantity: "0.01", MinQuantity: "0.01", QuoteReserve: "1.01", BaseReserve: "0"})
+ 	must(err)
+ 	if err := a.submitIOC(*expired, spotInstrument(), spotD("100"), c.now().Add(-2*time.Minute)); err == nil {
+ 		t.Fatal("expired price submitted")
+@@ -314,7 +390,7 @@
+ 		fmt.Fprint(w, `{"code":"1","data":[{"sCode":"51008","ordId":"123","OrdId":"","clOrdId":"ambiguous"}]}`)
+ 	})
+ 	must(st.Spot().SetReconciled("owner", "ex", true))
+-	pending, err := st.Spot().Reserve(store.SpotReserve{UserID: "owner", ExchangeID: "ex", TraderID: "a", ClientOrderID: "ambiguous", InstrumentID: "BTC-USDT", BaseCurrency: "BTC", Side: "buy", Quantity: "0.01", QuoteReserve: "1.01", BaseReserve: "0"})
++	pending, err := st.Spot().Reserve(store.SpotReserve{UserID: "owner", ExchangeID: "ex", TraderID: "a", ClientOrderID: "ambiguous", InstrumentID: "BTC-USDT", BaseCurrency: "BTC", Side: "buy", Quantity: "0.01", MinQuantity: "0.01", QuoteReserve: "1.01", BaseReserve: "0"})
+ 	must(err)
+ 	err = ambiguous.submitIOC(*pending, spotInstrument(), spotD("100"), ambiguous.client.now())
+ 	var rejected *spotRejectedSubmission
