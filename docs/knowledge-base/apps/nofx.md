@@ -328,6 +328,25 @@ error for wrong-key/corrupt input. The committed checker suite tests direct
 decryption, not `Scan`; retain that separate fail-open finding for repair with
 its own regression.
 
+On September 27, the signed-in **Spot allocations** form failed its account
+verification and disabled configuration. Source tracing isolated the failure to
+the signed US account-config GET, before instrument, wallet, or allocation
+checks. The generic UI error cannot distinguish a transport failure, exchange
+rejection, or account-schema mismatch. The separate `inspect-account` operator
+mode preserves the reviewed-main and deployed-source checks while reporting only
+status codes, counts, and validation booleans from that fixed read-only request.
+It does not change credentials, account settings, or trading state. Live account
+inspection remains pending; use the
+[operator runbook](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis)
+before choosing a repair.
+
+The same UI session saved a 120-minute scan interval for Trend, Mean Reversion,
+and Breakout. A read-only database check confirmed all three remain stopped,
+hidden from the public leaderboard, and bound to enabled `openrouter/free`
+models through OpenRouter. Their strategies and the Consensus trader were
+unchanged. This cadence schedules 36 calls per day before retries; it does not
+establish the API key's remaining quota or configure trading capital.
+
 The pre-`0012` US execution gap is concrete: in the
 [pinned OKX adapter](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go),
 `convertSymbol` creates `*-USDT-SWAP` IDs and `GetPositions` requests `SWAP`.
