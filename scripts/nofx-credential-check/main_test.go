@@ -14,13 +14,16 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"nofx/crypto"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -400,5 +403,43 @@ func TestAccountDiagnosticRequestErrorCategories(t *testing.T) {
 				t.Fatal("request error or URL leaked")
 			}
 		})
+	}
+}
+
+func TestAccountDiagnosticNegotiatesOnlyHTTP1(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		if r.ProtoMajor != 1 || r.Method != http.MethodGet || r.Host != "us.okx.com" || r.URL.RequestURI() != "/api/v5/account/config" {
+			t.Error("unexpected diagnostic request protocol or target")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"code":"0","data":[{"uid":"123","acctLv":"1"}]}`)
+	}))
+	server.EnableHTTP2 = true
+	server.Config.ErrorLog = log.New(io.Discard, "", 0)
+	server.StartTLS()
+	defer server.Close()
+	client := newAccountClient()
+	client.Timeout = 2 * time.Second
+	transport := client.Transport.(*http.Transport)
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	// Trust only this synthetic server; hostname and chain verification remain on.
+	transport.TLSClientConfig.RootCAs = x509.NewCertPool()
+	transport.TLSClientConfig.RootCAs.AddCert(server.Certificate())
+	transport.TLSClientConfig.ServerName = "127.0.0.1"
+	transport.Proxy = nil
+	transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		if address != "us.okx.com:443" {
+			return nil, errors.New("unexpected diagnostic destination")
+		}
+		return (&net.Dialer{}).DialContext(ctx, network, server.Listener.Addr().String())
+	}
+	defer transport.CloseIdleConnections()
+	result := inspectAccount(client, [3]string{"synthetic-key", "synthetic-secret", "synthetic-pass"})
+	if !result.AccountAccepted || result.HTTPStatus != 200 || requests.Load() != 1 {
+		t.Fatalf("HTTP/1 diagnostic failed against HTTP/2-capable TLS server: %+v; requests=%d", result, requests.Load())
 	}
 }

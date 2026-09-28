@@ -159,6 +159,11 @@ func newAccountClient() *http.Client {
 	transport.DisableKeepAlives = true
 	transport.Protocols = new(http.Protocols)
 	transport.Protocols.SetHTTP1(true)
+	// Clone may retain the default transport's h2 ALPN advertisement.
+	if transport.TLSClientConfig == nil {
+		transport.TLSClientConfig = &tls.Config{}
+	}
+	transport.TLSClientConfig.NextProtos = []string{"http/1.1"}
 	return &http.Client{Transport: transport, Timeout: 30 * time.Second,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}
