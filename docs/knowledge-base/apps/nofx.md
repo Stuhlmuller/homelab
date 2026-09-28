@@ -348,6 +348,19 @@ allowlisted request-error category, never raw errors. Use the
 [operator runbook](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis)
 before choosing a repair.
 
+The `78852f13` follow-up confirmed valid credential-header bytes but still
+reported `other` before an HTTP response. Review then identified a diagnostic
+transport mismatch: Go's default-transport clone can retain HTTP/2 in its TLS
+ALPN list after the checker selects HTTP/1 only. The checker now aligns both
+protocol settings, with a local HTTPS regression offering both protocols.
+Treat the earlier no-response results as inconclusive until rerunning the
+corrected checker; they do not establish a production network failure.
+After the operator fixed the saved connection, reopening **Spot allocations**
+enabled the currency, cap, and allocation controls. The form lists eligible
+currencies but does not expose available cash; allocation amounts still require
+the account owner's balance information. No allocation or activation was saved
+during that check.
+
 The same UI session saved a 120-minute scan interval for Trend, Mean Reversion,
 and Breakout. A read-only database check confirmed all three remain stopped,
 hidden from the public leaderboard, and bound to enabled `openrouter/free`
