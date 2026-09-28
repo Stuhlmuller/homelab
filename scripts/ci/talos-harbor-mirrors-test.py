@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import urllib.parse
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,7 +29,7 @@ ORIGINAL = [{"version": "v1alpha1", "machine": {"type": "worker"},
 class RolloutTest(unittest.TestCase):
     def test_dry_run_execution_and_fail_closed_gates(self):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
-                         "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure"):
+                         "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "scripts/config").mkdir(parents=True)
@@ -61,8 +62,26 @@ class RolloutTest(unittest.TestCase):
                     if command[0] == "gh":
                         return json.dumps([] if scenario == "workflow" else
                                           [{"headSha": SHA, "status": "completed", "conclusion": "success"}])
-                    if command[0] == "skopeo":
-                        self.assertIn("--no-creds", command)
+                    if command[0] == "curl":
+                        self.assertEqual(command[1], "--disable")
+                        self.assertIn("--fail", command)
+                        self.assertEqual(command[command.index("--max-time") + 1], "30")
+                        self.assertEqual(command[command.index("--doh-url") + 1], "https://1.1.1.1/dns-query")
+                        self.assertNotIn("--insecure", command)
+                        self.assertNotIn("--location", command)
+                        self.assertNotIn("test.anonymous-token", " ".join(command))
+                        if "/service/token?" in command[-1]:
+                            self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(command[-1]).query),
+                                             {"service": ["harbor-registry"], "scope": ["repository:mirror/docker.io/library/alpine:pull"]})
+                            return json.dumps({"token": "unsafe\r\nInjected: header" if scenario == "token-injection" else "test.anonymous-token"})
+                        headers = Path(command[command.index("--header") + 1].removeprefix("@"))
+                        self.assertEqual(headers.stat().st_mode & 0o777, 0o600)
+                        self.assertEqual(headers.parent.stat().st_mode & 0o777, 0o700)
+                        self.assertIn("Authorization: Bearer test.anonymous-token\n", headers.read_text())
+                        self.assertIn("application/vnd.oci.image.index.v1+json", headers.read_text())
+                        self.assertIn("application/vnd.docker.distribution.manifest.list.v2+json", headers.read_text())
+                        self.assertIn(command[-1], (f"https://harbor.stinkyboi.com/v2/mirror/docker.io/library/alpine/manifests/{DIGEST}",
+                                                   "https://harbor.stinkyboi.com/v2/mirror/docker.io/library/alpine/manifests/3.22"))
                         self.assertTrue(binary)
                         return b"wrong digest" if scenario == "digest" else MANIFEST.encode()
                     if command[:2] == ("kubectl", "get"):
@@ -131,11 +150,14 @@ class RolloutTest(unittest.TestCase):
                 self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure"))
                 self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure"))
                 if scenario in ("dry", "rollback", "rollback-reboot"):
-                    self.assertFalse(any(call[0] in ("gh", "skopeo") for call in calls))
+                    self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
                 if scenario.startswith("rollback"):
                     self.assertFalse(any(call[0] == "kubectl" for call in calls))
                 self.assertFalse(any("patch" in call and "machineconfig" not in call for call in calls))
                 for call in calls:
+                    if call[0] == "curl" and "--header" in call:
+                        self.assertFalse(Path(call[call.index("--header") + 1].removeprefix("@")).exists(),
+                                         "Private token header must be removed")
                     if call[:3] == ("talosctl", "machineconfig", "patch"):
                         self.assertFalse(Path(call[-1]).exists(), "Private temporary config must be removed")
 

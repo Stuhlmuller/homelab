@@ -262,7 +262,8 @@ the reviewed shared SSM plan before expecting the new bootstrap to complete. Pri
 `homelab` artifacts retain their existing authentication/signing contract.
 
 During the staged rollout, `harbor-secrets` reconciled before the new SSM
-parameter existed. After the scoped SSM apply succeeded, the GitOps
+parameter existed. The approved scoped plan applied 16 creations and three IAM
+updates, with no deletions or existing-secret rotations. After that apply, the GitOps
 `generated-secret-revision` annotation advances to `v2` to request a fresh
 reconciliation. Keep `refreshPolicy: OnChange` to avoid periodically regenerating
 the salted bcrypt registry password hash. Require the ExternalSecret to report

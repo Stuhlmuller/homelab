@@ -11,6 +11,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 
 ROOT = Path(__file__).resolve().parents[1]
 NODES = {"10.1.0.199": "acer", "10.1.0.200": "zimaboard-0",
@@ -44,18 +45,34 @@ def verify_copies(expected):
     images = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
     if not images:
         raise RuntimeError("Mirror inventory is empty")
-    for image in images:
-        source, digest = image["source"].split("@")
-        if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
-            raise RuntimeError("Mirror inventory requires SHA-256 digests")
-        repository, separator, tag = source.rpartition(":")
-        if not separator or "/" in tag:
-            repository, tag = source, ""
-        destination = f"docker://harbor.stinkyboi.com/mirror/{repository}"
-        for reference in (f"{destination}:{digest[7:]}", *([f"{destination}:{tag}"] if tag else [])):
-            manifest = run("skopeo", "inspect", "--raw", "--no-creds", reference, binary=True)
-            if "sha256:" + hashlib.sha256(manifest).hexdigest() != digest:
-                raise RuntimeError("Harbor destination manifest digest differs")
+    curl = ("curl", "--disable", "--fail", "--silent", "--show-error", "--noproxy", "*",
+            "--max-time", "30", "--doh-url", "https://1.1.1.1/dns-query", "--proto", "=https")
+    accept = ", ".join(("application/vnd.oci.image.index.v1+json", "application/vnd.oci.image.manifest.v1+json",
+                        "application/vnd.docker.distribution.manifest.list.v2+json",
+                        "application/vnd.docker.distribution.manifest.v2+json"))
+    with tempfile.TemporaryDirectory(prefix="harbor-manifests-") as temporary:
+        directory = Path(temporary)
+        directory.chmod(0o700)
+        headers = directory / "headers"
+        headers.touch(mode=0o600)
+        for image in images:
+            source, digest = image["source"].split("@")
+            if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+                raise RuntimeError("Mirror inventory requires SHA-256 digests")
+            repository, separator, tag = source.rpartition(":")
+            if not separator or "/" in tag:
+                repository, tag = source, ""
+            query = urllib.parse.urlencode({"service": "harbor-registry", "scope": f"repository:mirror/{repository}:pull"})
+            token = json.loads(run(*curl, "https://harbor.stinkyboi.com/service/token?" + query)).get("token")
+            if not isinstance(token, str) or not 1 <= len(token) <= 16384 or not re.fullmatch(r"[A-Za-z0-9._~+/-]+=*", token):
+                raise RuntimeError("Harbor returned an invalid anonymous Bearer token")
+            headers.write_text(f"Authorization: Bearer {token}\nAccept: {accept}\n")
+            destination = "https://harbor.stinkyboi.com/v2/mirror/" + urllib.parse.quote(repository, safe="/")
+            for reference in (digest[7:], *([tag] if tag else [])):
+                manifest = run(*curl, "--header", "@" + str(headers),
+                               destination + "/manifests/" + urllib.parse.quote(reference, safe=""), binary=True)
+                if "sha256:" + hashlib.sha256(manifest).hexdigest() != digest:
+                    raise RuntimeError("Harbor destination manifest digest differs")
 
 
 def documents(path):
