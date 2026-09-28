@@ -70,7 +70,9 @@ before relying on that input path.
 
 Patch `0016` paces fresh account-configuration reads across constructors,
 monitors, and dashboard/competition refreshes. Patch `0017` keeps trader
-buttons pending until the API finishes and leaves failed saves open. Before
+buttons pending until the API finishes and leaves failed saves open. Successful
+create/edit saves close independently of the subsequent list refresh; refresh
+rejections are handled without turning persisted changes into failed saves. Before
 those fixes are deployed, avoid repeated toggle clicks and verify persisted
 stopped state using the rollout gate; a badge or toast alone can precede the
 completed request. Neither fix activates traders.
