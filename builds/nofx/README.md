@@ -86,6 +86,18 @@ and the reported positive taker rate; the lower bound retains the conservative b
 fee deduction. Reported rebates also count toward marked exposure limits.
 Mocked execution checks cover rejected overflow and accepted lot-rounded limits.
 
+Patch `0016` spaces cash-spot account-configuration reads across all clients in
+the single backend. Each fresh request is signed after waiting until 500 ms
+after the previous response. No successful response is cached or application
+retry added; HTTP 429 propagates. Existing transport retries remain possible.
+Other endpoints and order submission remain unchanged. The
+shared queue can extend total latency beyond the individual HTTP timeout.
+
+Patch `0017` awaits the underlying API operations before refreshing trader
+state or closing configuration dialogs. Sonner's toast identifier is not a
+promise. Failed saves remain open, and a pending Start/Stop request disables
+that trader's toggle and rejects duplicate clicks.
+
 For a cash-spot rollout, publish the exact reviewed main commit to private
 Harbor and pin its reported backend/frontend digests through a separate PR.
 Then verify readiness, served source, and stopped-state acceptance. The

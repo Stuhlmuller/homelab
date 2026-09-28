@@ -1,0 +1,540 @@
+diff --git a/web/src/components/AITradersPage.tsx b/web/src/components/AITradersPage.tsx
+--- a/web/src/components/AITradersPage.tsx
++++ b/web/src/components/AITradersPage.tsx
+@@ -1,4 +1,4 @@
+-import React, { useState, useEffect } from 'react'
++import React, { useState, useEffect, useRef } from 'react'
+ import { useNavigate } from 'react-router-dom'
+ import useSWR from 'swr'
+ import { api } from '../lib/api'
+@@ -158,6 +158,8 @@
+   const [visibleTraderAddresses, setVisibleTraderAddresses] = useState<Set<string>>(new Set())
+   const [visibleExchangeAddresses, setVisibleExchangeAddresses] = useState<Set<string>>(new Set())
+   const [copiedId, setCopiedId] = useState<string | null>(null)
++  const pendingTraderActions = useRef(new Set<string>())
++  const [pendingTraders, setPendingTraders] = useState<Set<string>>(new Set())
+ 
+   // Toggle wallet address visibility for a trader
+   const toggleTraderAddressVisibility = (traderId: string) => {
+@@ -336,26 +338,19 @@
+       const exchange = allExchanges?.find((e) => e.id === data.exchange_id)
+ 
+       if (!model?.enabled) {
+-        toast.error(t('modelNotConfigured', language))
+-        return
++        throw new Error(t('modelNotConfigured', language))
+       }
+ 
+       if (!exchange?.enabled) {
+-        toast.error(t('exchangeNotConfigured', language))
+-        return
++        throw new Error(t('exchangeNotConfigured', language))
+       }
+ 
+-      await toast.promise(api.createTrader(data), {
+-        loading: '正在创建…',
+-        success: '创建成功',
+-        error: '创建失败',
+-      })
+-      setShowCreateModal(false)
++      await api.createTrader(data)
+       // Immediately refresh traders list for better UX
+       await mutateTraders()
+     } catch (error) {
+       console.error('Failed to create trader:', error)
+-      toast.error(t('createTraderFailed', language))
++      throw error
+     }
+   }
+ 
+@@ -372,20 +367,18 @@
+ 
+   const handleSaveEditTrader = async (data: CreateTraderRequest) => {
+     console.log('🔥🔥🔥 handleSaveEditTrader CALLED with data:', data)
+-    if (!editingTrader) return
++    if (!editingTrader) throw new Error(t('getTraderConfigFailed', language))
+ 
+     try {
+       const model = enabledModels?.find((m) => m.id === data.ai_model_id)
+       const exchange = enabledExchanges?.find((e) => e.id === data.exchange_id)
+ 
+       if (!model) {
+-        toast.error(t('modelConfigNotExist', language))
+-        return
++        throw new Error(t('modelConfigNotExist', language))
+       }
+ 
+       if (!exchange) {
+-        toast.error(t('exchangeConfigNotExist', language))
+-        return
++        throw new Error(t('exchangeConfigNotExist', language))
+       }
+ 
+       const request = {
+@@ -403,18 +396,12 @@
+       console.log('🔥 handleSaveEditTrader - data.strategy_id:', data.strategy_id)
+       console.log('🔥 handleSaveEditTrader - request:', request)
+ 
+-      await toast.promise(api.updateTrader(editingTrader.trader_id, request), {
+-        loading: '正在保存…',
+-        success: '保存成功',
+-        error: '保存失败',
+-      })
+-      setShowEditModal(false)
+-      setEditingTrader(null)
++      await api.updateTrader(editingTrader.trader_id, request)
+       // Immediately refresh traders list for better UX
+       await mutateTraders()
+     } catch (error) {
+       console.error('Failed to update trader:', error)
+-      toast.error(t('updateTraderFailed', language))
++      throw error
+     }
+   }
+ 
+@@ -425,11 +412,13 @@
+     }
+ 
+     try {
+-      await toast.promise(api.deleteTrader(traderId), {
++      const operation = api.deleteTrader(traderId)
++      toast.promise(operation, {
+         loading: '正在删除…',
+         success: '删除成功',
+         error: '删除失败',
+       })
++      await operation
+ 
+       // Immediately refresh traders list for better UX
+       await mutateTraders()
+@@ -440,38 +429,49 @@
+   }
+ 
+   const handleToggleTrader = async (traderId: string, running: boolean) => {
++    if (pendingTraderActions.current.has(traderId)) return
++    pendingTraderActions.current.add(traderId)
++    setPendingTraders(new Set(pendingTraderActions.current))
+     try {
+       if (running) {
+-        await toast.promise(api.stopTrader(traderId), {
++        const operation = api.stopTrader(traderId)
++        toast.promise(operation, {
+           loading: '正在停止…',
+           success: '已停止',
+           error: '停止失败',
+         })
++        await operation
+       } else {
+-        await toast.promise(api.startTrader(traderId), {
++        const operation = api.startTrader(traderId)
++        toast.promise(operation, {
+           loading: '正在启动…',
+           success: '已启动',
+           error: (error: unknown) =>
+             error instanceof Error ? error.message : '启动失败',
+         })
++        await operation
+       }
+ 
+       // Immediately refresh traders list to update running status
+       await mutateTraders()
+     } catch (error) {
+       console.error('Failed to toggle trader:', error)
+-      toast.error(t('operationFailed', language))
++    } finally {
++      pendingTraderActions.current.delete(traderId)
++      setPendingTraders(new Set(pendingTraderActions.current))
+     }
+   }
+ 
+   const handleToggleCompetition = async (traderId: string, currentShowInCompetition: boolean) => {
+     try {
+       const newValue = !currentShowInCompetition
+-      await toast.promise(api.toggleCompetition(traderId, newValue), {
++      const operation = api.toggleCompetition(traderId, newValue)
++      toast.promise(operation, {
+         loading: '正在更新…',
+         success: newValue ? '已在竞技场显示' : '已在竞技场隐藏',
+         error: '更新失败',
+       })
++      await operation
+ 
+       // Immediately refresh traders list to update status
+       await mutateTraders()
+@@ -534,11 +534,13 @@
+         ) || []
+ 
+       const request = config.buildRequest(updatedItems)
+-      await toast.promise(config.updateApi(request), {
++      const operation = config.updateApi(request)
++      toast.promise(operation, {
+         loading: '正在更新配置…',
+         success: '配置已更新',
+         error: '更新配置失败',
+       })
++      await operation
+ 
+       // 重新获取用户配置以确保数据同步
+       const refreshedItems = await config.refreshApi()
+@@ -653,11 +655,13 @@
+         ),
+       }
+ 
+-      await toast.promise(api.updateModelConfigs(request), {
++      const operation = api.updateModelConfigs(request)
++      toast.promise(operation, {
+         loading: '正在更新模型配置…',
+         success: '模型配置已更新',
+         error: '更新模型配置失败',
+       })
++      await operation
+ 
+       // 重新获取用户配置以确保数据同步
+       const refreshedModels = await api.getModelConfigs()
+@@ -686,11 +690,13 @@
+     if (!ok) return
+ 
+     try {
+-      await toast.promise(api.deleteExchange(exchangeId), {
++      const operation = api.deleteExchange(exchangeId)
++      toast.promise(operation, {
+         loading: language === 'zh' ? '正在删除交易所账户…' : 'Deleting exchange account...',
+         success: language === 'zh' ? '交易所账户已删除' : 'Exchange account deleted',
+         error: language === 'zh' ? '删除交易所账户失败' : 'Failed to delete exchange account',
+       })
++      await operation
+ 
+       // 重新获取用户配置以确保数据同步
+       const refreshedExchanges = await api.getExchangeConfigs()
+@@ -750,11 +756,13 @@
+           },
+         }
+ 
+-        await toast.promise(api.updateExchangeConfigsEncrypted(request), {
++        const operation = api.updateExchangeConfigsEncrypted(request)
++        toast.promise(operation, {
+           loading: language === 'zh' ? '正在更新交易所配置…' : 'Updating exchange config...',
+           success: language === 'zh' ? '交易所配置已更新' : 'Exchange config updated',
+           error: language === 'zh' ? '更新交易所配置失败' : 'Failed to update exchange config',
+         })
++        await operation
+       } else {
+         // 创建新账户
+         const createRequest = {
+@@ -775,11 +783,13 @@
+           lighter_api_key_index: lighterApiKeyIndex || 0,
+         }
+ 
+-        await toast.promise(api.createExchangeEncrypted(createRequest), {
++        const operation = api.createExchangeEncrypted(createRequest)
++        toast.promise(operation, {
+           loading: language === 'zh' ? '正在创建交易所账户…' : 'Creating exchange account...',
+           success: language === 'zh' ? '交易所账户已创建' : 'Exchange account created',
+           error: language === 'zh' ? '创建交易所账户失败' : 'Failed to create exchange account',
+         })
++        await operation
+       }
+ 
+       // 重新获取用户配置以确保数据同步
+@@ -1361,7 +1371,8 @@
+                           trader.is_running || false
+                         )
+                       }
+-                      className="px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold transition-all hover:scale-105 whitespace-nowrap"
++                      disabled={pendingTraders.has(trader.trader_id)}
++                      className="px-2 md:px-3 py-1.5 md:py-2 rounded text-xs md:text-sm font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                       style={
+                         trader.is_running
+                           ? {
+diff --git a/web/src/components/TraderConfigModal.tsx b/web/src/components/TraderConfigModal.tsx
+--- a/web/src/components/TraderConfigModal.tsx
++++ b/web/src/components/TraderConfigModal.tsx
+@@ -161,7 +161,7 @@
+   }
+ 
+   const handleSave = async () => {
+-    if (!onSave) return
++    if (!onSave || isSaving) return
+ 
+     setIsSaving(true)
+     try {
+@@ -182,11 +182,14 @@
+         }
+       }
+ 
+-      await toast.promise(onSave(saveData), {
++      const operation = onSave(saveData)
++      toast.promise(operation, {
+         loading: '正在保存…',
+         success: '保存成功',
+-        error: '保存失败',
++        error: (error: unknown) =>
++          error instanceof Error ? error.message : '保存失败',
+       })
++      await operation
+       onClose()
+     } catch (error) {
+       console.error('保存失败:', error)
+diff --git a/web/src/components/AITradersPage.requests.test.tsx b/web/src/components/AITradersPage.requests.test.tsx
+new file mode 100644
+--- /dev/null
++++ b/web/src/components/AITradersPage.requests.test.tsx
+@@ -0,0 +1,258 @@
++import {
++  act,
++  cleanup,
++  fireEvent,
++  render,
++  screen,
++  waitFor,
++} from '@testing-library/react'
++import { afterEach, beforeEach, expect, it, vi } from 'vitest'
++import { MemoryRouter } from 'react-router-dom'
++import type { TraderInfo } from '../types'
++import { AITradersPage } from './AITradersPage'
++
++const { state, requests, toastPromise, toastError } = vi.hoisted(() => ({
++  state: { traders: [] as TraderInfo[], mutate: vi.fn() },
++  requests: {
++    getModelConfigs: vi.fn(),
++    getExchangeConfigs: vi.fn(),
++    getSupportedModels: vi.fn(),
++    getTraderConfig: vi.fn(),
++    createTrader: vi.fn(),
++    updateTrader: vi.fn(),
++    startTrader: vi.fn(),
++    stopTrader: vi.fn(),
++    deleteTrader: vi.fn(),
++    toggleCompetition: vi.fn(),
++  },
++  toastPromise: vi.fn((operation: Promise<unknown>) => {
++    // Sonner 1.7.4 observes the request but returns a NON-thenable toast.
++    void operation.catch(() => {})
++    return { unwrap: () => operation }
++  }),
++  toastError: vi.fn(),
++}))
++vi.mock('../lib/api', () => ({ api: requests }))
++vi.mock('swr', () => ({
++  default: () => ({
++    data: state.traders,
++    mutate: state.mutate,
++    isLoading: false,
++  }),
++}))
++vi.mock('sonner', () => ({
++  toast: { promise: toastPromise, error: toastError, success: vi.fn() },
++}))
++vi.mock('../lib/notify', () => ({
++  confirmToast: vi.fn().mockResolvedValue(true),
++}))
++vi.mock('../lib/httpClient', () => ({
++  httpClient: {
++    get: vi.fn().mockResolvedValue({ success: true, data: { strategies: [] } }),
++  },
++}))
++vi.mock('../contexts/AuthContext', () => {
++  const auth = { user: { id: 'test-user' }, token: 'test-session' }
++  return { useAuth: () => auth }
++})
++vi.mock('../contexts/LanguageContext', () => ({
++  useLanguage: () => ({ language: 'en' }),
++}))
++
++function deferred() {
++  let resolve!: () => void
++  let reject!: (reason: Error) => void
++  const promise = new Promise<void>((yes, no) => {
++    resolve = yes
++    reject = no
++  })
++  return { promise, resolve, reject }
++}
++
++const trader: TraderInfo = {
++  trader_id: 'agent',
++  trader_name: 'Trend',
++  ai_model: 'model',
++  exchange_id: 'exchange',
++  is_running: false,
++  show_in_competition: false,
++}
++
++async function show() {
++  render(
++    <MemoryRouter>
++      <AITradersPage />
++    </MemoryRouter>
++  )
++  await waitFor(() =>
++    expect(screen.getByRole('button', { name: 'Create Trader' })).toBeEnabled()
++  )
++}
++
++beforeEach(() => {
++  vi.clearAllMocks()
++  state.traders = [{ ...trader }]
++  state.mutate.mockResolvedValue(undefined)
++  requests.getModelConfigs.mockResolvedValue([
++    { id: 'model', name: 'OpenRouter', provider: 'openai', enabled: true },
++  ])
++  requests.getExchangeConfigs.mockResolvedValue([
++    {
++      id: 'exchange',
++      name: 'OKX',
++      exchange_type: 'okx',
++      account_name: 'Shared account',
++      type: 'cex',
++      enabled: true,
++    },
++  ])
++  requests.getSupportedModels.mockResolvedValue([])
++  requests.getTraderConfig.mockResolvedValue({
++    ...trader,
++    scan_interval_minutes: 60,
++  })
++  vi.spyOn(console, 'error').mockImplementation(() => {})
++  vi.spyOn(console, 'log').mockImplementation(() => {})
++})
++afterEach(() => {
++  cleanup()
++  vi.restoreAllMocks()
++})
++
++it.each([
++  { running: false, succeeds: true },
++  { running: false, succeeds: false },
++  { running: true, succeeds: true },
++  { running: true, succeeds: false },
++])(
++  'awaits the actual toggle and blocks duplicates (running=$running, succeeds=$succeeds)',
++  async ({ running, succeeds }) => {
++    state.traders = [
++      { ...trader, is_running: running },
++      {
++        ...trader,
++        trader_id: 'second',
++        trader_name: 'Breakout',
++        is_running: running,
++      },
++    ]
++    const operation = deferred()
++    const request = running ? requests.stopTrader : requests.startTrader
++    request.mockReturnValue(operation.promise)
++    await show()
++    const [button, other] = screen.getAllByRole('button', {
++      name: running ? 'Stop' : 'Start',
++    })
++    fireEvent.click(button)
++    fireEvent.click(button)
++    await act(async () => {
++      await Promise.resolve()
++    })
++    expect(button).toBeDisabled()
++    expect(other).toBeEnabled()
++    expect(request).toHaveBeenCalledExactlyOnceWith('agent')
++    expect(state.mutate).not.toHaveBeenCalled()
++    await act(async () => {
++      if (succeeds) operation.resolve()
++      else operation.reject(new Error('Request failed'))
++    })
++    await waitFor(() => expect(button).toBeEnabled())
++    expect(state.mutate).toHaveBeenCalledTimes(succeeds ? 1 : 0)
++    expect(request).toHaveBeenCalledOnce()
++    expect(toastPromise).toHaveBeenCalledOnce()
++    expect(toastError).not.toHaveBeenCalled()
++  }
++)
++
++it.each([
++  { edit: false, succeeds: true },
++  { edit: false, succeeds: false },
++  { edit: true, succeeds: true },
++  { edit: true, succeeds: false },
++])(
++  'keeps the trader form open until save settles (edit=$edit, succeeds=$succeeds)',
++  async ({ edit, succeeds }) => {
++    const operation = deferred()
++    const request = edit ? requests.updateTrader : requests.createTrader
++    request.mockReturnValue(operation.promise)
++    await show()
++    fireEvent.click(
++      screen.getByRole('button', { name: edit ? 'Edit' : 'Create Trader' })
++    )
++    const name = await screen.findByPlaceholderText('请输入交易员名称')
++    fireEvent.change(name, { target: { value: 'Saved name' } })
++    const save = screen.getByRole('button', {
++      name: edit ? '保存修改' : '创建交易员',
++    })
++    fireEvent.click(save)
++    await act(async () => {
++      await Promise.resolve()
++    })
++    expect(name).toBeInTheDocument()
++    expect(save).toBeDisabled()
++    expect(state.mutate).not.toHaveBeenCalled()
++    fireEvent.click(save)
++    expect(request).toHaveBeenCalledOnce()
++    await act(async () => {
++      if (succeeds) operation.resolve()
++      else operation.reject(new Error('Request failed'))
++    })
++    if (succeeds) {
++      await waitFor(() =>
++        expect(
++          screen.queryByPlaceholderText('请输入交易员名称')
++        ).not.toBeInTheDocument()
++      )
++      expect(state.mutate).toHaveBeenCalledOnce()
++    } else {
++      await waitFor(() => expect(save).toBeEnabled())
++      expect(name).toHaveValue('Saved name')
++      expect(state.mutate).not.toHaveBeenCalled()
++    }
++    expect(request).toHaveBeenCalledOnce()
++    expect(toastPromise).toHaveBeenCalledOnce()
++  }
++)
++
++it.each([true, false])(
++  'awaits visibility changes before refreshing (succeeds=%s)',
++  async (succeeds) => {
++    const operation = deferred()
++    requests.toggleCompetition.mockReturnValue(operation.promise)
++    await show()
++    fireEvent.click(screen.getByTitle('在竞技场隐藏'))
++    await act(async () => {
++      await Promise.resolve()
++    })
++    expect(state.mutate).not.toHaveBeenCalled()
++    await act(async () => {
++      if (succeeds) operation.resolve()
++      else operation.reject(new Error('Request failed'))
++    })
++    expect(state.mutate).toHaveBeenCalledTimes(succeeds ? 1 : 0)
++    expect(requests.toggleCompetition).toHaveBeenCalledExactlyOnceWith(
++      'agent',
++      true
++    )
++  }
++)
++
++it('keeps a failed parent validation in the edit form without submitting', async () => {
++  requests.getTraderConfig.mockResolvedValue({
++    ...trader,
++    ai_model: 'removed-model',
++    scan_interval_minutes: 60,
++  })
++  await show()
++  fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
++  const name = await screen.findByPlaceholderText('请输入交易员名称')
++  const save = screen.getByRole('button', { name: '保存修改' })
++  fireEvent.click(save)
++  await act(async () => {
++    await Promise.resolve()
++  })
++  expect(name).toBeInTheDocument()
++  expect(save).toBeEnabled()
++  expect(requests.updateTrader).not.toHaveBeenCalled()
++  expect(state.mutate).not.toHaveBeenCalled()
++})

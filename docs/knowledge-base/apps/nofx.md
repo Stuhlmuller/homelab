@@ -428,6 +428,46 @@ closed. A future runtime fix should persist the post-start state consistently.
 
 ## Cash-spot competition implementation
 
+### Account read bursts and premature UI completion
+
+On September 27, a user-started cycle failed before model inference with HTTP
+429 from the US account-configuration endpoint. Four constructors and their
+initial recovery/context reads can issue twelve requests; dashboard and
+protection-monitor reads add more. OKX documents
+[five requests per two seconds per UID](https://app.okx.com/docs-v5/en/#trading-account-rest-api-get-account-configuration).
+The existing execution mutex serializes work but does not enforce that rate.
+The observed 429 alone does not identify which upstream layer rejected it.
+
+Maintained patch `0016` spaces this shared read path until 500 ms after the
+preceding response, signing only after waiting. It retains fresh account and
+borrow-mode checks and adds no application retry or cached success. HTTP 429
+propagates; existing internal HTTP transport retries remain possible.
+Only account-configuration reads use the gate; order endpoints are unchanged.
+This single-process queue can extend total latency beyond the HTTP timeout.
+Its mocked regression covers four clients, fresh responses/signatures, one
+429 without retry, and an independent write while an account read is blocked.
+
+Pinned Sonner 1.7.4 returns a toast identifier from `toast.promise`, so awaiting
+that value refreshed trader state and closed forms before API completion.
+Patch `0017` awaits the actual operation, propagates failed saves to the modal,
+and guards each pending Start/Stop request against duplicate clicks. Deferred
+promise regressions reproduce the early refresh/close and repeated-toggle
+paths. Deploy these source patches through private signed publication and a
+separate reviewed image pin; source validation alone is not runtime acceptance.
+
+The UI inspection also found a minimum trade larger than its allocation and a
+Consensus symbol malformed by the editor's automatic `USDT` suffix. Correct
+stopped configurations using the [competition runbook](../../nofx-agent-competition.md).
+The suffix behavior remains a separate editor limitation for other quotes;
+the saved spot minimum remains subject to exchange lot and minimum rules.
+
+The subsequent UI save and read-only database check confirmed all four traders
+stopped with 120-minute scans and competition visibility enabled. Each now uses
+its private `Live - <persona>` strategy with the same three USDT pairs, 1x
+leverage caps, 30% utilization, and a positive minimum that fits its allocation.
+Consensus uses a copy; the original Default strategy remains unchanged. This
+records saved configuration, not successful live cycles or investment returns.
+
 Published patch `0012` addresses the shared-account execution gap above.
 It adds authenticated OKX US spot metadata and candles, per-trader decimal
 allocations and fill ownership, durable reservations, native owned OCO orders,
