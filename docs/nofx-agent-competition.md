@@ -55,6 +55,26 @@ including failed attempts. Three hourly agents need at least 72 requests per day
 two-hour scans need 36 before retries or other usage. The actual account tier is
 an operator check; do not assume a larger quota or switch to a paid model.
 
+If Consensus also competes, use a private strategy copy with the same eligible
+pairs, risk limits, and cadence. Four two-hour agents schedule 48 calls per day
+before retries, debates, or other usage. Check that each saved minimum position
+fits below its allocation multiplied by the utilization limit, with room for
+fees and exchange lot/minimum constraints. A lower strategy minimum does not
+override the exchange's minimum. Never raise the capital cap to resolve a
+contradictory minimum automatically.
+
+The current coin editor appends `USDT` to input without that suffix. For USDT
+competition, enter complete eligible pairs such as `BTCUSDT`; remove malformed
+values such as `BTCUSDCUSDT`. Other quote currencies need an editor correction
+before relying on that input path.
+
+Patch `0016` paces fresh account-configuration reads across constructors,
+monitors, and dashboard/competition refreshes. Patch `0017` keeps trader
+buttons pending until the API finishes and leaves failed saves open. Before
+those fixes are deployed, avoid repeated toggle clicks and verify persisted
+stopped state using the rollout gate; a badge or toast alone can precede the
+completed request. Neither fix activates traders.
+
 Entries and explicit exits use limit IOC orders at the fresh quoted price,
 rounded to the instrument tick without chasing prices. They may fill partly or
 not at all. Every entry requires saved stop-loss and take-profit prices; native
