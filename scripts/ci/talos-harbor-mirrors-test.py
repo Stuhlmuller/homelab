@@ -121,7 +121,7 @@ class RolloutTest(unittest.TestCase):
                         self.assertEqual(command[-3:], ("--mode", "metal", "--strict"))
                         return ""
                     if "image" in command:
-                        self.assertEqual(command[-5:], ("image", "pull", "--namespace", "cri", "registry.k8s.io/pause:3.10"))
+                        self.assertEqual(command[-5:], ("image", "pull", "--namespace", "system", "registry.k8s.io/pause:3.10"))
                         self.assertTrue(applied)
                         self.assertEqual(len(captures), 3, "Pull follows persistent configuration readback")
                         self.assertEqual(calls[-2][:2], ("kubectl", "get"), "Pull follows node health check")

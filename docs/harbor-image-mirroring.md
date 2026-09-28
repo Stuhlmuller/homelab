@@ -69,13 +69,24 @@ retain registry blobs together with Harbor database/encryption-key backups.
    registry-mirror differences, validates with `--mode metal --strict`, and
    applies with `--mode no-reboot`. It checks configuration readback and node
    readiness/boot identity, then requests `registry.k8s.io/pause:3.10` through
-   Talos's native `image pull --namespace cri` using the selected client config.
+   Talos's native `image pull --namespace system` using the selected client config.
    Rollback and dry-run do not pull images. It never drains, restarts or deletes workloads.
 5. Verify every node's `registryconfigs` resource contains the committed
    endpoints and `skipFallback: true`. Correlate each native pause pull with
    Harbor manifest access logs from that node before claiming live migration.
-   Successful pulls alone can reuse cached layers; existing cached layers and
-   unchanged Pod image strings are not evidence of an upstream pull.
+   Talos skips an already pulled and unpacked reference entirely. Before the
+   first apply, inspect `talosctl ... image list --namespace system` on each node
+   and confirm `registry.k8s.io/pause:3.10` is absent. Repeat runs can return from
+   cache without a registry request; require correlated Harbor manifest logs
+   before claiming a fresh fetch. Do not delete cached images to force this test.
+   Unchanged Pod image strings are not evidence of an upstream pull.
+
+Talos 1.11.3 [kubelet](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/system/services/kubelet.go#L64-L74)
+and [etcd](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/system/services/etcd.go#L88-L104)
+use the CRI daemon's `system` namespace and the same registry builder as the
+native image API. Both therefore consume `machine.registries.mirrors`; there is
+no separate kubelet/etcd mirror configuration. The [image pull cache check](https://github.com/siderolabs/talos/blob/v1.11.3/internal/pkg/containers/image/image.go#L85-L99)
+explains why the probe uses the initially uncached system-namespace reference.
 
 The operator helper verifies destination manifests with curl using the fixed
 `https://1.1.1.1/dns-query` DNS-over-HTTPS resolver. Workstation split DNS can

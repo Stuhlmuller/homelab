@@ -179,7 +179,7 @@ def reconcile(node, execute, expected, rollback, talosconfig=None):
             if documents(normalized) != after or check_boot() != boot:
                 raise RuntimeError("Post-apply configuration or no-reboot verification failed")
             if not rollback:
-                run(*client, "image", "pull", "--namespace", "cri", "registry.k8s.io/pause:3.10")
+                run(*client, "image", "pull", "--namespace", "system", "registry.k8s.io/pause:3.10")
     print(f"{NODES[node]}: {'config applied; no reboot verified' if execute else 'config validated only'} Harbor {'rollback' if rollback else 'mirrors'}")
 
 
