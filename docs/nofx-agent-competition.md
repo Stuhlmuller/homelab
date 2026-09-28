@@ -17,12 +17,12 @@ The cap bounds outstanding buy reservations plus owned acquisition cost across
 agents. Market appreciation can exceed it; the cap does not guarantee a maximum
 loss. Agent cash and strategy entry limits also apply.
 
-Reviewed source `f0a60ec70b43e5e5b5a9691b4f59358d13089b7d` passed signed private
-publication in [run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462).
+Reviewed source `e7014c8b9644a6c13d909373eda3c572c1cdba00` passed signed private
+publication in [run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
 Deployment and functional acceptance remain separate from publication. Follow
 the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
 using its reported Harbor digests. Verify the
-served source includes patches `0012`–`0014`, both workloads are ready,
+served source includes patches `0012`–`0015`, both workloads are ready,
 all traders are stopped, and no simulation is active before configuring it in
 the UI.
 
@@ -64,6 +64,10 @@ are limit orders, so a trigger does not guarantee a fill. Reconciliation verifie
 terminal parent/child status and cumulative fills before releasing reservations.
 Uncertain submissions keep funds reserved and prevent new orders.
 
+Patch `0015` validates both lot-rounded protective quantity bounds before
+reservation or submission. The upper bound includes existing dust and reported
+positive taker rebates; the lower bound retains the conservative fee deduction.
+
 While running, the existing one-minute monitor restores missing protection from
 persisted entry intent. Dashboard reads never submit orders. Small residual dust
 remains owned and may join that trader's next entry under its new saved stops.
@@ -81,8 +85,10 @@ Run exactly one backend execution process. Reconciliation and submission share
 a process lock, while SQLite transactions reserve funds before HTTP. Additional
 processes require a durable execution lease first. For rollback, stop traders
 and simulations, review unresolved submissions and native protective orders,
-and retain the PVC, allocation tables, intents, and fill history. Earlier images
-cannot reconcile owned spot state; keep all OKX traders stopped on those images.
+and retain the PVC, allocation tables, intents, and fill history. Pre-`0012`
+images cannot reconcile owned spot state. Cash-spot images without `0015` lack
+its entry protection bound; keep all OKX traders stopped on either recovery
+target.
 
 The earlier pre-`0012` adapter shares whole-account futures positions and P&L.
 Its Initial Balance field is only a calculation baseline, not an allocation or

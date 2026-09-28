@@ -241,7 +241,10 @@ receipts and the independently retained public key stay in private operator
 storage. [NOFX Images run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462)
 completed the first signed publication and verified both stored signatures
 against the enrolled fingerprint for source
-`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d`. Runtime rollout acceptance remains
-separate from publication; independent operator signature verification remains
-pending.
+`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d`.
+[NOFX Images run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201)
+published and verified the follow-up source
+`e7014c8b9644a6c13d909373eda3c572c1cdba00`, including the `0015` protection fix.
+Runtime rollout acceptance remains separate from publication; independent
+operator signature verification remains pending.
 Historical artifacts and pull/admission enforcement remain unchanged.

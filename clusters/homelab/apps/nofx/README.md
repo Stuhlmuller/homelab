@@ -173,8 +173,8 @@ desired image references. Both deployments use `harbor-pull` only through
 `imagePullSecrets`; the kubelet credential never enters NOFX containers.
 
 The cash-spot rollout targets source
-`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d` from
-[run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462).
+`e7014c8b9644a6c13d909373eda3c572c1cdba00` from
+[run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
 All three jobs succeeded: test/build, private signed publication, and digest
 reporting. The manifest pair comes from that report. Runtime deployment and
 cash-spot UI acceptance remain pending; publication is not a live trading
@@ -205,7 +205,8 @@ Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expect
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
 source download matches the published build revision, including patches
-`0012`–`0014`. Patch `0013` remains inactive with no route or token mount.
+`0012`–`0015`, including the entry protection bounds in `0015`. Patch `0013`
+remains inactive with no route or token mount.
 Freshly verify every persisted trader is stopped before opening the dashboard;
 startup can resume a trader saved as running. Reload the authenticated UI and
 verify existing OKX traders show **OKX US Cash Spot**, preserve account labels,
@@ -229,7 +230,7 @@ strategy-to-run-ID mapping with the results. Compare displays factual metrics;
 verify all expected decisions and matching inputs before judging returns.
 
 For rollback, stop simulations and restore the previous reviewed image digests
-while retaining `nofx-data`, the spot ledger, and the storage fix. Earlier
+while retaining `nofx-data`, the spot ledger, and the storage fix. Pre-cash-spot
 images cannot reconcile owned spot state; keep all OKX traders stopped and
 review any unresolved orders or native protection before rollback. Returning
 to upstream images also restores their model-save side effects and Binance

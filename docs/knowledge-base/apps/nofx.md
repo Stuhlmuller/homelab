@@ -16,13 +16,13 @@ The deployment declares maintained Harbor backend and frontend images derived fr
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
 The cash-spot rollout targets source revision
-`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d`.
-[Publication run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462)
+`e7014c8b9644a6c13d909373eda3c572c1cdba00`.
+[Publication run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201)
 passed all three jobs: test/build, private signed publication, and digest
 reporting. `deployment.yaml` owns the image pair from that verified report.
 Deployment and cash-spot UI acceptance remain pending. Require ready containers
 at both exact digests and the matching served build revision with patches
-`0012`–`0014`. All traders must remain stopped; verify saved visibility settings
+`0012`–`0015`. All traders must remain stopped; verify saved visibility settings
 after reload. Explicit capital and allocations remain user input, and no
 independent returns are established by publication.
 Patch `0013` is included in the image but its gateway route and token remain
@@ -393,14 +393,14 @@ the exchange card. It labels existing OKX records as cash spot without rewriting
 stored names. Focused form tests cover create/edit payloads and switching to a
 non-OKX exchange. This UI repair does not allocate funds or start traders.
 
-Prepared patch `0015` fixes the entry protection bound reported after PR #1077
+Published patch `0015` fixes the entry protection bound reported after PR #1077
 merged. Recovery protects the full owned holding, so a new buy must account for
 existing dust and reported taker rebates before reservation or submission.
 Both fee-adjusted quantity bounds must fit the instrument's protective-order
 limits; possible rebates also count toward marked exposure. The existing mocked
 execution test covers rejection without POSTs or ledger changes and acceptance
-at the lot-rounded maximum. This source fix requires newly published images;
-images built before it do not resolve the finding.
+at the lot-rounded maximum. Deployment acceptance remains separate; images
+without `0015` retain this finding.
 
 Use the runbook's fresh zero-trader/zero-active-backtest counts and successful
 no-lock check immediately before merge. After GitOps readiness and source
@@ -419,8 +419,9 @@ regression proving no account request occurs. OKX no longer exposes that control
 
 SQLite remains on the existing NOFX PVC. The additive spot tables and immutable
 fill history must remain in backups; never remove them to reset a competition.
-Rollback to an earlier image must keep all OKX traders stopped: that image would
-use whole-account futures semantics and would not reconcile the spot ledger.
+Keep all OKX traders stopped during rollback. Pre-cash-spot images use
+whole-account futures semantics and cannot reconcile the spot ledger;
+cash-spot images without `0015` lack its entry protection bound.
 Native pending orders require explicit operator review before any rollback.
 One backend execution process is required until a durable execution lease exists.
 

@@ -111,12 +111,13 @@ closed even when static checks pass.
 ## Harbor runtime acceptance
 
 The cash-spot rollout targets reviewed source
-`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d` from
-[NOFX Images run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462).
+`e7014c8b9644a6c13d909373eda3c572c1cdba00` from
+[NOFX Images run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
 Its build, private publication, signature verification, and digest report all
 passed. Both manifest references come from that report. Patches `0012` and
 `0014` add owned cash-spot accounting and the matching allocation UI. Patch
 `0013` is present but its LiteLLM route remains unmounted and inactive.
+Patch `0015` adds the entry protection bounds included in this image pair.
 Runtime readiness and functional acceptance are still required below.
 
 The earlier US connection and dashboard rollout used source revision
@@ -198,7 +199,7 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0014`
+[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0015`
 in the source download and confirm all traders remain stopped and the three
 shared-account drafts retain their saved visibility settings after restart.
 Reload the authenticated UI
@@ -247,8 +248,8 @@ If startup or functional acceptance fails, restore the prior reviewed Harbor
 backend/frontend pair through a PR, retaining `harbor-pull`, the PVC, and the
 working-directory configuration. Follow the
 [cash-spot rollback limits](nofx-agent-competition.md#one-okx-account): retain the
-ledger and keep all OKX traders stopped on earlier images, which cannot reconcile
-owned spot state. The prior `9716e9d9` pair retains the startup
+ledger and keep all OKX traders stopped on earlier images. Pre-cash-spot images
+cannot reconcile owned spot state. The prior `9716e9d9` pair retains the startup
 error guidance but restores global-host routing and the old dashboard lookup.
 The initial `f76c278` pair is recorded in
 [PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036); restoring it also

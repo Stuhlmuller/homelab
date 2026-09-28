@@ -267,8 +267,8 @@ all live traders, review unresolved submissions and native protective orders,
 then restore the previous reviewed image digests through GitOps. Retain
 `nofx-data`, including the additive spot tables and append-only fill history,
 and the absolute executable/working-directory configuration. Never reset the
-ledger to make a rollback load. Earlier images cannot reconcile that ledger;
-keep every OKX trader stopped while running them. Returning to upstream also
+ledger to make a rollback load. Pre-cash-spot images cannot reconcile that ledger;
+keep every OKX trader stopped on recovery images. Returning to upstream also
 restores its model-save side effects and Binance dependency.
 
 ## Private image signing
