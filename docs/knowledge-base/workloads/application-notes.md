@@ -95,6 +95,12 @@ plugin schemas, managed one-hour timeout, and compiled subscription-recovery
 exports were checked; account-backed Discord/OpenRouter and scheduler acceptance
 remain post-sync checks. See the app README for state-aware rollback.
 
+On September 27, the upgraded gateway entered a 47-restart loop: it bound HTTP
+after 87 seconds but remained event-loop-blocked while starting Discord, so the
+two-minute startup probe terminated it before startup settled. The startup
+budget is now six minutes; readiness still removes an unresponsive pod quickly,
+and the existing six-minute liveness budget still bounds a later hang.
+
 [[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
 remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
 
