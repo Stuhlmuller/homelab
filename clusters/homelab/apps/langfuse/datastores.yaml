@@ -186,7 +186,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: valkey
-          image: docker.io/valkey/valkey:8.0@sha256:dbb2de90cb7a60c4f3f7e8d73fcaab69a94c557bb08a064108fa5d5b1814086e
+          image: docker.io/valkey/valkey:8.0@sha256:4436c94fc34ce4af0354b9379d433a1f258998fb955f995c89822f98c14a8cab
           command: ["valkey-server", "/run/secrets/langfuse/valkey.conf"]
           securityContext:
             runAsNonRoot: true
