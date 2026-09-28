@@ -739,11 +739,11 @@ controllers:
           requests:
             cpu: 1
             memory: 2Gi
-            ephemeral-storage: 5Gi
+            ephemeral-storage: 8Gi
           limits:
             cpu: 1500m
             memory: 4Gi
-            ephemeral-storage: 6Gi
+            ephemeral-storage: 10Gi
         probes:
           startup:
             enabled: true

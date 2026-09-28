@@ -284,10 +284,11 @@ containment limit deliberately prefers an app OOM over starving Talos, kubelet,
 and containerd; raise it only after the memory growth is fixed and 48 hours of
 healthy measurements show node headroom. The CPU limit throttles rare bursts
 before they can starve a four-core worker. It requests
-`5Gi` and limits `6Gi` of ephemeral storage: the shared
+`8Gi` and limits `10Gi` of ephemeral storage: the shared
 Nix store uses about `2.7Gi`, while the separately capped Codex runtime can use
-up to `2Gi`. The `5Gi` request reserves that expected footprint; the `6Gi`
-limit leaves room for the writable layer and logs. The `operator-toolbox` init
+up to `2Gi`. A 2026.9.5 rollout exceeded the previous `6Gi` aggregate limit
+after initialization and was evicted; the larger request covers the observed
+footprint while the limit retains node protection. The `operator-toolbox` init
 container requests `1` CPU and `2Gi` memory and limits `1500m` CPU and `3Gi`
 memory. The bootstrap init container requests `500m` CPU and `1Gi` memory and
 limits `1200m` CPU and `2Gi` memory. The local TCP proxy stays small at `25m`
