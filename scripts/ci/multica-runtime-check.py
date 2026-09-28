@@ -16,6 +16,12 @@ spec = importlib.util.spec_from_file_location("multica_bootstrap", source / "boo
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 settings = json.loads((source / "settings.json").read_text())
+runtime = (source.parent / "runtime.yaml").read_text()
+assert "model-key" not in runtime
+assert "litellm-provider-keys" not in runtime
+codex = (source / "codex.toml").read_text()
+assert 'forced_login_method = "chatgpt"' in codex
+assert "litellm" not in codex.lower()
 
 with tempfile.TemporaryDirectory() as temporary:
     directory = Path(temporary) / "profile"

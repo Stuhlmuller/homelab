@@ -31,20 +31,39 @@ reuse it; revoked or expired tokens fail closed. The code is mounted only in
 the init container. The daemon has no database credentials, signing secret,
 Kubernetes token, host sockets, or other application's home directory.
 
-Codex uses the existing LiteLLM `openai-default` model through a file-mounted
-key from `litellm-provider-keys`; the provider's OpenAI key is not mounted.
-This is currently the gateway's master key, with broader authority than model
-invocation. Replace it with a model-scoped virtual key when a repository-owned
-LiteLLM key-issuance path is available; never share the runtime with untrusted
-users. The [Codex provider configuration](https://learn.chatgpt.com/docs/config-file/config-reference)
-reads the mounted key directly through command-based authentication.
-Choose `openai-default` when selecting the agent model. The runtime registers
-in every workspace accessible to Rodman, including `Homelab`, with one task
-running at a time. The dedicated ServiceAccount is allowed to reach only the
-Multica backend and LiteLLM through their Istio authorization policies. No
-runtime Service or public listener is exposed. Multica executes tasks with
-full access inside this unprivileged container; Kubernetes is the execution
-boundary. Flannel currently does not enforce NetworkPolicy egress isolation.
+Codex uses native ChatGPT OAuth. Its login state lives under
+`/home/multica/.codex` on the retained runtime PVC and survives pod restarts;
+it is not copied into SSM or Kubernetes Secrets. After the first rollout, sign
+in once through the pinned CLI's device flow:
+
+```sh
+kubectl -n ai exec -it deployment/multica-runtime -- \
+  /tools/codex login --device-auth
+kubectl -n ai exec deployment/multica-runtime -- \
+  /tools/codex login status
+```
+
+Never share the device code. Repeat login only if the credential is revoked,
+expires, or the PVC is replaced. Before starting a task, inspect every
+workspace's agents and clear the retired LiteLLM-only model alias wherever it
+appears; an empty model uses the native Codex default:
+
+```sh
+kubectl -n ai exec deployment/multica-runtime -- \
+  /tools/multica --workspace-id <workspace-id> agent list --output json
+kubectl -n ai exec deployment/multica-runtime -- \
+  /tools/multica --workspace-id <workspace-id> \
+  agent update <agent-id> --model ''
+```
+
+The current `Homelab` workspace has only Mika and its model is already empty,
+so it needs no migration. The runtime registers in every workspace
+accessible to Rodman, including `Homelab`, with one task running at a time.
+The dedicated ServiceAccount is allowed to reach only the Multica backend
+through its Istio authorization policy. No runtime Service or public listener
+is exposed. Multica executes tasks with full access inside this unprivileged
+container; Kubernetes is the execution boundary. Flannel currently does not
+enforce NetworkPolicy egress isolation.
 
 After Argo sync, verify readiness and the `Homelab Codex` online runtime in
 Multica's Runtimes page:
@@ -55,7 +74,10 @@ kubectl -n ai exec deployment/multica-runtime -- \
   /tools/multica daemon status --output json
 ```
 
-The status must be `running`, list `codex`, and contain workspace runtime IDs.
+The login status must report a ChatGPT login. The daemon status must be
+`running`, list `codex`, and contain workspace runtime IDs. Start one bounded
+task and require a successful response before treating OAuth migration as
+complete; daemon health alone does not exercise model authentication.
 Non-interactive daemon logs are in `/home/multica/.multica/daemon.log` on the
 PVC; avoid publishing log contents or CLI configuration containing credentials.
 To stop or roll back the runtime, change its replica count to zero in Git and
@@ -103,7 +125,8 @@ the GitOps rollout. The new backend Secret syncs first; switching the chart's
 PostgreSQL keeps its existing Secret. Verify:
 
 ```sh
-kubectl -n ai wait --for=condition=Ready externalsecret/multica-backend-secrets --timeout=2m
+kubectl -n ai wait --for=condition=Ready \
+  externalsecret/multica-backend-secrets --timeout=2m
 kubectl -n ai rollout status deployment/multica-backend --timeout=5m
 ```
 
