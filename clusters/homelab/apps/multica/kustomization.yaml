@@ -2,6 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - externalsecret.yaml
+  - github-externalsecret.yaml
+  - github-virtualservice.yaml
   - postgres.yaml
   - authorizationpolicy.yaml
   - virtualservice.yaml

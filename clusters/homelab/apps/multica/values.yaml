@@ -16,7 +16,7 @@ images:
     pullPolicy: IfNotPresent
 
 # checkov:skip=CKV_SECRET_6: Kubernetes Secret name, not secret material.
-existingSecret: multica-backend-secrets
+existingSecret: multica-backend-github-secrets
 
 postgres:
   external:

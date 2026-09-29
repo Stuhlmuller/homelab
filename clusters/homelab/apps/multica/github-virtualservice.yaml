@@ -1,0 +1,32 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: multica-github-callbacks
+  namespace: ai
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "GitHub HMAC webhooks and signed installation setup callbacks only."
+    homelab.rst.io/public-funnel: "false"
+spec:
+  # Internal Host rewrite by cloudflared; no public DNS record is required.
+  hosts:
+    - multica-github.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - match:
+        - uri:
+            exact: /api/webhooks/github
+          method:
+            exact: POST
+        - uri:
+            exact: /api/github/setup
+          method:
+            exact: GET
+      route:
+        - destination:
+            host: multica-frontend.ai.svc.cluster.local
+            port:
+              number: 3000
