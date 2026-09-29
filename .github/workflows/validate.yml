@@ -45,7 +45,11 @@ jobs:
 
       - name: Check OpenRouter key provisioning
         run: |
-          nix develop --command bash -euo pipefail <<'EOF'
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
           test_dir="$(mktemp -d)"
           trap 'rm -rf "$test_dir"' EXIT
           cp IaC/modules/openrouter-ssm-key/* "$test_dir/"
@@ -53,6 +57,11 @@ jobs:
           tofu init -backend=false -no-color
           tofu test -no-color
           EOF
+          then
+            echo "::error::OpenRouter provisioning checks failed; detailed output withheld from public logs."
+            exit 1
+          fi
+          echo "OpenRouter provisioning checks passed; detailed output withheld from public logs."
 
       - name: Check whitespace
         run: git diff --check
