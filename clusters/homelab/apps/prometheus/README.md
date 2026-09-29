@@ -186,3 +186,12 @@ kubectl -n monitoring get prometheusrule argocd-application-health
 kubectl -n monitoring get externalsecret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 kubectl -n monitoring get secret alertmanager-discord-webhook alertmanager-openclaw-alert-hook
 ```
+
+## Inactive reliability candidate
+
+HOME-4 adds `reliability-candidate/` and a guarded cold-copy helper. These are
+not active: current NFS storage and disabled Watchdog remain unchanged. See
+[the rollout, rollback and acceptance gates](../../../../docs/monitoring-reliability.md).
+The candidate requires verified dedicated local ext4 storage, a live node-fence
+collector/startup guard, independent backup retrieval, and an approved external
+heartbeat receiver before activation.

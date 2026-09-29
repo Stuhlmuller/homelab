@@ -968,3 +968,15 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Monitoring recovery candidate
+
+`monitoring-checkpoint-test.py` tests synthetic cold-copy/fence failures in the
+static gate. `monitoring-render-check.py` checks pinned Helm claim names, retained
+zero-replica storage, native Watchdog evaluation and Alertmanager routing.
+`monitoring-replay-test.py` uses pinned binaries and synthetic loopback fixtures
+to exercise Prometheus ingestion/WAL/history and Alertmanager silence replay.
+These cannot certify production node fencing, healthy storage, independent
+backup retrieval, or external missing-heartbeat notification. See
+[monitoring reliability](../../monitoring-reliability.md) for the outstanding
+activation implementation and operational gates.
