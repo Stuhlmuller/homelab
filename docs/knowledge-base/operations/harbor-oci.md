@@ -68,7 +68,12 @@ backend `6dfec7dd502b` (5 critical, 65 high findings) and frontend `210a1bd9ca7e
 (2 critical, 58 high findings). Remediation requires reviewed dependency/base
 image updates and rebuilt images; successful scanning does not imply no known
 vulnerabilities. Six retained historical images had no report, motivating the
-bootstrap backfill; its live completion remains unverified. The in-progress
+bootstrap backfill. On 2026-09-29, the automatic PostSync job applied
+[PR #1101](https://github.com/Stuhlmuller/homelab/pull/1101) at `453e935c563d`.
+All 26 retained private image manifests reported successful scans at 00:18 UTC,
+with no missing, pending, running or failed reports. The last of the six
+historical scans completed at 00:16:55 UTC; Harbor was Synced/Healthy.
+The earlier in-progress
 mirror copy had successful scans for all 62 uploaded runnable manifests and
 16 indexes inspected; 15 unscanned objects were in-toto attestations. This
 snapshot does not establish scan completion for images not yet uploaded.
@@ -278,6 +283,18 @@ unchanged; node rollout still requires exact reviewed `main` and live digest che
 uses a separate generated `/homelab/harbor/mirror-robot-push-password`; apply
 the reviewed shared SSM plan before expecting the new bootstrap to complete. Private
 `homelab` artifacts retain their existing authentication/signing contract.
+
+The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
+and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
+stopped during the second upstream copy used for PostgreSQL tag aliases (17.5,
+then 14.23). Destination digest uploads and readback
+had succeeded; Harbor showed no concurrent error or resource pressure. Deleted
+private client logs prevented proving the underlying failure. The publisher now
+creates aliases from the verified Harbor digest and resumes already-present
+digest tags only after exact hash comparison. Complete anonymous downloads
+still run for every entry. Failures expose fixed phase/status/category metadata
+and the public catalog source, never raw transport output. This removes the
+observed second external transfer; live recovery must still be verified.
 
 During the staged rollout, `harbor-secrets` reconciled before the new SSM
 parameter existed. The approved scoped plan applied 16 creations and three IAM

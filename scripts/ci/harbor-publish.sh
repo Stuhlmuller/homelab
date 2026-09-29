@@ -85,9 +85,25 @@ scratch="$(mktemp -d "${RUNNER_TEMP}/harbor-publish.XXXXXX")"
 forward_pid=""
 hosts_added=false
 kubeconfig_added=false
+mirror_source=setup
+mirror_phase="setup"
+mirror_category="command-failed"
 cleanup() {
   local result=$?
   trap - EXIT INT TERM
+  if [[ "$mode" == mirror && "$mirror_category" == command-failed && -f "$scratch/mirror-error" ]]; then
+    if grep -Eiq 'toomanyrequests|too many requests|status code:? 429' "$scratch/mirror-error"; then
+      mirror_category="rate-limited"
+    elif grep -Fqi 'no space left on device' "$scratch/mirror-error"; then
+      mirror_category="storage-full"
+    elif grep -Eiq 'unauthorized|authentication required|access denied|denied:' "$scratch/mirror-error"; then
+      mirror_category="authentication-denied"
+    elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then
+      mirror_category="transport-failed"
+    elif grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error"; then
+      mirror_category="manifest-missing"
+    fi
+  fi
   if [[ -n "$forward_pid" ]]; then
     kill -TERM "$forward_pid" 2>/dev/null || true
     wait "$forward_pid" 2>/dev/null || true
@@ -99,6 +115,11 @@ cleanup() {
     rm -f -- "$HOME/.kube/config" || result=1
   fi
   rm -rf -- "$scratch" || result=1
+  if [[ "$mode" == mirror && "$result" -ne 0 ]]; then
+    # Only reviewed catalog text, fixed labels, and the exit status are public.
+    printf 'source=%s\nphase=%s\nexit_status=%s\ncategory=%s\n' \
+      "$mirror_source" "$mirror_phase" "$result" "$mirror_category" >"$RUNNER_TEMP/harbor-mirror-status"
+  fi
   exit "$result"
 }
 trap cleanup EXIT
@@ -174,32 +195,57 @@ if [[ "$mode" == mirror ]]; then
     source_repository="${source_repository%:*}"
     destination="harbor.stinkyboi.com/mirror/${source_repository}"
     tag="${source_digest#sha256:}"
-    skopeo copy --all --preserve-digests --src-no-creds \
-      --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
-      "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}"
-    skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
-      "docker://${destination}:${tag}" >"$scratch/manifest.json"
+    mirror_source="$source"
+    mirror_phase="digest-lookup"
+    if skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+      "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"; then
+      : # Resume only after checking the exact bytes below.
+    else
+      lookup_status=$?
+      if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error"; then
+        exit "$lookup_status"
+      fi
+      mirror_phase="upstream-copy"
+      skopeo copy --all --preserve-digests --src-no-creds \
+        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
+        "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      mirror_phase="digest-verify"
+      skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+        "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"
+    fi
+    mirror_phase="digest-verify"
+    mirror_category="digest-mismatch"
     [[ "sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    mirror_category="command-failed"
     tagged_source="${source%@*}"
     if [[ "$tagged_source" == *:* ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
+      mirror_phase="alias-copy"
       skopeo copy --all --preserve-digests --src-no-creds \
         --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
-        "docker://${source_repository}@${source_digest}" "docker://${destination}:${source_tag}"
+        "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+      mirror_phase="alias-verify"
       skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
-        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json"
+        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"
+      mirror_category="digest-mismatch"
       [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+      mirror_category="command-failed"
     fi
+    mirror_phase="anonymous-pull"
     pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
     skopeo copy --all --preserve-digests --src-no-creds \
       --src-authfile "$scratch/anonymous-auth.json" \
-      "docker://${destination}@${source_digest}" "dir:${pull_directory}"
-    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
+      "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
+    mirror_phase="pull-verify"
+    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
+    mirror_category="digest-mismatch"
     [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    mirror_category="command-failed"
     rm -rf -- "$pull_directory"
     printf '%s:%s@%s\n' "$destination" "$tag" "$source_digest" >>"$scratch/verified-digests"
   done < <(jq --raw-output '.images[].source' "$manifest")
+  mirror_phase="acceptance"
   cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"
   exit 0
 fi
