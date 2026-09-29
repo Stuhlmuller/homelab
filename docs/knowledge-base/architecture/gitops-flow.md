@@ -182,3 +182,10 @@ checks; runtime digest changes remain reviewed GitOps changes. Upstream image re
 The [Talos mirror rollout](../../harbor-image-mirroring.md) redirects node pulls
 after publication; its recovery patch restores upstream transport. Publish new
 catalog digests before merging their consuming image or chart changes.
+
+The sibling `IaC/live/litellm-openrouter-key` unit owns the OpenRouter-issued
+LiteLLM key and its encrypted SSM destination. It follows shared SSM reader-IAM
+reconciliation. Full applies and targeted `argocd_app=litellm` runs require
+`OPENROUTER_MANAGEMENT_KEY` before any writes, then use a private policy-checked
+saved plan before Application registration. Targeted Langfuse and unrelated
+app applies do not require this credential. PR plans exclude the key unit.

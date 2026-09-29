@@ -32,12 +32,29 @@ against an inert upstream transport. It does not prove live delivery.
 
 **Do not merge/activate until prerequisites are ready:** complete the protected
 [Langfuse workflow](../langfuse/README.md#validation), provision the dedicated
-OpenRouter key at `/homelab/litellm/openrouter-api-key` through an approved
-secret-injection path, and require initialized Langfuse plus Ready
+OpenRouter key with the declared `IaC/live/litellm-openrouter-key` unit, and
+require initialized Langfuse plus Ready
 `litellm-app-keys`, `litellm-telemetry` and `multica-litellm` ExternalSecrets.
-The SSM unit only creates a placeholder for the externally issued key; inference
-fails closed on that placeholder. A new OnChange Secret revision is needed
-after replacing or rotating its value. Langfuse key rotation also requires a
+The official OpenRouter provider `0.3.19` issues `homelab-litellm` and writes
+its one-time plaintext result directly to the SSM SecureString
+`/homelab/litellm/openrouter-api-key`. No placeholder or local random token is
+used. The shared SSM unit grants reader access but does not own this parameter.
+
+Bootstrap a management key once in the OpenRouter account and store it as the
+`homelab-production` GitHub environment secret `OPENROUTER_MANAGEMENT_KEY`.
+The protected full apply or `argocd_app=litellm` dispatch injects it only into
+the provider, then plans, policy-checks and applies the saved key plan before
+Application registration. Targeted LiteLLM apply assumes the prior Langfuse
+prerequisite apply has reconciled shared SSM reader permissions. PR plans never
+receive the management credential or this unit's sensitive state. Runtime Pods
+never receive the management key. Ordinary inference keys cannot create keys.
+See [OpenRouter management authentication](https://openrouter.ai/docs/guides/overview/auth/management-api-keys).
+
+Retain encrypted OpenTofu state: OpenRouter returns plaintext only at creation;
+importing a key hash cannot recover it. Both key and parameter prevent accidental
+destruction; rollback retains them. If SSM publication fails after issuance,
+retry using the retained state. Do not recreate keys outside this resource.
+A new OnChange Secret revision is needed after a reviewed key rotation. Langfuse key rotation also requires a
 Git-controlled gateway rollout because its exporter loads credentials at startup.
 Application dependency ordering alone does not establish readiness.
 

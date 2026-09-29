@@ -43,6 +43,17 @@ jobs:
             nix develop --command kubectl kustomize "$overlay" >/dev/null
           done
 
+      - name: Check OpenRouter key provisioning
+        run: |
+          nix develop --command bash -euo pipefail <<'EOF'
+          test_dir="$(mktemp -d)"
+          trap 'rm -rf "$test_dir"' EXIT
+          cp IaC/modules/openrouter-ssm-key/* "$test_dir/"
+          cd "$test_dir"
+          tofu init -backend=false -no-color
+          tofu test -no-color
+          EOF
+
       - name: Check whitespace
         run: git diff --check
 

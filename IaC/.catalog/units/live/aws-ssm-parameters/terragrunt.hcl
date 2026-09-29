@@ -31,6 +31,7 @@ inputs = {
     "external-secrets_aws-ssm-auth",
   ]
   additional_parameter_reader_names = [
+    "/homelab/litellm/openrouter-api-key",
     "/homelab/grafana/azuread/client-id",
     "/homelab/grafana/azuread/client-secret",
     "/homelab/grafana/azuread/auth-url",
@@ -269,10 +270,6 @@ inputs = {
         prefix  = "sk-"
         special = false
       }
-      initial_value = local.placeholder
-    }
-    "/homelab/litellm/openrouter-api-key" = {
-      description   = "Dedicated OpenRouter provider key for LiteLLM; provision through protected secret injection."
       initial_value = local.placeholder
     }
     "/homelab/litellm/openai-api-key" = {

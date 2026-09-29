@@ -12,8 +12,12 @@ OpenClaw, NOFX and n8n caller configuration stays unchanged. See the
 2026-09-29 UTC read-only inspection: Multica Synced/Healthy; LiteLLM
 OutOfSync/Degraded, one running pod; Langfuse Application absent;
 `litellm-app-keys` Ready=False (provider secret lookup failed). Activation
-requires protected SSM/S3/Langfuse reconciliation, externally issued dedicated
-OpenRouter key injection, Ready Secrets and initialized Langfuse before merge.
+requires protected SSM/S3/Langfuse reconciliation, Ready Secrets and initialized
+Langfuse before merge. `IaC/live/litellm-openrouter-key` now issues the dedicated
+key through the official provider and writes its one-time value to encrypted
+SSM. Protected full/LiteLLM applies require the bootstrap environment secret
+`OPENROUTER_MANAGEMENT_KEY`; its absence was verified by secret-name inspection.
+The management key is not a runtime credential and cannot itself run inference.
 No live Multica inference or correlated generation is verified. The SDK check
 covers real native startup/auth plus mocked provider streaming, Multica route
 restrictions and telemetry redaction. Earlier foundation-only statements below

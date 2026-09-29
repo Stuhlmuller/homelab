@@ -147,6 +147,20 @@ plan_and_apply_langfuse_prerequisites() {
   echo "::endgroup::"
 }
 
+plan_and_apply_openrouter_key() {
+  local key_plan_dir
+  key_plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-openrouter-plan.XXXXXX")"
+  cleanup_dirs+=("$key_plan_dir")
+  (
+    cd IaC/live/litellm-openrouter-key
+    terragrunt init -no-color
+    terragrunt plan -out "$key_plan_dir/plan.out" -no-color
+    terragrunt --log-disable show -json "$key_plan_dir/plan.out" >"$key_plan_dir/plan.json"
+    conftest test --policy ../../../policy --output github "$key_plan_dir/plan.json"
+    terragrunt apply -no-color "$key_plan_dir/plan.out"
+  )
+}
+
 plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
@@ -185,6 +199,14 @@ plan_and_apply_argocd_apps() {
       --out-dir "$plan_dir" -- apply -no-color
   )
 }
+
+# Fail before any full/LiteLLM apply mutates state if the management credential is missing.
+if [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" || "${TERRAGRUNT_ARGOCD_APP:-}" == "litellm" ]]; then
+  test -n "${OPENROUTER_MANAGEMENT_KEY:-}" || {
+    echo "OPENROUTER_MANAGEMENT_KEY must be configured on homelab-production." >&2
+    exit 1
+  }
+fi
 
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
@@ -230,6 +252,8 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "litellm" ]]; then
+    plan_and_apply_openrouter_key
   fi
   echo "::group::Targeted Argo CD Application registration apply"
   plan_and_apply_argocd_apps
@@ -262,6 +286,7 @@ echo "::group::Argo CD bootstrap apply"
 echo "::endgroup::"
 
 plan_and_apply_langfuse_prerequisites
+plan_and_apply_openrouter_key
 
 echo "::group::Kubernetes node label apply"
 (

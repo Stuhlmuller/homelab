@@ -27,6 +27,19 @@ The September 2026 migration preserves all 68 current values and archives
   encrypted SSM parameters and creates only the `external-secrets/aws-ssm-auth`
   Kubernetes Secret through the Kubernetes provider.
 
+## OpenRouter-issued LiteLLM key
+
+`IaC/live/litellm-openrouter-key` uses the official OpenRouter provider to create
+`homelab-litellm` and writes its sensitive result to
+`/homelab/litellm/openrouter-api-key` as a SecureString under `alias/aws/ssm`.
+The shared SSM unit owns only reader permissions for this path. The protected
+workflow injects `OPENROUTER_MANAGEMENT_KEY` from `homelab-production`; an account
+administrator must bootstrap that management credential once. Full or targeted
+LiteLLM apply plans/policy-checks this secret-bearing unit privately. No key
+values are outputs or CI artifacts. Preserve encrypted state and both resources
+on rollback; OpenRouter cannot return the issued plaintext again. See the
+[activation runbook](../clusters/homelab/apps/litellm/README.md#validation-and-activation).
+
 ## Secret Reference Matrix
 
 Most Parameter Store entries in this table are managed by Terragrunt at
