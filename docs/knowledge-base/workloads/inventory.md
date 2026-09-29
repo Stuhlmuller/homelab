@@ -120,6 +120,8 @@ Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
 
+OpenClaw's managed `gh` and Git HTTPS helper renew homelab-scoped GitHub App
+tokens from the existing mounted key, using temporary private CLI config files.
 OpenClaw also mounts a repository-managed assistant bundle using OpenRouter's
 `openrouter/free` router: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved

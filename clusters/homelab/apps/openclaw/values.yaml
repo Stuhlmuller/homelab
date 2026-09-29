@@ -26,7 +26,7 @@ controllers:
                   - key: octelium.com/node-mode-dataplane
                     operator: DoesNotExist
       annotations:
-        homelab.rst.io/openclaw-assistant-sha256: "6ebff0ec41e1874a3e7e9b388b1415fe134b07476c41351a5e5bc99718e85757"
+        homelab.rst.io/openclaw-assistant-sha256: "9df7921a119d83db19b15045f93840a16d92db1c989aaf56168fea5d73fb538d"
         homelab.rst.io/openclaw-discord-bot-token-ssm-version: "2"
         homelab.rst.io/openclaw-grafana-login-ssm-version: "1"
         homelab.rst.io/openclaw-grafana-alert-hook-ssm-version: "2"
@@ -343,6 +343,8 @@ controllers:
             git config --global gpg.ssh.allowedSignersFile "$OPENCLAW_STATE_DIR/git/allowed_signers"
             git config --global commit.gpgsign true
             git config --global log.showSignature true
+            git config --global --replace-all credential.https://github.com.helper ''
+            git config --global --add credential.https://github.com.helper '!/etc/openclaw-assistant/gh auth git-credential'
             if [ ! -s "$OPENCLAW_CONFIG_PATH" ]; then
               printf '{}\n' > "$OPENCLAW_CONFIG_PATH"
             fi
@@ -697,7 +699,7 @@ controllers:
           OPENCLAW_NO_AUTO_UPDATE: "1"
           GIT_CONFIG_GLOBAL: /data/openclaw/gitconfig
           NIX_CONFIG: experimental-features = nix-command flakes
-          PATH: /toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          PATH: /etc/openclaw-assistant:/toolbox/profile/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           OPENCLAW_GATEWAY_TOKEN:
             valueFrom:
               secretKeyRef:
@@ -877,6 +879,7 @@ persistence:
     enabled: true
     type: configMap
     name: openclaw-assistant
+    defaultMode: 0555
     advancedMounts:
       openclaw:
         01-runtime-storage:

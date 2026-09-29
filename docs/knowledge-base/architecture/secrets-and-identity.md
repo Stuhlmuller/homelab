@@ -332,7 +332,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `/homelab/openclaw/github-app/installation-id`, and
   `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
   the private key is mounted into the app as a file referenced by
-  `GITHUB_APP_PRIVATE_KEY_PATH`.
+  `GITHUB_APP_PRIVATE_KEY_PATH`. The managed `assistant/gh` wrapper exchanges
+  that key for a homelab-only installation token on each CLI/Git invocation.
+  Tokens use private temporary CLI config files, never the PVC or child process
+  environment; requests omit administration and secret-management permissions.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]]. Configure
