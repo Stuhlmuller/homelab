@@ -21,6 +21,11 @@ deletion. It is deliberately not a proxy cache. The protected
 `harbor-mirror.yml` workflow copies all platforms with digest preservation,
 keeps a digest-named tag for each entry, maintains reviewed source-tag aliases,
 and downloads every image anonymously into a fresh temporary directory.
+Retries reuse an existing digest-named tag only after its manifest hash matches
+the catalog; a missing tag is copied from upstream. Other lookup errors and
+unexpected hashes stop publication. Source-tag aliases are copied from that
+verified Harbor digest, avoiding a second upstream transfer. Every entry still
+receives a complete anonymous download and alias verification on each run.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
 No retention/delete job is introduced. Size NFS for the additional images and
 retain registry blobs together with Harbor database/encryption-key backups.
@@ -50,6 +55,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
    changes alone therefore do not require another full image copy. New workflow
    dispatches and credential access still require exact current `main`.
    A running Harbor UI or manifest request alone does not prove complete copies.
+   Failed runs expose only the catalog source, operation phase, exit status and
+   a fixed error category. Raw transport logs and credentials remain private.
 3. From that clean checkout, render and strictly validate each existing machine
    configuration. The helper defaults to inspection; use Talos client 1.11.3.
    Restore the private client config at `.talos/talosconfig`, or pass an existing
