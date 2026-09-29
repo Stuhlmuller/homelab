@@ -37,6 +37,8 @@ in the same change.
   services.
 - [[patterns/new-terragrunt-unit]] is the checklist for new Terragrunt units.
 - [[operations/validation-gates]] collects validation expectations.
+- [[operations/harbor-recovery-acceptance]] records HOME-15 activation evidence,
+  independent recovery inventory gaps and proposed outage targets.
 
 ## Update Rule
 
