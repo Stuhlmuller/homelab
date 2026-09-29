@@ -1,0 +1,53 @@
+# yamllint disable rule:line-length
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-router-policy
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-router-policy
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - nodes
+      - pods
+      - namespaces
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-router-policy
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-router-policy
+subjects:
+  - kind: ServiceAccount
+    name: kube-router-policy
+    namespace: kube-system

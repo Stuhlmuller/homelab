@@ -1,0 +1,250 @@
+{
+  "families": [
+    4
+  ],
+  "targets": [
+    {
+      "id": "forbidden-pod",
+      "category": "pod",
+      "host": "REPLACE_WITH_HEALTHY_NONMESH_POD_IP",
+      "port": 8080,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "forbidden-service",
+      "category": "service",
+      "host": "REPLACE_WITH_SAME_FIXTURE_CLUSTER_IP",
+      "port": 8080,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "forbidden-service-dns",
+      "category": "service",
+      "host": "REPLACE_WITH_SAME_FIXTURE_SERVICE_FQDN",
+      "port": 8080,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "exception"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "api-node",
+      "category": "node",
+      "host": "10.1.0.199",
+      "port": 6443,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4,
+      "local_node": "acer"
+    },
+    {
+      "id": "worker-node",
+      "category": "node",
+      "host": "10.1.0.200",
+      "port": 10250,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4,
+      "local_node": "zimaboard-0"
+    },
+    {
+      "id": "nas",
+      "category": "lan",
+      "host": "10.1.0.2",
+      "port": 443,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "public-http",
+      "category": "public",
+      "host": "1.1.1.1",
+      "port": 80,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "public-https",
+      "category": "public",
+      "host": "1.1.1.1",
+      "port": 443,
+      "expect": {
+        "openclaw": "allow",
+        "multica-runtime": "allow",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "public-dns",
+      "category": "dns",
+      "host": "1.1.1.1",
+      "port": 53,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "dns-udp",
+      "family": 4,
+      "query": "example.com"
+    },
+    {
+      "id": "cluster-dns-udp",
+      "category": "dns",
+      "host": "REPLACE_WITH_COREDNS_SERVICE_IP",
+      "port": 53,
+      "expect": {
+        "openclaw": "allow",
+        "multica-runtime": "allow",
+        "signing": "allow",
+        "recovery": "deny"
+      },
+      "protocol": "dns-udp",
+      "family": 4,
+      "query": "harbor.stinkyboi.com"
+    },
+    {
+      "id": "cluster-dns-tcp",
+      "category": "dns",
+      "host": "REPLACE_WITH_COREDNS_SERVICE_IP",
+      "port": 53,
+      "expect": {
+        "openclaw": "allow",
+        "multica-runtime": "allow",
+        "signing": "allow",
+        "recovery": "deny"
+      },
+      "protocol": "dns-tcp",
+      "family": 4,
+      "query": "harbor.stinkyboi.com"
+    },
+    {
+      "id": "registry-service",
+      "category": "service",
+      "host": "REPLACE_WITH_ISTIO_GATEWAY_CLUSTER_IP",
+      "port": 443,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "allow",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "registry-pod",
+      "category": "pod",
+      "host": "REPLACE_WITH_ISTIO_GATEWAY_POD_IP",
+      "port": 443,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "allow",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "registry-dns",
+      "category": "service",
+      "host": "harbor.stinkyboi.com",
+      "port": 443,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "deny",
+        "signing": "allow",
+        "recovery": "exception"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "litellm-pod",
+      "category": "pod",
+      "host": "REPLACE_WITH_LITELLM_POD_IP",
+      "port": 15008,
+      "expect": {
+        "openclaw": "allow",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "multica-backend-pod",
+      "category": "pod",
+      "host": "REPLACE_WITH_MULTICA_BACKEND_POD_IP",
+      "port": 15008,
+      "expect": {
+        "openclaw": "deny",
+        "multica-runtime": "allow",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    },
+    {
+      "id": "grafana-pod",
+      "category": "pod",
+      "host": "REPLACE_WITH_GRAFANA_POD_IP",
+      "port": 15008,
+      "expect": {
+        "openclaw": "allow",
+        "multica-runtime": "deny",
+        "signing": "deny",
+        "recovery": "deny"
+      },
+      "protocol": "tcp",
+      "family": 4
+    }
+  ]
+}
