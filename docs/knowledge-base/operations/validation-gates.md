@@ -185,12 +185,12 @@ rg -n \
 
 AI routing requires both the source gates and per-caller live evidence in
 [[../architecture/ai-observability]].
-`scripts/ci/langfuse-staging-check.py` preserves current runtime secret/provider
-contracts and verifies that the incomplete activation hook/template is absent.
-It must pass again after overlapping caller changes. The separate activation
-PR must replace that invariant with production-matched SDK checks: native
-startup, pre-auth admission, success/failure credential redaction, streaming
-and exact usage. Include the real authentication-failure logging path; a
+`scripts/ci/langfuse-staging-check.py` preserves unchanged OpenClaw consumers.
+`scripts/ci/litellm-attribution-check.py` runs against pinned Python 3.13 /
+LiteLLM 1.80.8 dependencies in CI: native startup, pre-auth admission,
+Multica free-model restrictions, success/failure credential redaction,
+streaming and exact usage. The pinned OpenCode 1.18.33 binary also passed local
+model discovery using a fixture file-backed key. Include the real authentication-failure logging path; a
 pre-call-hook-only fixture misses dynamic callback extraction. Confirm actual
 Langfuse generations after rollout; a Ready Secret may still contain a provider
 placeholder and direct Astra recovery is outside gateway-only accounting.

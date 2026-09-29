@@ -1,11 +1,23 @@
 # AI observability
 
-Langfuse is the intended operator UI for prompts, outputs, errors and token
-usage. The service and distinct app-key producers are staged first; current
-OpenClaw/LiteLLM runtime configuration and the existing OpenClaw master-key
-alias remain unchanged. Caller activation is a separate implementation PR;
-this foundation contains no activation template or gateway hook. See the [gateway contract](../../../clusters/homelab/apps/litellm/README.md)
-and [Langfuse deployment](../../../clusters/homelab/apps/langfuse/README.md).
+Multica's OpenCode runtime selects `litellm/openrouter/free`, routed through
+LiteLLM using a dedicated OpenRouter key. Gateway ASGI admission blocks dynamic
+telemetry overrides before native authentication; callbacks export trusted app
+identity, content, usage and sanitized errors to Langfuse. Codex OAuth,
+OpenClaw, NOFX and n8n caller configuration stays unchanged. See the
+[gateway implementation and activation gates](../../../clusters/homelab/apps/litellm/README.md).
+
+## Multica activation status
+
+2026-09-29 UTC read-only inspection: Multica Synced/Healthy; LiteLLM
+OutOfSync/Degraded, one running pod; Langfuse Application absent;
+`litellm-app-keys` Ready=False (provider secret lookup failed). Activation
+requires protected SSM/S3/Langfuse reconciliation, externally issued dedicated
+OpenRouter key injection, Ready Secrets and initialized Langfuse before merge.
+No live Multica inference or correlated generation is verified. The SDK check
+covers real native startup/auth plus mocked provider streaming, Multica route
+restrictions and telemetry redaction. Earlier foundation-only statements below
+are historical; the current change supersedes the missing gateway implementation.
 
 ## Rollout evidence
 

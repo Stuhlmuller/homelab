@@ -85,6 +85,34 @@ PVC; avoid publishing log contents or CLI configuration containing credentials.
 To stop or roll back the runtime, change its replica count to zero in Git and
 preserve the PVC/PV. The web app and database are independent of this daemon.
 
+## OpenRouter free through LiteLLM
+
+The same daemon also discovers checksum-pinned OpenCode `1.18.33`. Select the
+OpenCode runtime and `litellm/openrouter/free` model for an agent. The committed
+`runtime/opencode.json` makes both main and small-model requests use LiteLLM;
+Codex retains its native ChatGPT OAuth configuration and existing agents are
+not rewritten.
+
+The runtime mounts only its inference key from `multica-litellm`; LiteLLM owns
+the dedicated OpenRouter key and file-mounted Langfuse project credentials.
+OpenCode config uses its native `{file:...}` secret reference, and model
+selection uses Multica's native `opencode models --verbose` discovery.
+OpenCode state and copied configuration share the existing node-local home PVC;
+there is no new storage or public service. The free router's available models
+and tool capabilities can vary. Context/output limits are conservative local
+budgets (32,768/4,096), not a guarantee for every routed model.
+
+Follow [gateway activation and rollback](../litellm/README.md#validation-and-activation)
+before merging. After sync, require `opencode` in daemon status and verify:
+
+```sh
+kubectl -n ai exec deployment/multica-runtime -- opencode models litellm
+```
+
+Expected: `litellm/openrouter/free`. Run one bounded task through Multica and
+verify the matching Langfuse generation has `app:multica`, input/output and
+nonzero usage. Codex OAuth tasks remain outside gateway telemetry.
+
 ## Sign-in and application storage
 
 Secret material is delivered by External Secrets from AWS SSM Parameter Store

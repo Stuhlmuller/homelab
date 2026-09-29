@@ -157,7 +157,9 @@ cluster CA is intentionally rotated.
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
-| litellm (staged) | `litellm-app-keys` | unmounted `litellm-app-keys` | `/homelab/litellm/master-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token` |
+| litellm app authentication | `litellm-app-keys` | file-mounted `litellm-app-keys` | `/homelab/litellm/master-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token`, `/homelab/litellm/openrouter-api-key` |
+| litellm telemetry | `litellm-telemetry` | file-mounted project keys | `/homelab/langfuse/project-public-key`, `/homelab/langfuse/project-secret-key` |
+| multica inference | `multica-litellm` | file-mounted `token` | `/homelab/multica/litellm-token` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |

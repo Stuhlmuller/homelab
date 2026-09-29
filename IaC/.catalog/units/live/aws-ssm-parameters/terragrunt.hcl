@@ -271,6 +271,10 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/litellm/openrouter-api-key" = {
+      description   = "Dedicated OpenRouter provider key for LiteLLM; provision through protected secret injection."
+      initial_value = local.placeholder
+    }
     "/homelab/litellm/openai-api-key" = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder

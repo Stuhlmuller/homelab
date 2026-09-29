@@ -318,6 +318,13 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   No activation hook/template or direct OpenClaw OTLP credential is included:
   the candidate gateway admission boundary failed an offline security audit.
   See [[ai-observability]] for the required pre-auth guard and accounting scope.
+- LiteLLM authenticates separate file-mounted app keys. Multica consumes only
+  `/homelab/multica/litellm-token` via `multica-litellm`; the gateway alone reads
+  the dedicated external `/homelab/litellm/openrouter-api-key` plus Langfuse
+  project keys via `litellm-telemetry`. SSM creates a placeholder, never a usable
+  OpenRouter key; protected credential injection is required before activation.
+  OpenClaw and NOFX consumers remain unchanged. OpenClaw's existing token
+  retains its master-key alias. See [[ai-observability]] for rollout blockers.
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It

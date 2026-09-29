@@ -241,6 +241,13 @@ scripts/octelium-e2e-check.sh
 
 ## Caller activation
 
+Multica activation is now implemented in the [gateway](../litellm/README.md)
+and its OpenCode runtime. The prerequisites below still gate merge and rollout;
+OpenClaw and NOFX migration remain separate. The old staging check now verifies
+only unchanged OpenClaw consumers; native SDK checks cover the gateway guard.
+The foundation-only implementation statements below describe the earlier stage.
+
+
 This change stages Langfuse and its credentials first. Existing OpenClaw and
 LiteLLM runtime configuration stays unchanged: an asynchronous protected
 apply must not race a caller restart requiring credentials that do not exist.
