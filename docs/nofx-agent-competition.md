@@ -17,12 +17,12 @@ The cap bounds outstanding buy reservations plus owned acquisition cost across
 agents. Market appreciation can exceed it; the cap does not guarantee a maximum
 loss. Agent cash and strategy entry limits also apply.
 
-Reviewed source `e7014c8b9644a6c13d909373eda3c572c1cdba00` passed signed private
-publication in [run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
+Reviewed source `b78cc47ddd5bb9bdace4912b47886e799a9d5efd` passed signed private
+publication in [run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505).
 Deployment and functional acceptance remain separate from publication. Follow
 the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
 using its reported Harbor digests. Verify the
-served source includes patches `0012`–`0015`, both workloads are ready,
+served source includes patches `0012`–`0018`, both workloads are ready,
 all traders are stopped, and no simulation is active before configuring it in
 the UI.
 

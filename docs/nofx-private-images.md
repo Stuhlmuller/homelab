@@ -111,14 +111,26 @@ closed even when static checks pass.
 ## Harbor runtime acceptance
 
 The cash-spot rollout targets reviewed source
-`e7014c8b9644a6c13d909373eda3c572c1cdba00` from
-[NOFX Images run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
+`b78cc47ddd5bb9bdace4912b47886e799a9d5efd` from
+[NOFX Images run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505).
 Its build, private publication, signature verification, and digest report all
 passed. Both manifest references come from that report. Patches `0012` and
 `0014` add owned cash-spot accounting and the matching allocation UI. Patch
 `0013` is present but its LiteLLM route remains unmounted and inactive.
 Patch `0015` adds the entry protection bounds included in this image pair.
+Patches `0016` and `0017` pace shared account reads and wait for trader API
+requests before refreshing state or closing forms. The revised `0017` also
+separates successful saves from background list refreshes, addressing the
+rollout review finding. Patch `0018` reuses strict
+JSON decisions for live OKX `openrouter/free` calls and preserves invalid
+responses as failures. The source archive SHA-256
+is `760e88843ea40956ace7bfb12d97304678dcb089da842f9b2fd646d237e0e904`.
 Runtime readiness and functional acceptance are still required below.
+
+The previous cash-spot source `e7014c8b9644a6c13d909373eda3c572c1cdba00`,
+published by [run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201),
+retains owned accounting and entry protection but lacks these pacing, UI
+completion, and live JSON fixes. Keep traders stopped if reverting to that pair.
 
 The earlier US connection and dashboard rollout used source revision
 `689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
@@ -199,9 +211,9 @@ authenticated UI session. Use the UI for model configuration and new simulations
 After GitOps rollout, require Argo CD `Synced` and `Healthy`, both containers
 ready at the declared Harbor digests, and the source download matching the build
 revision. Then perform the functional checks in the
-[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0015`
-in the source download and confirm all traders remain stopped and the three
-shared-account drafts retain their saved visibility settings after restart.
+[NOFX README](../clusters/homelab/apps/nofx/README.md): verify patches `0007`–`0018`
+in the source download and confirm all traders remain stopped and retain their
+saved visibility settings after restart.
 Reload the authenticated UI
 only after a fresh persisted stopped-state check, because runtime loading can
 auto-start saved running traders. Select **AI Traders → View** and inspect its

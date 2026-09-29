@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-27
+updated: 2026-09-28
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -16,17 +16,23 @@ The deployment declares maintained Harbor backend and frontend images derived fr
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
 The cash-spot rollout targets source revision
-`e7014c8b9644a6c13d909373eda3c572c1cdba00`.
-[Publication run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201)
+`b78cc47ddd5bb9bdace4912b47886e799a9d5efd`, merged in
+[PR #1105](https://github.com/Stuhlmuller/homelab/pull/1105).
+[Publication run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505)
 passed all three jobs: test/build, private signed publication, and digest
 reporting. `deployment.yaml` owns the image pair from that verified report.
 Cash-spot functional acceptance remains pending. Require ready containers
 at both exact digests and the matching served build revision with patches
-`0012`–`0015`. All traders must remain stopped; verify saved visibility settings
+`0012`–`0018`. Stop all traders before rollout; verify saved visibility settings
 after reload. Explicit capital and allocations remain user input, and no
 independent returns are established by publication.
 Patch `0013` is included in the image but its gateway route and token remain
 unmounted. Gateway activation requires its separate reviewed prerequisites.
+The prepared source archive SHA-256 is
+`760e88843ea40956ace7bfb12d97304678dcb089da842f9b2fd646d237e0e904`.
+Compare it with the served archive after rollout. Publication includes the
+account-read pacing, request-completion, and strict free-model JSON fixes below; it does not
+establish their deployment or successful live competition.
 
 [PR #1086](https://github.com/Stuhlmuller/homelab/pull/1086) merged
 `5dbaa5641b47342864092123a76020ae480b91bb`. At 2026-09-28 02:45:06 UTC,
@@ -488,6 +494,14 @@ remain failed cycles; configured symbols, 1x leverage, and execution limits
 remain enforced. Other models and live exchanges retain their existing path.
 Publish and pin reviewed images before treating this source fix as deployed.
 Neither the mocked regression nor deployment proves returns or a winning agent.
+
+The first static-gate attempt on PR #1104 failed in the Harbor publication test
+fixture: mock readiness preceded PID-file completion, and cleanup left an empty
+PID file. The unchanged focused test and full-gate rerun passed. Production
+cleanup tracks its own process ID and did not use that file. If this recurs,
+synchronize mock readiness with current PID publication in
+`scripts/ci/harbor-publish-test.py`; retain strict cleanup assertions. Evidence:
+[run 36455510987](https://github.com/Stuhlmuller/homelab/actions/runs/36455510987).
 
 Published patch `0012` addresses the shared-account execution gap above.
 It adds authenticated OKX US spot metadata and candles, per-trader decimal
