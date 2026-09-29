@@ -1,0 +1,23 @@
+# Candidate only: no live Kustomization references this directory.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: independent-application-backups
+  namespace: monitoring
+spec:
+  groups:
+    - name: homelab.application-backup
+      rules:
+        - alert: IndependentApplicationBackupUnavailable
+          expr: |
+            (homelab_application_backup_check_success{app=~"octelium|media-postgres"} != 1)
+            or (time() - homelab_application_backup_capture_timestamp_seconds{app=~"octelium|media-postgres"} > 108000)
+            or (time() - homelab_application_backup_check_timestamp_seconds{app=~"octelium|media-postgres"} > 7200)
+            or absent(homelab_application_backup_check_success{app="octelium"})
+            or absent(homelab_application_backup_check_success{app="media-postgres"})
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Independent application recovery copy is missing, stale, or unreadable
+            description: Inspect the private publisher and retrieval checker. A successful local backup Job is insufficient.

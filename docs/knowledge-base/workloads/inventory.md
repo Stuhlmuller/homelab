@@ -304,3 +304,14 @@ to the evidence recorded there.
 Wazuh SIEM is removed from active desired state pending a hardware upgrade.
 See [[../operations/wazuh-siem]] for the historical implementation and
 restoration requirements.
+
+## Recovery inventory (HOME-2)
+
+[Application recovery](../../application-recovery.md) records per-workload durable
+data, proposed loss/time budgets and remaining capture/secret gaps. Publication
+adapters cover complete Octelium/media logical sets and fenced AFFiNE/Multica
+DB/blob bundles, but only the existing Octelium/media jobs currently declare
+automatic capture. Candidate off-NAS publication and checks are not active.
+No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
+n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
+application behavior, not only a checksum or successful backup Job.
