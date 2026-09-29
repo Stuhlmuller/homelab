@@ -54,17 +54,34 @@ attempt; the trading loop
 records failures and waits for its normal configured ticker without stopping.
 AI duration metadata is attached only after a successful call, so a failed
 record's zero duration does not mean no request was sent. Consistent completion
-across all agents remains unverified. Inspect provider timing evidence and
-reproduce a late completion before changing the deadline. Do not substitute
-successful waits for failed model responses.
+across all agents remains unverified. Do not substitute successful waits for
+failed model responses.
 
-Lifecycle finding: `AutoTrader.Stop` marks the trader stopped and waits for
-active work, including an AI request; MCP requests have no lifecycle-bound
-cancellation. Stop is
-synchronous in the API while the frontend times out after 30 seconds. SIGTERM
-stops traders sequentially, and the deployment has no custom termination grace.
-Before extending the AI deadline, add cancellation tied to Stop, reproduce
-Stop during a delayed response body, and review HTTP/shutdown timing together.
+Provider-side inspection subsequently distinguished the failures: all three
+requests generated tokens through Liquid, then ended cancelled with HTTP 499
+at about 121 seconds. Throughput was 16–17 tokens/second. One request first
+encountered a provider-side 503 and was routed to Liquid; that fallback is
+distinct from an application retry. The successful request used AtlasCloud and
+completed in 90.7 seconds. These are request metadata, not a claim that a longer
+deadline guarantees valid decisions. No provider logging settings were changed.
+
+At deployed revision `b78cc47d`, `AutoTrader.Stop` marks the trader stopped and
+waits for active work, but cannot cancel its AI HTTP request. Stop is synchronous
+in the API while the frontend times out after 30 seconds. SIGTERM stops traders
+sequentially, and the deployment has no custom termination grace.
+
+Patch `0019` adds lifecycle cancellation for strict AI requests in live and
+historical runs before extending the free-model deadline to ten minutes.
+The configured 8,000-token budget needs roughly 500 seconds at the observed
+16 tokens/second. Stop cancels pending inference, and live restart creates a new
+context; exchange work already in progress retains its existing completion
+semantics. Ordinary AI timeouts remain failed cycles, not lifecycle cancellation.
+Other clients keep their existing deadlines and the strict free path retains
+one application attempt. A local partial-body reproduction distinguishes an
+expired short deadline from a valid later completion. A separate live-caller
+regression covers Stop during body reception and restart. Publish and pin the
+reviewed source before treating this change as deployed; verify stopped-state
+acceptance again before operator activation.
 
 OKX equity-history HTTP 409 remains intentional: legacy whole-account snapshots
 cannot establish owned agent returns. The leaderboard explains this state, but
