@@ -33,7 +33,13 @@ class RolloutTest(unittest.TestCase):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
                          "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection",
                          "prior-success", "later-page-success", "bundle-changed", "non-ancestor", "missing-history", "missing-blob",
-                         "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha"):
+                         "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha",
+                         "github-outage", "dns-outage", "advanced-main",
+                         "rollback-github-outage", "rollback-dns-outage", "rollback-advanced-main",
+                         "rollback-late-github-outage", "rollback-late-advanced-main",
+                         "rollback-endpoint-down", "rollback-stale-credentials", "rollback-dirty",
+                         "rollback-tampered-revision", "rollback-scope", "rollback-multidoc",
+                         "rollback-race", "rollback-readback"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "scripts/config").mkdir(parents=True)
@@ -51,18 +57,28 @@ class RolloutTest(unittest.TestCase):
                     (root / ".talos/patches" / name).write_text(json.dumps({"machine": {"registries": {"mirrors": wanted}}}))
                 current = copy.deepcopy(ORIGINAL)
                 calls, captures = [], []
+                remote_checks = 0
                 applied = False
 
                 def run(*command, binary=False):
-                    nonlocal current, applied
+                    nonlocal current, applied, remote_checks
                     calls.append(command)
                     if command[0] == "talosctl" and any(action in command for action in ("get", "read", "apply-config", "image")):
                         self.assertIn("--talosconfig", command)
                         self.assertEqual(command[command.index("--talosconfig") + 1], str(talosconfig.resolve()))
                     if command[:2] == ("git", "status"):
-                        return " M unsafe\n" if scenario == "dirty" else ""
-                    if command[:2] in (("git", "rev-parse"), ("git", "ls-remote")):
-                        return SHA + "\n"
+                        return " M unsafe\n" if scenario in ("dirty", "rollback-dirty") else ""
+                    if command[:2] == ("git", "rev-parse"):
+                        return (PRIOR_SHA if scenario == "rollback-tampered-revision" else SHA) + "\n"
+                    if command[:2] == ("git", "ls-remote"):
+                        remote_checks += 1
+                        late = "-late-" in scenario
+                        if not late or remote_checks == 2:
+                            if scenario.endswith(("github-outage", "dns-outage")):
+                                raise subprocess.CalledProcessError(128, command)
+                            if scenario.endswith("advanced-main"):
+                                return PRIOR_SHA + "\trefs/heads/main\n"
+                        return SHA + "\trefs/heads/main\n"
                     if command[:2] == ("git", "merge-base"):
                         self.assertEqual(command[2], "--is-ancestor")
                         self.assertEqual(command[-1], SHA)
@@ -128,10 +144,14 @@ class RolloutTest(unittest.TestCase):
                     if command == ("talosctl", "version", "--client", "--short"):
                         return "Client:\nTalos v1.13.0\n" if scenario == "wrong-client" else "Client:\nTalos v1.11.3\n"
                     if "read" in command:
+                        self.assertEqual(command[command.index("--endpoints") + 1], "10.1.0.199")
+                        self.assertEqual(command[command.index("--nodes") + 1], "10.1.0.202")
+                        if scenario in ("rollback-endpoint-down", "rollback-stale-credentials"):
+                            raise subprocess.CalledProcessError(1, command)
                         return "87654321-0000-0000-0000-000000000000" if applied and scenario == "rollback-reboot" else "12345678-0000-0000-0000-000000000000"
                     if "persistent" in command:
                         captures.append(command)
-                        if scenario == "race" and len(captures) == 2:
+                        if scenario in ("race", "rollback-race") and len(captures) == 2:
                             current[0]["machine"]["unrelated"] = True
                         return json.dumps({"metadata": {"id": "persistent"}, "spec": json.dumps(current)})
                     if command[:3] == ("talosctl", "machineconfig", "patch"):
@@ -142,9 +162,9 @@ class RolloutTest(unittest.TestCase):
                             operations = json.loads(command[5])
                             self.assertEqual(operations[-1], {"op": "add", "path": "/machine/registries/mirrors", "value": wanted})
                             value[0]["machine"].setdefault("registries", {})["mirrors"] = operations[-1]["value"]
-                            if scenario == "scope":
+                            if scenario in ("scope", "rollback-scope"):
                                 value[0]["cluster"]["secret"] = "changed"
-                            if scenario == "multidoc":
+                            if scenario in ("multidoc", "rollback-multidoc"):
                                 value.pop()
                         Path(command[-1]).write_text(json.dumps(value))
                         return ""
@@ -162,7 +182,7 @@ class RolloutTest(unittest.TestCase):
                     if "apply-config" in command:
                         self.assertIn("no-reboot", command)
                         applied = True
-                        if scenario != "readback":
+                        if scenario not in ("readback", "rollback-readback"):
                             current = json.loads(Path(command[-1]).read_text())
                         return ""
                     raise AssertionError(f"Unexpected command: {command[0]}")
@@ -173,9 +193,13 @@ class RolloutTest(unittest.TestCase):
                     if scenario in ("dry", "apply", "rollback", "custom-config", "prior-success", "later-page-success"):
                         rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"), config_argument)
                     else:
-                        with self.assertRaises(RuntimeError):
+                        with self.assertRaises((RuntimeError, subprocess.CalledProcessError)):
                             rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"), config_argument)
                 self.assertNotIn("PrivateSecret", output.getvalue())
+                self.assertEqual(sum("apply-config" in call for call in calls), int(applied),
+                                 "Never retry an apply, including after failed readback")
+                if scenario == "rollback-readback":
+                    self.assertNotIn("config applied", output.getvalue())
                 if scenario in ("prior-success", "later-page-success"):
                     self.assertEqual({call[2].split(":", 1)[1] for call in calls if call[:2] == ("git", "show")},
                                      {"scripts/config/harbor-images.json", ".github/workflows/harbor-mirror.yml",
@@ -185,12 +209,17 @@ class RolloutTest(unittest.TestCase):
                     self.assertFalse(any(call[0] == "curl" for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
-                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success"))
+                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "rollback-readback", "custom-config", "pull-failure", "prior-success", "later-page-success"))
                 self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success"))
                 if scenario in ("dry", "rollback", "rollback-reboot"):
                     self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
                 if scenario.startswith("rollback"):
-                    self.assertFalse(any(call[0] == "kubectl" for call in calls))
+                    self.assertFalse(any(call[0] in ("kubectl", "gh", "curl") for call in calls))
+                if scenario in ("rollback-late-github-outage", "rollback-late-advanced-main"):
+                    self.assertEqual(remote_checks, 2)
+                    self.assertTrue(any(call[:2] == ("talosctl", "validate") for call in calls))
+                if scenario in ("rollback-endpoint-down", "rollback-stale-credentials"):
+                    self.assertFalse(captures, "Failed authenticated boot read must stop config access")
                 self.assertFalse(any("patch" in call and "machineconfig" not in call for call in calls))
                 for call in calls:
                     if call[0] == "curl" and "--header" in call:
