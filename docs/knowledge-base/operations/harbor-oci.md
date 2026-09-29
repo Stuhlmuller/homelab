@@ -272,7 +272,9 @@ The [mirror runbook](../../harbor-image-mirroring.md) owns copying, cutover and
 recovery. `scripts/config/harbor-images.json` captures public upstream digests
 from repository declarations, rendered charts and live Pods/system images. The
 protected `harbor-mirror.yml` workflow copies all platforms into the normal
-public-read `mirror` project and verifies complete anonymous pulls. Its publisher
+public-read `mirror` project and verifies complete anonymous pulls. A completed
+ancestor publication is reusable only with the runbook's six publication files
+unchanged; node rollout still requires exact reviewed `main` and live digest checks. Its publisher
 uses a separate generated `/homelab/harbor/mirror-robot-push-password`; apply
 the reviewed shared SSM plan before expecting the new bootstrap to complete. Private
 `homelab` artifacts retain their existing authentication/signing contract.
@@ -291,6 +293,10 @@ starting image publication; the annotation change alone is not readiness evidenc
 registries, covering controller-generated Pods and Talos system images.
 Authenticated Talos calls explicitly select the private `.talos/talosconfig` or
 the operator-provided `--talosconfig` path; absent files fail before networking.
+Talos skips cached pull references. The cutover probes pause in the `system`
+namespace, where it was absent on all four nodes during this rollout. System
+images and CRI share the mirror configuration; correlate the pull with Harbor
+access logs, since repeating an already-cached probe proves no new request.
 `skipFallback: true` prevents silent upstream pulls. Apply only after publication;
 new image/chart versions need a prerequisite catalog publication. The rollback
 patch restores upstream access for cold bootstrap or Harbor recovery. Existing

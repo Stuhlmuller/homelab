@@ -8,6 +8,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 import urllib.parse
 from unittest.mock import patch
@@ -17,6 +18,7 @@ SPEC = importlib.util.spec_from_file_location("rollout", ROOT / "scripts/talos-h
 rollout = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(rollout)
 SHA = "a" * 40
+PRIOR_SHA = "b" * 40
 MANIFEST = '{"schemaVersion":2}'
 DIGEST = hashlib.sha256(MANIFEST.encode()).hexdigest()
 MIRRORS = {"docker.io": {"endpoints": ["https://harbor.stinkyboi.com/v2/mirror/docker.io"],
@@ -29,7 +31,9 @@ ORIGINAL = [{"version": "v1alpha1", "machine": {"type": "worker"},
 class RolloutTest(unittest.TestCase):
     def test_dry_run_execution_and_fail_closed_gates(self):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
-                         "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection"):
+                         "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection",
+                         "prior-success", "later-page-success", "bundle-changed", "non-ancestor", "missing-history", "missing-blob",
+                         "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "scripts/config").mkdir(parents=True)
@@ -59,9 +63,36 @@ class RolloutTest(unittest.TestCase):
                         return " M unsafe\n" if scenario == "dirty" else ""
                     if command[:2] in (("git", "rev-parse"), ("git", "ls-remote")):
                         return SHA + "\n"
+                    if command[:2] == ("git", "merge-base"):
+                        self.assertEqual(command[2], "--is-ancestor")
+                        self.assertEqual(command[-1], SHA)
+                        if scenario in ("non-ancestor", "missing-history") or command[-2] == "c" * 40:
+                            raise subprocess.CalledProcessError(1 if scenario == "non-ancestor" else 128, command)
+                        return ""
+                    if command[:2] == ("git", "show"):
+                        self.assertTrue(binary)
+                        revision, path = command[2].split(":", 1)
+                        if revision == PRIOR_SHA and path == "flake.lock":
+                            if scenario == "missing-blob":
+                                raise subprocess.CalledProcessError(128, command)
+                            if scenario == "bundle-changed":
+                                return b"changed lockfile"
+                        return path.encode()
                     if command[0] == "gh":
-                        return json.dumps([] if scenario == "workflow" else
-                                          [{"headSha": SHA, "status": "completed", "conclusion": "success"}])
+                        self.assertEqual(command[:4], ("gh", "api", "--paginate", "--slurp"))
+                        self.assertEqual(command[-1], "repos/Stuhlmuller/homelab/actions/workflows/harbor-mirror.yml/runs"
+                                         "?branch=main&event=workflow_dispatch&status=success&per_page=100")
+                        item = {"head_sha": PRIOR_SHA if scenario in ("prior-success", "later-page-success", "bundle-changed", "non-ancestor", "missing-history", "missing-blob") else SHA,
+                                "head_branch": "feature" if scenario == "wrong-branch" else "main",
+                                "event": "push" if scenario == "wrong-event" else "workflow_dispatch",
+                                "status": "in_progress" if scenario == "wrong-status" else "completed",
+                                "conclusion": "failure" if scenario == "wrong-conclusion" else "success"}
+                        if scenario == "short-sha":
+                            item["head_sha"] = SHA[:7]
+                        if scenario == "later-page-success":
+                            return json.dumps([{"workflow_runs": [{**item, "head_sha": "c" * 40}] * 100},
+                                               {"workflow_runs": [item]}])
+                        return json.dumps([{"workflow_runs": [] if scenario == "workflow" else [item]}])
                     if command[0] == "curl":
                         self.assertEqual(command[1], "--disable")
                         self.assertIn("--fail", command)
@@ -121,7 +152,7 @@ class RolloutTest(unittest.TestCase):
                         self.assertEqual(command[-3:], ("--mode", "metal", "--strict"))
                         return ""
                     if "image" in command:
-                        self.assertEqual(command[-5:], ("image", "pull", "--namespace", "cri", "registry.k8s.io/pause:3.10"))
+                        self.assertEqual(command[-5:], ("image", "pull", "--namespace", "system", "registry.k8s.io/pause:3.10"))
                         self.assertTrue(applied)
                         self.assertEqual(len(captures), 3, "Pull follows persistent configuration readback")
                         self.assertEqual(calls[-2][:2], ("kubectl", "get"), "Pull follows node health check")
@@ -139,16 +170,23 @@ class RolloutTest(unittest.TestCase):
                 output = io.StringIO()
                 with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
                         contextlib.redirect_stdout(output):
-                    if scenario in ("dry", "apply", "rollback", "custom-config"):
+                    if scenario in ("dry", "apply", "rollback", "custom-config", "prior-success", "later-page-success"):
                         rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"), config_argument)
                     else:
                         with self.assertRaises(RuntimeError):
                             rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"), config_argument)
                 self.assertNotIn("PrivateSecret", output.getvalue())
+                if scenario in ("prior-success", "later-page-success"):
+                    self.assertEqual({call[2].split(":", 1)[1] for call in calls if call[:2] == ("git", "show")},
+                                     {"scripts/config/harbor-images.json", ".github/workflows/harbor-mirror.yml",
+                                      "scripts/ci/harbor-publish.sh", "scripts/ci/install-kubeconfig.sh", "flake.nix", "flake.lock"})
+                if scenario in ("bundle-changed", "non-ancestor", "missing-history", "missing-blob", "wrong-branch",
+                                "wrong-event", "wrong-status", "wrong-conclusion", "short-sha"):
+                    self.assertFalse(any(call[0] == "curl" for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
-                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure"))
-                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure"))
+                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success"))
+                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success"))
                 if scenario in ("dry", "rollback", "rollback-reboot"):
                     self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
                 if scenario.startswith("rollback"):

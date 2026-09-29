@@ -41,8 +41,15 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha"
    ```
 
-   Require a successful run, including complete anonymous downloads. A running
-   Harbor UI or successful manifest request alone does not prove complete copies.
+   Require a successful run, including complete anonymous downloads. A completed
+   successful `main` dispatch on an ancestor is reusable only when its publication
+   bundle is byte-identical to current reviewed `main`: `scripts/config/harbor-images.json`,
+   `.github/workflows/harbor-mirror.yml`, `scripts/ci/harbor-publish.sh`,
+   `scripts/ci/install-kubeconfig.sh`, `flake.nix`, and `flake.lock`.
+   Missing commit history or blobs cannot establish that evidence. Probe or docs
+   changes alone therefore do not require another full image copy. New workflow
+   dispatches and credential access still require exact current `main`.
+   A running Harbor UI or manifest request alone does not prove complete copies.
 3. From that clean checkout, render and strictly validate each existing machine
    configuration. The helper defaults to inspection; use Talos client 1.11.3.
    Restore the private client config at `.talos/talosconfig`, or pass an existing
@@ -64,18 +71,29 @@ retain registry blobs together with Harbor database/encryption-key backups.
    ```
 
    Repeat for `.201`, `.200`, then `.199` only after the preceding node passes.
-   The helper requires successful publication at that SHA, verifies destination
+   The helper requires successful publication of the same bundle, verifies destination
    manifests, preserves the full persistent machine configuration, allows only
    registry-mirror differences, validates with `--mode metal --strict`, and
    applies with `--mode no-reboot`. It checks configuration readback and node
    readiness/boot identity, then requests `registry.k8s.io/pause:3.10` through
-   Talos's native `image pull --namespace cri` using the selected client config.
+   Talos's native `image pull --namespace system` using the selected client config.
    Rollback and dry-run do not pull images. It never drains, restarts or deletes workloads.
 5. Verify every node's `registryconfigs` resource contains the committed
    endpoints and `skipFallback: true`. Correlate each native pause pull with
    Harbor manifest access logs from that node before claiming live migration.
-   Successful pulls alone can reuse cached layers; existing cached layers and
-   unchanged Pod image strings are not evidence of an upstream pull.
+   Talos skips an already pulled and unpacked reference entirely. Before the
+   first apply, inspect `talosctl ... image list --namespace system` on each node
+   and confirm `registry.k8s.io/pause:3.10` is absent. Repeat runs can return from
+   cache without a registry request; require correlated Harbor manifest logs
+   before claiming a fresh fetch. Do not delete cached images to force this test.
+   Unchanged Pod image strings are not evidence of an upstream pull.
+
+Talos 1.11.3 [kubelet](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/system/services/kubelet.go#L64-L74)
+and [etcd](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/system/services/etcd.go#L88-L104)
+use the CRI daemon's `system` namespace and the same registry builder as the
+native image API. Both therefore consume `machine.registries.mirrors`; there is
+no separate kubelet/etcd mirror configuration. The [image pull cache check](https://github.com/siderolabs/talos/blob/v1.11.3/internal/pkg/containers/image/image.go#L85-L99)
+explains why the probe uses the initially uncached system-namespace reference.
 
 The operator helper verifies destination manifests with curl using the fixed
 `https://1.1.1.1/dns-query` DNS-over-HTTPS resolver. Workstation split DNS can
@@ -83,7 +101,8 @@ otherwise return the unreachable Istio ClusterIP. Requests retain the Harbor
 hostname and TLS verification; no system DNS, hosts file, or environment override
 is changed. Anonymous Bearer tokens stay in a private temporary header file and
 are removed on exit. Every digest-named tag and source-tag alias must return the
-catalog's exact manifest bytes after the successful same-revision copy workflow.
+catalog's exact manifest bytes after a successful copy workflow for the same
+publication bundle. Rollout still requires a clean checkout of exact current `main`.
 
 Talos host DNS currently reaches the existing public Harbor HTTPS route.
 The registry and artifacts are hosted in the cluster, but node traffic still
