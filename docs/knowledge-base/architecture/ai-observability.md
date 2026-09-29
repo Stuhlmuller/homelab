@@ -50,7 +50,14 @@ requires SSM/S3 reconciliation, Ready Secrets and initialized Langfuse before
 caller changes merge. Its UI gate also requires the separate authenticated
 Octelium catalog apply and protected `octelium-public-tunnel.yml` DNS workflow;
 Terragrunt alone does not publish the route. Use the same reviewed current-main
-SHA and verify the authenticated route before activating callers.
+SHA and verify the authenticated route before activating callers. The fixed
+`scripts/octelium-langfuse-reconcile.py` path reuses the NOFX TLS carrier and an
+existing native operator login without workstation DNS or credential changes.
+It previews by default, applies only `langfuse.default` after clean/current-main
+guards, and requires repeat-apply convergence plus non-anonymous human-policy
+and routing readback. The existing human Policy is a prerequisite, not modified
+by this helper. Its offline regression is part of the static gate; it does not
+establish live UI or telemetry acceptance.
 `scripts/ci/langfuse-staging-check.py` proves existing caller credentials remain
 unchanged and the incomplete activation hook/template is absent. A follow-up
 must preserve current provider, model, image, bootstrap ordering and execution
