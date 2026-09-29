@@ -36,17 +36,17 @@ def verify_main(expected):
 
 
 def verify_copies(expected):
-    runs = json.loads(run("gh", "run", "list", "--repo", REPOSITORY, "--workflow", "harbor-mirror.yml",
-                          "--branch", "main", "--event", "workflow_dispatch",
-                          "--json", "headSha,headBranch,event,status,conclusion", "--limit", "20"))
+    pages = json.loads(run("gh", "api", "--paginate", "--slurp",
+                           f"repos/{REPOSITORY}/actions/workflows/harbor-mirror.yml/runs"
+                           "?branch=main&event=workflow_dispatch&status=success&per_page=100"))
     published = False
-    for item in runs:
-        if (not isinstance(item, dict) or item.get("headBranch") != "main" or
+    for item in (item for page in pages for item in page["workflow_runs"]):
+        if (not isinstance(item, dict) or item.get("head_branch") != "main" or
                 item.get("event") != "workflow_dispatch" or item.get("status") != "completed" or
-                item.get("conclusion") != "success" or not isinstance(item.get("headSha"), str) or
-                not re.fullmatch(r"[0-9a-f]{40}", item["headSha"])):
+                item.get("conclusion") != "success" or not isinstance(item.get("head_sha"), str) or
+                not re.fullmatch(r"[0-9a-f]{40}", item["head_sha"])):
             continue
-        revision = item["headSha"]
+        revision = item["head_sha"]
         try:
             run("git", "merge-base", "--is-ancestor", revision, expected)
             published = all(run("git", "show", f"{revision}:{path}", binary=True) ==
