@@ -352,3 +352,14 @@ local routing exists in source, but worker certificate issuance depends on
 control-plane trustd. Direct-worker operational recovery remains unproven.
 Activation status and independent backup availability are separate HOME-15 /
 HOME-2 evidence tasks. These tests establish no live health or recovery time.
+
+The proposal requires a named operator/approved maintenance window and exclusion
+of concurrent configuration writers; recapture alone cannot close the apply
+race. Approval binds the full replacement map, upstream egress, deadlines and
+stop conditions. Config readback establishes only config restoration. Transport
+recovery and the proposed 30-minute target require a separately approved,
+initially uncached digest-pinned upstream pull with actual transfer evidence,
+without cache deletion. The contract's required future test matrix covers
+authenticity, authority, identity/certificates, tools/parsers, uncertain apply,
+CLI privacy/cleanup and combined outages. Those tests and operational proof,
+signed commits and pinned-tool validation remain acceptance gates.
