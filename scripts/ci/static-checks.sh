@@ -1271,6 +1271,7 @@ echo "::group::OpenClaw Discord plugin"
 python3 scripts/ci/langfuse-staging-check.py
 python3 scripts/ci/openclaw-config-check.py
 python3 scripts/ci/openclaw-assistant-check.py
+node scripts/ci/openclaw-github-check.cjs
 python3 scripts/ci/openclaw-runtime-storage-check.py
 # homelab-workloads deliberately has no cluster-scoped resource permissions.
 kustomize build clusters/homelab/apps/openclaw | yq eval-all -e \

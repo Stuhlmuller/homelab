@@ -2,6 +2,24 @@
 
 Source: `clusters/homelab/apps/openclaw/README.md` and `assistant/`.
 
+September 29 UTC GitHub diagnosis: the running app's bare `gh api` exited 4
+asking for login, while its mounted App key authenticated successfully and the
+installation already granted repository write permissions. App credentials
+were present; the missing installation-token exchange caused CLI access failure.
+The managed `assistant/gh` wrapper now renews a homelab-only token per command,
+using private temporary native CLI configuration. Git HTTPS routes through the
+same wrapper. No new App grants, personal token, or persistent token cache.
+Local regression checks cover authentication and cleanup. An in-memory live
+probe of the repository helper returned the requested token grants, listed only
+`Stuhlmuller/homelab`, and successfully supplied Git credentials without exposing
+them. Deployment acceptance still requires the new pod's normal PATH and Git
+helper to pass authenticated reads. See the app README.
+Validation: the full static gate, pinned app-template 4.4.0 Helm rendering,
+and Kustomize rendering passed locally, including the executable helper mount.
+The existing installation has broader grants (including secrets write and all
+repositories) than this helper requests. Narrowing the App registration is a
+separate owner-reviewed GitHub IaC task; this change scopes issued tokens only.
+
 September 26 model routing: interactive turns, heartbeat, and managed jobs use
 OpenRouter's `openrouter/free` router with no fallback. OpenRouter credentials
 remain in the PVC-backed auth profile; repository configuration contains no key.

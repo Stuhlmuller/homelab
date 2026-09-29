@@ -519,6 +519,32 @@ After replacing any GitHub App SSM placeholder, bump
 to the resulting SSM parameter version so Argo CD rolls the pod and reloads the
 environment variables.
 
+The managed `assistant/gh` wrapper precedes the toolbox on the app's PATH.
+It signs a GitHub App JWT using Node's built-in crypto, requests a fresh
+installation token for `homelab`, and passes it through a private temporary
+native CLI config file. Each invocation cleans up its own file; no token is
+stored on the PVC or injected into a subprocess environment. The temporary
+`GH_CONFIG_DIR` is an internal per-process path, not a desired-state input.
+Tokens expire after one hour; renewal happens on every command, without a
+timer or cached credentials. Git HTTPS uses this wrapper as its credential
+helper. Existing commit signing remains separate.
+
+The token requests contents, pull requests, issues, and workflows write access,
+plus Actions, checks, statuses, and metadata read access. It does not request
+the installation's administration or secret-management permissions. See
+[GitHub's installation-token flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app).
+
+Verify from the app container using `gh api repos/Stuhlmuller/homelab/pulls
+--jq length` and `gh api installation/repositories --jq '.repositories[].full_name'`.
+The second command must list only `Stuhlmuller/homelab`. A missing/invalid key,
+denied token request, or missing installation access fails closed; do not print
+tokens or use another account to bypass it. Run `node
+scripts/ci/openclaw-github-check.cjs` locally for signing, scope, renewal, private
+file permissions, cleanup, CLI exit-code propagation, and failure checks.
+Rollback by reverting the wrapper, PATH, Git helper, and assistant bundle digest
+through GitOps. Live acceptance remains pending until the new pod passes these
+authenticated reads.
+
 ## OpenRouter Free And Codex Recovery
 
 Do not store OpenRouter keys, ChatGPT passwords, browser cookies, or OpenAI API
