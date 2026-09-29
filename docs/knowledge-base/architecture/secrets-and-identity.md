@@ -217,9 +217,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`. Both environments require reviewer approval before
-  GitHub releases the token; approve a pull request plan only after reviewing
-  its exact code because that job also assumes the environment-bound AWS OIDC
+  `homelab-production`. Only `homelab-plan` requires reviewer approval.
+  The production environment
+  permits only `main` and releases credentials without another approval;
+  main-only diagnostics also use production. Approve a pull request plan only
+  after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
   identity. Repository Actions policy rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
   always-on checks and no force pushes. The CI connector does not pass Octelium

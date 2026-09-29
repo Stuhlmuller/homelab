@@ -23,8 +23,9 @@ This repository uses GitHub Actions for the review and rollout path:
   links to active applies. It has no production environment, stored secrets,
   or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
-  current `main` SHA. It repeats static checks and Conftest, waits for the
-  `homelab-production` approval, then verifies `main` again before referencing
+  current `main` SHA. It repeats static checks and Conftest, enters the
+  main-only `homelab-production` environment without reviewer approval, then
+  verifies `main` again before referencing
   environment credentials or running live commands. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
@@ -33,7 +34,7 @@ This repository uses GitHub Actions for the review and rollout path:
   targeted Argo reconciliations never advance that checkpoint.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
-  production approval gates, never prunes, and proves a second apply has no
+  production branch gates, never prunes, and proves a second apply has no
   live diff.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
@@ -218,14 +219,21 @@ Create two GitHub environments:
 - `homelab-plan`: used by same-repository pull request plans. Require a
   reviewer and approve only after reviewing the exact pull request diff; the
   job checks out pull request code before using live write-capable identities.
-- `homelab-production`: used by post-merge applies. Require reviewers and limit
-  deployment branches to `main`.
+- `homelab-production`: used by post-merge applies and main-only diagnostics.
+  No required reviewers; allow only the exact `main` branch (no tags).
+  Other branches use `homelab-plan` and retain required reviewer approval.
+
+The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
+in [github-iac](https://github.com/Stuhlmuller/github-iac). Its
+`reconcile-homelab-production.sh` checks the existing main-only branch policy
+and PR-plan reviewers before removing the production reviewer requirement.
 
 Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Add
 `AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan` lets
 trusted pull requests render AzureAD application plans, otherwise that PR plan
 phase is skipped with a warning. Keep live credentials environment-scoped so
-GitHub withholds them until the required reviewer approves the job; do not keep
+GitHub releases PR-plan credentials only after approval and production
+credentials only to `main`; do not keep
 duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |

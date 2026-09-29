@@ -238,11 +238,14 @@ observations below retain their original dates.
   `14700233` began requiring signed squash pull requests, strict always-on
   checks, and non-fast-forward protection. Unused repository secrets
   `KUBE_CONFIG_B64`, `TAILSCALE_AUTH_KEY`, and `TS_AUTH_KEY` were removed.
-- **Risk:** A reviewer can still approve their own deployment because the
-  organization has one member; the gate provides an explicit diff-review
-  checkpoint but not independent separation of duties.
-- **Next step:** Keep live credentials environment-scoped and require a second
-  reviewer after another trusted organization member exists.
+- **Update:** The operator requested no deployment approval for `main`.
+  `homelab-production` retains its exact main-only branch restriction, with no
+  required reviewers; `homelab-plan` retains reviewers for PR branches.
+  The source is `github-iac/Stuhlmuller/repositories/terragrunt.hcl`; its
+  focused reconciler verifies both boundaries before and after apply.
+- **Risk:** Main jobs receive production credentials without another human
+  checkpoint; merged-code review and branch protections remain the boundary.
+- **Next step:** Keep credentials environment-scoped and retain PR-plan review.
 
 - **Status:** blocked by organization policy and authority
 - **Area:** dependency security
