@@ -1,0 +1,106 @@
+# yamllint disable rule:line-length
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-router-policy
+  namespace: kube-system
+  annotations:
+    checkov.io/skip12: CKV_K8S_28=Privileged host netfilter administration cannot enforce a dropped NET_RAW capability.
+    checkov.io/skip1: CKV_K8S_11=CPU throttling of host firewall reconciliation can delay policy updates.
+    checkov.io/skip2: CKV_K8S_16=The policy-only engine must program host iptables and ipsets.
+    checkov.io/skip3: CKV_K8S_19=Host networking is required to program the node firewall.
+    checkov.io/skip4: CKV_K8S_20=Privileged host firewall management is the narrowly scoped purpose of this daemon.
+    checkov.io/skip5: CKV_K8S_22=The upstream firewall binary needs writable runtime scratch space; it mounts no
+      host CNI config.
+    checkov.io/skip6: CKV_K8S_23=The firewall daemon requires the host network namespace.
+    checkov.io/skip7: CKV_K8S_31=The privileged firewall process manages kernel networking at the host boundary.
+    checkov.io/skip8: CKV_K8S_37=Privileged netfilter administration requires host capabilities.
+    checkov.io/skip9: CKV_K8S_38=The dedicated read-only ServiceAccount watches policy and endpoint state.
+    checkov.io/skip10: CKV_K8S_40=Host iptables and ipset administration requires root.
+    checkov.io/skip11: CKV2_K8S_6=Host-network policy-engine traffic is outside Pod NetworkPolicy; protect operator/node
+      access separately.
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-router-policy
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kube-router-policy
+    spec:
+      serviceAccountName: kube-router-policy
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      hostNetwork: true
+      dnsPolicy: Default
+      priorityClassName: system-node-critical
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      containers:
+        - name: kube-router
+          image: docker.io/cloudnativelabs/kube-router:v2.11.1@sha256:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a
+          args:
+            - --run-router=false
+            - --run-service-proxy=false
+            - --run-loadbalancer=false
+            - --run-firewall=true
+            - --enable-cni=false
+            - --enable-ipv4=true
+            - --enable-ipv6=false
+            - --metrics-port=0
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 20244
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 20244
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 20244
+            periodSeconds: 10
+          volumeMounts:
+            - name: modules
+              mountPath: /lib/modules
+              readOnly: true
+            - name: xtables
+              mountPath: /run/xtables.lock
+          imagePullPolicy: IfNotPresent
+      volumes:
+        - name: modules
+          hostPath:
+            path: /lib/modules
+            type: Directory
+        - name: xtables
+          hostPath:
+            path: /run/xtables.lock
+            type: FileOrCreate

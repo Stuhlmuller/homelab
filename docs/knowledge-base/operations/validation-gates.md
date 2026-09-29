@@ -1143,3 +1143,20 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Network enforcement candidate (HOME-3)
+
+Run `python3 -I scripts/ci/network-isolation-test.py` in the Nix shell and render
+all three `clusters/homelab/platform/network-isolation-candidate/` overlays.
+These check source policy drift, additive grants, scoped dependencies and probe
+failure handling. They do not prove actual packet enforcement. PyYAML is included
+in the development shell for these manifest tests and the operator helpers.
+
+Before any activation follow [network enforcement](../../network-enforcement.md):
+reconcile chart/live policies, verify exact versions and primary network only,
+prove IPv4-only operation or implement dual-family coverage, preserve operator
+access, and collect two rounds on every node under exact workload identities.
+Production acceptance also needs application probes and exercised rollback.
+The synthetic namespace-only recovery check was unavailable in the implementation
+workspace; mount/credential isolation and an approved no-NIC backend remain
+required before real archives. See [[../runbooks/runtime-isolation]].

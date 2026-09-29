@@ -1,0 +1,55 @@
+# yamllint disable rule:line-length
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: network-isolation-policies
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Stuhlmuller/homelab.git
+    targetRevision: main
+    path: clusters/homelab/platform/network-isolation-candidate/policies
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: network-isolation-engine
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Stuhlmuller/homelab.git
+    targetRevision: main
+    path: clusters/homelab/platform/network-isolation-candidate/engine
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: network-isolation-rollback
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Stuhlmuller/homelab.git
+    targetRevision: main
+    path: clusters/homelab/platform/network-isolation-candidate/rollback
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true

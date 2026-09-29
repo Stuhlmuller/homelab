@@ -6,6 +6,16 @@ This repo treats runtime isolation as desired state, not as an ad hoc live
 cluster repair. Add or change isolation controls in git first, validate the
 rendered manifests, then let Argo CD converge them.
 
+## Staged enforcement candidate
+
+HOME-3 adds an unregistered policy-only kube-router candidate, agent egress
+allowlists, an additive-policy inventory, synthetic transport probes and a
+separate recovery containment contract. See [network enforcement](network-enforcement.md)
+for compatibility evidence, explicit HTTPS/DNS/gateway/local-node exceptions,
+approval gates and rollback. Nothing in that candidate establishes live proof
+or permits real archive processing. The existing boundary below remains the
+last documented state until operational acceptance is recorded.
+
 ## Current Boundary
 
 The live audit on 2026-05-24 found kube-flannel as the only CNI DaemonSet.
