@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-28
+updated: 2026-09-29
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,32 +15,71 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The cash-spot rollout targets source revision
+The cash-spot rollout uses source revision
 `b78cc47ddd5bb9bdace4912b47886e799a9d5efd`, merged in
 [PR #1105](https://github.com/Stuhlmuller/homelab/pull/1105).
 [Publication run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505)
 passed all three jobs: test/build, private signed publication, and digest
 reporting. `deployment.yaml` owns the image pair from that verified report.
-Cash-spot functional acceptance remains pending. Require ready containers
-at both exact digests and the matching served build revision with patches
-`0012`–`0018`. Stop all traders before rollout; verify saved visibility settings
-after reload. Explicit capital and allocations remain user input, and no
-independent returns are established by publication.
+Runtime and read-only dashboard acceptance passed on 2026-09-29; live model
+completion remains partial as described below. Stop all traders before future
+rollouts and verify saved visibility settings after reload. Explicit capital
+and allocations remain user input; publication does not establish returns.
 Patch `0013` is included in the image but its gateway route and token remain
 unmounted. Gateway activation requires its separate reviewed prerequisites.
 The prepared source archive SHA-256 is
 `760e88843ea40956ace7bfb12d97304678dcb089da842f9b2fd646d237e0e904`.
-Compare it with the served archive after rollout. Publication includes the
-account-read pacing, request-completion, and strict free-model JSON fixes below; it does not
-establish their deployment or successful live competition.
+The served archive matched this hash after rollout. This verifies deployment of
+the account-read pacing, request-completion, and strict free-model JSON fixes;
+it does not establish successful live competition.
+
+## Runtime acceptance: 2026-09-29
+
+[PR #1103](https://github.com/Stuhlmuller/homelab/pull/1103) merged at signed
+revision `18fa9225759709928ccf92f7ef1ab290d8c6a255`. Argo reported `Synced` to
+that revision, both ready containers matched the publication digests, and the
+HTTP-served source archive matched the hash above. The fresh pre-merge gate
+found no running traders, active backtests, or heartbeat locks. All four traders
+remained stopped after restart; saved configuration and visibility survived.
+Authenticated account and position reads returned HTTP 200, and the leaderboard
+displayed fresh, separately owned measurements. Argo remained `Degraded` because
+the existing inactive, unmounted `nofx-litellm` ExternalSecret was not ready.
+
+After operator activation, the first sampled free-router round completed one
+valid structured response and three response-body timeouts at the client's
+120-second total HTTP deadline. The timeout identifies incomplete body reception;
+status handling occurs afterward, so the recorded error does not establish the
+upstream HTTP status or cause. `mcp/free_router.go` retains one application
+attempt; the trading loop
+records failures and waits for its normal configured ticker without stopping.
+AI duration metadata is attached only after a successful call, so a failed
+record's zero duration does not mean no request was sent. Consistent completion
+across all agents remains unverified. Inspect provider timing evidence and
+reproduce a late completion before changing the deadline. Do not substitute
+successful waits for failed model responses.
+
+Lifecycle finding: `AutoTrader.Stop` marks the trader stopped and waits for
+active work, including an AI request; MCP requests have no lifecycle-bound
+cancellation. Stop is
+synchronous in the API while the frontend times out after 30 seconds. SIGTERM
+stops traders sequentially, and the deployment has no custom termination grace.
+Before extending the AI deadline, add cancellation tied to Stop, reproduce
+Stop during a delayed response body, and review HTTP/shutdown timing together.
+
+OKX equity-history HTTP 409 remains intentional: legacy whole-account snapshots
+cannot establish owned agent returns. The leaderboard explains this state, but
+the individual dashboard shows a generic error and untranslated `loadingError`.
+Follow up in `web/src/lib/api.ts` and `EquityChart.tsx` with a typed unavailable
+state and a regression that preserves the backend history guard. Never clear
+history or splice changed allocations onto legacy snapshots to make a chart.
 
 [PR #1086](https://github.com/Stuhlmuller/homelab/pull/1086) merged
 `5dbaa5641b47342864092123a76020ae480b91bb`. At 2026-09-28 02:45:06 UTC,
 Argo was `Synced` to that commit; both ready image IDs matched the report.
 The served `e7014c8b` build included `0015` with verified SHA-256
 `d95bdac77ee547b29e658592e5e7f65df6cb24e3b9eef46f519c761e91d1ba79`.
-All traders were stopped. UI/account acceptance awaits NOFX sign-in and
-explicit allocations. Argo remains `Degraded`: inactive, unmounted
+All traders were stopped. UI/account acceptance was pending at that revision.
+Argo remained `Degraded`: inactive, unmounted
 `nofx-litellm` is `Ready=False`; `ssm:GetParameter` lacks identity-policy access.
 The existing `aws-ssm-parameters` unit owns this token and reader IAM.
 Follow its separately reviewed full protected
@@ -559,13 +598,13 @@ are not presented as per-agent history. A missing configuration or rejected
 account authentication remains an operational blocker, not a zero-return score.
 
 Signed publication and image rollout are complete; functional acceptance and
-live activation remain separate gates. No trader was started, no funds moved,
-and no winner established by the implementation tests.
+live activation remain separate gates. Implementation tests did not start
+traders, move funds, or establish a winner. See the dated runtime evidence above.
 Build-test coverage includes mocked protocol/ownership, SQLite reservation and
 replay, entry-protection recovery, lifecycle shutdown, unavailable-score handling,
-bounded competition refresh, and the allocation UI. Full Argo health and fresh
-stopped UI/account acceptance remain required. Harbor and retained GHCR images
-stay private.
+bounded competition refresh, and the allocation UI. Full Argo health and
+consistent live model completion remain unresolved. Harbor and retained GHCR
+images stay private.
 
 An existing credential-log finding remains outside this feature:
 `mcp/openai_client.go:SetAPIKey` logs the first and last four characters of
