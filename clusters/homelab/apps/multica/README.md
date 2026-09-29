@@ -21,8 +21,10 @@ backup. See [storage ownership](../../../../docs/knowledge-base/architecture/sto
 An init container copies the CLI from the same pinned Multica backend image
 and installs checksum-verified Codex 0.153.2 binaries. Settings live in
 `runtime/settings.json`; automatic CLI updates are disabled so upgrades remain
-reviewed GitOps changes. `HOME` only supplies the standard OS home path needed
-by both CLIs; application settings and credentials use files.
+reviewed GitOps changes. Both CLIs are mounted into `/usr/local/bin` so agent
+tasks can invoke them through their normal restricted PATH. `HOME` only supplies
+the standard OS home path needed by both CLIs; application settings and
+credentials use files.
 
 On first boot, `runtime/bootstrap.py` signs in as `rodman@stuhlmuller.net`
 using only the fixed-code key from `multica-backend-secrets`, then creates a

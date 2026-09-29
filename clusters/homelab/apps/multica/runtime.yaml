@@ -159,6 +159,10 @@ spec:
               mountPath: /tools
               readOnly: true
             - name: tools
+              mountPath: /usr/local/bin/multica
+              subPath: multica
+              readOnly: true
+            - name: tools
               mountPath: /usr/local/bin/codex
               subPath: codex
               readOnly: true
