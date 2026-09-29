@@ -15,6 +15,7 @@ python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
+python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
