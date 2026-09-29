@@ -108,6 +108,15 @@ most 1x leverage. Local spot validation and execution limits remain in force.
 Missing JSON, empty completions, refusals, and provider errors remain failures;
 the live path no longer fabricates an `ALL/wait` decision from missing JSON.
 
+Patch `0019` gives the strict free-model client a ten-minute total HTTP deadline.
+Observed free providers generated about 16 tokens/second, so the configured
+8,000-token budget can exceed the previous two-minute limit. Trader Stop and
+backtest Stop cancel an in-flight strict AI request; live restart creates a fresh
+context. This cancellation does not interrupt an exchange order already in
+progress. Other model clients retain their existing deadlines, and free-model
+requests still make one application attempt. Delayed-body and Stop/restart
+regressions use synthetic HTTP responses and mocked exchange reads.
+
 For a cash-spot rollout, publish the exact reviewed main commit to private
 Harbor and pin its reported backend/frontend digests through a separate PR.
 Then verify readiness, served source, and stopped-state acceptance. The
