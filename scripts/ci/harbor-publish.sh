@@ -202,7 +202,9 @@ if [[ "$mode" == mirror ]]; then
       : # Resume only after checking the exact bytes below.
     else
       lookup_status=$?
-      if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error"; then
+      if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" &&
+          ! grep -Fq "artifact mirror/${source_repository}:${tag} not found" "$scratch/mirror-error" &&
+          ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
         exit "$lookup_status"
       fi
       mirror_phase="upstream-copy"

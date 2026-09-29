@@ -22,7 +22,10 @@ deletion. It is deliberately not a proxy cache. The protected
 keeps a digest-named tag for each entry, maintains reviewed source-tag aliases,
 and downloads every image anonymously into a fresh temporary directory.
 Retries reuse an existing digest-named tag only after its manifest hash matches
-the catalog; a missing tag is copied from upstream. Other lookup errors and
+the catalog; a missing tag is copied from upstream. Missing-content detection
+accepts registry manifest/name-unknown errors and Harbor's exact expected
+artifact or repository `not found` message. Generic 404 responses and messages
+for another repository or digest tag still stop publication. Other lookup errors and
 unexpected hashes stop publication. Source-tag aliases are copied from that
 verified Harbor digest, avoiding a second upstream transfer. Every entry still
 receives a complete anonymous download and alias verification on each run.

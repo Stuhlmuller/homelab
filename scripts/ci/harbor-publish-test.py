@@ -91,7 +91,8 @@ class HarborPublicationGates(unittest.TestCase):
         return [(release["source_revision"], image)
                 for release in self.manifest["releases"] for image in release["images"]]
 
-    def transport_mocks(self, failure=None, repeated_digests=False, mirror=False, resume=False):
+    def transport_mocks(self, failure=None, repeated_digests=False, mirror=False, resume=False,
+                        missing_error="manifest unknown"):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = sorted({image["name"] for _, image in self.artifacts()})
@@ -129,6 +130,7 @@ class HarborPublicationGates(unittest.TestCase):
             "last_tag": f"homelab-{last_revision}",
             "mirror": mirror,
             "resume": resume,
+            "missing_error": missing_error,
         }
         mock = "#!/usr/bin/env python3\nFIXTURE = " + repr(fixture) + "\n" + textwrap.dedent('''\
             import json
@@ -236,7 +238,9 @@ class HarborPublicationGates(unittest.TestCase):
                             print("connection refused private-test-credential-must-never-appear", file=sys.stderr)
                             raise SystemExit(18)
                         if not FIXTURE["resume"] and reference not in published:
-                            print("manifest unknown", file=sys.stderr)
+                            artifact = reference.removeprefix("harbor.stinkyboi.com/")
+                            print(FIXTURE["missing_error"].format(artifact=artifact, repository=artifact.rsplit(":", 1)[0]),
+                                  file=sys.stderr)
                             raise SystemExit(1)
                     raw = published.get(reference) or FIXTURE["manifests"][reference]
                     if "--no-creds" in args:
@@ -415,6 +419,33 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertEqual(self.calls_for("docker"), [])
         self.assertEqual(self.calls_for("cosign"), [])
         self.assert_cleaned()
+
+    def test_mirror_accepts_only_expected_harbor_missing_content(self):
+        for message, accepted in (
+            ("unknown: artifact {artifact} not found", True),
+            ("unknown: repository {repository} not found", True),
+            ("unknown: artifact {artifact}0 not found", False),
+            ("unknown: repository unrelated/{repository} not found", False),
+            ("unknown: status code 404 (Not Found)", False),
+            ("unauthorized: authentication required", False),
+        ):
+            with self.subTest(message=message):
+                self.calls.unlink(missing_ok=True)
+                (self.root / "summary").unlink(missing_ok=True)
+                self.transport_mocks(mirror=True, missing_error=message)
+                result = self.run_helper(mode="mirror")
+                copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+                if accepted:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(len(copies), 6)
+                    self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
+                    self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
+                else:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(copies, [])
+                    self.assertIn("phase=digest-lookup\n", self.public_status)
+                    self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
 
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
         for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "digest", "mirror-tag", "pull", "pull-digest"):

@@ -294,7 +294,17 @@ creates aliases from the verified Harbor digest and resumes already-present
 digest tags only after exact hash comparison. Complete anonymous downloads
 still run for every entry. Failures expose fixed phase/status/category metadata
 and the public catalog source, never raw transport output. This removes the
-observed second external transfer; live recovery must still be verified.
+observed second external transfer.
+
+[Recovery run 36506302738](https://github.com/Stuhlmuller/homelab/actions/runs/36506302738)
+passed both PostgreSQL alias failures and completed the first 31 catalog entries,
+then stopped at the missing PostgreSQL 18.4 digest tag. Live read-only probes
+confirmed Harbor returns HTTP 404 with `NOT_FOUND` and an exact artifact or
+repository `not found` message, rather than registry manifest/name-unknown.
+The publisher now recognizes only those additional messages naming the expected
+mirror repository and, for an artifact, its exact digest tag. Generic 404s and
+messages naming other content still fail closed. Complete publication and node
+cutover remain pending.
 
 During the staged rollout, `harbor-secrets` reconciled before the new SSM
 parameter existed. The approved scoped plan applied 16 creations and three IAM
