@@ -401,3 +401,14 @@ No AWS signing resource or public transparency log is used. Namespace Pod
 creators and cluster administrators can access the key: keep those permissions
 restricted, back up etcd to encrypted off-node storage, and retain trusted public
 keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
+
+## Independent application recovery credentials
+
+The staged [application recovery contract](../../application-recovery.md) keeps
+publication and read-only verification profiles outside the cluster/NAS. Proposed
+IAM policies in `recovery/application-backups` are unattached and scoped to a
+dedicated bucket; delete/versioning/lifecycle mutations are denied. No new secret
+values, identities or permissions were created. Preserve app encryption/signing
+keys and password-free-dump role credentials through the existing private vault.
+Archive restore has no cloud credentials or production access and remains gated
+on enforced containment.

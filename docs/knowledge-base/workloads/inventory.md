@@ -249,3 +249,14 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
 networking, migration and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+## Recovery inventory (HOME-2)
+
+[Application recovery](../../application-recovery.md) records per-workload durable
+data, proposed loss/time budgets and remaining capture/secret gaps. Publication
+adapters cover complete Octelium/media logical sets and fenced AFFiNE/Multica
+DB/blob bundles, but only the existing Octelium/media jobs currently declare
+automatic capture. Candidate off-NAS publication and checks are not active.
+No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
+n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
+application behavior, not only a checksum or successful backup Job.

@@ -30,6 +30,9 @@ python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
+python3 -I scripts/ci/application-backup-test.py
+python3 -I scripts/ci/application-backup-restore-test.py
+python3 -I scripts/ci/application-backup-rules-test.py
 
 echo "::group::CronJob failure alert recovery"
 python3 scripts/ci/job-alert-recovery-check.py

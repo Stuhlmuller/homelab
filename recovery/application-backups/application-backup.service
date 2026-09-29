@@ -1,0 +1,21 @@
+# Candidate: install only after the runbook's concrete host/access approval.
+[Unit]
+Description=Verify and publish independent application recovery copies
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=application-backup
+Group=application-backup
+WorkingDirectory=/opt/homelab
+ExecStart=/usr/bin/python3 -I /opt/homelab/scripts/application-backup-run.py
+TimeoutStartSec=50min
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/srv/application-backup-sources
+ReadWritePaths=/var/lib/application-backups
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

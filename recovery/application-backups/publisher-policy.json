@@ -1,0 +1,50 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "InspectDedicatedBucket",
+      "Effect": "Allow",
+      "Action": ["s3:GetBucketVersioning"],
+      "Resource": "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1"
+    },
+    {
+      "Sid": "ListApplicationPrefixes",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1",
+      "Condition": {"StringLike": {"s3:prefix": ["applications/octelium/*", "applications/media-postgres/*"]}}
+    },
+    {
+      "Sid": "VerifyImmutableApplicationVersions",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:GetObjectVersion"],
+      "Resource": [
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium/*",
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/media-postgres/*"
+      ]
+    },
+    {
+      "Sid": "CreateChecksummedObjects",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject"],
+      "Resource": [
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/octelium/*",
+        "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/applications/media-postgres/*"
+      ],
+      "Condition": {"StringEquals": {"s3:if-none-match": "*", "s3:x-amz-server-side-encryption": "aws:kms"}}
+    },
+    {
+      "Sid": "UseOnlyRegionalS3ManagedKey",
+      "Effect": "Allow",
+      "Action": ["kms:GenerateDataKey", "kms:Decrypt"],
+      "Resource": "arn:aws:kms:us-east-1:716182248480:key/*",
+      "Condition": {"ForAnyValue:StringEquals": {"kms:ResourceAliases": "alias/aws/s3"}, "StringEquals": {"kms:ViaService": "s3.us-east-1.amazonaws.com", "kms:EncryptionContext:aws:s3:arn": "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1"}}
+    },
+    {
+      "Sid": "NeverDeleteRecoveryCopies",
+      "Effect": "Deny",
+      "Action": ["s3:DeleteObject", "s3:DeleteObjectVersion", "s3:PutLifecycleConfiguration", "s3:PutBucketVersioning", "s3:DeleteBucket"],
+      "Resource": ["arn:aws:s3:::homelab-application-backups-716182248480-us-east-1", "arn:aws:s3:::homelab-application-backups-716182248480-us-east-1/*"]
+    }
+  ]
+}
