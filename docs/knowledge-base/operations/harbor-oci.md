@@ -52,10 +52,26 @@ for backup schedule, restore sequence and limitations.
 
 The chart enables Trivy with a retained 5 Gi cache. The repository-owned
 PostSync bootstrap sets and verifies `auto_scan: "true"` for the private
-`homelab` project on creation and subsequent syncs. New image pushes trigger
-scans; enabling this setting does not backfill existing artifacts. Verify a
-completed report after a new push before claiming live scanning acceptance.
+`homelab` and `mirror` projects on creation and subsequent syncs. New image pushes
+trigger scans. Bootstrap also submits missing scans for retained private
+`homelab` image artifacts, leaving existing reports and active scans alone and
+excluding signatures and attestations. Verify completed reports after sync;
+successful submission does not prove a successful scan.
+Backfill traverses the complete repository/artifact inventory, including histories
+over 1,000 artifacts; duplicate IDs and inconsistent pagination still fail closed.
+The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
+
+Read-only acceptance on 2026-09-28 found scan-on-push enabled in both projects
+and Trivy v0.72.0 healthy. Both running NOFX images had successful reports:
+backend `6dfec7dd502b` (5 critical, 65 high findings) and frontend `210a1bd9ca7e`
+(2 critical, 58 high findings). Remediation requires reviewed dependency/base
+image updates and rebuilt images; successful scanning does not imply no known
+vulnerabilities. Six retained historical images had no report, motivating the
+bootstrap backfill; its live completion remains unverified. The in-progress
+mirror copy had successful scans for all 62 uploaded runnable manifests and
+16 indexes inspected; 15 unscanned objects were in-toto attestations. This
+snapshot does not establish scan completion for images not yet uploaded.
 
 ## Package Migration
 

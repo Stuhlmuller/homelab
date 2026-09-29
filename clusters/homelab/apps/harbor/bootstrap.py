@@ -135,42 +135,100 @@ def robot_name(name, project_name):
     return f"{PREFIX}{project_name}+{name}"
 
 
-def read_robots(client, project_id):
-    robots = {}
+def read_pages(client, path, parameters, max_count=None):
+    objects = []
     seen_ids = set()
     expected_total = None
     count = 0
-    for page in range(1, 11):
-        # Harbor defaults /robots to system robots; project filtering is explicit.
-        query = urllib.parse.urlencode({"q": f"Level=project,ProjectID={project_id}",
-                                        "page": page, "page_size": 100})
-        document, headers = client.request("GET", "/robots?" + query)
+    page = 1
+    while True:
+        query = urllib.parse.urlencode({**parameters, "page": page, "page_size": 100})
+        document, headers = client.request("GET", path + "?" + query)
         try:
             total = int(headers.get("X-Total-Count", ""))
         except (ValueError, TypeError):
-            raise BootstrapError("Harbor robot list lacks a valid total count") from None
-        if total < 0 or total > 1000 or (expected_total is not None and total != expected_total):
-            raise BootstrapError("Harbor robot listing changed or exceeded its bounded limit")
+            raise BootstrapError("Harbor object list lacks a valid total count") from None
+        if total < 0 or (max_count is not None and total > max_count) or (
+            expected_total is not None and total != expected_total
+        ):
+            raise BootstrapError("Harbor object listing changed or exceeded its bounded limit")
         expected_total = total
         # Harbor's Go handler serializes an empty result slice as null.
         if document is None and total == 0:
             document = []
         if not isinstance(document, list) or len(document) > 100:
-            raise BootstrapError("Harbor robot listing is malformed")
-        for robot in document:
-            if not isinstance(robot, dict) or not isinstance(robot.get("name"), str):
-                raise BootstrapError("Harbor robot listing contains an invalid object")
-            identifier = positive_id(robot.get("id"))
-            if identifier in seen_ids or robot["name"] in robots:
-                raise BootstrapError("Harbor robot listing is ambiguous")
+            raise BootstrapError("Harbor object listing is malformed")
+        for item in document:
+            if not isinstance(item, dict):
+                raise BootstrapError("Harbor object listing contains an invalid object")
+            identifier = positive_id(item.get("id"))
+            if identifier in seen_ids:
+                raise BootstrapError("Harbor object listing is ambiguous")
             seen_ids.add(identifier)
-            robots[robot["name"]] = robot
+            objects.append(item)
         count += len(document)
         if count == total:
-            return robots
+            return objects
         if not document or count > total:
-            raise BootstrapError("Harbor robot pagination is inconsistent")
-    raise BootstrapError("Harbor robot listing exceeded its bounded limit")
+            raise BootstrapError("Harbor object pagination is inconsistent")
+        page += 1
+
+
+def read_robots(client, project_id):
+    # Harbor defaults /robots to system robots; project filtering is explicit.
+    robots = {}
+    for robot in read_pages(client, "/robots", {"q": f"Level=project,ProjectID={project_id}"}, max_count=1000):
+        name = robot.get("name")
+        if not isinstance(name, str) or name in robots:
+            raise BootstrapError("Harbor robot listing is ambiguous")
+        robots[name] = robot
+    return robots
+
+
+def unscanned_image(artifact):
+    attributes = artifact.get("extra_attrs") or {}
+    return (artifact.get("type") == "IMAGE" and artifact.get("media_type") in (
+        "application/vnd.oci.image.config.v1+json", "application/vnd.docker.container.image.v1+json"
+    ) and isinstance(attributes, dict) and all(
+        isinstance(attributes.get(key), str) and attributes[key] not in ("", "unknown")
+        for key in ("os", "architecture")
+    ) and artifact.get("scan_overview") in (None, {}))
+
+
+def backfill_scans(client):
+    # Only private application image manifests: scanning an index would also
+    # rescan its already-scanned children. Signatures/attestations are excluded.
+    pending = []
+    for repository in read_pages(client, "/projects/homelab/repositories", {"sort": "id"}):
+        name = repository.get("name")
+        if not isinstance(name, str) or not name.startswith("homelab/") or not name[8:]:
+            raise BootstrapError("Harbor returned the wrong image repository")
+        encoded = urllib.parse.quote(urllib.parse.quote(name[8:], safe=""), safe="")
+        path = f"/projects/homelab/repositories/{encoded}/artifacts"
+        artifacts = read_pages(client, path, {"sort": "id", "with_scan_overview": "true",
+                                              "with_accessory": "true", "with_tag": "false"})
+        accessories = {item["artifact_id"] for artifact in artifacts
+                       for item in (artifact.get("accessories") or [])}
+        for artifact in artifacts:
+            if artifact["id"] in accessories or not unscanned_image(artifact):
+                continue
+            digest = artifact.get("digest")
+            if not isinstance(digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+                raise BootstrapError("Harbor returned an invalid image digest")
+            pending.append((f"{path}/{digest}", artifact["id"]))
+    queued = 0
+    for path, identifier in pending:
+        # A push or another bootstrap may have started scanning since listing.
+        artifact, _ = client.request("GET", path + "?with_scan_overview=true")
+        if not isinstance(artifact, dict) or artifact.get("id") != identifier or (
+            artifact.get("digest") != path.rsplit("/", 1)[1]
+        ):
+            raise BootstrapError("Harbor returned the wrong image artifact")
+        if unscanned_image(artifact):
+            client.request("POST", path + "/scan", {"scan_type": "vulnerability"},
+                           expected=(202,), json_response=False)
+            queued += 1
+    print(f"Harbor queued {queued} missing homelab image vulnerability scans.")
 
 
 def permissions(name, project_name):
@@ -275,6 +333,7 @@ def reconcile(client, robot_passwords):
     current = config_values(config)
     if any(current[key] != value for key, value in SETTINGS.items()):
         raise BootstrapError("Harbor configuration verification failed")
+    backfill_scans(client)
     print("Harbor homelab is private, mirror is public; project-scoped robots reconciled.")
 
 
