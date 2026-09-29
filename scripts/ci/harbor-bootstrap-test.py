@@ -307,6 +307,16 @@ class BootstrapTest(unittest.TestCase):
         self.assertTrue(any("/app101/artifacts?" in path and "page=2" in path
                             for _, path, _ in self.api.requests))
 
+    def test_backfill_scans_missing_image_after_one_thousand_artifacts(self):
+        self.api.repositories = [{"id": 1, "name": "homelab/app"}]
+        self.api.artifacts["app"] = [self.image(i, scan_overview={"vulnerability": {"scan_status": "Success"}})
+                                     for i in range(1, 1001)] + [self.image(1001)]
+        bootstrap.backfill_scans(self.client)
+        scans = [path for _, path, _ in self.api.requests if path.endswith("/scan")]
+        self.assertEqual(scans, [f"/projects/homelab/repositories/app/artifacts/sha256:{1001:064x}/scan"])
+        self.assertTrue(any("/app/artifacts?" in path and "page=11" in path
+                            for _, path, _ in self.api.requests))
+
     def test_backfill_rechecks_reports_before_requesting_scan(self):
         self.api.repositories = [{"id": 1, "name": "homelab/app"}]
         self.api.artifacts["app"] = [self.image(1)]

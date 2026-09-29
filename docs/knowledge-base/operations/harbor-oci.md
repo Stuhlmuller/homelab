@@ -57,6 +57,9 @@ trigger scans. Bootstrap also submits missing scans for retained private
 `homelab` image artifacts, leaving existing reports and active scans alone and
 excluding signatures and attestations. Verify completed reports after sync;
 successful submission does not prove a successful scan.
+Backfill traverses the complete repository/artifact inventory, including histories
+over 1,000 artifacts; duplicate IDs and inconsistent pagination still fail closed.
+The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 
 Read-only acceptance on 2026-09-28 found scan-on-push enabled in both projects

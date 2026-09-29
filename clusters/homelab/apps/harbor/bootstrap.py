@@ -135,19 +135,22 @@ def robot_name(name, project_name):
     return f"{PREFIX}{project_name}+{name}"
 
 
-def read_pages(client, path, parameters):
+def read_pages(client, path, parameters, max_count=None):
     objects = []
     seen_ids = set()
     expected_total = None
     count = 0
-    for page in range(1, 11):
+    page = 1
+    while True:
         query = urllib.parse.urlencode({**parameters, "page": page, "page_size": 100})
         document, headers = client.request("GET", path + "?" + query)
         try:
             total = int(headers.get("X-Total-Count", ""))
         except (ValueError, TypeError):
             raise BootstrapError("Harbor object list lacks a valid total count") from None
-        if total < 0 or total > 1000 or (expected_total is not None and total != expected_total):
+        if total < 0 or (max_count is not None and total > max_count) or (
+            expected_total is not None and total != expected_total
+        ):
             raise BootstrapError("Harbor object listing changed or exceeded its bounded limit")
         expected_total = total
         # Harbor's Go handler serializes an empty result slice as null.
@@ -168,13 +171,13 @@ def read_pages(client, path, parameters):
             return objects
         if not document or count > total:
             raise BootstrapError("Harbor object pagination is inconsistent")
-    raise BootstrapError("Harbor object listing exceeded its bounded limit")
+        page += 1
 
 
 def read_robots(client, project_id):
     # Harbor defaults /robots to system robots; project filtering is explicit.
     robots = {}
-    for robot in read_pages(client, "/robots", {"q": f"Level=project,ProjectID={project_id}"}):
+    for robot in read_pages(client, "/robots", {"q": f"Level=project,ProjectID={project_id}"}, max_count=1000):
         name = robot.get("name")
         if not isinstance(name, str) or name in robots:
             raise BootstrapError("Harbor robot listing is ambiguous")
