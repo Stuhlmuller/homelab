@@ -603,6 +603,9 @@ The resulting managed policy is limited to lifecycle operations on the ten
 exact slots `homelab-ssm-parameter-reader-00` through `-09` and conditioned
 attach/detach operations on the exact `homelab-ssm-parameter-readers` group;
 attachment listing is read-only on that same group.
+It also grants only `kms:DescribeKey` on the current runtime-secret key ARN
+resolved from `runtime_kms_key_id`; it adds no encryption, decryption, or key
+administration permission. The managed policy and attachment are reused.
 
 The unit also adopts the existing `external-secrets_aws-ssm-auth` IAM user,
 removes direct managed and inline user policies, and attaches an operator-owned
@@ -633,10 +636,15 @@ also need the IAM and SSM write actions represented by
 
 If the production apply fails while reading a KMS key in `us-west-2` with an
 error like `AccessDeniedException` for `kms:DescribeKey`, update the relevant
-operator-owned identity policy through a reviewed Terragrunt unit. Do not repair
+operator-owned identity policy through the reviewed
+[`github-actions-role-policy` full-unit saved-plan path](../IaC/operator/README.md#full-unit-reconciliation).
+The September 29, 2026 Langfuse apply had exactly this failure: its identity
+policy covered the former runtime key but omitted the current AWS-managed SSM
+key. For that repair, accept only the single managed-policy update adding
+`DescribeKey` on the resolved current key; stop on any unrelated drift. CI
+does not gain access to apply the operator unit. Do not repair
 this by editing SSM parameter values, changing External Secrets, or patching live
-cluster resources; the failure happens before Terragrunt can refresh the SSM
-declaration state.
+cluster resources; the failure prevents the SSM declaration plan from completing.
 
 The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
 `ARM_TENANT_ID` environment variables mapped from the protected GitHub
