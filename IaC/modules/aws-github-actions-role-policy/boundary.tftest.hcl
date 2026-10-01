@@ -35,6 +35,68 @@ override_data {
   values = { target_key_arn = "arn:aws:kms:us-west-2:123456789012:key/managed" }
 }
 
+run "apply_role_describes_only_current_runtime_key" {
+  command = plan
+
+  variables {
+    additional_kms_key_aliases = ["alias/aws/ssm"]
+  }
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.parameter_reader_administration]
+  }
+
+  assert {
+    condition = [
+      for statement in jsondecode(data.aws_iam_policy_document.parameter_reader_administration.json).Statement : statement
+      if anytrue([for action in flatten([statement.Action]) : startswith(lower(action), "kms:") || action == "*"])
+      ] == [{
+        Sid      = "DescribeRuntimeSecretKey"
+        Effect   = "Allow"
+        Action   = "kms:DescribeKey"
+        Resource = "arn:aws:kms:us-west-2:123456789012:key/test"
+    }]
+    error_message = "The apply role must gain only DescribeKey on the current runtime-secret key, with no cryptographic, administrative, wildcard, or migration-key permissions."
+  }
+}
+
+run "apply_role_reads_only_langfuse_blob_storage_identity" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.parameter_reader_administration]
+  }
+
+  assert {
+    condition = [
+      for statement in jsondecode(data.aws_iam_policy_document.parameter_reader_administration.json).Statement : {
+        Sid       = statement.Sid
+        Effect    = statement.Effect
+        Actions   = toset(flatten([statement.Action]))
+        Resources = toset(flatten([statement.Resource]))
+      }
+      if anytrue([
+        for resource in flatten([statement.Resource]) :
+        resource == "*" || strcontains(resource, ":user/")
+      ])
+      ] == [{
+        Sid    = "ReadLangfuseBlobStorageIdentity"
+        Effect = "Allow"
+        Actions = toset([
+          "iam:GetUser",
+          "iam:GetUserPolicy",
+          "iam:ListAccessKeys",
+        ])
+        Resources = toset([
+          "arn:aws:iam::123456789012:user/homelab/homelab-langfuse-s3",
+        ])
+    }]
+    error_message = "The apply role may read only the exact Langfuse S3 user's metadata; it must not gain wildcard or IAM write, tag, rotation, or other-user access."
+  }
+}
+
 run "migration_allows_only_both_exact_keys" {
   command = plan
 

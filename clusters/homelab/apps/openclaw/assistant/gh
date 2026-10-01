@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+// Authenticate each invocation with the mounted App key; never persist a token.
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const { spawnSync } = require('node:child_process');
+
+async function run(args, env = process.env, request = fetch, spawn = spawnSync) {
+  const app = env.GITHUB_APP_ID;
+  const installation = env.GITHUB_APP_INSTALLATION_ID;
+  if (!/^\d+$/.test(app || '') || !/^\d+$/.test(installation || '')) {
+    throw new Error('GitHub App IDs are missing or invalid');
+  }
+  const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const now = Math.floor(Date.now() / 1000);
+  const payload = encode({ alg: 'RS256', typ: 'JWT' }) + '.' +
+    encode({ iat: now - 60, exp: now + 300, iss: app });
+  const jwt = payload + '.' + crypto.sign('RSA-SHA256', Buffer.from(payload),
+    fs.readFileSync(env.GITHUB_APP_PRIVATE_KEY_PATH)).toString('base64url');
+  const response = await request(
+    `https://api.github.com/app/installations/${installation}/access_tokens`, {
+      method: 'POST',
+      redirect: 'error',
+      signal: AbortSignal.timeout(15000),
+      headers: { Authorization: `Bearer ${jwt}`, Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json' },
+      body: JSON.stringify({ repositories: ['homelab'], permissions: {
+        contents: 'write', pull_requests: 'write', issues: 'write', workflows: 'write',
+        actions: 'read', checks: 'read', statuses: 'read', metadata: 'read',
+      } }),
+    });
+  if (!response.ok) throw new Error(`GitHub App authentication failed (HTTP ${response.status})`);
+  const { token } = await response.json();
+  if (typeof token !== 'string' || !token) throw new Error('GitHub returned no installation token');
+  // Each concurrent invocation owns its private native gh config and cleanup.
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-gh-'));
+  try {
+    fs.writeFileSync(path.join(directory, 'hosts.yml'), JSON.stringify({
+      'github.com': { oauth_token: token, git_protocol: 'https' },
+    }), { mode: 0o600 });
+    const childEnv = { ...env, GH_CONFIG_DIR: directory };
+    // Ambient tokens must not override the scoped App identity; debug logs leak headers.
+    for (const key of ['GH_TOKEN', 'GITHUB_TOKEN', 'GH_DEBUG', 'DEBUG']) delete childEnv[key];
+    const child = spawn('/toolbox/profile/bin/gh', args, { env: childEnv, stdio: 'inherit' });
+    if (child.error) throw new Error('Could not start GitHub CLI');
+    return child.status ?? 1;
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+module.exports = { run };
+if (require.main === module) {
+  run(process.argv.slice(2)).then(code => { process.exitCode = code; }).catch(error => {
+    // Never print HTTP bodies, JWTs, private keys, or subprocess environment.
+    console.error(error.message.startsWith('GitHub') ? error.message : 'GitHub App authentication unavailable');
+    process.exitCode = 1;
+  });
+}

@@ -284,10 +284,11 @@ containment limit deliberately prefers an app OOM over starving Talos, kubelet,
 and containerd; raise it only after the memory growth is fixed and 48 hours of
 healthy measurements show node headroom. The CPU limit throttles rare bursts
 before they can starve a four-core worker. It requests
-`5Gi` and limits `6Gi` of ephemeral storage: the shared
+`8Gi` and limits `10Gi` of ephemeral storage: the shared
 Nix store uses about `2.7Gi`, while the separately capped Codex runtime can use
-up to `2Gi`. The `5Gi` request reserves that expected footprint; the `6Gi`
-limit leaves room for the writable layer and logs. The `operator-toolbox` init
+up to `2Gi`. A 2026.9.5 rollout exceeded the previous `6Gi` aggregate limit
+after initialization and was evicted; the larger request covers the observed
+footprint while the limit retains node protection. The `operator-toolbox` init
 container requests `1` CPU and `2Gi` memory and limits `1500m` CPU and `3Gi`
 memory. The bootstrap init container requests `500m` CPU and `1Gi` memory and
 limits `1200m` CPU and `2Gi` memory. The local TCP proxy stays small at `25m`
@@ -373,7 +374,8 @@ spawning probe processes inside the containers while requiring the proxy to
 connect to the gateway and relay a successful HTTP response.
 
 The app container also owns startup and liveness probes. Startup allows up to
-two minutes for the gateway to load persisted state and plugins. After startup,
+six minutes for the gateway to load persisted state, plugins, and channels.
+After startup,
 36 consecutive failed liveness checks restart only the app container after
 about six minutes without an HTTP response through the proxy. Readiness removes
 the pod from the Service after two failures. A TCP-only check is not sufficient
@@ -385,7 +387,9 @@ about 23 minutes, exceeding the default ten-minute Deployment progress deadline;
 the pinned chart has no supported value for changing that field. Bootstrap uses
 OpenClaw 2026.9.5's validated batches within existing configuration phases to
 reduce repeated CLI invocations and writes. Private temporary batch files are
-cleaned on exit. See the [startup measurements and rollout checks](../../../../docs/knowledge-base/operations/openclaw-bootstrap-batching.md);
+cleaned on exit. The runtime-backup CronJob shares sync wave `0` with the
+Deployment so its desired state is applied before Argo waits for the long
+rollout. See the [startup measurements and rollout checks](../../../../docs/knowledge-base/operations/openclaw-bootstrap-batching.md);
 actual improvement requires measurement after rollout.
 
 Use the event timestamps to distinguish expected startup failures from a live
@@ -514,6 +518,32 @@ After replacing any GitHub App SSM placeholder, bump
 `homelab.rst.io/openclaw-github-app-credentials-ssm-version` in `values.yaml`
 to the resulting SSM parameter version so Argo CD rolls the pod and reloads the
 environment variables.
+
+The managed `assistant/gh` wrapper precedes the toolbox on the app's PATH.
+It signs a GitHub App JWT using Node's built-in crypto, requests a fresh
+installation token for `homelab`, and passes it through a private temporary
+native CLI config file. Each invocation cleans up its own file; no token is
+stored on the PVC or injected into a subprocess environment. The temporary
+`GH_CONFIG_DIR` is an internal per-process path, not a desired-state input.
+Tokens expire after one hour; renewal happens on every command, without a
+timer or cached credentials. Git HTTPS uses this wrapper as its credential
+helper. Existing commit signing remains separate.
+
+The token requests contents, pull requests, issues, and workflows write access,
+plus Actions, checks, statuses, and metadata read access. It does not request
+the installation's administration or secret-management permissions. See
+[GitHub's installation-token flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app).
+
+Verify from the app container using `gh api repos/Stuhlmuller/homelab/pulls
+--jq length` and `gh api installation/repositories --jq '.repositories[].full_name'`.
+The second command must list only `Stuhlmuller/homelab`. A missing/invalid key,
+denied token request, or missing installation access fails closed; do not print
+tokens or use another account to bypass it. Run `node
+scripts/ci/openclaw-github-check.cjs` locally for signing, scope, renewal, private
+file permissions, cleanup, CLI exit-code propagation, and failure checks.
+Rollback by reverting the wrapper, PATH, Git helper, and assistant bundle digest
+through GitOps. Live acceptance remains pending until the new pod passes these
+authenticated reads.
 
 ## OpenRouter Free And Codex Recovery
 

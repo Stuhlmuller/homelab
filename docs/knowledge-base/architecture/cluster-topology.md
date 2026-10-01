@@ -131,7 +131,10 @@ It also owns `octelium.com/override-gw-ip=10.1.0.200` on that node so the
 gateway advertises the LAN address reachable through the declared Tailscale
 subnet route. The gateway agent reads this annotation at startup; run the
 documented Octelium upgrade path after changing it, then verify the live
-Gateway status before testing an off-LAN CLIENT session.
+Gateway status before testing an off-LAN CLIENT session. Reconcile exact gateway
+A/AAAA records with `scripts/octelium-gateway-dns.sh`; it preserves advertised
+addresses and removes stale records. Annotations use a separate field manager
+from labels so server-side apply cannot remove the dataplane label.
 The reviewed Terragrunt plan removed it from the undersized `zimaboard-2` on
 2026-08-30 before any reboot; live inspection confirmed the label absent, all
 bound Octelium Pods terminating, and no PVC consumers on that node. The worker

@@ -57,6 +57,6 @@ resource "kubernetes_annotations" "nodes" {
     name = each.key
   }
 
-  field_manager = "terragrunt"
+  field_manager = "terragrunt-annotations"
   force         = true
 }

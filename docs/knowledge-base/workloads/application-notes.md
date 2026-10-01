@@ -95,6 +95,17 @@ plugin schemas, managed one-hour timeout, and compiled subscription-recovery
 exports were checked; account-backed Discord/OpenRouter and scheduler acceptance
 remain post-sync checks. See the app README for state-aware rollback.
 
+On September 27, the upgraded gateway entered a 47-restart loop: it bound HTTP
+after 87 seconds but remained event-loop-blocked while starting Discord, so the
+two-minute startup probe terminated it before startup settled. The startup
+budget is now six minutes; readiness still removes an unresponsive pod quickly,
+and the existing six-minute liveness budget still bounds a later hang.
+The recovered pod then exceeded its `6Gi` aggregate ephemeral-storage limit and
+was evicted. Desired state now requests `8Gi` and limits `10Gi`; the worker had
+about `17Gi` free and no disk pressure when measured. The backup CronJob now
+shares sync wave `0` with the Deployment so Argo applies it before waiting on
+the long rollout.
+
 [[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
 remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
 
@@ -193,6 +204,46 @@ present and that Prometheus is receiving `argocd_app_info`.
 memory measurements, explicit monitoring reservations, scheduling-fit model,
 and required post-rollout checks. These requests protect scheduler accounting;
 the cluster's remaining failover-capacity deficit remains open.
+
+## Multica desktop access
+
+September 30 desktop investigation: the local app used `http://multica` and
+`ws://multica/ws`. A direct request could not resolve `multica`, and
+`octelium status` timed out after 15 seconds. The desktop showed a failed-send
+notification. The public hostname returned `401` with
+`x-octelium-unauthorized: true`; browser navigation reached Entra login, and
+the current frontend, backend, and database pods were ready. The reported
+intermittent `403` was not reproduced or attributed to a specific policy.
+
+Private desktop access therefore needs working Octelium DNS and data-plane
+connectivity, including reconnect and session-renewal verification. If choosing
+public desktop access instead, first replace fixed-code development login with
+production application authentication and review existing accounts and signup
+restrictions before changing the outer access boundary. See the
+[Multica runbook](../../../clusters/homelab/apps/multica/README.md) and
+[upstream authentication setup](https://multica.ai/docs/auth-setup).
+
+Migration preflight found one database account and a running Codex daemon with
+no active tasks. SSM listed only Multica's JWT, PostgreSQL, and development-code
+parameters; the repository has no shared SMTP provider. The pinned `v0.4.29`
+source supports SMTP, Resend, and Google OAuth, but an account/provider must be
+configured before public access can change. Its email service logs login codes
+when no email backend is configured, even in production mode, so setting
+`APP_ENV=production` alone is insufficient. The runtime's existing PAT can be
+reused, but its first-boot fixed-code flow and Secret mount must be replaced in
+the same migration. No authentication or routing change has been deployed.
+
+The operator declined Google OAuth and has no mail provider, so the selected
+repair retains Octelium authentication. PR
+[#1087](https://github.com/Stuhlmuller/homelab/pull/1087) prepares the gateway
+LAN-address override; live inspection found that annotation absent. Its
+`homelab-plan` environment approval and approving PR review remain outstanding.
+The repository's `scripts/octelium-tunnel-check.py` passed both browser gRPC-Web
+and verified native TLS/HTTP2/gRPC carrier checks. The Mac CLI still timed out;
+the scoped native-client carrier integration described in `docs/octelium.md`
+must also be completed and tested. Gateway rollout alone is not desktop
+acceptance: require private name resolution, authenticated API access,
+WebSocket reconnect, and a successful desktop task after session renewal.
 
 ## Sonarr
 

@@ -1,0 +1,182 @@
+--- a/trader/okx_spot_client.go
++++ b/trader/okx_spot_client.go
+@@ -17,6 +17,7 @@
+ 	"sort"
+ 	"strconv"
+ 	"strings"
++	"sync"
+ 	"time"
+ 	"unicode"
+ 
+@@ -25,9 +26,20 @@
+ 
+ const OKXSpotBaseURL = "https://us.okx.com"
+ 
++// Account configuration allows five reads per two seconds per UID. All clients
++// share this conservative gate in the single backend, including before UID lookup.
++type okxSpotAccountReadPacer struct {
++	sync.Mutex
++	next time.Time
++}
++
++// ponytail: split by verified account UID when independent accounts need higher throughput.
++var sharedOKXSpotAccountReads okxSpotAccountReadPacer
++
+ type OKXSpotClient struct {
+-	rest *OKXTrader
+-	now  func() time.Time
++	rest         *OKXTrader
++	now          func() time.Time
++	accountReads *okxSpotAccountReadPacer
+ }
+ 
+ type OKXSpotAccount struct {
+@@ -96,7 +108,7 @@
+ 
+ // NewOKXSpotClient does not contact the exchange or change account configuration.
+ func NewOKXSpotClient(apiKey, secretKey, passphrase string) *OKXSpotClient {
+-	return &OKXSpotClient{now: time.Now, rest: &OKXTrader{
++	return &OKXSpotClient{now: time.Now, accountReads: &sharedOKXSpotAccountReads, rest: &OKXTrader{
+ 		apiKey: apiKey, secretKey: secretKey, passphrase: passphrase,
+ 		httpClient: &http.Client{Timeout: 30 * time.Second,
+ 			Transport:     spotStrictTransport{http.DefaultTransport},
+@@ -319,6 +331,15 @@
+ }
+ 
+ func (c *OKXSpotClient) Account() (OKXSpotAccount, error) {
++	if gate := c.accountReads; gate != nil {
++		gate.Lock()
++		defer func() {
++			gate.next = time.Now().Add(500 * time.Millisecond)
++			gate.Unlock()
++		}()
++		time.Sleep(time.Until(gate.next))
++	}
++	// Sign only after waiting, and hold the gate through HTTP so reads cannot overtake.
+ 	var rows []OKXSpotAccount
+ 	err := c.read(okxAccountConfigPath, &rows)
+ 	if err != nil {
+--- a/trader/okx_spot_client_test.go
++++ b/trader/okx_spot_client_test.go
+@@ -34,6 +34,8 @@
+ func spotFixture(t *testing.T, handler http.HandlerFunc) *OKXSpotClient {
+ 	t.Helper()
+ 	c := NewOKXSpotClient("synthetic", "synthetic", "synthetic")
++	// Protocol fixtures do not exercise real time; the pacing regression does.
++	c.accountReads = nil
+ 	c.now = func() time.Time { return time.UnixMilli(28800000) }
+ 	c.rest.httpClient.Transport = spotStrictTransport{spotFixtureTransport{t, handler}}
+ 	return c
+--- /dev/null
++++ b/trader/okx_spot_account_pacing_test.go
+@@ -0,0 +1,110 @@
++package trader
++
++import (
++	"fmt"
++	"net/http"
++	"sync"
++	"testing"
++	"time"
++)
++
++func TestOKXSpotAccountReadPacing(t *testing.T) {
++	var mu sync.Mutex
++	var reads []time.Time
++	entered, release := make(chan struct{}), make(chan struct{})
++	var releaseOnce sync.Once
++	unblock := func() { releaseOnce.Do(func() { close(release) }) }
++	defer unblock()
++	previous := http.DefaultTransport
++	http.DefaultTransport = spotFixtureTransport{t, func(w http.ResponseWriter, r *http.Request) {
++		if r.Method == http.MethodPost && r.URL.Path == okxOrderPath {
++			spotReply(w, `[{"ordId":"99","clOrdId":"ownerIOC","sCode":"0"}]`)
++			return
++		}
++		if r.Method != http.MethodGet || r.URL.Path != okxAccountConfigPath {
++			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
++			w.WriteHeader(http.StatusBadRequest)
++			return
++		}
++		now := time.Now()
++		stamp, err := time.Parse("2006-01-02T15:04:05.000Z", r.Header.Get("OK-ACCESS-TIMESTAMP"))
++		if err != nil || now.Sub(stamp) > 200*time.Millisecond || stamp.After(now) {
++			t.Error("account request was not signed after waiting")
++		}
++		mu.Lock()
++		reads = append(reads, now)
++		n := len(reads)
++		mu.Unlock()
++		if n == 1 {
++			close(entered)
++			<-release
++		}
++		if n == 8 {
++			w.WriteHeader(http.StatusTooManyRequests)
++			return
++		}
++		spotReply(w, fmt.Sprintf(`[{"uid":"%d","acctLv":"1"}]`, n))
++	}}
++	t.Cleanup(func() { http.DefaultTransport = previous })
++
++	type result struct {
++		account OKXSpotAccount
++		err     error
++	}
++	results := make(chan result, 8)
++	clients := make([]*OKXSpotClient, 4)
++	for i := range clients {
++		clients[i] = NewOKXSpotClient("synthetic", "synthetic", "synthetic")
++	}
++	readTwice := func(c *OKXSpotClient) {
++		for range 2 {
++			a, err := c.Account()
++			results <- result{a, err}
++		}
++	}
++	go readTwice(clients[0])
++	select {
++	case <-entered:
++	case <-time.After(5 * time.Second):
++		t.Fatal("first account read did not start")
++	}
++	// A blocked account read must not hold up a native write on another client.
++	write := make(chan error, 1)
++	go func() {
++		_, err := clients[1].PlaceIOC(spotInstrument(), "buy", "ownerIOC", spotD("0.1"), spotD("100.1"))
++		write <- err
++	}()
++	select {
++	case err := <-write:
++		if err != nil {
++			t.Fatal(err)
++		}
++	case <-time.After(time.Second):
++		t.Fatal("account read pacing delayed a write")
++	}
++	unblock()
++	for _, c := range clients[1:] {
++		go readTwice(c)
++	}
++	seen, failures := map[string]bool{}, 0
++	for range 8 {
++		select {
++		case r := <-results:
++			if r.err != nil {
++				failures++
++			} else {
++				seen[r.account.UID] = true
++			}
++		case <-time.After(10 * time.Second):
++			t.Fatal("paced account reads did not finish")
++		}
++	}
++	if failures != 1 || len(seen) != 7 || len(reads) != 8 {
++		t.Fatalf("reads must be fresh with no retry: failures=%d unique=%d requests=%d", failures, len(seen), len(reads))
++	}
++	for i := 1; i < len(reads); i++ {
++		if gap := reads[i].Sub(reads[i-1]); gap < 480*time.Millisecond {
++			t.Fatalf("shared account reads burst: gap=%v; require 500ms spacing", gap)
++		}
++	}
++}

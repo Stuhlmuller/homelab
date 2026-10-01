@@ -345,6 +345,33 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
+test_allows_exact_harbor_mirror_status if {
+	violations := deny with input as workflow_with_live_run(harbor_mirror_private_run)
+	count(violations) == 0
+}
+
+test_rejects_modified_harbor_mirror_status if {
+	every run in [
+		replace(harbor_mirror_private_run, `cat "$public_status"`, `cat "$private_log"`),
+		replace(harbor_mirror_private_run, `cat "$public_status"`, `cat "$public_status"; cat "$private_log"`),
+		replace(harbor_mirror_private_run, "$RUNNER_TEMP/harbor-mirror-status", "$RUNNER_TEMP/other-status"),
+		replace(harbor_mirror_private_run, `rm -f "$public_status"`, "true"),
+		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
+		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
+		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
+		replace(harbor_mirror_private_run, "8bdfa8a07cea5ca1878f961b685d671fafc0d98db236ae9c4cdaa05735b97f30", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
+		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
+		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
+		sprintf("%s\necho extra", [harbor_mirror_private_run]),
+	] {
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_rejects_wrapped_live_command_and_write_all if {
 	base := workflow_with_live_run("nix develop --command bash scripts/ci/install-kubeconfig.sh")
 	workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {

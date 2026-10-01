@@ -29,7 +29,9 @@ production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
-`homelab-ssm-parameter-readers` group. The role cannot manage this bootstrap
+`homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
+current runtime-secret key. This metadata-only grant adds no cryptographic or
+key-administration actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
@@ -217,6 +219,38 @@ user require an un-targeted operator plan. Import
 `aws_iam_user.external_secrets` as `external-secrets_aws-ssm-auth` first only
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
+
+The September 29, 2026 Langfuse apply reached SSM refresh but failed because
+the workflow role's KMS grant still named the former runtime key, not the
+current `alias/aws/ssm` target. Reconcile the existing managed policy through
+this administrator-owned unit; CI must not widen its own permissions. For this
+correction, require a saved plan whose only managed-resource change is the
+additional exact-key `kms:DescribeKey` statement in
+`aws_iam_policy.parameter_reader_administration`. Stop if trust, attachments,
+the External Secrets user/boundary, or any other resource would change.
+On September 30, 2026 PDT (October 1 UTC), the reviewed saved plan was applied
+and a fresh full-unit plan was a no-op. The CI policy simulation allows
+`kms:DescribeKey` on the current SSM key and leaves `kms:Decrypt` and
+`kms:ScheduleKeyDeletion` implicitly denied.
+
+### Langfuse blob-storage bootstrap
+
+On September 30, 2026 PDT (October 1 UTC), an administrator applied the
+reviewed 12-resource `IaC/live/langfuse-blob-storage` bootstrap through that
+unit's normal remote state. A fresh plan was a no-op; live checks confirmed all
+four bucket public-access blocks, bucket versioning, and both exact S3 SSM
+parameters as current SecureStrings under `alias/aws/ssm`. Future reconciliation
+must use that same remote state and a reviewed saved plan. Do not hand-create a
+partial identity or put it in a separate state: the secret-bearing access-key
+resource and its SSM parameters must remain under the same unit's lifecycle.
+
+After a reviewed operator apply adds the pending grant, CI can use only
+`iam:GetUser`, `iam:ListAccessKeys`, and `iam:GetUserPolicy` on
+`arn:aws:iam::716182248480:user/homelab/homelab-langfuse-s3` for normal
+Langfuse-user refresh. This additional grant has no IAM create, write, tag,
+delete, rotate, wildcard, or other-user access. Any future Langfuse IAM
+lifecycle or credential-rotation change is operator-owned: review and apply it
+through the same remote-state saved-plan path, rather than broadening CI.
 
 After backend-disabled initialization, run the offline boundary regression with
 `terragrunt --log-disable run --no-auto-init -- test -no-color`. It evaluates

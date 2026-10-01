@@ -297,6 +297,32 @@ private_live_output(run) if {
 	private_live_tail(tail)
 }
 
+# Harbor exposes only the reviewed publisher's fixed status fields. Keep this
+# exception exact: other private wrappers cannot print arbitrary files or logs.
+private_live_output(run) if {
+	trim(run, "\n") == harbor_mirror_private_run
+}
+
+harbor_mirror_private_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+public_status="$RUNNER_TEMP/harbor-mirror-status"
+rm -f "$public_status"
+trap 'rm -f "$private_log" "$public_status"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/harbor-publish.sh mirror
+EOF
+then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'8bdfa8a07cea5ca1878f961b685d671fafc0d98db236ae9c4cdaa05735b97f30  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+    cat "$public_status"
+  fi
+  echo "::error::Harbor mirror failed; private transport and registry output withheld."
+  exit 1
+fi
+echo "All inventoried public images copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."`
+
 private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
 	count(lines) == 5

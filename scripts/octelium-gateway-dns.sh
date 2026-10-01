@@ -14,7 +14,7 @@ Usage: scripts/octelium-gateway-dns.sh [options]
 Reconcile Cloudflare DNS records for Octelium gateway hostnames.
 
 The script reads the Cloudflare API token from AWS SSM Parameter Store, queries
-Octelium Gateway status, and creates exact AAAA records for the advertised
+Octelium Gateway status, and creates exact A and AAAA records for the advertised
 _gw-* hostnames. Exact gateway records prevent those names from falling through
 to a wildcard A record that points at the tailnet.
 
@@ -136,34 +136,47 @@ done < <(
     .items[]
     | .status.hostname as $hostname
     | .status.publicIPs[]?
-    | select(test(":"))
-    | [$hostname, .]
+    | [$hostname, (if test(":") then "AAAA" else "A" end), .]
     | @tsv
   ' <<<"$gateways_json"
 )
 
 if [[ "${#gateway_records[@]}" -eq 0 ]]; then
-  echo "error: no Octelium gateway IPv6 addresses found for ${domain}" >&2
+  echo "error: no Octelium gateway addresses found for ${domain}" >&2
   exit 1
 fi
 
-delete_exact_records() {
-  local hostname="$1"
-  local record_type="$2"
-  local records
+# Reconcile each hostname/type as a set: gateways can advertise multiple IPs.
+reconcile_records() {
+  local hostname="$1" record_type="$2" desired="$3"
+  local records address record payload id content
+  records="$(cf_api GET "/zones/${zone_id}/dns_records?type=${record_type}&name=${hostname}" | jq -c '.result')"
+  while IFS= read -r address; do
+    [[ -n "$address" ]] || continue
+    payload="$(jq -cn --arg type "$record_type" --arg name "$hostname" --arg content "$address" \
+      '{type: $type, name: $name, content: $content, ttl: 300, proxied: false}')"
+    record="$(jq -c --arg address "$address" '[.[] | select(.content == $address)][0] // empty' <<<"$records")"
+    if [[ -z "$record" ]]; then
+      if [[ "$dry_run" == "true" ]]; then
+        echo "DRY-RUN create ${record_type} ${hostname} ${address}"
+      else
+        cf_api POST "/zones/${zone_id}/dns_records" "$payload" >/dev/null
+        echo "Created ${record_type} ${hostname} ${address}"
+      fi
+    elif ! jq -e '.proxied == false and .ttl == 300' >/dev/null <<<"$record"; then
+      id="$(jq -r '.id' <<<"$record")"
+      if [[ "$dry_run" == "true" ]]; then
+        echo "DRY-RUN update ${record_type} ${hostname} ${address}"
+      else
+        cf_api PUT "/zones/${zone_id}/dns_records/${id}" "$payload" >/dev/null
+        echo "Updated ${record_type} ${hostname} ${address}"
+      fi
+    fi
+  done < <(jq -r '.[]' <<<"$desired")
 
-  records="$(
-    cf_api GET "/zones/${zone_id}/dns_records?type=${record_type}&name=${hostname}" |
-      jq -c '.result[]'
-  )"
-
-  if [[ -z "$records" ]]; then
-    return 0
-  fi
-
+  # Publish replacements before deleting obsolete addresses.
   while IFS= read -r record; do
     [[ -n "$record" ]] || continue
-    local id content
     id="$(jq -r '.id' <<<"$record")"
     content="$(jq -r '.content' <<<"$record")"
     if [[ "$dry_run" == "true" ]]; then
@@ -172,63 +185,15 @@ delete_exact_records() {
       cf_api DELETE "/zones/${zone_id}/dns_records/${id}" >/dev/null
       echo "Deleted ${record_type} ${hostname} ${content}"
     fi
-  done <<<"$records"
+  done < <(jq -c --argjson desired "$desired" \
+    'group_by(.content)[] | if (.[0].content as $ip | $desired | index($ip)) == null then .[] else .[1:][] end' <<<"$records")
 }
 
-upsert_aaaa_record() {
-  local hostname="$1"
-  local ipv6="$2"
-  local payload records record_id
-
-  payload="$(
-    jq -cn \
-      --arg type "AAAA" \
-      --arg name "$hostname" \
-      --arg content "$ipv6" \
-      '{type: $type, name: $name, content: $content, ttl: 300, proxied: false}'
-  )"
-
-  records="$(
-    cf_api GET "/zones/${zone_id}/dns_records?type=AAAA&name=${hostname}" |
-      jq -c '.result[]'
-  )"
-
-  if [[ -z "$records" ]]; then
-    if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN create AAAA ${hostname} ${ipv6}"
-    else
-      cf_api POST "/zones/${zone_id}/dns_records" "$payload" >/dev/null
-      echo "Created AAAA ${hostname} ${ipv6}"
-    fi
-    return 0
-  fi
-
-  record_id="$(jq -r '.id' <<<"$(head -n 1 <<<"$records")")"
-  if [[ "$dry_run" == "true" ]]; then
-    echo "DRY-RUN update AAAA ${hostname} ${ipv6}"
-  else
-    cf_api PUT "/zones/${zone_id}/dns_records/${record_id}" "$payload" >/dev/null
-    echo "Updated AAAA ${hostname} ${ipv6}"
-  fi
-
-  tail -n +2 <<<"$records" | while IFS= read -r extra_record; do
-    [[ -n "$extra_record" ]] || continue
-    local extra_id extra_content
-    extra_id="$(jq -r '.id' <<<"$extra_record")"
-    extra_content="$(jq -r '.content' <<<"$extra_record")"
-    if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN delete extra AAAA ${hostname} ${extra_content}"
-    else
-      cf_api DELETE "/zones/${zone_id}/dns_records/${extra_id}" >/dev/null
-      echo "Deleted extra AAAA ${hostname} ${extra_content}"
-    fi
+records_json="$(printf '%s\n' "${gateway_records[@]}" | jq -Rn '[inputs | split("\t")] | unique')"
+while IFS= read -r hostname; do
+  for record_type in A AAAA; do
+    desired="$(jq -c --arg hostname "$hostname" --arg type "$record_type" \
+      '[.[] | select(.[0] == $hostname and .[1] == $type) | .[2]] | unique' <<<"$records_json")"
+    reconcile_records "$hostname" "$record_type" "$desired"
   done
-}
-
-for gateway_record in "${gateway_records[@]}"; do
-  hostname="${gateway_record%%$'\t'*}"
-  ipv6="${gateway_record#*$'\t'}"
-
-  delete_exact_records "$hostname" A
-  upsert_aaaa_record "$hostname" "$ipv6"
-done
+done < <(jq -r 'map(.[0]) | unique[]' <<<"$records_json")

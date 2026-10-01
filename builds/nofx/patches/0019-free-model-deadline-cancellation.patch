@@ -1,0 +1,897 @@
+diff --git a/backtest/historical_cancellation_test.go b/backtest/historical_cancellation_test.go
+new file mode 100644
+index 0000000..e8c4dd5
+--- /dev/null
++++ b/backtest/historical_cancellation_test.go
+@@ -0,0 +1,135 @@
++package backtest
++
++import (
++	"context"
++	"errors"
++	"io"
++	"net/http"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"nofx/kernel"
++	"nofx/market"
++	"nofx/mcp"
++	"nofx/store"
++)
++
++type historicalCancelTransport func(*http.Request) (*http.Response, error)
++
++func (f historicalCancelTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
++
++type historicalDelayedBody struct {
++	ctx     context.Context
++	reading chan<- context.Context
++	release <-chan struct{}
++	timeout bool
++}
++
++func (b *historicalDelayedBody) Read([]byte) (int, error) {
++	if b.timeout {
++		return 0, context.DeadlineExceeded
++	}
++	b.reading <- b.ctx
++	select {
++	case <-b.ctx.Done():
++		return 0, b.ctx.Err()
++	case <-b.release:
++		return 0, io.EOF
++	}
++}
++func (*historicalDelayedBody) Close() error { return nil }
++
++func TestHistoricalFreeRequestCancellation(t *testing.T) {
++	original := http.DefaultTransport
++	http.DefaultTransport = historicalCancelTransport(func(*http.Request) (*http.Response, error) {
++		t.Error("unexpected external request outside synthetic fixture")
++		return nil, errors.New("external requests disabled")
++	})
++	t.Cleanup(func() { http.DefaultTransport = original })
++	for _, mode := range []string{"stop", "parent_cancel", "timeout_then_stop", "paused_stop"} {
++		t.Run(mode, func(t *testing.T) {
++			t.Chdir(t.TempDir())
++			cfg := BacktestConfig{RunID: "cancel-test", Symbols: []string{"BTCUSDT"}, Timeframes: []string{"3m"}, DecisionTimeframe: "3m", InitialBalance: 1000}
++			series := &timeframeSeries{}
++			for i := int64(0); i < 81; i++ {
++				open := int64(1577836800000) + i*180000
++				series.klines = append(series.klines, market.Kline{OpenTime: open, CloseTime: open + 179999, Open: 100, High: 101, Low: 99, Close: 100, Volume: 1})
++				series.closeTimes = append(series.closeTimes, open+179999)
++			}
++			feed := &DataFeed{symbols: cfg.Symbols, timeframes: cfg.Timeframes, primaryTF: "3m", decisionTimes: series.closeTimes[79:], symbolSeries: map[string]*symbolSeries{"BTCUSDT": {byTF: map[string]*timeframeSeries{"3m": series}}}}
++			strategy := store.GetDefaultStrategyConfig("en")
++			strategy.CoinSource = store.CoinSourceConfig{SourceType: "static", StaticCoins: cfg.Symbols}
++			r := &Runner{cfg: cfg, feed: feed, strategyEngine: kernel.NewStrategyEngine(&strategy), account: NewBacktestAccount(1000, 0, 0), state: &BacktestState{Cash: 1000, Equity: 1000, MaxEquity: 1000, MinEquity: 1000}, status: RunStateCreated, pauseCh: make(chan struct{}, 1), resumeCh: make(chan struct{}, 1), stopCh: make(chan struct{}, 1), doneCh: make(chan struct{})}
++			reading := make(chan context.Context, 2)
++			release := make(chan struct{})
++			var calls atomic.Int32
++			r.mcpClient = mcp.NewStructuredFreeRouterClient("synthetic", mcp.WithHTTPClient(&http.Client{Transport: historicalCancelTransport(func(req *http.Request) (*http.Response, error) {
++				if req.Method != http.MethodPost || req.URL.String() != "https://openrouter.ai/api/v1/chat/completions" {
++					t.Error("unexpected network request")
++				}
++				attempt := calls.Add(1)
++				return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header), Body: &historicalDelayedBody{req.Context(), reading, release, mode == "timeout_then_stop" && attempt == 1}, Request: req}, nil
++			})}))
++			parent, cancel := context.WithCancel(context.Background())
++			t.Cleanup(func() { close(release); cancel(); r.Stop(); _ = r.Wait() })
++			if mode == "paused_stop" {
++				r.Pause()
++			}
++			if err := r.Start(parent); err != nil {
++				t.Fatal(err)
++			}
++			if mode == "paused_stop" {
++				deadline := time.Now().Add(time.Second)
++				for r.Status() != RunStatePaused && time.Now().Before(deadline) {
++					time.Sleep(time.Millisecond)
++				}
++				if r.Status() != RunStatePaused {
++					t.Fatal("runner did not pause")
++				}
++				if err := r.Start(parent); err == nil {
++					t.Fatal("paused active runner accepted a second cancellation owner")
++				}
++				r.Stop()
++				select {
++				case <-r.doneCh:
++				case <-time.After(250 * time.Millisecond):
++					t.Fatal("Stop did not interrupt paused wait")
++				}
++				if r.Wait() != nil || r.Status() != RunStateStopped || calls.Load() != 0 || r.snapshotState().BarIndex != 0 {
++					t.Fatal("paused Stop advanced or failed the run")
++				}
++				return
++			}
++			var requestContext context.Context
++			select {
++			case requestContext = <-reading:
++			case <-time.After(2 * time.Second):
++				t.Fatal("historical loop did not reach body read")
++			}
++			wantBars, wantCalls := 0, int32(1)
++			if mode == "timeout_then_stop" {
++				wantBars, wantCalls = 1, 2
++				if parent.Err() != nil || r.Status() != RunStateRunning || r.snapshotState().BarIndex != 1 {
++					t.Fatal("HTTP timeout stopped the lifecycle instead of recording a failed cycle")
++				}
++			}
++			if mode == "parent_cancel" {
++				cancel()
++			} else {
++				r.Stop()
++			}
++			select {
++			case <-r.doneCh:
++			case <-time.After(250 * time.Millisecond):
++				t.Fatal("historical cancellation did not interrupt response body")
++			}
++			if mode != "parent_cancel" && r.Wait() != nil {
++				t.Fatal("normal Stop returned a failure")
++			}
++			if requestContext.Err() != context.Canceled || r.Status() != RunStateStopped || calls.Load() != wantCalls || r.snapshotState().BarIndex != wantBars || len(r.account.Positions()) != 0 {
++				t.Fatal("cancellation retried, advanced a bar, or executed a decision")
++			}
++		})
++	}
++}
+diff --git a/backtest/historical_structured_test.go b/backtest/historical_structured_test.go
+index 9a89e41..da0efbc 100644
+--- a/backtest/historical_structured_test.go
++++ b/backtest/historical_structured_test.go
+@@ -1,6 +1,7 @@
+ package backtest
+ 
+ import (
++	"context"
+ 	"errors"
+ 	"testing"
+ 
+@@ -59,7 +60,7 @@ func TestHistoricalStructuredFailureIsOneAttempt(t *testing.T) {
+ 		model := &failingHistoricalModel{err: failure}
+ 		r := &Runner{mcpClient: model, strategyEngine: kernel.NewStrategyEngine(&cfg)}
+ 		ctx := &kernel.Context{SimulationTimeMS: 1577847600000, Account: kernel.AccountInfo{TotalEquity: 1000}, MarketDataMap: map[string]*market.Data{"BTCUSDT": {Symbol: "BTCUSDT", CurrentPrice: 100}}}
+-		if fd, err := r.invokeAIWithRetry(ctx); err == nil || fd != nil || model.calls != 1 {
++		if fd, err := r.invokeAIWithRetry(context.Background(), ctx); err == nil || fd != nil || model.calls != 1 {
+ 			t.Fatalf("failure retried/accepted: %v, calls=%d", err, model.calls)
+ 		}
+ 	}
+diff --git a/backtest/runner.go b/backtest/runner.go
+index 38daa44..7b6fb29 100644
+--- a/backtest/runner.go
++++ b/backtest/runner.go
+@@ -22,6 +22,7 @@ import (
+ var (
+ 	errBacktestCompleted = errors.New("backtest completed")
+ 	errLiquidated        = errors.New("account liquidated")
++	errBacktestStopped   = errors.New("backtest stopped")
+ )
+ 
+ const (
+@@ -41,6 +42,7 @@ type Runner struct {
+ 
+ 	statusMu sync.RWMutex
+ 	status   RunState
++	cancel   context.CancelCauseFunc
+ 
+ 	stateMu sync.RWMutex
+ 	state   *BacktestState
+@@ -188,14 +190,19 @@ func (r *Runner) releaseLock() {
+ // Start launches the backtest loop.
+ func (r *Runner) Start(ctx context.Context) error {
+ 	r.statusMu.Lock()
+-	if r.status != RunStateCreated && r.status != RunStatePaused {
++	if r.cancel != nil || (r.status != RunStateCreated && r.status != RunStatePaused) {
+ 		r.statusMu.Unlock()
+ 		return fmt.Errorf("cannot start runner in state %s", r.status)
+ 	}
+ 	r.status = RunStateRunning
++	runContext, cancel := context.WithCancelCause(ctx)
++	r.cancel = cancel
+ 	r.statusMu.Unlock()
+ 
+-	go r.loop(ctx)
++	go func() {
++		defer cancel(nil)
++		r.loop(runContext)
++	}()
+ 	return nil
+ }
+ 
+@@ -235,19 +242,31 @@ func (r *Runner) loop(ctx context.Context) {
+ 	for {
+ 		select {
+ 		case <-ctx.Done():
+-			r.handleStop(fmt.Errorf("context canceled: %w", ctx.Err()))
++			r.handleContextStop(ctx)
+ 			return
+ 		case <-r.stopCh:
+ 			r.handleStop(nil)
+ 			return
+ 		case <-r.pauseCh:
+ 			r.handlePause()
+-			<-r.resumeCh
+-			r.resumeFromPause()
++			select {
++			case <-ctx.Done():
++				r.handleContextStop(ctx)
++				return
++			case <-r.stopCh:
++				r.handleStop(nil)
++				return
++			case <-r.resumeCh:
++				r.resumeFromPause()
++			}
+ 		default:
+ 		}
+ 
+-		err := r.stepOnce()
++		err := r.stepOnce(ctx)
++		if ctx.Err() != nil {
++			r.handleContextStop(ctx)
++			return
++		}
+ 		if errors.Is(err, errBacktestCompleted) {
+ 			r.handleCompletion()
+ 			return
+@@ -263,7 +282,10 @@ func (r *Runner) loop(ctx context.Context) {
+ 	}
+ }
+ 
+-func (r *Runner) stepOnce() error {
++func (r *Runner) stepOnce(runContext context.Context) error {
++	if err := runContext.Err(); err != nil {
++		return err
++	}
+ 	state := r.snapshotState()
+ 	if state.BarIndex >= r.feed.DecisionBarCount() {
+ 		return errBacktestCompleted
+@@ -328,7 +350,10 @@ func (r *Runner) stepOnce() error {
+ 		}
+ 
+ 		if !fromCache {
+-			fd, err := r.invokeAIWithRetry(ctx)
++			fd, err := r.invokeAIWithRetry(runContext, ctx)
++			if runContext.Err() != nil {
++				return runContext.Err()
++			}
+ 			if err != nil {
+ 				decisionAttempted = true
+ 				hadError = true
+@@ -346,6 +371,9 @@ func (r *Runner) stepOnce() error {
+ 			}
+ 		}
+ 
++		if err := runContext.Err(); err != nil {
++			return err
++		}
+ 		if fullDecision != nil {
+ 			r.fillDecisionRecord(record, fullDecision)
+ 
+@@ -553,7 +581,7 @@ func (r *Runner) fillDecisionRecord(record *store.DecisionRecord, full *kernel.F
+ 	}
+ }
+ 
+-func (r *Runner) invokeAIWithRetry(ctx *kernel.Context) (*kernel.FullDecision, error) {
++func (r *Runner) invokeAIWithRetry(runContext context.Context, ctx *kernel.Context) (*kernel.FullDecision, error) {
+ 	var lastErr error
+ 	attempts := aiDecisionMaxRetries
+ 	if _, structured := r.mcpClient.(mcp.StructuredOutputClient); structured && ctx.SimulationTimeMS > 0 {
+@@ -563,7 +591,8 @@ func (r *Runner) invokeAIWithRetry(ctx *kernel.Context) (*kernel.FullDecision, e
+ 	for attempt := 0; attempt < attempts; attempt++ {
+ 		// Use GetFullDecisionWithStrategy with the pre-configured strategy engine
+ 		// This ensures backtest uses the same unified prompt generation as live trading
+-		fd, err := kernel.GetFullDecisionWithStrategy(
++		fd, err := kernel.GetFullDecisionWithStrategyContext(
++			runContext,
+ 			ctx,
+ 			r.mcpClient,
+ 			r.strategyEngine,
+@@ -572,10 +601,19 @@ func (r *Runner) invokeAIWithRetry(ctx *kernel.Context) (*kernel.FullDecision, e
+ 		if err == nil {
+ 			return fd, nil
+ 		}
++		if runContext.Err() != nil {
++			return nil, runContext.Err()
++		}
+ 		lastErr = err
+ 		if attempt+1 < attempts {
+ 			delay := time.Duration(attempt+1) * 500 * time.Millisecond
+-			time.Sleep(delay)
++			timer := time.NewTimer(delay)
++			select {
++			case <-runContext.Done():
++				timer.Stop()
++				return nil, runContext.Err()
++			case <-timer.C:
++			}
+ 		}
+ 	}
+ 	return nil, lastErr
+@@ -1027,6 +1065,14 @@ func (r *Runner) shouldTriggerDecision(barIndex int) bool {
+ 	return barIndex%r.cfg.DecisionCadenceNBars == 0
+ }
+ 
++func (r *Runner) handleContextStop(ctx context.Context) {
++	if errors.Is(context.Cause(ctx), errBacktestStopped) {
++		r.handleStop(nil)
++	} else {
++		r.handleStop(fmt.Errorf("context canceled: %w", ctx.Err()))
++	}
++}
++
+ func (r *Runner) handleStop(reason error) {
+ 	r.forceCheckpoint()
+ 	if reason != nil {
+@@ -1112,6 +1158,11 @@ func (r *Runner) Resume() {
+ }
+ 
+ func (r *Runner) Stop() {
++	r.statusMu.Lock()
++	defer r.statusMu.Unlock()
++	if r.cancel != nil {
++		r.cancel(errBacktestStopped)
++	}
+ 	select {
+ 	case r.stopCh <- struct{}{}:
+ 	default:
+diff --git a/kernel/engine.go b/kernel/engine.go
+index fd73230..2df9139 100644
+--- a/kernel/engine.go
++++ b/kernel/engine.go
+@@ -1,6 +1,7 @@
+ package kernel
+ 
+ import (
++	"context"
+ 	"encoding/json"
+ 	"fmt"
+ 	"io"
+@@ -252,6 +253,14 @@ func GetFullDecision(ctx *Context, mcpClient mcp.AIClient) (*FullDecision, error
+ 
+ // GetFullDecisionWithStrategy uses StrategyEngine to get AI decision (unified prompt generation)
+ func GetFullDecisionWithStrategy(ctx *Context, mcpClient mcp.AIClient, engine *StrategyEngine, variant string) (*FullDecision, error) {
++	return GetFullDecisionWithStrategyContext(context.Background(), ctx, mcpClient, engine, variant)
++}
++
++// GetFullDecisionWithStrategyContext cancels supported AI requests with their owner.
++func GetFullDecisionWithStrategyContext(requestContext context.Context, ctx *Context, mcpClient mcp.AIClient, engine *StrategyEngine, variant string) (*FullDecision, error) {
++	if err := requestContext.Err(); err != nil {
++		return nil, err
++	}
+ 	if ctx == nil {
+ 		return nil, fmt.Errorf("context is nil")
+ 	}
+@@ -314,7 +323,11 @@ func GetFullDecisionWithStrategy(ctx *Context, mcpClient mcp.AIClient, engine *S
+ 			fields["action"].(map[string]any)["enum"] = []string{"open_long", "close_long", "hold", "wait"}
+ 			fields["leverage"].(map[string]any)["maximum"] = 1
+ 		}
+-		aiResponse, err = structuredClient.CallWithStructuredOutput(systemPrompt, userPrompt, schema)
++		if contextual, ok := structuredClient.(mcp.ContextStructuredOutputClient); ok {
++			aiResponse, err = contextual.CallWithStructuredOutputContext(requestContext, systemPrompt, userPrompt, schema)
++		} else {
++			aiResponse, err = structuredClient.CallWithStructuredOutput(systemPrompt, userPrompt, schema)
++		}
+ 	} else {
+ 		aiResponse, err = mcpClient.CallWithMessages(systemPrompt, userPrompt)
+ 	}
+diff --git a/mcp/client.go b/mcp/client.go
+index 2a78c83..03f9498 100644
+--- a/mcp/client.go
++++ b/mcp/client.go
+@@ -2,6 +2,7 @@ package mcp
+ 
+ import (
+ 	"bytes"
++	"context"
+ 	"encoding/json"
+ 	"fmt"
+ 	"io"
+@@ -471,6 +472,11 @@ func (client *Client) isRetryableError(err error) bool {
+ //       Build()
+ //   result, err := client.CallWithRequest(request)
+ func (client *Client) CallWithRequest(req *Request) (string, error) {
++	return client.CallWithRequestContext(context.Background(), req)
++}
++
++// CallWithRequestContext ties request transmission and body reads to the caller's lifecycle.
++func (client *Client) CallWithRequestContext(ctx context.Context, req *Request) (string, error) {
+ 	requestClient, err := client.routedRequestClient()
+ 	if err != nil {
+ 		return "", err
+@@ -497,7 +503,10 @@ func (client *Client) CallWithRequest(req *Request) (string, error) {
+ 		}
+ 
+ 		// Call single request
+-		result, err := requestClient.callWithRequest(req)
++		if err := ctx.Err(); err != nil {
++			return "", err
++		}
++		result, err := requestClient.callWithRequest(ctx, req)
+ 		if err == nil {
+ 			if attempt > 1 {
+ 				requestClient.logger.Infof("✓ AI API retry succeeded")
+@@ -505,6 +514,9 @@ func (client *Client) CallWithRequest(req *Request) (string, error) {
+ 			return result, nil
+ 		}
+ 
++		if ctx.Err() != nil {
++			return "", ctx.Err()
++		}
+ 		lastErr = err
+ 		// Check if error is retryable
+ 		if !requestClient.hooks.isRetryableError(err) {
+@@ -515,7 +527,13 @@ func (client *Client) CallWithRequest(req *Request) (string, error) {
+ 		if attempt < maxRetries {
+ 			waitTime := requestClient.config.RetryWaitBase * time.Duration(attempt)
+ 			requestClient.logger.Infof("⏳ Waiting %v before retry...", waitTime)
+-			time.Sleep(waitTime)
++			timer := time.NewTimer(waitTime)
++			select {
++			case <-ctx.Done():
++				timer.Stop()
++				return "", ctx.Err()
++			case <-timer.C:
++			}
+ 		}
+ 	}
+ 
+@@ -523,7 +541,7 @@ func (client *Client) CallWithRequest(req *Request) (string, error) {
+ }
+ 
+ // callWithRequest single AI API call (using Request object)
+-func (client *Client) callWithRequest(req *Request) (string, error) {
++func (client *Client) callWithRequest(ctx context.Context, req *Request) (string, error) {
+ 	// Print current AI configuration
+ 	client.logger.Infof("📡 [%s] Request AI Server with Builder: BaseURL: %s", client.String(), client.BaseURL)
+ 	client.logger.Debugf("[%s] Messages count: %d", client.String(), len(req.Messages))
+@@ -548,7 +566,7 @@ func (client *Client) callWithRequest(req *Request) (string, error) {
+ 	}
+ 
+ 	// Send HTTP request
+-	resp, err := client.httpClient.Do(httpReq)
++	resp, err := client.httpClient.Do(httpReq.WithContext(ctx))
+ 	if err != nil {
+ 		return "", fmt.Errorf("failed to send request: %w", err)
+ 	}
+diff --git a/mcp/free_router.go b/mcp/free_router.go
+index 940c07e..3f5f19d 100644
+--- a/mcp/free_router.go
++++ b/mcp/free_router.go
+@@ -1,8 +1,11 @@
+ package mcp
+ 
+ import (
++	"context"
++	"fmt"
+ 	"net/url"
+ 	"strings"
++	"time"
+ )
+ 
+ // IsFreeRouter opts in only the exact free model at its official API origin.
+@@ -21,6 +24,7 @@ type structuredFreeRouterClient struct{ AIClient }
+ // NewStructuredFreeRouterClient shares the strict, one-attempt decision contract.
+ // Fixed routing options follow caller options so they cannot enable paid models or retries.
+ func NewStructuredFreeRouterClient(apiKey string, opts ...ClientOption) AIClient {
++	opts = append([]ClientOption{WithTimeout(10 * time.Minute)}, opts...)
+ 	opts = append(opts, WithProvider(ProviderCustom), WithAPIKey(apiKey),
+ 		WithBaseURL("https://openrouter.ai/api/v1"), WithModel("openrouter/free"),
+ 		WithMaxRetries(1), WithUseFullURL(false))
+@@ -28,12 +32,26 @@ func NewStructuredFreeRouterClient(apiKey string, opts ...ClientOption) AIClient
+ }
+ 
+ func (c *structuredFreeRouterClient) CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error) {
+-	return c.AIClient.CallWithRequest(&Request{
++	return c.AIClient.CallWithRequest(freeRouterRequest(systemPrompt, userPrompt, schema))
++}
++
++func (c *structuredFreeRouterClient) CallWithStructuredOutputContext(ctx context.Context, systemPrompt, userPrompt string, schema map[string]any) (string, error) {
++	client, ok := c.AIClient.(interface {
++		CallWithRequestContext(context.Context, *Request) (string, error)
++	})
++	if !ok {
++		return "", fmt.Errorf("structured free client does not support request cancellation")
++	}
++	return client.CallWithRequestContext(ctx, freeRouterRequest(systemPrompt, userPrompt, schema))
++}
++
++func freeRouterRequest(systemPrompt, userPrompt string, schema map[string]any) *Request {
++	return &Request{
+ 		Model:    "openrouter/free",
+ 		Messages: []Message{NewSystemMessage(systemPrompt), NewUserMessage(userPrompt)},
+ 		ResponseFormat: &ResponseFormat{Type: "json_schema", JSONSchema: JSONSchema{
+ 			Name: "trading_decisions", Strict: true, Schema: schema,
+ 		}},
+ 		Provider: &ProviderPreferences{RequireParameters: true},
+-	})
++	}
+ }
+diff --git a/mcp/free_router_deadline_test.go b/mcp/free_router_deadline_test.go
+new file mode 100644
+index 0000000..98de7d5
+--- /dev/null
++++ b/mcp/free_router_deadline_test.go
+@@ -0,0 +1,108 @@
++package mcp
++
++import (
++	"context"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"net/http"
++	"net/http/httptest"
++	"net/url"
++	"path/filepath"
++	"strings"
++	"sync/atomic"
++	"testing"
++	"time"
++)
++
++type bodyTimeoutLocalTransport func(*http.Request) (*http.Response, error)
++
++func (f bodyTimeoutLocalTransport) RoundTrip(r *http.Request) (*http.Response, error) {
++	return f(r)
++}
++
++func TestSpotFreeRouterDelayedBodyDeadline(t *testing.T) {
++	// Keep the local HTTP regression independent of operator routing files.
++	previous := liteLLMRoutingConfigPath
++	liteLLMRoutingConfigPath = filepath.Join(t.TempDir(), "absent-routing.json")
++	t.Cleanup(func() { liteLLMRoutingConfigPath = previous })
++	if DefaultTimeout != 120*time.Second {
++		t.Fatalf("unrelated client default changed: %v", DefaultTimeout)
++	}
++	defaultClient := NewStructuredFreeRouterClient("synthetic", WithLogger(NewNoopLogger())).(*structuredFreeRouterClient)
++	if got := defaultClient.AIClient.(*Client).httpClient.Timeout; got != 10*time.Minute {
++		t.Fatalf("strict free-model deadline=%v, want 10m", got)
++	}
++
++	const bodyDelay = 500 * time.Millisecond
++	const content = `{"decision":"wait"}`
++	for _, tc := range []struct {
++		name     string
++		deadline time.Duration
++		wantFail bool
++	}{
++		{"short_budget", 200 * time.Millisecond, true},
++		{"longer_budget", 2 * time.Second, false},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			var attempts atomic.Int32
++			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				attempts.Add(1)
++				var request struct {
++					Model          string              `json:"model"`
++					ResponseFormat ResponseFormat      `json:"response_format"`
++					Provider       ProviderPreferences `json:"provider"`
++				}
++				if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
++					t.Errorf("synthetic request decode: %v", err)
++				}
++				if request.Model != "openrouter/free" || request.ResponseFormat.Type != "json_schema" ||
++					!request.ResponseFormat.JSONSchema.Strict || !request.Provider.RequireParameters {
++					t.Error("request lost the strict free-model contract")
++				}
++				w.Header().Set("Content-Type", "application/json")
++				_, _ = w.Write([]byte(`{"choices":[`))
++				w.(http.Flusher).Flush() // Headers and partial body arrive before the deadline.
++				time.Sleep(bodyDelay)
++				_, _ = fmt.Fprintf(w, `{"finish_reason":"stop","message":{"content":%q}}]}`, content)
++			}))
++			defer server.Close()
++			local, err := url.Parse(server.URL)
++			if err != nil {
++				t.Fatal(err)
++			}
++			transport := http.DefaultTransport.(*http.Transport).Clone()
++			transport.Proxy = nil
++			defer transport.CloseIdleConnections()
++			client := NewStructuredFreeRouterClient("synthetic", WithLogger(NewNoopLogger()),
++				WithHTTPClient(&http.Client{Transport: bodyTimeoutLocalTransport(func(r *http.Request) (*http.Response, error) {
++					if r.URL.String() != "https://openrouter.ai/api/v1/chat/completions" {
++						return nil, errors.New("unexpected endpoint: external request blocked")
++					}
++					request := r.Clone(r.Context())
++					request.URL.Scheme, request.URL.Host = local.Scheme, local.Host
++					request.Host = local.Host
++					return transport.RoundTrip(request)
++				})}), WithTimeout(tc.deadline))
++			schema := map[string]any{
++				"type": "object", "additionalProperties": false,
++				"required":   []string{"decision"},
++				"properties": map[string]any{"decision": map[string]any{"type": "string", "enum": []string{"wait"}}},
++			}
++			started := time.Now()
++			result, err := client.(StructuredOutputClient).CallWithStructuredOutput("synthetic system", "synthetic user", schema)
++			elapsed := time.Since(started)
++			if tc.wantFail {
++				if err == nil || !errors.Is(err, context.DeadlineExceeded) || !strings.Contains(err.Error(), "failed to read response") || result != "" {
++					t.Fatalf("want body-read deadline failure, got result=%q err=%v", result, err)
++				}
++			} else if err != nil || result != content {
++				t.Fatalf("want complete strict response, got result=%q err=%v", result, err)
++			}
++			if attempts.Load() != 1 {
++				t.Fatalf("HTTP attempts=%d, want exactly one", attempts.Load())
++			}
++			t.Logf("deadline=%v body_delay=%v elapsed=%v attempts=%d error=%v", tc.deadline, bodyDelay, elapsed.Round(time.Millisecond), attempts.Load(), err)
++		})
++	}
++}
+diff --git a/mcp/interface.go b/mcp/interface.go
+index ef92388..5d7cb38 100644
+--- a/mcp/interface.go
++++ b/mcp/interface.go
+@@ -1,6 +1,7 @@
+ package mcp
+ 
+ import (
++	"context"
+ 	"net/http"
+ 	"time"
+ )
+@@ -20,6 +21,12 @@ type StructuredOutputClient interface {
+ 	CallWithStructuredOutput(systemPrompt, userPrompt string, schema map[string]any) (string, error)
+ }
+ 
++// ContextStructuredOutputClient adds cancellation without changing existing clients.
++type ContextStructuredOutputClient interface {
++	StructuredOutputClient
++	CallWithStructuredOutputContext(context.Context, string, string, map[string]any) (string, error)
++}
++
+ // clientHooks internal hook interface (for subclass to override specific steps)
+ // These methods are only used inside the package to implement dynamic dispatch
+ type clientHooks interface {
+diff --git a/trader/auto_trader.go b/trader/auto_trader.go
+index efcca72..2ac2f34 100644
+--- a/trader/auto_trader.go
++++ b/trader/auto_trader.go
+@@ -1,6 +1,7 @@
+ package trader
+ 
+ import (
++	"context"
+ 	"encoding/json"
+ 	"fmt"
+ 	"github.com/shopspring/decimal"
+@@ -120,6 +121,7 @@ type AutoTrader struct {
+ 	positionFirstSeenTime map[string]int64   // Position first seen time (symbol_side -> timestamp in milliseconds)
+ 	stopMonitorCh         chan struct{}      // Used to stop monitoring goroutine
+ 	monitorWg             sync.WaitGroup     // Used to wait for monitoring goroutine to finish
++	runCancel             context.CancelFunc
+ 	runDone               chan struct{}      // Non-nil until the current run and its monitors have exited
+ 	peakPnLCache          map[string]float64 // Peak profit cache (symbol -> peak P&L percentage)
+ 	peakPnLCacheMutex     sync.RWMutex       // Cache read-write lock
+@@ -363,31 +365,34 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
+ 
+ // prepareRun reserves lifecycle state synchronously, before a goroutine can be
+ // scheduled. Stop can therefore always cancel an accepted start.
+-func (at *AutoTrader) prepareRun() error {
++func (at *AutoTrader) prepareRun() (context.Context, error) {
+ 	at.isRunningMutex.Lock()
+ 	defer at.isRunningMutex.Unlock()
+ 	if at.isRunning || at.runDone != nil {
+-		return fmt.Errorf("trader is already running or stopping")
++		return nil, fmt.Errorf("trader is already running or stopping")
+ 	}
+ 	if at.config.ScanInterval <= 0 {
+-		return fmt.Errorf("positive scan interval required")
++		return nil, fmt.Errorf("positive scan interval required")
+ 	}
++	ctx, cancel := context.WithCancel(context.Background())
++	at.runCancel = cancel
+ 	at.stopMonitorCh = make(chan struct{})
+ 	at.runDone = make(chan struct{})
+ 	at.startTime = time.Now()
+ 	at.monitorWg.Add(1)
+ 	at.isRunning = true
+-	return nil
++	return ctx, nil
+ }
+ 
+ // Start reserves running state before returning and reports the eventual result.
+ func (at *AutoTrader) Start() (<-chan error, error) {
+-	if err := at.prepareRun(); err != nil {
++	ctx, err := at.prepareRun()
++	if err != nil {
+ 		return nil, err
+ 	}
+ 	completed := make(chan error, 1)
+ 	go func() {
+-		completed <- at.runPrepared()
++		completed <- at.runPrepared(ctx)
+ 		close(completed)
+ 	}()
+ 	return completed, nil
+@@ -395,15 +400,17 @@ func (at *AutoTrader) Start() (<-chan error, error) {
+ 
+ // Run preserves the blocking entry point used by existing manager callers.
+ func (at *AutoTrader) Run() error {
+-	if err := at.prepareRun(); err != nil {
++	ctx, err := at.prepareRun()
++	if err != nil {
+ 		return err
+ 	}
+-	return at.runPrepared()
++	return at.runPrepared(ctx)
+ }
+ 
+-func (at *AutoTrader) runPrepared() error {
++func (at *AutoTrader) runPrepared(ctx context.Context) error {
+ 	defer func() {
+ 		at.isRunningMutex.Lock()
++		at.runCancel()
+ 		if at.isRunning {
+ 			at.isRunning = false
+ 			close(at.stopMonitorCh)
+@@ -414,6 +421,7 @@ func (at *AutoTrader) runPrepared() error {
+ 		at.isRunningMutex.Lock()
+ 		close(at.runDone)
+ 		at.runDone = nil
++		at.runCancel = nil
+ 		at.isRunningMutex.Unlock()
+ 	}()
+ 
+@@ -485,7 +493,7 @@ func (at *AutoTrader) runPrepared() error {
+ 	defer ticker.Stop()
+ 
+ 	// Execute immediately on first run
+-	if err := at.runCycle(); err != nil {
++	if err := at.runCycle(ctx); err != nil {
+ 		logger.Infof("❌ Execution failed: %v", err)
+ 	}
+ 
+@@ -500,7 +508,7 @@ func (at *AutoTrader) runPrepared() error {
+ 
+ 		select {
+ 		case <-ticker.C:
+-			if err := at.runCycle(); err != nil {
++			if err := at.runCycle(ctx); err != nil {
+ 				logger.Infof("❌ Execution failed: %v", err)
+ 			}
+ 		case <-at.stopMonitorCh:
+@@ -520,6 +528,7 @@ func (at *AutoTrader) Stop() {
+ 		at.isRunningMutex.Unlock()
+ 		return
+ 	}
++	at.runCancel()
+ 	if at.isRunning {
+ 		at.isRunning = false
+ 		close(at.stopMonitorCh)
+@@ -530,7 +539,7 @@ func (at *AutoTrader) Stop() {
+ }
+ 
+ // runCycle runs one trading cycle (using AI full decision-making)
+-func (at *AutoTrader) runCycle() error {
++func (at *AutoTrader) runCycle(requestContext context.Context) error {
+ 	at.callCount++
+ 
+ 	logger.Info("\n" + strings.Repeat("=", 70) + "\n")
+@@ -597,7 +606,7 @@ func (at *AutoTrader) runCycle() error {
+ 
+ 	// 5. Use strategy engine to call AI for decision
+ 	logger.Infof("🤖 Requesting AI analysis and decision... [Strategy Engine]")
+-	aiDecision, err := kernel.GetFullDecisionWithStrategy(ctx, at.mcpClient, at.strategyEngine, "balanced")
++	aiDecision, err := kernel.GetFullDecisionWithStrategyContext(requestContext, ctx, at.mcpClient, at.strategyEngine, "balanced")
+ 
+ 	if aiDecision != nil && aiDecision.AIRequestDurationMs > 0 {
+ 		record.AIRequestDurationMs = aiDecision.AIRequestDurationMs
+diff --git a/trader/auto_trader_lifecycle_test.go b/trader/auto_trader_lifecycle_test.go
+index 9e7c240..a135acf 100644
+--- a/trader/auto_trader_lifecycle_test.go
++++ b/trader/auto_trader_lifecycle_test.go
+@@ -8,7 +8,8 @@ import (
+ func TestAutoTraderStopBeforeScheduledLoop(t *testing.T) {
+ 	at := &AutoTrader{config: AutoTraderConfig{ScanInterval: time.Hour}, trader: &OKXSpotTrader{}}
+ 	for cycle := 0; cycle < 20; cycle++ {
+-		if err := at.prepareRun(); err != nil {
++		ctx, err := at.prepareRun()
++		if err != nil {
+ 			t.Fatal(err)
+ 		}
+ 		if _, err := at.Start(); err == nil {
+@@ -19,10 +20,10 @@ func TestAutoTraderStopBeforeScheduledLoop(t *testing.T) {
+ 		// Wait for cancellation before scheduling the loop: a stopped cash-spot
+ 		// run must not touch the deliberately unconfigured exchange adapter.
+ 		<-at.stopMonitorCh
+-		if err := at.prepareRun(); err == nil {
++		if _, err := at.prepareRun(); err == nil {
+ 			t.Fatal("restart accepted before shutdown completed")
+ 		}
+-		if err := at.runPrepared(); err != nil {
++		if err := at.runPrepared(ctx); err != nil {
+ 			t.Fatal(err)
+ 		}
+ 		select {
+diff --git a/trader/live_free_cancellation_test.go b/trader/live_free_cancellation_test.go
+new file mode 100644
+index 0000000..4372df7
+--- /dev/null
++++ b/trader/live_free_cancellation_test.go
+@@ -0,0 +1,78 @@
++package trader
++
++import (
++	"context"
++	"io"
++	"net/http"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"nofx/mcp"
++)
++
++type liveDelayedBody struct {
++	ctx     context.Context
++	release <-chan struct{}
++	reading chan<- context.Context
++}
++
++func (b *liveDelayedBody) Read([]byte) (int, error) {
++	b.reading <- b.ctx
++	select {
++	case <-b.ctx.Done():
++		return 0, b.ctx.Err()
++	case <-b.release:
++		return 0, io.EOF
++	}
++}
++func (*liveDelayedBody) Close() error { return nil }
++
++func TestSpotStopCancelsLiveFreeResponse(t *testing.T) {
++	at, spot, _ := spotContextFixture(t, "USD")
++	spot.traderID = "b" // This allocation has no holdings or protection to mutate.
++	at.trader = spot
++	at.config.ScanInterval = time.Hour
++	reading := make(chan context.Context, 2)
++	release := make(chan struct{})
++	var calls atomic.Int32
++	at.mcpClient = mcp.NewStructuredFreeRouterClient("synthetic", mcp.WithHTTPClient(&http.Client{
++		Transport: okxInitializationTransport(func(req *http.Request) (*http.Response, error) {
++			if req.Method != http.MethodPost || req.URL.String() != "https://openrouter.ai/api/v1/chat/completions" {
++				t.Error("unexpected model request")
++			}
++			calls.Add(1)
++			return &http.Response{StatusCode: http.StatusOK, Header: make(http.Header),
++				Body: &liveDelayedBody{req.Context(), release, reading}, Request: req}, nil
++		}),
++	}))
++	t.Cleanup(func() { close(release); at.Stop() })
++	for run := int32(1); run <= 2; run++ {
++		completed, err := at.Start()
++		if err != nil {
++			t.Fatal(err)
++		}
++		var requestContext context.Context
++		select {
++		case requestContext = <-reading:
++		case <-time.After(3 * time.Second):
++			t.Fatal("live cycle never reached response-body read")
++		}
++		if requestContext.Err() != nil {
++			t.Fatal("restart reused canceled request context")
++		}
++		stopped := make(chan struct{})
++		go func() { at.Stop(); close(stopped) }()
++		select {
++		case <-stopped:
++		case <-time.After(250 * time.Millisecond):
++			t.Fatal("Stop did not cancel the live AI response-body read")
++		}
++		if requestContext.Err() != context.Canceled || calls.Load() != run {
++			t.Fatal("Stop lost cancellation or retried the free model")
++		}
++		if err := <-completed; err != nil {
++			t.Fatal(err)
++		}
++	}
++}

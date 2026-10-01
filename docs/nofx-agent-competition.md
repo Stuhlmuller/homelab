@@ -8,7 +8,7 @@ not the scoreboard for these simulations.
 
 ## One OKX account
 
-The prepared cash-spot build (patch `0012`) lets the three personas reuse one
+The cash-spot build (patch `0012`) lets the three personas reuse one
 OKX US connection. Its ledger separates each trader's allocated quote cash, orders,
 fills, fees, holdings, and returns. Other account holdings are not imported.
 Multiple connections with the same authenticated OKX account UID share one
@@ -17,10 +17,12 @@ The cap bounds outstanding buy reservations plus owned acquisition cost across
 agents. Market appreciation can exceed it; the cap does not guarantee a maximum
 loss. Agent cash and strategy entry limits also apply.
 
-This feature has not been published, deployed, or activated by this source
-change. Follow the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
-using the exact tested source and reported private Harbor digests. Verify the
-served source includes patches `0012`–`0014`, both workloads are ready,
+Reviewed source `b78cc47ddd5bb9bdace4912b47886e799a9d5efd` passed signed private
+publication in [run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505).
+Deployment and functional acceptance remain separate from publication. Follow
+the [private-image rollout gates](nofx-private-images.md#harbor-runtime-acceptance)
+using its reported Harbor digests. Verify the
+served source includes patches `0012`–`0018`, both workloads are ready,
 all traders are stopped, and no simulation is active before configuring it in
 the UI.
 
@@ -46,6 +48,43 @@ Keep every agent on provider OpenAI, base URL `https://openrouter.ai/api/v1`,
 and model `openrouter/free`. The free router may choose different underlying
 models; competition compares the saved personas, not fixed model identities.
 
+Check the account's [current free-model quota](https://openrouter.ai/docs/api_reference/limits)
+before choosing cadence. OpenRouter documents a default of
+[50 free requests per day](https://openrouter.ai/blog/tutorials/how-to-get-the-lowest-cost-llm-inference-on-openrouter/),
+including failed attempts. Three hourly agents need at least 72 requests per day;
+two-hour scans need 36 before retries or other usage. The actual account tier is
+an operator check; do not assume a larger quota or switch to a paid model.
+
+If Consensus also competes, use a private strategy copy with the same eligible
+pairs, risk limits, and cadence. Four two-hour agents schedule 48 calls per day
+before retries, debates, or other usage. Check that each saved minimum position
+fits below its allocation multiplied by the utilization limit, with room for
+fees and exchange lot/minimum constraints. A lower strategy minimum does not
+override the exchange's minimum. Never raise the capital cap to resolve a
+contradictory minimum automatically.
+
+The current coin editor appends `USDT` to input without that suffix. For USDT
+competition, enter complete eligible pairs such as `BTCUSDT`; remove malformed
+values such as `BTCUSDCUSDT`. Other quote currencies need an editor correction
+before relying on that input path.
+
+Patch `0016` paces fresh account-configuration reads across constructors,
+monitors, and dashboard/competition refreshes. Patch `0017` keeps trader
+buttons pending until the API finishes and leaves failed saves open. Successful
+create/edit saves close independently of the subsequent list refresh; refresh
+rejections are handled without turning persisted changes into failed saves. Before
+those fixes are deployed, avoid repeated toggle clicks and verify persisted
+stopped state using the rollout gate; a badge or toast alone can precede the
+completed request. Neither fix activates traders.
+
+Patch `0018` extends the existing strict historical JSON contract to OKX
+cash-spot calls using the exact official `openrouter/free` route. It requires
+provider support for the supplied schema and makes one provider attempt per
+cycle. Invalid or empty replies remain failures instead of synthetic
+`ALL/wait` decisions. Configured symbols and all spot execution limits still
+apply. Free-model availability and timeouts can still cause failed cycles;
+the request contract does not establish successful trading or returns.
+
 Entries and explicit exits use limit IOC orders at the fresh quoted price,
 rounded to the instrument tick without chasing prices. They may fill partly or
 not at all. Every entry requires saved stop-loss and take-profit prices; native
@@ -54,6 +93,10 @@ align to exchange ticks before the bracket and reward/risk checks. Both legs
 are limit orders, so a trigger does not guarantee a fill. Reconciliation verifies
 terminal parent/child status and cumulative fills before releasing reservations.
 Uncertain submissions keep funds reserved and prevent new orders.
+
+Patch `0015` validates both lot-rounded protective quantity bounds before
+reservation or submission. The upper bound includes existing dust and reported
+positive taker rebates; the lower bound retains the conservative fee deduction.
 
 While running, the existing one-minute monitor restores missing protection from
 persisted entry intent. Dashboard reads never submit orders. Small residual dust
@@ -72,10 +115,12 @@ Run exactly one backend execution process. Reconciliation and submission share
 a process lock, while SQLite transactions reserve funds before HTTP. Additional
 processes require a durable execution lease first. For rollback, stop traders
 and simulations, review unresolved submissions and native protective orders,
-and retain the PVC, allocation tables, intents, and fill history. Earlier images
-cannot reconcile owned spot state; keep all OKX traders stopped on those images.
+and retain the PVC, allocation tables, intents, and fill history. Pre-`0012`
+images cannot reconcile owned spot state. Cash-spot images without `0015` lack
+its entry protection bound; keep all OKX traders stopped on either recovery
+target.
 
-The deployed pre-`0012` adapter shares whole-account futures positions and P&L.
+The earlier pre-`0012` adapter shares whole-account futures positions and P&L.
 Its Initial Balance field is only a calculation baseline, not an allocation or
 spending limit. Do not infer isolated competition from that earlier build.
 
@@ -87,16 +132,19 @@ inactive `Live - <persona>` strategy copied from the matching simulation
 strategy. The copies retain their personas but remove historical-only and
 historical strict-JSON-schema instructions.
 
-Each draft is configured for 1x leverage caps, at most three positions, a 30%
+During the original setup, each draft was configured for 1x leverage caps,
+at most three positions, a 30%
 margin target, a 60-minute scan interval, and hidden leaderboard visibility.
 In the pre-`0012` futures runtime, that margin target is advisory prompt text.
-The prepared spot executor enforces the saved utilization limit against owned
+The spot executor enforces the saved utilization limit against owned
 marked equity before entry. These draft settings alone still reserve no capital;
 the explicit allocation form and shared cap are required after rollout.
 The existing Consensus trader and `Sim - <persona>` strategies are unchanged.
 Live activation remains a user action; no live orders were placed during setup.
-Read-only persisted checks verified `is_running=0` and `show_in_competition=0`
-for all three after using the trader cards' visibility toggles.
+At that setup check, read-only queries verified `is_running=0` and
+`show_in_competition=0` for all three after using the visibility toggles.
+Those historical flags do not establish current state; verify saved visibility
+and stopped state afresh during rollout.
 
 Keep the drafts stopped pending runtime verification. In the earlier
 `25bceceb` runtime, `kernel/engine.go` validates a copied decision, so its live
@@ -117,7 +165,8 @@ values; omitted API visibility still defaults to true. Follow the
 [runtime acceptance checks](nofx-private-images.md#harbor-runtime-acceptance)
 before relying on these fixes; `deployment.yaml` owns the desired image pair.
 After restart, reload the UI and verify all three drafts remain stopped and
-hidden. The legacy Arena `ExecuteConsensus` to `ExecuteDecision` path bypasses
+retain their saved visibility settings. The legacy Arena `ExecuteConsensus` to
+`ExecuteDecision` path bypasses
 the shared validator. Patch `0012` rejects that path for cash spot; these drafts
 use their own saved strategies.
 

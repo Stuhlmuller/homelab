@@ -9,13 +9,13 @@ Preparing or building these images does not enable live traders. Deployment
 and operational acceptance are documented in the
 [NOFX runbook](../../clusters/homelab/apps/nofx/README.md).
 
-Historical runs using `openrouter/free` at the official OpenRouter API request
-strict structured decisions and require a provider that supports those request
-parameters. Malformed responses remain failed cycles instead of becoming
+Historical runs and OKX cash-spot traders using `openrouter/free` at the official
+OpenRouter API request strict structured decisions and require a provider
+that supports those request parameters. Malformed responses remain failed cycles instead of becoming
 synthetic `ALL` wait decisions. This strict path makes one provider attempt per
 cycle, including transient errors; failures remain visible. Other models and
-live traders retain their existing request path. The simulator also caps actual
-fill leverage at the configured limit.
+other live exchanges retain their existing request path. The simulator also
+caps actual fill leverage at the configured limit.
 
 Patch `0013-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
 configuration and routes only `openrouter/free` through LiteLLM when the fixed
@@ -86,11 +86,44 @@ and the reported positive taker rate; the lower bound retains the conservative b
 fee deduction. Reported rebates also count toward marked exposure limits.
 Mocked execution checks cover rejected overflow and accepted lot-rounded limits.
 
-This is prepared source, not a verified cash-spot deployment. Publish the exact
-reviewed main commit to private Harbor, pin its reported backend/frontend
-digests through a separate rollout PR, then verify readiness, served source,
-and stopped-state acceptance. Explicit capital amounts remain an operator input;
-this change neither chooses them nor starts a trader.
+Patch `0016` spaces cash-spot account-configuration reads across all clients in
+the single backend. Each fresh request is signed after waiting until 500 ms
+after the previous response. No successful response is cached or application
+retry added; HTTP 429 propagates. Existing transport retries remain possible.
+Other endpoints and order submission remain unchanged. The
+shared queue can extend total latency beyond the individual HTTP timeout.
+
+Patch `0017` awaits the underlying API operations before refreshing trader
+state or closing configuration dialogs. Sonner's toast identifier is not a
+promise. Failed persistence keeps the form open. Successful create/edit saves
+close the form while the list refresh runs with a rejection handler; a pending
+or unexpectedly rejected refresh does not invite another save. A pending
+Start/Stop request disables that trader's toggle and rejects duplicate clicks.
+
+Patch `0018` reuses the historical structured-output client and strict local
+decoder for OKX cash-spot calls to the exact official `openrouter/free` route.
+It requests JSON-schema support and retains one provider attempt. The spot
+schema allows only configured symbols, long/close/hold/wait actions, and at
+most 1x leverage. Local spot validation and execution limits remain in force.
+Missing JSON, empty completions, refusals, and provider errors remain failures;
+the live path no longer fabricates an `ALL/wait` decision from missing JSON.
+
+Patch `0019` gives the strict free-model client a ten-minute total HTTP deadline.
+Observed free providers generated about 16 tokens/second, so the configured
+8,000-token budget can exceed the previous two-minute limit. Trader Stop and
+backtest Stop cancel an in-flight strict AI request; live restart creates a fresh
+context. This cancellation does not interrupt an exchange order already in
+progress. Other model clients retain their existing deadlines, and free-model
+requests still make one application attempt. Delayed-body and Stop/restart
+regressions use synthetic HTTP responses and mocked exchange reads.
+
+For a cash-spot rollout, publish the exact reviewed main commit to private
+Harbor and pin its reported backend/frontend digests through a separate PR.
+Then verify readiness, served source, and stopped-state acceptance. The
+[private-image runbook](../../docs/nofx-private-images.md#harbor-runtime-acceptance)
+records publication provenance. Explicit capital amounts and live activation
+remain operator actions. Startup can resume saved running traders, so verify
+stopped state immediately before rollout.
 
 The existing single backend replica is the execution boundary: a process lock
 serializes account reconciliation and submission; database transactions reserve
@@ -265,8 +298,8 @@ all live traders, review unresolved submissions and native protective orders,
 then restore the previous reviewed image digests through GitOps. Retain
 `nofx-data`, including the additive spot tables and append-only fill history,
 and the absolute executable/working-directory configuration. Never reset the
-ledger to make a rollback load. Earlier images cannot reconcile that ledger;
-keep every OKX trader stopped while running them. Returning to upstream also
+ledger to make a rollback load. Pre-cash-spot images cannot reconcile that ledger;
+keep every OKX trader stopped on recovery images. Returning to upstream also
 restores its model-save side effects and Binance dependency.
 
 ## Private image signing

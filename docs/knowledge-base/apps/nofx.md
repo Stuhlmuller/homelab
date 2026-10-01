@@ -2,7 +2,7 @@
 title: NOFX
 type: app
 status: active
-updated: 2026-09-26
+updated: 2026-09-29
 ---
 
 NOFX is deployed as a homelab trading app at the publicly resolvable
@@ -15,19 +15,101 @@ Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
 the `nofx-data` PVC using the `nfs-default` storage class.
-The US connection and dashboard rollout targets source revision
+The cash-spot rollout uses source revision
+`b78cc47ddd5bb9bdace4912b47886e799a9d5efd`, merged in
+[PR #1105](https://github.com/Stuhlmuller/homelab/pull/1105).
+[Publication run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505)
+passed all three jobs: test/build, private signed publication, and digest
+reporting. `deployment.yaml` owns the image pair from that verified report.
+Runtime and read-only dashboard acceptance passed on 2026-09-29; live model
+completion remains partial as described below. Stop all traders before future
+rollouts and verify saved visibility settings after reload. Explicit capital
+and allocations remain user input; publication does not establish returns.
+Patch `0013` is included in the image but its gateway route and token remain
+unmounted. Gateway activation requires its separate reviewed prerequisites.
+The prepared source archive SHA-256 is
+`760e88843ea40956ace7bfb12d97304678dcb089da842f9b2fd646d237e0e904`.
+The served archive matched this hash after rollout. This verifies deployment of
+the account-read pacing, request-completion, and strict free-model JSON fixes;
+it does not establish successful live competition.
+
+## Runtime acceptance: 2026-09-29
+
+[PR #1103](https://github.com/Stuhlmuller/homelab/pull/1103) merged at signed
+revision `18fa9225759709928ccf92f7ef1ab290d8c6a255`. Argo reported `Synced` to
+that revision, both ready containers matched the publication digests, and the
+HTTP-served source archive matched the hash above. The fresh pre-merge gate
+found no running traders, active backtests, or heartbeat locks. All four traders
+remained stopped after restart; saved configuration and visibility survived.
+Authenticated account and position reads returned HTTP 200, and the leaderboard
+displayed fresh, separately owned measurements. Argo remained `Degraded` because
+the existing inactive, unmounted `nofx-litellm` ExternalSecret was not ready.
+
+After operator activation, the first sampled free-router round completed one
+valid structured response and three response-body timeouts at the client's
+120-second total HTTP deadline. The timeout identifies incomplete body reception;
+status handling occurs afterward, so the recorded error does not establish the
+upstream HTTP status or cause. `mcp/free_router.go` retains one application
+attempt; the trading loop
+records failures and waits for its normal configured ticker without stopping.
+AI duration metadata is attached only after a successful call, so a failed
+record's zero duration does not mean no request was sent. Consistent completion
+across all agents remains unverified. Do not substitute successful waits for
+failed model responses.
+
+Provider-side inspection subsequently distinguished the failures: all three
+requests generated tokens through Liquid, then ended cancelled with HTTP 499
+at about 121 seconds. Throughput was 16–17 tokens/second. One request first
+encountered a provider-side 503 and was routed to Liquid; that fallback is
+distinct from an application retry. The successful request used AtlasCloud and
+completed in 90.7 seconds. These are request metadata, not a claim that a longer
+deadline guarantees valid decisions. No provider logging settings were changed.
+
+At deployed revision `b78cc47d`, `AutoTrader.Stop` marks the trader stopped and
+waits for active work, but cannot cancel its AI HTTP request. Stop is synchronous
+in the API while the frontend times out after 30 seconds. SIGTERM stops traders
+sequentially, and the deployment has no custom termination grace.
+
+Patch `0019` adds lifecycle cancellation for strict AI requests in live and
+historical runs before extending the free-model deadline to ten minutes.
+The configured 8,000-token budget needs roughly 500 seconds at the observed
+16 tokens/second. Stop cancels pending inference, and live restart creates a new
+context; exchange work already in progress retains its existing completion
+semantics. Ordinary AI timeouts remain failed cycles, not lifecycle cancellation.
+Other clients keep their existing deadlines and the strict free path retains
+one application attempt. A local partial-body reproduction distinguishes an
+expired short deadline from a valid later completion. A separate live-caller
+regression covers Stop during body reception and restart. Publish and pin the
+reviewed source before treating this change as deployed; verify stopped-state
+acceptance again before operator activation.
+
+OKX equity-history HTTP 409 remains intentional: legacy whole-account snapshots
+cannot establish owned agent returns. The leaderboard explains this state, but
+the individual dashboard shows a generic error and untranslated `loadingError`.
+Follow up in `web/src/lib/api.ts` and `EquityChart.tsx` with a typed unavailable
+state and a regression that preserves the backend history guard. Never clear
+history or splice changed allocations onto legacy snapshots to make a chart.
+
+[PR #1086](https://github.com/Stuhlmuller/homelab/pull/1086) merged
+`5dbaa5641b47342864092123a76020ae480b91bb`. At 2026-09-28 02:45:06 UTC,
+Argo was `Synced` to that commit; both ready image IDs matched the report.
+The served `e7014c8b` build included `0015` with verified SHA-256
+`d95bdac77ee547b29e658592e5e7f65df6cb24e3b9eef46f519c761e91d1ba79`.
+All traders were stopped. UI/account acceptance was pending at that revision.
+Argo remained `Degraded`: inactive, unmounted
+`nofx-litellm` is `Ready=False`; `ssm:GetParameter` lacks identity-policy access.
+The existing `aws-ssm-parameters` unit owns this token and reader IAM.
+Follow its separately reviewed full protected
+[Terragrunt Apply](../../ci-cd.md) path, then check ESO and Argo health.
+Do not patch IAM ad hoc or activate gateway routing to clear this finding.
+
+The earlier US connection and dashboard release used source revision
 `689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
 [PR #1066](https://github.com/Stuhlmuller/homelab/pull/1066).
 [Publication run 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
-passed publication and private pull verification.
-`deployment.yaml` owns the image pair. Require the exact build revision,
-patches `0007`–`0011`, and read-only authenticated dashboard checks after
-rollout. All traders must remain stopped and the three drafts hidden.
-Publication alone does not establish authentication, spot support, or
-independent returns.
-Patch `0012` is a prepared source change; its cash-spot implementation below
-has not been published, deployed, or activated by this change. Historical
-acceptance evidence in this note describes earlier images, not that feature.
+passed publication and private pull verification. Retain that pair as recovery
+history. Its acceptance evidence below describes the earlier runtime, not the
+new cash-spot build.
 The prior startup-error build `9716e9d9121a062029c72dc5f03f0d266a166650` from
 successful
 [run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
@@ -126,8 +208,8 @@ workflow before relying on that diagnostic path; do not reuse the CI identity.
 
 OpenRouter's OpenAI-compatible Base URL must be `https://openrouter.ai/api/v1`,
 with model `openrouter/free`. NOFX appends `/chat/completions`; the observed
-`/responses` suffix is invalid. The existing OKX trader remains stopped;
-three private simulation strategies are saved inactive. No live OKX trading
+`/responses` suffix is invalid. The existing OKX trader was stopped;
+three private simulation strategies were saved inactive. No live OKX trading
 was activated. The original upstream OKX adapter has no demo mode and can change
 position mode during client construction; the deployed derivative removes that
 construction side effect.
@@ -209,11 +291,12 @@ focused backend build regressions. Patch `0009`
 also checks current OKX cross-margin leverage, skips matching settings, and uses
 one instrument-level update when needed. Leverage errors stop openings before
 canceling existing orders, with a mocked transport regression. Verify exact
-published digests, source patches, and persisted stopped/hidden flags after
+published digests, source patches, persisted stopped state, and saved visibility after
 rollout before accepting the runtime. The pre-`0012` runtime shares positions
 and account-level returns; Initial Balance does not reserve capital. Independent
-live balances then required separate funded accounts or subaccounts. The prepared
-cash-spot ledger below provides owned accounting within one physical account.
+live balances then required separate funded accounts or subaccounts. The
+published cash-spot ledger below provides owned accounting within one physical
+account.
 The runbook
 records the draft limits without presenting shared balances or historical
 simulations as independent live competition results.
@@ -262,16 +345,12 @@ digests, and the served source archive byte-identical to the prepared source
 (SHA-256 `c1d4ff37a512c59666a59fb75b5a44b40b372d13e676205eb55032f98c3e7815`).
 All traders remained stopped; the three competitors remained hidden. The new
 backend still reported OKX `50119`, with no successful initialization or balance
-read. Authentication remains unresolved. Browser refresh returned to login, so
-authenticated UI acceptance is pending. No trader was activated.
-After rollout, freshly verify every persisted trader is stopped before using
-**AI Traders → View**; runtime loading can auto-start saved running traders.
-Read-only account/positions requests must return 200 on successful exchange
-reads, or safe `503 TRADER_UNAVAILABLE` guidance when initialization fails.
-The latter leaves authentication unresolved. Recheck all traders stopped and
-the three drafts hidden afterward; never use Start as an authentication test.
-The regional host does not add US spot support or make USDT perpetuals
-available.
+read. Authentication remained unresolved at that inspection. Browser refresh
+returned to login, leaving authenticated UI acceptance pending. No trader was
+activated. That regional repair alone did not add US spot support or make USDT
+perpetuals available. The cash-spot rollout uses the allocation-aware acceptance
+checks below; do not carry its predecessor's account-200 requirement into an
+unallocated spot trader or use Start as an authentication test.
 
 Credential diagnosis found a possible masking defect in pinned
 `crypto/crypto.go`: `EncryptedString.Scan` suppresses storage-decryption errors
@@ -305,11 +384,51 @@ infer that another regional host or credential rotation is the required fix.
 The September 21 live diagnostic passed: every saved OKX credential field
 decrypted successfully, with no empty results, nested envelopes, or surrounding
 API-key whitespace. This rules out those storage defects for that inspection;
-the exchange rejection and browser login remain unresolved. A separate scratch
-reproduction observed `EncryptedString.Scan` returning ciphertext without an
+the exchange rejection and browser login were unresolved then. A separate
+scratch reproduction observed `EncryptedString.Scan` returning ciphertext without an
 error for wrong-key/corrupt input. The committed checker suite tests direct
 decryption, not `Scan`; retain that separate fail-open finding for repair with
 its own regression.
+
+On September 27, the signed-in **Spot allocations** form failed its account
+verification and disabled configuration. Source tracing isolated the failure to
+the signed US account-config GET, before instrument, wallet, or allocation
+checks. The generic UI error cannot distinguish a transport failure, exchange
+rejection, or account-schema mismatch. The separate `inspect-account` operator
+mode preserves the reviewed-main and deployed-source checks while reporting only
+status codes, counts, and validation booleans from that fixed read-only request.
+It does not change credentials, account settings, or trading state. Inspection
+from reviewed main `e338548a` found one connection with three successfully
+decrypted credential fields, no empty/nested values or surrounding key
+whitespace, and no HTTP response from the signed request. A credential-free
+backend probe resolved the US hostname and received HTTP 200 from its public
+time endpoint; standard CA files were readable and no proxy/TLS environment
+overrides were set. Those results do not establish an invalid OKX key: local
+header rejection and Go transport failures both occur before an HTTP status.
+The checker now distinguishes invalid header bytes and reports only a fixed,
+allowlisted request-error category, never raw errors. Use the
+[operator runbook](../../../clusters/homelab/apps/nofx/README.md#read-only-credential-diagnosis)
+before choosing a repair.
+
+The `78852f13` follow-up confirmed valid credential-header bytes but still
+reported `other` before an HTTP response. Review then identified a diagnostic
+transport mismatch: Go's default-transport clone can retain HTTP/2 in its TLS
+ALPN list after the checker selects HTTP/1 only. The checker now aligns both
+protocol settings, with a local HTTPS regression offering both protocols.
+Treat the earlier no-response results as inconclusive until rerunning the
+corrected checker; they do not establish a production network failure.
+After the operator fixed the saved connection, reopening **Spot allocations**
+enabled the currency, cap, and allocation controls. The form lists eligible
+currencies but does not expose available cash; allocation amounts still require
+the account owner's balance information. No allocation or activation was saved
+during that check.
+
+The same UI session saved a 120-minute scan interval for Trend, Mean Reversion,
+and Breakout. A read-only database check confirmed all three remain stopped,
+hidden from the public leaderboard, and bound to enabled `openrouter/free`
+models through OpenRouter. Their strategies and the Consensus trader were
+unchanged. This cadence schedules 36 calls per day before retries; it does not
+establish the API key's remaining quota or configure trading capital.
 
 The pre-`0012` US execution gap is concrete: in the
 [pinned OKX adapter](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/trader/okx_trader.go),
@@ -323,8 +442,8 @@ enforced shared exposure limits, then test that one persona cannot cancel or
 close another's allocation. The
 [competition runbook](../../nofx-agent-competition.md#one-okx-account) records
 why shared account equity and Initial Balance cannot establish independent
-returns. The patch `0011` rollout did not resolve that gap; prepared patch `0012`
-addresses it below, with separate rollout and activation gates.
+returns. The patch `0011` rollout did not resolve that gap; published patch
+`0012` addresses it below, with separate rollout and activation gates.
 
 During this trace, `handleOrderFills` was also found to query fills by order ID
 without checking that the order belongs to the resolved trader. The shared
@@ -371,7 +490,76 @@ closed. A future runtime fix should persist the post-start state consistently.
 
 ## Cash-spot competition implementation
 
-The prepared patch `0012` addresses the shared-account execution gap above.
+### Account read bursts and premature UI completion
+
+On September 27, a user-started cycle failed before model inference with HTTP
+429 from the US account-configuration endpoint. Four constructors and their
+initial recovery/context reads can issue twelve requests; dashboard and
+protection-monitor reads add more. OKX documents
+[five requests per two seconds per UID](https://app.okx.com/docs-v5/en/#trading-account-rest-api-get-account-configuration).
+The existing execution mutex serializes work but does not enforce that rate.
+The observed 429 alone does not identify which upstream layer rejected it.
+
+Maintained patch `0016` spaces this shared read path until 500 ms after the
+preceding response, signing only after waiting. It retains fresh account and
+borrow-mode checks and adds no application retry or cached success. HTTP 429
+propagates; existing internal HTTP transport retries remain possible.
+Only account-configuration reads use the gate; order endpoints are unchanged.
+This single-process queue can extend total latency beyond the HTTP timeout.
+Its mocked regression covers four clients, fresh responses/signatures, one
+429 without retry, and an independent write while an account read is blocked.
+
+Pinned Sonner 1.7.4 returns a toast identifier from `toast.promise`, so awaiting
+that value refreshed trader state and closed forms before API completion.
+Patch `0017` awaits the actual operation, propagates failed persistence to the
+modal, and guards each pending Start/Stop request against duplicate clicks.
+Create/edit completion is independent of the subsequent list refresh, whose
+rejection is explicitly handled. This prevents a pending or unexpectedly
+rejected refresh from leaving an already-saved form available for resubmission.
+Ordinary SWR fetch errors are generally handled internally; this fixes the
+save-promise contract, not a demonstrated production fetch failure. Deferred
+regressions cover persistence and refresh separately. Deploy through private
+signed publication and a separate reviewed image pin; source validation alone is not runtime acceptance.
+
+The UI inspection also found a minimum trade larger than its allocation and a
+Consensus symbol malformed by the editor's automatic `USDT` suffix. Correct
+stopped configurations using the [competition runbook](../../nofx-agent-competition.md).
+The suffix behavior remains a separate editor limitation for other quotes;
+the saved spot minimum remains subject to exchange lot and minimum rules.
+
+The subsequent UI save and read-only database check confirmed all four traders
+stopped with 120-minute scans and competition visibility enabled. Each now uses
+its private `Live - <persona>` strategy with the same three USDT pairs, 1x
+leverage caps, 30% utilization, and a positive minimum that fits its allocation.
+Consensus uses a copy; the original Default strategy remains unchanged. This
+records saved configuration, not successful live cycles or investment returns.
+
+### Live free-model JSON contract
+
+On September 28, read-only decision inspection found six failed cycles where
+the legacy parser replaced missing JSON with synthetic `ALL/wait`, then spot
+validation rejected that unconfigured symbol. Two responses were empty.
+An offline regression reproduced both cases through the real live decision
+caller with mocked HTTP. Historical free-model requests already used a strict
+JSON contract, while live calls omitted it.
+
+Patch `0018` shares that existing client, schema, and local decoder with OKX
+cash-spot calls to the exact official `openrouter/free` route. It requires
+structured-output support and keeps one provider attempt. Invalid responses
+remain failed cycles; configured symbols, 1x leverage, and execution limits
+remain enforced. Other models and live exchanges retain their existing path.
+Publish and pin reviewed images before treating this source fix as deployed.
+Neither the mocked regression nor deployment proves returns or a winning agent.
+
+The first static-gate attempt on PR #1104 failed in the Harbor publication test
+fixture: mock readiness preceded PID-file completion, and cleanup left an empty
+PID file. The unchanged focused test and full-gate rerun passed. Production
+cleanup tracks its own process ID and did not use that file. If this recurs,
+synchronize mock readiness with current PID publication in
+`scripts/ci/harbor-publish-test.py`; retain strict cleanup assertions. Evidence:
+[run 36455510987](https://github.com/Stuhlmuller/homelab/actions/runs/36455510987).
+
+Published patch `0012` addresses the shared-account execution gap above.
 It adds authenticated OKX US spot metadata and candles, per-trader decimal
 allocations and fill ownership, durable reservations, native owned OCO orders,
 and recovery from persisted entry intent. The UI requires explicit amounts with
@@ -382,21 +570,30 @@ The shared cap bounds outstanding quote reservations plus owned acquisition
 cost, while each agent has its own remaining cash and strategy limits. It is
 not a marked-value ceiling or guaranteed loss limit.
 
-Prepared patch `0014` removes misleading legacy futures controls from the OKX
+Published patch `0014` removes misleading legacy futures controls from the OKX
 trader form. The backend already ignores its margin and Initial Balance inputs;
 the form now omits both and directs capital changes to **Spot allocations** on
 the exchange card. It labels existing OKX records as cash spot without rewriting
 stored names. Focused form tests cover create/edit payloads and switching to a
 non-OKX exchange. This UI repair does not allocate funds or start traders.
 
-Prepared patch `0015` fixes the entry protection bound reported after PR #1077
+Published patch `0015` fixes the entry protection bound reported after PR #1077
 merged. Recovery protects the full owned holding, so a new buy must account for
 existing dust and reported taker rebates before reservation or submission.
 Both fee-adjusted quantity bounds must fit the instrument's protective-order
 limits; possible rebates also count toward marked exposure. The existing mocked
 execution test covers rejection without POSTs or ledger changes and acceptance
-at the lot-rounded maximum. This source fix requires newly published images;
-images built before it do not resolve the finding.
+at the lot-rounded maximum. Deployment acceptance remains separate; images
+without `0015` retain this finding.
+
+Use the runbook's fresh zero-trader/zero-active-backtest counts and successful
+no-lock check immediately before merge. After GitOps readiness and source
+checks, verify **OKX US Cash Spot**, preserved account labels, and no margin or Initial
+Balance controls. **Spot allocations** must leave unconfigured money inputs
+blank; do not infer amounts. Before allocation, expect unavailable/unscored
+states rather than requiring HTTP 200 account reads. Missing allocation is not
+an authentication failure or a zero-return score. Recheck stopped state and
+saved visibility settings after UI reload. Gateway patch `0013` stays unmounted.
 
 Existing non-OKX form finding: `TraderConfigModal.handleFetchCurrentBalance`
 queries the persisted trader ID even after an unsaved exchange selection.
@@ -406,8 +603,9 @@ regression proving no account request occurs. OKX no longer exposes that control
 
 SQLite remains on the existing NOFX PVC. The additive spot tables and immutable
 fill history must remain in backups; never remove them to reset a competition.
-Rollback to an earlier image must keep all OKX traders stopped: that image would
-use whole-account futures semantics and would not reconcile the spot ledger.
+Keep all OKX traders stopped during rollback. Pre-cash-spot images use
+whole-account futures semantics and cannot reconcile the spot ledger;
+cash-spot images without `0015` lack its entry protection bound.
 Native pending orders require explicit operator review before any rollback.
 One backend execution process is required until a durable execution lease exists.
 
@@ -416,13 +614,14 @@ uses original allocation for owned returns. Previous whole-account equity curves
 are not presented as per-agent history. A missing configuration or rejected
 account authentication remains an operational blocker, not a zero-return score.
 
-This code is prepared independently of live activation. No trader was started,
-no funds moved, and no winner established by the implementation tests.
+Signed publication and image rollout are complete; functional acceptance and
+live activation remain separate gates. Implementation tests did not start
+traders, move funds, or establish a winner. See the dated runtime evidence above.
 Build-test coverage includes mocked protocol/ownership, SQLite reservation and
 replay, entry-protection recovery, lifecycle shutdown, unavailable-score handling,
-bounded competition refresh, and the allocation UI. Publication still requires
-the protected workflow, followed by a reviewed digest-pin rollout and fresh
-stopped-state/source/readiness checks. Harbor and retained GHCR images stay private.
+bounded competition refresh, and the allocation UI. Full Argo health and
+consistent live model completion remain unresolved. Harbor and retained GHCR
+images stay private.
 
 An existing credential-log finding remains outside this feature:
 `mcp/openai_client.go:SetAPIKey` logs the first and last four characters of

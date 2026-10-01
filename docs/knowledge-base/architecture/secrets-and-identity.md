@@ -157,14 +157,14 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   The server runtime uses only the fixed-code key in an init container to
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
   local PVC. The daemon renews it; revoked or expired tokens fail startup
-  rather than silently creating a replacement. Main-container mounts expose
-  only its own profile and the LiteLLM master-key field, not the backend JWT,
-  database password, fixed code, or provider OpenAI key. This remains a trusted
-  operator runtime: tasks can read that profile and model credential. Its
-  LiteLLM master key also grants gateway administration; replace it with a
-  model-scoped virtual key once a repository-owned issuance path exists.
-  Its dedicated ServiceAccount has no Kubernetes token and receives explicit
-  Istio access to the Multica backend and LiteLLM.
+  rather than silently creating a replacement. The main container exposes only
+  its own profile, including native ChatGPT OAuth state retained on the runtime
+  PVC; it does not mount the backend JWT, database password, fixed code, or a
+  model API key. This remains a trusted operator runtime because tasks can read
+  that profile. Its dedicated ServiceAccount has no Kubernetes token and
+  receives explicit Istio access only to the Multica backend. OAuth is created
+  through an interactive Codex device login and must not be copied into SSM or
+  a Kubernetes Secret.
 - NOFX uses generated `/homelab/nofx/jwt-secret`,
   `/homelab/nofx/data-encryption-key`, and
   `/homelab/nofx/rsa-private-key` values. The RSA key is a 2048-bit PEM key
@@ -268,7 +268,17 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   before planning. CI must not traverse `IaC/operator` or gain permission to
   replace its own attachment. The
   grant is bounded to policy slots `00` through `09` and the exact
-  `homelab-ssm-parameter-readers` group. The unit also adopts
+  `homelab-ssm-parameter-readers` group, plus metadata-only `kms:DescribeKey`
+  on the resolved current runtime-secret key. The September 29, 2026 Langfuse
+  apply reached SSM refresh but its identity policy still covered only the old
+  runtime key. The correction reuses the operator-owned policy and attachment;
+  it adds no cryptographic or key-administration permission. Apply only the
+  reviewed single-policy saved-plan update through
+  [the operator runbook](../../../IaC/operator/README.md#full-unit-reconciliation),
+  never CI self-administration; stop on unrelated drift. On September 30, 2026
+  PDT (October 1 UTC), the saved plan applied and a fresh full-unit plan was a
+  no-op; CI simulation allows only `kms:DescribeKey` on the current SSM key,
+  with `kms:Decrypt` and `kms:ScheduleKeyDeletion` implicitly denied. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
   with an operator-owned boundary that allows only homelab SSM reads and
   runtime-secret KMS decrypt/describe access. The boundary denies direct
@@ -287,6 +297,17 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - Langfuse keeps application, datastore, project and headless-init credentials
   under `/homelab/langfuse/`; its namespace consumes `langfuse-secrets`.
   `IaC/live/langfuse-blob-storage` owns the distinct S3 runtime credential pair.
+  On September 30, 2026 PDT (October 1 UTC), an administrator applied its
+  reviewed 12-resource bootstrap through the normal remote state; a fresh plan
+  was a no-op and live checks confirmed public-access blocks, versioning, and
+  both exact S3 SSM parameters as current SecureStrings under `alias/aws/ssm`.
+  After a reviewed operator apply adds the pending grant, CI can use only
+  `iam:GetUser`, `iam:ListAccessKeys`, and
+  `iam:GetUserPolicy` on
+  `arn:aws:iam::716182248480:user/homelab/homelab-langfuse-s3` for Langfuse-user
+  refresh. This additional grant has no IAM write, tag, wildcard, or other-user
+  permission. Future Langfuse IAM lifecycle or credential-rotation changes
+  remain operator-owned through the same saved-plan path.
 - Future LiteLLM app keys are generated separately for NOFX and Multica at
   `/homelab/<app>/litellm-token`; OpenClaw's future key uses
   `/homelab/openclaw/litellm-app-token`. The existing OpenClaw `litellm-token`
@@ -332,7 +353,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `/homelab/openclaw/github-app/installation-id`, and
   `/homelab/openclaw/github-app/private-key`; the ID values are env vars and
   the private key is mounted into the app as a file referenced by
-  `GITHUB_APP_PRIVATE_KEY_PATH`.
+  `GITHUB_APP_PRIVATE_KEY_PATH`. The managed `assistant/gh` wrapper exchanges
+  that key for a homelab-only installation token on each CLI/Git invocation.
+  Tokens use private temporary CLI config files, never the PVC or child process
+  environment; requests omit administration and secret-management permissions.
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [[runbooks/secrets-aws-ssm]] and [[workloads/application-notes]]. Configure
@@ -384,8 +408,11 @@ See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
 separate project robots for pull and publication. NOFX receives only the pull
 credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
-disabled and project creation is admin-only. Never store Harbor bootstrap
-images in Harbor itself.
+disabled and project creation is admin-only. Public upstream copies use the
+separate public-read `mirror` project; `robot$mirror+publisher` uses its own generated
+`/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
+Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
+see [the image mirror runbook](../../harbor-image-mirroring.md).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

@@ -44,7 +44,7 @@ domain, such as `_gw-*.stinkyboi.com`, not the Istio front-proxy route. After
 `octops` creates or updates Gateway status, run
 `scripts/octelium-gateway-dns.sh --dry-run` and then
 `scripts/octelium-gateway-dns.sh` so those exact hostnames resolve to the
-advertised gateway IPv6 addresses instead of falling through to the tailnet
+advertised gateway IPv4/IPv6 addresses instead of falling through to the tailnet
 wildcard DNS record.
 
 Application hostnames stay on the existing `*.stinkyboi.com` names. After the

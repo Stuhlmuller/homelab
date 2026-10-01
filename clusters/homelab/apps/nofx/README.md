@@ -41,12 +41,13 @@ variables. The existing encrypted database continues to own the OpenRouter provi
 forwards that original provider key in its request body to LiteLLM while using the
 file token for gateway authentication, and rejects any other configured model.
 
-This staging deliberately preserves the current image digest. Do not apply the
+Publishing or pinning the cash-spot images does not activate this route. The
+routing and token mounts remain absent. Do not apply the
 activation patch until LiteLLM is activated, `nofx-litellm` is Ready and its target
 Secret exists, and a reviewed `main` image containing
 `0013-litellm-runtime-routing.patch` has published a verified backend digest.
-Use a separate reviewed digest-pin follow-up, then prove a short historical
-`openrouter/free` run reaches LiteLLM with one structured provider attempt and no
+Use a separate reviewed gateway-activation follow-up, then prove a short
+historical `openrouter/free` run reaches LiteLLM with one structured provider attempt and no
 raw provider or gateway credentials in application logs.
 That follow-up must consume this patch, remove the scratch activation check, and
 switch `nofx-runtime-check.py` to `active=True` for the now-active render.
@@ -64,8 +65,10 @@ The existing claim retains SQLite at `/app/data/data.db`, simulation runs at
 `/app/data/backtests`, and new log files at `/app/data/data/nofx_YYYY-MM-DD.log`.
 Earlier logs under `/app/data` remain untouched. Back up the whole claim as one
 recovery set; simulation traces and caches can contain private configuration.
-No new claim or database migration is required. Reverting the working-directory
-change leaves data intact but breaks new backtests and hides their relative
+No new claim is required. The cash-spot build adds ledger tables to the existing
+database; retain them and their fill history during rollback.
+Reverting the working-directory change leaves data intact but breaks new
+backtests and hides their relative
 filesystem history; restore this configuration to reuse those files.
 
 Validate the rendered runtime contract with:
@@ -96,9 +99,8 @@ upstream commit
 [source.json](../../../../builds/nofx/source.json) pins the source archive and
 checksum; both Dockerfiles pin their builder and runtime images by digest.
 The preparation script applies the committed patches before Docker builds
-either runtime. The source includes the following repairs; the US connection
-and dashboard rollout targets `689df14c755c43dfdfc744316f7a526081d7a2c6`.
-Require the publication and rollout acceptance below:
+either runtime. The deployed cash-spot build contains the following repairs;
+functional acceptance remains pending as described below:
 
 - Key-preserving model edits without submitted-credential logging or trader
   initialization during configuration save.
@@ -113,15 +115,21 @@ Require the publication and rollout acceptance below:
   `https://openrouter.ai/api/v1`, with one provider attempt per cycle. Refused,
   truncated, or malformed output remains a failed cycle.
 - File-backed LiteLLM routing for `openrouter/free`, preserving the encrypted
-  provider configuration while using the backend-only gateway token mount. This
-  remains inactive until an image built from the patch is published and pinned.
+  provider configuration. This remains inactive while the backend-only route
+  and token mounts are absent, even after the image is published and pinned.
 - A leverage cap applied to actual simulated fills, plus selected-run comparison
   of equity, return, drawdown, and recorded decision outcomes. Generated run IDs
   include a safe strategy slug; the table does not declare a winner.
 - Preservation of the shared validator's leverage clamp in parsed decisions and
   explicit hidden visibility when creating traders, including existing databases.
-- OKX cross-margin leverage lookup before openings, one update only when needed,
-  and rejection of openings before order cancellation if lookup or update fails.
+- Owned OKX US cash-spot execution with explicit per-trader allocations,
+  a shared account capital cap, durable decimal reservations, and native owned
+  protection.
+  Existing manual holdings never become agent inventory; shorting and leverage
+  are rejected.
+- A cash-spot trader form that omits ignored margin and Initial Balance fields.
+  **Spot allocations** on the exchange card requires operator-supplied amounts;
+  saving configuration neither funds the account nor starts traders.
 - Failed OKX account-config reads block initialization even with a saved balance.
   Known `50119` startup errors reach the UI as fixed account/region guidance.
 - US account routing and owned-trader dashboard lookup: unavailable traders
@@ -164,19 +172,43 @@ it as recovery history. [deployment.yaml](deployment.yaml) declares the current
 desired image references. Both deployments use `harbor-pull` only through
 `imagePullSecrets`; the kubelet credential never enters NOFX containers.
 
-The US connection and dashboard rollout targets
+The cash-spot rollout targets source
+`b78cc47ddd5bb9bdace4912b47886e799a9d5efd` from successful
+[run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505).
+This pair includes shared account-read pacing, awaited trader API actions, and
+strict free-model JSON decisions in patches `0016`–`0018`.
+Publication verified private pulls and signatures;
+deployment and stopped-state functional acceptance remain separate gates.
+
+The previous cash-spot rollout used source
+`e7014c8b9644a6c13d909373eda3c572c1cdba00` from
+[run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201).
+All three jobs succeeded: test/build, private signed publication, and digest
+reporting. [PR #1086](https://github.com/Stuhlmuller/homelab/pull/1086) deployed
+that pair. At 2026-09-28 02:45:06 UTC, Argo was synced to the merge commit;
+both containers were ready at the published digests, the served source matched
+this build with patch `0015`, and all traders were stopped.
+Argo remains `Degraded` because the inactive, unmounted `nofx-litellm`
+ExternalSecret lacks SSM reader permission. Reconcile the declared shared
+`aws-ssm-parameters` IAM through a reviewed full protected Terragrunt Apply,
+then verify ESO readiness and Argo health. UI/account acceptance awaits
+NOFX sign-in and explicit allocations; no live trading result is established.
+See the [dated rollout evidence](../../../../docs/knowledge-base/apps/nofx.md).
+
+The earlier US connection and dashboard release used
 [build 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)
 at revision `689df14c755c43dfdfc744316f7a526081d7a2c6`, merged in
 [PR #1066](https://github.com/Stuhlmuller/homelab/pull/1066). Publication and
-private pull verification passed; the manifest pins both references from its
-verified digest artifact. The prior startup-error build
+private pull verification passed; retain that pair as history.
+The prior startup-error build
 `9716e9d9121a062029c72dc5f03f0d266a166650` from successful
 [run 35555807176](https://github.com/Stuhlmuller/homelab/actions/runs/35555807176)
 remains recovery history; it uses the global OKX host.
-Before merge, also require a healthy `harbor-pull`
-ExternalSecret and a fresh authenticated check that all live traders are
-stopped. Use the UI or the runbook's read-only database count; an old observation
-does not satisfy this gate.
+Immediately before merge, require `harbor-pull` ExternalSecret `Ready=True` and
+the runbook's fresh read-only activity checks: zero running traders, zero
+running or paused backtests, and a successful lock-file lookup with no results. A
+`created` backtest may already be active; stale observations or failed queries
+do not satisfy this gate. Do not delete locks to pass it.
 Keep all packages private and follow the
 [private-image runbook](../../../../docs/nofx-private-images.md) for credential,
 publication, and rollout checks. The earlier `25bceceb` deployment in
@@ -187,16 +219,23 @@ Retain the PVC, absolute command, working directory, and read-only root. After
 Argo CD reports `Synced` and `Healthy`, verify both Pods actually use the expected
 Harbor digests. The image test target covers key-preserving model edits, invalid
 run IDs, and the leverage/visibility regressions without live orders. Verify the
-source download matches the deployed revision, including patches `0007`–`0011`.
-Verify `0013` as well after the separately gated gateway activation.
+source download matches the published build revision, including patches
+`0012`–`0018`, including the entry protection bounds in `0015`, account-read
+pacing in `0016`, completed-request UI state in `0017`, and strict free-model
+JSON decisions in `0018`. Patch `0013`
+remains inactive with no route or token mount.
 Freshly verify every persisted trader is stopped before opening the dashboard;
-runtime loading can auto-start a trader saved as running. Reload the
-authenticated UI, select **AI Traders → View**, and inspect its account/positions
-requests. Require successful exchange reads to establish authentication, or
-explicit unavailable guidance when initialization still fails; a rendered page
-alone does not prove authentication. Recheck all traders stopped and the three
-shared-account drafts hidden afterward. Do not use Start to test this rollout.
-It adds no spot execution or independent return attribution.
+startup can resume a trader saved as running. Reload the authenticated UI and
+verify existing OKX traders show **OKX US Cash Spot**, preserve account labels,
+and omit margin and Initial Balance controls. Open **Spot allocations** and
+verify unconfigured capital and allocation inputs are blank. Amounts remain
+explicit operator input; do not choose defaults to satisfy a check.
+Before allocation, safe unavailable/unscored account and leaderboard states are
+expected; HTTP 200 account reads are not an acceptance requirement. Missing
+configuration is distinct from failed account authentication, and neither is a
+zero-return score. After explicit configuration, successful read-only account
+and positions reads can establish authentication. Recheck all traders stopped
+and verify saved visibility settings afterward. Do not use Start for acceptance.
 For historical workflow changes, also run a
 fresh short OKX-backed simulation:
 inspect valid structured decisions and actual fill leverage, and confirm the
@@ -208,8 +247,11 @@ strategy-to-run-ID mapping with the results. Compare displays factual metrics;
 verify all expected decisions and matching inputs before judging returns.
 
 For rollback, stop simulations and restore the previous reviewed image digests
-while retaining `nofx-data` and the storage fix. Returning to upstream images
-also restores their model-save side effects and Binance data dependency.
+while retaining `nofx-data`, the spot ledger, and the storage fix. Pre-cash-spot
+images cannot reconcile owned spot state; keep all OKX traders stopped and
+review any unresolved orders or native protection before rollback. Returning
+to upstream images also restores their model-save side effects and Binance
+data dependency.
 
 ## OpenRouter simulation setup
 
@@ -242,9 +284,9 @@ length or concurrency.
 The upstream pinned OKX client always selects the live API, even if a configuration UI
 offers a testnet option. Use Backtest Lab for simulations. Creating or reloading
 an upstream OKX trader can change the account's position mode before trading
-starts. The derivative removes that constructor write; it does not add demo
-trading or net-mode order support. Operators must configure the account mode
-themselves before any live use. Existing running traders still auto-resume on
+starts. The derivative removes that constructor write. Patch `0012` replaces
+the runtime adapter with cash spot and rejects testnet; it does not add demo
+trading. Existing running traders still auto-resume on
 startup; the stopped state remains essential during simulation work.
 On September 14, the existing OKX trader remained stopped and three
 private simulation strategies were saved inactive. Live OKX trading was not
@@ -276,16 +318,12 @@ All runtime dashboard readers share the lookup; the existing public
 equity-history route reads the database without exchange initialization.
 Authenticated dashboard defaults never fall back to another user's trader.
 
-Source validation is separate from publication and rollout. After deploying
-both verified images, verify every persisted trader is stopped, reload the
-browser, and use **AI Traders → View** to check `/api/positions` for the saved
-trader. Require HTTP 200 on a successful exchange read, or explicit unavailable
-guidance if initialization still fails. Confirm all traders remain stopped.
-Do not substitute an empty success for a failed
-exchange read. Changing regions does not add US spot trading: the adapter still
-targets USDT perpetuals, which [OKX excludes for US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
-Keep the existing rollout gates; rollback restores the previous image pair and
-its global-host authentication failure without changing stored credentials.
+That regional repair alone did not add US spot trading: its adapter still
+targeted USDT perpetuals, which [OKX excludes for US residents](https://www.okx.com/en-us/learn/what-is-perpetual-contracts).
+The published `0012` cash-spot replacement requires separate deployment and the
+allocation-aware acceptance checks above. Keep stopped state and saved
+credentials intact; an unavailable response must not become an empty successful
+account.
 
 ### Read-only credential diagnosis
 
@@ -341,6 +379,26 @@ Passing this check establishes readable storage, not OKX authentication. Preserv
 the database and encryption key during diagnosis; verify the saved key's account
 and live/demo status through the account owner's UI if storage passes. Never use
 **Start** as a connection test.
+
+If **Spot allocations** cannot verify the account, use the separate account mode
+with the same reviewed-main and deployed-source checks:
+
+```sh
+nix develop --command bash scripts/nofx-credential-check.sh inspect-account "$reviewed_main_sha"
+```
+
+This retains the storage counters and adds `account_checks` without account IDs.
+Each usable connection gets one signed GET to the US account-config endpoint,
+using the production proxy/TLS settings, without redirects or application retries.
+Unusable credentials are skipped. Output contains only HTTP status, a validated
+numeric OKX code, counts, validation booleans, and a fixed request-error category;
+it excludes response text, raw errors, account identifiers, and credentials.
+Header validity is checked before sending. HTTP status zero means no response
+was received, not that OKX rejected the credentials. Categories classify typed
+Go errors; `network_io` and `other` do not rule out an untyped TLS failure.
+This mode does not read
+balances, place orders, or change account settings. The original `inspect` mode
+remains storage-only.
 
 Source: pinned upstream
 [runtime image](https://github.com/NoFxAiOS/nofx/blob/bdfd8dc0d02c14b295eb36cbaee00d8402867927/docker/Dockerfile.backend),

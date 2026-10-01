@@ -6,8 +6,9 @@ Tags: #harbor #oci #packages #gitops
 
 Harbor is declared in `IaC/terragrunt.stack.hcl` and
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
-(Harbor `2.15.2`); upstream component images remain public, digest-pinned
-bootstrap dependencies. Harbor must not depend on images stored in itself.
+(Harbor `2.15.2`). Upstream component references remain digest-pinned; the
+Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
+bootstrap and registry recovery use the reviewed upstream rollback path.
 
 `https://harbor.stinkyboi.com` uses Cloudflare Tunnel, the Octelium `harbor`
 WEB Service, and the shared Istio gateway. Octelium transport is anonymous and
@@ -31,10 +32,11 @@ upstream server name/CA and remove this bypass across the service catalog.
 
 ## Identity And State
 
-SSM in `us-west-2` generates ten Harbor secrets. `harbor-secrets` materializes
+SSM in `us-west-2` generates eleven Harbor secrets. `harbor-secrets` materializes
 administrator, internal service, encryption and database secrets as well as
 pre-generated project robot passwords. The bootstrap Job creates only the
-private `homelab` project and its `pull` and `publisher` robots; publisher has
+private `homelab` project and its `pull` and `publisher` robots, plus the public
+upstream-only `mirror` project and its own scoped `publisher` robot; publisher has
 pull/push permissions and no artifact deletion. Source-controlled bootstrap
 credentials stay outside this public repository.
 
@@ -50,10 +52,31 @@ for backup schedule, restore sequence and limitations.
 
 The chart enables Trivy with a retained 5 Gi cache. The repository-owned
 PostSync bootstrap sets and verifies `auto_scan: "true"` for the private
-`homelab` project on creation and subsequent syncs. New image pushes trigger
-scans; enabling this setting does not backfill existing artifacts. Verify a
-completed report after a new push before claiming live scanning acceptance.
+`homelab` and `mirror` projects on creation and subsequent syncs. New image pushes
+trigger scans. Bootstrap also submits missing scans for retained private
+`homelab` image artifacts, leaving existing reports and active scans alone and
+excluding signatures and attestations. Verify completed reports after sync;
+successful submission does not prove a successful scan.
+Backfill traverses the complete repository/artifact inventory, including histories
+over 1,000 artifacts; duplicate IDs and inconsistent pagination still fail closed.
+The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
+
+Read-only acceptance on 2026-09-28 found scan-on-push enabled in both projects
+and Trivy v0.72.0 healthy. Both running NOFX images had successful reports:
+backend `6dfec7dd502b` (5 critical, 65 high findings) and frontend `210a1bd9ca7e`
+(2 critical, 58 high findings). Remediation requires reviewed dependency/base
+image updates and rebuilt images; successful scanning does not imply no known
+vulnerabilities. Six retained historical images had no report, motivating the
+bootstrap backfill. On 2026-09-29, the automatic PostSync job applied
+[PR #1101](https://github.com/Stuhlmuller/homelab/pull/1101) at `453e935c563d`.
+All 26 retained private image manifests reported successful scans at 00:18 UTC,
+with no missing, pending, running or failed reports. The last of the six
+historical scans completed at 00:16:55 UTC; Harbor was Synced/Healthy.
+The earlier in-progress
+mirror copy had successful scans for all 62 uploaded runnable manifests and
+16 indexes inspected; 15 unscanned objects were in-toto attestations. This
+snapshot does not establish scan completion for images not yet uploaded.
 
 ## Package Migration
 
@@ -92,8 +115,7 @@ for runtime evidence and `clusters/homelab/apps/nofx/deployment.yaml` for curren
 desired references. Later source builds require a separate functional rollout.
 Registry-origin cutover is required only for an actual custom-image consumer:
 first verify copies and read-only pulls, then preserve that consumer's exact
-digest while changing its registry through GitOps. No third-party images are
-mirrored by this task.
+digest while changing its registry through GitOps. The later cluster-wide mirror rollout below extends this to third-party images.
 
 ## Rollout And Acceptance
 
@@ -238,6 +260,82 @@ do not cover the signing key. See `builds/nofx/README.md` for recovery and rollb
 
 Status: the retained signer's fingerprint is enrolled. Backup verification
 receipts and the independently retained public key stay in private operator
-storage. First signed publication and independent live image verification
-remain pending.
+storage. [NOFX Images run 36350207462](https://github.com/Stuhlmuller/homelab/actions/runs/36350207462)
+completed the first signed publication and verified both stored signatures
+against the enrolled fingerprint for source
+`f0a60ec70b43e5e5b5a9691b4f59358d13089b7d`.
+[NOFX Images run 36368577201](https://github.com/Stuhlmuller/homelab/actions/runs/36368577201)
+published and verified the follow-up source
+`e7014c8b9644a6c13d909373eda3c572c1cdba00`, including the `0015` protection fix.
+Runtime rollout acceptance remains separate from publication; independent
+operator signature verification remains pending.
 Historical artifacts and pull/admission enforcement remain unchanged.
+
+## Cluster-wide Image Mirror
+
+The [mirror runbook](../../harbor-image-mirroring.md) owns copying, cutover and
+recovery. `scripts/config/harbor-images.json` captures public upstream digests
+from repository declarations, rendered charts and live Pods/system images. The
+protected `harbor-mirror.yml` workflow copies all platforms into the normal
+public-read `mirror` project and verifies complete anonymous pulls. A completed
+ancestor publication is reusable only with the runbook's six publication files
+unchanged; node rollout still requires exact reviewed `main` and live digest checks. Its publisher
+uses a separate generated `/homelab/harbor/mirror-robot-push-password`; apply
+the reviewed shared SSM plan before expecting the new bootstrap to complete. Private
+`homelab` artifacts retain their existing authentication/signing contract.
+
+The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
+and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
+stopped during the second upstream copy used for PostgreSQL tag aliases (17.5,
+then 14.23). Destination digest uploads and readback
+had succeeded; Harbor showed no concurrent error or resource pressure. Deleted
+private client logs prevented proving the underlying failure. The publisher now
+creates aliases from the verified Harbor digest and resumes already-present
+digest tags only after exact hash comparison. Complete anonymous downloads
+still run for every entry. Failures expose fixed phase/status/category metadata
+and the public catalog source, never raw transport output. This removes the
+observed second external transfer.
+
+[Recovery run 36506302738](https://github.com/Stuhlmuller/homelab/actions/runs/36506302738)
+passed both PostgreSQL alias failures and completed the first 31 catalog entries,
+then stopped at the missing PostgreSQL 18.4 digest tag. Live read-only probes
+confirmed Harbor returns HTTP 404 with `NOT_FOUND` and an exact artifact or
+repository `not found` message, rather than registry manifest/name-unknown.
+The publisher now recognizes only those additional messages naming the expected
+mirror repository and, for an artifact, its exact digest tag. Generic 404s and
+messages naming other content still fail closed. Complete publication and node
+cutover remain pending.
+
+During the staged rollout, `harbor-secrets` reconciled before the new SSM
+parameter existed. The approved scoped plan applied 16 creations and three IAM
+updates, with no deletions or existing-secret rotations. After that apply, the GitOps
+`generated-secret-revision` annotation advances to `v2` to request a fresh
+reconciliation. Keep `refreshPolicy: OnChange` to avoid periodically regenerating
+the salted bcrypt registry password hash. Require the ExternalSecret to report
+Ready and materialize the mirror credential before accepting bootstrap or
+starting image publication; the annotation change alone is not readiness evidence.
+
+`.talos/patches/harbor-mirrors.yaml` and the validated
+`scripts/talos-harbor-mirrors.py` path redirect containerd for all inventoried
+registries, covering controller-generated Pods and Talos system images.
+Authenticated Talos calls explicitly select the private `.talos/talosconfig` or
+the operator-provided `--talosconfig` path; absent files fail before networking.
+Talos skips cached pull references. The cutover probes pause in the `system`
+namespace, where it was absent on all four nodes during this rollout. System
+images and CRI share the mirror configuration; correlate the pull with Harbor
+access logs, since repeating an already-cached probe proves no new request.
+`skipFallback: true` prevents silent upstream pulls. Apply only after publication;
+new image/chart versions need a prerequisite catalog publication. The rollback
+patch restores upstream access for cold bootstrap or Harbor recovery. Existing
+public DNS transport remains; this does not establish network isolation.
+
+Initial inspection on 2026-09-28 UTC: all four nodes Ready, Harbor Synced/Healthy;
+OpenClaw had unready app/proxy containers before this change. The 145 catalog
+entries passed anonymous upstream manifest/digest verification. All four current
+Talos configurations passed strict mirror-patch validation. Harbor registry NFS
+reported about 901 GiB available (shared filesystem capacity, not a PVC quota);
+no storage expansion was needed for this preflight. The shared SSM plan includes
+pending AI secrets; the [targeted secret plan](../../harbor-image-mirroring.md#initial-secret-plan-scope)
+limits publication to the new mirror credential and documents shared IAM/random
+state dependencies requiring explicit operator approval. Image transfer
+and node cutover remain pending; source verification is not migration evidence.

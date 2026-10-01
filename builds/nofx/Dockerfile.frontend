@@ -8,6 +8,7 @@ FROM dependencies AS tests
 RUN npm test -- --run src/components/ModelConfigModal.test.tsx \
     src/components/BacktestComparison.test.tsx \
     src/components/AITradersPage.start.test.tsx \
+    src/components/AITradersPage.requests.test.tsx \
     src/lib/httpClient.test.ts \
     src/components/SpotCompetitionModal.test.tsx \
     src/components/TraderConfigModal.spot.test.tsx \

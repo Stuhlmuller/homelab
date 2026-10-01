@@ -28,6 +28,24 @@ restore job for PostgreSQL, Valkey, or ClickHouse. Retained PVCs protect
 against accidental GitOps deletion but are not an independent recovery copy.
 Treat state recovery as unverified until a restore procedure and drill exist.
 
+## Migration startup
+
+The web container runs database migrations before starting HTTP. Chart `2.1.1`
+has no web startup probe; its default liveness checks killed the first startup
+after about 47 seconds, leaving ClickHouse migration `47` dirty. The supported
+`langfuse.web.livenessProbe.initialDelaySeconds: 600` gives migrations ten
+minutes before liveness checks begin. Readiness still withholds traffic until
+the app is ready; steady-state liveness timing is unchanged. A hung startup
+can therefore take ten minutes to be recycled.
+
+`nix develop --command bash scripts/ci/langfuse-startup-check.sh` checks the
+actual pinned chart render, not just the values file. This prevention does not
+repair an existing dirty migration. Inspect the last clean version and partial
+schema; never mark an incomplete migration complete. Recovery needs a reviewed,
+repository-owned path, quiesced writers and a verified recovery copy. Do not
+reset PVCs, rotate credentials or run ad hoc migration commands. Reverting the
+probe value does not roll back database state and reintroduces the startup risk.
+
 ## Validation
 
 Use the protected full Terragrunt apply or its dependency-aware
@@ -117,25 +135,41 @@ Before a follow-up activation PR:
 1. Complete the protected full `Terragrunt Apply` or its dependency-aware
    `argocd_app=langfuse` dispatch described above. Both plan/policy-check and
    apply SSM/S3 producers before registering Langfuse.
-2. Reconcile the separate Octelium catalog and public DNS paths. Terragrunt does
-   not apply either. From a clean checkout of the reviewed current `main`,
-   verify the exact commit before using the existing authenticated operator
-   [catalog path](../../../../docs/octelium.md):
+2. Reconcile the separate Octelium Service and public DNS paths. Terragrunt does
+   not apply either. The existing `homelab-human-web-access` Policy must already
+   exist. Install the pinned client through `scripts/install-octeliumctl.sh` and
+   use an existing native operator login. Preview from a trusted checkout:
+
+   ```sh
+   nix develop --command python3 -I scripts/octelium-langfuse-reconcile.py
+   ```
+
+   The helper reuses the [NOFX carrier](../../../../docs/octelium-nofx-reconciliation.md)
+   without changing workstation hosts, DNS, saved client configuration or
+   credentials. `--homedir` selects another existing private operator login.
+   A browser Portal session alone is not proof of native authentication.
+   Before execution, verify the clean, reviewed current `main` **before entering
+   Nix**; the helper repeats that guard before opening transport:
 
    ```sh
    (
-   set -e
-   git fetch origin main
-   test -z "$(git status --porcelain)"
-   test "$(git rev-parse HEAD)" = '<reviewed-main-sha>'
-   test "$(git rev-parse origin/main)" = '<reviewed-main-sha>'
-   octeliumctl apply --domain stinkyboi.com --include ClusterConfig docs/examples/octelium/homelab-services.yaml
-   octeliumctl apply --domain stinkyboi.com docs/examples/octelium/homelab-services.yaml
+   set -euo pipefail
+   reviewed_main_sha='<reviewed-main-sha>'
+   test -z "$(git status --porcelain=v1 --untracked-files=all --ignore-submodules=none)"
+   test "$(git rev-parse HEAD)" = "$reviewed_main_sha"
+   test "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" = "$reviewed_main_sha"
+   nix develop --command python3 -I scripts/octelium-langfuse-reconcile.py \
+     --execute --expected-sha "$reviewed_main_sha"
    )
    ```
 
-   Use authenticated operator access; never add `--prune`. Stop on any reported
-   apply failure. Wait for Argo CD's `octelium-public` Application to be
+   This applies only `langfuse.default`, never Policies, Users or credentials;
+   it requires a no-change second apply and verifies the non-anonymous human
+   policy and routing contract afterward. Native errors fail closed, including
+   CLI errors reported with exit zero. Do not add `--prune`. Repair or roll back
+   the declared Service through a reviewed PR and rerun the helper; removing
+   the helper does not remove the live Service or bypass its human policy.
+   Wait for Argo CD's `octelium-public` Application to be
    Synced/Healthy with the new tunnel pod revision before dispatching DNS:
 
    ```sh
