@@ -50,7 +50,7 @@ test_allows_only_archived_ssm_key_retirement if {
 }
 
 test_rejects_sensitive_resource_destroy_plans if {
-	every resource_type in {"aws_kms_key", "aws_ssm_parameter", "kubernetes_secret", "kubernetes_secret_v1"} {
+	every resource_type in {"openrouter_api_key", "aws_kms_key", "aws_ssm_parameter", "kubernetes_secret", "kubernetes_secret_v1"} {
 		plan := {"resource_changes": [{
 			"address": sprintf("%s.this", [resource_type]),
 			"type": resource_type,

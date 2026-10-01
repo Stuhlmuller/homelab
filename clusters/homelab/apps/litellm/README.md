@@ -1,62 +1,79 @@
 # LiteLLM app attribution
 
-LiteLLM currently retains its existing provider and master-key configuration.
-Langfuse integration and app authentication are deferred to a separate
-implementation PR. Activate only through a reviewed follow-up after
-the [readiness gates](../langfuse/README.md#caller-activation) pass.
+The gateway exposes `openrouter/free` to Multica using the dedicated
+`/homelab/litellm/openrouter-api-key` SSM credential. It translates through
+LiteLLM's OpenAI-compatible transport to OpenRouter `/api/v1`, preserving late
+SSE usage chunks. `openai-default` remains unchanged. OpenClaw and NOFX are not
+migrated by this change.
 
-The intended integration sends requests, outputs, usage and safe errors to
-the homelab Langfuse project. Langfuse owns the observability UI; LiteLLM does
-not need another database just to label callers.
+`gateway.py` starts the native single-worker proxy with a pure-ASGI admission
+guard. Request-level callback/exporter overrides are rejected before native
+authentication, including failure logging. `app_identity.py` authenticates
+file-mounted app keys and emits Langfuse generations with trusted `app:multica`
+attribution. Multica may discover models and call free-model chat completions;
+it cannot administer the gateway or override provider credentials, URLs,
+fallbacks or mock responses. Its provider key never reaches the runtime.
 
-Separate generated `/homelab/<app>/litellm-token` parameters identify NOFX
-and Multica; OpenClaw's future key uses `/homelab/openclaw/litellm-app-token`. Its existing
-`litellm-token` remains the master-key alias until activation switches the
-consumer. The `litellm-app-keys` ExternalSecret produces those keys for later
-file mounting; no current gateway container consumes them. The activation
-contract requires inference-only app keys, operator-only administration,
-trusted app attribution and preservation of caller session IDs.
+Langfuse receives prompts, outputs, provider usage and safe error type/status.
+Authentication headers and provider credentials are removed from telemetry
+snapshots; arbitrary provider errors/tracebacks are excluded. Raw request
+logging is disabled. Langfuse project credentials are mounted from
+`litellm-telemetry`; its OTLP endpoint is committed in `gateway.py`. No additional
+LiteLLM database is required. The free router can select different underlying
+models; its returned model and provider usage are the accounting evidence.
 
-The pinned LiteLLM 1.80.8 SDK extracts request-level callbacks and dynamic
-exporter credentials before pre-call hooks. Authentication failures can also
-reprocess the original body before custom authentication runs. An offline
-regression reproduced caller-selected Langfuse credentials on both paths.
-The incomplete hook and activation template were removed from this foundation
-change; they are not a safe activation recipe. The follow-up must enforce
-admission before these paths and prove rejected requests cannot initialize
-callbacks or redirect telemetry.
+## Validation and activation
 
-Preserve each app's original provider/model and credentials. Strip credentials
-from request snapshots and headers before export, retain safe error type/status
-only, and preserve successful prompt/output/usage capture. INFO logging and
-disabled raw-request logging are required. Never serialize the full inference
-argument dictionary or arbitrary provider error bodies/tracebacks.
+Run the full repository static gate and `scripts/ci/litellm-attribution-check.py`
+with the pinned Python dependencies in `.github/workflows/validate.yml`. The
+latter exercises native startup/authentication, rejected logging/routing
+controls, Multica inference, credential redaction, streaming and exact usage
+against an inert upstream transport. It does not prove live delivery.
 
-After activation, Langfuse must support filtering and grouping by authenticated
-app identity. Provider-reported usage and price availability determine token
-and cost completeness; subscription OAuth traffic is not billable OpenAI API
-traffic. Key rotation must account for the `OnChange` ExternalSecrets.
+**Do not merge/activate until prerequisites are ready:** complete the protected
+[Langfuse workflow](../langfuse/README.md#validation), provision the dedicated
+OpenRouter key with the declared `IaC/live/litellm-openrouter-key` unit, and
+require initialized Langfuse plus Ready
+`litellm-app-keys`, `litellm-telemetry` and `multica-litellm` ExternalSecrets.
+The official OpenRouter provider `0.3.19` issues `homelab-litellm` and writes
+its one-time plaintext result directly to the SSM SecureString
+`/homelab/litellm/openrouter-api-key`. No placeholder or local random token is
+used. The shared SSM unit grants reader access but does not own this parameter.
 
-## Validation and rollout
+Bootstrap a management key once in the OpenRouter account and store it as the
+`homelab-production` GitHub environment secret `OPENROUTER_MANAGEMENT_KEY`.
+The protected full apply or `argocd_app=litellm` dispatch injects it only into
+the provider, then plans, policy-checks and applies the saved key plan before
+Application registration. Targeted LiteLLM apply assumes the prior Langfuse
+prerequisite apply has reconciled shared SSM reader permissions. PR plans never
+receive the management credential or this unit's sensitive state. Runtime Pods
+never receive the management key. Ordinary inference keys cannot create keys.
+See [OpenRouter management authentication](https://openrouter.ai/docs/guides/overview/auth/management-api-keys).
 
-Run `nix develop --command python3 scripts/ci/langfuse-staging-check.py` to
-verify this foundation leaves callers unchanged and contains no activation
-hook/template. The activation PR must supply production-matched offline
-checks covering native startup, authentication failures, callback admission,
-credential redaction, streaming and exact provider usage.
-Render both the pinned Helm chart and Kustomize overlay, then evaluate them
-with `conftest test --policy policy` (the namespace is `main`).
+Retain encrypted OpenTofu state: OpenRouter returns plaintext only at creation;
+importing a key hash cannot recover it. Both key and parameter prevent accidental
+destruction; rollback retains them. If SSM publication fails after issuance,
+retry using the retained state. Do not recreate keys outside this resource.
+A new OnChange Secret revision is needed after a reviewed key rotation. Langfuse key rotation also requires a
+Git-controlled gateway rollout because its exporter loads credentials at startup.
+Application dependency ordering alone does not establish readiness.
 
-Before changing an app's provider endpoint, verify its original model and
-credentials work through the gateway, then verify a correlated live trace has
-nonzero token usage and input/output. Gateway health alone is insufficient.
-Langfuse project initialization must finish before the first request; the
-Application dependency orders registration, not readiness.
+Render pinned chart `0.1.832` and both Kustomize overlays; run Conftest policy
+checks before rollout. After sync, require one real Multica OpenCode task,
+one Langfuse generation with `app:multica`, prompt/output and nonzero usage,
+and no credential values in exported data. Verify the authenticated Langfuse UI
+through Octelium. Merely seeing a selectable model is not inference acceptance.
 
-The September 20 live inspection found the existing `OPENAI_API_KEY` is still
-the `REPLACE_ME` placeholder. Do not migrate working subscriptions or Bedrock
-workflows to `openai-default`. Their provider/model and credential contracts
-must be preserved and verified during their individual migrations.
+Rollback the Git change and remove the copied
+`/home/multica/.config/opencode/opencode.json` through a reviewed runtime init
+change if reverting the OpenCode integration; it resides on the retained PVC.
+Restore agents that selected `litellm/openrouter/free` to their prior runtime
+and model. Retain Multica and Langfuse PVCs and SSM credentials.
+
+Read-only inspection on 2026-09-29 UTC found Multica Synced/Healthy, LiteLLM
+OutOfSync/Degraded with one running gateway pod, no Langfuse Application, and
+`litellm-app-keys` failing secret synchronization. Live activation is blocked;
+no inference or telemetry delivery has been claimed.
 
 The operator explicitly deferred n8n migration on September 20; its existing
 Bedrock credential and workflow remain unchanged, outside this rollout's

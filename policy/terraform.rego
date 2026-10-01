@@ -3,6 +3,7 @@ package main
 import rego.v1
 
 sensitive_delete_resource_types := {
+	"openrouter_api_key",
 	"aws_kms_key",
 	"aws_ssm_parameter",
 	"kubernetes_secret",

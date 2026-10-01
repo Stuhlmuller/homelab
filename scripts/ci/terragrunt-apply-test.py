@@ -37,6 +37,7 @@ units = {
     "IaC/bootstrap/argocd": "bootstrap",
     "IaC/live/aws-ssm-parameters": "ssm",
     "IaC/live/langfuse-blob-storage": "s3",
+    "IaC/live/litellm-openrouter-key": "openrouter",
     "IaC/live/kubernetes-node-labels": "nodes",
     "IaC/live/azuread-applications": "azure",
     "IaC/live/kubernetes-secrets": "secrets",
@@ -124,7 +125,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "nofx"):
+        for name in ("langfuse", "nofx", "litellm"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -211,7 +212,7 @@ class TerragruntApplyTest(unittest.TestCase):
             scripts.mkdir(parents=True)
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
-            for unit in ("bootstrap/argocd", "live/aws-ssm-parameters", "live/langfuse-blob-storage",
+            for unit in ("bootstrap/argocd", "live/aws-ssm-parameters", "live/langfuse-blob-storage", "live/litellm-openrouter-key",
                          "live/kubernetes-node-labels", "live/azuread-applications",
                          "live/kubernetes-secrets/external-secrets-aws-ssm-auth", "live/argocd-apps"):
                 (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
@@ -224,13 +225,15 @@ class TerragruntApplyTest(unittest.TestCase):
                                "TERRAGRUNT_ARGOCD_APP": target,
                                "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
                                "ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
-                               "ARM_TENANT_ID": "fixture"},
+                               "ARM_TENANT_ID": "fixture",
+                               "OPENROUTER_MANAGEMENT_KEY": config.get("management_key", "fixture")},
                 text=True, capture_output=True, timeout=15, check=False)
-            calls = [json.loads(line) for line in (root / "calls.jsonl").read_text().splitlines()]
+            calls = [json.loads(line) for line in (root / "calls.jsonl").read_text().splitlines()] if (root / "calls.jsonl").exists() else []
             self.assertNotIn("UNEXPECTED", [call["event"] for call in calls], result.stderr)
             self.assertNotIn("Traceback", result.stderr, result.stderr)
             self.assertFalse(list((root / "IaC").rglob("plan.out")))
             self.assertFalse(list(root.glob("homelab-langfuse-plan.*")))
+            self.assertFalse(list(root.glob("homelab-openrouter-plan.*")))
             self.assertFalse(list(root.glob("terragrunt-argocd-apps.*")))
             return result, [call["event"] for call in calls]
 
@@ -244,6 +247,22 @@ class TerragruntApplyTest(unittest.TestCase):
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
+
+    def test_litellm_key_requires_checked_plan_and_management_credential(self):
+        result, events = self.run_apply(target="litellm")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "openrouter.init", "openrouter.plan",
+                                  "openrouter.show", "openrouter.policy", "openrouter.apply",
+                                  "apps.plan", "apps.policy", "apps.apply"])
+        for operation in ("plan", "policy"):
+            result, events = self.run_apply(target="litellm", fail="openrouter." + operation)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("openrouter.apply", events)
+            self.assertNotIn("apps.apply", events)
+        for target in ("", "litellm"):
+            result, events = self.run_apply(target=target, management_key="")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(events, [])
 
     def test_missing_target_and_invalid_repair_do_not_write(self):
         for options in ({"missing_target": "langfuse"}, {"repair": "invalid"}):
@@ -308,7 +327,7 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any(event.startswith("preflight.") for event in events))
         self.assertEqual([event for event in events if event.endswith(".apply")], [
-            "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
+            "bootstrap.apply", "ssm.apply", "s3.apply", "openrouter.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
 

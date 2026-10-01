@@ -43,8 +43,40 @@ jobs:
             nix develop --command kubectl kustomize "$overlay" >/dev/null
           done
 
+      - name: Check OpenRouter key provisioning
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          test_dir="$(mktemp -d)"
+          trap 'rm -rf "$test_dir"' EXIT
+          cp IaC/modules/openrouter-ssm-key/* "$test_dir/"
+          cd "$test_dir"
+          tofu init -backend=false -no-color
+          tofu test -no-color
+          EOF
+          then
+            echo "::error::OpenRouter provisioning checks failed; detailed output withheld from public logs."
+            exit 1
+          fi
+          echo "OpenRouter provisioning checks passed; detailed output withheld from public logs."
+
       - name: Check whitespace
         run: git diff --check
+
+      - name: Install Python for gateway checks
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+
+      - name: Check gateway authentication and telemetry
+        run: |
+          python -m venv "${RUNNER_TEMP}/litellm-test"
+          source "${RUNNER_TEMP}/litellm-test/bin/activate"
+          python -m pip install 'litellm[proxy]==1.80.8' 'opentelemetry-sdk==1.25.0' 'openai==2.8.0' 'httpx==0.28.1'
+          python scripts/ci/litellm-attribution-check.py
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh

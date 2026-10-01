@@ -17,7 +17,12 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 settings = json.loads((source / "settings.json").read_text())
 runtime = (source.parent / "runtime.yaml").read_text()
-assert "model-key" not in runtime
+assert "secretName: multica-litellm" in runtime
+assert "mountPath: /usr/local/bin/opencode" in runtime
+opencode = json.loads((source / "opencode.json").read_text())
+assert opencode["model"] == opencode["small_model"] == "litellm/openrouter/free"
+assert opencode["enabled_providers"] == ["litellm"]
+assert opencode["provider"]["litellm"]["options"]["apiKey"] == "{file:/run/multica-litellm/token}"
 assert "litellm-provider-keys" not in runtime
 assert """            - name: tools
               mountPath: /usr/local/bin/multica

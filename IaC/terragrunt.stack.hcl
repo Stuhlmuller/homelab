@@ -3601,6 +3601,12 @@ unit "aws_ssm_parameters" {
   no_dot_terragrunt_stack = true
 }
 
+unit "litellm_openrouter_key" {
+  source                  = "./.catalog/units/live/litellm-openrouter-key"
+  path                    = "live/litellm-openrouter-key"
+  no_dot_terragrunt_stack = true
+}
+
 unit "langfuse_blob_storage" {
   source                  = "./.catalog/units/live/langfuse-blob-storage"
   path                    = "live/langfuse-blob-storage"
