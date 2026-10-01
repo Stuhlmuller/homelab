@@ -71,14 +71,14 @@ const INGESTION_TABLES = [
 const LOCK_NAME = ".langfuse-empty-schema-recovery.lock";
 
 const REQUIRED_47_COLUMNS = [
+  ["events_core", "evaluation_rule_id", "String", "DEFAULT", "if(notEmpty(arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id'))), arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id')), arrayElement(metadata_values, indexOf(metadata_names, 'job_configuration_id')))"],
   ["events_core", "evaluator_execution_is_test", "Bool", "DEFAULT", "has(metadata_names, 'evaluator_test') AND (arrayElement(metadata_values, indexOf(metadata_names, 'evaluator_test')) = 'true')"],
   ["events_core", "evaluator_id", "String", "DEFAULT", "arrayElement(metadata_values, indexOf(metadata_names, 'evaluator_id'))"],
-  ["events_core", "evaluation_rule_id", "String", "DEFAULT", "if(notEmpty(arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id'))), arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id')), arrayElement(metadata_values, indexOf(metadata_names, 'job_configuration_id')))"],
+  ["events_full", "evaluation_rule_id", "String", "DEFAULT", "if(notEmpty(arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id'))), arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id')), arrayElement(metadata_values, indexOf(metadata_names, 'job_configuration_id')))"],
   ["events_full", "evaluator_execution_is_test", "Bool", "DEFAULT", "has(metadata_names, 'evaluator_test') AND (arrayElement(metadata_values, indexOf(metadata_names, 'evaluator_test')) = 'true')"],
   ["events_full", "evaluator_id", "String", "DEFAULT", "arrayElement(metadata_values, indexOf(metadata_names, 'evaluator_id'))"],
-  ["events_full", "evaluation_rule_id", "String", "DEFAULT", "if(notEmpty(arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id'))), arrayElement(metadata_values, indexOf(metadata_names, 'evaluation_rule_id')), arrayElement(metadata_values, indexOf(metadata_names, 'job_configuration_id')))"],
-  ["scores", "evaluator_id", "String", "DEFAULT", "metadata['evaluator_id']"],
   ["scores", "evaluation_rule_id", "String", "DEFAULT", "if(notEmpty(metadata['evaluation_rule_id']), metadata['evaluation_rule_id'], metadata['job_configuration_id'])"],
+  ["scores", "evaluator_id", "String", "DEFAULT", "metadata['evaluator_id']"],
 ];
 
 const REQUIRED_47_INDICES = [

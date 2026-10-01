@@ -87,7 +87,9 @@ class FakeClickHouse {
       if (this.phase !== "post") return tsv([["events_full", "evaluator_id", "String", "DEFAULT", this.options.wrongInitialDefault ? "wrong_default" : "arrayElement(metadata_values, indexOf(metadata_names, 'evaluator_id'))"]]);
       const columns = this.options.wrongDefault ? postColumns.map((row) => [...row]) : postColumns;
       if (this.options.wrongDefault) columns[0][4] = "wrong_default";
-      return tsv(columns);
+      // Match ClickHouse ORDER BY table, name rather than fixture insertion order.
+      return tsv([...columns].sort((left, right) =>
+        left[0].localeCompare(right[0]) || left[1].localeCompare(right[1])));
     }
     if (sql.includes("FROM system.data_skipping_indices")) return tsv(this.phase === "post" ? postIndices : []);
     if (sql.startsWith("SHOW CREATE DATABASE")) return "CREATE DATABASE default ENGINE = Atomic\n";
