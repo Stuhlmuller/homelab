@@ -37,6 +37,13 @@ then reset only the migration marker to `46` and replay pinned migrations.
 Restoring replicas requires clean `48` and complete schema verification; see
 [the writer-fence runbook](../../../clusters/homelab/apps/langfuse/README.md#approved-empty-database-recovery-writer-fence).
 
+Fence PR #1133 merged signed as `712699eb`. Verify the live fence through the
+runbook and retain runtime evidence privately. The separate one-shot replay stage
+adds a retained 1Gi logical-copy claim and a guarded native-migrator Job; it
+does not resume writers or activate callers. See the
+[replay acceptance and failure gates](../../../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
+Recovery completion, UI login and telemetry are not yet claimed.
+
 Deployment-gate finding: the live `homelab-production` environment had only a
 branch-policy protection rule, with no required reviewers, on October 1. The
 above deployments had explicit operator approval, but did not pause for a

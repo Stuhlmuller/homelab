@@ -216,6 +216,12 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
+The incident-specific Langfuse migration replay adds a retained 1Gi
+`langfuse-migration-recovery` claim for verified DDL and full migration history,
+only after proving all nine ingestion tables empty. It preserves private
+artifacts without pruning; both source and copy remain on the same QNAP.
+This is not an automatic backup or verified restore. See the
+[one-shot recovery contract](../../../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
 Multica PostgreSQL now follows the recovered NFS database probe pattern:

@@ -22,6 +22,12 @@ objects after 30 days. There is no automatic logical backup or restore job for
 these datastores. The retained PVCs and S3 lifecycle are not independent
 recovery copies, so record and test a manual restore procedure before claiming
 backup/restore readiness for `https://langfuse.stinkyboi.com`.
+The approved interrupted-migration replay uses a separate retained 1Gi
+`langfuse-migration-recovery` claim for private schema/history artifacts,
+guarded by exact empty-table checks. It does not provide recurring backups or
+an independent failure domain; no restore drill has been completed. Keep this
+claim through Job cleanup and replica restoration; see the
+[recovery runbook](../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
 
 ## NAS Configuration
 

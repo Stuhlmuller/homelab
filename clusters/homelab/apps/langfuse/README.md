@@ -54,7 +54,7 @@ global replica value must also be zero; per-role zeros alone render as one.
 The chart regression checks both rendered replica counts against desired state.
 Datastores, PVCs, credentials and caller routing remain unchanged.
 
-Before adding the one-shot recovery Job in a subsequent reviewed revision,
+Before deploying the one-shot recovery Job in a subsequent reviewed revision,
 verify the fence has reconciled and **no web or worker Pods remain**:
 
 ```sh
@@ -72,11 +72,68 @@ observed deployment generations, zero desired/actual replicas and an empty Pod
 list, including terminating Pods. Then recheck the exact partial migration and
 empty tables, preserve and verify a complete logical recovery copy, and use
 the pinned native migrator to reset only the marker to `46` and replay `up`.
-No recovery Job or database mutation is included in this fence stage. Resume
+PR #1133 included only the fence, not a recovery Job or database mutation. Resume
 all three replica values to one and remove the temporary zero-replica assertion
 in a separate reviewed revision only after
 clean migration `48` and its complete schema are verified. Rolling back this
 fence before recovery merely restores the existing migration crash loop.
+
+### One-shot empty-schema replay
+
+The fence merged as `712699ebfbf381a5f85cdb42fef0605a88c39c99`. Verify both Git
+sources, observed zero replicas and writer Pod absence before replay; retain
+live acceptance evidence privately. The separate `recovery-job.yaml` stage
+keeps all writers stopped. Its command
+replaces the pinned image entrypoint so no automatic migration precedes guards.
+It uses the existing Langfuse service account without an API token and mounts
+only the existing ClickHouse password, as a file. No IAM, RBAC, secret or caller
+changes are included.
+
+`recover-empty-schema.mjs` is deliberately incident-specific, not a general
+backup tool. It requires the exact partial migration 47, all 14 expected objects,
+nine empty ingestion tables, and no active writer or migrator. A fixed exclusive
+PVC lock prevents duplicate recovery processes. It captures database/object DDL
+and every migration-history row with exact 64-bit sequences, rechecks the source,
+then verifies private modes and SHA-256 checksums before publishing the copy.
+Only then does the pinned native migrator append clean marker 46 and run `up`.
+It verifies the preserved history prefix, exact new markers, migration 47
+columns/defaults/indexes/view projections, and migration 48 settings.
+
+The retained `langfuse-migration-recovery` PVC is a separate `1Gi` NFS claim.
+Artifacts are `snapshot-<id>.complete/` plus `receipt-<id>.json`; directories
+must be mode 0700 and files 0600. Raw migration diagnostics stay in the private
+snapshot, never Pod logs. Completed receipts permit database-read-only
+verification; partial/changed artifacts fail closed and are never overwritten
+or pruned. Do not remove a leftover lock or retry a failed Job blindly.
+
+There are no automatic retries, liveness probes or hard Job deadline that
+could kill migration DDL. If it stalls, inspect its status and ClickHouse
+activity read-only before approving cancellation. Any failure keeps the writer
+fence in place. Do not reset storage or force version 47/48 complete.
+
+```sh
+nix develop --command bash scripts/ci/langfuse-startup-check.sh
+nix develop --command node scripts/ci/langfuse-empty-schema-recovery-check.mjs
+kubectl -n langfuse get job langfuse-empty-schema-recovery-20261001
+kubectl -n langfuse get pvc langfuse-migration-recovery
+kubectl -n langfuse logs job/langfuse-empty-schema-recovery-20261001
+```
+
+Require the reviewed Argo revision, Job completion, verified private receipt,
+and independently checked clean 48/schema before resuming. The next reviewed
+revision removes the one-shot Job/ConfigMap wiring and temporary CI fence,
+retains the recovery claim, and restores all three replica values to one.
+The UI and ingestion remain unverified until that final live acceptance.
+
+This logical copy is complete only because the guards prove every ingestion
+table empty. It is on the same NAS, not offsite or an independent failure domain,
+and no restore drill is claimed. Restoration would require a reviewed isolated
+ClickHouse Job with the recorded server version/config and unchanged secret
+references: verify the manifest, recreate the database and base tables, import
+`schema_migrations.tsv`, then recreate dependent views/materialized views.
+Preserve the UUID-bearing DDL and exact history; never replay these files over
+the live database. The existing PostgreSQL/Valkey/S3 state is unchanged and
+must remain available. General datastore backup/restore remains a separate gap.
 
 ## Validation
 
