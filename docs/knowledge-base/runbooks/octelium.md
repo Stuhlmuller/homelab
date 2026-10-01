@@ -36,3 +36,19 @@ gates in [[../architecture/cluster-topology]].
 
 See [[../architecture/secrets-and-identity]], [[tailnet-ingress]], and
 [[../workloads/inventory]].
+
+## macOS API carrier
+
+`scripts/octelium-macos-api-carrier.py` installs a loopback-only native API
+carrier as a system LaunchDaemon. macOS requires administrator permission for
+its port 443 listener. The installer checks TLS, native gRPC, and browser
+gRPC-Web before adding one marked canonical API hostname entry to `/etc/hosts`;
+public DNS remains unchanged. It rejects conflicting local hostname entries or
+listeners, preserves unrelated hosts entries, and provides an uninstall path.
+The macOS curl status-line trailing-space regression is covered by the offline
+check in `scripts/ci/octelium-macos-api-carrier-test.py`.
+
+Both live protocol probes passed. Privileged installation, human session login,
+private gateway reachability, and Multica desktop reconnect acceptance remain
+separate checks. This carrier grants no Octelium permissions and does not
+bypass session expiry. See [the macOS setup procedure](../../octelium.md).

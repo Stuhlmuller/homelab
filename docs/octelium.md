@@ -502,11 +502,41 @@ In a dedicated client container or Pod, map `octelium-api.stinkyboi.com` to
 `127.0.0.1` (for example, a declared Pod `hostAliases` entry) and run the
 carrier in that same network namespace. Binding port 443 may require the
 container's low-port capability. Keep the transport hostname publicly resolved;
-do not map it to loopback. Do not add a workstation-wide hosts entry that
-would redirect the browser's gRPC-Web traffic. The standalone transport probe
+do not map it to loopback. Do not add an unmanaged workstation-wide hosts entry that
+would redirect the browser's gRPC-Web traffic to an unverified listener. The standalone transport probe
 uses a temporary high port and curl `--connect-to`, so it needs neither root
 nor a hosts-file change. CI and OpenClaw client integration remains a separate
 rollout gate; the carrier probe alone does not prove authenticated execution.
+
+### macOS native API carrier
+
+The pinned macOS client fixes the native API port at 443. The repository-owned
+`scripts/octelium-macos-api-carrier.py` installs a loopback-only Cloudflare TCP
+carrier as a LaunchDaemon. This machine requires root to bind that port. The
+installer verifies native gRPC and browser gRPC-Web over the same carrier with
+normal TLS verification before adding one marked `/etc/hosts` entry for the
+canonical API hostname. The public transport hostname remains publicly resolved.
+It refuses an existing unmanaged API hosts entry or occupied listener port.
+
+```sh
+sudo python3 scripts/octelium-macos-api-carrier.py install
+octelium status --domain stinkyboi.com
+# If the saved human session has expired, complete the normal Entra login:
+octelium login --domain stinkyboi.com
+```
+
+The carrier restarts through launchd but does not grant access or keep an expired
+human session valid. Gateway rollout, private client connection, and Multica
+API/WebSocket acceptance remain separate gates. Installation and authenticated
+Mac access are pending administrator execution; unauthenticated native and
+browser protocol probes have passed. Roll back using:
+
+```sh
+sudo python3 scripts/octelium-macos-api-carrier.py uninstall
+```
+
+Uninstall removes only the managed hostname line and this LaunchDaemon. Browser
+API traffic then returns to public DNS; native CLI traffic again needs a carrier.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
