@@ -61,6 +61,42 @@ run "apply_role_describes_only_current_runtime_key" {
   }
 }
 
+run "apply_role_reads_only_langfuse_blob_storage_identity" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.parameter_reader_administration]
+  }
+
+  assert {
+    condition = [
+      for statement in jsondecode(data.aws_iam_policy_document.parameter_reader_administration.json).Statement : {
+        Sid       = statement.Sid
+        Effect    = statement.Effect
+        Actions   = toset(flatten([statement.Action]))
+        Resources = toset(flatten([statement.Resource]))
+      }
+      if anytrue([
+        for resource in flatten([statement.Resource]) :
+        resource == "*" || strcontains(resource, ":user/")
+      ])
+      ] == [{
+        Sid    = "ReadLangfuseBlobStorageIdentity"
+        Effect = "Allow"
+        Actions = toset([
+          "iam:GetUser",
+          "iam:GetUserPolicy",
+          "iam:ListAccessKeys",
+        ])
+        Resources = toset([
+          "arn:aws:iam::123456789012:user/homelab/homelab-langfuse-s3",
+        ])
+    }]
+    error_message = "The apply role may read only the exact Langfuse S3 user's metadata; it must not gain wildcard or IAM write, tag, rotation, or other-user access."
+  }
+}
+
 run "migration_allows_only_both_exact_keys" {
   command = plan
 

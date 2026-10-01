@@ -645,6 +645,23 @@ key. For that repair, accept only the single managed-policy update adding
 does not gain access to apply the operator unit. Do not repair
 this by editing SSM parameter values, changing External Secrets, or patching live
 cluster resources; the failure prevents the SSM declaration plan from completing.
+On September 30, 2026 PDT (October 1 UTC), the reviewed administrator saved
+plan was applied and a fresh full-unit plan was a no-op. CI simulation allows
+only `kms:DescribeKey` on the current SSM key; `kms:Decrypt` and
+`kms:ScheduleKeyDeletion` remain implicitly denied.
+
+On September 30, 2026 PDT (October 1 UTC), an administrator applied the
+reviewed 12-resource `IaC/live/langfuse-blob-storage` bootstrap through its
+normal remote state; its fresh plan was a no-op. Live checks confirmed all four
+bucket public-access blocks, versioning, and both exact S3 SSM parameters as
+current SecureStrings under `alias/aws/ssm`. The unit keeps the bucket,
+`/homelab/homelab-langfuse-s3` IAM user, access key, and resulting SSM
+parameters in one lifecycle. After a reviewed operator apply adds the pending
+grant, the protected workflow gets only `iam:GetUser`, `iam:ListAccessKeys`, and
+`iam:GetUserPolicy` for that exact user so refresh can be a no-op. This
+additional grant has no IAM mutation, tag, rotation, wildcard, or other-user
+permission. Future Langfuse IAM changes remain operator-owned through the same
+remote-state saved-plan path.
 
 The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
 `ARM_TENANT_ID` environment variables mapped from the protected GitHub

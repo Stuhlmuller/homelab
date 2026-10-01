@@ -21,6 +21,7 @@ locals {
     for index in range(var.parameter_reader_policy_slot_count) :
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/${var.parameter_reader_policy_name_prefix}${format("%02d", index)}"
   ]
+  langfuse_blob_storage_user_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
 }
 
 data "aws_iam_policy_document" "parameter_reader_administration" {
@@ -97,6 +98,17 @@ data "aws_iam_policy_document" "parameter_reader_administration" {
     effect    = "Allow"
     actions   = ["kms:DescribeKey"]
     resources = [data.aws_kms_alias.runtime_secret.target_key_arn]
+  }
+
+  statement {
+    sid    = "ReadLangfuseBlobStorageIdentity"
+    effect = "Allow"
+    actions = [
+      "iam:GetUser",
+      "iam:ListAccessKeys",
+      "iam:GetUserPolicy",
+    ]
+    resources = [local.langfuse_blob_storage_user_arn]
   }
 }
 

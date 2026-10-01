@@ -275,7 +275,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   it adds no cryptographic or key-administration permission. Apply only the
   reviewed single-policy saved-plan update through
   [the operator runbook](../../../IaC/operator/README.md#full-unit-reconciliation),
-  never CI self-administration; stop on unrelated drift. The unit also adopts
+  never CI self-administration; stop on unrelated drift. On September 30, 2026
+  PDT (October 1 UTC), the saved plan applied and a fresh full-unit plan was a
+  no-op; CI simulation allows only `kms:DescribeKey` on the current SSM key,
+  with `kms:Decrypt` and `kms:ScheduleKeyDeletion` implicitly denied. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
   with an operator-owned boundary that allows only homelab SSM reads and
   runtime-secret KMS decrypt/describe access. The boundary denies direct
@@ -294,6 +297,17 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 - Langfuse keeps application, datastore, project and headless-init credentials
   under `/homelab/langfuse/`; its namespace consumes `langfuse-secrets`.
   `IaC/live/langfuse-blob-storage` owns the distinct S3 runtime credential pair.
+  On September 30, 2026 PDT (October 1 UTC), an administrator applied its
+  reviewed 12-resource bootstrap through the normal remote state; a fresh plan
+  was a no-op and live checks confirmed public-access blocks, versioning, and
+  both exact S3 SSM parameters as current SecureStrings under `alias/aws/ssm`.
+  After a reviewed operator apply adds the pending grant, CI can use only
+  `iam:GetUser`, `iam:ListAccessKeys`, and
+  `iam:GetUserPolicy` on
+  `arn:aws:iam::716182248480:user/homelab/homelab-langfuse-s3` for Langfuse-user
+  refresh. This additional grant has no IAM write, tag, wildcard, or other-user
+  permission. Future Langfuse IAM lifecycle or credential-rotation changes
+  remain operator-owned through the same saved-plan path.
 - Future LiteLLM app keys are generated separately for NOFX and Multica at
   `/homelab/<app>/litellm-token`; OpenClaw's future key uses
   `/homelab/openclaw/litellm-app-token`. The existing OpenClaw `litellm-token`
