@@ -48,7 +48,21 @@ listeners, preserves unrelated hosts entries, and provides an uninstall path.
 The macOS curl status-line trailing-space regression is covered by the offline
 check in `scripts/ci/octelium-macos-api-carrier-test.py`.
 
-Both live protocol probes passed. Privileged installation, human session login,
-private gateway reachability, and Multica desktop reconnect acceptance remain
-separate checks. This carrier grants no Octelium permissions and does not
+On 2026-10-01 both protocol probes, privileged installation, authenticated
+native status, private Multica HTTP 200, and desktop runtime refresh passed on
+the home LAN. `scripts/multica-desktop-connect.py` owns the user LaunchAgent and
+backed-up desktop HTTP/WebSocket endpoint configuration. It starts at login and
+restarts failed clients. Off-LAN and new chat-send acceptance remain separate
+checks. This carrier grants no Octelium permissions and does not
 bypass session expiry. See [the macOS setup procedure](../../octelium.md).
+
+
+### Gateway retirement finding
+
+The 2026-10-01 authenticated Gateway inventory still included `zimaboard-2`
+after its dataplane label was removed; only `zimaboard-0` ran a gateway agent.
+Upstream v0.35.0 nocturne removes a Gateway when its Node disappears, but label
+removal does not trigger that cleanup. The home-LAN connection succeeded with
+this inventory; its effect on reconnect latency is unproven. Add a validated,
+repository-owned retirement path before removing the stale Gateway; do not
+delete the Kubernetes Node merely to force cleanup.
