@@ -117,8 +117,10 @@ Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 Langfuse web allows ten minutes for database migrations before liveness checks
-begin. The first deployment's interrupted ClickHouse migration remains a
-separate recovery gate; see [[../architecture/ai-observability]].
+begin. Web and worker are temporarily fenced at zero replicas for the approved
+empty-database migration recovery; datastores and claims remain intact. Resume
+requires clean migration 48 and schema verification; see
+[[../architecture/ai-observability]].
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
