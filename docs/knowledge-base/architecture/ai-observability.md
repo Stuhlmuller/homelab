@@ -43,6 +43,12 @@ adds a retained 1Gi logical-copy claim and a guarded native-migrator Job; it
 does not resume writers or activate callers. See the
 [replay acceptance and failure gates](../../../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
 Recovery completion, UI login and telemetry are not yet claimed.
+The CLI regression covers projected ConfigMap symlinks: module and invocation
+paths must resolve to the same canonical file before its entrypoint runs.
+Accept recovery only with the fixed success marker and independent postchecks,
+not Job exit status alone. The reviewed `-r2` retry retains the writer fence and
+recovery claim; require terminal prior execution and unchanged preconditions
+before deployment. Keep all supporting runtime evidence private.
 
 Deployment-gate finding: the live `homelab-production` environment had only a
 branch-policy protection rule, with no required reviewers, on October 1. The

@@ -89,6 +89,13 @@ It uses the existing Langfuse service account without an API token and mounts
 only the existing ClickHouse password, as a file. No IAM, RBAC, secret or caller
 changes are included.
 
+The CLI compares canonical paths so Kubernetes' projected ConfigMap symlinks
+cannot silently skip its entrypoint. The offline regression invokes both real
+and projected paths with filesystem permissions denying secrets and writes.
+The `-r2` Job name declares a reviewed retry; deploy it only after the prior Job
+is terminal and read-only checks establish no recovery ran. Never delete or
+restart a Job manually. An exit code alone is not a recovery success signal.
+
 `recover-empty-schema.mjs` is deliberately incident-specific, not a general
 backup tool. It requires the exact partial migration 47, all 14 expected objects,
 nine empty ingestion tables, and no active writer or migrator. A fixed exclusive
@@ -114,12 +121,13 @@ fence in place. Do not reset storage or force version 47/48 complete.
 ```sh
 nix develop --command bash scripts/ci/langfuse-startup-check.sh
 nix develop --command node scripts/ci/langfuse-empty-schema-recovery-check.mjs
-kubectl -n langfuse get job langfuse-empty-schema-recovery-20261001
+kubectl -n langfuse get job langfuse-empty-schema-recovery-20261001-r2
 kubectl -n langfuse get pvc langfuse-migration-recovery
-kubectl -n langfuse logs job/langfuse-empty-schema-recovery-20261001
+kubectl -n langfuse logs job/langfuse-empty-schema-recovery-20261001-r2
 ```
 
-Require the reviewed Argo revision, Job completion, verified private receipt,
+Require the reviewed Argo revision, Job completion with its fixed success marker,
+verified private receipt,
 and independently checked clean 48/schema before resuming. The next reviewed
 revision removes the one-shot Job/ConfigMap wiring and temporary CI fence,
 retains the recovery claim, and restores all three replica values to one.
