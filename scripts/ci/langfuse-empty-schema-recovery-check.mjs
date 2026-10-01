@@ -1,6 +1,6 @@
 // Offline recovery regression: no cluster, credentials, or network access.
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { CLICKHOUSE_VERSION, IMAGE, MIGRATE, MIGRATIONS, fixedConfig, recover } from "../../clusters/homelab/apps/langfuse/recover-empty-schema.mjs";
