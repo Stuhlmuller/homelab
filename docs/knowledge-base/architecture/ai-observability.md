@@ -29,6 +29,14 @@ prevents the short-probe failure; existing dirty state still needs an approved
 repository-owned recovery. Never force version `47` complete. Initialization,
 authenticated UI and real per-app telemetry remain unverified.
 
+The operator approved data-preserving recovery on October 1. Its first stage
+sets global/web/worker replicas to zero without changing datastores, PVCs or
+credentials. The next stage must wait for both writer Pod sets to disappear,
+capture and verify the complete empty-database schema and migration history,
+then reset only the migration marker to `46` and replay pinned migrations.
+Restoring replicas requires clean `48` and complete schema verification; see
+[the writer-fence runbook](../../../clusters/homelab/apps/langfuse/README.md#approved-empty-database-recovery-writer-fence).
+
 Deployment-gate finding: the live `homelab-production` environment had only a
 branch-policy protection rule, with no required reviewers, on October 1. The
 above deployments had explicit operator approval, but did not pause for a

@@ -46,6 +46,32 @@ repository-owned path, quiesced writers and a verified recovery copy. Do not
 reset PVCs, rotate credentials or run ad hoc migration commands. Reverting the
 probe value does not roll back database state and reintroduces the startup risk.
 
+### Approved empty-database recovery: writer fence
+
+Web and worker are temporarily set to zero replicas while recovering the
+interrupted first migration. The chart uses Helm's `default` function, so its
+global replica value must also be zero; per-role zeros alone render as one.
+The chart regression checks both rendered replica counts against desired state.
+Datastores, PVCs, credentials and caller routing remain unchanged.
+
+Before adding the one-shot recovery Job in a subsequent reviewed revision,
+verify the fence has reconciled and **no web or worker Pods remain**:
+
+```sh
+kubectl -n argocd get application langfuse
+kubectl -n langfuse get deploy langfuse-web langfuse-worker
+kubectl -n langfuse get pods -l 'app.kubernetes.io/component in (web,worker)'
+```
+
+Require the reviewed revision, zero desired/actual replicas and an empty Pod
+list, including terminating Pods. Then recheck the exact partial migration and
+empty tables, preserve and verify a complete logical recovery copy, and use
+the pinned native migrator to reset only the marker to `46` and replay `up`.
+No recovery Job or database mutation is included in this fence stage. Resume
+all three replica values to one in a separate reviewed revision only after
+clean migration `48` and its complete schema are verified. Rolling back this
+fence before recovery merely restores the existing migration crash loop.
+
 ## Validation
 
 Use the protected full Terragrunt apply or its dependency-aware
