@@ -42,3 +42,24 @@ for protocol in ("application/grpc", "application/grpc-web+proto"):
     with patch.object(carrier.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=response.replace("200 ", "403 "))):
         assert not carrier.probe(protocol)
 print("macOS curl status-line and TLS failure checks passed")
+
+# The user agent must keep the client in the foreground and publish only loopback.
+spec = importlib.util.spec_from_file_location("desktop", root / "scripts/multica-desktop-connect.py")
+desktop = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(desktop)
+config = desktop.launch_config("/usr/local/bin/octelium")
+args = config["ProgramArguments"]
+assert config["KeepAlive"] and config["RunAtLoad"]
+assert "--detach" not in args and "--no-dns" in args
+assert args[-1] == "multica:127.0.0.1:18080"
+with tempfile.TemporaryDirectory() as directory:
+    profile = Path(directory)
+    original = '{"apiUrl":"http://multica","other":"preserved"}'
+    (profile / "desktop.json").write_text(original)
+    desktop.configure_desktop(profile)
+    desktop.configure_desktop(profile)
+    updated = desktop.json.loads((profile / "desktop.json").read_text())
+    assert updated == {"apiUrl": desktop.API, "wsUrl": "ws://127.0.0.1:18080/ws", "other": "preserved"}
+    assert (profile / "desktop.before-octelium.json").read_text() == original
+    assert (profile / "desktop.json").stat().st_mode & 0o777 == 0o600
+print("Multica persistent connection and config backup checks passed")

@@ -522,10 +522,31 @@ octelium login --domain stinkyboi.com
 ```
 
 The carrier restarts through launchd but does not grant access or keep an expired
-human session valid. Gateway rollout, private client connection, and Multica
-API/WebSocket acceptance remain separate gates. Installation and authenticated
-Mac access are pending administrator execution; unauthenticated native and
-browser protocol probes have passed. Roll back using:
+human session valid. After login, install the persistent Multica connection as
+the signed-in user (without sudo):
+
+```sh
+python3 scripts/multica-desktop-connect.py
+```
+
+This user LaunchAgent runs the native client in foreground gvisor mode, leaves
+system DNS unchanged, and publishes Multica on `127.0.0.1:18080`. Only after the
+route returns HTTP 200 does it back up and update `~/.multica/desktop.json` for
+HTTP and WebSocket access. Restart Multica to load the endpoint. launchd starts
+the connection at login and restarts failed clients; expired sessions still
+require normal Octelium login.
+
+On 2026-10-01, privileged carrier installation, authenticated native API,
+private HTTP 200, and a restarted Multica desktop displaying both runtimes
+Online were verified on the home LAN. Off-LAN reachability and a new chat send
+remain unverified. Roll back the desktop connection before removing its carrier:
+
+```sh
+launchctl bootout "gui/$(id -u)/com.stuhlmuller.multica-octelium"
+rm -f ~/Library/LaunchAgents/com.stuhlmuller.multica-octelium.plist
+cp ~/.multica/desktop.before-octelium.json ~/.multica/desktop.json
+# Restart Multica, then remove the API carrier if no other client uses it:
+```
 
 ```sh
 sudo python3 scripts/octelium-macos-api-carrier.py uninstall
