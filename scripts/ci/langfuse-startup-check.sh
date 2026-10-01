@@ -2,6 +2,9 @@
 set -euo pipefail
 
 values=clusters/homelab/apps/langfuse/values.yaml
+# Remove this temporary fence assertion only in the reviewed post-recovery resume.
+yq -o=json '.langfuse | [.replicas, .web.replicas, .worker.replicas]' "$values" |
+  jq -e 'all(.[]; . == 0)' >/dev/null
 # Check the actual pinned chart output: unsupported values silently do nothing.
 helm template langfuse langfuse --repo https://langfuse.github.io/langfuse-k8s \
   --version 2.1.1 --namespace langfuse \

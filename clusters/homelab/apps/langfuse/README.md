@@ -58,17 +58,23 @@ Before adding the one-shot recovery Job in a subsequent reviewed revision,
 verify the fence has reconciled and **no web or worker Pods remain**:
 
 ```sh
-kubectl -n argocd get application langfuse
-kubectl -n langfuse get deploy langfuse-web langfuse-worker
+kubectl -n argocd get application langfuse -o json |
+  jq '{sync: .status.sync.status, revisions: .status.sync.revisions}'
+kubectl -n langfuse get deploy langfuse-web langfuse-worker -o json |
+  jq '.items[] | {name: .metadata.name, generation: .metadata.generation,
+    observed: .status.observedGeneration, desired: .spec.replicas,
+    actual: (.status.replicas // 0)}'
 kubectl -n langfuse get pods -l 'app.kubernetes.io/component in (web,worker)'
 ```
 
-Require the reviewed revision, zero desired/actual replicas and an empty Pod
+Require the reviewed Git revision in both Git-source entries, Synced status,
+observed deployment generations, zero desired/actual replicas and an empty Pod
 list, including terminating Pods. Then recheck the exact partial migration and
 empty tables, preserve and verify a complete logical recovery copy, and use
 the pinned native migrator to reset only the marker to `46` and replay `up`.
 No recovery Job or database mutation is included in this fence stage. Resume
-all three replica values to one in a separate reviewed revision only after
+all three replica values to one and remove the temporary zero-replica assertion
+in a separate reviewed revision only after
 clean migration `48` and its complete schema are verified. Rolling back this
 fence before recovery merely restores the existing migration crash loop.
 
