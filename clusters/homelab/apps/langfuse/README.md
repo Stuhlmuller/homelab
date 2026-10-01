@@ -28,6 +28,24 @@ restore job for PostgreSQL, Valkey, or ClickHouse. Retained PVCs protect
 against accidental GitOps deletion but are not an independent recovery copy.
 Treat state recovery as unverified until a restore procedure and drill exist.
 
+## Migration startup
+
+The web container runs database migrations before starting HTTP. Chart `2.1.1`
+has no web startup probe; its default liveness checks killed the first startup
+after about 47 seconds, leaving ClickHouse migration `47` dirty. The supported
+`langfuse.web.livenessProbe.initialDelaySeconds: 600` gives migrations ten
+minutes before liveness checks begin. Readiness still withholds traffic until
+the app is ready; steady-state liveness timing is unchanged. A hung startup
+can therefore take ten minutes to be recycled.
+
+`nix develop --command bash scripts/ci/langfuse-startup-check.sh` checks the
+actual pinned chart render, not just the values file. This prevention does not
+repair an existing dirty migration. Inspect the last clean version and partial
+schema; never mark an incomplete migration complete. Recovery needs a reviewed,
+repository-owned path, quiesced writers and a verified recovery copy. Do not
+reset PVCs, rotate credentials or run ad hoc migration commands. Reverting the
+probe value does not roll back database state and reintroduces the startup risk.
+
 ## Validation
 
 Use the protected full Terragrunt apply or its dependency-aware

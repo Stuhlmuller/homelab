@@ -9,6 +9,36 @@ and [Langfuse deployment](../../../clusters/homelab/apps/langfuse/README.md).
 
 ## Rollout evidence
 
+On 2026-10-01 UTC, protected apply
+[36806826625](https://github.com/Stuhlmuller/homelab/actions/runs/36806826625)
+registered Langfuse at `b4ee43ce`. SSM/S3 producers converged, all three PVCs
+bound, and the Langfuse, LiteLLM app-key and NOFX ExternalSecrets became Ready.
+The declared Octelium Service reconciled idempotently; protected DNS run
+[36807529935](https://github.com/Stuhlmuller/homelab/actions/runs/36807529935)
+succeeded and the public FQDN resolved. These are foundation milestones, not
+UI or ingestion acceptance. Caller runtime configuration remains unchanged.
+
+Web startup began at 02:47:25Z; kubelet killed it for failed liveness at
+02:48:12Z while ClickHouse migrations were running. Read-only inspection found
+version `47` dirty after clean `46`: only its first added column exists; seven
+columns, four indexes and the materialized-view projections are missing.
+All nine ingestion tables had zero rows at 03:03:57Z. Datastores and worker
+were Ready, but web remained unavailable. The
+[startup allowance](../../../clusters/homelab/apps/langfuse/README.md#migration-startup)
+prevents the short-probe failure; existing dirty state still needs an approved
+repository-owned recovery. Never force version `47` complete. Initialization,
+authenticated UI and real per-app telemetry remain unverified.
+
+Deployment-gate finding: the live `homelab-production` environment had only a
+branch-policy protection rule, with no required reviewers, on October 1. The
+above deployments had explicit operator approval, but did not pause for a
+GitHub environment review. This differs from `docs/ci-cd.md`; related
+[PR #1111](https://github.com/Stuhlmuller/homelab/pull/1111) was still open.
+Authorization for removing required environment reviewers was not verified.
+Resolve that policy/documentation discrepancy through its owner before relying
+on an environment review gate; this Langfuse fix does not change protection
+rules.
+
 Read-only inspection on 2026-09-26 found no Langfuse namespace, Application,
 PVCs or staged caller Secrets. Existing LiteLLM, OpenClaw and NOFX Applications
 were Synced/Healthy. All four nodes were Ready without MemoryPressure. The

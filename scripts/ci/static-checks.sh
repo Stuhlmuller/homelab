@@ -409,6 +409,10 @@ echo "::group::Harbor chart, credentials and cold bootstrap"
 bash scripts/ci/harbor-check.sh
 echo "::endgroup::"
 
+echo "::group::Langfuse migration startup allowance"
+bash scripts/ci/langfuse-startup-check.sh
+echo "::endgroup::"
+
 echo "::group::NOFX runtime storage"
 kubectl kustomize clusters/homelab/apps/nofx |
   yq ea -o=json -I=0 '[.]' - |
