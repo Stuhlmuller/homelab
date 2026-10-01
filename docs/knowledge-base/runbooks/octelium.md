@@ -66,3 +66,18 @@ removal does not trigger that cleanup. The home-LAN connection succeeded with
 this inventory; its effect on reconnect latency is unproven. Add a validated,
 repository-owned retirement path before removing the stale Gateway; do not
 delete the Kubernetes Node merely to force cleanup.
+
+
+The follow-up failure on 2026-10-01 was a running native client with no local
+listener, while the API carrier and authenticated session remained healthy.
+Restarting that client restored HTTP 200. Process-only `KeepAlive` cannot catch
+this state. The installed supervisor checks HTTP every five seconds, allows 90
+seconds for startup and 30 seconds of sustained failure after readiness, then
+reaps the client so launchd can restart it. Session expiration still requires
+login; the original client hang trigger remains unknown. The supervisor is
+copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
+
+A live acceptance test froze only the managed client with SIGSTOP. The
+supervisor reaped it, launchd restarted the connection, HTTP returned 200, and
+the same desktop Autopilot page recovered to show 13 entries without an app
+restart. The offline regression exercises a running but unresponsive child.
