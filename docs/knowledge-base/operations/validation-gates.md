@@ -97,6 +97,52 @@ Workflow changes are covered by `scripts/ci/conftest-policies.sh` and
 40-character commit SHA; keep an optional trailing version comment when it helps
 reviewers map the immutable pin back to the upstream release tag.
 
+### Chainguard Actions
+
+The workflow migration replaces 56 references across 18 workflows with
+SHA-pinned `chainguard-actions` equivalents. Checkout preserves its existing
+v5.0.1/v7.0.1 split; upload-artifact v7.0.1, semantic-release v6.0.0, and
+Super-Linter v8.7.0 preserve their upstream versions. Nix installation moves
+to v31.11.1, AWS credential setup to v6.2.0, and CodeQL to v4.38.2 because
+the catalog lacks the exact previously pinned revisions. Inputs, permissions,
+triggers, environments, and commands remain unchanged.
+
+This uses hardened **actions**, not replacement runner images. Super-Linter's
+[hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
+still runs the upstream GHCR container, now pinned by digest. Other migrated
+actions use JavaScript or composite steps. Ubuntu hosted runners and Nix-managed
+tools remain; application images built or inspected by CI are separate workload
+contracts. `terragrunt-apply-request.yml` has no external actions to replace.
+
+`nix-community/cache-nix-action` remains pinned upstream: no corresponding
+Chainguard repository was available during this migration. Recheck the catalog
+before replacing it; do not remove caching or substitute a different cache
+implementation merely to change the publisher.
+
+Before enabling CI, confirm the repository owner's Chainguard Actions entitlement;
+its status has not been verified locally. GitHub's repository policy was checked:
+Actions are enabled, all publishers are allowed, and SHA pinning is required.
+See the
+[migration prerequisites](https://edu.chainguard.dev/chainguard/actions/overview/).
+The selected Nix and semantic-release actions include vendor usage telemetry;
+the Nix action sends repository/action identity and uses an audience-specific
+OIDC token when the job already permits it. No new credentials or permissions
+are added. Review each pinned `source.json`, `action.yml`, and `HARDENING.md`
+when updating these dependencies.
+
+Keep the artifact-upload prohibition effective for both upstream and Chainguard
+names in `policy/workflows.rego`. Refresh the exact workflow security hashes only
+after reviewing the full definitions. Validate with `actionlint`,
+`conftest verify --policy policy`, workflow policy evaluation, and the static
+gate. GitHub execution remains the integration check; rollback restores the
+previous action references and their matching workflow security hashes.
+
+Migration validation passed locally: the full static gate, actionlint, 89 policy
+regressions, 1,064 workflow policy checks, and 51 Harbor publication tests.
+Normalized workflow comparison confirmed only `uses:` values changed.
+
+### Workflow security contracts
+
 The pull-request `Terragrunt Gate` is an always-present aggregate. Its
 unprivileged static job runs for every PR and owns live-scope detection. Only a
 trusted same-repository PR whose diff contains a declared live input may enter
@@ -166,7 +212,7 @@ buildless `actions` analysis job because this repository has no compiled
 application source. Treat it as CI/CD security automation: workflow edits
 should pass the static policy gate locally before relying on GitHub's code
 scanning result.
-The CodeQL action v4.38.1 pin (`1c5b675653bb5c22dbe9b12b556ec555138e09fd`)
+The Chainguard CodeQL action v4.38.2 pin (`05a2b18f97905888db8f883471cc925f1a97a01c`)
 is recorded in the exact normalized workflow security hash. Updating action
 revisions requires reviewing that workflow and refreshing its hash alongside
 the pin; the credentialed-job inventory and permission checks still apply.
