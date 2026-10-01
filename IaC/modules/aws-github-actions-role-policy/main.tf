@@ -91,6 +91,13 @@ data "aws_iam_policy_document" "parameter_reader_administration" {
     actions   = ["iam:ListAttachedGroupPolicies"]
     resources = [local.parameter_reader_group_arn]
   }
+
+  statement {
+    sid       = "DescribeRuntimeSecretKey"
+    effect    = "Allow"
+    actions   = ["kms:DescribeKey"]
+    resources = [data.aws_kms_alias.runtime_secret.target_key_arn]
+  }
 }
 
 data "aws_iam_policy_document" "github_actions_assume_role" {

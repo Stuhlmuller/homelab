@@ -29,7 +29,9 @@ production environments in `Stuhlmuller/homelab` and
 `Stuhlmuller/github-iac`.
 The permission grant is limited to the ten exact managed-policy slots
 `homelab-ssm-parameter-reader-00` through `-09` and attachments to the exact
-`homelab-ssm-parameter-readers` group. The role cannot manage this bootstrap
+`homelab-ssm-parameter-readers` group, plus `kms:DescribeKey` on the resolved
+current runtime-secret key. This metadata-only grant adds no cryptographic or
+key-administration actions. The role cannot manage this bootstrap
 policy, its own attachment, or another role.
 
 The same unit adopts the existing `external-secrets_aws-ssm-auth` IAM user,
@@ -217,6 +219,16 @@ user require an un-targeted operator plan. Import
 `aws_iam_user.external_secrets` as `external-secrets_aws-ssm-auth` first only
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
+
+The September 29, 2026 Langfuse apply reached SSM refresh but failed because
+the workflow role's KMS grant still named the former runtime key, not the
+current `alias/aws/ssm` target. Reconcile the existing managed policy through
+this administrator-owned unit; CI must not widen its own permissions. For this
+correction, require a saved plan whose only managed-resource change is the
+additional exact-key `kms:DescribeKey` statement in
+`aws_iam_policy.parameter_reader_administration`. Stop if trust, attachments,
+the External Secrets user/boundary, or any other resource would change.
+Rollout is pending until that reviewed administrator apply and live verification.
 
 After backend-disabled initialization, run the offline boundary regression with
 `terragrunt --log-disable run --no-auto-init -- test -no-color`. It evaluates

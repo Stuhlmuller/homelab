@@ -268,7 +268,14 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   before planning. CI must not traverse `IaC/operator` or gain permission to
   replace its own attachment. The
   grant is bounded to policy slots `00` through `09` and the exact
-  `homelab-ssm-parameter-readers` group. The unit also adopts
+  `homelab-ssm-parameter-readers` group, plus metadata-only `kms:DescribeKey`
+  on the resolved current runtime-secret key. The September 29, 2026 Langfuse
+  apply reached SSM refresh but its identity policy still covered only the old
+  runtime key. The correction reuses the operator-owned policy and attachment;
+  it adds no cryptographic or key-administration permission. Apply only the
+  reviewed single-policy saved-plan update through
+  [the operator runbook](../../../IaC/operator/README.md#full-unit-reconciliation),
+  never CI self-administration; stop on unrelated drift. The unit also adopts
   `external-secrets_aws-ssm-auth`, removes direct user policies, and caps it
   with an operator-owned boundary that allows only homelab SSM reads and
   runtime-secret KMS decrypt/describe access. The boundary denies direct
