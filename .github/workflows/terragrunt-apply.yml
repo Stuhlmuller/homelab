@@ -48,15 +48,13 @@ jobs:
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}" || { echo "::error::Expected ${EXPECTED_SHA}, got ${ACTUAL_SHA}."; exit 1; }
 
       - name: Check Out Repository
-        # actions/checkout@v5
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
           fetch-depth: 2
           persist-credentials: false
 
       - name: Install Nix
-        # cachix/install-nix-action@v31
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
         with:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
@@ -116,8 +114,7 @@ jobs:
           }
 
       - name: Check Out Repository
-        # actions/checkout@v5
-        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -153,8 +150,7 @@ jobs:
           printf 'APPLY_BASE_SHA=%s\n' "${base_sha}" >>"${GITHUB_ENV}"
 
       - name: Install Nix
-        # cachix/install-nix-action@v31
-        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
         with:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
@@ -175,8 +171,7 @@ jobs:
           test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-production environment secret."; exit 1; }
 
       - name: Configure AWS Credentials
-        # aws-actions/configure-aws-credentials@v6.1.1
-        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
         with:
           aws-region: ${{ env.AWS_REGION }}
           mask-aws-account-id: true

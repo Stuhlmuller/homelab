@@ -147,7 +147,8 @@ deny contains msg if {
 	steps := object.get(job, "steps", [])
 	some index
 	uses := object.get(steps[index], "uses", "")
-	startswith(uses, "actions/upload-artifact@")
+	some prefix in {"actions/upload-artifact@", "chainguard-actions/actions-upload-artifact@"}
+	startswith(uses, prefix)
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 

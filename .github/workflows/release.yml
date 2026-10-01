@@ -19,13 +19,13 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: chainguard-actions/actions-checkout@279383ec3b8d70f964ffa5a2151ea3d2a5317ec6 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Semantic Release Dry Run
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        uses: chainguard-actions/cycjimmy-semantic-release-action@b4e37369e853084a108f15ea5f1a9fc0cfe757ef # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -39,13 +39,13 @@ jobs:
       contents: write # for creating releases
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: chainguard-actions/actions-checkout@279383ec3b8d70f964ffa5a2151ea3d2a5317ec6 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@b12c8f6015dc215fe37bc154d4ad456dd3833c90 # v6.0.0
+        uses: chainguard-actions/cycjimmy-semantic-release-action@b4e37369e853084a108f15ea5f1a9fc0cfe757ef # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
