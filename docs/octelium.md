@@ -887,3 +887,13 @@ backbone.
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before
 running the operator script again.
+
+
+The follow-up failure on 2026-10-01 was a running native client with no local
+listener, while the API carrier and authenticated session remained healthy.
+Restarting that client restored HTTP 200. Process-only `KeepAlive` cannot catch
+this state. The installed supervisor checks HTTP every five seconds, allows 90
+seconds for startup and 30 seconds of sustained failure after readiness, then
+reaps the client so launchd can restart it. Session expiration still requires
+login; the original client hang trigger remains unknown. The supervisor is
+copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.

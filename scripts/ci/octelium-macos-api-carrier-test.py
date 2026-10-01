@@ -1,9 +1,9 @@
 """Offline checks for the exact-host macOS carrier installation boundary."""
 import importlib.util
 import tempfile
-from types import SimpleNamespace
-from unittest.mock import patch
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 root = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("carrier", root / "scripts/octelium-macos-api-carrier.py")
@@ -48,7 +48,7 @@ spec = importlib.util.spec_from_file_location("desktop", root / "scripts/multica
 desktop = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(desktop)
 config = desktop.launch_config("/usr/local/bin/octelium")
-args = config["ProgramArguments"]
+args = desktop.client_args("/usr/local/bin/octelium")
 assert config["KeepAlive"] and config["RunAtLoad"]
 assert "--detach" not in args and "--no-dns" in args
 assert args[-1] == "multica:127.0.0.1:18080"
@@ -63,3 +63,15 @@ with tempfile.TemporaryDirectory() as directory:
     assert (profile / "desktop.before-octelium.json").read_text() == original
     assert (profile / "desktop.json").stat().st_mode & 0o777 == 0o600
 print("Multica persistent connection and config backup checks passed")
+
+# Reproduce a client that stays alive but never serves HTTP; it must be reaped.
+child = Mock()
+child.poll.return_value = None
+with patch.object(desktop.subprocess, "Popen", return_value=child), \
+     patch.object(desktop, "route_ready", return_value=False), \
+     patch.object(desktop.time, "monotonic", side_effect=[0, 91]), \
+     patch.object(desktop.signal, "signal"):
+    desktop.supervise("octelium")
+child.terminate.assert_called_once()
+child.wait.assert_called_once_with(timeout=5)
+print("Live but unresponsive client is terminated for launchd recovery")
