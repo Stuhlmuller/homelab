@@ -117,7 +117,8 @@ Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 Langfuse web allows ten minutes for database migrations before liveness checks
-begin. The post-recovery desired state restores web and worker to one replica
+begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
+The post-recovery desired state restores web and worker to one replica
 and removes the one-shot Job/ConfigMap, gated on private clean migration 48,
 schema and receipt verification. Datastores and caller settings are unchanged;
 the separate 1Gi `langfuse-migration-recovery` NFS claim remains managed and

@@ -33,10 +33,11 @@ langfuse:
     resources:
       requests:
         cpu: 250m
-        memory: 512Mi
+        # Reserve the full web memory budget for scheduling.
+        memory: 2Gi
       limits:
         cpu: "1"
-        memory: 1Gi
+        memory: 2Gi
     pod:
       additionalEnv:
         - name: LANGFUSE_INIT_ORG_ID

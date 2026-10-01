@@ -19,6 +19,8 @@ helm template langfuse langfuse --repo https://langfuse.github.io/langfuse-k8s \
     ([.[] | select(.metadata.name == "langfuse-web")
       | .spec.template.spec.containers[] | select(.name == "langfuse-web")] |
     length == 1 and (.[0] |
+      .resources.requests.memory == "2Gi" and
+      .resources.limits.memory == "2Gi" and
       .livenessProbe.initialDelaySeconds >= 600 and
       .livenessProbe.httpGet.path == "/api/public/health" and
       .livenessProbe.periodSeconds == 10 and
@@ -26,7 +28,7 @@ helm template langfuse langfuse --repo https://langfuse.github.io/langfuse-k8s \
       .readinessProbe.httpGet.path == "/api/public/ready" and
       .readinessProbe.initialDelaySeconds == 20))
   ' >/dev/null
-echo "Langfuse: rendered replicas, migration startup allowance and health probes verified"
+echo "Langfuse: rendered replicas, web memory budget, startup allowance and health probes verified"
 
 # Keep the recovery copy managed without redeploying its one-shot writer.
 kubectl kustomize clusters/homelab/apps/langfuse |

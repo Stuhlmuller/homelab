@@ -7,6 +7,22 @@ alias remain unchanged. Caller activation is a separate implementation PR;
 this foundation contains no activation template or gateway hook. See the [gateway contract](../../../clusters/homelab/apps/litellm/README.md)
 and [Langfuse deployment](../../../clusters/homelab/apps/langfuse/README.md).
 
+## Web resource contract
+
+The pinned web image uses Node 24. Web memory request and limit are both `2Gi`, with
+no runtime heap override; the chart regression checks the rendered allocation.
+Worker/CPU budgets and caller configuration stay unchanged. This remains a
+homelab-sized allocation below upstream production guidance. Recheck placement,
+surge capacity and actual available memory before deployment, then verify
+initialization, readiness and authenticated UI; retain runtime evidence privately.
+See [web memory](../../../clusters/homelab/apps/langfuse/README.md#web-memory).
+
+Source-based hardening follow-up: the pinned image runs as `nextjs`, but web
+and worker values do not explicitly declare a restricted Pod security context.
+Review image needs and test non-root enforcement, no privilege escalation,
+capability dropping and RuntimeDefault seccomp in a separate scoped change.
+Source: `clusters/homelab/apps/langfuse/values.yaml` and the pinned chart render.
+
 ## Rollout evidence
 
 On 2026-10-01 UTC, protected apply
