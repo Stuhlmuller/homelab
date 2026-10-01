@@ -16,7 +16,7 @@ spec:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: langfuse-empty-schema-recovery-20261001
+  name: langfuse-empty-schema-recovery-20261001-r2
   namespace: langfuse
   annotations:
     argocd.argoproj.io/sync-wave: "1"

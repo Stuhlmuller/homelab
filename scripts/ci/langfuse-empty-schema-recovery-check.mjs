@@ -1,8 +1,10 @@
 // Offline recovery regression: no cluster, credentials, or network access.
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import { CLICKHOUSE_VERSION, IMAGE, MIGRATE, MIGRATIONS, fixedConfig, recover } from "../../clusters/homelab/apps/langfuse/recover-empty-schema.mjs";
 
 const config = {
@@ -130,6 +132,27 @@ async function rejects(promise, code) {
 }
 
 assert.match(fixedConfig().fenceRevision, /^[0-9a-f]{40}$/);
+
+{
+  // Exercise the actual CLI through Kubernetes' projected ConfigMap symlinks.
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "langfuse-recovery-entrypoint-")));
+  const payload = join(root, "..payload");
+  const name = "recover-empty-schema.mjs";
+  mkdirSync(payload);
+  copyFileSync(fileURLToPath(new URL(`../../clusters/homelab/apps/langfuse/${name}`, import.meta.url)), join(payload, name));
+  symlinkSync("..payload", join(root, "..data"));
+  symlinkSync(`..data/${name}`, join(root, name));
+  for (const script of [join(payload, name), join(root, name)]) {
+    // Deny credentials, writes and child processes even if run on a cluster node.
+    const result = spawnSync(process.execPath, ["--permission", `--allow-fs-read=${root}`, script], {
+      cwd: root, env: {}, encoding: "utf8", timeout: 5_000,
+    });
+    assert.ifError(result.error);
+    assert.equal(result.status, 1, "CLI must enter main and fail closed without secret access");
+    assert.equal(result.stdout, "");
+    assert.equal(result.stderr, "Langfuse empty-schema recovery failed (unexpected-error)\n");
+  }
+}
 
 for (const [options, code] of [
   [{ wrongVersion: true }, "unexpected-clickhouse-version"],

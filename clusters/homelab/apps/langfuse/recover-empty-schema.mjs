@@ -13,6 +13,7 @@ import {
   openSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   renameSync,
   rmdirSync,
   statSync,
@@ -23,7 +24,7 @@ import {
 } from "node:fs";
 import { request } from "node:http";
 import { basename, join, relative } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 export const IMAGE = "docker.io/langfuse/langfuse:4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd";
 export const HTTP_HOST = "langfuse-clickhouse.langfuse.svc.cluster.local";
@@ -691,4 +692,5 @@ async function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();
+// ConfigMap keys are symlinks; Node resolves the module but not argv[1].
+if (process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1])) await main();
