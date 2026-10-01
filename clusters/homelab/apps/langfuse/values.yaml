@@ -27,6 +27,9 @@ langfuse:
     pullPolicy: IfNotPresent
   web:
     replicas: 1
+    # Chart 2.1.1 has no web startupProbe; migrations run before HTTP starts.
+    livenessProbe:
+      initialDelaySeconds: 600
     resources:
       requests:
         cpu: 250m
