@@ -26,7 +26,8 @@ The approved interrupted-migration replay uses a separate retained 1Gi
 `langfuse-migration-recovery` claim for private schema/history artifacts,
 guarded by exact empty-table checks. It does not provide recurring backups or
 an independent failure domain; no restore drill has been completed. Keep this
-claim through Job cleanup and replica restoration; see the
+claim through Job cleanup and replica restoration. `recovery-pvc.yaml` retains
+the same managed claim after the Job/ConfigMap wiring is removed; see the
 [recovery runbook](../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
 
 ## NAS Configuration

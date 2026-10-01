@@ -48,13 +48,13 @@ probe value does not roll back database state and reintroduces the startup risk.
 
 ### Approved empty-database recovery: writer fence
 
-Web and worker are temporarily set to zero replicas while recovering the
-interrupted first migration. The chart uses Helm's `default` function, so its
+The recovery fence sets web and worker to zero replicas before replaying the
+interrupted first migration. The chart uses Helm's `default` function, so the
 global replica value must also be zero; per-role zeros alone render as one.
 The chart regression checks both rendered replica counts against desired state.
 Datastores, PVCs, credentials and caller routing remain unchanged.
 
-Before deploying the one-shot recovery Job in a subsequent reviewed revision,
+Before deploying the one-shot recovery Job in a separate reviewed revision,
 verify the fence has reconciled and **no web or worker Pods remain**:
 
 ```sh
@@ -80,12 +80,12 @@ fence before recovery merely restores the existing migration crash loop.
 
 ### One-shot empty-schema replay
 
-The fence merged as `712699ebfbf381a5f85cdb42fef0605a88c39c99`. Verify both Git
-sources, observed zero replicas and writer Pod absence before replay; retain
-live acceptance evidence privately. The separate `recovery-job.yaml` stage
-keeps all writers stopped. Its command
-replaces the pinned image entrypoint so no automatic migration precedes guards.
-It uses the existing Langfuse service account without an API token and mounts
+The fence merged as `712699ebfbf381a5f85cdb42fef0605a88c39c99`. The separate
+replay revision requires both Git sources, observed zero replicas and writer
+Pod absence to be verified first; retain live acceptance evidence privately.
+That revision deploys a one-shot Job while keeping all writers stopped. Its
+command replaces the pinned image entrypoint so no automatic migration precedes
+guards. It uses the existing Langfuse service account without an API token and mounts
 only the existing ClickHouse password, as a file. No IAM, RBAC, secret or caller
 changes are included.
 
@@ -106,14 +106,15 @@ Only then does the pinned native migrator append clean marker 46 and run `up`.
 It verifies the preserved history prefix, exact new markers, migration 47
 columns/defaults/indexes/view projections, and migration 48 settings.
 
-The retained `langfuse-migration-recovery` PVC is a separate `1Gi` NFS claim.
+The retained `langfuse-migration-recovery` PVC is a separate `1Gi` NFS claim,
+declared in `recovery-pvc.yaml` independently of the removed Job.
 Artifacts are `snapshot-<id>.complete/` plus `receipt-<id>.json`; directories
 must be mode 0700 and files 0600. Raw migration diagnostics stay in the private
 snapshot, never Pod logs. Completed receipts permit database-read-only
 verification; partial/changed artifacts fail closed and are never overwritten
 or pruned. Do not remove a leftover lock or retry a failed Job blindly.
 
-There are no automatic retries, liveness probes or hard Job deadline that
+The replay Job has no automatic retries, liveness probes or hard deadline that
 could kill migration DDL. If it stalls, inspect its status and ClickHouse
 activity read-only before approving cancellation. Any failure keeps the writer
 fence in place. Do not reset storage or force version 47/48 complete.
@@ -121,17 +122,37 @@ fence in place. Do not reset storage or force version 47/48 complete.
 ```sh
 nix develop --command bash scripts/ci/langfuse-startup-check.sh
 nix develop --command node scripts/ci/langfuse-empty-schema-recovery-check.mjs
-kubectl -n langfuse get job langfuse-empty-schema-recovery-20261001-r2
 kubectl -n langfuse get pvc langfuse-migration-recovery
-kubectl -n langfuse logs job/langfuse-empty-schema-recovery-20261001-r2
 ```
 
-Require the reviewed Argo revision, Job completion with its fixed success marker,
-verified private receipt,
-and independently checked clean 48/schema before resuming. The next reviewed
-revision removes the one-shot Job/ConfigMap wiring and temporary CI fence,
-retains the recovery claim, and restores all three replica values to one.
-The UI and ingestion remain unverified until that final live acceptance.
+### Resume and retain the recovery copy
+
+This resume revision must not merge until the reviewed replay revision is
+Synced, the Job has completed with its fixed success marker and no active
+recovery Pod, the private receipt is verified, and an independent read-only
+check confirms clean migration 48
+and its complete schema. Keep that evidence private; do not put database
+snapshots, receipt contents or raw logs in the public repository or PR.
+
+The desired state restores global/web/worker replicas to one and removes the
+one-shot Job and generated ConfigMap. The unchanged recovery PVC remains
+managed by Argo CD with `Prune=false,Delete=false`; no datastore, credential or
+caller configuration changes. The incident-specific helper and its offline
+regression remain in git, but are not mounted or executed by a workload.
+The chart check keeps the migration startup allowance and verifies the retained
+claim plus absence of recovery Job/ConfigMap resources.
+
+After rollout, verify both Git-source revisions, Synced/Healthy status,
+observed deployment generations, Ready web/worker and datastores, Bound claims,
+and absence of the recovery Job/ConfigMap. Then verify project initialization
+and authenticated UI access. Caller activation and real telemetry remain
+separate acceptance gates; restored replicas do not prove either.
+
+If resume fails, use a forward reviewed change setting all three replica
+values to zero while preserving the startup allowance, recovery claim and
+datastores. Do not revert the whole resume revision: that would reintroduce the
+one-shot Job. Do not rerun recovery, reset storage or change migration markers
+without a new reviewed recovery plan.
 
 This logical copy is complete only because the guards prove every ingestion
 table empty. It is on the same NAS, not offsite or an independent failure domain,
@@ -276,8 +297,9 @@ Before a follow-up activation PR:
    Obtain normal `homelab-production` approval and require that exact run to
    succeed. If `main` changed, review the new commit before redispatching; do
    not bypass SHA or environment gates or edit DNS in the provider console.
-3. Verify the Langfuse Application is Synced/Healthy, all three PVCs are Bound,
-   the project is initialized, and the authenticated UI opens through Octelium.
+3. Verify the Langfuse Application is Synced/Healthy, datastore and retained
+   recovery PVCs are Bound, the project is initialized, and the authenticated
+   UI opens through Octelium.
    Verify `langfuse-secrets` and `litellm-app-keys`
    ExternalSecrets are Ready without printing their values.
    Run `nix develop --command python3 scripts/octelium-tunnel-check.py` and
