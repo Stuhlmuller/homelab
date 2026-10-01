@@ -7,3 +7,9 @@ resources:
   - externalsecret.yaml
   - datastores.yaml
   - virtualservice.yaml
+  - recovery-job.yaml
+configMapGenerator:
+  - name: langfuse-empty-schema-recovery
+    namespace: langfuse
+    files:
+      - recover-empty-schema.mjs
