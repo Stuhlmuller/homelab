@@ -117,11 +117,11 @@ Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 Langfuse web allows ten minutes for database migrations before liveness checks
-begin. Web and worker are temporarily fenced at zero replicas for the approved
-empty-database migration recovery; datastores and claims remain intact. A
-one-shot native recovery Job retains its verified schema/history copy on a
-separate 1Gi `langfuse-migration-recovery` NFS claim. Resume
-requires clean migration 48 and schema verification; see
+begin. The post-recovery desired state restores web and worker to one replica
+and removes the one-shot Job/ConfigMap, gated on private clean migration 48,
+schema and receipt verification. Datastores and caller settings are unchanged;
+the separate 1Gi `langfuse-migration-recovery` NFS claim remains managed and
+retained. Restored replicas do not establish UI or telemetry acceptance; see
 [[../architecture/ai-observability]].
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and

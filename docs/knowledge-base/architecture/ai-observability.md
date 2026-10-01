@@ -25,13 +25,13 @@ columns, four indexes and the materialized-view projections are missing.
 All nine ingestion tables had zero rows at 03:03:57Z. Datastores and worker
 were Ready, but web remained unavailable. The
 [startup allowance](../../../clusters/homelab/apps/langfuse/README.md#migration-startup)
-prevents the short-probe failure; existing dirty state still needs an approved
-repository-owned recovery. Never force version `47` complete. Initialization,
+prevents the short-probe failure but does not repair interrupted state; that
+requires the separate reviewed recovery. Never force version `47` complete. Initialization,
 authenticated UI and real per-app telemetry remain unverified.
 
 The operator approved data-preserving recovery on October 1. Its first stage
-sets global/web/worker replicas to zero without changing datastores, PVCs or
-credentials. The next stage must wait for both writer Pod sets to disappear,
+fences global/web/worker replicas at zero without changing datastores, PVCs or
+credentials. The replay stage must wait for both writer Pod sets to disappear,
 capture and verify the complete empty-database schema and migration history,
 then reset only the migration marker to `46` and replay pinned migrations.
 Restoring replicas requires clean `48` and complete schema verification; see
@@ -39,16 +39,22 @@ Restoring replicas requires clean `48` and complete schema verification; see
 
 Fence PR #1133 merged signed as `712699eb`. Verify the live fence through the
 runbook and retain runtime evidence privately. The separate one-shot replay stage
-adds a retained 1Gi logical-copy claim and a guarded native-migrator Job; it
+uses a retained 1Gi logical-copy claim and a guarded native-migrator Job; it
 does not resume writers or activate callers. See the
 [replay acceptance and failure gates](../../../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
-Recovery completion, UI login and telemetry are not yet claimed.
 The CLI regression covers projected ConfigMap symlinks: module and invocation
 paths must resolve to the same canonical file before its entrypoint runs.
 Accept recovery only with the fixed success marker and independent postchecks,
 not Job exit status alone. The reviewed `-r2` retry retains the writer fence and
 recovery claim; require terminal prior execution and unchanged preconditions
 before deployment. Keep all supporting runtime evidence private.
+
+The resume revision is gated on successful replay and private receipt/schema
+verification. It restores all three replica values to one, removes the recovery
+Job/ConfigMap wiring and keeps the recovery claim managed. It does not activate
+callers or establish UI/telemetry acceptance. If resume fails, a forward PR
+fences all three replicas at zero without reintroducing the Job; see
+[resume and rollback](../../../clusters/homelab/apps/langfuse/README.md#resume-and-retain-the-recovery-copy).
 
 Deployment-gate finding: the live `homelab-production` environment had only a
 branch-policy protection rule, with no required reviewers, on October 1. The

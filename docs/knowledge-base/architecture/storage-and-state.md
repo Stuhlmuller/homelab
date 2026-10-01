@@ -216,10 +216,12 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
-The incident-specific Langfuse migration replay adds a retained 1Gi
+The incident-specific Langfuse migration replay uses a retained 1Gi
 `langfuse-migration-recovery` claim for verified DDL and full migration history,
 only after proving all nine ingestion tables empty. It preserves private
 artifacts without pruning; both source and copy remain on the same QNAP.
+`recovery-pvc.yaml` keeps the same claim managed after removal of the one-shot
+Job and generated ConfigMap. Resume and rollback must not remove this claim.
 This is not an automatic backup or verified restore. See the
 [one-shot recovery contract](../../../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
