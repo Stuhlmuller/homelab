@@ -963,7 +963,10 @@ handling, retention and matching scheduled/PostSync Pod contracts. The MySQL
 server and dump client both permit 512 MiB packets for stored MDM packages.
 
 The targeted protected apply validates existing platform readiness before shared
-SSM/IAM reconciliation and Fleet registration. Require published Harbor digests,
+SSM/IAM reconciliation and Fleet registration. The fixed Fleet mirror inventory
+must match the application's rendered images exactly and remain a subset of the
+full reviewed inventory; scoped publication retains digest and complete anonymous
+pull verification. Require published Harbor digests,
 ready workloads and secrets, Bound claims, the pinned public version, blocked
 setup aliases, authenticated administrator access and the PostSync backup's
 verified-publication log. Nightly recurrence, offsite recovery and actual device

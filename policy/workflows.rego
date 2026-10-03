@@ -312,16 +312,24 @@ trap 'rm -f "$private_log" "$public_status"' EXIT
 if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 set -euo pipefail
 umask 077
-bash scripts/ci/harbor-publish.sh mirror
+case "$IMAGE_SCOPE" in
+  all)
+    bash scripts/ci/harbor-publish.sh mirror
+    ;;
+  fleet)
+    bash scripts/ci/harbor-publish.sh mirror-fleet
+    ;;
+  *) exit 2 ;;
+esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'8bdfa8a07cea5ca1878f961b685d671fafc0d98db236ae9c4cdaa05735b97f30  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'237e3d7d78c469c2e8e2b3c27405bb404a13b57ed82f32f89f57cf5757aefdd5  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
   exit 1
 fi
-echo "All inventoried public images copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."`
+echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."`
 
 private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]

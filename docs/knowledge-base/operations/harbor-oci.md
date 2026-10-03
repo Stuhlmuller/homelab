@@ -78,6 +78,22 @@ mirror copy had successful scans for all 62 uploaded runnable manifests and
 16 indexes inspected; 15 unscanned objects were in-toto attestations. This
 snapshot does not establish scan completion for images not yet uploaded.
 
+## Scoped application image publication
+
+`harbor-mirror.yml` accepts only `image_scope=all` (the default) or `fleet`.
+Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
+exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
+missing, extra or non-inventoried sources. Both modes keep reviewed-main guards,
+anonymous upstream reads, immutable digest checks and complete anonymous pulls.
+They use the same existing mirror publisher and destination repositories.
+
+The full-inventory workflow has no verified successful run as of October 3.
+Run `36511537440` failed after 75 minutes copying an unrelated Python image
+with sanitized category `transport-failed`; that missing digest remained in the
+148-image inventory. Fleet's initial rollout therefore uses the fixed scope to
+avoid coupling deployment to the full historical mirror audit. This does not
+establish full-inventory mirror completion.
+
 ## Package Migration
 
 Repository inventory found only the NOFX backend and frontend custom images.

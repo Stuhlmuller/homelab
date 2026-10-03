@@ -127,7 +127,8 @@ digests before registering it. Talos uses Harbor with upstream fallback disabled
 After signed protected merge of the reviewed change:
 
 ```sh
-gh workflow run harbor-mirror.yml --ref main -f expected_sha='<current-main-sha>'
+gh workflow run harbor-mirror.yml --ref main \
+  -f expected_sha='<current-main-sha>' -f image_scope=fleet
 # Require successful digest publication before continuing.
 gh workflow run terragrunt-apply.yml --ref main \
   -f expected_sha='<current-main-sha>' -f argocd_app=fleet
@@ -142,6 +143,11 @@ External Secrets, Istio, storage and public-tunnel applications, a Ready
 Fleet destination before dispatch. The scoped path avoids unrelated AzureAD
 changes that currently block a full apply when Azure credentials are absent.
 No manual Kubernetes or cloud mutation is needed.
+
+The fixed Fleet mirror scope contains exactly the four images rendered by this
+application. It verifies each manifest digest and a complete anonymous pull,
+without processing the full homelab image history. CI rejects scope drift or
+sources absent from the reviewed full inventory.
 
 Local gates:
 
