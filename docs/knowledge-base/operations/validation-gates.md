@@ -973,6 +973,20 @@ verified-publication log. Nightly recurrence, offsite recovery and actual device
 enrollment are separate gates. See the
 [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
+On October 3, the reviewed scoped mirror, targeted apply, DNS reconciliation,
+public administrator/API checks and initial backup passed; the Fleet runbook
+records their workflow IDs. Omitted ExternalSecret server defaults caused
+repeated Argo self-healing, so Fleet now declares refresh interval, remote-ref
+strategies and template merge policy explicitly, matching the live API defaults.
+
+An external Python `urllib` probe with its default user agent received HTTP 403
+with a Cloudflare response header. The same endpoint returned 200 for curl, the
+browser and an identified `Fleet-verification/1.0` client; authenticated API
+checks passed with that client. The exact edge rule was not identified or
+changed. If a device client receives 403, inspect edge events and capture any
+needed exception in desired state; this probe does not establish device
+enrollment compatibility.
+
 ## Harbor OCI rollout
 
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression

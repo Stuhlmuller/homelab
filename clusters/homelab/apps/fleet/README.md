@@ -184,6 +184,27 @@ through a reviewed PR. Preserve the Fleet Application and PVCs while investigati
 For an app-version rollback, consult the release's migration notes and retain a
 database backup from before the upgrade.
 
+## Deployment acceptance: 2026-10-03
+
+The [scoped mirror](https://github.com/Stuhlmuller/homelab/actions/runs/37157590653),
+[targeted apply](https://github.com/Stuhlmuller/homelab/actions/runs/37158855174)
+and [DNS reconciliation](https://github.com/Stuhlmuller/homelab/actions/runs/37159252098)
+succeeded at reviewed main `df9dc622`. Fleet 4.92.2, MySQL 8.4.11 and Redis
+started with zero restarts. All five ExternalSecrets were Ready and all three
+PVCs Bound. The live MySQL packet limit is 536870912 bytes.
+
+Public TLS, health/version, administrator login, configured server URL and
+authenticated host listing passed; the verification session was revoked.
+The browser rendered the login form. All public setup aliases returned 404.
+The initial backup Job completed and published the checksum-verified set
+`fleet-20261003T224520Z`. These checks found one administrator and zero devices.
+Nightly recurrence, offsite recovery, restore testing and real-device enrollment
+remain separate acceptance gates.
+
+External Secrets defaults are explicit because omitted remote-reference,
+refresh-interval and template-merge defaults caused Argo to repeat self-healing
+despite healthy workloads. Declaring the defaults preserves secret semantics.
+
 Upstream references: [hosting](https://fleetdm.com/docs/deploy/deploy-fleet),
 [configuration](https://fleetdm.com/docs/configuration/fleet-server-configuration),
 [v4.92.2 source](https://github.com/fleetdm/fleet/tree/fleet-v4.92.2).
