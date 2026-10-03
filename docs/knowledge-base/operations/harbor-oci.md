@@ -355,3 +355,27 @@ pending AI secrets; the [targeted secret plan](../../harbor-image-mirroring.md#i
 limits publication to the new mirror credential and documents shared IAM/random
 state dependencies requiring explicit operator approval. Image transfer
 and node cutover remain pending; source verification is not migration evidence.
+
+## Recovery dependency review (HOME-12 / HOME-13)
+
+At source baseline `a5b296da70068a666a526ff4b3656361d01157aa`, rollback
+requires GitHub current-main checks and the sole `.199` Talos endpoint.
+The [recovery contract proposal](../../harbor-mirror-recovery-contract.md)
+records pinned Talos 1.11.3 source, synthetic negative tests, an immutable
+rollback-only bundle design, and unrun approval/operational gates. No offline
+path is implemented; current-main activation checks remain intact. Worker
+local routing exists in source, but worker certificate issuance depends on
+control-plane trustd. Direct-worker operational recovery remains unproven.
+Activation status and independent backup availability are separate HOME-15 /
+HOME-2 evidence tasks. These tests establish no live health or recovery time.
+
+The proposal requires a named operator/approved maintenance window and exclusion
+of concurrent configuration writers; recapture alone cannot close the apply
+race. Approval binds the full replacement map, upstream egress, deadlines and
+stop conditions. Config readback establishes only config restoration. Transport
+recovery and the proposed 30-minute target require a separately approved,
+initially uncached digest-pinned upstream pull with actual transfer evidence,
+without cache deletion. The contract's required future test matrix covers
+authenticity, authority, identity/certificates, tools/parsers, uncertain apply,
+CLI privacy/cleanup and combined outages. Those tests and operational proof,
+signed commits and pinned-tool validation remain acceptance gates.
