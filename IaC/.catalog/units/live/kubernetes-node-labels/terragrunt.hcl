@@ -11,6 +11,13 @@ terraform {
 }
 
 inputs = {
+  node_annotations = {
+    # Octelium otherwise advertises the ISP-facing IPv6 address, which is not
+    # reachable through the reviewed Tailscale 10.1.0.0/24 fallback route.
+    zimaboard-0 = {
+      "octelium.com/override-gw-ip" = "10.1.0.200"
+    }
+  }
   node_labels = {
     zimaboard-0 = {
       "octelium.com/node-mode-dataplane" = ""

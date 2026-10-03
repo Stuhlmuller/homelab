@@ -184,6 +184,11 @@ device when Octelium is unavailable or when a local-LAN workflow has not yet
 moved. GitHub Actions uses Octelium Service `kubernetes-api-ci` instead of this
 tailnet route.
 
+The Terragrunt node unit sets `octelium.com/override-gw-ip=10.1.0.200` on the
+active Octelium dataplane node. This makes authenticated CLIENT sessions use the
+LAN address carried by the same `10.1.0.0/24` subnet route instead of the
+unreachable ISP-facing IPv6 address discovered by the gateway agent.
+
 Do not remove the Tailscale Application while the operator is remote. Retire it
 only after direct `octelium connect` plus `kubernetes-api.homelab`, the same
 Service from a Cordium Workspace, and a replacement Talos transport have all
