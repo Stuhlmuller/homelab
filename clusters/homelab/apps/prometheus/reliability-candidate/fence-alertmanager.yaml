@@ -1,0 +1,7 @@
+alertmanager:
+  alertmanagerSpec:
+    replicas: 0
+    paused: false
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain

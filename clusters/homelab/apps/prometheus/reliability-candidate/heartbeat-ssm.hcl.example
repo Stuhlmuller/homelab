@@ -1,0 +1,8 @@
+# Activation change to IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl:
+# add this entry under inputs.parameters. The existing module derives its exact
+# reader ARN and creates a SecureString placeholder. It does NOT supply the URL.
+# Apply only after approval of the new SSM parameter and reader permission.
+"/homelab/monitoring/heartbeat-url" = {
+  description   = "Independent monitoring-loss receiver HTTPS success URL."
+  initial_value = local.placeholder
+}

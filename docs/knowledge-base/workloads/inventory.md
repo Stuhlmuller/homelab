@@ -265,3 +265,12 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
 networking, migration and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+## Inactive monitoring reliability candidate
+
+Prometheus and Alertmanager retain their active NFS dependency. HOME-4 stages
+`prometheus/reliability-candidate/` for dedicated local ext4 claims and an
+independent Watchdog receiver, with HOME-2 operator metrics scraping. Hardware,
+live fencing/startup integration, backup publication and receiver approval are
+unresolved. No candidate is registered. See
+[monitoring reliability](../../monitoring-reliability.md).

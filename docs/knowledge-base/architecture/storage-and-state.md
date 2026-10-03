@@ -489,3 +489,15 @@ registry storage. Preserve a fresh encrypted off-node etcd backup after key
 creation and restore that Secret before cert-manager can regenerate it. Keep
 the public key independently for historical signature verification. See
 [[../operations/harbor-oci]] for the pending signing acceptance gates.
+
+### HOME-4 implementation candidate
+
+[Monitoring reliability](../../monitoring-reliability.md) stages retained local
+PV/PVCs with distinct claim names and zero-replica chart overlays, plus a
+checksummed cold-copy helper. Dedicated healthy ext4 hardware is the proposed
+architecture; no node/device is selected or verified. Original claims remain
+untouched. Production mount wiring, a live all-writer fence collector and
+actual-startup guard remain implementation gates; independent retrieval and
+application replay remain acceptance gates. HOME-2's publisher needs a
+monitoring adapter before it can publish these directory checkpoints. Neither
+this candidate nor merged design PR #973 proves a migration.

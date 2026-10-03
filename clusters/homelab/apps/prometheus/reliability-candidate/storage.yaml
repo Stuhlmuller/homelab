@@ -1,0 +1,100 @@
+# Inactive template. Resolve hardware and mount provisioning before registration.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: monitoring-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-local-v1
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: monitoring-local
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: monitoring
+    name: prometheus-local-v1-prometheus-prometheus-kube-prometheus-prometheus-0
+  local:
+    path: /var/mnt/monitoring/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - REQUIRES-VERIFIED-STORAGE-NODE
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-local-v1-prometheus-prometheus-kube-prometheus-prometheus-0
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: monitoring-local
+  volumeName: prometheus-local-v1
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: alertmanager-local-v1
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: monitoring-local
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: monitoring
+    name: alertmanager-local-v1-alertmanager-prometheus-kube-prometheus-alertmanager-0
+  local:
+    path: /var/mnt/monitoring/alertmanager
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - REQUIRES-VERIFIED-STORAGE-NODE
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alertmanager-local-v1-alertmanager-prometheus-kube-prometheus-alertmanager-0
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: monitoring-local
+  volumeName: alertmanager-local-v1
+  resources:
+    requests:
+      storage: 10Gi

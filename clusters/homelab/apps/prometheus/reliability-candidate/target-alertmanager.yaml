@@ -1,0 +1,24 @@
+# Inactive; replicas intentionally remain zero. See the runbook.
+alertmanager:
+  alertmanagerSpec:
+    replicas: 0
+    paused: false
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
+    nodeSelector:
+      kubernetes.io/hostname: REQUIRES-VERIFIED-STORAGE-NODE
+    retention: 120h
+    storage:
+      volumeClaimTemplate:
+        metadata:
+          name: alertmanager-local-v1
+          annotations:
+            argocd.argoproj.io/sync-options: Prune=false,Delete=false
+        spec:
+          storageClassName: monitoring-local
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi

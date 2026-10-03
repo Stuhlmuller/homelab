@@ -268,3 +268,12 @@ See [`clusters/homelab/apps/harbor/README.md`](../clusters/homelab/apps/harbor/R
 for backup and coordinated database/blob recovery. A same-NAS backup is not
 independent disaster recovery; retain GHCR migration sources until the registry
 restore contract has been proven.
+
+## Monitoring reliability candidate
+
+Prometheus and Alertmanager remain on NFS in active desired state. HOME-4
+stages dedicated local ext4 claims, retained rollback copies and an independent
+heartbeat in [monitoring reliability](monitoring-reliability.md). No existing
+worker disk or Acer system disk is approved as the target. The migration remains
+blocked on verified storage, live fence/startup integration and independent
+backup/restore proof; NFS rollback is an emergency path with the original risk.

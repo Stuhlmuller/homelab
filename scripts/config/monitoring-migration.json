@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "migration_id": null,
+  "workload": "prometheus",
+  "source_pvc_uid": null,
+  "source_pv": null,
+  "target_pvc_uid": null,
+  "target_pv": null,
+  "application_image_digest": null,
+  "writer_nodes": [],
+  "fence_collector": null,
+  "fence_collector_sha256": null
+}

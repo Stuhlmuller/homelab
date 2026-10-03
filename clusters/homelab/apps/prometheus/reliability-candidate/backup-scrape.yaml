@@ -1,0 +1,39 @@
+# HOME-2 integration template. Replace reserved .invalid target only after the
+# operator host, TLS/auth and HOME-3 ingress contract are approved and measured.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: independent-backup-operator
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  scrapeInterval: 60s
+  scrapeTimeout: 10s
+  scheme: HTTPS
+  staticConfigs:
+    - targets: [backup-operator.invalid:9100]
+      labels:
+        job: independent-backup-operator
+  metricRelabelings:
+    - sourceLabels: [__name__]
+      regex: homelab_application_backup_.*
+      action: keep
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: independent-backup-scrape
+  namespace: monitoring
+spec:
+  groups:
+    - name: homelab.independent-backup-scrape
+      rules:
+        - alert: IndependentBackupMetricsUnavailable
+          expr: up{job="independent-backup-operator"} != 1 or absent(up{job="independent-backup-operator"})
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Independent backup operator metrics are unavailable
+            description: Check the approved operator host, TLS, exporter and network path; absence is not backup success.

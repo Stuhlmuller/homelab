@@ -1,0 +1,24 @@
+# Inactive; replicas intentionally remain zero. See the runbook.
+prometheus:
+  prometheusSpec:
+    replicas: 0
+    paused: false
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
+    nodeSelector:
+      kubernetes.io/hostname: REQUIRES-VERIFIED-STORAGE-NODE
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          name: prometheus-local-v1
+          annotations:
+            argocd.argoproj.io/sync-options: Prune=false,Delete=false
+        spec:
+          storageClassName: monitoring-local
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 50Gi

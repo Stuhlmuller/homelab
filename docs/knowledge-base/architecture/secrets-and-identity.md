@@ -437,3 +437,13 @@ No AWS signing resource or public transparency log is used. Namespace Pod
 creators and cluster administrators can access the key: keep those permissions
 restricted, back up etcd to encrypted off-node storage, and retain trusted public
 keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
+
+### Inactive monitoring heartbeat contract
+
+HOME-4 proposes `/homelab/monitoring/heartbeat-url` through an inactive SSM
+example and the `alertmanager-independent-heartbeat` ExternalSecret. It preserves
+Discord routing and adds only Watchdog delivery to an approved external
+receiver. No endpoint/account/value or IAM grant is provisioned. Approval and
+the existing parameter module's exact reader grant precede activation. See
+[monitoring reliability](../../monitoring-reliability.md); receiver-side missed
+heartbeat delivery, not HTTP success alone, is the acceptance gate.

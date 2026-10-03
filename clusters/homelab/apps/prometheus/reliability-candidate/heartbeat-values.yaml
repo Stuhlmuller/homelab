@@ -1,0 +1,6 @@
+defaultRules:
+  disabled:
+    Watchdog: false
+alertmanager:
+  alertmanagerSpec:
+    configSecret: alertmanager-independent-heartbeat
