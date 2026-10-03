@@ -954,6 +954,22 @@ missing-Service recreation without treating auth failures as absence, and
 live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
 
+## Fleet device management rollout
+
+Fleet adds bootstrap API regression tests for closed first-admin setup,
+administrator identity validation, token revocation and credential redaction.
+Backup tests cover dump and checksum failures, atomic publication, collision
+handling, retention and matching scheduled/PostSync Pod contracts. The MySQL
+server and dump client both permit 512 MiB packets for stored MDM packages.
+
+The targeted protected apply validates existing platform readiness before shared
+SSM/IAM reconciliation and Fleet registration. Require published Harbor digests,
+ready workloads and secrets, Bound claims, the pinned public version, blocked
+setup aliases, authenticated administrator access and the PostSync backup's
+verified-publication log. Nightly recurrence, offsite recovery and actual device
+enrollment are separate gates. See the
+[Fleet runbook](../../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+
 ## Harbor OCI rollout
 
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression

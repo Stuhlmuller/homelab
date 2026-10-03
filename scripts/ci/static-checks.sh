@@ -18,6 +18,7 @@ python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
+python3 -I scripts/ci/fleet-backup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 -I scripts/ci/harbor-images-check-test.py

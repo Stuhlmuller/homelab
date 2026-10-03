@@ -718,3 +718,14 @@ Every full production apply compares against the latest successful historical
 push apply or full dispatch SHA. Rerunning after one or more failed applies
 therefore keeps the full unapplied range instead of considering only the newest
 commit. Targeted Argo dispatches do not move that checkpoint.
+
+The protected `argocd_app=fleet` dispatch checks the existing AppProject,
+External Secrets namespace allowlist, healthy platform/public-tunnel apps,
+CRDs and storage before writing state. It applies the shared SSM/IAM saved plan
+through Conftest, then only the Fleet Application saved plan. This provisions
+Fleet's generated credentials without reconciling AzureAD, Langfuse storage,
+bootstrap or unrelated Applications. Review shared SSM/IAM changes before
+dispatch; that unit still owns other applications' secret contracts. Publish the
+reviewed images with `harbor-mirror.yml` first and reconcile public DNS with
+`octelium-public-tunnel.yml` afterward, following the
+[Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).

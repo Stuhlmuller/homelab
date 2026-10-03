@@ -14,6 +14,8 @@ data:
     mysqlx=OFF
     skip-log-bin
     max_connections=60
+    # Fleet stores MDM packages in MySQL; keep server and backup client aligned.
+    max_allowed_packet=536870912
     innodb_buffer_pool_size=256M
     performance_schema=OFF
     character-set-server=utf8mb4

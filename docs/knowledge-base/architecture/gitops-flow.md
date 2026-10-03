@@ -137,13 +137,16 @@ health settings to the repository-owned Argo CD configuration.
 
 ## Dependency Rule
 
-Fleet's initial rollout uses the existing full protected apply so shared SSM
-credentials/IAM are reconciled before app registration. A targeted
-`argocd_app=fleet` dispatch alone does not create its secrets. Mirror the reviewed
+Fleet's targeted protected `argocd_app=fleet` apply reconciles shared SSM
+credentials/IAM before registering only Fleet. It requires the existing
+AppProject, secret store and platform dependencies to permit Fleet first;
+it does not advance the full-apply checkpoint. This avoids unrelated AzureAD
+changes whose credentials are currently absent from CI. Mirror the reviewed
 Fleet/MySQL/Redis digests to Harbor before registering the new app; reconcile
 the declared public DNS through `octelium-public-tunnel.yml`. The app's internal
-PostSync bootstrap creates its first administrator; both public setup API aliases
-remain blocked. See the [Fleet rollout](../../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+PostSync bootstrap creates its first administrator, followed by a verified
+database backup; both public setup API aliases remain blocked. See the
+[Fleet rollout](../../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not
 prove runtime readiness. A dependency is ready only when Argo CD reports the

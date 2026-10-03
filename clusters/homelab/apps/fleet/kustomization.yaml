@@ -12,9 +12,14 @@ resources:
   - networkpolicy.yaml
   - authorizationpolicy.yaml
   - backup-cronjob.yaml
+  - backup-job.yaml
   - virtualservice.yaml
   - bootstrap-job.yaml
 configMapGenerator:
+  - name: fleet-backup
+    namespace: fleet
+    files:
+      - backup.sh
   - name: fleet-bootstrap
     namespace: fleet
     files:

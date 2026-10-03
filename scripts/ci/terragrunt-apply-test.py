@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Exercise the actual apply shell offline; no cloud CLI is on the fixture PATH."""
 import json
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 SOURCE = Path(__file__).parent
 APPS = ["external-secrets", "cert-manager", "istio", "platform-storage"]
@@ -43,6 +43,7 @@ units = {
     "IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth": "secret",
     "IaC/live/argocd-apps": "apps",
     "IaC/live/argocd-apps/langfuse": "repair",
+    "IaC/live/argocd-apps/fleet": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -98,6 +99,9 @@ elif tool == "kubectl":
         event("preflight.crds")
     elif args == ["wait", "--for=condition=Ready", "--timeout=0s", "clustersecretstore/aws-ssm"]:
         event("preflight.store")
+    elif args == ["get", "clustersecretstore", "aws-ssm", "-o", "json"]:
+        event("preflight.store_scope")
+        print(json.dumps(config["store"]))
     elif args == ["get", "storageclass", "nfs-default", "-o", "name"]:
         event("preflight.storage")
     elif args == ["apply", "-f", "clusters/homelab/apps/external-secrets/namespace.yaml"]:
@@ -124,7 +128,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "nofx"):
+        for name in ("langfuse", "fleet", "nofx"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -189,11 +193,18 @@ else:
 
 class TerragruntApplyTest(unittest.TestCase):
     def run_apply(self, target="langfuse", repair="false", **overrides):
-        config = {"target": target, "project": json.loads(json.dumps(PROJECT)),
-                  "app_names": APPS, "crds": CRDS,
+        project = json.loads(json.dumps(PROJECT))
+        app_names = APPS
+        if target == "fleet":
+            project["spec"]["destinations"][0]["namespace"] = "fleet"
+            project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
+            app_names = [*APPS, "octelium-public"]
+        config = {"target": target, "project": project,
+                  "app_names": app_names, "crds": CRDS,
+                  "store": {"spec": {"conditions": [{"namespaces": ["fleet"]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
-                  }} for name in APPS], **overrides}
+                  }} for name in app_names], **overrides}
         with tempfile.TemporaryDirectory(prefix="terragrunt-apply-test-") as tmp:
             root = Path(tmp).resolve()
             binaries = root / "bin"
@@ -216,15 +227,17 @@ class TerragruntApplyTest(unittest.TestCase):
                          "live/kubernetes-secrets/external-secrets-aws-ssm-auth", "live/argocd-apps"):
                 (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
             (root / "fixture.json").write_text(json.dumps(config))
+            environment = {"PATH": str(binaries), "FIXTURE_ROOT": str(root),
+                           "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
+                           "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
+                           "TERRAGRUNT_ARGOCD_APP": target,
+                           "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair}
+            if not config.get("without_azuread"):
+                environment.update({"ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
+                                    "ARM_TENANT_ID": "fixture"})
             result = subprocess.run(
                 [str(binaries / "bash"), str(scripts / "terragrunt-apply.sh")],
-                cwd=root, env={"PATH": str(binaries), "FIXTURE_ROOT": str(root),
-                               "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
-                               "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
-                               "TERRAGRUNT_ARGOCD_APP": target,
-                               "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
-                               "ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
-                               "ARM_TENANT_ID": "fixture"},
+                cwd=root, env=environment,
                 text=True, capture_output=True, timeout=15, check=False)
             calls = [json.loads(line) for line in (root / "calls.jsonl").read_text().splitlines()]
             self.assertNotIn("UNEXPECTED", [call["event"] for call in calls], result.stderr)
@@ -246,7 +259,8 @@ class TerragruntApplyTest(unittest.TestCase):
         ])
 
     def test_missing_target_and_invalid_repair_do_not_write(self):
-        for options in ({"missing_target": "langfuse"}, {"repair": "invalid"}):
+        for options in ({"missing_target": "langfuse"}, {"repair": "invalid"},
+                        {"target": "fleet", "missing_target": "fleet"}):
             with self.subTest(options=options):
                 result, events = self.run_apply(**options)
                 self.assertNotEqual(result.returncode, 0)
@@ -302,6 +316,52 @@ class TerragruntApplyTest(unittest.TestCase):
         result, events = self.run_apply(target="nofx")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
+
+    def test_fleet_applies_checked_ssm_then_only_fleet_without_azuread(self):
+        result, events = self.run_apply(target="fleet", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, [
+            "generate", "preflight.project", "preflight.apps", "preflight.crds",
+            "preflight.store", "preflight.store_scope", "preflight.storage",
+            "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
+            "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
+            "apps.plan", "apps.policy", "apps.apply",
+        ])
+
+    def test_fleet_missing_prerequisites_fail_before_any_write(self):
+        variants = [
+            {"project": PROJECT},  # Project permits Langfuse, not Fleet.
+            {"apps": []},
+            {"store": {"spec": {"conditions": [{"namespaces": ["langfuse"]}]}}},
+            {"store": {"spec": {}}},
+            {"fail": "preflight.store_scope"},
+        ]
+        for name in ("external-secrets", "octelium-public"):
+            apps = [{"metadata": {"name": app}, "status": {
+                "sync": {"status": "OutOfSync" if app == name else "Synced"},
+                "health": {"status": "Healthy"},
+            }} for app in [*APPS, "octelium-public"]]
+            variants.append({"apps": apps})
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="fleet", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                    for event in events), events)
+
+    def test_fleet_ssm_and_application_failures_stop_later_stages(self):
+        for failure in ("ssm.plan", "ssm.policy", "ssm.apply", "apps.plan", "apps.policy"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="fleet", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events[-1], failure)
+                self.assertNotIn("apps.apply", events)
+
+    def test_full_apply_still_requires_changed_azuread_credentials(self):
+        result, events = self.run_apply(target="", without_azuread=True)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(events, ["generate"])
+        self.assertIn("AzureAD credentials are required", result.stderr)
 
     def test_full_sequence_is_unchanged(self):
         result, events = self.run_apply(target="")

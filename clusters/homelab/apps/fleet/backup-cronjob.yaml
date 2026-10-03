@@ -41,45 +41,23 @@ spec:
               imagePullPolicy: IfNotPresent
               command:
                 - /bin/bash
-                - -ec
-                - |
-                  umask 077
-                  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-                  archive="fleet-${stamp}.sql"
-                  pending="$(mktemp -d /backups/.pending-XXXXXXXX)"
-                  trap 'rm -rf -- "$pending"' EXIT
-                  mysqldump --defaults-extra-file=/run/secrets/fleet-backup/client.cnf \
-                    --single-transaction --quick --skip-lock-tables \
-                    --no-tablespaces --set-gtid-purged=OFF \
-                    --result-file="${pending}/${archive}" fleet
-                  test -s "${pending}/${archive}"
-                  tail -n 2 "${pending}/${archive}" | grep -q '^-- Dump completed on '
-                  (
-                    cd "$pending"
-                    sha256sum "$archive" > "${archive}.sha256"
-                    sha256sum --check --status "${archive}.sha256"
-                  )
-                  # Publish only a complete dump; prune only after verification.
-                  mv "${pending}/${archive}" "/backups/${archive}"
-                  mv "${pending}/${archive}.sha256" "/backups/${archive}.sha256"
-                  find /backups -maxdepth 1 -type f -name 'fleet-*.sql' -mtime +13 -print0 |
-                    while IFS= read -r -d '' old; do
-                      rm -f -- "$old" "${old}.sha256"
-                    done
-                  printf 'Published verified Fleet database backup %s\n' "$archive"
+                - /scripts/backup.sh
               resources:
                 requests:
                   cpu: 100m
                   memory: 128Mi
                 limits:
                   cpu: 500m
-                  memory: 256Mi
+                  memory: 2Gi
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
                 capabilities:
                   drop: [ALL]
               volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                  readOnly: true
                 - name: credentials
                   mountPath: /run/secrets/fleet-backup
                   readOnly: true
@@ -88,6 +66,10 @@ spec:
                 - name: tmp
                   mountPath: /tmp
           volumes:
+            - name: script
+              configMap:
+                name: fleet-backup
+                defaultMode: 0444
             - name: credentials
               secret:
                 secretName: fleet-backup

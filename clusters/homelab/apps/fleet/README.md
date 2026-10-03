@@ -96,11 +96,16 @@ inventory, enrollment identity and MDM configuration; Redis retains coordination
 and queued state. Preserve the database together with the server encryption
 key, SSM values, APNs certificate/key and any later Windows/Android identities.
 Changing only an SSM database password does not rotate an existing MySQL user.
+MySQL and the dump client both allow 512 MiB packets for stored MDM packages.
 
 A nightly CronJob at 03:45 America/Los_Angeles writes a transaction-consistent
 MySQL dump plus SHA-256 checksum to a separate retained NFS backup claim and
-retains 14 days. Failed or empty dumps are not
-published as successful backups. This protects against logical mistakes; it
+retains 14 days. Each verified set is published atomically as
+`fleet-YYYYMMDDTHHMMSSZ/fleet.sql` and `fleet.sql.sha256`. Failed, empty or
+incomplete dumps are never published; pruning runs only after success. A
+PostSync Job runs the same backup after administrator bootstrap on each sync;
+its completion and retained logs verify the first backup during rollout.
+This protects against logical mistakes; it
 shares the QNAP failure domain and is not an offsite backup. NAS durability,
 an independent encrypted copy and an isolated restore drill remain acceptance
 gaps. Redis AOF is retained but has no independent backup; recovery may lose
@@ -124,15 +129,19 @@ After signed protected merge of the reviewed change:
 ```sh
 gh workflow run harbor-mirror.yml --ref main -f expected_sha='<current-main-sha>'
 # Require successful digest publication before continuing.
-gh workflow run terragrunt-apply.yml --ref main -f expected_sha='<current-main-sha>'
-# Full apply includes shared SSM; targeted argocd_app=fleet alone does not.
+gh workflow run terragrunt-apply.yml --ref main \
+  -f expected_sha='<current-main-sha>' -f argocd_app=fleet
+# The Fleet target applies shared SSM/IAM before registering only Fleet.
 gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<current-main-sha>'
 ```
 
 Review shared SSM/IAM plans for unrelated changes. Registration dependencies
 order work; they do not establish upstream readiness. Require Healthy/Synced
-External Secrets, Istio, storage and public-tunnel applications and a Ready
-`aws-ssm` store. No manual Kubernetes or cloud mutation is needed.
+External Secrets, Istio, storage and public-tunnel applications, a Ready
+`aws-ssm` store permitting namespace `fleet`, and the `homelab` AppProject's
+Fleet destination before dispatch. The scoped path avoids unrelated AzureAD
+changes that currently block a full apply when Azure credentials are absent.
+No manual Kubernetes or cloud mutation is needed.
 
 Local gates:
 
@@ -148,6 +157,8 @@ Live checks after reconciliation:
 kubectl -n argocd get application fleet
 kubectl -n fleet get externalsecret,pvc,deploy,statefulset,pod,cronjob
 kubectl -n fleet rollout status deployment/fleet --timeout=300s
+kubectl -n fleet wait --for=condition=complete job/fleet-mysql-backup-initial --timeout=600s
+kubectl -n fleet logs job/fleet-mysql-backup-initial
 curl -fsS https://fleet.stinkyboi.com/healthz
 curl -fsS https://fleet.stinkyboi.com/version
 curl -sS -o /dev/null -w '%{http_code}\n' https://fleet.stinkyboi.com/api/v1/setup
@@ -156,8 +167,10 @@ curl -sS -o /dev/null -w '%{http_code}\n' https://fleet.stinkyboi.com/api/setup
 
 Require ready workloads and ExternalSecrets, Bound claims, HTTP 200 health and
 the pinned version, HTTP 404 for both setup aliases, and successful private
-administrator login. Verify a completed scheduled backup before claiming backup
-acceptance. Then verify a real device enrolls and checks in from outside the LAN.
+administrator login. Require the initial backup Job's successful completion and
+verified-publication log. Verify the first scheduled run separately to establish
+nightly recurrence. Then verify a real device enrolls and checks in from outside
+the LAN.
 A rendered configuration or healthy server alone does not prove MDM enrollment.
 
 Rollback public access by reverting the Fleet tunnel/DNS/VirtualService changes

@@ -72,7 +72,11 @@ indefinite unattended identity remain unresolved.
 
 Fleet keeps dedicated MySQL and Redis state on retained `nfs-default` claims.
 A separate retained NFS claim receives nightly transaction-consistent MySQL
-dumps with 14-day retention. Database restore also needs the stable Fleet server
+dumps with 14-day retention. A PostSync Job verifies the first backup after
+bootstrap. Both paths atomically publish a timestamped directory containing
+`fleet.sql` and its verified checksum; failed attempts never prune prior sets.
+The server and dump client both allow 512 MiB packets for MDM package data.
+Database restore also needs the stable Fleet server
 key and enrolled platform identities. These copies share the QNAP failure domain;
 offsite coverage and an isolated restore drill remain unverified. See the
 [Fleet backup and restore contract](../../../clusters/homelab/apps/fleet/README.md#secrets-and-storage).

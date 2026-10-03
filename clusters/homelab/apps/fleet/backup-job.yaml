@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fleet-mysql-backup-initial
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+    checkov.io/skip1: CKV_K8S_40=QNAP all-squash requires UID and GID 65534 for writable NFS backups.
+    checkov.io/skip2: CKV2_K8S_6=Fleet backup Pods have no inbound server and are covered by the namespace default-deny NetworkPolicy.
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 604800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fleet-backup
+    spec:
+      serviceAccountName: fleet-backup
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: backup
+          image: mysql:8.4.11@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - /scripts/backup.sh
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+            - name: credentials
+              mountPath: /run/secrets/fleet-backup
+              readOnly: true
+            - name: backups
+              mountPath: /backups
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: script
+          configMap:
+            name: fleet-backup
+            defaultMode: 0444
+        - name: credentials
+          secret:
+            secretName: fleet-backup
+            defaultMode: 0440
+        - name: backups
+          persistentVolumeClaim:
+            claimName: fleet-mysql-backups
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
