@@ -74,6 +74,13 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: grafana.stinkyboi.com
+      # Fleet agents and MDM clients cannot perform Octelium browser login.
+      # Fleet authenticates users/devices; Istio permanently blocks first setup.
+      - hostname: fleet.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: fleet.stinkyboi.com
+          httpHostHeader: fleet.stinkyboi.com
       - hostname: kiali.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:

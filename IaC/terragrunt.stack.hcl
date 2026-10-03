@@ -792,6 +792,91 @@ unit "argocd_apps_external_secrets" {
   }
 }
 
+unit "argocd_apps_fleet" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/fleet"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "../aws-ssm-parameters",
+      "external-secrets",
+      "cert-manager",
+      "istio",
+      "octelium",
+      "octelium-public",
+      "platform-storage"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "fleet"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "fleet"
+        }
+
+        sources = [
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/fleet"
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "3m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "url"
+            value = "https://fleet.stinkyboi.com"
+          },
+          {
+            name  = "rollout"
+            value = "generated SSM secrets, External Secrets, MySQL, Redis, NFS, Istio, and public device ingress must be healthy before enrollment"
+          },
+          {
+            name  = "storage"
+            value = "clusters/homelab/apps/fleet/README.md"
+          }
+        ]
+      }
+    }
+  }
+}
+
 unit "argocd_apps_github_actions_runner" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/github-actions-runner"

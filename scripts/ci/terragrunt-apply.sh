@@ -116,9 +116,7 @@ adopt_existing_ssm_parameters() {
   done
 }
 
-plan_and_apply_langfuse_prerequisites() {
-  local langfuse_plan_dir
-
+plan_and_apply_ssm_prerequisites() {
   echo "::group::AWS SSM parameter declaration plan and apply"
   (
     cd IaC/live/aws-ssm-parameters
@@ -130,6 +128,12 @@ plan_and_apply_langfuse_prerequisites() {
     terragrunt apply -no-color plan.out
   )
   echo "::endgroup::"
+}
+
+plan_and_apply_langfuse_prerequisites() {
+  local langfuse_plan_dir
+
+  plan_and_apply_ssm_prerequisites
 
   echo "::group::Langfuse blob storage plan and apply"
   # Application filters omit this sibling AWS unit. Keep its private saved-plan
@@ -193,26 +197,36 @@ repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
   terragrunt_argocd_app_state_repair_unit
 )"
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" ]]; then
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
-  echo "::group::Langfuse targeted apply prerequisites"
-  kubectl -n argocd get appproject homelab -o json | jq -e '
+  echo "::group::${TERRAGRUNT_ARGOCD_APP} targeted apply prerequisites"
+  kubectl -n argocd get appproject homelab -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
     .spec |
     (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and
-    (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null) and
-    any(.destinations[]; .namespace == "langfuse" and .server == "https://kubernetes.default.svc") and
+    ($app != "langfuse" or (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null)) and
+    any(.destinations[]; .namespace == $app and .server == "https://kubernetes.default.svc") and
     any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace")
   ' >/dev/null
-  kubectl -n argocd get applications external-secrets cert-manager istio platform-storage -o json | jq -e '
-    (.items | length == 4) and
+  prerequisite_apps=(external-secrets cert-manager istio platform-storage)
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+    prerequisite_apps+=(octelium-public)
+  fi
+  kubectl -n argocd get applications "${prerequisite_apps[@]}" -o json | jq -e \
+    --argjson expected "${#prerequisite_apps[@]}" '
+    (.items | length == $expected) and
     all(.items[]; .status.sync.status == "Synced" and .status.health.status == "Healthy")
   ' >/dev/null
   kubectl wait --for=condition=Established --timeout=0s \
     crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io \
     crd/authorizationpolicies.security.istio.io crd/virtualservices.networking.istio.io
   kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+    kubectl get clustersecretstore aws-ssm -o json | jq -e '
+      any(.spec.conditions[]?.namespaces[]?; . == "fleet")
+    ' >/dev/null
+  fi
   kubectl get storageclass nfs-default -o name >/dev/null
   echo "::endgroup::"
 fi
@@ -230,6 +244,8 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+    plan_and_apply_ssm_prerequisites
   fi
   echo "::group::Targeted Argo CD Application registration apply"
   plan_and_apply_argocd_apps

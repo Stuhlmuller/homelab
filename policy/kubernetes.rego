@@ -355,6 +355,7 @@ external_secret_allowed_prefixes := {
 	"argocd": {"/homelab/argocd/"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
 	"cert-manager": {"/homelab/cert-manager/"},
+	"fleet": {"/homelab/fleet/"},
 	"github-actions-runner": {"/homelab/github-actions-runner/"},
 	"harbor": {"/homelab/harbor/"},
 	"langfuse": {"/homelab/langfuse/"},
