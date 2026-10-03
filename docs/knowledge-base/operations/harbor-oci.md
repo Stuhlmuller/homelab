@@ -96,6 +96,42 @@ establish full-inventory mirror completion.
 
 ## Package Migration
 
+### Cloudflared 2026.9.3 prerequisite (HOME-17)
+
+[PR #1128](https://github.com/Stuhlmuller/homelab/pull/1128) at
+`6e2cdd6ef586e6c312d4982cdbee966041489de9` changes only the consuming
+cloudflared image. Its [static gate](https://github.com/Stuhlmuller/homelab/actions/runs/36666881786/job/109733342718)
+rejects the missing catalog image and digest
+`sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c`.
+This is catalog drift; no policy or workflow exception is needed. The two
+September 30 scheduled findings observed the same failed execution.
+
+The prerequisite catalog addition retains 2026.9.1 for rollback and leaves
+the consuming Deployment unchanged. Anonymous Docker Hub manifest reads on
+2026-09-30 verified that both the 2026.9.3 tag and digest hash to the proposed
+743-byte multi-platform manifest (Linux amd64 and arm64). This proves upstream
+manifest identity, not complete Harbor publication or live pull availability.
+
+Require review and successful static/policy CI before an explicitly approved
+prerequisite merge. Then obtain separate approval to dispatch
+`harbor-mirror.yml` on exact reviewed current `main`, with matching
+`expected_sha`, using the existing protected environment. Require complete
+anonymous downloads and digest/alias verification before approving the
+consumer upgrade. An older publication run cannot cover this changed catalog.
+Rebase the consumer onto the prerequisite and require current-head static
+success; keep HOME-17 open until two consecutive scheduled observations also
+report success. A green catalog check alone does not establish publication.
+
+On publication failure, hold the consuming PR and retain 2026.9.1. Before the
+consumer merges, a reviewed revert of only this catalog addition is sufficient
+to withdraw the proposal; do not delete copied artifacts. After the upgrade,
+rollback requires an approved declarative revert to the retained 2026.9.1
+image, followed by tunnel/readiness and existing route checks. Do not relax
+strict mirrors or change operator access as part of this fix. See
+[the publication runbook](../../harbor-image-mirroring.md#updates-and-coverage).
+Current-head CI success, publication, scheduled recovery and live health remain
+unverified by this investigation.
+
 Repository inventory found only the NOFX backend and frontend custom images.
 Authenticated GHCR inspection on 2026-09-19 found two tags in each repository:
 the Packages API also confirmed two active versions per repository and no
