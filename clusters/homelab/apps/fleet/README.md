@@ -48,6 +48,37 @@ reviewed capacity for its downloaded databases. Fleet enables optional analytics
 by default; its administrator controls that setting in Fleet. Bootstrap does not
 overwrite application settings on subsequent syncs.
 
+### Prepare Apple enrollment
+
+The repository-owned helper downloads Fleet's vendor-signed APNs certificate
+request without requiring an Apple login:
+
+```sh
+python3 -I scripts/fleet-download-apple-csr.py \
+  --output /tmp/fleet-mdm-apple.csr
+```
+
+It authenticates using the initial administrator Secret, keeps credentials in
+memory and revokes its session. It refuses to overwrite an existing output.
+After changing the initial password, use Fleet's **Settings > Integrations >
+MDM > Turn on > Download CSR** flow instead.
+
+Generating the CSR creates encrypted SCEP/APNs keys in Fleet's database on the
+first request; subsequent requests reuse the keys. Fleet sends the public CSR,
+including the configured organization and administrator email, to its vendor
+signing service. No private key is downloaded or emailed. Preserve the database
+and server encryption key throughout this setup.
+
+Sign in to [Apple Push Certificates Portal](https://identity.apple.com/pushcert/),
+create a certificate using `fleet-mdm-apple.csr`, then upload the downloaded
+APNs `.pem` in Fleet's Apple MDM setup flow. Keep both files outside git. This
+provider-account step cannot be replaced by a self-signed certificate.
+
+After activation, enroll one selected device, require MDM **On**, refresh its
+inventory through the public endpoint, and verify installation and removal of
+an agreed harmless configuration profile. CSR generation alone neither enables
+MDM nor enrolls a device.
+
 ## Public access and authentication
 
 ```text

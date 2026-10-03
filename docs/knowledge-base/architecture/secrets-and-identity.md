@@ -74,6 +74,12 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `rodman@stuhlmuller.net`; subsequent syncs preserve user changes. APNs and
   platform signing identities still require their provider setup. Preserve them
   with the database and server key. See the [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md).
+  The repository-owned `scripts/fleet-download-apple-csr.py` prepares Apple's
+  vendor-signed CSR using the initial administrator Secret without printing
+  credentials. Its first request creates encrypted SCEP/APNs keys in MySQL;
+  preserve that database with the server encryption key. The public CSR goes
+  to Fleet's signing service; the operator must still issue the APNs certificate
+  through their Apple account and upload it in Fleet before device enrollment.
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
