@@ -18,13 +18,13 @@ jobs:
       security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        uses: chainguard-actions/actions-checkout@279383ec3b8d70f964ffa5a2151ea3d2a5317ec6 # v7.0.1
         with:
           persist-credentials: false
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
+        uses: chainguard-actions/github-codeql-action/init@05a2b18f97905888db8f883471cc925f1a97a01c # v4.38.2
         with:
           languages: actions
           build-mode: none
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
+        uses: chainguard-actions/github-codeql-action/analyze@05a2b18f97905888db8f883471cc925f1a97a01c # v4.38.2
