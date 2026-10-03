@@ -6,14 +6,14 @@ inventory. A chart version change deliberately requires refreshing that inventor
 """
 
 import json
-from pathlib import Path
 import re
 import subprocess
 import sys
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "scripts/config/harbor-images.json"
+FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 
 
@@ -71,6 +71,14 @@ def yaml_documents(paths):
          *map(str, paths)], text=True))
 
 
+def rendered_fleet_images():
+    manifests = subprocess.check_output(
+        ["kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/fleet")], text=True)
+    documents = json.loads(subprocess.check_output(
+        ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
+    return declared_images(documents)[0]
+
+
 def chart_sources():
     stack = ROOT / "IaC/terragrunt.stack.hcl"
     charts = []
@@ -112,6 +120,15 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
+    fleet_sources = {item["source"] for item in json.loads(FLEET_CATALOG.read_text())["images"]}
+    fleet_known = {normalize(image) for image in fleet_sources}
+    fleet_required = {normalize(image) for image in rendered_fleet_images()}
+    errors.extend("Fleet mirror scope missing rendered image: " + image
+                  for image in sorted(fleet_required - fleet_known))
+    errors.extend("Fleet mirror scope has unrendered image: " + image
+                  for image in sorted(fleet_known - fleet_required))
+    errors.extend("Fleet mirror scope source absent from full catalog: " + image
+                  for image in sorted(fleet_sources - {item["source"] for item in catalog}))
     registries = {image.split("/", 1)[0] for image in known}
     expected_mirrors = {registry: {
         "endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
@@ -124,7 +141,8 @@ def check():
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"Harbor catalog covers {len(images)} declared image references; chart inventory matches")
+    print(f"Harbor catalog covers {len(images)} declared image references; chart inventory matches; "
+          f"Fleet scope covers exactly {len(fleet_required)} rendered images")
 
 
 if __name__ == "__main__":
