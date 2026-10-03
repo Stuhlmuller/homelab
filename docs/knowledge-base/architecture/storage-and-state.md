@@ -478,3 +478,16 @@ registry storage. Preserve a fresh encrypted off-node etcd backup after key
 creation and restore that Secret before cert-manager can regenerate it. Keep
 the public key independently for historical signature verification. See
 [[../operations/harbor-oci]] for the pending signing acceptance gates.
+
+## Staged independent application recovery (HOME-2)
+
+[Application recovery](../../application-recovery.md) owns the source inventory,
+proposed RPO/RTO, private secret dependencies, version-specific S3 publication,
+paired capture contract, synthetic fixtures, retention and rollout/rollback.
+Octelium/media source dumps remain on QNAP; the new dedicated application bucket,
+IAM profiles, operator schedule and freshness rules are candidates only. The
+publisher never expires retained data. AFFiNE/Multica adapters require a reviewed
+writer fence; they do not automate capture. Other workload gaps remain explicit.
+Operator-managed independent backups are unverified. Real-data drills require
+HOME-3 containment and separate approval; HOME-4 owns independent alert delivery.
+No operational RPO/RTO or application recovery is proven by synthetic tests.

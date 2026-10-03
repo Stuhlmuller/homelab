@@ -268,3 +268,11 @@ See [`clusters/homelab/apps/harbor/README.md`](../clusters/homelab/apps/harbor/R
 for backup and coordinated database/blob recovery. A same-NAS backup is not
 independent disaster recovery; retain GHCR migration sources until the registry
 restore contract has been proven.
+
+## Independent application publication candidate
+
+See [application recovery](application-recovery.md) for HOME-2 inventory,
+version-specific publication code, staged destination/permissions/scheduling,
+paired DB/blob contracts and synthetic restore evidence. This does not change
+the current QNAP-backed jobs or activate independent backups. Actual remote
+retrieval, enforced restore containment and application acceptance remain gates.
