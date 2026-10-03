@@ -80,6 +80,11 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   preserve that database with the server encryption key. The public CSR goes
   to Fleet's signing service; the operator must still issue the APNs certificate
   through their Apple account and upload it in Fleet before device enrollment.
+  Its `--certificate` mode performs first activation through Fleet's APNs setup
+  API, refuses to overwrite an enabled integration, verifies enabled state and
+  certificate metadata, and revokes its session. Certificate renewal remains
+  the documented Fleet UI flow using the same Apple account. APNs material
+  stays encrypted in MySQL and outside git.
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the

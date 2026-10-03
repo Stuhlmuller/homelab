@@ -74,6 +74,23 @@ create a certificate using `fleet-mdm-apple.csr`, then upload the downloaded
 APNs `.pem` in Fleet's Apple MDM setup flow. Keep both files outside git. This
 provider-account step cannot be replaced by a self-signed certificate.
 
+For first activation, the same repository-owned helper can upload the issued
+certificate through Fleet's setup API:
+
+```sh
+python3 -I scripts/fleet-download-apple-csr.py \
+  --certificate '/absolute/private/path/Certificate.pem'
+```
+
+The command validates the PEM input, requires Apple MDM to be disabled, uploads
+only the certificate, verifies the enabled flag and APNs metadata, and revokes
+its session. Fleet checks that the certificate matches its stored private key.
+The key and certificate remain encrypted application data in MySQL; this step
+does not change Kubernetes Secrets or put certificate material in git. If MDM
+is already enabled, use Fleet's **Renew certificate** flow with the same Apple
+account instead of replacing the integration. A failed verification after
+upload may still mean activation succeeded; inspect Fleet before retrying.
+
 After activation, enroll one selected device, require MDM **On**, refresh its
 inventory through the public endpoint, and verify installation and removal of
 an agreed harmless configuration profile. CSR generation alone neither enables
