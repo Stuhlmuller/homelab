@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fleet-mysql-config
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+data:
+  fleet.cnf: |
+    [mysqld]
+    # The upstream mysql-files directory is UID 999-only. Fleet never uses
+    # server-side file import/export; disable it for the NFS anonymous UID.
+    secure-file-priv=NULL
+    mysqlx=OFF
+    skip-log-bin
+    max_connections=60
+    innodb_buffer_pool_size=256M
+    performance_schema=OFF
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+    pid-file=/var/run/mysqld/mysqld.pid
+    socket=/var/run/mysqld/mysqld.sock
+    tmpdir=/tmp
+  # Sourced by the official MySQL entrypoint on an empty data directory.
+  # The generated secret contract is alphanumeric; validate before SQL use.
+  10-fleet.sh: |
+    fleet_password="$(cat /run/secrets/fleet-mysql/mysql-password)"
+    if [[ ! "$fleet_password" =~ ^[A-Za-z0-9]{32,}$ ]]; then
+      mysql_error 'Fleet database password does not match the generated-secret contract'
+    fi
+    if [ "$fleet_password" = "$MYSQL_ROOT_PASSWORD" ]; then
+      mysql_error 'Fleet application and root passwords must be distinct'
+    fi
+    docker_process_sql --database=mysql <<EOSQL
+    CREATE DATABASE IF NOT EXISTS fleet CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER 'fleet'@'%' IDENTIFIED BY '${fleet_password}';
+    GRANT ALL PRIVILEGES ON fleet.* TO 'fleet'@'%';
+    DROP USER IF EXISTS 'root'@'%';
+    EOSQL
+    unset fleet_password

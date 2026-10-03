@@ -66,6 +66,15 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 ## Identity Notes
 
+- Fleet uses five generated `/homelab/fleet/` SSM values: database user/root
+  passwords, Redis password, a stable 32-byte server encryption key and initial
+  administrator password. Namespace `fleet` has a scoped store/policy contract.
+  Separate mounted Secrets keep the root password out of Fleet and the admin
+  password exclusively in its one-time bootstrap Job. The initial account uses
+  `rodman@stuhlmuller.net`; subsequent syncs preserve user changes. APNs and
+  platform signing identities still require their provider setup. Preserve them
+  with the database and server key. See the [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md).
+
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
   literal Microsoft Entra issuer committed in

@@ -33,6 +33,9 @@ annotations. Do not add Tailscale Funnel routes for app UI or callback traffic.
 AFFiNE is the reviewed app exception: its Octelium Service is anonymous and
 delegates login to the application. AFFiNE public signup remains disabled.
 NOFX requires Octelium human browser authentication before its own login.
+Fleet is a native-device exception through the public connector directly to
+Istio: Fleet authenticates users and devices, while both public first-admin API
+aliases remain blocked. See [Fleet](fleet/README.md).
 
 Do not add a route just because an upstream chart exposes a web UI. Prefer the
 least direct reviewed access path. For example, Grafana is the operator-facing

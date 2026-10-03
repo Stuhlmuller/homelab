@@ -24,6 +24,14 @@ direct Tailscale LoadBalancer path around Octelium authentication.
 
 ## Platform And Support Applications
 
+Fleet Free adds family device management in namespace `fleet`, registered by
+`IaC/live/argocd-apps/fleet` from `clusters/homelab/apps/fleet`. It depends on
+SSM, External Secrets, Istio, retained NFS and `octelium-public`. The reviewed
+`fleet.stinkyboi.com` native-client route uses Fleet authentication and permanently
+blocks public first-admin setup. MySQL, Redis and nightly MySQL backups use
+retained NFS; the APNs/provider setup and a real enrolled device remain separate
+acceptance gates. See the [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md).
+
 | App                     | Kind                      | Namespace               | GitOps path                                   | Terragrunt path                              | Depends on                                                  |
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/live/argocd-apps/platform-dns`          | Argo CD bootstrap                                           |

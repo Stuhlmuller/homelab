@@ -276,6 +276,17 @@ the new callback hostname.
 
 ## Future Callback Template
 
+Fleet is a deliberate native-device exception: `fleet.stinkyboi.com` serves the
+UI and management protocols directly through `octelium-public` and the Istio TLS
+gateway. Fleet authenticates users, agent enrollment and MDM traffic; those
+clients cannot complete Octelium browser login. Public first-admin setup is
+permanently denied on both API aliases and the setup UI. The internal PostSync
+Job creates the first account from a generated, mounted secret. The public edge
+can see device-management request content. Roll back by reverting the Fleet
+VirtualService, tunnel route and declared DNS through the reviewed workflow;
+retain its database and enrolled-device keys. See the
+[Fleet ingress contract](../clusters/homelab/apps/fleet/README.md#public-access-and-authentication).
+
 Future public exposure must be limited to callback paths, reviewed separately,
 and routed through the Octelium public connector unless a later policy change
 explicitly approves another backbone.

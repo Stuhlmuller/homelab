@@ -64,9 +64,16 @@ permissions on the resolved `us-west-2` SSM key ARN. An apply role that can
 only use the `us-east-1` state key will still fail during provider refresh with
 `AccessDeniedException` for `kms:DescribeKey` on the SSM key.
 
+Fleet's five generated `/homelab/fleet/` parameters supply MySQL user/root
+passwords, a Redis password, the stable 32-byte server encryption key and the
+initial administrator password. Separate ExternalSecrets keep the root and
+administrator credentials out of Fleet server Pods. Preserve the encryption key
+with MySQL backups. Platform APNs/WSTEP identities are additional enrollment
+prerequisites; see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
-`media`, `monitoring`, `octelium-client`, `octelium-public`,
+`fleet`, `media`, `monitoring`, `octelium-client`, `octelium-public`,
 `octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 

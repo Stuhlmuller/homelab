@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleet
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    app.kubernetes.io/name: fleet
+    app.kubernetes.io/component: server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fleet
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    checkov.io/skip1: CKV_K8S_40=Fleet's upstream image owns its runtime home as UID 100 and GID 101.
+    checkov.io/skip2: CKV2_K8S_6=Fleet ingress is restricted by the sibling networkpolicy.yaml and authorizationpolicy.yaml.
+  labels:
+    app.kubernetes.io/name: fleet
+    app.kubernetes.io/component: server
+spec:
+  replicas: 1
+  # Migrate with the same pinned Fleet image while no older server is running.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fleet
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fleet
+        app.kubernetes.io/component: server
+    spec:
+      serviceAccountName: fleet
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: prepare-database
+          image: fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c
+          imagePullPolicy: IfNotPresent
+          command: [fleet, prepare, db, --no-prompt, --config, /run/secrets/fleet/fleet.yml]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: config
+              mountPath: /run/secrets/fleet
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: fleet
+          image: fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c
+          imagePullPolicy: IfNotPresent
+          command: [fleet, serve, --config, /run/secrets/fleet/fleet.yml]
+          ports:
+            - name: http
+              containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /version
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: config
+              mountPath: /run/secrets/fleet
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          secret:
+            secretName: fleet-config
+            defaultMode: 0440
+        - name: tmp
+          emptyDir:
+            sizeLimit: 512Mi

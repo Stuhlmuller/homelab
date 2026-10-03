@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fleet-mysql
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    app.kubernetes.io/name: fleet
+    app.kubernetes.io/component: mysql
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fleet-mysql
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+    checkov.io/skip1: CKV_K8S_40=QNAP all-squash requires UID and GID 65534 for writable NFS data.
+    checkov.io/skip2: CKV2_K8S_6=Fleet ingress is restricted by the sibling networkpolicy.yaml and authorizationpolicy.yaml.
+  labels:
+    app.kubernetes.io/name: fleet
+    app.kubernetes.io/component: mysql
+spec:
+  serviceName: fleet-mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fleet
+      app.kubernetes.io/component: mysql
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: fleet
+        app.kubernetes.io/component: mysql
+    spec:
+      serviceAccountName: fleet-datastores
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mysql
+          image: mysql:8.4.11@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
+          imagePullPolicy: IfNotPresent
+          # Official image initialization reads the root password from a file.
+          # Desired database/user/settings are owned by mysql-configmap.yaml.
+          env:
+            - name: MYSQL_ROOT_PASSWORD_FILE
+              value: /run/secrets/fleet-mysql/mysql-root-password
+          ports:
+            - name: mysql
+              containerPort: 3306
+          startupProbe:
+            exec:
+              command: [mysqladmin, --defaults-extra-file=/run/secrets/fleet-mysql/root.cnf, ping, --silent]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 180
+          readinessProbe:
+            exec:
+              command: [mysql, --defaults-extra-file=/run/secrets/fleet-mysql/client.cnf, --batch, --skip-column-names, --execute=SELECT 1]
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: [mysqladmin, --defaults-extra-file=/run/secrets/fleet-mysql/root.cnf, ping, --silent]
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 60
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: secrets
+              mountPath: /run/secrets/fleet-mysql
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: config
+              mountPath: /etc/mysql/conf.d
+              readOnly: true
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+            - name: runtime
+              mountPath: /var/run/mysqld
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: secrets
+          secret:
+            secretName: fleet-mysql
+            defaultMode: 0440
+        - name: data
+          persistentVolumeClaim:
+            claimName: fleet-mysql-data
+        - name: config
+          configMap:
+            name: fleet-mysql-config
+            items:
+              - key: fleet.cnf
+                path: fleet.cnf
+        - name: initdb
+          configMap:
+            name: fleet-mysql-config
+            items:
+              - key: 10-fleet.sh
+                path: 10-fleet.sh
+        - name: runtime
+          emptyDir:
+            sizeLimit: 16Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
