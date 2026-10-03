@@ -1,0 +1,1261 @@
+[
+  {
+    "path": "clusters/homelab/apps/affine/networkpolicy.yaml",
+    "namespace": "affine",
+    "name": "affine-server",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "affine",
+          "app.kubernetes.io/component": "server"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 3010
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/affine/networkpolicy.yaml",
+    "namespace": "affine",
+    "name": "affine-data-services",
+    "spec": {
+      "podSelector": {
+        "matchExpressions": [
+          {
+            "key": "app.kubernetes.io/component",
+            "operator": "In",
+            "values": [
+              "database",
+              "cache"
+            ]
+          }
+        ]
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/part-of": "homelab-productivity"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            },
+            {
+              "protocol": "TCP",
+              "port": 6379
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/cordium/networkpolicy.yaml",
+    "namespace": "octelium",
+    "name": "cordium-genesis",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "cordium",
+          "app.kubernetes.io/component": "genesis",
+          "app.kubernetes.io/part-of": "homelab"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "egress": [
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "kube-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "UDP",
+              "port": 53
+            },
+            {
+              "protocol": "TCP",
+              "port": 53
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "ipBlock": {
+                "cidr": "10.0.0.0/8"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 443
+            },
+            {
+              "protocol": "TCP",
+              "port": 8080
+            },
+            {
+              "protocol": "TCP",
+              "port": 6443
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/cordium/networkpolicy.yaml",
+    "namespace": "octelium",
+    "name": "cordium-cluster-config",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "cordium",
+          "app.kubernetes.io/component": "cluster-config",
+          "app.kubernetes.io/part-of": "homelab"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "egress": [
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "kube-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "UDP",
+              "port": 53
+            },
+            {
+              "protocol": "TCP",
+              "port": 53
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "ipBlock": {
+                "cidr": "0.0.0.0/0"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 443
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/cordium/user-namespace-sysctl.yaml",
+    "namespace": "cordium",
+    "name": "cordium-user-namespace-sysctl",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "cordium-user-namespace-sysctl"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/deluge/media-storage.yaml",
+    "namespace": "media",
+    "name": "media-downloads-directories",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "media-downloads-directories",
+          "app.kubernetes.io/part-of": "homelab-media"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/dispatcharr/postgres-networkpolicy.yaml",
+    "namespace": "media",
+    "name": "dispatcharr-postgres",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "dispatcharr-postgres"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "media"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-default-deny-ingress",
+    "spec": {
+      "podSelector": {},
+      "policyTypes": [
+        "Ingress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-components",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app": "harbor"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app": "harbor"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            },
+            {
+              "protocol": "TCP",
+              "port": 5000
+            },
+            {
+              "protocol": "TCP",
+              "port": 6379
+            }
+          ]
+        },
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "monitoring"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8001
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-nginx",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app": "harbor",
+          "component": "nginx"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "harbor",
+                  "app.kubernetes.io/component": "bootstrap"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-core-bootstrap",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app": "harbor",
+          "component": "core"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "harbor",
+                  "app.kubernetes.io/component": "bootstrap"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-postgres",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "harbor-postgres"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app": "harbor",
+                  "component": "core"
+                }
+              }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app": "harbor",
+                  "component": "exporter"
+                }
+              }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "harbor-postgres-backup"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-postgres-backup",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "harbor-postgres-backup"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "egress": [
+        {
+          "to": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "harbor-postgres"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "kube-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "UDP",
+              "port": 53
+            },
+            {
+              "protocol": "TCP",
+              "port": 53
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-image-signing",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "harbor-image-signing"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "egress": [
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "app": "istio-ingressgateway"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 443
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "kube-system"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "k8s-app": "kube-dns"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "UDP",
+              "port": 53
+            },
+            {
+              "protocol": "TCP",
+              "port": 53
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/langfuse/networkpolicy.yaml",
+    "namespace": "langfuse",
+    "name": "langfuse-ingress",
+    "spec": {
+      "podSelector": {},
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "langfuse"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            },
+            {
+              "protocol": "TCP",
+              "port": 6379
+            },
+            {
+              "protocol": "TCP",
+              "port": 8123
+            },
+            {
+              "protocol": "TCP",
+              "port": 9000
+            }
+          ]
+        },
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "ai"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 3000
+            }
+          ]
+        },
+        {
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 15008
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/media-postgres/networkpolicy.yaml",
+    "namespace": "media",
+    "name": "media-postgres",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "media-postgres"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "media"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/media-postgres/networkpolicy.yaml",
+    "namespace": "media",
+    "name": "media-postgres-backup",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "media-postgres-backup"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/media-postgres-recovery/restore-job.yaml",
+    "namespace": "media",
+    "name": "media-postgres-restore",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "media-postgres-restore"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/multica/postgres.yaml",
+    "namespace": "ai",
+    "name": "multica-postgres",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "multica",
+          "app.kubernetes.io/instance": "multica",
+          "app.kubernetes.io/component": "postgres"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "multica",
+                  "app.kubernetes.io/instance": "multica",
+                  "app.kubernetes.io/component": "backend"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        }
+      ],
+      "egress": []
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/multica/runtime.yaml",
+    "namespace": "ai",
+    "name": "multica-runtime",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "multica-runtime"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": []
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/n8n-postgres/networkpolicy.yaml",
+    "namespace": "automation",
+    "name": "n8n-postgres",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "n8n-postgres"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "n8n"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/nofx/networkpolicy.yaml",
+    "namespace": "nofx",
+    "name": "nofx-frontend",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "nofx",
+          "app.kubernetes.io/component": "frontend"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 80
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/nofx/networkpolicy.yaml",
+    "namespace": "nofx",
+    "name": "nofx-backend",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "nofx",
+          "app.kubernetes.io/component": "backend"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "nofx",
+                  "app.kubernetes.io/component": "frontend"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ],
+      "egress": [
+        {}
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/octelium/networkpolicy.yaml",
+    "namespace": "octelium-client",
+    "name": "octelium-demo-allow-client",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "octelium-demo",
+          "app.kubernetes.io/instance": "octelium-demo"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "octelium",
+                  "app.kubernetes.io/instance": "octelium-client"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "octelium"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "app": "octelium",
+                  "octelium.com/component": "svc",
+                  "octelium.com/svc": "homelab-demo.homelab"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 9898
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/octelium-public/networkpolicy.yaml",
+    "namespace": "octelium-public",
+    "name": "cloudflared-egress",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "cloudflared",
+          "app.kubernetes.io/part-of": "octelium-public"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "egress": [
+        {
+          "to": [
+            {
+              "ipBlock": {
+                "cidr": "0.0.0.0/0",
+                "except": [
+                  "10.0.0.0/8",
+                  "172.16.0.0/12",
+                  "192.168.0.0/16",
+                  "169.254.0.0/16"
+                ]
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 443
+            },
+            {
+              "protocol": "UDP",
+              "port": 7844
+            },
+            {
+              "protocol": "TCP",
+              "port": 7844
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 443
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "octelium"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "kube-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "UDP",
+              "port": 53
+            },
+            {
+              "protocol": "TCP",
+              "port": 53
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/octelium-storage/networkpolicy.yaml",
+    "namespace": "octelium-storage",
+    "name": "octelium-storage",
+    "spec": {
+      "podSelector": {
+        "matchExpressions": [
+          {
+            "key": "app.kubernetes.io/name",
+            "operator": "In",
+            "values": [
+              "octelium-postgres",
+              "octelium-redis"
+            ]
+          }
+        ]
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "octelium"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            },
+            {
+              "protocol": "TCP",
+              "port": 6379
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/octelium-storage/networkpolicy.yaml",
+    "namespace": "octelium-storage",
+    "name": "octelium-postgres-backup",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "octelium-postgres"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "octelium-postgres-backup"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 5432
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/octelium-storage/networkpolicy.yaml",
+    "namespace": "octelium-storage",
+    "name": "octelium-storage-default-deny",
+    "spec": {
+      "podSelector": {},
+      "policyTypes": [
+        "Ingress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/openclaw/networkpolicy.yaml",
+    "namespace": "ai",
+    "name": "openclaw",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "openclaw"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "monitoring"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "octelium-client"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/policy-bot/networkpolicy.yaml",
+    "namespace": "automation",
+    "name": "policy-bot",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "policy-bot"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "octelium-client"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/radarr/media-storage.yaml",
+    "namespace": "media",
+    "name": "media-movies-directories",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "media-movies-directories",
+          "app.kubernetes.io/part-of": "homelab-media"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/sonarr/media-storage.yaml",
+    "namespace": "media",
+    "name": "media-tv-directories",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "media-tv-directories",
+          "app.kubernetes.io/part-of": "homelab-media"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  }
+]
