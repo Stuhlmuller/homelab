@@ -50,7 +50,6 @@ units = {
     "IaC/live/argocd-apps": "apps",
     "IaC/live/argocd-apps/langfuse": "repair",
     "IaC/live/argocd-apps/fleet": "repair",
-    "IaC/live/argocd-apps/wazuh": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -135,7 +134,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "wazuh", "nofx"):
+        for name in ("langfuse", "fleet", "nofx"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -203,14 +202,10 @@ class TerragruntApplyTest(unittest.TestCase):
         project = json.loads(json.dumps(PROJECT))
         app_names = APPS
         crds = CRDS
-        if target in ("fleet", "wazuh"):
+        if target in ("fleet",):
             project["spec"]["destinations"][0]["namespace"] = target
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
-            app_names = [*APPS, "octelium-public" if target == "fleet" else "octelium"]
-        if target == "wazuh":
-            app_names.append("prometheus")
-            crds = [*CRDS, "certificates.cert-manager.io", "issuers.cert-manager.io",
-                    "podmonitors.monitoring.coreos.com", "prometheusrules.monitoring.coreos.com"]
+            app_names = [*APPS, "octelium-public"]
         config = {"target": target, "project": project,
                   "app_names": app_names, "crds": crds,
                   "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
@@ -274,8 +269,7 @@ class TerragruntApplyTest(unittest.TestCase):
 
     def test_missing_target_and_invalid_repair_do_not_write(self):
         for options in ({"missing_target": "langfuse"}, {"repair": "invalid"},
-                        {"target": "fleet", "missing_target": "fleet"},
-                        {"target": "wazuh", "missing_target": "wazuh"}):
+                        {"target": "fleet", "missing_target": "fleet"}):
             with self.subTest(options=options):
                 result, events = self.run_apply(**options)
                 self.assertNotEqual(result.returncode, 0)
@@ -333,7 +327,7 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
 
     def test_generated_secret_apps_check_ssm_then_only_target_without_azuread(self):
-        for target in ("fleet", "wazuh"):
+        for target in ("fleet",):
             with self.subTest(target=target):
                 result, events = self.run_apply(target=target, without_azuread=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -346,8 +340,8 @@ class TerragruntApplyTest(unittest.TestCase):
                 ])
 
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
-        for target, access_app in (("fleet", "octelium-public"), ("wazuh", "octelium")):
-            app_names = [*APPS, access_app, *(["prometheus"] if target == "wazuh" else [])]
+        for target, access_app in (("fleet", "octelium-public"),):
+            app_names = [*APPS, access_app]
             variants = [
                 {"project": PROJECT},  # Project permits Langfuse, not this target.
                 {"apps": []},
@@ -370,7 +364,7 @@ class TerragruntApplyTest(unittest.TestCase):
                                         for event in events), events)
 
     def test_generated_secret_apps_failures_stop_later_stages(self):
-        for target in ("fleet", "wazuh"):
+        for target in ("fleet",):
             for failure in ("ssm.plan", "ssm.policy", "ssm.apply", "apps.plan", "apps.policy"):
                 with self.subTest(target=target, failure=failure):
                     result, events = self.run_apply(target=target, fail=failure)

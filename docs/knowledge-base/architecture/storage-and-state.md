@@ -489,15 +489,3 @@ registry storage. Preserve a fresh encrypted off-node etcd backup after key
 creation and restore that Secret before cert-manager can regenerate it. Keep
 the public key independently for historical signature verification. See
 [[../operations/harbor-oci]] for the pending signing acceptance gates.
-
-## Wazuh security logs (staged)
-
-Wazuh declares retained local indexer 100Gi and manager 50Gi claims on `acer`,
-plus NFS snapshot/backup storage. Local capacities are not enforced quotas;
-Talos EPHEMERAL free space and indexer watermarks are operational gates.
-Successful index snapshots older than 14 days are pruned through the indexer
-API only after a new successful snapshot, retaining at least three successes.
-Raw-file pruning and a complete manager-state backup remain production gates.
-Restoration needs index snapshots, manager identities, SSM credentials and
-the cert-manager CA. No live backup or restore is verified. See
-[[../operations/wazuh-siem]] and the Wazuh workload runbook.

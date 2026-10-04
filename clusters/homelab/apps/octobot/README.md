@@ -24,11 +24,6 @@ to trading only with withdrawals disabled before enabling live execution.
   `octobot.homelab`; no public Funnel route
 - Secret source: none committed; OctoBot setup and exchange credentials are
   stored by the application on its persistent volumes
-- Security log collection: the chart mounts the upstream 2.1.1 logging
-  configuration with console level `DEBUG`, matching the existing file logger.
-  The Wazuh node collector receives this stdout stream. The original
-  `user/logging_config.ini` remains on the PVC; removing the managed mount
-  restores that file. No trading settings change.
 
 ## Validate
 

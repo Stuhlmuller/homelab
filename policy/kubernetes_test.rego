@@ -2,29 +2,6 @@ package main
 
 import rego.v1
 
-test_allows_wazuh_own_secret_prefix if {
-	violations := deny with input as {
-		"apiVersion": "external-secrets.io/v1",
-		"kind": "ExternalSecret",
-		"metadata": {"name": "wazuh-credentials", "namespace": "wazuh"},
-		# checkov:skip=CKV_SECRET_6: Public SSM parameter path fixture, not credential material.
-		"spec": {"data": [{"secretKey": "value", "remoteRef": {"key": "/homelab/wazuh/api-password"}}]},
-	}
-	count(violations) == 0
-}
-
-test_rejects_wazuh_cross_application_secret if {
-	violations := deny with input as {
-		"apiVersion": "external-secrets.io/v1",
-		"kind": "ExternalSecret",
-		"metadata": {"name": "wazuh-credentials", "namespace": "wazuh"},
-		# checkov:skip=CKV_SECRET_6: Public SSM parameter path fixture, not credential material.
-		"spec": {"data": [{"secretKey": "value", "remoteRef": {"key": "/homelab/fleet/admin-password"}}]},
-	}
-	some msg in violations
-	contains(msg, "outside its allowed application prefixes")
-}
-
 test_rejects_gateway_attached_non_octelium_external_route if {
 	violations := deny with input as {
 		"apiVersion": "networking.istio.io/v1",

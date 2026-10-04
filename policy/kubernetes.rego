@@ -367,7 +367,6 @@ external_secret_allowed_prefixes := {
 	"octelium-public": {"/homelab/octelium/"},
 	"octelium-storage": {"/homelab/octelium/"},
 	"tailscale": {"/homelab/tailscale/"},
-	"wazuh": {"/homelab/wazuh/"},
 }
 
 deny contains msg if {

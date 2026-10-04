@@ -47,19 +47,3 @@ kubectl kustomize clusters/homelab/apps/langfuse |
       .metadata.annotations["argocd.argoproj.io/sync-options"] == "Prune=false,Delete=false")
   ' >/dev/null
 echo "Langfuse: recovery volume retained and one-shot Job/ConfigMap absent"
-
-# Argo waits for each wave to become healthy before applying the next wave.
-# A generated ConfigMap must exist before the Deployment tries to mount it.
-kubectl kustomize clusters/homelab/apps/langfuse |
-  yq ea -o=json -I=0 '[.]' - |
-  jq -e '
-    [.[] | select(.kind == "Deployment" and .metadata.name == "langfuse-clickhouse")] as $deployments |
-    ($deployments[0].spec.template.spec.volumes[] |
-      select(.name == "logging-config") | .configMap.name) as $configName |
-    [.[] | select(.kind == "ConfigMap" and .metadata.name == $configName)] as $configs |
-    ($deployments | length == 1) and ($configs | length == 1) and
-    ($configs[0].metadata.namespace == $deployments[0].metadata.namespace) and
-    (($configs[0].metadata.annotations["argocd.argoproj.io/sync-wave"] // "0" | tonumber) <
-      ($deployments[0].metadata.annotations["argocd.argoproj.io/sync-wave"] // "0" | tonumber))
-  ' >/dev/null
-echo "Langfuse: ClickHouse logging ConfigMap precedes its Deployment sync wave"

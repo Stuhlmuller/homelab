@@ -2,6 +2,105 @@ package main
 
 import rego.v1
 
+test_allows_four_wazuh_parameter_retirements if {
+	changes := [wazuh_retirement_change(name) |
+		some name in {"indexer-admin-password", "api-password", "dashboard-password", "agent-enrollment-password"}
+	]
+	count(changes) == 4
+	every change in changes {
+		wazuh_ssm_parameter_retirement(change)
+	}
+	violations := deny with input as {"resource_changes": changes}
+	count(violations) == 0
+}
+
+test_rejects_other_wazuh_parameter_addresses_and_resource_types if {
+	change := wazuh_retirement_change("api-password")
+	patches := [
+		{"address": "aws_ssm_parameter.this[\"/homelab/wazuh/api-password\"]"},
+		{"address": "module.other.aws_ssm_parameter.generated[\"/homelab/wazuh/api-password\"]"},
+		{"address": "aws_ssm_parameter.generated[\"/homelab/wazuh/dashboard-password\"]"},
+		{"type": "aws_kms_key"},
+		{"type": "kubernetes_secret"},
+		{"type": "kubernetes_secret_v1"},
+	]
+	every patch in patches {
+		candidate := object.union(change, patch)
+		not wazuh_ssm_parameter_retirement(candidate)
+		violations := deny with input as {"resource_changes": [candidate]}
+		some msg in violations
+		contains(msg, "must not delete sensitive resource")
+	}
+	not wazuh_ssm_parameter_retirement(object.union(change, {"type": "other_resource"}))
+}
+
+test_rejects_other_wazuh_parameter_identities if {
+	change := wazuh_retirement_change("api-password")
+	patches := [
+		{"name": "/homelab/wazuh/dashboard-password"},
+		{"name": "/homelab/other/api-password"},
+		{"type": "String"},
+		{"region": "us-east-1"},
+		{"arn": "arn:aws:ssm:us-east-1:716182248480:parameter/homelab/wazuh/api-password"},
+		{"arn": "arn:aws:ssm:us-west-2:000000000000:parameter/homelab/wazuh/api-password"},
+		{"arn": "arn:aws:ssm:us-west-2:716182248480:parameter/homelab/wazuh/dashboard-password"},
+	]
+	invalid_before := array.concat(
+		[object.union(change.change.before, patch) | some patch in patches],
+		[object.remove(change.change.before, {field}) | some field in {"name", "type", "region", "arn"}],
+	)
+	every before in invalid_before {
+		candidate := {
+			"address": change.address, "type": change.type,
+			"change": {"actions": ["delete"], "after": null, "before": before},
+		}
+		not wazuh_ssm_parameter_retirement(candidate)
+		violations := deny with input as {"resource_changes": [candidate]}
+		some msg in violations
+		contains(msg, "must not delete sensitive resource")
+	}
+}
+
+test_rejects_other_parameter_names_and_wazuh_prefixes if {
+	every name in {"password", "api-password/extra", "../other/api-password", "api-password-extra"} {
+		change := wazuh_retirement_change(name)
+		not wazuh_ssm_parameter_retirement(change)
+		violations := deny with input as {"resource_changes": [change]}
+		some msg in violations
+		contains(msg, "must not delete sensitive resource")
+	}
+}
+
+test_rejects_wazuh_parameter_replacements_and_nonnull_after if {
+	change := wazuh_retirement_change("api-password")
+	every patch in [{"actions": ["delete", "create"]}, {"actions": ["create", "delete"]}, {"after": {}}] {
+		candidate := object.union(change, {"change": object.union(change.change, patch)})
+		not wazuh_ssm_parameter_retirement(candidate)
+		violations := deny with input as {"resource_changes": [candidate]}
+		some msg in violations
+		contains(msg, "must not delete sensitive resource")
+	}
+	not wazuh_ssm_parameter_retirement({
+		"address": change.address, "type": change.type,
+		"change": object.remove(change.change, {"after"}),
+	})
+	not wazuh_ssm_parameter_retirement(object.union(change, {"change": object.union(change.change, {"actions": ["create"]})}))
+}
+
+wazuh_retirement_change(name) := {
+	"address": sprintf("aws_ssm_parameter.generated[\"/homelab/wazuh/%s\"]", [name]),
+	"type": "aws_ssm_parameter",
+	"change": {
+		"actions": ["delete"], "after": null,
+		"before": {
+			"name": sprintf("/homelab/wazuh/%s", [name]),
+			"type": "SecureString",
+			"region": "us-west-2",
+			"arn": sprintf("arn:aws:ssm:us-west-2:716182248480:parameter/homelab/wazuh/%s", [name]),
+		},
+	},
+}
+
 test_legacy_retirement_excludes_active_opentofu_key if {
 	before := {
 		"arn": "arn:aws:kms:us-west-2:716182248480:key/959539ca-5646-435c-8ae4-aec13b0f0607",

@@ -15,7 +15,23 @@ deny contains msg if {
 	action_deletes(change.change.actions)
 	not archived_ssm_key_retirement(change)
 	not archived_legacy_key_retirement(change)
+	not wazuh_ssm_parameter_retirement(change)
 	msg := sprintf("Terraform plan must not delete sensitive resource %q of type %s", [change.address, change.type])
+}
+
+# Wazuh was removed pending a hardware upgrade. Only its four generated
+# credentials may be retired; replacements and all other secret deletions stay blocked.
+wazuh_ssm_parameter_retirement(change) if {
+	change.type == "aws_ssm_parameter"
+	change.change.actions == ["delete"]
+	change.change.after == null
+	some name in {"indexer-admin-password", "api-password", "dashboard-password", "agent-enrollment-password"}
+	parameter_name := sprintf("/homelab/wazuh/%s", [name])
+	change.address == sprintf("aws_ssm_parameter.generated[%q]", [parameter_name])
+	change.change.before.name == parameter_name
+	change.change.before.type == "SecureString"
+	change.change.before.region == "us-west-2"
+	change.change.before.arn == sprintf("arn:aws:ssm:us-west-2:716182248480:parameter%s", [parameter_name])
 }
 
 # Cross-project state audit found no outside dependencies; all 60 legacy

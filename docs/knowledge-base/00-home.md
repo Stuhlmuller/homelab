@@ -31,6 +31,8 @@ in the same change.
   security, audit-console, and Cordium CI/developer/agent execution expansion.
 - [[operations/harbor-oci]] records private OCI registry ownership, package
   migration and rollout acceptance.
+- [[operations/wazuh-siem]] records the deferred SIEM plan and restoration
+  references for a future hardware upgrade.
 - [[source-map]] lists the source docs and repo paths imported into the vault.
 - [[patterns/new-application]] is the checklist for adding a new workload.
 - [[patterns/new-platform-service]] is the checklist for shared platform
@@ -60,6 +62,3 @@ Do not record secrets, raw credentials, private keys, Talos secrets, kubeconfigs
 token values, raw certificate material, or private-only hostnames here. Safe
 references such as ExternalSecret names, SSM parameter paths, public runbook
 paths, and known homelab LAN addresses already documented in the repo are fine.
-
-- [[operations/wazuh-siem]] tracks staged SIEM deployment, log-source coverage,
-  capacity and live ingestion acceptance.

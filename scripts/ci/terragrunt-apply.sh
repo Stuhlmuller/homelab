@@ -200,11 +200,16 @@ plan_and_apply_argocd_apps() {
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
 
+if [[ "${TERRAGRUNT_RETIRE_WAZUH:-false}" == "true" ]]; then
+  bash "${script_dir}/wazuh-retire.sh"
+  exit 0
+fi
+
 repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
   terragrunt_argocd_app_state_repair_unit
 )"
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "wazuh" ]]; then
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
@@ -219,8 +224,6 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
   prerequisite_apps=(external-secrets cert-manager istio platform-storage)
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
     prerequisite_apps+=(octelium-public)
-  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "wazuh" ]]; then
-    prerequisite_apps+=(octelium prometheus)
   fi
   kubectl -n argocd get applications "${prerequisite_apps[@]}" -o json | jq -e \
     --argjson expected "${#prerequisite_apps[@]}" '
@@ -231,15 +234,9 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io
     crd/authorizationpolicies.security.istio.io crd/virtualservices.networking.istio.io
   )
-  if [[ "$TERRAGRUNT_ARGOCD_APP" == "wazuh" ]]; then
-    prerequisite_crds+=(
-      crd/certificates.cert-manager.io crd/issuers.cert-manager.io
-      crd/podmonitors.monitoring.coreos.com crd/prometheusrules.monitoring.coreos.com
-    )
-  fi
   kubectl wait --for=condition=Established --timeout=0s "${prerequisite_crds[@]}"
   kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
-  if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "wazuh" ]]; then
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
     kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
       any(.spec.conditions[]?.namespaces[]?; . == $app)
     ' >/dev/null
@@ -261,7 +258,7 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
-  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "wazuh" ]]; then
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
     plan_and_apply_ssm_prerequisites
   fi
   echo "::group::Targeted Argo CD Application registration apply"

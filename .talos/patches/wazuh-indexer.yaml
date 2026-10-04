@@ -1,4 +1,0 @@
-# Apply only to the declared Wazuh indexer node, acer.
-machine:
-  sysctls:
-    vm.max_map_count: "262144"

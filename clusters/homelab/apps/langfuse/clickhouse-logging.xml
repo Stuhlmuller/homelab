@@ -1,8 +1,0 @@
-<clickhouse>
-    <logger>
-        <!-- Match the upstream trace-level file logger in container output so
-             the Wazuh node collector also receives ClickHouse diagnostics. -->
-        <console>1</console>
-        <console_log_level>trace</console_log_level>
-    </logger>
-</clickhouse>

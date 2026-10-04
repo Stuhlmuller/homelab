@@ -1,39 +1,5 @@
 serviceAccount:
   octobot: {}
-configMaps:
-  logging:
-    includeInChecksum: true
-    includeChecksumInControllers:
-      - octobot
-    data:
-      # Upstream 2.1.1 logger config, with console matching the DEBUG file stream.
-      # Mount over the user config; retain its original PVC file for rollback.
-      logging_config.ini: |
-        [loggers]
-        keys=root
-        [handlers]
-        keys=consoleHandler,fileHandler
-        [formatters]
-        keys=consoleFormatter,fileFormatter
-        [logger_root]
-        level=DEBUG
-        handlers=consoleHandler,fileHandler
-        [handler_consoleHandler]
-        class=StreamHandler
-        level=DEBUG
-        formatter=consoleFormatter
-        args=(sys.stdout,)
-        [handler_fileHandler]
-        class=handlers.RotatingFileHandler
-        level=DEBUG
-        formatter=fileFormatter
-        args=('logs/OctoBot.log', 'a', 24000000, 20)
-        [formatter_consoleFormatter]
-        class=colorlog.ColoredFormatter
-        format=%(log_color)s %(asctime)s %(levelname)-8s %(name)-20s %(message)s
-        [formatter_fileFormatter]
-        format=%(asctime)-16s %(levelname)-6s %(name)-20s %(filename)-s:%(lineno)-8s %(message)s
-        datefmt=%Y-%m-%d %H:%M:%S
 controllers:
   octobot:
     serviceAccount:
@@ -107,15 +73,6 @@ service:
       http:
         port: 5001
 persistence:
-  logging:
-    type: configMap
-    identifier: logging
-    advancedMounts:
-      octobot:
-        app:
-          - path: /octobot/user/logging_config.ini
-            subPath: logging_config.ini
-            readOnly: true
   user:
     enabled: true
     storageClass: nfs-default
