@@ -536,11 +536,14 @@ class CredentialExportTest(unittest.TestCase):
         self.values = {"user_principal_name": {"value": "rodman.mac@stinkyboi.com"},
                        "initial_password": {"value": self.password}}
 
-    def run_export(self, error=None):
+    def run_export(self, error=None, pilot=None):
         output = io.StringIO()
         result = subprocess.CompletedProcess([], 0, json.dumps(self.values).encode(), b"")
+        argv = ["credentials", "--output", str(self.destination)]
+        if pilot:
+            argv[1:1] = ["--pilot", pilot]
         with patch.object(credentials, "ROOT", self.repo), \
-                patch.object(credentials.sys, "argv", ["credentials", "--output", str(self.destination)]), \
+                patch.object(credentials.sys, "argv", argv), \
                 patch.object(credentials.subprocess, "run", return_value=result, side_effect=error) as process, \
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             try:
@@ -558,6 +561,13 @@ class CredentialExportTest(unittest.TestCase):
         self.assertIn(self.password, self.destination.read_text())
         self.assertEqual(stat.S_IMODE(self.destination.stat().st_mode), 0o600)
         process.assert_called_once()
+        self.assertIn("IaC/live/azuread-applications/fleet-pilot-user", str(process.call_args))
+
+    def test_stuhlmuller_pilot_requires_explicit_selection(self):
+        self.values["user_principal_name"]["value"] = "rodman.mac@stuhlmuller.net"
+        status, process = self.run_export(pilot="stuhlmuller")
+        self.assertEqual(status, 0)
+        self.assertIn("IaC/operator/entra-stuhlmuller-pilot-user", str(process.call_args))
 
     def test_existing_file_is_preserved_without_reading_credentials(self):
         self.destination.write_text("existing content")

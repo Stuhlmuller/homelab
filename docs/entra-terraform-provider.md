@@ -31,6 +31,23 @@ write powers merely to make a CI apply succeed. In particular,
 `AppRoleAssignment.ReadWrite.All` can grant API permissions and elevate its own
 principal; it is not limited to assigning Fleet administrators.
 
+## Custom-domain and Mac-pilot boundary
+
+`IaC/operator/entra-stuhlmuller-domain` and
+`IaC/operator/entra-stuhlmuller-pilot-user` remain outside the CI credential
+boundary. The former uses a human Entra operator to read and verify the
+existing non-default, managed `stuhlmuller.net` domain; the latter creates only
+the explicitly named cloud-only pilot after that verification. Neither expands
+the plan/apply identities with `Domain.ReadWrite.All` or `User.ReadWrite.All`.
+
+The domain unit starts with verification disabled, exports the exact Graph TXT
+record, and requires a separate DNS-owner GitOps change before a reviewed commit
+enables the one-time `verify` action. It does not configure Microsoft mail,
+federation or Google Workspace. Existing `stuhlmuller.net` users are not
+created, converted, assigned, or forced to use Entra. See the
+[domain module](../IaC/modules/entra-domain-verification/README.md) for the
+saved-plan sequence.
+
 The plan identity's claims-assignment refresh is a live acceptance gate:
 Microsoft's documented least permissions for that read include
 `Application.ReadWrite.OwnedBy`. Test the narrower read grants first. A denied

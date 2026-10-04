@@ -76,8 +76,8 @@ terragrunt_normalized_root_source_at_ref() {
 }
 
 terragrunt_azuread_stack_changed() {
-  local base_sha="${APPLY_BASE_SHA:-}"
-  local head_sha="${APPLY_HEAD_SHA:-${GITHUB_SHA:-HEAD}}"
+  local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
+  local head_sha="${APPLY_HEAD_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-${GITHUB_SHA:-HEAD}}}"
   local base_root_source
   local head_root_source
   local base_stack_units
@@ -118,6 +118,38 @@ terragrunt_azuread_stack_changed() {
   fi
 
   [[ "$base_root_source" != "$head_root_source" ]]
+}
+
+# The AzureAD collection contains both application registrations and the
+# legacy pilot user. Unrelated operator-only modules must not make a normal
+# deployment plan or apply that collection wholesale.
+terragrunt_azuread_plan_inputs_changed() {
+  local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
+  local head_sha="${APPLY_HEAD_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-${GITHUB_SHA:-HEAD}}}"
+
+  if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]] ||
+    ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null ||
+    ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+
+  ! git diff --quiet "$base_sha" "$head_sha" -- \
+    flake.nix \
+    flake.lock \
+    policy/terraform.rego \
+    scripts/ci/terragrunt-filter-base.sh \
+    scripts/ci/terragrunt-plan.sh
+}
+
+terragrunt_azuread_changed_filter() {
+  local include_plan_inputs="${1:-false}"
+
+  if terragrunt_azuread_stack_changed ||
+    { [[ "$include_plan_inputs" == "true" ]] && terragrunt_azuread_plan_inputs_changed; }; then
+    printf '*\n'
+  else
+    printf 'IaC/live/azuread-applications/* | [main...HEAD]\n'
+  fi
 }
 
 terragrunt_stack_changed() {

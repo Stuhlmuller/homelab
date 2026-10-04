@@ -182,7 +182,7 @@ echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter "$(terragrunt_changed_filter 'IaC/live/azuread-applications/*' true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
+    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
   )
 
   while IFS= read -r unit_file; do

@@ -3845,3 +3845,17 @@ unit "operator_azuread_ci_identities" {
   path                    = "operator/azuread-ci-identities"
   no_dot_terragrunt_stack = true
 }
+
+# Read and verify a non-default managed Entra domain before creating the one
+# scoped cloud-only Mac pilot. These operator units never modify Google users.
+unit "operator_entra_stuhlmuller_domain" {
+  source                  = "./.catalog/units/operator/entra-stuhlmuller-domain"
+  path                    = "operator/entra-stuhlmuller-domain"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_entra_stuhlmuller_pilot_user" {
+  source                  = "./.catalog/units/operator/entra-stuhlmuller-pilot-user"
+  path                    = "operator/entra-stuhlmuller-pilot-user"
+  no_dot_terragrunt_stack = true
+}
