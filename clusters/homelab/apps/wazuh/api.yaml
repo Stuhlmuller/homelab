@@ -2,8 +2,8 @@ host: [0.0.0.0]
 port: 55000
 https:
   enabled: true
-  key: /run/wazuh/tls/tls.key
-  cert: /run/wazuh/tls/tls.crt
+  key: /run/wazuh/api-tls/tls.key
+  cert: /run/wazuh/api-tls/tls.crt
   use_ca: false
 logs:
   level: info

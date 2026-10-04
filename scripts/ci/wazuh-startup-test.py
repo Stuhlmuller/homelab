@@ -25,11 +25,22 @@ def executable(path, source):
 
 
 class StartupTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tls = tempfile.TemporaryDirectory(prefix="wazuh-test-tls-")
+        cls.addClassCleanup(cls.tls.cleanup)
+        root = Path(cls.tls.name)
+        subprocess.run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+            "-subj", "/CN=wazuh-startup-test", "-keyout", str(root / "tls.key"),
+            "-out", str(root / "tls.crt"),
+        ], check=True, capture_output=True, timeout=15)
+
     def run_startup(self, failure=None):
         with tempfile.TemporaryDirectory(prefix="wazuh-startup-") as temporary:
             root = Path(temporary)
             for directory in (
-                "run/wazuh/credentials", "run/wazuh/config", "etc/filebeat",
+                "run/wazuh/credentials", "run/wazuh/config", "run/wazuh/tls", "etc/filebeat",
                 "var/ossec/api/configuration", "var/ossec/etc", "bin",
             ):
                 (root / directory).mkdir(parents=True)
@@ -47,11 +58,26 @@ class StartupTests(unittest.TestCase):
             }
             for path, content in inputs.items():
                 (root / path).write_text(content)
-            executable(root / "bin/install", """
-import os, shutil, sys
+            for name in ("tls.key", "tls.crt"):
+                if failure == "tls-missing" and name == "tls.key":
+                    continue
+                value = (Path(self.tls.name) / name).read_text()
+                (root / "run/wazuh/tls" / name).write_text(
+                    "invalid key" if failure == "tls-invalid" and name == "tls.key" else value)
+            executable(root / "bin/install", f"""
+import json, os, pathlib, shutil, sys
 if os.environ.get('WAZUH_TEST_FAIL') == 'install':
     sys.exit(21)
-shutil.copyfile(sys.argv[-2], sys.argv[-1])
+if os.environ.get('WAZUH_TEST_FAIL') == 'tls-install' and '/api-tls/' in sys.argv[-1]:
+    sys.exit(21)
+with open({str(root / 'install-calls')!r}, 'a') as log:
+    log.write(json.dumps(sys.argv[1:]) + '\\n')
+target = pathlib.Path(sys.argv[-1])
+if '-d' in sys.argv:
+    target.mkdir(parents=True, exist_ok=True)
+else:
+    shutil.copyfile(sys.argv[-2], target)
+target.chmod(int(sys.argv[sys.argv.index('-m') + 1], 8))
 """)
             executable(root / "var/ossec/framework/python/bin/python3", f"""
 import json, os, pathlib, sys
@@ -83,10 +109,10 @@ assert sys.argv[1:] == ['start']
 assert pathlib.Path({str(root / 'api-configured')!r}).exists()
 pathlib.Path({str(root / 'started')!r}).touch()
 """)
-            source = (APP / "manager-start.sh").read_text()
+            source = (APP / "manager-start.bash").read_text()
             for original in ("/var/ossec", "/run/wazuh", "/etc/filebeat", "/usr/share/filebeat"):
                 source = source.replace(original, str(root / original.removeprefix("/")))
-            script = root / "manager-start.sh"
+            script = root / "manager-start.bash"
             script.write_text(source)
             environment = os.environ.copy()
             environment["PATH"] = str(root / "bin") + os.pathsep + environment["PATH"]
@@ -105,12 +131,22 @@ pathlib.Path({str(root / 'started')!r}).touch()
                 settings = json.loads((root / "etc/filebeat/wazuh-template.json").read_text())["settings"]
                 self.assertEqual(settings["index.number_of_shards"], 1)
                 self.assertEqual(settings["index.number_of_replicas"], 0)
+                tls = root / "run/wazuh/api-tls"
+                self.assertEqual(tls.stat().st_mode & 0o777, 0o750)
+                for name, mode in (("tls.key", 0o600), ("tls.crt", 0o640)):
+                    self.assertEqual((tls / name).stat().st_mode & 0o777, mode)
+                    self.assertEqual((tls / name).read_bytes(), (root / "run/wazuh/tls" / name).read_bytes())
+                    calls = [json.loads(line) for line in (root / "install-calls").read_text().splitlines()]
+                    install = next(call for call in calls if call[-1] == str(tls / name))
+                    self.assertEqual(install[install.index("-o") + 1], "wazuh")
+                    self.assertEqual(install[install.index("-g") + 1], "wazuh")
 
     def test_success_starts_only_after_configuring_credentials(self):
         self.run_startup()
 
     def test_each_failure_keeps_all_wazuh_listeners_down(self):
-        for phase in ("install", "create-user", "keystore", "analysis", "logcollector", "filebeat", "template"):
+        for phase in ("install", "tls-install", "tls-missing", "tls-invalid", "create-user",
+                      "keystore", "analysis", "logcollector", "filebeat", "template"):
             with self.subTest(phase=phase):
                 self.run_startup(phase)
 
@@ -118,6 +154,10 @@ pathlib.Path({str(root / 'started')!r}).touch()
         manifest = (APP / "manager.yaml").read_text()
         self.assertIn("mountPath: /etc/cont-init.d/2-manager", manifest)
         self.assertNotIn("mountPath: /entrypoint-scripts", manifest)
+        self.assertIn("subPath: manager-start.bash", manifest)
+        api = (APP / "api.yaml").read_text()
+        self.assertIn("key: /run/wazuh/api-tls/tls.key", api)
+        self.assertIn("cert: /run/wazuh/api-tls/tls.crt", api)
 
 
 if __name__ == "__main__":

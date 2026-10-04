@@ -62,7 +62,12 @@ assert objects['CronJob', 'wazuh-canary']['spec']['schedule'] == '*/5 * * * *'
 spec = importlib.util.spec_from_file_location('preflight', ROOT / 'scripts/wazuh-preflight.py')
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
-c = lambda size, **kw: {'resources': {'requests': {'memory': size}}, **kw}
+
+
+def c(size, **kw):
+    return {'resources': {'requests': {'memory': size}}, **kw}
+
+
 assert module.pod_request({'containers': [c('1Gi')], 'initContainers': [c('2Gi')]}) == 2 * 1024**3
 assert module.pod_request({'containers': [c('1Gi')], 'initContainers': [c('512Mi', restartPolicy='Always'), c('2Gi')]}) == 2560 * 1024**2
 assert module.pod_request({'containers': [c('1Gi')], 'overhead': {'memory': '32Mi'}}) == 1056 * 1024**2

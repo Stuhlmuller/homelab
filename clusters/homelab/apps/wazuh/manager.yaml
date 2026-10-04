@@ -96,7 +96,7 @@ spec:
             - {name: config, mountPath: /wazuh-config-mount/etc/ossec.conf, subPath: ossec.conf, readOnly: true}
             - {name: config, mountPath: /wazuh-config-mount/etc/rules/homelab_rules.xml, subPath: local_rules.xml, readOnly: true}
             - {name: config, mountPath: /run/wazuh/config, readOnly: true}
-            - {name: hooks, mountPath: /etc/cont-init.d/2-manager, subPath: manager-start.sh, readOnly: true}
+            - {name: hooks, mountPath: /etc/cont-init.d/2-manager, subPath: manager-start.bash, readOnly: true}
             - {name: credentials, mountPath: /run/wazuh/credentials, readOnly: true}
             - {name: tls, mountPath: /run/wazuh/tls, readOnly: true}
       volumes:
@@ -108,7 +108,7 @@ spec:
           configMap:
             name: wazuh-core-config
             defaultMode: 0555
-            items: [{key: manager-start.sh, path: manager-start.sh}]
+            items: [{key: manager-start.bash, path: manager-start.bash}]
         - name: credentials
           secret: {secretName: wazuh-credentials, defaultMode: 0400}
         - name: tls

@@ -8,6 +8,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import shutil
 import ssl
 import time
@@ -69,14 +70,49 @@ def snapshot():
             result = json.load(response)["snapshots"][0]
         if result["state"] == "SUCCESS":
             print("Wazuh index snapshot completed successfully")
-            return
+            return name
         if result["state"] != "IN_PROGRESS":
             raise RuntimeError("Wazuh index snapshot did not complete successfully")
         time.sleep(10)
     raise RuntimeError("Timed out waiting for Wazuh index snapshot")
 
 
+def prune_snapshots(current):
+    """Keep 14 days and at least three successes; never remove repository files."""
+    context = ssl.create_default_context(cafile="/run/admin/ca.crt")
+    context.load_cert_chain("/run/admin/tls.crt", "/run/admin/tls.key")
+    base = "https://wazuh-indexer.wazuh.svc.cluster.local:9200/_snapshot/homelab/"
+
+    def request(method, suffix):
+        req = urllib.request.Request(base + suffix, method=method)
+        with urllib.request.urlopen(req, context=context, timeout=60) as response:
+            return json.load(response)
+
+    snapshots = request("GET", "_all")["snapshots"]
+    eligible = [item for item in snapshots
+                if re.fullmatch(r"homelab-[0-9]{8}-[0-9]{6}", item["snapshot"])
+                and item["state"] == "SUCCESS"
+                and isinstance(item.get("end_time_in_millis"), int)]
+    if not any(item["snapshot"] == current for item in eligible):
+        raise RuntimeError("New successful snapshot missing from retention readback")
+    newest = sorted(eligible, key=lambda item: item["end_time_in_millis"], reverse=True)[:3]
+    keep = {current, *(item["snapshot"] for item in newest)}
+    cutoff = (time.time() - 14 * 86400) * 1000
+    removed = set()
+    for item in eligible:
+        name = item["snapshot"]
+        if name in keep or item["end_time_in_millis"] >= cutoff:
+            continue
+        if request("DELETE", name).get("acknowledged") is not True:
+            raise RuntimeError("Wazuh snapshot deletion was not acknowledged")
+        removed.add(name)
+    remaining = {item["snapshot"] for item in request("GET", "_all")["snapshots"]}
+    if removed & remaining or not keep <= remaining:
+        raise RuntimeError("Wazuh snapshot retention readback failed")
+    print(f"Verified snapshot retention; removed {len(removed)} older successful snapshots")
+
+
 if __name__ == "__main__":
     os.umask(0o077)
     mirror_archives()
-    snapshot()
+    prune_snapshots(snapshot())

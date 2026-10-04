@@ -243,5 +243,69 @@ class BackupTests(unittest.TestCase):
                 self.assertTrue(self.source.exists())
 
 
+class SnapshotRetentionTests(unittest.TestCase):
+    def setUp(self):
+        self.now = 1791078000
+        self.current = "homelab-20261004-020000"
+
+    def item(self, name, days, state="SUCCESS"):
+        return {"snapshot": name, "state": state,
+                "end_time_in_millis": (self.now - days * 86400) * 1000}
+
+    def run_retention(self, records, *, acknowledge=True, readback=True):
+        deleted = []
+
+        def api(request, **kwargs):
+            suffix = request.full_url.rsplit("/", 1)[-1]
+            if request.method == "DELETE":
+                self.assertRegex(suffix, r"^homelab-[0-9]{8}-[0-9]{6}$")
+                deleted.append(suffix)
+                return response({"acknowledged": acknowledge})
+            self.assertEqual(suffix, "_all")
+            return response({"snapshots": [item for item in records
+                            if not readback or item["snapshot"] not in deleted]})
+
+        with patch.object(BACKUP.time, "time", return_value=self.now), \
+                patch.object(BACKUP.ssl, "create_default_context", return_value=Mock()), \
+                patch.object(BACKUP.urllib.request, "urlopen", side_effect=api), \
+                contextlib.redirect_stdout(io.StringIO()):
+            BACKUP.prune_snapshots(self.current)
+        return deleted
+
+    def test_only_expired_successes_deleted_and_minimum_three_kept(self):
+        records = [self.item(self.current, 0),
+                   self.item("homelab-20261003-020000", 1),
+                   self.item("homelab-20260910-020000", 24),
+                   self.item("homelab-20260909-020000", 25),
+                   self.item("operator-manual-backup", 100),
+                   self.item("homelab-20260901-020000", 33, "PARTIAL"),
+                   self.item("homelab-20260902-020000", 32, "IN_PROGRESS")]
+        deleted = self.run_retention(records)
+        self.assertEqual(deleted, ["homelab-20260909-020000"])
+        self.assertEqual(self.run_retention([i for i in records if i["snapshot"] not in deleted]), [])
+
+    def test_recent_snapshots_and_last_three_successes_survive(self):
+        for ages in ((1, 2, 3, 4), (20, 21)):
+            records = [self.item(self.current, 0)] + [
+                self.item(f"homelab-202609{day:02d}-020000", age)
+                for day, age in enumerate(ages, 1)]
+            self.assertEqual(self.run_retention(records), [])
+
+    def test_new_snapshot_must_be_a_verified_success_before_deletion(self):
+        for records in ([], [self.item(self.current, 0, "PARTIAL")],
+                        [{"snapshot": self.current, "state": "SUCCESS"}]):
+            with self.subTest(records=records), self.assertRaisesRegex(RuntimeError, "missing from retention"):
+                self.run_retention(records)
+
+    def test_deletion_requires_acknowledgement_and_absent_readback(self):
+        records = [self.item(self.current, 0)] + [
+            self.item(f"homelab-202609{day:02d}-020000", 20 + day)
+            for day in range(1, 5)]
+        with self.assertRaisesRegex(RuntimeError, "not acknowledged"):
+            self.run_retention(records, acknowledge=False)
+        with self.assertRaisesRegex(RuntimeError, "readback failed"):
+            self.run_retention(records, readback=False)
+
+
 if __name__ == "__main__":
     unittest.main()

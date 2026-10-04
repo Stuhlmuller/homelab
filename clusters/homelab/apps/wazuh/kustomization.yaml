@@ -28,7 +28,7 @@ configMapGenerator:
       - ossec.conf
       - api.yaml
       - local_rules.xml
-      - manager-start.sh
+      - manager-start.bash
       - bootstrap.py
       - backup.py
   - name: wazuh-collectors

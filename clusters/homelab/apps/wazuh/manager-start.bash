@@ -7,6 +7,11 @@ set -euo pipefail
 umask 077
 install -m 0600 /run/wazuh/credentials/filebeat.yml /etc/filebeat/filebeat.yml
 install -m 0640 -o root -g wazuh /run/wazuh/config/api.yaml /var/ossec/api/configuration/api.yaml
+# The API enforces wazuh ownership; projected Secret files cannot be chowned.
+# Keep its copy in the container runtime filesystem, outside persisted state.
+install -d -m 0750 -o root -g wazuh /run/wazuh/api-tls
+install -m 0600 -o wazuh -g wazuh /run/wazuh/tls/tls.key /run/wazuh/api-tls/tls.key
+install -m 0640 -o wazuh -g wazuh /run/wazuh/tls/tls.crt /run/wazuh/api-tls/tls.crt
 install -m 0640 -o root -g wazuh /run/wazuh/credentials/agent-enrollment-password /var/ossec/etc/authd.pass
 install -m 0600 /run/wazuh/credentials/api-admin.json /var/ossec/api/configuration/admin.json
 /var/ossec/framework/python/bin/python3 /var/ossec/framework/scripts/create_user.py
@@ -16,7 +21,10 @@ printf '%s\n' admin | /var/ossec/bin/wazuh-keystore -f indexer -k username
 # Single indexer: a replica cannot be allocated. Preserve upstream mappings.
 /var/ossec/framework/python/bin/python3 - <<'PY'
 import json
+import ssl
 from pathlib import Path
+ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER).load_cert_chain(
+    '/run/wazuh/api-tls/tls.crt', '/run/wazuh/api-tls/tls.key')
 path = Path('/etc/filebeat/wazuh-template.json')
 template = json.loads(path.read_text())
 template.setdefault('settings', {})['index.number_of_replicas'] = 0

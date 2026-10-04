@@ -79,8 +79,12 @@ Wazuh manager diagnostics already stream to stdout; its JSON API log is
 collected natively from `/var/ossec/logs/api.json`. The indexer's native Docker
 Log4j configuration sends ordinary, deprecation and slow logs to stdout.
 Verify these own-service streams separately from alert/archive collection.
-JVM GC/fatal-error diagnostic files still need a native console route; heap
-dumps are sensitive memory artifacts and are not log-shipping inputs.
+Native JVM GC, safepoint and warning logs also use stdout, including complete
+HotSpot fatal reports through `ErrorFileToStdout`. Heap dumps remain sensitive
+local memory artifacts and are not log-shipping inputs. With a JDK 17+ on PATH,
+`python3 -I scripts/ci/wazuh-jvm-test.py` tests real GC output and a deliberately
+crashed isolated Java child with core/heap dumps disabled. Local routing tests
+do not replace live indexed source proof.
 Talos log collection is not an installed Wazuh endpoint agent or host FIM.
 
 Fluent Bit excludes only its own container diagnostic logs to prevent feedback
@@ -102,6 +106,11 @@ The shared SSM unit generates four distinct credentials under `/homelab/wazuh/`:
 `kibanaserver` service identity), and `agent-enrollment-password`. External
 Secrets renders native config files and bcrypt hashes. No credential values,
 raw certificates, demo users or secret environment variables belong in Git.
+Before manager startup, its API certificate/key are copied to private ephemeral
+files owned by `wazuh` and validated. The native API enforces this ownership;
+it cannot change ownership on projected read-only Secret files. Authd and
+Filebeat read their original projections. Certificate renewal still needs a
+reviewed Pod revision so the API refreshes its runtime copy and processes reload.
 
 Indexer data (100 GiB) and manager state (50 GiB) use retained node-local volumes
 on `acer`. QNAP squashes NFS ownership, making it unsuitable for these upstream
@@ -110,15 +119,19 @@ metadata, not filesystem quotas: both volumes consume Talos EPHEMERAL. Keep
 indexer disk watermarks enabled and monitor node free space. A node reinstall
 can destroy local state despite `Retain`; PVC retention is not a backup.
 
-A nightly Job at 04:30 America/Los_Angeles takes a native indexer snapshot
-(`wazuh-*` and `.kibana*`, without global security state), then mirrors manager
-alerts/archives `.gz` files closed for over 24 hours with SHA-256 verification.
-It does not delete local raw files, prune NAS copies, or provide a complete
+A nightly Job at 04:30 America/Los_Angeles mirrors manager alerts/archives
+`.gz` files closed for over 24 hours with SHA-256 verification, then takes a native
+indexer snapshot (`wazuh-*` and `.kibana*`, without global security state).
+After a verified successful snapshot, it removes successful snapshots older
+than 14 days through the indexer API, preserving at least three successes and
+the just-created snapshot. Deletion requires acknowledgement and readback;
+manual names, failed and incomplete snapshots remain for operator inspection.
+It does not delete local raw files, prune raw NAS copies, or provide a complete
 manager identity/database backup. Snapshots and manager archives use the retained
 150GiB `wazuh-backups` NFS claim. Confirm an initial successful run; finite,
-verified pruning and a quiesced manager-state backup are still production gates.
-Index archives expire after 30 days and alerts after 90 days, but snapshots can
-retain expired index data until a separate reviewed pruning policy is enabled.
+verified raw-file pruning and a quiesced manager-state backup are still production
+gates. Index archives expire after 30 days and alerts after 90 days, but retained
+snapshots extend recoverability of expired index data by the snapshot window.
 Size these from measured daily ingest; no fixed retention period is guaranteed
 to fit on disk.
 
@@ -200,5 +213,6 @@ renewed Kubernetes Secret data alone does not prove processes reloaded it.
 - [Wazuh Kubernetes deployment](https://documentation.wazuh.com/current/deployment-options/deploying-with-kubernetes/index.html)
 - [Wazuh 4.14.8 reference manifests](https://github.com/wazuh/wazuh-kubernetes/tree/v4.14.8)
 - [Wazuh full event archives](https://documentation.wazuh.com/current/user-manual/manager/event-logging.html)
+- [Indexer snapshot deletion API](https://docs.opensearch.org/latest/api-reference/snapshots/delete-snapshot/)
 - [Talos 1.11 logging](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/logging-and-telemetry/logging)
 - [Fluent Bit Kubernetes events](https://docs.fluentbit.io/manual/data-pipeline/inputs/kubernetes-events)
