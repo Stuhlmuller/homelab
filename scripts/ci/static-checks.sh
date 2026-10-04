@@ -181,11 +181,18 @@ echo "::group::Terragrunt Azure credential gate"
       exit 1
     fi
   done
+  [[ "$(terragrunt_azuread_changed_filter)" == "*" ]]
   changed_path="IaC/modules/argocd-application-kubernetes/main.tf"
   if terragrunt_azuread_stack_changed; then
     echo "An unrelated module change must not require Azure credentials." >&2
     exit 1
   fi
+  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  changed_path="IaC/modules/entra-verified-family-user/main.tf"
+  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  changed_path="scripts/ci/terragrunt-plan.sh"
+  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter true)" == "*" ]]
   changed_path=""
 
   stack_change=true
@@ -320,6 +327,19 @@ done
   terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
 )
+rg -Fq 'data "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf
+rg -Fq 'resource "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf && exit 1
+rg -Fq 'forceTakeover = false' IaC/modules/entra-domain-verification/main.tf
+rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
+rg -Fq 'verify_domain = false' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user; do
+  (
+    cd "IaC/operator/${operator_unit}"
+    terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+    terragrunt --log-disable run --no-auto-init -- validate -no-color
+  )
+done
 echo "::endgroup::"
 
 echo "::group::Etcd offsite bucket offline guards"

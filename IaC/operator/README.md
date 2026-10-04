@@ -20,6 +20,26 @@ is needed. Follow the [provider runbook](../../docs/entra-terraform-provider.md)
 for encrypted plans, stable application ownership, environment protection,
 credential-selector publication and real CI acceptance.
 
+## Entra `stuhlmuller.net` pilot
+
+`entra-stuhlmuller-domain` reads the existing Entra domain through the
+Microsoft Graph provider, reads the Microsoft-generated TXT verification record,
+and verifies it only after the DNS owner has published that record. It is
+intentionally an operator unit: verification requires tenant-wide domain
+authority that the CI identities must not receive.
+
+The unit requires a managed, non-default and non-initial domain and always uses
+`forceTakeover = false`. It cannot create, delete, federate, make a default
+domain, configure Microsoft 365 mail services, or change Google Workspace.
+The companion `entra-stuhlmuller-pilot-user` unit creates only
+`rodman.mac@stuhlmuller.net` after that verification, with no group, role,
+license, Fleet-console assignment, mailbox, or impact on other accounts. The
+unit uses the separate `entra-verified-family-user` module so a guarded
+operator pilot change cannot alter the legacy AzureAD user collection. The full
+two-stage saved-plan procedure is in the
+[domain module](../modules/entra-domain-verification/README.md) and the
+[Fleet Free runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+
 ## Etcd Offsite Backup Storage
 
 `etcd-backup-storage` owns a dedicated private, versioned S3 bucket in
