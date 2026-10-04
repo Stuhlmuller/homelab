@@ -10,11 +10,17 @@ permission change, snapshot, real-data processing or restore is authorized.
 
 ## Evidence identity and ownership
 
-- Remote main: `33f2277e50f34d69091bfbb6472eef0bf6486699`.
+- Entry baseline: `33f2277e50f34d69091bfbb6472eef0bf6486699`.
+  Main advanced during preparation to `99deec007bf82f197960f87e9c31bbc51f0c7157`
+  (Wazuh #1153). Its 71-file diff was rechecked: chart-source catalog, Multica
+  placement and backup client pin are unchanged. New Wazuh manifests, collector
+  RBAC, local storage, Harbor images and Talos logging/sysctl patches expand
+  generated-grant, application-recovery and strict-render coverage. Include them
+  in final integration; earlier #1162 evidence does not cover these additions.
 - [Draft #1162](https://github.com/Stuhlmuller/homelab/pull/1162):
   `1d1caad4305c256201c521442dc98507b0f29b52`, resolved through GitHub and
   `git ls-remote`, fetched into an isolated detached review worktree before tests.
-  Reported tree: `2d008b857e92da5fc111a18c595580d21f81eab9`.
+  Verified tree: `2d008b857e92da5fc111a18c595580d21f81eab9`.
   Its branch and all existing desired-state pins remain untouched.
 - HOME-54 QA `be6e1963-510b-4557-9b08-2bf14576ae13`: source fix and public
   1.34.12 content verified; unsigned revision, incomplete CI, generated RBAC,
@@ -158,7 +164,7 @@ at the baseline. Every entry requires repository-values rendering at each chosen
 Kubernetes version, served CRD/API and conversion/admission webhook review,
 rendered SA/RBAC aggregation, chart digest/provenance and image-catalog coverage.
 This is a complete catalog inventory, not proof of complete generated resources.
-Also inspect operators, literal manifests and cluster-default roles. Unknown
+Also inspect operators, literal manifests (including newly merged Wazuh) and cluster-default roles. Unknown
 group/wildcard/aggregation/impersonation/bind/escalate grants are not denial.
 
 | Area | Current result / required evidence |
@@ -225,6 +231,8 @@ Approval remains pending until the complete request is separately decided.
 
 On isolated #1162: eight focused Kubernetes patch/RBAC fixture tests pass; Harbor
 coverage regression passes. Public 1.35.9 index/manifest/config hashes verified.
+The full static runner passes bootstrap and focused checks, then stops at missing
+Terragrunt (exit 127). Inventory equality, JSON/digest shape and whitespace pass.
 These are repository/content results, not live version, containment or recovery
 evidence. The earlier 94 recovery tests and six synthetic Talos validations remain
 attributed prior results, not rerun results. No current cluster facts collected.
