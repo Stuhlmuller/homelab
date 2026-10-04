@@ -978,6 +978,9 @@ The Entra app/user units require focused encrypted plans before protected apply.
 Browser SAML identity, device/user registration, actual Mac password sync,
 offline login, and FileVault unlock must each be verified independently. Record
 failed versus untested checks explicitly; Argo health is not their acceptance.
+Keep identity-specific acceptance evidence in a private operator report. Public
+documentation should describe the verification method without publishing account
+identifiers, credentials or detailed tenant security state from the test.
 
 Fleet adds bootstrap API regression tests for closed first-admin setup,
 administrator identity validation, token revocation and credential redaction.
