@@ -39,6 +39,7 @@ check_inactive() {
 check_inactive
 plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/wazuh-retire.XXXXXX")"
 trap 'rm -rf "$plan_dir"' EXIT
+printf '%s\n' '{"wazuh_retirement":true}' >"$plan_dir/retirement-policy.json"
 
 prepare_plan() {
   local kind="$1" unit="$2"
@@ -49,7 +50,8 @@ prepare_plan() {
     terragrunt --log-disable show -json "$plan_dir/$kind.plan" >"$plan_dir/$kind.json"
   )
   python3 -I "$root/scripts/ci/wazuh-retire-plan.py" "$kind" "$plan_dir/$kind.json"
-  conftest test --policy "$root/policy" --output github "$plan_dir/$kind.json"
+  conftest test --policy "$root/policy" --data "$plan_dir/retirement-policy.json" \
+    --output github "$plan_dir/$kind.json"
 }
 
 # Validate both plans before either write. A shared-unit drift fails closed.

@@ -21,8 +21,10 @@ gh workflow run terragrunt-apply.yml --ref main \
 ```
 
 Both saved plans must pass strict resource checks and policy before either is
-applied. The secret-deletion policy exception matches only the four exact
-generated SecureStrings; other secret deletions and replacements remain blocked.
+applied. Only this path supplies the policy context permitting deletion of the
+four exact generated SecureStrings. Normal full and targeted applies continue
+to reject these deletions until retirement completes; other secret deletions
+and replacements remain blocked.
 Cleanup refuses an enabled Application, an active operation, finalizers
 or any Wazuh namespace, volume or collector permissions. Unrelated state drift
 also stops cleanup. Investigate failures through reviewed code changes; do not

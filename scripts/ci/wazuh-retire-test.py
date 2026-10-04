@@ -124,10 +124,16 @@ elif tool == "python3":
         sys.exit(result.returncode)
     receipt(path.with_suffix(".plan"), "guard")
 elif tool == "conftest":
-    assert args[:5] == ["test", "--policy", str(root / "policy"), "--output", "github"]
-    path = Path(args[5])
+    assert args[:4] == ["test", "--policy", str(root / "policy"), "--data"]
+    assert args[5:7] == ["--output", "github"] and len(args) == 8
+    context, path = Path(args[4]), Path(args[7])
+    assert context == path.parent / "retirement-policy.json"
+    capability = json.loads(context.read_text())
+    assert capability == {"wazuh_retirement": True} and capability["wazuh_retirement"] is True
+    saved = path.with_suffix(".plan")
+    assert Path(str(saved) + ".guard").read_text() == hashlib.sha256(saved.read_bytes()).hexdigest()
     event(path.stem + ".policy")
-    receipt(path.with_suffix(".plan"), "policy")
+    receipt(saved, "policy")
 elif tool == "aws":
     assert args == ["ssm", "describe-parameters", "--region", "us-west-2", "--parameter-filters",
                     "Key=Path,Option=Recursive,Values=/homelab/wazuh/", "--query", "Parameters[].Name",

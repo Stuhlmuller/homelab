@@ -19,9 +19,11 @@ deny contains msg if {
 	msg := sprintf("Terraform plan must not delete sensitive resource %q of type %s", [change.address, change.type])
 }
 
-# Wazuh was removed pending a hardware upgrade. Only its four generated
-# credentials may be retired; replacements and all other secret deletions stay blocked.
+# Only the guarded retirement helper supplies this external data capability,
+# after checking inactivity and the exact plan. Ordinary applies still deny
+# all four deletions; plan input alone cannot authorize the exception.
 wazuh_ssm_parameter_retirement(change) if {
+	data.wazuh_retirement == true
 	change.type == "aws_ssm_parameter"
 	change.change.actions == ["delete"]
 	change.change.after == null

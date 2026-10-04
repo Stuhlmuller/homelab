@@ -2,15 +2,29 @@ package main
 
 import rego.v1
 
+test_wazuh_deletions_require_external_retirement_capability if {
+	changes := [wazuh_retirement_change(name) |
+		some name in {"indexer-admin-password", "api-password", "dashboard-password", "agent-enrollment-password"}
+	]
+	ordinary := deny with input as {"resource_changes": changes}
+	count(ordinary) == 4
+	input_only := deny with input as {"resource_changes": changes, "wazuh_retirement": true}
+	count(input_only) == 4
+	every capability in [false, null, "true", 1, {"authorized": true}] {
+		violations := deny with input as {"resource_changes": changes} with data.wazuh_retirement as capability
+		count(violations) == 4
+	}
+}
+
 test_allows_four_wazuh_parameter_retirements if {
 	changes := [wazuh_retirement_change(name) |
 		some name in {"indexer-admin-password", "api-password", "dashboard-password", "agent-enrollment-password"}
 	]
 	count(changes) == 4
 	every change in changes {
-		wazuh_ssm_parameter_retirement(change)
+		wazuh_ssm_parameter_retirement(change) with data.wazuh_retirement as true
 	}
-	violations := deny with input as {"resource_changes": changes}
+	violations := deny with input as {"resource_changes": changes} with data.wazuh_retirement as true
 	count(violations) == 0
 }
 
@@ -26,12 +40,12 @@ test_rejects_other_wazuh_parameter_addresses_and_resource_types if {
 	]
 	every patch in patches {
 		candidate := object.union(change, patch)
-		not wazuh_ssm_parameter_retirement(candidate)
-		violations := deny with input as {"resource_changes": [candidate]}
+		not wazuh_ssm_parameter_retirement(candidate) with data.wazuh_retirement as true
+		violations := deny with input as {"resource_changes": [candidate]} with data.wazuh_retirement as true
 		some msg in violations
 		contains(msg, "must not delete sensitive resource")
 	}
-	not wazuh_ssm_parameter_retirement(object.union(change, {"type": "other_resource"}))
+	not wazuh_ssm_parameter_retirement(object.union(change, {"type": "other_resource"})) with data.wazuh_retirement as true
 }
 
 test_rejects_other_wazuh_parameter_identities if {
@@ -54,8 +68,8 @@ test_rejects_other_wazuh_parameter_identities if {
 			"address": change.address, "type": change.type,
 			"change": {"actions": ["delete"], "after": null, "before": before},
 		}
-		not wazuh_ssm_parameter_retirement(candidate)
-		violations := deny with input as {"resource_changes": [candidate]}
+		not wazuh_ssm_parameter_retirement(candidate) with data.wazuh_retirement as true
+		violations := deny with input as {"resource_changes": [candidate]} with data.wazuh_retirement as true
 		some msg in violations
 		contains(msg, "must not delete sensitive resource")
 	}
@@ -64,8 +78,8 @@ test_rejects_other_wazuh_parameter_identities if {
 test_rejects_other_parameter_names_and_wazuh_prefixes if {
 	every name in {"password", "api-password/extra", "../other/api-password", "api-password-extra"} {
 		change := wazuh_retirement_change(name)
-		not wazuh_ssm_parameter_retirement(change)
-		violations := deny with input as {"resource_changes": [change]}
+		not wazuh_ssm_parameter_retirement(change) with data.wazuh_retirement as true
+		violations := deny with input as {"resource_changes": [change]} with data.wazuh_retirement as true
 		some msg in violations
 		contains(msg, "must not delete sensitive resource")
 	}
@@ -75,16 +89,16 @@ test_rejects_wazuh_parameter_replacements_and_nonnull_after if {
 	change := wazuh_retirement_change("api-password")
 	every patch in [{"actions": ["delete", "create"]}, {"actions": ["create", "delete"]}, {"after": {}}] {
 		candidate := object.union(change, {"change": object.union(change.change, patch)})
-		not wazuh_ssm_parameter_retirement(candidate)
-		violations := deny with input as {"resource_changes": [candidate]}
+		not wazuh_ssm_parameter_retirement(candidate) with data.wazuh_retirement as true
+		violations := deny with input as {"resource_changes": [candidate]} with data.wazuh_retirement as true
 		some msg in violations
 		contains(msg, "must not delete sensitive resource")
 	}
 	not wazuh_ssm_parameter_retirement({
 		"address": change.address, "type": change.type,
 		"change": object.remove(change.change, {"after"}),
-	})
-	not wazuh_ssm_parameter_retirement(object.union(change, {"change": object.union(change.change, {"actions": ["create"]})}))
+	}) with data.wazuh_retirement as true
+	not wazuh_ssm_parameter_retirement(object.union(change, {"change": object.union(change.change, {"actions": ["create"]})})) with data.wazuh_retirement as true
 }
 
 wazuh_retirement_change(name) := {
