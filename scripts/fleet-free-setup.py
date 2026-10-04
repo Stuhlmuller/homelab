@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ROOT / "clusters/homelab/apps/fleet/profiles"
 CONSOLE_USER = "rodman@stinkyboi.com"
 MAC_FILES = ("macos-security-baseline.mobileconfig", "macos-entra-platform-sso.mobileconfig")
-IOS_FILES = ("ios-passcode-baseline.mobileconfig",)
+IOS_FILES = ("ios-passcode-baseline.mobileconfig",)  # Retired; retained only for removal.
 POLICY = {
     "name": "Family Mac FileVault enabled",
     "query": "SELECT 1 FROM disk_encryption WHERE user_uuid IS NOT '' AND filevault_status = 'on' LIMIT 1;",
@@ -214,22 +214,14 @@ def execute(args):
         elif args.action == "reporting":
             reporting(api, token)
         elif args.action == "validate-profiles":
-            all_profiles = desired + profiles(IOS_FILES, 1)
             api.request("POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true", {
                 "configuration_profiles": [{"profile": base64.b64encode(raw).decode()}
-                                           for raw, _ in all_profiles],
+                                           for raw, _ in desired],
             }, token, accepted_status=204)
             print("Fleet Free profile validation passed; no profiles assigned")
         else:
             host = ios_host(api, mdm, token, args.host_id) if args.action == "ios-baseline" else mdm.local_host(api, token)
             apply_profiles(api, mdm, token, host, desired, remove=args.remove)
-            if args.action == "ios-baseline" and not args.remove:
-                info = mdm.command(api, token, host, {"RequestType": "SecurityInfo"}).get("SecurityInfo", {})
-                passcode = {key: info.get(key) for key in
-                            ("PasscodePresent", "PasscodeCompliant", "PasscodeCompliantWithProfiles")}
-                if any(value is not None and type(value) is not bool for value in passcode.values()):
-                    raise SetupError("Passcode security response has an invalid value type")
-                print(json.dumps(passcode))
     finally:
         api.request("POST", "/api/v1/fleet/logout", token=token)
         print("Fleet operator session revoked", flush=True)
@@ -247,11 +239,13 @@ def main(argv=None):
     if args.remove and args.action not in ("mac-pilot", "ios-baseline"):
         parser.error("--remove applies only to device profiles")
     try:
+        if args.action == "ios-baseline" and not args.remove:
+            raise SetupError("The iOS passcode baseline is retired; ios-baseline requires --remove")
         profiles(MAC_FILES, 5)
         profiles(IOS_FILES, 1)
         if not args.execute:
             print("Dry run: profile files valid; no credentials or APIs accessed.\n"
-                  "mac-pilot targets this exact Mac by serial AND hardware UUID; ios-baseline checks the selected host platform.\n"
+                  "mac-pilot targets this exact Mac by serial AND hardware UUID; ios-baseline removes the retired profile from the selected iPhone/iPad.\n"
                   "Profile writes replace only stable repository identifiers, preserve other profiles, and never auto-retry.\n"
                   "console-sso uses the managed Entra unit outputs, precreates only the authorized SSO admin, and keeps recovery login.\n"
                   "reporting adds a macOS-only FileVault SQL policy without automatic remediation.")

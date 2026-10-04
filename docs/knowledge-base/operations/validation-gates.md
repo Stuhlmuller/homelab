@@ -1056,6 +1056,27 @@ without resubmitting installation. Its later `SecurityInfo` also returned
 availability. Inspect the existing command before any retry; do not enqueue
 duplicate profile writes.
 
+Read-only Fleet command-history inspection on 2026-10-04 confirmed the iPhone
+baseline in the acknowledged `ProfileList` result at `02:17:05Z`, matching the
+repository profile UUID. The existing `SecurityInfo` command subsequently
+acknowledged at `03:17:46Z`: `PasscodePresent=true`, `PasscodeCompliant=false`,
+and `PasscodeCompliantWithProfiles=false`. These are recorded device responses,
+not a fresh check after the user's passcode change. The
+[iPhone baseline](../../../clusters/homelab/apps/fleet/profiles/ios-passcode-baseline.mobileconfig)
+requires six characters and rejects simple passcodes; omitting scheduled expiry
+does not disable those requirements. Post-change compliance and enrollment mode
+remain unverified. No device settings were changed during this inspection.
+
+Later on 2026-10-04, the owner requested baseline removal. The existing
+`fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --remove --execute`
+operator completed acknowledged `ProfileList`, `RemoveProfile`, and fresh
+`ProfileList` commands: the baseline was absent, all unrelated profiles remained,
+and the operator session was revoked. The focused Fleet setup suite (38 tests),
+Apple MDM/API suite (17 tests), removal dry run, and `git diff --check` passed.
+The operator now rejects iOS baseline installation before credential access and
+excludes the retired payload from active-profile validation. Its payload is
+retained only for idempotent removal; the user's current passcode is preserved.
+
 An external Python `urllib` probe with its default user agent received HTTP 403
 with a Cloudflare response header. The same endpoint returned 200 for curl, the
 browser and an identified `Fleet-verification/1.0` client; authenticated API

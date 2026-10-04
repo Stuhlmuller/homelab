@@ -97,8 +97,6 @@ class FakeMDM:
         self.installed = [copy.deepcopy(UNRELATED)]
         self.drop_unrelated = False
         self.install_error = None
-        self.security = {"PasscodePresent": True, "PasscodeCompliant": True,
-                         "PasscodeCompliantWithProfiles": True}
 
     @staticmethod
     def profile_identifiers(reply):
@@ -126,8 +124,6 @@ class FakeMDM:
             self.installed = [item for item in self.installed
                               if item["PayloadIdentifier"] != command["Identifier"]]
             return {}
-        if request == "SecurityInfo":
-            return {"SecurityInfo": copy.deepcopy(self.security)}
         raise AssertionError("Unexpected MDM command")
 
 
@@ -181,9 +177,20 @@ class FleetFreeTest(unittest.TestCase):
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
         for action in ("validate-profiles", "mac-pilot", "ios-baseline", "console-sso", "reporting"):
             with self.subTest(action=action):
-                args = [action] + (["--host-id", "2"] if action == "ios-baseline" else [])
+                args = [action] + (["--host-id", "2", "--remove"] if action == "ios-baseline" else [])
                 status, _, loader = self.run_command(args)
                 self.assertEqual(status, 0)
+                loader.assert_not_called()
+                self.api.initial_password.assert_not_called()
+                self.assertEqual(self.api.calls, [])
+                self.assertEqual(self.mdm.calls, [])
+
+    def test_retired_ios_install_is_rejected_before_credentials_modules_and_api(self):
+        for flags in ([], ["--execute"]):
+            with self.subTest(flags=flags):
+                status, output, loader = self.run_command(["ios-baseline", "--host-id", "2"] + flags)
+                self.assertEqual(status, 1)
+                self.assertIn("ios-baseline requires --remove", output)
                 loader.assert_not_called()
                 self.api.initial_password.assert_not_called()
                 self.assertEqual(self.api.calls, [])
@@ -227,6 +234,11 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual(writes, [("POST", "/api/v1/fleet/login"),
                                   ("POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true"),
                                   ("POST", "/api/v1/fleet/logout")])
+        submitted = [plistlib.loads(base64.b64decode(item["profile"]))
+                     for item in self.api.calls[2][2]["configuration_profiles"]]
+        self.assertEqual([profile["PayloadIdentifier"] for profile in submitted],
+                         [profile["PayloadIdentifier"] for _, profile in helper.profiles(helper.MAC_FILES, 5)])
+        self.assertTrue(all(profile["TargetDeviceType"] == 5 for profile in submitted))
         self.assertEqual(self.mdm.calls, [])
         self.assert_logged_out()
 
@@ -242,24 +254,30 @@ class FleetFreeTest(unittest.TestCase):
             with self.subTest(field=field):
                 original = copy.deepcopy(self.api.host)
                 self.api.host[field] = value
-                self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--execute"])[0], 1)
+                self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--remove", "--execute"])[0], 1)
                 self.assert_no_setup_mutations()
                 self.mdm.local_host.assert_not_called()
                 self.assert_logged_out()
                 self.api.host = original
 
-    def test_ios_targets_only_selected_device_and_reports_boolean_security(self):
-        status, output, _ = self.run_command(["ios-baseline", "--host-id", "2", "--execute"])
+    def test_ios_removes_only_retired_profile_from_selected_device(self):
+        profile = plistlib.loads((self.profiles / helper.IOS_FILES[0]).read_bytes())
+        self.mdm.installed.append(profile)
+        status, _, _ = self.run_command(["ios-baseline", "--host-id", "2", "--remove", "--execute"])
         self.assertEqual(status, 0)
         self.assertTrue(all(host == IOS_UUID for host, _ in self.mdm.calls))
-        self.assertIn('"PasscodeCompliantWithProfiles": true', output)
+        self.assertEqual([command for _, command in self.mdm.calls], [
+            {"RequestType": "ProfileList"},
+            {"RequestType": "RemoveProfile", "Identifier": profile["PayloadIdentifier"]},
+            {"RequestType": "ProfileList"},
+        ])
         self.mdm.local_host.assert_not_called()
-        self.assertIn(UNRELATED, self.mdm.installed)
+        self.assertEqual(self.mdm.installed, [UNRELATED])
         self.assert_logged_out()
-
-    def test_malformed_security_info_cannot_leak_server_values(self):
-        self.mdm.security["PasscodePresent"] = PRIVATE
-        self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--execute"])[0], 1)
+        self.mdm.calls.clear()
+        self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--remove", "--execute"])[0], 0)
+        self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
+        self.assertEqual(self.mdm.installed, [UNRELATED])
         self.assert_logged_out()
 
     def test_remove_is_idempotent_and_never_removes_another_profile(self):
