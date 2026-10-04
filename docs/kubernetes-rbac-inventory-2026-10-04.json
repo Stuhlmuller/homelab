@@ -1,0 +1,424 @@
+{
+  "bindings": [
+    {
+      "apps_write_hints": [],
+      "binding": "cordium-genesis",
+      "role": {
+        "aggregation_unresolved": false,
+        "rules": [
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resources": [
+              "configmaps",
+              "namespaces",
+              "secrets",
+              "serviceaccounts",
+              "services"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch",
+              "create",
+              "update",
+              "patch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "apps"
+            ],
+            "resources": [
+              "deployments",
+              "replicasets"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch",
+              "create",
+              "update",
+              "patch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "networking.k8s.io"
+            ],
+            "resources": [
+              "networkpolicies"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch",
+              "create",
+              "update",
+              "patch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "rbac.authorization.k8s.io"
+            ],
+            "resources": [
+              "clusterroles",
+              "roles"
+            ],
+            "verbs": [
+              "bind",
+              "escalate"
+            ]
+          },
+          {
+            "apiGroups": [
+              "rbac.authorization.k8s.io"
+            ],
+            "resources": [
+              "clusterroles",
+              "clusterrolebindings",
+              "roles",
+              "rolebindings"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch",
+              "bind",
+              "create",
+              "escalate",
+              "update",
+              "patch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "apiextensions.k8s.io"
+            ],
+            "resources": [
+              "customresourcedefinitions"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch"
+            ]
+          }
+        ],
+        "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "cordium-genesis"
+      },
+      "scope": "*",
+      "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml",
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "cordium-genesis",
+          "namespace": "octelium"
+        }
+      ],
+      "unresolved": false
+    },
+    {
+      "apps_write_hints": [],
+      "binding": "cordium-genesis-cleanup",
+      "role": {
+        "aggregation_unresolved": false,
+        "rules": [
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resourceNames": [
+              "cordium-genesis"
+            ],
+            "resources": [
+              "serviceaccounts"
+            ],
+            "verbs": [
+              "delete"
+            ]
+          }
+        ],
+        "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "cordium-genesis-cleanup"
+      },
+      "scope": "octelium",
+      "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml",
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "cordium-genesis-cleanup",
+          "namespace": "octelium"
+        }
+      ],
+      "unresolved": false
+    },
+    {
+      "apps_write_hints": [],
+      "binding": "cordium-genesis-cleanup",
+      "role": {
+        "aggregation_unresolved": false,
+        "rules": [
+          {
+            "apiGroups": [
+              "rbac.authorization.k8s.io"
+            ],
+            "resourceNames": [
+              "cordium-genesis"
+            ],
+            "resources": [
+              "clusterroles",
+              "clusterrolebindings"
+            ],
+            "verbs": [
+              "delete"
+            ]
+          }
+        ],
+        "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "cordium-genesis-cleanup"
+      },
+      "scope": "*",
+      "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml",
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "cordium-genesis-cleanup",
+          "namespace": "octelium"
+        }
+      ],
+      "unresolved": false
+    },
+    {
+      "apps_write_hints": [],
+      "binding": "system:coredns",
+      "role": {
+        "aggregation_unresolved": false,
+        "rules": [
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resources": [
+              "endpoints",
+              "services",
+              "pods",
+              "namespaces"
+            ],
+            "verbs": [
+              "list",
+              "watch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "discovery.k8s.io"
+            ],
+            "resources": [
+              "endpointslices"
+            ],
+            "verbs": [
+              "list",
+              "watch"
+            ]
+          }
+        ],
+        "source": "clusters/homelab/platform/dns/coredns-clusterrole.yaml"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "system:coredns"
+      },
+      "scope": "*",
+      "source": "clusters/homelab/platform/dns/coredns-clusterrolebinding.yaml",
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "coredns",
+          "namespace": "kube-system"
+        }
+      ],
+      "unresolved": false
+    },
+    {
+      "apps_write_hints": [],
+      "binding": "multus",
+      "role": {
+        "aggregation_unresolved": false,
+        "rules": [
+          {
+            "apiGroups": [
+              "k8s.cni.cncf.io"
+            ],
+            "resources": [
+              "*"
+            ],
+            "verbs": [
+              "*"
+            ]
+          },
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resources": [
+              "pods",
+              "pods/status"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "update",
+              "watch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "",
+              "events.k8s.io"
+            ],
+            "resources": [
+              "events"
+            ],
+            "verbs": [
+              "create",
+              "patch",
+              "update"
+            ]
+          }
+        ],
+        "source": "clusters/homelab/platform/multus/multus.yaml"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "multus"
+      },
+      "scope": "*",
+      "source": "clusters/homelab/platform/multus/multus.yaml",
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "multus",
+          "namespace": "kube-system"
+        }
+      ],
+      "unresolved": false
+    }
+  ],
+  "scope": "literal tracked cluster YAML only; effective live grants UNKNOWN",
+  "service_accounts": [
+    {
+      "automount": false,
+      "name": "affine",
+      "namespace": "affine",
+      "source": "clusters/homelab/apps/affine/serviceaccount.yaml"
+    },
+    {
+      "automount": true,
+      "name": "cordium-genesis",
+      "namespace": "octelium",
+      "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+    },
+    {
+      "automount": false,
+      "name": "cordium-genesis-cleanup",
+      "namespace": "octelium",
+      "source": "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+    },
+    {
+      "automount": false,
+      "name": "fleet",
+      "namespace": "fleet",
+      "source": "clusters/homelab/apps/fleet/serviceaccount.yaml"
+    },
+    {
+      "automount": false,
+      "name": "fleet-datastores",
+      "namespace": "fleet",
+      "source": "clusters/homelab/apps/fleet/serviceaccount.yaml"
+    },
+    {
+      "automount": false,
+      "name": "fleet-bootstrap",
+      "namespace": "fleet",
+      "source": "clusters/homelab/apps/fleet/serviceaccount.yaml"
+    },
+    {
+      "automount": false,
+      "name": "fleet-backup",
+      "namespace": "fleet",
+      "source": "clusters/homelab/apps/fleet/serviceaccount.yaml"
+    },
+    {
+      "automount": false,
+      "name": "harbor",
+      "namespace": "harbor",
+      "source": "clusters/homelab/apps/harbor/serviceaccount.yaml"
+    },
+    {
+      "automount": false,
+      "name": "multica-runtime",
+      "namespace": "ai",
+      "source": "clusters/homelab/apps/multica/runtime.yaml"
+    },
+    {
+      "automount": false,
+      "name": "nofx",
+      "namespace": "nofx",
+      "source": "clusters/homelab/apps/nofx/serviceaccount.yaml"
+    },
+    {
+      "automount": "inherited",
+      "name": "octeliumee-nocturne",
+      "namespace": "octelium",
+      "source": "clusters/homelab/apps/octelium-enterprise/resources.yaml"
+    },
+    {
+      "automount": "inherited",
+      "name": "octeliumee-secretman",
+      "namespace": "octelium",
+      "source": "clusters/homelab/apps/octelium-enterprise/resources.yaml"
+    },
+    {
+      "automount": false,
+      "name": "cloudflared",
+      "namespace": "octelium-public",
+      "source": "clusters/homelab/apps/octelium-public/serviceaccount.yaml"
+    },
+    {
+      "automount": false,
+      "name": "octelium-client",
+      "namespace": "octelium-client",
+      "source": "clusters/homelab/apps/octelium/connector.yaml"
+    },
+    {
+      "automount": "inherited",
+      "name": "coredns",
+      "namespace": "kube-system",
+      "source": "clusters/homelab/platform/dns/coredns-serviceaccount.yaml"
+    },
+    {
+      "automount": "inherited",
+      "name": "multus",
+      "namespace": "kube-system",
+      "source": "clusters/homelab/platform/multus/multus.yaml"
+    }
+  ]
+}

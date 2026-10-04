@@ -1078,3 +1078,26 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Supported-platform preparation (HOME-60)
+
+The [integrated preparation packet](../../home-60-supported-platform-preparation.md)
+consolidates HOME-54/55/58 with completed Recovery/adversarial findings.
+Talos 1.14.2 / Kubernetes 1.35.9 remains a candidate. A proposed 1.34.12
+checkpoint before OS hops requires separate bridge acceptance; expiry on
+October 6 at 18:00 UTC retains HOLD. Signed revision, QA, Recovery and exact
+operational authorization remain four independent gates. The packet replaces
+the original healthy-API rollback assumption with source-stack recovery gates
+and records unresolved installer identities, full renders, mesh compatibility
+and the unnamed receipt custodian. The isolated SRE integration adds inactive
+1.35.9 component patches and additive catalog pins while retaining old artifacts.
+[Client profiles](../../home-60-client-profiles.json) remain preparation data;
+active scheduler and restore-version guards are unchanged. See the
+[integration disposition](../../home-60-integration-disposition.md).
+## Kubernetes controller patch candidate
+
+Run `python3 scripts/ci/kubernetes-patch-test.py` for HOME-54 component/catalog
+checks and synthetic RBAC hints. Reproduce the literal grant inventory with
+`python3 scripts/kubernetes-rbac-inventory.py`. These checks do not prove live
+authorization, full chart rendering, Talos strict renders or recovery readiness;
+see [the independent review gates](../../kubernetes-cve-2026-2270.md).

@@ -1,0 +1,351 @@
+{
+  "baseline": "33f2277e50f34d69091bfbb6472eef0bf6486699",
+  "scope": "Catalog source inventory; not full generated-resource coverage",
+  "charts": [
+    {
+      "chart": "app-template",
+      "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "4.4.0",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "argo-cd",
+      "repoURL": "https://argoproj.github.io/argo-helm",
+      "source": "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl",
+      "targetRevision": "9.5.15",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "base",
+      "repoURL": "https://istio-release.storage.googleapis.com/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.27.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "cert-manager",
+      "repoURL": "https://charts.jetstack.io",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "v1.20.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "cni",
+      "repoURL": "https://istio-release.storage.googleapis.com/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.27.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "compass",
+      "repoURL": "ghcr.io/adinhodovic/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "0.6.0",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "crossplane",
+      "repoURL": "https://charts.crossplane.io/stable",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "2.3.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "descheduler",
+      "repoURL": "https://kubernetes-sigs.github.io/descheduler",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "0.33.0",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "external-secrets",
+      "repoURL": "https://charts.external-secrets.io",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "2.0.1",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "gateway",
+      "repoURL": "https://istio-release.storage.googleapis.com/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.27.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "git:deploy/chart/local-path-provisioner",
+      "repoURL": "https://github.com/rancher/local-path-provisioner.git",
+      "source": "clusters/homelab/platform/storage/cordium-local-path-provisioner-application.yaml",
+      "targetRevision": "5d4bfc84b32cd9c5f56ed3aba921b1a3924ea2f0",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "grafana",
+      "repoURL": "https://grafana-community.github.io/helm-charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "12.11.2",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "harbor",
+      "repoURL": "https://helm.goharbor.io",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.19.2",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "istiod",
+      "repoURL": "https://istio-release.storage.googleapis.com/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.27.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "kiali-operator",
+      "repoURL": "https://kiali.org/helm-charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "2.26.0",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "kube-prometheus-stack",
+      "repoURL": "https://prometheus-community.github.io/helm-charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "85.2.0",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "langfuse",
+      "repoURL": "ghcr.io/langfuse/langfuse-k8s/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "2.1.1",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "litellm-helm",
+      "repoURL": "ghcr.io/berriai",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "0.1.832",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "metrics-server",
+      "repoURL": "https://kubernetes-sigs.github.io/metrics-server/",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "3.13.1",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "multica",
+      "repoURL": "ghcr.io/multica-ai/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "0.4.29",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "nfs-subdir-external-provisioner",
+      "repoURL": "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/",
+      "source": "clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml",
+      "targetRevision": "4.0.18",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "tailscale-operator",
+      "repoURL": "https://pkgs.tailscale.com/helmcharts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.102.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    },
+    {
+      "chart": "ztunnel",
+      "repoURL": "https://istio-release.storage.googleapis.com/charts",
+      "source": "IaC/terragrunt.stack.hcl",
+      "targetRevision": "1.27.3",
+      "target_kubernetes": [
+        "1.35.9",
+        "1.36.5",
+        "1.37.1"
+      ],
+      "render_status": "NOT_RUN",
+      "api_crd_webhook_status": "UNVERIFIED",
+      "generated_rbac_status": "UNVERIFIED",
+      "artifact_provenance_status": "UNVERIFIED"
+    }
+  ]
+}

@@ -358,6 +358,12 @@
       "source": "ghcr.io/siderolabs/kubelet:v1.34.11@sha256:d30a104cc43649aff40f94b00a935b75c4f0a17ae2317f5fabf43974c7055616"
     },
     {
+      "source": "ghcr.io/siderolabs/kubelet:v1.34.12@sha256:975b8681ecc89fc111c6de908bed691b3caaeefd255ed68c138b068fb0aece08"
+    },
+    {
+      "source": "ghcr.io/siderolabs/kubelet:v1.35.9@sha256:40c4200b8163a952bbde447febd9822cb986b70ec785f39c4cfcb8e377b05b55"
+    },
+    {
       "source": "ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00"
     },
     {
@@ -430,13 +436,37 @@
       "source": "registry.k8s.io/kube-apiserver:v1.34.11@sha256:c7aac63a5f4154da416802b1ecb3f5349d9eade8f3cc3dcf57efb5ed0f685e69"
     },
     {
+      "source": "registry.k8s.io/kube-apiserver:v1.34.12@sha256:ec5d36e7ba8be94476143c6c2f6a69971f368f9164b076d9ea50ff061716613a"
+    },
+    {
+      "source": "registry.k8s.io/kube-apiserver:v1.35.9@sha256:32abf8e4e2ae679b35c719a04902c2ae1a98a5b8648ac034a4672e39660f8a73"
+    },
+    {
       "source": "registry.k8s.io/kube-controller-manager:v1.34.11@sha256:cbb63968eb76f6a167b075a12132d690bb2be11a25088fc0ac549d6aa6f8035f"
+    },
+    {
+      "source": "registry.k8s.io/kube-controller-manager:v1.34.12@sha256:8a92c48d3faa0649598a4d854d294ff9d5de66bad5b23ddeb4c3b94c6bdcbf96"
+    },
+    {
+      "source": "registry.k8s.io/kube-controller-manager:v1.35.9@sha256:d7e4983f79ee763f7c56226395ab9c55261ff6035df5ed23eef9bd26b63eb140"
     },
     {
       "source": "registry.k8s.io/kube-proxy:v1.34.11@sha256:ab8219b43a5ddbafad58bf901509c29994e79fcd7e3b6c47f67f0af790328d89"
     },
     {
+      "source": "registry.k8s.io/kube-proxy:v1.34.12@sha256:b4a7c92729b02378bbe2f2658fe31e7f5ad224a496fffbd2c724c1b4d178dbce"
+    },
+    {
+      "source": "registry.k8s.io/kube-proxy:v1.35.9@sha256:d08adb0c8c2c68075f1e6fa6c4c82880c5af54c1686ac20d22af612082c32a31"
+    },
+    {
       "source": "registry.k8s.io/kube-scheduler:v1.34.11@sha256:54d5f94040d210a6482e53c9bfeabda7be07e961d7667cff34eb469df3b5c658"
+    },
+    {
+      "source": "registry.k8s.io/kube-scheduler:v1.34.12@sha256:5f01ad6a2f8df998388843145fc20b2d214ed8b22e36d7a2f8c9ede276242d0d"
+    },
+    {
+      "source": "registry.k8s.io/kube-scheduler:v1.35.9@sha256:d96574ba699bc887eeefcc05d9f7828b4df5ba75feac6f20b98097aa85d1ed22"
     },
     {
       "source": "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.18.0@sha256:1545919b72e3ae035454fc054131e8d0f14b42ef6fc5b2ad5c751cafa6b2130e"

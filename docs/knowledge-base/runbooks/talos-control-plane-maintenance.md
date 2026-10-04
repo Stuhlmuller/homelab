@@ -113,3 +113,13 @@ That recovery is exact-key and snapshot-first, with a Talos snapshot-restore
 rollback; do not generalize it into a routine etcd mutation path.
 
 See [[../architecture/cluster-topology]] and [[validation]].
+
+## October supported-platform preparation
+
+The [replacement HOME-55/60 proposal](../../talos-security-upgrade-2026-10.md)
+supersedes the original attachment's healthy-API rollback allowance and OS-first
+sequence. A separately gated Kubernetes patch checkpoint precedes the Talos
+hops; each transition needs source-stack recovery. The
+[integration disposition](../../home-60-integration-disposition.md) records
+artifact retention and unresolved client/installer, mesh, Recovery and approval
+gates. This proposal changes no current operational authorization.

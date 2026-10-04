@@ -1,0 +1,88 @@
+{
+  "status": "PREPARATION_ONLY_NOT_CONSUMED_BY_RUNTIME",
+  "evidence": "home-60-artifact-evidence.json",
+  "scheduled_client_retained": "v1.11.3",
+  "restore_helper_retained": "3.6.5",
+  "profiles": [
+    {
+      "talos": "1.11.3",
+      "kubernetes_during_os_hops": "1.34.12",
+      "upstream_default_etcd": "3.6.5",
+      "talosctl_linux_amd64": {
+        "url": "https://github.com/siderolabs/talos/releases/download/v1.11.3/talosctl-linux-amd64",
+        "sha256": "7cd3a0d25a8f2dea343c2815431cc07d3e80bab124e7c3e22738819dc09c1b3f",
+        "verification": "ADVERTISED_CHECKSUM_ONLY_THIS_INTEGRATION"
+      },
+      "etcdutl_required_version": "3.6.5",
+      "etcdutl_archive_sha256": "66bad39ed920f6fc15fd74adcb8bfd38ba9a6412f8c7852d09eb11670e88cac3",
+      "etcdutl_archive_platform": "linux-amd64",
+      "installer_digest": null,
+      "snapshot_rpc_compatibility": "UNVERIFIED",
+      "source_stack_boot_watch_recovery": "UNVERIFIED"
+    },
+    {
+      "talos": "1.11.6",
+      "kubernetes_during_os_hops": "1.34.12",
+      "upstream_default_etcd": "3.6.5",
+      "talosctl_linux_amd64": {
+        "url": "https://github.com/siderolabs/talos/releases/download/v1.11.6/talosctl-linux-amd64",
+        "sha256": "a248ef5c5f9cab08013281e6e14d8d8862e7363515e58e2fba8c94ca05c5cf34",
+        "verification": "ADVERTISED_CHECKSUM_ONLY_THIS_INTEGRATION"
+      },
+      "etcdutl_required_version": "3.6.5",
+      "etcdutl_archive_sha256": "66bad39ed920f6fc15fd74adcb8bfd38ba9a6412f8c7852d09eb11670e88cac3",
+      "etcdutl_archive_platform": "linux-amd64",
+      "installer_digest": null,
+      "snapshot_rpc_compatibility": "UNVERIFIED",
+      "source_stack_boot_watch_recovery": "UNVERIFIED"
+    },
+    {
+      "talos": "1.12.12",
+      "kubernetes_during_os_hops": "1.34.12",
+      "upstream_default_etcd": "3.6.14",
+      "talosctl_linux_amd64": {
+        "url": "https://github.com/siderolabs/talos/releases/download/v1.12.12/talosctl-linux-amd64",
+        "sha256": "3a3ad9fe02df94f8bcfe85a9d982991fbf510a2167fb0e5d1b2c149d6541090e",
+        "verification": "ADVERTISED_CHECKSUM_ONLY_THIS_INTEGRATION"
+      },
+      "etcdutl_required_version": "3.6.14",
+      "etcdutl_archive_sha256": null,
+      "etcdutl_archive_platform": "linux-amd64",
+      "installer_digest": null,
+      "snapshot_rpc_compatibility": "UNVERIFIED",
+      "source_stack_boot_watch_recovery": "UNVERIFIED"
+    },
+    {
+      "talos": "1.13.11",
+      "kubernetes_during_os_hops": "1.34.12",
+      "upstream_default_etcd": "3.6.14",
+      "talosctl_linux_amd64": {
+        "url": "https://github.com/siderolabs/talos/releases/download/v1.13.11/talosctl-linux-amd64",
+        "sha256": "d4358faf5ebd740ab92ec4a9e3111f2f271f681e479f07b8603a3616c76b2413",
+        "verification": "ADVERTISED_CHECKSUM_ONLY_THIS_INTEGRATION"
+      },
+      "etcdutl_required_version": "3.6.14",
+      "etcdutl_archive_sha256": null,
+      "etcdutl_archive_platform": "linux-amd64",
+      "installer_digest": null,
+      "snapshot_rpc_compatibility": "UNVERIFIED",
+      "source_stack_boot_watch_recovery": "UNVERIFIED"
+    },
+    {
+      "talos": "1.14.2",
+      "kubernetes_during_os_hops": "1.34.12",
+      "upstream_default_etcd": "3.7.1",
+      "talosctl_linux_amd64": {
+        "url": "https://github.com/siderolabs/talos/releases/download/v1.14.2/talosctl-linux-amd64",
+        "sha256": "c6c9552b0e5f767352c595fa1c0af4f186f697488646872955057d23990a66c4",
+        "verification": "ADVERTISED_CHECKSUM_ONLY_THIS_INTEGRATION"
+      },
+      "etcdutl_required_version": "3.7.1",
+      "etcdutl_archive_sha256": null,
+      "etcdutl_archive_platform": "linux-amd64",
+      "installer_digest": null,
+      "snapshot_rpc_compatibility": "UNVERIFIED",
+      "source_stack_boot_watch_recovery": "UNVERIFIED"
+    }
+  ]
+}
