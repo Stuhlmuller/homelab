@@ -77,6 +77,7 @@ def main():
             if health["status"] in ("green", "yellow"):
                 break
         except (RuntimeError, OSError):
+            # A failed health probe retries; exhausting this bounded loop fails the Job.
             pass
         time.sleep(5)
     else:
