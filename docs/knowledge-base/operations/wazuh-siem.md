@@ -5,13 +5,34 @@ Tags: #security #logging #wazuh #operations
 Source: [Wazuh runbook](../../../clusters/homelab/apps/wazuh/README.md),
 `IaC/terragrunt.stack.hcl`, `scripts/wazuh-{preflight,talos,verify}.py`.
 
-Wazuh 4.14.8 plus Fluent Bit 5.1.3 is declared but **not deployed**. Automated
-sync is disabled. On 2026-10-03 read-only inspection after the Langfuse memory
-reservation found all four nodes Ready and only 2.82GiB unreserved on `acer`.
+Wazuh 4.14.8 plus Fluent Bit 5.1.3 merged in
+[PR #1153](https://github.com/Stuhlmuller/homelab/pull/1153), but the runtime is
+**not deployed** and automated sync is disabled. On 2026-10-04 read-only
+inspection after the Langfuse memory reservation found all four nodes Ready
+and only 2.82GiB unreserved on `acer`.
 Wazuh and its collectors request 7.12GiB there plus 1GiB operating headroom:
-the current capacity shortfall is 5.30GiB. Capacity must be added or specific
-existing workloads moved before activation. `acer`
-has about 397GiB disk free, but local-volume capacity is not a quota.
+the current capacity shortfall is 5.30GiB. The existing nodes together also lack
+about 3.20GiB of unreserved memory for Wazuh plus headroom; moving workloads
+between them cannot close that gap. Add capacity or obtain the operator's
+selection of workloads to retire before activation. `acer` has about 394GiB
+disk free, but local-volume capacity is not a quota.
+
+The logging rollout required
+[PR #1167](https://github.com/Stuhlmuller/homelab/pull/1167) to put ClickHouse's
+generated ConfigMap before its Deployment sync wave. Argo's existing 900-second
+timeout released the stale operation; Langfuse recovered Healthy/Synced at
+`0ad30199`. OctoBot's mounted console and file levels were both verified DEBUG,
+with console output directed to stdout. These prove source configuration and
+recovery, not Wazuh ingestion.
+
+On 2026-10-04 at 07:53:55 UTC, Kubernetes evicted a Langfuse ClickHouse Pod
+from `zimaboard-1` for ephemeral-storage pressure: available `3759652Ki`, below
+the `4333555065`-byte threshold. Pod status also records an earlier eviction
+there on October 3. Kubernetes rescheduled the replacement onto `zimaboard-0`;
+it was Ready with zero restarts and Langfuse was Healthy/Synced at 07:55:46 UTC.
+This does not establish that `zimaboard-1` disk pressure is fixed. Before Wazuh
+activation, check free disk, image usage and room for each persistent 2GiB
+collector queue on every node; `acer` capacity alone is insufficient evidence.
 
 Declared sources: all namespaces' container output, existing Metadata audit
 files, Kubernetes events, and Talos service/kernel JSON. Full archives are
@@ -21,8 +42,9 @@ and record sizes are finite. Oversized admitted events require lossless
 fragmentation before Wazuh's 64KiB syslog limit.
 
 NOFX's pinned logger already duplicates its file output to stdout; OctoBot
-console DEBUG and ClickHouse console trace are now declared to match their file
-logs. Actual reconciliation and source proof remain pending.
+console DEBUG and ClickHouse console trace match their file logs. Both mounted
+configurations were verified after reconciliation; Wazuh source receipts remain
+pending.
 Outstanding source coverage: NAS/Plex and network appliances; conventional
 endpoint agents; OpenClaw private doctor reports; Octelium's native security
 logstore. Wazuh API JSON is collected natively; manager/indexer console
@@ -40,7 +62,7 @@ Manager startup copies API TLS files into private ephemeral `wazuh`-owned
 files and checks their keypair before starting daemons. Projected Secrets stay
 read-only; leaf renewal requires a reviewed Pod revision and ingestion readback.
 
-Acceptance still requires protected merge, capacity, prerequisites, image
+Acceptance still requires capacity, prerequisites, image
 publication, Wazuh sync, Talos forwarding, private UI login, recent per-source
 and per-node index counts, canary in both archives/alerts, first backup and an
 isolated restore. No live ingestion, backup or restore success is claimed.
