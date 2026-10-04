@@ -1,0 +1,2 @@
+# Offline optional Helm-render checker only; API runner uses Python stdlib.
+PyYAML==6.0.2

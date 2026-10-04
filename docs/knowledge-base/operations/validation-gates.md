@@ -4,6 +4,15 @@ Tags: #operations #validation
 
 ## Default Gate
 
+HOME-57's [disposable Harbor authorization proposal](../../harbor-authorization-fixture.md)
+adds a pinned chart/image fixture and a disabled direct API/registry runner,
+independently owned by QA for SRE integration. Its offline tests run in the
+static gate. Denied mutations require unchanged state and an identical valid
+administrator positive control. No server fixture has run; scan/expiry,
+collector/alert integration, HOME-59 all-hop TLS and HOME-3 isolation remain
+separate gates. Even a successful implemented subset returns incomplete, not
+operational acceptance. See [[operations/harbor-oci]].
+
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
 

@@ -1,0 +1,16 @@
+{
+  "chart_url": "https://helm.goharbor.io/harbor-1.19.2.tgz",
+  "chart_version": "1.19.2",
+  "harbor_version": "v2.15.2",
+  "chart_sha256": "sha256:36d8eeb41b4df1aeff18c9af7709110a2fac2194b491d37957822b3359cd5e9a",
+  "images": {
+    "nginx": "docker.io/goharbor/nginx-photon:v2.15.2@sha256:0ccc1eca228ecea120d7ad9e4386b8e86ced200212f00060a9abc753dbe7f17f",
+    "portal": "docker.io/goharbor/harbor-portal:v2.15.2@sha256:b811b67f7a7f6f1614e4bdf7478b207d13e8aa3f815ff6ad84f216a5098d213d",
+    "core": "docker.io/goharbor/harbor-core:v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7",
+    "jobservice": "docker.io/goharbor/harbor-jobservice:v2.15.2@sha256:f71a4452a095bcd2a8f0683648a3ae28415432df87ccfb00ec7625f3e340a598",
+    "registry.registry": "docker.io/goharbor/registry-photon:v2.15.2@sha256:c4ebef61ceb50a3d8bc21d149bc280422db20a1e69df317b64b74098c3615855",
+    "registry.controller": "docker.io/goharbor/harbor-registryctl:v2.15.2@sha256:223d5cb49d5dbf0ba4ae022e7dd9775fa459904112dc12084d3aaa36c1408362",
+    "redis": "docker.io/goharbor/valkey-photon:v2.15.2@sha256:7337783e8148f01a25b113f5c7b1d640f78b1860fcaf80a33d0dbb294f7b99d0",
+    "database": "docker.io/goharbor/harbor-db:v2.15.2@sha256:5ebfb345b33d673fa8483ffc997013113b7d14ea56abfa65cfcb621b4acf3039"
+  }
+}
