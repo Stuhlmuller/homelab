@@ -257,3 +257,12 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
 networking, migration and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+## PostgreSQL 17 consumer reconciliation (HOME-49)
+
+The companion to PR #1143 aligns Multica's inactive `images.postgres.tag`
+with its external PostgreSQL deployment and Langfuse at index `ac08538`.
+`postgres.external.enabled` remains true. Before the dependency PR merges,
+require the separate HOME-49 catalog prerequisite to be published and verified,
+rebase onto it, and follow `docs/pgvector-pg17-update.md` from that prerequisite
+for extension, backup/restore, rollback and live acceptance gates.
