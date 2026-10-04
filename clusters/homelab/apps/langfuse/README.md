@@ -28,6 +28,25 @@ restore job for PostgreSQL, Valkey, or ClickHouse. Retained PVCs protect
 against accidental GitOps deletion but are not an independent recovery copy.
 Treat state recovery as unverified until a restore procedure and drill exist.
 
+## Web memory
+
+Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
+The pinned image uses Node 24 with no runtime heap override. Reserve the full
+container budget so scheduling accounts for memory beyond the JavaScript heap.
+The pinned-chart check verifies both rendered web memory values.
+
+This is a bounded homelab allocation, below the upstream
+[production sizing recommendation](https://langfuse.com/self-hosting/configuration/scaling)
+of 4 GiB per application container; it is not a throughput or production-sizing
+claim. Before rollout, recheck node requested/available memory, MemoryPressure
+and rolling-update surge capacity. Accept only after web initialization,
+readiness and authenticated UI access succeed without heap aborts; verify real
+ingestion separately. Keep live measurements and logs private.
+
+Memory changes do not alter database migrations or recovery artifacts. If
+startup still fails, use the forward writer fence below while reviewing a new
+budget; do not reintroduce the recovery Job or change migration markers.
+
 ## Migration startup
 
 The web container runs database migrations before starting HTTP. Chart `2.1.1`
