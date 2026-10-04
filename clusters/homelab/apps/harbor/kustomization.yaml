@@ -11,6 +11,7 @@ resources:
   - postgres.yaml
   - backup-cronjob.yaml
   - backup-job.yaml
+  - vulnerability-exporter.yaml
   - networkpolicy.yaml
   - virtualservice.yaml
   - bootstrap-job.yaml
@@ -23,6 +24,10 @@ configMapGenerator:
     namespace: harbor
     files:
       - backup.sh
+  - name: harbor-vulnerability-exporter
+    namespace: harbor
+    files:
+      - vulnerability-exporter.py
 generatorOptions:
   disableNameSuffixHash: true
   annotations:

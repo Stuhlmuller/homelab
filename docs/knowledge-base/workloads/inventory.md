@@ -257,7 +257,10 @@ gateway/Discord recovery remains pending.
 ## Private OCI Packages
 
 Harbor owns private `homelab` custom images and the public upstream-only
-`mirror` project. The [Talos mirror rollout](../../harbor-image-mirroring.md)
+`mirror` project. Its in-cluster vulnerability collector exports aggregate
+completed-scan critical-CVE counts per project for Grafana; it is read-only,
+uses the existing file-mounted Harbor administrator credential, and emits no
+artifact, digest, or CVE labels. The [Talos mirror rollout](../../harbor-image-mirroring.md)
 covers Helm/operator-generated workloads and system images; publication must
 precede node cutover or new consumer versions.
 New builds use a local signing Job and the cert-manager-owned

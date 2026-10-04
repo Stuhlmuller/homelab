@@ -59,6 +59,24 @@ After rollout, verify the Trivy Pod is Ready and a newly pushed image shows a
 completed vulnerability report in Harbor. Bootstrap success proves the project
 setting and scan submission, not successful database downloads or completed scans.
 
+## Critical CVE alerting
+
+`vulnerability-exporter.py` reads only completed scan summaries for the
+repository-managed `homelab` and `mirror` projects through the in-cluster core
+API. It publishes the aggregate
+`harbor_vulnerability_critical_total{project=...}` metric; artifact names,
+digests, CVE IDs, and credentials never become Prometheus labels or logs. The
+collector mounts the existing administrator credential as a file and keeps the
+credential out of process arguments and environment variables.
+
+The ServiceMonitor is scraped every minute. Grafana alerts after five minutes
+when any completed image scan has one or more critical findings. Missing metric
+data and evaluation errors are also alerting, so a failed collector cannot make
+the security signal look healthy. Open the affected project's artifact scan in
+Harbor, identify the image and fixed dependency or base-image version, then
+remediate through a reviewed rebuild and GitOps rollout. The alert includes the
+project label but deliberately omits sensitive or high-cardinality artifact data.
+
 ## Local image signing
 
 The protected NOFX publisher creates `signing-job.yaml` for two verified image
