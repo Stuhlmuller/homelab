@@ -3752,3 +3752,9 @@ unit "operator_etcd_backup_storage" {
   path                    = "operator/etcd-backup-storage"
   no_dot_terragrunt_stack = true
 }
+
+unit "operator_azuread_ci_identities" {
+  source                  = "./.catalog/units/operator/azuread-ci-identities"
+  path                    = "operator/azuread-ci-identities"
+  no_dot_terragrunt_stack = true
+}

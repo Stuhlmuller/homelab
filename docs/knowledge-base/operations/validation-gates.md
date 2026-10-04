@@ -732,10 +732,10 @@ On October 3, the latest successful full checkpoint remained
 [`82ebd734` / run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179).
 The pre-Fleet-identity `main` revision `58ecf587` already changed the
 Grafana/Octelium AzureAD catalog inputs and shared root since that checkpoint;
-the missing protected Azure credentials therefore already block full applies.
-The focused Fleet identity operator path does not advance or repair this
-checkpoint. Recovery requires the protected Azure credential contract and a
-reviewed successful full apply across the outstanding range; never relabel a
+the Azure provider contract and outstanding range therefore need verification
+before the next full apply. The focused Fleet identity operator path and Entra
+OIDC verification do not advance this checkpoint. Recovery requires a reviewed
+successful full apply across the outstanding range; never relabel a
 targeted run or manually skip the unapplied range. See the
 [Fleet Free identity runbook](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md#repository-operator-workflow).
 
@@ -967,6 +967,16 @@ live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
+
+Entra provider authentication has its own
+[operator bootstrap and CI acceptance gates](../../entra-terraform-provider.md).
+Check the encrypted operator plan against exact application names, federation
+subjects, read/owned-app permissions and retained human ownership. Reject
+credentials, directory roles, licenses and unreviewed tenant-wide write grants.
+Validate both GitHub environment protections before publishing identity
+selectors. A human-operator plan does not prove GitHub OIDC or claims-assignment
+refresh works; require actual CI runs for both identities and fresh no-change
+plans. Keep private identity and authentication evidence out of public logs.
 
 The [Free Entra acceptance checklist](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
 adds separate gates for Microsoft Password Platform SSO and console SAML. The

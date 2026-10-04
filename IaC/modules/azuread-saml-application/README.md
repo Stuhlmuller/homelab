@@ -28,8 +28,10 @@ selected certificate here; it does not verify a SAML message signature.
 For Fleet, generate the explicit stack and use only
 `IaC/live/azuread-applications/fleet` for init, validation, plan, and the reviewed
 apply. Providers reuse existing Azure CLI login locally or CI-injected identity
-credentials. The applying identity owns both the application and service
-principal; changing that identity may change ownership, so review the plan.
+credentials. Explicit human and automation owners apply to both the application
+and service principal; switching the Terraform login does not replace them.
+Bootstrap the named automation principal through the operator-owned identity
+unit before planning this unit. Keep the human owner during the transition.
 The operator needs permission to manage applications, create token-signing
 certificates, read the individually assigned users, and assign application roles.
 A successful plan does not establish permission for those write operations.

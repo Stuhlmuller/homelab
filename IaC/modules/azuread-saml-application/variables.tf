@@ -3,6 +3,22 @@ variable "display_name" {
   type        = string
 }
 
+variable "owner_user_principal_names" {
+  description = "Stable human application owners, independent of the Terraform login."
+  type        = set(string)
+
+  validation {
+    condition     = length(var.owner_user_principal_names) > 0
+    error_message = "Retain at least one explicitly named human application owner."
+  }
+}
+
+variable "owner_service_principal_names" {
+  description = "Explicit automation owners; use unique enterprise-application display names."
+  type        = set(string)
+  default     = []
+}
+
 variable "entity_id" {
   description = "HTTPS SAML entity ID, matching the service provider configuration."
   type        = string

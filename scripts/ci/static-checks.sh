@@ -13,6 +13,8 @@ python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
+python3 -I scripts/ci/entra-ci-configure-test.py
+python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
@@ -306,6 +308,11 @@ done
   terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+(
+  cd IaC/operator/azuread-ci-identities
+  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
 )
 echo "::endgroup::"
 
@@ -776,14 +783,15 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
     ($live_plan | length) == 1 and
     $live_plan[0].env == {
-      "ARM_CLIENT_ID": "${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}",
-      "ARM_CLIENT_SECRET": "${{ secrets.AZUREAD_CLIENT_SECRET }}",
-      "ARM_TENANT_ID": "${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}",
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_USE_OIDC": "true",
+      "ARM_USE_CLI": "false",
+      "ARM_USE_MSI": "false",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
       "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
       "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
     } and
     ([.jobs["terragrunt-plan"].steps[] |
-      select(.name != "Run Live Terragrunt Plan") |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     .jobs["terragrunt-plan-skipped"].needs == ["static-policy"] and
     (.jobs["terragrunt-plan-skipped"].if |
@@ -875,6 +883,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-migrate.yml:migrate' \
     '.github/workflows/harbor-migrate.yml:static-policy' \
     '.github/workflows/harbor-mirror.yml:mirror' \
@@ -917,6 +926,7 @@ while read -r workflow expected_hash; do
 done <<'EOF'
 .github/workflows/cordium-check.yml 3f9c9f1a6a53e91cc0a2a1740e82e2e5a8309e371b6636635242b6355cfd590a
 .github/workflows/cordium-login-denial.yml c1f86f5c218661938000b441dec9ba3dbb38e1fa292486a67d4b6dfbe71e1111
+.github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 9fab359f6fa412a340f4bbd6d140ec840fdd592336266f3e7c2cc94a26510cbe
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
 .github/workflows/harbor-mirror.yml c7a0555b84a3febc24f13e47f28ad2c045489ef1057b3aebcd0a97a5ab4c3ab0
@@ -930,8 +940,8 @@ done <<'EOF'
 .github/workflows/octelium-public-tunnel.yml d944741bcf57ca037b1fe7dc83de7a5e66a26dd8b3d35100ca990dbf3df5f3ba
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml a135de51cadb29530e31bc0a4f1bd3b3a033134000aa829bf6cd1c391496607f
-.github/workflows/terragrunt-plan.yml 501a4fdbb2538d234428da6d283ec57edd8cb47fedc4892be826431a3a88fca1
+.github/workflows/terragrunt-apply.yml 20110307f8a2f5f0ec7ec6deee290e9d635d17ceadd560f603502b70d724c55b
+.github/workflows/terragrunt-plan.yml 6fe0f6536944c191b3c9220357e51e93cb03ec8a1467b1fdf59136037fde869f
 EOF
 echo "::endgroup::"
 
@@ -939,6 +949,7 @@ echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
@@ -987,6 +998,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
   jq -e '
+    [.jobs["terragrunt-apply"].steps[] | select(.name == "Run Live Terragrunt Apply")] as $live_apply |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
@@ -1000,6 +1012,18 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["static-policy"].steps[0].if == null and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
+    ($live_apply | length) == 1 and
+    $live_apply[0].env == {
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_USE_OIDC": "true",
+      "ARM_USE_CLI": "false",
+      "ARM_USE_MSI": "false",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
+    ([.jobs["terragrunt-apply"].steps[] |
+      .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
@@ -1034,6 +1058,34 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       contains(".event == \"workflow_dispatch\"") and
       contains("startswith(\"Full @ \")") and
       contains("max_by(.run_number)"))
+  ' >/dev/null
+yq -o=json '.' .github/workflows/entra-oidc-verify.yml |
+  jq -e '
+    [.jobs.verify.steps[] | select(.name == "Verify Four Entra Units Without Applying")] as $verify |
+    (.on | keys) == ["workflow_dispatch"] and
+    (.on.workflow_dispatch.inputs | keys) == ["expected_sha"] and
+    .name == "Entra OIDC Verify" and
+    ."run-name" == "Entra OIDC verification @ ${{ github.sha }}" and
+    .permissions == {} and
+    (.jobs | keys) == ["verify"] and
+    .jobs.verify.if == "github.repository == '\''Stuhlmuller/homelab'\'' && github.ref == '\''refs/heads/main'\''" and
+    .jobs.verify.strategy == {"fail-fast": false, "matrix": {"include": [
+      {"identity": "plan", "environment": "homelab-plan"},
+      {"identity": "apply", "environment": "homelab-production"}
+    ]}} and
+    .jobs.verify.environment == {"name": "${{ matrix.environment }}"} and
+    .jobs.verify.permissions == {"contents": "read", "id-token": "write"} and
+    .jobs.verify.env == null and
+    ($verify | length) == 1 and
+    $verify[0].env == {
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "ARM_USE_OIDC": "true", "ARM_USE_CLI": "false", "ARM_USE_MSI": "false",
+      "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"
+    } and
+    ($verify[0].run | contains("python3 -I scripts/ci/entra-oidc-verify.py")) and
+    ([.jobs.verify.steps[] | .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
+    (.jobs.verify | tostring | contains("OCTELIUM") | not)
   ' >/dev/null
 yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
   jq -e '

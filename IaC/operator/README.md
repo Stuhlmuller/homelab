@@ -10,6 +10,16 @@ format, validation, and plan checks pass. This separation prevents a compromised
 workflow from widening the permissions of its own AWS role while keeping the
 bootstrap policy reproducible and reviewable.
 
+## Entra CI provider identities
+
+`azuread-ci-identities` declares separate GitHub OIDC identities for protected
+plans and production applies, including federation and Microsoft Graph grants.
+Use the existing human Azure CLI operator to bootstrap this unit; CI must not
+traverse it or own either provider application. No client secret or paid license
+is needed. Follow the [provider runbook](../../docs/entra-terraform-provider.md)
+for encrypted plans, stable application ownership, environment protection,
+credential-selector publication and real CI acceptance.
+
 ## Etcd Offsite Backup Storage
 
 `etcd-backup-storage` owns a dedicated private, versioned S3 bucket in

@@ -23,7 +23,14 @@ cleanup_temp_dirs() {
 trap cleanup_temp_dirs EXIT
 
 azuread_credentials_available() {
-  [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_CLIENT_SECRET:-}" && -n "${ARM_TENANT_ID:-}" ]]
+  [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_TENANT_ID:-}" ]] || return 1
+  case "${ARM_USE_OIDC:-false}" in
+    true)
+      [[ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]
+      ;;
+    false) [[ -n "${ARM_CLIENT_SECRET:-}" ]] ;;
+    *) return 1 ;;
+  esac
 }
 
 destroy_deleted_terragrunt_units() {
@@ -255,7 +262,7 @@ fi
 
 if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
-  echo "Set AZUREAD_CLIENT_ID, AZUREAD_CLIENT_SECRET, and AZUREAD_TENANT_ID on homelab-production." >&2
+  echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2
   exit 1
 fi
 
@@ -298,7 +305,7 @@ if azuread_credentials_available; then
   )
 elif terragrunt_azuread_stack_changed; then
   echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the apply diff could not be determined." >&2
-  echo "Set AZUREAD_CLIENT_ID, AZUREAD_CLIENT_SECRET, and AZUREAD_TENANT_ID on homelab-production." >&2
+  echo "Set AZUREAD_CLIENT_ID and AZUREAD_TENANT_ID on homelab-production; the job requires GitHub OIDC token access." >&2
   exit 1
 else
   echo "::warning::Skipping AzureAD application registration because AzureAD credentials are not configured and IaC/live/azuread-applications did not change in this push."

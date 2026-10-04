@@ -239,20 +239,20 @@ and console-SAML acceptance checks.
 ## Repository operator workflow
 
 Use reviewed, signed, merged `main` and the existing operator's Azure CLI, AWS
-and Kubernetes access. The public CI has no AzureAD write credential configured;
-run these two focused identity units from the authenticated local operator
-session after their plans and the repository gate pass. This still uses the
-declared Terragrunt modules and encrypted remote state. It does not change
-unrelated Entra applications or tenant policies.
+and Kubernetes access. The [Entra provider identities](../../../../docs/entra-terraform-provider.md)
+use free GitHub OIDC for CI reads and owned-application changes. User creation,
+claims-policy changes and administrator assignments remain focused operator
+Terraform operations: CI has no corresponding tenant-wide write grants. Run
+these two units from the authenticated operator session after their plans and
+the repository gate pass, using the same modules and encrypted remote state.
 
 These focused applies do **not** advance the full infrastructure checkpoint.
 The last successful full apply is [run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179)
 at `82ebd734ad61357faa0f03212613ef15f593ff80`. Before the Fleet identity changes,
 `main` already changed the Grafana/Octelium identity units and their shared root
-since that checkpoint, so the missing Azure CI credentials already block a full
-apply. Local Fleet success does not repair that prerequisite. Preserve the
-fail-closed gate and checkpoint; provision the protected Azure credential
-contract, review the complete outstanding plan, and complete a real full apply
+since that checkpoint. Provider OIDC activation and focused Fleet success do
+not reconcile that outstanding range. Preserve the fail-closed gate and
+checkpoint; review the complete outstanding plan and complete a real full apply
 before claiming recovery of the general infrastructure pipeline. Do not mark a
 focused run as `Full` or advance its baseline manually.
 

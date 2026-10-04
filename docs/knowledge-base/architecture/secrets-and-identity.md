@@ -109,6 +109,14 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   an unchanged apply does not rotate them. Coordinate a reviewed
   `rotate_when_changed` revision with the Grafana `OnChange` ExternalSecret and
   the Octelium native-secret sync before either expiry.
+- Entra provider identities are operator-owned Terraform resources under
+  `IaC/operator/azuread-ci-identities`. Separate plan/apply applications trust
+  only their exact protected GitHub environments; no client secret, paid license
+  or CI self-grant permission is configured. Stable application ownership
+  preserves the human administrator when switching provider identities. GitHub
+  environment protection remains owned by `Stuhlmuller/github-iac`. Follow the
+  [provider runbook](../../../docs/entra-terraform-provider.md) for the bootstrap,
+  permission limits and independent CI OIDC acceptance gates.
 - Alertmanager owns notification delivery credentials for Grafana-managed
   alerts. The Prometheus app materializes the
   `alertmanager-discord-webhook` ExternalSecret in `monitoring`, sourced from

@@ -39,6 +39,29 @@ generate "azuread_provider" {
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
 provider "azuread" {}
+
+data "azuread_user" "application_owner" {
+  user_principal_name = "rodman@stinkyboi.com"
+}
+
+data "azuread_service_principal" "terraform_apply" {
+  display_name = "homelab-terraform-apply"
+}
+EOF
+}
+
+# The pinned catalog accepts owner IDs, but Terragrunt inputs cannot reference
+# Terraform data sources. Override only this existing attribute in the module.
+generate "ownership" {
+  path      = "ownership_override.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+resource "azuread_application" "this" {
+  owners = [
+    data.azuread_user.application_owner.object_id,
+    data.azuread_service_principal.terraform_apply.object_id,
+  ]
+}
 EOF
 }
 

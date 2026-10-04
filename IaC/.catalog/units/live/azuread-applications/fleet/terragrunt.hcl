@@ -21,5 +21,9 @@ inputs = {
   assertion_consumer_service_url = "https://fleet.stinkyboi.com/api/v1/fleet/sso/callback"
   login_url                      = "https://fleet.stinkyboi.com/login"
   allowed_user_principal_names   = ["rodman@stinkyboi.com"]
-  signing_certificate_end_date   = "2027-10-04T00:00:00Z"
+  owner_user_principal_names     = ["rodman@stinkyboi.com"]
+  owner_service_principal_names = [
+    "homelab-terraform-apply",
+  ]
+  signing_certificate_end_date = "2027-10-04T00:00:00Z"
 }
