@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wazuh-default-deny
+  namespace: wazuh
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wazuh-ambient
+  namespace: wazuh
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    # Ambient authenticates HBONE; AuthorizationPolicies restrict actual ports.
+    - ports:
+        - {port: 15008, protocol: TCP}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wazuh-talos-sources
+  namespace: wazuh
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-collector
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - ipBlock: {cidr: 10.1.0.199/32}
+        - ipBlock: {cidr: 10.1.0.200/32}
+        - ipBlock: {cidr: 10.1.0.201/32}
+        - ipBlock: {cidr: 10.1.0.202/32}
+      ports:
+        - {port: 5170, protocol: TCP}

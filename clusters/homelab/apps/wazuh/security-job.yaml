@@ -1,0 +1,82 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wazuh-security-init
+  namespace: wazuh
+  annotations:
+    checkov.io/skip9: CKV_K8S_40=The pinned upstream image owns its runtime directories as UID 1000; no host namespaces are shared.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    checkov.io/skip1: CKV2_K8S_6=The workload is covered by sibling networkpolicy.yaml.
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: wazuh-security-init
+        app.kubernetes.io/part-of: wazuh
+    spec:
+      serviceAccountName: wazuh
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: reconcile-security-users
+          image: docker.io/wazuh/wazuh-indexer:4.14.8@sha256:6a9c1e3827da627a70859213b3e9cfe43193a492e358953de332b94de33b07de
+          imagePullPolicy: IfNotPresent
+          # Same native class/classpath as securityadmin.sh, with an explicit JVM.
+          command: [/usr/share/wazuh-indexer/jdk/bin/java]
+          args:
+            - -Xmx256m
+            - -Dorg.apache.logging.log4j.simplelog.StatusLogger.level=OFF
+            - -cp
+            - /usr/share/wazuh-indexer/plugins/opensearch-security/*:/usr/share/wazuh-indexer/lib/*:/usr/share/wazuh-indexer/plugins/opensearch-security/deps/*
+            - org.opensearch.security.tools.SecurityAdmin
+            - -h
+            - wazuh-indexer.wazuh.svc.cluster.local
+            - -p
+            - "9200"
+            - -icl
+            - -f
+            - /run/credentials/internal_users.yml
+            - -t
+            - internalusers
+            - -cacert
+            - /run/admin/ca.crt
+            - -cert
+            - /run/admin/tls.crt
+            - -key
+            - /run/admin/tls.key
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: credentials, mountPath: /run/credentials, readOnly: true}
+            - {name: admin, mountPath: /run/admin, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: scripts
+          configMap: {name: wazuh-core-config}
+        - name: credentials
+          secret:
+            secretName: wazuh-credentials
+            defaultMode: 0440
+            items:
+              - {key: internal_users.yml, path: internal_users.yml}
+              - {key: indexer-admin-password, path: indexer-admin-password}
+        - name: admin
+          secret: {secretName: wazuh-admin-tls, defaultMode: 0440}
+        - name: tmp
+          emptyDir: {}

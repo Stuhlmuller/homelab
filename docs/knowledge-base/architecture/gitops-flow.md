@@ -194,3 +194,12 @@ checks; runtime digest changes remain reviewed GitOps changes. Upstream image re
 The [Talos mirror rollout](../../harbor-image-mirroring.md) redirects node pulls
 after publication; its recovery patch restores upstream transport. Publish new
 catalog digests before merging their consuming image or chart changes.
+
+## Wazuh staged activation
+
+Wazuh intentionally registers with automated sync disabled until its capacity
+gate passes. The targeted `argocd_app=wazuh` apply reconciles shared SSM/IAM
+before only its Application and requires existing AppProject, namespace secret
+permission, platform storage, certificates, Istio and Octelium prerequisites.
+It does not update the full-apply checkpoint. Enable runtime sync only through
+a reviewed explicit-stack change. See [[../operations/wazuh-siem]].
