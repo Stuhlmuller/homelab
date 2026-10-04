@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-dashboard
+  namespace: wazuh
+  annotations:
+    checkov.io/skip9: CKV_K8S_40=The pinned upstream image owns its runtime directories as UID 1000; no host namespaces are shared.
+    argocd.argoproj.io/sync-wave: "2"
+    checkov.io/skip1: CKV_K8S_22=The upstream dashboard writes plugin runtime data inside its image filesystem.
+    checkov.io/skip2: CKV2_K8S_6=The workload is covered by sibling networkpolicy.yaml.
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app.kubernetes.io/name: wazuh-dashboard}
+  template:
+    metadata:
+      annotations:
+        homelab.stuhlmuller.dev/wazuh-revision: "v1"
+      labels:
+        app.kubernetes.io/name: wazuh-dashboard
+        app.kubernetes.io/part-of: wazuh
+    spec:
+      serviceAccountName: wazuh
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: dashboard
+          image: docker.io/wazuh/wazuh-dashboard:4.14.8@sha256:dd338d22355e8f0cdf8cc97d5b928539d56061b83c3274a79059e60ad5b8ac14
+          imagePullPolicy: IfNotPresent
+          # Bypass the upstream entrypoint that falls back to demo credentials.
+          command: [/usr/share/wazuh-dashboard/bin/opensearch-dashboards]
+          args: [-c, /usr/share/wazuh-dashboard/config/opensearch_dashboards.yml]
+          ports: [{name: http, containerPort: 5601}]
+          resources:
+            requests: {cpu: 500m, memory: 1Gi}
+            limits: {cpu: "1", memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          startupProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 10
+            failureThreshold: 90
+          readinessProbe:
+            httpGet: {path: /login, port: http}
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket: {port: http}
+            periodSeconds: 30
+            failureThreshold: 6
+          volumeMounts:
+            - {name: config, mountPath: /usr/share/wazuh-dashboard/config/opensearch_dashboards.yml, subPath: opensearch_dashboards.yml, readOnly: true}
+            - {name: config, mountPath: /usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml, subPath: wazuh.yml, readOnly: true}
+            - {name: ca, mountPath: /run/wazuh/ca, readOnly: true}
+      volumes:
+        - name: config
+          secret:
+            secretName: wazuh-credentials
+            defaultMode: 0440
+            items:
+              - {key: opensearch_dashboards.yml, path: opensearch_dashboards.yml}
+              - {key: wazuh.yml, path: wazuh.yml}
+        - name: ca
+          secret:
+            secretName: wazuh-indexer-tls
+            defaultMode: 0444
+            items: [{key: ca.crt, path: ca.crt}]

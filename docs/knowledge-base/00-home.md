@@ -60,3 +60,6 @@ Do not record secrets, raw credentials, private keys, Talos secrets, kubeconfigs
 token values, raw certificate material, or private-only hostnames here. Safe
 references such as ExternalSecret names, SSM parameter paths, public runbook
 paths, and known homelab LAN addresses already documented in the repo are fine.
+
+- [[operations/wazuh-siem]] tracks staged SIEM deployment, log-source coverage,
+  capacity and live ingestion acceptance.

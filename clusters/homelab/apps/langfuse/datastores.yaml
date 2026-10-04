@@ -361,6 +361,10 @@ spec:
               mountPath: /var/lib/clickhouse
             - name: logs
               mountPath: /var/log/clickhouse-server
+            - name: logging-config
+              mountPath: /etc/clickhouse-server/config.d/90-homelab-logging.xml
+              subPath: 90-homelab-logging.xml
+              readOnly: true
       volumes:
         - name: credentials
           secret:
@@ -377,6 +381,9 @@ spec:
             claimName: langfuse-clickhouse-data
         - name: logs
           emptyDir: {}
+        - name: logging-config
+          configMap:
+            name: langfuse-clickhouse-logging
 ---
 apiVersion: v1
 kind: Service

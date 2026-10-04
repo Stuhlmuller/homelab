@@ -1,0 +1,29 @@
+cluster.name: wazuh
+node.name: wazuh-indexer-0
+network.host: 0.0.0.0
+discovery.type: single-node
+path.data: /var/lib/wazuh-indexer
+path.logs: /var/log/wazuh-indexer
+path.repo: [/snapshots]
+plugins.security.ssl.http.pemcert_filepath: certs/tls.crt
+plugins.security.ssl.http.pemkey_filepath: certs/tls.key
+plugins.security.ssl.http.pemtrustedcas_filepath: certs/ca.crt
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.http.clientauth_mode: OPTIONAL
+plugins.security.ssl.transport.pemcert_filepath: certs/tls.crt
+plugins.security.ssl.transport.pemkey_filepath: certs/tls.key
+plugins.security.ssl.transport.pemtrustedcas_filepath: certs/ca.crt
+plugins.security.ssl.transport.enforce_hostname_verification: true
+plugins.security.nodes_dn: [CN=wazuh-indexer]
+plugins.security.authcz.admin_dn: [CN=wazuh-admin]
+plugins.security.restapi.roles_enabled: [all_access, security_rest_api_access]
+# Only the ESO-rendered user database is mounted during initial bootstrap.
+plugins.security.allow_default_init_securityindex: true
+plugins.security.check_snapshot_restore_write_privileges: true
+plugins.security.enable_snapshot_restore_privilege: true
+compatibility.override_main_response_version: true
+# Keep watermarks enabled: filling the Talos system disk endangers the API.
+cluster.routing.allocation.disk.threshold_enabled: true
+cluster.routing.allocation.disk.watermark.low: 80%
+cluster.routing.allocation.disk.watermark.high: 85%
+cluster.routing.allocation.disk.watermark.flood_stage: 90%

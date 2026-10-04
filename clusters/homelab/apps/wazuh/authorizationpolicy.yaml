@@ -1,0 +1,141 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: wazuh-strict
+  namespace: wazuh
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: wazuh-talos-ingress
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-collector
+  mtls:
+    mode: STRICT
+  portLevelMtls:
+    "5170":
+      mode: PERMISSIVE
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-default-deny
+  namespace: wazuh
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-core
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-indexer
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/wazuh/sa/wazuh
+      to:
+        - operation:
+            ports: ["9200", "9300"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-manager-api
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-manager
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/wazuh/sa/wazuh
+      to:
+        - operation:
+            ports: ["55000"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-logs
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-manager
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/wazuh/sa/wazuh-collector
+      to:
+        - operation:
+            ports: ["5140"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-dashboard
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-dashboard
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/wazuh/sa/wazuh
+      to:
+        - operation:
+            ports: ["5601"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-talos-sources
+  namespace: wazuh
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: wazuh-collector
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks: [10.1.0.199/32, 10.1.0.200/32, 10.1.0.201/32, 10.1.0.202/32]
+      to:
+        - operation:
+            ports: ["5170"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: wazuh-collector-metrics
+  namespace: wazuh
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
+      to:
+        - operation:
+            ports: ["2020"]
