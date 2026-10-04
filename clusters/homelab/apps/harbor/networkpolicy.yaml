@@ -81,9 +81,6 @@ spec:
             matchLabels:
               app.kubernetes.io/name: harbor
               app.kubernetes.io/component: bootstrap
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: harbor-vulnerability-exporter
       ports:
         - {protocol: TCP, port: 8080}
 ---
@@ -163,12 +160,14 @@ spec:
         - {protocol: TCP, port: 8080}
   egress:
     - to:
-        - podSelector:
+        - namespaceSelector:
             matchLabels:
-              app: harbor
-              component: core
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              app: istio-ingressgateway
       ports:
-        - {protocol: TCP, port: 8080}
+        - {protocol: TCP, port: 443}
     - to:
         - namespaceSelector:
             matchLabels:

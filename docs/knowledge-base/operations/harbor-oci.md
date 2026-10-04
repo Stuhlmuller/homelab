@@ -371,3 +371,12 @@ pending AI secrets; the [targeted secret plan](../../harbor-image-mirroring.md#i
 limits publication to the new mirror credential and documents shared IAM/random
 state dependencies requiring explicit operator approval. Image transfer
 and node cutover remain pending; source verification is not migration evidence.
+
+## HOME-57 collector privilege and transport proposal
+
+The [transition plan](../../harbor-vulnerability-exporter-transition.md) inventories
+the exact Harbor 2.15.2 read permissions, dedicated robot Secret contract,
+verified gateway TLS, remaining plaintext hop, HOME-3 policy integration and
+independent denied-write/admin gates. Merge and activation remain blocked on
+credential workflow/IaC prerequisites and delegated operational decisions.
+Local collector tests are not live authorization, isolation or backup evidence.

@@ -18,6 +18,7 @@ python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
+python3 -I scripts/ci/harbor-vulnerability-exporter-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py

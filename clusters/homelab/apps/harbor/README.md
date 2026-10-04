@@ -62,12 +62,16 @@ setting and scan submission, not successful database downloads or completed scan
 ## Critical CVE alerting
 
 `vulnerability-exporter.py` reads only completed scan summaries for the
-repository-managed `homelab` and `mirror` projects through the in-cluster core
-API. It publishes the aggregate
+repository-managed `homelab` and `mirror` projects through verified TLS to the
+in-cluster Istio gateway. The gateway-to-Harbor hop remains HTTP and requires
+explicit residual-risk acceptance before activating this candidate. It publishes the aggregate
 `harbor_vulnerability_critical_total{project=...}` metric; artifact names,
 digests, CVE IDs, and credentials never become Prometheus labels or logs. The
-collector mounts the existing administrator credential as a file and keeps the
-credential out of process arguments and environment variables. Harbor omits
+collector mounts only the dedicated `harbor-vulnerability-exporter` Secret
+(`robot-password`), with `repository:list` and `artifact:list` permissions for
+the two projects. Credential provisioning is an outstanding prerequisite;
+**hold merge/activation** until the [HOME-57 transition gates](../../../../docs/harbor-vulnerability-exporter-transition.md)
+are met. Credentials stay out of process arguments and environment variables. Harbor omits
 zero-valued severity buckets, so a completed scan without a `Critical` bucket
 correctly contributes zero rather than failing collection.
 

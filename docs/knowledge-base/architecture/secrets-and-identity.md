@@ -479,3 +479,13 @@ No AWS signing resource or public transparency log is used. Namespace Pod
 creators and cluster administrators can access the key: keep those permissions
 restricted, back up etcd to encrypted off-node storage, and retain trusted public
 keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
+
+## Harbor vulnerability collector proposal
+
+HOME-57 replaces the collector admin mount with dedicated Secret
+`harbor-vulnerability-exporter` / `robot-password`. The proposed system robot
+has only project-scoped repository/artifact list permissions for `homelab` and
+`mirror`, with a 30-day lifetime. Credential issuance, its dedicated SSM/ESO
+path and renewal workflow remain prerequisites, not deployed resources. Verified
+TLS terminates at the existing gateway; its plaintext Harbor hop requires
+Decision Review acceptance. See the [transition and rollback gates](../../harbor-vulnerability-exporter-transition.md).
