@@ -432,3 +432,13 @@ pending AI secrets; the [targeted secret plan](../../harbor-image-mirroring.md#i
 limits publication to the new mirror credential and documents shared IAM/random
 state dependencies requiring explicit operator approval. Image transfer
 and node cutover remain pending; source verification is not migration evidence.
+
+## PostgreSQL 17 pgvector update (HOME-49)
+
+PR #1143 requires the `ac08538` index in the catalog before its consumers
+can advance. Keep the prior `cf134a7` index and `pg17` alias for recovery;
+the new entry is digest-only. Publication must complete before the consumer
+PR merges. See [compatibility, validation and rollback gates](../../pgvector-pg17-update.md).
+Registry metadata verifies PostgreSQL 17.11 on both images and pgvector
+0.8.6 → 0.8.7 in build history; runtime extension and restore acceptance
+remain unverified. Catalog coverage is desired-state evidence only.
