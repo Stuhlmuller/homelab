@@ -727,6 +727,17 @@ apply cannot become the new successful checkpoint while skipping an unknown
 deleted-unit range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the
 working-tree Gitleaks scan still covers the complete checkout.
 
+On October 3, the latest successful full checkpoint remained
+[`82ebd734` / run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179).
+The pre-Fleet-identity `main` revision `58ecf587` already changed the
+Grafana/Octelium AzureAD catalog inputs and shared root since that checkpoint;
+the missing protected Azure credentials therefore already block full applies.
+The focused Fleet identity operator path does not advance or repair this
+checkpoint. Recovery requires the protected Azure credential contract and a
+reviewed successful full apply across the outstanding range; never relabel a
+targeted run or manually skip the unapplied range. See the
+[Fleet Free identity runbook](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md#repository-operator-workflow).
+
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
 that route is the failed dependency, restore reviewed
 `IaC/live/kubernetes-node-labels` state from a trusted LAN machine with a direct

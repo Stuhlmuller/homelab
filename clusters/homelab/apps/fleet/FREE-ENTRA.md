@@ -232,6 +232,17 @@ session after their plans and the repository gate pass. This still uses the
 declared Terragrunt modules and encrypted remote state. It does not change
 unrelated Entra applications or tenant policies.
 
+These focused applies do **not** advance the full infrastructure checkpoint.
+The last successful full apply is [run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179)
+at `82ebd734ad61357faa0f03212613ef15f593ff80`. Before the Fleet identity changes,
+`main` already changed the Grafana/Octelium identity units and their shared root
+since that checkpoint, so the missing Azure CI credentials already block a full
+apply. Local Fleet success does not repair that prerequisite. Preserve the
+fail-closed gate and checkpoint; provision the protected Azure credential
+contract, review the complete outstanding plan, and complete a real full apply
+before claiming recovery of the general infrastructure pipeline. Do not mark a
+focused run as `Full` or advance its baseline manually.
+
 Generate the explicit stack, plan each unit, inspect the plans privately, then
 apply those exact plans after protected merge:
 
