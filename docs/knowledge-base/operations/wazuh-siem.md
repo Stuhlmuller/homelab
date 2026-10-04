@@ -38,6 +38,12 @@ is needed: the staged logging and indexer patches were never applied.
 
 ## Restore after a hardware upgrade
 
+Removal verification for [PR #1177](https://github.com/Stuhlmuller/homelab/pull/1177)
+encountered node disk-pressure eviction of an existing source workload. Its
+controller recovered it, but node disk pressure remained a capacity finding.
+Resolve that pressure and verify healthy source workloads across a restart
+before restoring collectors; a successful rollout alone does not prove headroom.
+
 Historical implementation:
 
 - [PR #1153](https://github.com/Stuhlmuller/homelab/pull/1153) introduced the
