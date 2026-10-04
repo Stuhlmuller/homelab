@@ -33,7 +33,10 @@ The destination is an operator-specific placeholder. The helper only reads
 existing Pods through the declared API. It checks the PostgreSQL custom dump
 with `pg_restore`, verifies matching upload contents before and after the dump,
 and rejects active tasks, changed attachments/migrations, or changed source
-Pods. Archives are mode `0600` in a mode `0700` directory and contain private
+Pods. Claimed, running, and local-directory-waiting tasks must finish; queued
+and deferred work remains in the database. Metadata reads are bounded to 30
+seconds; archive streaming/validation allows one hour per operation for full
+volumes. Archives are mode `0600` in a mode `0700` directory and contain private
 application data; never commit or publish them. This is an online backup with
 stable uploads, not an atomic snapshot or a tested restore. It excludes the
 runtime PVC and external secrets, which must remain intact.

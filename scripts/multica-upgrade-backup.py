@@ -22,10 +22,12 @@ from pathlib import Path, PurePosixPath
 NAMESPACE = "ai"
 API_SERVER = "https://10.1.0.199:6443"
 ARTIFACTS = ("multica.dump", "uploads.tar")
+METADATA_TIMEOUT_SECONDS = 30
+ARCHIVE_TIMEOUT_SECONDS = 3600
 STATE_QUERY = """
 SELECT json_build_object(
   'active_tasks', (SELECT count(*) FROM agent_task_queue
-    WHERE status NOT IN ('completed', 'failed', 'cancelled', 'canceled')),
+    WHERE status IN ('dispatched', 'running', 'waiting_local_directory')),
   'migration_count', (SELECT count(*) FROM schema_migrations),
   'migration_hash', (SELECT md5(coalesce(string_agg(version, E'\\n'
     ORDER BY version), '')) FROM schema_migrations),
@@ -94,13 +96,12 @@ def sync_directory(path):
 
 class Cluster:
     def __init__(self, kubectl, context):
-        self.base = [kubectl, "--context", context, "--namespace", NAMESPACE,
-                     "--request-timeout=30s"]
+        self.base = [kubectl, "--context", context, "--namespace", NAMESPACE]
 
-    def run(self, args, **kwargs):
+    def run(self, args, *, timeout=METADATA_TIMEOUT_SECONDS, **kwargs):
         # Never forward arbitrary authenticated client output or database errors.
-        return subprocess.run(self.base + args, stderr=subprocess.DEVNULL,
-                              timeout=300, check=True, **kwargs)
+        return subprocess.run(self.base + [f"--request-timeout={timeout}s"] + args,
+                              stderr=subprocess.DEVNULL, timeout=timeout, check=True, **kwargs)
 
     def json(self, args):
         return json.loads(self.run(args, stdout=subprocess.PIPE).stdout)
@@ -140,14 +141,14 @@ class Cluster:
                                "-Atqc", STATE_QUERY], stdout=subprocess.PIPE)
         record = json.loads(result.stdout)
         if record["active_tasks"] != 0:
-            raise ValueError("Multica tasks are active; wait for them to finish")
+            raise ValueError("Multica tasks are claimed or executing; wait for them to finish")
         return record
 
 
 def capture(cluster, path, pod, container, command):
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "wb") as output:
-        cluster.execute(pod, container, command, stdout=output)
+        cluster.execute(pod, container, command, stdout=output, timeout=ARCHIVE_TIMEOUT_SECONDS)
         output.flush()
         os.fsync(output.fileno())
 
@@ -204,7 +205,8 @@ def backup(destination, kubectl, context):
         for options in (["--list"], ["--exit-on-error", "--file=/dev/null"]):
             with (partial / "multica.dump").open("rb") as source:
                 cluster.execute(postgres, "postgres", ["pg_restore", *options],
-                                stdin=source, stdout=subprocess.DEVNULL)
+                                stdin=source, stdout=subprocess.DEVNULL,
+                                timeout=ARCHIVE_TIMEOUT_SECONDS)
         (partial / "uploads-after.tar").unlink()
         record = {
             "format": 1, "started_at": started_at,
