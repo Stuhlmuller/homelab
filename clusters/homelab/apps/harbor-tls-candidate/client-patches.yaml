@@ -1,0 +1,116 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-bootstrap
+  namespace: harbor
+  annotations:
+    # This candidate is not authorization to execute an admin-bearing hook.
+    argocd.argoproj.io/hook: Skip
+spec:
+  template:
+    metadata:
+      annotations:
+        homelab.rst.io/tls-client-revision: "1"
+    spec:
+      containers:
+        - name: bootstrap
+          volumeMounts:
+            - name: backend-trust
+              mountPath: /etc/harbor/backend-trust
+              readOnly: true
+      volumes:
+        - name: backend-trust
+          configMap:
+            name: harbor-backend-trust
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: harbor-postgres-backup-initial
+  namespace: harbor
+  annotations:
+    argocd.argoproj.io/hook: Skip
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: harbor-postgres-backup
+  namespace: harbor
+spec:
+  suspend: true
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harbor-vulnerability-exporter
+  namespace: harbor
+spec:
+  replicas: 0
+  template:
+    metadata:
+      annotations:
+        homelab.rst.io/lifecycle-metrics-script-revision: "1"
+    spec:
+      containers:
+        - name: lifecycle-metrics
+          image: docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d
+          command: [python3, -I, -B, /app/lifecycle-metrics.py]
+          ports:
+            - name: lifecycle
+              containerPort: 8081
+          resources:
+            requests: {cpu: 5m, memory: 16Mi}
+            limits: {cpu: 50m, memory: 32Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: lifecycle-script
+              mountPath: /app/lifecycle-metrics.py
+              subPath: lifecycle-metrics.py
+              readOnly: true
+            - name: lifecycle-metadata
+              mountPath: /lifecycle
+              readOnly: true
+      volumes:
+        - name: lifecycle-script
+          configMap:
+            name: harbor-lifecycle-metrics
+        - name: lifecycle-metadata
+          secret:
+            secretName: harbor-vulnerability-exporter
+            defaultMode: 0440
+            items:
+              - key: expires-at
+                path: expires-at
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: harbor-vulnerability-exporter
+  namespace: harbor
+spec:
+  ports:
+    - name: lifecycle
+      port: 8081
+      targetPort: lifecycle
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: harbor-vulnerability-exporter
+  namespace: harbor
+spec:
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 1m
+      scrapeTimeout: 30s
+      honorLabels: false
+    - port: lifecycle
+      path: /metrics
+      interval: 1m
+      scrapeTimeout: 10s
+      honorLabels: false

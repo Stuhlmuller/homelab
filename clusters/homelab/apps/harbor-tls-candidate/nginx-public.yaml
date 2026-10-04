@@ -1,0 +1,208 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: harbor-nginx
+  namespace: harbor
+  labels:
+    heritage: Helm
+    release: harbor
+    chart: harbor
+    app: harbor
+    app.kubernetes.io/instance: harbor
+    app.kubernetes.io/name: harbor
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: harbor
+    app.kubernetes.io/version: 2.15.2
+data:
+  nginx.conf: "worker_processes auto;\npid /tmp/nginx.pid;\n\nevents {\n  worker_connections\
+    \ 3096;\n  use epoll;\n  multi_accept on;\n}\n\nhttp {\n  map $proxy_host $harbor_tls_name\
+    \ {\n    default invalid.invalid;\n    core harbor-core;\n    portal harbor-portal;\n\
+    \  }\n  proxy_ssl_verify on;\n  proxy_ssl_verify_depth 2;\n  proxy_ssl_trusted_certificate\
+    \ /etc/nginx/backend-trust/ca.crt;\n  proxy_ssl_server_name on;\n  proxy_ssl_name\
+    \ $harbor_tls_name;\n  proxy_ssl_protocols TLSv1.2 TLSv1.3;\n  proxy_next_upstream\
+    \ off;\n\n  client_body_temp_path /tmp/client_body_temp;\n  proxy_temp_path /tmp/proxy_temp;\n\
+    \  fastcgi_temp_path /tmp/fastcgi_temp;\n  uwsgi_temp_path /tmp/uwsgi_temp;\n\
+    \  scgi_temp_path /tmp/scgi_temp;\n  tcp_nodelay on;\n\n  # this is necessary\
+    \ for us to be able to disable request buffering in all cases\n  proxy_http_version\
+    \ 1.1;\n\n  upstream core {\n    server \"harbor-core:443\";\n  }\n\n  upstream\
+    \ portal {\n    server \"harbor-portal:443\";\n  }\n\n  log_format timed_combined\
+    \ '[$time_local]:$remote_addr - '\n    '\"$request\" $status $body_bytes_sent\
+    \ '\n    '\"$http_referer\" \"$http_user_agent\" '\n    '$request_time $upstream_response_time\
+    \ $pipe';\n\n  access_log /dev/stdout timed_combined;\n\n  map $http_x_forwarded_proto\
+    \ $x_forwarded_proto {\n    default $http_x_forwarded_proto;\n    \"\"      $scheme;\n\
+    \  }\n\n  server {\n    listen 8443 ssl;\n#    server_name harbordomain.com;\n\
+    \    server_tokens off;\n    # SSL\n    ssl_certificate /etc/nginx/cert/tls.crt;\n\
+    \    ssl_certificate_key /etc/nginx/cert/tls.key;\n\n    # Recommendations from\
+    \ https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html\n    ssl_protocols\
+    \ TLSv1.2 TLSv1.3;\n    ssl_ciphers '!aNULL:kECDH+AESGCM:ECDH+AESGCM:RSA+AESGCM:kECDH+AES:ECDH+AES:RSA+AES:';\n\
+    \    ssl_prefer_server_ciphers on;\n    ssl_session_cache shared:SSL:10m;\n\n\
+    \    # disable any limits to avoid HTTP 413 for large image uploads\n    client_max_body_size\
+    \ 0;\n\n    # required to avoid HTTP 411: see Issue #1486 (https://github.com/docker/docker/issues/1486)\n\
+    \    chunked_transfer_encoding on;\n\n    # Add extra headers\n    add_header\
+    \ Strict-Transport-Security \"max-age=31536000; includeSubdomains; preload\";\n\
+    \    add_header X-Frame-Options DENY;\n    add_header Content-Security-Policy\
+    \ \"frame-ancestors 'none'\";\n\n    location / {\n      proxy_pass https://portal/;\n\
+    \      proxy_set_header Host $http_host;\n      proxy_set_header X-Real-IP $remote_addr;\n\
+    \      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n      proxy_set_header\
+    \ X-Forwarded-Proto $x_forwarded_proto;\n\n      proxy_cookie_path / \"/; HttpOnly;\
+    \ Secure\";\n\n      proxy_buffering off;\n      proxy_request_buffering off;\n\
+    \    }\n\n    location /api/ {\n      proxy_pass https://core/api/;\n      \n\
+    \      proxy_ssl_session_reuse on;\n      proxy_set_header Host $host;\n     \
+    \ proxy_set_header X-Real-IP $remote_addr;\n      proxy_set_header X-Forwarded-For\
+    \ $proxy_add_x_forwarded_for;\n      proxy_set_header X-Forwarded-Proto $x_forwarded_proto;\n\
+    \n      proxy_cookie_path / \"/; Secure\";\n\n      proxy_buffering off;\n   \
+    \   proxy_request_buffering off;\n    }\n\n    location /c/ {\n      proxy_pass\
+    \ https://core/c/;\n      proxy_set_header Host $host;\n      proxy_set_header\
+    \ X-Real-IP $remote_addr;\n      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n\
+    \      proxy_set_header X-Forwarded-Proto $x_forwarded_proto;\n\n      proxy_cookie_path\
+    \ / \"/; Secure\";\n\n      proxy_buffering off;\n      proxy_request_buffering\
+    \ off;\n    }\n\n    location /v1/ {\n      return 404;\n    }\n\n    location\
+    \ /v2/ {\n      proxy_pass https://core/v2/;\n      proxy_set_header Host $http_host;\n\
+    \      proxy_set_header X-Real-IP $remote_addr;\n      proxy_set_header X-Forwarded-For\
+    \ $proxy_add_x_forwarded_for;\n      proxy_set_header X-Forwarded-Proto $x_forwarded_proto;\n\
+    \      proxy_buffering off;\n      proxy_request_buffering off;\n      proxy_send_timeout\
+    \ 900;\n      proxy_read_timeout 900;\n    }\n\n    location /service/ {\n   \
+    \   proxy_pass https://core/service/;\n      proxy_set_header Host $http_host;\n\
+    \      proxy_set_header X-Real-IP $remote_addr;\n      proxy_set_header X-Forwarded-For\
+    \ $proxy_add_x_forwarded_for;\n      proxy_set_header X-Forwarded-Proto $x_forwarded_proto;\n\
+    \n      proxy_cookie_path / \"/; Secure\";\n\n      proxy_buffering off;\n   \
+    \   proxy_request_buffering off;\n    }\n\n  location /service/notifications {\n\
+    \      return 404;\n    }\n  }\n}\n"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harbor-nginx
+  namespace: harbor
+  labels:
+    heritage: Helm
+    release: harbor
+    chart: harbor
+    app: harbor
+    app.kubernetes.io/instance: harbor
+    app.kubernetes.io/name: harbor
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: harbor
+    app.kubernetes.io/version: 2.15.2
+    component: nginx
+    app.kubernetes.io/component: nginx
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      release: harbor
+      app: harbor
+      component: nginx
+  template:
+    metadata:
+      labels:
+        heritage: Helm
+        release: harbor
+        chart: harbor
+        app: harbor
+        app.kubernetes.io/instance: harbor
+        app.kubernetes.io/name: harbor
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: harbor
+        app.kubernetes.io/version: 2.15.2
+        component: nginx
+        app.kubernetes.io/component: nginx
+      annotations:
+        checksum/configmap: fdbb3f7f2577ecb9993e0ac1fe86bd296bb9093578a4005c2b42b29b6b81e202
+        homelab.rst.io/tls-leaf-revision: '1'
+        homelab.rst.io/tls-trust-revision: '1'
+        checksum/home59-config: b7a96fd08c9aa1db3c24560e37fae3536b2815b64ce54654e08f60c5df635e15
+    spec:
+      serviceAccountName: harbor
+      securityContext:
+        runAsUser: 10000
+        fsGroup: 10000
+      automountServiceAccountToken: false
+      containers:
+      - name: nginx
+        image: docker.io/goharbor/nginx-photon:v2.15.2@sha256:0ccc1eca228ecea120d7ad9e4386b8e86ced200212f00060a9abc753dbe7f17f
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /
+            port: 8443
+          initialDelaySeconds: 300
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /
+            port: 8443
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 25m
+            memory: 32Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - name: config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: certificate
+          mountPath: /etc/nginx/cert
+        - name: backend-trust
+          mountPath: /etc/nginx/backend-trust
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: harbor-nginx
+      - name: certificate
+        secret:
+          secretName: harbor-frontend-tls
+      - name: backend-trust
+        configMap:
+          name: harbor-backend-trust
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: harbor
+  namespace: harbor
+  labels:
+    heritage: Helm
+    release: harbor
+    chart: harbor
+    app: harbor
+    app.kubernetes.io/instance: harbor
+    app.kubernetes.io/name: harbor
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: harbor
+    app.kubernetes.io/version: 2.15.2
+spec:
+  type: ClusterIP
+  ports:
+  - name: https
+    port: 443
+    targetPort: 8443
+  selector:
+    release: harbor
+    app: harbor
+    component: nginx

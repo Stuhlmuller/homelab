@@ -1,0 +1,29 @@
+# Review-only patch for the EXISTING Terragrunt-owned Harbor Application.
+# Not referenced by a Kustomization or applied by a tool. Signed SHA is HOME-66 input.
+spec:
+  sources:
+    - repoURL: https://helm.goharbor.io
+      chart: harbor
+      path: .
+      targetRevision: 1.19.2
+      helm:
+        releaseName: harbor
+        valueFiles:
+          - $values/clusters/homelab/apps/harbor/values.yaml
+          - $values/clusters/homelab/apps/harbor-tls-candidate/values.yaml
+    - repoURL: https://github.com/Stuhlmuller/homelab.git
+      targetRevision: SIGNED_REVISION_REQUIRED
+      ref: values
+      path: .
+      directory:
+        include: .argocd-values-ref-placeholder.yaml
+    - repoURL: https://github.com/Stuhlmuller/homelab.git
+      targetRevision: SIGNED_REVISION_REQUIRED
+      path: clusters/homelab/apps/harbor-tls-candidate
+  syncPolicy:
+    automated:
+      enabled: false
+      prune: false
+      selfHeal: false
+    retry:
+      limit: 0

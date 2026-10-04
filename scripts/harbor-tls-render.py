@@ -119,19 +119,38 @@ def render(chart, helm):
     return harden(resources) + supporting()
 
 
+def public_overrides(resources):
+    # Explicit allowlist: NEVER persist Helm's generated Secret resources or
+    # credential-bearing component ConfigMaps. These three contain public proxy
+    # configuration and references only and override the chart's same identities.
+    result = [copy.deepcopy(one(resources, kind, name)) for kind, name in (
+        ('ConfigMap', 'harbor-nginx'), ('Deployment', 'harbor-nginx'), ('Service', 'harbor'))]
+    require(set(result[0]['data']) == {'nginx.conf'})
+    pod = result[1]['spec']['template']['spec']
+    require(len(pod['containers']) == 1 and not pod['containers'][0].get('env'))
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--chart', type=Path, required=True)
     parser.add_argument('--helm', default='helm')
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--write-public-candidate', action='store_true')
     args = parser.parse_args()
     try:
         resources = render(args.chart, args.helm)
-        if args.check:
+        require(not (args.check and args.write_public_candidate))
+        if args.write_public_candidate:
+            # Repository files only; unregistered. No trust bytes, keys or auth.
+            (CANDIDATE / 'nginx-public.yaml').write_text(yaml.safe_dump_all(public_overrides(resources), sort_keys=False))
+            (CANDIDATE / 'certificates.yaml').write_text(yaml.safe_dump_all(supporting()[2:], sort_keys=False))
+            print('Wrote public NGINX overrides and certificate references only; unregistered/HOLD.')
+        elif args.check:
             print(json.dumps({'candidate_resources': len(resources), 'execution_enabled': False}))
         else:
-            # Helm may generate secret values: require --check until a reviewed
-            # materialization/redaction pipeline exists. No rendered secret output.
+            # Full Helm output may contain generated secrets. Only --check or
+            # the explicit public-object allowlist may leave this process.
             raise ValueError('Render output remains disabled')
         return 0
     except Exception:  # noqa: BLE001 - rendered Helm data may contain credentials

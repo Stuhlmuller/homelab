@@ -1,0 +1,21 @@
+# Deliberately unbuildable until reviewed public CA input exists (HOME-66).
+# No issuer/key generation, private keys, credentials or Application registration.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: harbor-backend-trust
+    namespace: harbor
+    files: [ca.crt=inputs/ca.crt]
+secretGenerator:
+  - name: harbor-frontend-trust
+    namespace: istio-system
+    type: Opaque
+    files: [ca.crt=inputs/ca.crt]
+  - name: harbor-internal-public-trust
+    namespace: harbor
+    type: Opaque
+    files: [ca.crt=inputs/ca.crt]
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    homelab.rst.io/approval-required: HOME-66

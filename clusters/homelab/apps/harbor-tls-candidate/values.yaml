@@ -21,3 +21,34 @@ internalTLS:
     secretName: harbor-registry-tls
   trivy:
     secretName: harbor-trivy-tls
+
+# Public CA only; supplied separately, never a signing key.
+caBundleSecretName: harbor-internal-public-trust
+nginx:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"
+core:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"
+portal:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"
+jobservice:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"
+registry:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"
+trivy:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"
+exporter:
+  podAnnotations:
+    homelab.rst.io/tls-leaf-revision: "1"
+    homelab.rst.io/tls-trust-revision: "1"

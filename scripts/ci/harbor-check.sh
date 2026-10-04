@@ -5,6 +5,8 @@ rendered_dir="$(mktemp -d)"
 trap 'rm -rf -- "$rendered_dir"' EXIT
 helm pull harbor --repo https://helm.goharbor.io --version 1.19.2 --destination "$rendered_dir"
 python3 -I scripts/ci/harbor-tls-test.py --chart "$rendered_dir/harbor-1.19.2.tgz"
+python3 -I scripts/ci/harbor-materialization-test.py --chart "$rendered_dir/harbor-1.19.2.tgz"
+python3 -I scripts/ci/harbor-lifecycle-alert-check.py
 python3 -I scripts/ci/harbor-authorization-render-check.py --chart "$rendered_dir/harbor-1.19.2.tgz"
 for render in first second; do
   helm template harbor "$rendered_dir/harbor-1.19.2.tgz" --namespace harbor \

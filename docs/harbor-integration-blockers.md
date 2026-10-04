@@ -45,6 +45,17 @@ execution path is added by integration.
   are not running Envoy/NGINX, CA reload or Harbor evidence. No independent
   all-hop acceptance is implied by integration.
 
+## R1/R5 follow-up
+
+The [materialization/alert proposal](harbor-tls-materialization-and-alerts.md)
+delivers public chart overrides, unregistered CA-only generators, client/port
+patches, phased reload annotations and metadata-only expiry rules/checks.
+HOME-66 owns missing identities, environment records and trusted signing; dependent
+R2/R3/R4 stay parked. No speculative execution adapter is added.
+Independent source closures apply only to reviewed `afa40cb3`, `a458b038` and
+`1acbe6c9`; they do not approve integration `8c666d4b` or this follow-up.
+QA #1174 `3569689be77196e3cf0b90af4d96d46d323ad6d4` is separate and not integrated.
+
 ## Finite blocker table
 
 These are completion criteria, not requests to execute. Rows distinguish work
@@ -53,11 +64,11 @@ Do not create another speculative adapter to hide a missing prerequisite.
 
 | ID / class | Remaining item and accountable domain | Concrete completion evidence / dependency |
 | --- | --- | --- |
-| R1 — repository deliverable | SRE: TLS GitOps materialization, public trust distribution/rotation, client and port migration | Reviewed unregistered source for exact chart/proxy/CA identities, Secret/ConfigMap delivery and revision/reload sequence; inventory bootstrap, backup, signing, registry, scanner, UI and metrics clients. Depends on chosen custody/trust inputs; actual proxy proof is E1. |
+| R1 — repository deliverable | SRE: TLS GitOps materialization, public trust distribution/rotation, client and port migration | Input-independent materialization, client/port inventory and phased reload deltas now delivered. Remaining: HOME-66 approved public trust/issuer custody, exact signed source revisions and client restart/overlap records; independent review and actual proxy/client proof E1. |
 | R2 — repository deliverable | QA: disposable environment provision/checkpoint/teardown and execution adapter | Exact immutable revisions, pinned images/resources, no production routes/data, credential isolation, sentinel-hook controls, reliable cleanup and bounded lifetime. Connect corrected authorization/session/expiry/scan-summary cases to a real pinned topology. Depends on I1/I2; no fixture run now. |
 | R3 — repository deliverable, input-blocked | SRE/Recovery: private capture/transfer/publication and protected recovery adapter | Signed repository-owned procedure using an actually supported operator identity/custody mechanism; exact ID/intent/version checks, unknown-response handling, no general-runner management credential, independent reconciliation/termination. Cannot implement an accepted adapter before I1/A1; planners remain disabled. |
 | R4 — repository deliverable | Recovery: exact pause/selective-stop/separate-resume plans | Immutable Terragrunt/Argo revisions and source positions; exporter-only resource selection, prune/retry exclusions, verified idle automation and hook exclusion; separately reviewed resume. Source model exists; concrete environment-specific artifacts require I2 and runtime sentinel proof E1. |
-| R5 — repository deliverable | SRE/Recovery: expiry/notification and operational acceptance checks | Repository-owned expiry watch, day-20 staffed renewal ownership, alert receipt/deadline-observer plan, client compatibility and backup/retrieval acceptance records. No silent interruption or baseline admin-over-HTTP rollback. |
+| R5 — repository deliverable | SRE/Recovery: expiry/notification and operational acceptance checks | Disabled expiry-only sidecar, ESO metadata projection, four alert rules and nine PromQL acceptance cases delivered. Remaining: HOME-66 named staffed owner/observer and approved deadlines; actual route receipt, server-expiry/version, client and backup/retrieval records E1. No silent interruption or HTTP/admin rollback. |
 | I1 — unavailable identities/custody | SRE/security: named person-bound Harbor and AWS identities, independent observer/termination verifier, approved isolated workstation | Named accountable operators and reviewed authentication/custody records; supported private secret delivery; absolute credential and surviving-session bounds. Native admin is broad; static passwords lacking enforced expiry need a verified termination design and new risk decision. No shared bootstrap password. |
 | I2 — unavailable environment records | QA/Recovery: exact disposable and operational environment records | Approved environment identifier/topology/capacity/expiry, rendered versions and baseline/checkpoint, independent operator/observer access, cleanup responsibility; existing operations/hooks and scheduled backups identified. No live records were obtained here. |
 | I3 — unavailable effective identity evidence | SRE/security: IAM/KMS, ESO/controller and namespace authority, writer/session exclusion | Complete effective policy/grant/RBAC/admission inventory: shared/dedicated readers, Secret readers, Pod/store/policy creators, all workflow/operator/recovery/IaC writers and outstanding sessions. Actual environment reviewer/main/bypass/OIDC rules if Actions is proposed. Unknown or unexcluded writer means HOLD. Source inventory is insufficient. |

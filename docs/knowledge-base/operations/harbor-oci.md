@@ -412,3 +412,16 @@ signing/full validation, authority and execution approvals, and runtime evidence
 HOME-64 accepts preparation direction only; HOME-62's issuer rejection and all
 hard stops remain. Offline model/TLS results do not establish server, proxy,
 controller, effective IAM or recovery acceptance.
+
+
+### Disabled TLS materialization and expiry checks
+
+The [R1/R5 follow-up](../../harbor-tls-materialization-and-alerts.md) supplies
+allowlisted public NGINX overrides, unregistered public-CA generators, HTTPS
+bootstrap and TLS port patches, phased component reload annotations, and an
+expiry-only sidecar with tested PromQL alerts. The overlay keeps exporter replicas
+at zero, hooks Skip and scheduled backup suspended; it is not an authorized stop
+or sync operation. Public trust/issuer custody, named renewal/observer identities,
+signing and environment records remain HOME-66 inputs. Independent source closures
+apply only to their reviewed revisions; no integration or runtime acceptance is
+implied. QA's session-survival follow-up remains separately owned and unintegrated.

@@ -1,0 +1,22 @@
+# Review-only values delta. Promote into values.yaml and regenerate public overrides.
+nginx:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
+core:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
+portal:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
+jobservice:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
+registry:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
+trivy:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
+exporter:
+  podAnnotations:
+    homelab.rst.io/tls-trust-revision: '2'
