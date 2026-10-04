@@ -76,7 +76,8 @@ than six minutes after the last successful collection, so a failed collector
 cannot make the security signal look healthy. The generated ConfigMap name is
 stable, so each script change must increment the Deployment's
 `homelab.rst.io/vulnerability-exporter-script-revision` pod-template annotation
-to roll the collector. Open the affected project's artifact scan in
+to roll the collector. The Grafana query uses the raw metric so a healthy
+zero-valued series resolves the alert instead of becoming no-data. Open the affected project's artifact scan in
 Harbor, identify the image and fixed dependency or base-image version, then
 remediate through a reviewed rebuild and GitOps rollout. The alert includes the
 project label but deliberately omits sensitive or high-cardinality artifact data.

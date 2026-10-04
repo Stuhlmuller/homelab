@@ -261,7 +261,9 @@ alerting:
                     type: prometheus
                     uid: prometheus
                   editorMode: code
-                  expr: harbor_vulnerability_critical_total > 0
+                  # Keep a healthy zero-valued series distinct from missing
+                  # collector telemetry, which noDataState treats as alerting.
+                  expr: harbor_vulnerability_critical_total
                   instant: true
                   intervalMs: 1000
                   legendFormat: Harbor critical CVEs

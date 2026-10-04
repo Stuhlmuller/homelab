@@ -69,7 +69,9 @@ artifact names, digests, CVE IDs, or credentials in metrics. The Grafana rule
 alerts at critical severity after five minutes for a nonzero count; absent data
 and evaluation errors also alert. Cached metrics expire within six minutes of a
 failed collection, and script revisions roll the collector through its
-versioned pod-template annotation. Triage in Harbor, then rebuild and roll out a
+versioned pod-template annotation. The raw Grafana query preserves healthy
+zero-valued project series while missing telemetry enters Alerting. Triage in
+Harbor, then rebuild and roll out a
 remediated image through GitOps. Source: `clusters/homelab/apps/harbor/vulnerability-exporter.py`,
 `clusters/homelab/apps/harbor/vulnerability-exporter.yaml`, and
 `clusters/homelab/apps/grafana/values.yaml`.
