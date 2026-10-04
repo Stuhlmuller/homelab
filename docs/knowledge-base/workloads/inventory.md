@@ -271,8 +271,9 @@ Harbor owns private `homelab` custom images and the public upstream-only
 completed-scan critical-CVE counts per project for Grafana; it is read-only,
 proposes a dedicated file-mounted list-only robot and verified TLS to the
 existing Istio gateway, and emits no artifact, digest, or CVE labels. This
-HOME-57 candidate is on hold for credential provisioning, independent denied-path
-validation and acceptance of the remaining gateway-to-core HTTP boundary; see
+HOME-57 candidate is on hold for protected credential provisioning, independent
+server authorization and HOME-59’s required all-hop TLS implementation (no
+gateway-only exception). Its separate periodic ESO candidate is unregistered; see
 [the transition plan](../../harbor-vulnerability-exporter-transition.md). The [Talos mirror rollout](../../harbor-image-mirroring.md)
 covers Helm/operator-generated workloads and system images; publication must
 precede node cutover or new consumer versions.

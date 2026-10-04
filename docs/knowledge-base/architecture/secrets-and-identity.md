@@ -482,10 +482,18 @@ keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
 
 ## Harbor vulnerability collector proposal
 
-HOME-57 replaces the collector admin mount with dedicated Secret
-`harbor-vulnerability-exporter` / `robot-password`. The proposed system robot
-has only project-scoped repository/artifact list permissions for `homelab` and
-`mirror`, with a 30-day lifetime. Credential issuance, its dedicated SSM/ESO
-path and renewal workflow remain prerequisites, not deployed resources. Verified
-TLS terminates at the existing gateway; its plaintext Harbor hop requires
-Decision Review acceptance. See the [transition and rollback gates](../../harbor-vulnerability-exporter-transition.md).
+HOME-57 isolates the collector Secret (`harbor-vulnerability-exporter`, key
+`robot-password`) from admin credentials. The disabled protected workflow
+publishes one JSON lifecycle envelope to the exact
+`/homelab/harbor/vulnerability-robot-password` SecureString. An unregistered
+independent ESO polls only its `secret` property; the shared Harbor OnChange
+secret is unchanged. The SSM catalog uses externally managed value semantics,
+so later IaC does not restore retired credentials. A dedicated OIDC role proposal
+permits only this parameter and context-bound KMS use. Issuer system-robot
+management authority requires independent review before provision; no identity,
+role or environment is claimed to exist.
+
+HOME-59 requires verified TLS at every credential-bearing hop, with no gateway
+exception. SRE owns integration, QA server authorization, and Recovery separate
+availability/compromise handling. See the [transition gates](../../harbor-vulnerability-exporter-transition.md)
+and [lifecycle contract](../../harbor-vulnerability-credential-lifecycle.md).

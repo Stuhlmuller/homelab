@@ -372,11 +372,20 @@ limits publication to the new mirror credential and documents shared IAM/random
 state dependencies requiring explicit operator approval. Image transfer
 and node cutover remain pending; source verification is not migration evidence.
 
-## HOME-57 collector privilege and transport proposal
+## HOME-57 collector privilege and lifecycle proposal
 
-The [transition plan](../../harbor-vulnerability-exporter-transition.md) inventories
-the exact Harbor 2.15.2 read permissions, dedicated robot Secret contract,
-verified gateway TLS, remaining plaintext hop, HOME-3 policy integration and
-independent denied-write/admin gates. Merge and activation remain blocked on
-credential workflow/IaC prerequisites and delegated operational decisions.
-Local collector tests are not live authorization, isolation or backup evidence.
+The [transition plan](../../harbor-vulnerability-exporter-transition.md) records
+HOME-59's all-hop verified TLS target. No gateway-only exception was granted;
+current code still lacks verified gateway→frontend→core TLS. Plaintext exposes
+both credential confidentiality and metrics integrity. TLS does not establish
+HOME-3 enforcement or prevent stolen-token replay through other allowed routes.
+
+The [lifecycle proposal](../../harbor-vulnerability-credential-lifecycle.md) adds a
+disabled manual protected workflow, exact-ID/scope/expiry verification, bounded
+renewal, a one-version SSM envelope and unregistered ESO/writer-role candidates.
+The proposed one-day issuer has system robot-management authority and requires
+separate Decision Review disposition; helper restrictions are not server RBAC.
+SRE owns #1163 integration; QA owns pinned-server controls and Recovery owns
+first-cutover containment, alert limits and compromise revocation. Signing, full
+validation, real authorization, all-hop TLS and operational evidence remain gates.
+No provisioning, execution, live health or continuous renewal monitoring is claimed.

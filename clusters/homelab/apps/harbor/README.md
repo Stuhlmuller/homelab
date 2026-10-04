@@ -64,12 +64,15 @@ setting and scan submission, not successful database downloads or completed scan
 `vulnerability-exporter.py` reads only completed scan summaries for the
 repository-managed `homelab` and `mirror` projects through verified TLS to the
 in-cluster Istio gateway. The gateway-to-Harbor hop remains HTTP and requires
-explicit residual-risk acceptance before activating this candidate. It publishes the aggregate
+the all-hop TLS implementation selected by HOME-59 before activation; no
+gateway-only exception was granted. It publishes the aggregate
 `harbor_vulnerability_critical_total{project=...}` metric; artifact names,
 digests, CVE IDs, and credentials never become Prometheus labels or logs. The
 collector mounts only the dedicated `harbor-vulnerability-exporter` Secret
 (`robot-password`), with `repository:list` and `artifact:list` permissions for
-the two projects. Credential provisioning is an outstanding prerequisite;
+the two projects. The disabled protected issuance/renewal workflow and unregistered ESO/role
+candidates are described in the [lifecycle proposal](../../../../docs/harbor-vulnerability-credential-lifecycle.md);
+credential provisioning and independent acceptance remain prerequisites;
 **hold merge/activation** until the [HOME-57 transition gates](../../../../docs/harbor-vulnerability-exporter-transition.md)
 are met. Credentials stay out of process arguments and environment variables. Harbor omits
 zero-valued severity buckets, so a completed scan without a `Critical` bucket
