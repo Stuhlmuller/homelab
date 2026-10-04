@@ -11,5 +11,8 @@ resources:
 configMapGenerator:
   - name: langfuse-clickhouse-logging
     namespace: langfuse
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
     files:
       - 90-homelab-logging.xml=clickhouse-logging.xml
