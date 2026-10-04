@@ -59,6 +59,30 @@ resource "msgraph_update_resource" "signing_certificate" {
   ignore_missing_property = false
 }
 
+# Fleet resolves the signed NameID as an exact account email. An external MSA
+# identity can otherwise emit its personal email and collide with recovery login.
+# Use the documented Graph v1.0 source, not an undocumented UI-only source ID.
+resource "azuread_claims_mapping_policy" "name_id" {
+  display_name = "${var.display_name} NameID"
+  definition = [jsonencode({
+    ClaimsMappingPolicy = {
+      Version              = 1
+      IncludeBasicClaimSet = "true"
+      ClaimsSchema = [{
+        Source        = "user"
+        ID            = "userprincipalname"
+        SamlClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+      }]
+    }
+  })]
+}
+
+resource "azuread_service_principal_claims_mapping_policy_assignment" "name_id" {
+  claims_mapping_policy_id = azuread_claims_mapping_policy.name_id.id
+  service_principal_id     = azuread_service_principal.this.id
+  depends_on               = [msgraph_update_resource.signing_certificate]
+}
+
 resource "azuread_app_role_assignment" "allowed" {
   for_each            = data.azuread_user.allowed
   app_role_id         = "00000000-0000-0000-0000-000000000000"

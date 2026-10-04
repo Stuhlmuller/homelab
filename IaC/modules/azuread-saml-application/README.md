@@ -1,7 +1,8 @@
 # Entra SAML enterprise application
 
 Creates a single-tenant SAML application, enterprise service principal,
-Microsoft-generated signing certificate, and individual user assignments.
+Microsoft-generated signing certificate, explicit NameID mapping, and individual
+user assignments.
 No client password, Graph permission grant, group assignment, Conditional
 Access policy, Intune enrollment, subscription, or purchased license is created.
 
@@ -33,11 +34,38 @@ The operator needs permission to manage applications, create token-signing
 certificates, read the individually assigned users, and assign application roles.
 A successful plan does not establish permission for those write operations.
 
-Entra's default SAML NameID uses the user's UPN. Precreate the exact UPN in
-Fleet with SSO enabled and verify the actual SAML login before retiring any
-recovery access. This module does not grant a Fleet role or provision a Fleet
-user. The Fleet console is separate from the Mac's native Microsoft Platform
-SSO extension.
+The first Fleet browser test returned `account_disabled`: the external
+Microsoft-account owner's signed NameID matched the password-only recovery user
+instead of the precreated organizational UPN. Fleet 4.92.2 resolves NameID by
+account email, then rejects users with SSO disabled. Do not fix that collision by
+converting the recovery user to SSO.
+
+The dedicated service principal now owns an explicit claims mapping policy:
+`Source=user`, `ID=userprincipalname`, and the standard SAML `nameidentifier`
+claim URI. This is Microsoft's documented Graph v1.0 mapping. Basic claims are
+retained. The policy overrides default claim configuration and uses the existing
+app-specific signing key; it does not enable `acceptMappedClaims`, issue a shared
+constant identity, or modify the owner's user object. Microsoft's UI documents
+`user.localuserprincipalname` for B2B users, but that ID is absent from the stable
+claims-mapping source reference, so this module does not assume API support.
+Verify the actual callback resolves the precreated UPN after apply; configuration
+and metadata checks alone do not establish that the collision is fixed.
+
+[Entra Free](https://www.microsoft.com/en-us/security/business/microsoft-entra-pricing)
+includes unlimited SaaS SSO. Microsoft's claims customization and Graph API
+references list permissions, not an additional P1/P2 requirement, for this basic
+SAML mapping. A service principal applying the policy needs
+`Policy.ReadWrite.ApplicationConfiguration` and `Policy.Read.All`; an interactive
+principal needs Application Administrator or Global Administrator. The module
+does not grant these permissions. Stop on a license error without adding a paid
+license or trial. This is not a custom claims provider/authentication extension.
+
+Precreate the exact intended NameID in Fleet with SSO enabled and verify actual
+SAML login before retiring any recovery access. This module does not grant a
+Fleet role or provision a Fleet user. The console remains separate from the
+Mac's native Microsoft Platform SSO extension. Removing the policy assignment
+restores default claims and can reproduce the collision; retain recovery access
+and verify a fresh callback when changing or rolling back the mapping.
 
 Certificate expiry is a reviewed input, not a perpetual timestamp expression.
 Before expiry, change the date in a PR, review replacement, and apply. The new
@@ -56,3 +84,9 @@ References:
 - [Microsoft Graph update resource](https://github.com/microsoft/terraform-provider-msgraph/blob/v0.5.0/docs/resources/update_resource.md)
 - [Microsoft Graph SAML signing-key activation](https://learn.microsoft.com/en-us/graph/application-saml-sso-configure-api#activate-the-custom-signing-key)
 - [Microsoft Graph service principal](https://learn.microsoft.com/en-us/graph/api/resources/serviceprincipal?view=graph-rest-1.0)
+- [Microsoft Graph v1.0 NameID mapping example](https://learn.microsoft.com/en-us/graph/api/claimsmappingpolicy-post-claimsmappingpolicies?view=graph-rest-1.0)
+- [Claims-mapping sources, precedence and restrictions](https://learn.microsoft.com/en-us/entra/identity-platform/reference-claims-customization)
+- [B2B UPN behavior](https://learn.microsoft.com/en-us/entra/external-id/claims-mapping)
+- [AzureAD claims-mapping policy](https://github.com/hashicorp/terraform-provider-azuread/blob/v3.9.0/docs/resources/claims_mapping_policy.md)
+- [AzureAD policy assignment](https://github.com/hashicorp/terraform-provider-azuread/blob/v3.9.0/docs/resources/service_principal_claims_mapping_policy_assignment.md)
+- [Fleet 4.92.2 NameID lookup and SSO-disabled rejection](https://github.com/fleetdm/fleet/blob/fleet-v4.92.2/server/service/sessions.go#L794)

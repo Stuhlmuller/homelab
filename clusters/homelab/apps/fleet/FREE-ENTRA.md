@@ -42,6 +42,16 @@ Keep a privately stored local recovery credential until SAML login and recovery
 have been verified. Do not grant console access merely because someone owns an
 enrolled device.
 
+The first deployed browser test failed with `account_disabled`. Fleet accepted
+the signed identity but matched the external Microsoft-account owner's personal
+email to the password-only recovery account. The [SAML module](../../../../IaC/modules/azuread-saml-application/README.md)
+therefore declares a dedicated, stable Graph claims mapping from
+`userprincipalname` to SAML NameID, preserving basic claims and the existing
+signing key. Keep the recovery account password-only and the organizational UPN
+account SSO-only. Retest the real callback after applying the mapping; until
+then, console login remains failed rather than verified. No paid feature,
+static shared NameID, tenant-owner conversion or license bypass is used.
+
 Mac Platform SSO uses the native Microsoft extension and device/user
 registration. It does not use Fleet's console SAML application to synchronize
 passwords. Neither integration makes the other one successful.
