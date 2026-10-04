@@ -1,0 +1,10 @@
+# Offline proposal only. No Application or parent Kustomization registers this.
+# Promote only the reviewed replica delta into the active source; do not apply
+# this whole render or change an Argo CD source path to this directory.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../harbor
+replicas:
+  - name: harbor-vulnerability-exporter
+    count: 0
