@@ -62,6 +62,22 @@ over 1,000 artifacts; duplicate IDs and inconsistent pagination still fail close
 The separate robot inventory retains its 1,000-object safety bound.
 See `clusters/homelab/apps/harbor/README.md`.
 
+Grafana receives `harbor_vulnerability_critical_total` from the repository-owned
+Harbor vulnerability collector. It queries only completed scan summaries for the
+`homelab` and `mirror` projects and emits aggregate counts per project, without
+artifact names, digests, CVE IDs, or credentials in metrics. The Grafana rule
+alerts at critical severity after five minutes for a nonzero count; absent data
+and evaluation errors also alert. Cached metrics expire within six minutes of a
+failed collection, and script revisions roll the collector through its
+versioned pod-template annotation. The raw Grafana query preserves healthy
+zero-valued project series while missing telemetry enters Alerting. A completed
+Harbor scan that omits its zero-valued `Critical` severity bucket contributes
+zero. Triage in
+Harbor, then rebuild and roll out a
+remediated image through GitOps. Source: `clusters/homelab/apps/harbor/vulnerability-exporter.py`,
+`clusters/homelab/apps/harbor/vulnerability-exporter.yaml`, and
+`clusters/homelab/apps/grafana/values.yaml`.
+
 Read-only acceptance on 2026-09-28 found scan-on-push enabled in both projects
 and Trivy v0.72.0 healthy. Both running NOFX images had successful reports:
 backend `6dfec7dd502b` (5 critical, 65 high findings) and frontend `210a1bd9ca7e`

@@ -38,7 +38,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "20"
+  homelab.rst.io/alerting-provisioning-version: "21"
 plugins:
   - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
@@ -247,6 +247,83 @@ alerting:
         folder: Homelab
         interval: 1m
         rules:
+          - uid: homelab-harbor-critical-cves
+            title: Harbor image scan reports critical CVEs
+            condition: C
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange:
+                  from: 600
+                  to: 0
+                model:
+                  datasource:
+                    type: prometheus
+                    uid: prometheus
+                  editorMode: code
+                  # Keep a healthy zero-valued series distinct from missing
+                  # collector telemetry, which noDataState treats as alerting.
+                  expr: harbor_vulnerability_critical_total
+                  instant: true
+                  intervalMs: 1000
+                  legendFormat: Harbor critical CVEs
+                  maxDataPoints: 43200
+                  range: false
+                  refId: A
+              - refId: B
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: A
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  reducer: last
+                  refId: B
+                  type: reduce
+              - refId: C
+                datasourceUid: __expr__
+                relativeTimeRange:
+                  from: 0
+                  to: 0
+                model:
+                  conditions:
+                    - evaluator:
+                        params:
+                          - 0
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params:
+                          - C
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                  datasource:
+                    type: __expr__
+                    uid: __expr__
+                  expression: B
+                  intervalMs: 1000
+                  maxDataPoints: 43200
+                  refId: C
+                  type: threshold
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 5m
+            annotations:
+              summary: Harbor completed image scans report one or more critical CVEs.
+              description: The alert is grouped by Harbor project. Triage the affected image scan in Harbor; the metric intentionally omits artifact, digest, and CVE labels.
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/harbor/README.md#critical-cve-alerting
+            labels:
+              severity: critical
+              managed_by: grafana-provisioning
+              app: harbor
           - uid: homelab-target-down
             title: Homelab Prometheus target down
             condition: C
