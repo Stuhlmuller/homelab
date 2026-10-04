@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: harbor-verified-frontend
+  namespace: istio-system
+spec:
+  host: harbor.harbor.svc.cluster.local
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: 443
+        tls:
+          mode: SIMPLE
+          credentialName: harbor-frontend-trust
+          sni: harbor-frontend.harbor.svc.cluster.local
+          subjectAltNames: [harbor-frontend.harbor.svc.cluster.local]
+          insecureSkipVerify: false

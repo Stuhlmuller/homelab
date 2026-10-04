@@ -1,0 +1,5 @@
+# Pre-Wazuh value verified on acer, 2026-10-04 UTC.
+# The operator helper refuses rollback while Wazuh indexer replicas exist.
+machine:
+  sysctls:
+    vm.max_map_count: "65530"

@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wazuh-manager
+  namespace: wazuh
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    checkov.io/skip1: CKV_K8S_23=The upstream manager supervisor requires root to initialize files and launch daemons under their dedicated users.
+    checkov.io/skip2: CKV_K8S_40=The manager supervisor starts as root and its daemons drop privileges internally.
+    checkov.io/skip3: CKV_K8S_37=The upstream manager requires file ownership, user switching, chroot and DAC capabilities inside this container only.
+    checkov.io/skip4: CKV_K8S_25=The upstream manager requires file ownership, user switching, chroot and DAC capabilities inside this container only.
+    checkov.io/skip5: CKV_K8S_22=The upstream s6 supervisor and Wazuh bootstrap initialize runtime files in the image filesystem.
+    checkov.io/skip6: CKV2_K8S_6=The workload is covered by sibling networkpolicy.yaml.
+spec:
+  replicas: 1
+  serviceName: wazuh-manager
+  selector:
+    matchLabels: {app.kubernetes.io/name: wazuh-manager}
+  template:
+    metadata:
+      annotations:
+        homelab.stuhlmuller.dev/wazuh-revision: "v1"
+      labels:
+        app.kubernetes.io/name: wazuh-manager
+        app.kubernetes.io/part-of: wazuh
+    spec:
+      serviceAccountName: wazuh
+      automountServiceAccountToken: false
+      nodeSelector: {kubernetes.io/hostname: acer}
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: prepare-state
+          image: docker.io/wazuh/wazuh-manager:4.14.8@sha256:412f665c77af5497780d29d0d9f069d7a169c5eca45e9a3a47a587d9cfc99b55
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -ec
+            - mkdir -p /state/{api,etc,logs,queue,agentless,multigroups,integrations,active-response,wodles,filebeat-config,filebeat-data}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts: [{name: state, mountPath: /state}]
+      containers:
+        - name: manager
+          image: docker.io/wazuh/wazuh-manager:4.14.8@sha256:412f665c77af5497780d29d0d9f069d7a169c5eca45e9a3a47a587d9cfc99b55
+          imagePullPolicy: IfNotPresent
+          ports:
+            - {name: agents, containerPort: 1514}
+            - {name: enrollment, containerPort: 1515}
+            - {name: api, containerPort: 55000}
+            - {name: syslog-tcp, containerPort: 5140}
+          resources:
+            requests: {cpu: "1", memory: 2Gi}
+            limits: {cpu: "2", memory: 2Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID, SYS_CHROOT]
+          startupProbe:
+            tcpSocket: {port: api}
+            periodSeconds: 10
+            failureThreshold: 90
+          readinessProbe:
+            exec:
+              command: [/bin/bash, -ec, "/var/ossec/bin/wazuh-control status | grep -q 'wazuh-analysisd is running' && test -S /var/ossec/queue/sockets/queue"]
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket: {port: syslog-tcp}
+            periodSeconds: 30
+            failureThreshold: 6
+          volumeMounts:
+            - {name: state, mountPath: /var/ossec/api/configuration, subPath: api}
+            - {name: state, mountPath: /var/ossec/etc, subPath: etc}
+            - {name: state, mountPath: /var/ossec/logs, subPath: logs}
+            - {name: state, mountPath: /var/ossec/queue, subPath: queue}
+            - {name: state, mountPath: /var/ossec/agentless, subPath: agentless}
+            - {name: state, mountPath: /var/ossec/var/multigroups, subPath: multigroups}
+            - {name: state, mountPath: /var/ossec/integrations, subPath: integrations}
+            - {name: state, mountPath: /var/ossec/active-response/bin, subPath: active-response}
+            - {name: state, mountPath: /var/ossec/wodles, subPath: wodles}
+            - {name: state, mountPath: /etc/filebeat, subPath: filebeat-config}
+            - {name: state, mountPath: /var/lib/filebeat, subPath: filebeat-data}
+            - {name: config, mountPath: /wazuh-config-mount/etc/ossec.conf, subPath: ossec.conf, readOnly: true}
+            - {name: config, mountPath: /wazuh-config-mount/etc/rules/homelab_rules.xml, subPath: local_rules.xml, readOnly: true}
+            - {name: config, mountPath: /run/wazuh/config, readOnly: true}
+            - {name: hooks, mountPath: /etc/cont-init.d/2-manager, subPath: manager-start.bash, readOnly: true}
+            - {name: credentials, mountPath: /run/wazuh/credentials, readOnly: true}
+            - {name: tls, mountPath: /run/wazuh/tls, readOnly: true}
+      volumes:
+        - name: state
+          persistentVolumeClaim: {claimName: wazuh-manager-local}
+        - name: config
+          configMap: {name: wazuh-core-config}
+        - name: hooks
+          configMap:
+            name: wazuh-core-config
+            defaultMode: 0555
+            items: [{key: manager-start.bash, path: manager-start.bash}]
+        - name: credentials
+          secret: {secretName: wazuh-credentials, defaultMode: 0400}
+        - name: tls
+          secret: {secretName: wazuh-manager-tls, defaultMode: 0440}

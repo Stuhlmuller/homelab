@@ -41,6 +41,38 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/wazuh/indexer-admin-password" = {
+      description = "Wazuh indexer administrator password, also used for the operator dashboard login."
+      generated = {
+        length  = 40
+        special = false
+        prefix  = "Aa1!"
+      }
+    }
+    "/homelab/wazuh/api-password" = {
+      description = "Wazuh dashboard dedicated manager API credential."
+      generated = {
+        length  = 40
+        special = false
+        prefix  = "Aa1!"
+      }
+    }
+    "/homelab/wazuh/dashboard-password" = {
+      description = "Wazuh dashboard kibanaserver credential for indexer access."
+      generated = {
+        length  = 40
+        special = false
+        prefix  = "Aa1!"
+      }
+    }
+    "/homelab/wazuh/agent-enrollment-password" = {
+      description = "Wazuh agent registration shared credential; restrict to enrolled homelab endpoints."
+      generated = {
+        length  = 40
+        special = false
+        prefix  = "Aa1!"
+      }
+    }
     "/homelab/fleet/mysql-password" = {
       description = "Fleet dedicated MySQL application password."
       generated = {

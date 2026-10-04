@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: wazuh
+resources:
+  - namespace.yaml
+  - certificates.yaml
+  - externalsecret.yaml
+  - local-storage.yaml
+  - services.yaml
+  - indexer.yaml
+  - security-job.yaml
+  - manager.yaml
+  - dashboard.yaml
+  - collectors.yaml
+  - canary.yaml
+  - prometheusrule.yaml
+  - bootstrap-job.yaml
+  - backup-cronjob.yaml
+  - authorizationpolicy.yaml
+  - networkpolicy.yaml
+  - virtualservice.yaml
+configMapGenerator:
+  - name: wazuh-core-config
+    files:
+      - opensearch.yml
+      - log4j2.properties
+      - jvm.options
+      - ossec.conf
+      - api.yaml
+      - local_rules.xml
+      - manager-start.bash
+      - bootstrap.py
+      - backup.py
+  - name: wazuh-collectors
+    files:
+      - collector-node.conf
+      - collector-central.conf
+      - collector-size.lua

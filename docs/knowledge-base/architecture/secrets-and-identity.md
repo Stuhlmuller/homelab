@@ -489,11 +489,26 @@ publishes one JSON lifecycle envelope to the exact
 independent ESO polls only its `secret` property; the shared Harbor OnChange
 secret is unchanged. The SSM catalog uses externally managed value semantics,
 so later IaC does not restore retired credentials. A dedicated OIDC role proposal
-permits only this parameter and context-bound KMS use. Issuer system-robot
-management authority requires independent review before provision; no identity,
+permits only this parameter and context-bound KMS use. HOME-62 rejected system-robot
+issuer authority; its workflow/helper execution is hard-disabled. No identity,
 role or environment is claimed to exist.
 
 HOME-59 requires verified TLS at every credential-bearing hop, with no gateway
 exception. SRE owns integration, QA server authorization, and Recovery separate
 availability/compromise handling. See the [transition gates](../../harbor-vulnerability-exporter-transition.md)
 and [lifecycle contract](../../harbor-vulnerability-credential-lifecycle.md).
+## Wazuh identities (staged)
+
+Four generated SSM SecureStrings under `/homelab/wazuh/` separate indexer admin,
+manager API, dashboard service and enrollment credentials. ESO renders native
+file configs and bcrypt hashes; cert-manager owns the internal CA and TLS keys.
+Private `wazuh.default` Octelium access requires the human-access policy and
+Wazuh login; no public ingress or anonymous Service is introduced. Collector
+RBAC reads only Pods, namespaces and events. See [[../operations/wazuh-siem]].
+
+HOME-57 integrates the pinned QA fixture and Recovery artifact with their ancestry
+preserved. Its unregistered TLS renderer removes the chart's insecure verification
+override and checks exact upstream identities. Standalone recovery is metadata-only
+and cannot mutate or enable. See [integration and custody gates](../../harbor-tls-and-recovery-integration.md).
+Public CA distribution, proxy runtime/rotation proof and replacement operator custody
+remain unimplemented activation prerequisites; no TLS/server authorization is claimed.

@@ -389,3 +389,15 @@ SRE owns #1163 integration; QA owns pinned-server controls and Recovery owns
 first-cutover containment, alert limits and compromise revocation. Signing, full
 validation, real authorization, all-hop TLS and operational evidence remain gates.
 No provisioning, execution, live health or continuous renewal monitoring is claimed.
+
+
+## HOME-57 integrated proposal
+
+QA #1164 and Recovery #1165 are integrated into SRE's proposal with original
+commits preserved. The [TLS/recovery integration contract](../../harbor-tls-and-recovery-integration.md)
+records the unregistered chart renderer, verified upstream identity tests and
+standalone metadata-only exact-ID recovery planner. HOME-62 rejected the proposed
+system issuer: the workflow/helper cannot execute even if acceptance flags change.
+Trust distribution, GitOps materialization, client/hook migration, actual proxy
+and Harbor-denial evidence, expiry/alerts, signing and HOME-3 remain HOLD gates.
+Recovery interruption limits are proposals, not authorized windows.

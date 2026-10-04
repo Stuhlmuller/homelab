@@ -1,0 +1,23 @@
+# Unregistered HOME-59 proposal. Requires scripts/harbor-tls-render.py.
+expose:
+  tls:
+    enabled: true
+    certSource: secret
+    secret:
+      secretName: harbor-frontend-tls
+  clusterIP:
+    ports:
+      httpsPort: 443
+internalTLS:
+  enabled: true
+  certSource: secret
+  core:
+    secretName: harbor-core-tls
+  portal:
+    secretName: harbor-portal-tls
+  jobservice:
+    secretName: harbor-jobservice-tls
+  registry:
+    secretName: harbor-registry-tls
+  trivy:
+    secretName: harbor-trivy-tls
