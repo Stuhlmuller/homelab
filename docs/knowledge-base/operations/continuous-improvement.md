@@ -43,6 +43,19 @@ page for cross-cutting or not-yet-owned findings.
 
 ## Current Standing Order
 
+### Talos diagnostic output containment, 2026-10-04
+
+- **Status:** open.
+- **Area:** operator diagnostics and secrets.
+- **Evidence:** a read-only machine-config inspection during Multica upgrade
+  preparation treated a YAML string as a mapping and emitted credential-bearing
+  configuration into private agent tool output. No configuration was committed.
+- **Risk:** retained diagnostic output contains cluster authentication material.
+- **Next step:** assess transcript access and coordinate a separate approved
+  Talos/Kubernetes credential-rotation procedure through repository-owned code.
+  Parse structured/YAML responses in memory and print only explicitly selected
+  non-secret fields; never dump raw machine configuration when parsing fails.
+
 Rodman asked Claw to continue making security and reliability improvements as
 needed, to treat the homelab as home, and to mark findings in
 `docs/knowledge-base/`. This page is the durable capture point for that work

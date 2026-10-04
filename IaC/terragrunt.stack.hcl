@@ -1892,10 +1892,24 @@ unit "argocd_apps_multica" {
             repoURL        = "ghcr.io/multica-ai/charts"
             chart          = "multica"
             path           = "."
-            targetRevision = "0.4.29"
+            targetRevision = "0.6.1"
             helm = {
               releaseName = "multica"
               valueFiles  = ["$values/clusters/homelab/apps/multica/values.yaml"]
+              # Change chart and image versions in one Application update. The
+              # main-tracking files retain the previous release until this apply.
+              parameters = [
+                {
+                  name        = "images.backend.tag"
+                  value       = "v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c"
+                  forceString = true
+                },
+                {
+                  name        = "images.frontend.tag"
+                  value       = "v0.6.1@sha256:cc8260b0371661896dce52f968c8822d8275e0b275a43484347e5a59efffbb7c"
+                  forceString = true
+                }
+              ]
             }
           },
           {
@@ -1911,6 +1925,11 @@ unit "argocd_apps_multica" {
             repoURL        = local.repo_url
             targetRevision = local.target_revision
             path           = "clusters/homelab/apps/multica"
+            kustomize = {
+              images = [
+                "ghcr.io/multica-ai/multica-backend=ghcr.io/multica-ai/multica-backend:v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c"
+              ]
+            }
           }
         ]
 

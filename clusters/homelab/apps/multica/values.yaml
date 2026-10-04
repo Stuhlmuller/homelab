@@ -1,4 +1,7 @@
 images:
+  # Compatibility defaults for the pre-upgrade Application tracking main.
+  # Effective release tags are Helm parameters beside its chart version in
+  # IaC/terragrunt.stack.hcl; update those together for a controlled rollout.
   backend:
     repository: ghcr.io/multica-ai/multica-backend
     # checkov:skip=CKV_SECRET_6: OCI image digest pin, not secret material.
@@ -54,6 +57,8 @@ backend:
     allowedEmails: ""
     allowedEmailDomains: ""
     disableWorkspaceCreation: false
+    # Keep self-host usage telemetry disabled across upgrades.
+    doNotTrack: "1"
     vcsIntegrationEnabled: false
     googleClientId: ""
     googleRedirectUri: https://multica.stinkyboi.com/auth/callback
@@ -87,7 +92,3 @@ frontend:
 
 ingress:
   enabled: false
-
-monitoring:
-  prometheusRule:
-    enabled: false

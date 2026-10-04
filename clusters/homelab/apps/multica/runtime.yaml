@@ -39,6 +39,8 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: install-multica
+          # Compatibility default; Application kustomize.images in
+          # IaC/terragrunt.stack.hcl advances this with the chart and web images.
           image: ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
           imagePullPolicy: IfNotPresent
           command: [/bin/sh, -ec]
