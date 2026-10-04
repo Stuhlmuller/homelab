@@ -29,7 +29,7 @@ SELECT json_build_object(
   'active_tasks', (SELECT count(*) FROM agent_task_queue
     WHERE status IN ('dispatched', 'running', 'waiting_local_directory')),
   'migration_count', (SELECT count(*) FROM schema_migrations),
-  'migration_hash', (SELECT md5(coalesce(string_agg(version, E'\\n'
+  'migration_hash', (SELECT md5(coalesce(string_agg(version::text, E'\\n'
     ORDER BY version), '')) FROM schema_migrations),
   'attachment_count', (SELECT count(*) FROM attachment),
   'attachment_hash', (SELECT md5(coalesce(string_agg(row_to_json(a)::text,

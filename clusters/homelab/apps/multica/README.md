@@ -11,12 +11,46 @@ separate browser-facing hostname.
 
 ## Upgrade to 0.6.1
 
-The chart, backend, frontend, and runtime CLI are pinned to `0.6.1` together.
+`IaC/terragrunt.stack.hcl` owns the effective release: chart `0.6.1`, backend
+and frontend tags in `helm.parameters`, and the runtime CLI image in
+`kustomize.images`. One Terragrunt update to the Argo Application advances all
+four pins. `values.yaml` and `runtime.yaml` deliberately retain digest-pinned
+`0.4.29` compatibility defaults. The existing Application tracks `main`, so
+changing those defaults on merge would start database migrations with the old
+chart's startup budget before Terragrunt installs the new chart. Keep release
+changes in the Application overrides; Git sources continue to track `main`.
+
 Desktop `0.6.1` calls session-renewal and search-index APIs absent from `0.4.29`.
 The new backend applies its migrations automatically before serving requests;
 the chart allows ten minutes for startup and uses database-independent
 `/health` liveness with database-dependent `/healthz` readiness. First-party
 self-host telemetry is explicitly disabled with `doNotTrack: "1"`.
+
+Render the effective release with the same overrides as the Application, from
+the repository root in `nix develop`. Rendering the base files alone checks the
+compatibility defaults, not the deployed release:
+
+```sh
+multica_render_dir="$(mktemp -d)"
+helm template multica oci://ghcr.io/multica-ai/charts/multica \
+  --version 0.6.1 --namespace ai \
+  --values clusters/homelab/apps/multica/values.yaml \
+  --set-string images.backend.tag=v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c \
+  --set-string images.frontend.tag=v0.6.1@sha256:cc8260b0371661896dce52f968c8822d8275e0b275a43484347e5a59efffbb7c \
+  > "$multica_render_dir/chart.yaml"
+cp -R clusters/homelab/apps/multica "$multica_render_dir/runtime"
+(
+  cd "$multica_render_dir/runtime"
+  kustomize edit set image \
+    ghcr.io/multica-ai/multica-backend=ghcr.io/multica-ai/multica-backend:v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c
+  kustomize build . > "$multica_render_dir/runtime.yaml"
+)
+```
+
+The chart render must contain both `0.6.1` images, a 60-attempt startup probe,
+and `/health` liveness. The runtime render must copy its CLI from the same
+`0.6.1` backend digest. Helm parameters override the compatibility values; Argo
+passes its image override to Kustomize's `edit set image` before building.
 
 Before merging an upgrade, wait for active agent tasks to finish and capture a
 private logical database backup plus uploads outside the checkout:
@@ -50,8 +84,9 @@ restores the database and uploads from the same capture, restores the previous
 chart/image pins, then resumes the workload; preserve the original archives.
 
 After the reviewed merge, dispatch the exact current `main` revision through
-`terragrunt-apply.yml` with `argocd_app=multica` to reconcile the chart version.
-Argo CD also consumes the committed image pins automatically. Verify chart and
+`terragrunt-apply.yml` with `argocd_app=multica` to reconcile the chart and image
+overrides in the same Application update. A merge alone must leave the current
+chart and Multica images on `0.4.29`. Verify chart and
 all three Multica binaries are `0.6.1`, all four workloads are Ready, database
 queries succeed, and the native desktop's search manifest and session renewal
 return `200` with a connected WebSocket. Keep Octelium and fixed-code sign-in
@@ -68,7 +103,8 @@ token, daemon identity, Codex state, repositories, and task workspaces across
 pod and node restarts. It does not provide node-loss recovery or an off-node
 backup. See [storage ownership](../../../../docs/knowledge-base/architecture/storage-and-state.md).
 
-An init container copies the CLI from the same pinned Multica backend image
+An init container copies the CLI from the backend image selected by the
+Application's Kustomize override, matching its Helm backend image parameter,
 and installs checksum-verified Codex 0.153.2 binaries. Settings live in
 `runtime/settings.json`; automatic CLI updates are disabled so upgrades remain
 reviewed GitOps changes. Both CLIs are mounted into `/usr/local/bin` so agent

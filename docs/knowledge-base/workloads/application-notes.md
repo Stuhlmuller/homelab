@@ -60,8 +60,16 @@ the database and uploads, then verify renewal, search, and the originally
 failing desktop action. See the
 [Multica runbook](../../../clusters/homelab/apps/multica/README.md).
 
-The reviewed upgrade pins chart, web, backend and runtime CLI to `0.6.1` and
-disables self-host telemetry. `scripts/multica-upgrade-backup.py` captures a
+The reviewed upgrade's effective chart, web, backend and runtime CLI pins are
+owned together in `IaC/terragrunt.stack.hcl`: chart version, Helm image
+parameters and the Kustomize runtime-image override. Base values and runtime
+manifests retain `0.4.29` compatibility images so the existing Application's
+`main` tracking cannot start migrations before Terragrunt installs the new
+chart and its startup probe. A single Application update activates `0.6.1`;
+both image generations stay in the Harbor inventory. Render with the
+Application overrides as documented in the Multica runbook, rather than
+treating base-file renders as the effective release. Self-host telemetry is
+disabled. `scripts/multica-upgrade-backup.py` captures a
 private online PostgreSQL archive and verifies stable upload contents, idle
 tasks, unchanged attachment/migration fingerprints and source Pods. It checks
 archive readability but does not fence writers or prove a restore. Retain the

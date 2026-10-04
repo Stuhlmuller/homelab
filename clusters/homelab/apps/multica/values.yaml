@@ -1,13 +1,16 @@
 images:
+  # Compatibility defaults for the pre-upgrade Application tracking main.
+  # Effective release tags are Helm parameters beside its chart version in
+  # IaC/terragrunt.stack.hcl; update those together for a controlled rollout.
   backend:
     repository: ghcr.io/multica-ai/multica-backend
     # checkov:skip=CKV_SECRET_6: OCI image digest pin, not secret material.
-    tag: v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c
+    tag: v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
     pullPolicy: IfNotPresent
   frontend:
     repository: ghcr.io/multica-ai/multica-web
     # checkov:skip=CKV_SECRET_6: OCI image digest pin, not secret material.
-    tag: v0.6.1@sha256:cc8260b0371661896dce52f968c8822d8275e0b275a43484347e5a59efffbb7c
+    tag: v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f
     pullPolicy: IfNotPresent
   postgres:
     repository: pgvector/pgvector
