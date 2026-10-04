@@ -25,7 +25,12 @@ not an available recovery path yet.
   the APNs certificate. Upload it through Fleet's setup flow, retain the same
   Apple account, and renew the same certificate annually. Manual family/BYOD
   enrollment does not require Apple Business Manager. Enable MDM first, then
-  use Fleet's **Add hosts** flow for macOS, iOS and iPadOS.
+  use **Hosts > Add hosts > macOS > Personal (BYOD)** for a family Mac.
+  This Free flow opens `/enroll` and downloads its profile through
+  `/api/v1/fleet/enrollment_profiles/ota`. The administrator endpoint
+  `/api/v1/fleet/enrollment_profiles/manual` returns HTTP 402 without Premium;
+  do not substitute it for personal enrollment. iOS/iPadOS enrollment still
+  needs its own device acceptance check.
 - Windows: inventory uses fleetd; Windows MDM additionally needs Fleet's
   [Windows MDM setup](https://fleetdm.com/guides/windows-mdm-setup) and WSTEP
   signing identity. Add its secret references and file paths through GitOps
@@ -36,7 +41,8 @@ not an available recovery path yet.
   app availability follow Fleet's current Free/Premium capabilities.
 - Linux: fleetd inventory, queries and supported scripts; no Apple-style MDM.
 
-This deployment does not enroll, reset, wipe, or change any family device.
+Deploying the server does not automatically enroll, reset, wipe, or change a
+family device.
 Enroll one consenting test device and verify inventory plus a reversible
 configuration profile before rolling out family-wide. Platform certificates,
 provider account setup and an actual enrolled-device check are separate from
@@ -95,6 +101,39 @@ After activation, enroll one selected device, require MDM **On**, refresh its
 inventory through the public endpoint, and verify installation and removal of
 an agreed harmless configuration profile. CSR generation alone neither enables
 MDM nor enrolls a device.
+
+On macOS, read `profiles status -type enrollment` outside the agent sandbox
+through an approved local read-only session. Sandboxed execution can falsely
+report **No** despite active enrollment. Correlate the local serial and hardware
+UUID with the exact Fleet host privately; hostname or another online Mac is not
+sufficient evidence. Keep those identifiers out of git. A Fleet profile status
+of **verifying** records installation acknowledgement while independent profile
+verification remains incomplete.
+
+### Verify reversible profile delivery on this Mac
+
+Run the repository-owned verifier on the selected enrolled Mac, outside the
+agent sandbox when necessary for accurate local hardware identity:
+
+```sh
+# Preview only: no credential reads or API requests.
+python3 -I scripts/fleet-verify-apple-mdm.py
+# Send commands to this exact Mac only.
+python3 -I scripts/fleet-verify-apple-mdm.py --execute
+```
+
+Execution privately matches both local serial and hardware UUID to exactly one
+Fleet Mac. It installs a unique removable profile setting only `SmokeTest=true`
+in an unused preference domain, verifies presence, then attempts removal in
+`finally`. Acceptance requires its absence, retention of every pre-existing
+profile and API session revocation. If cleanup fails or is unconfirmed, inspect
+this Mac's **Fleet temporary MDM verification** profile; do not claim success or
+blindly rerun the test.
+
+The verifier shares the CSR helper's initial administrator Secret contract.
+After that password changes, a reviewed authentication path is required before
+using this verifier again; it does not reset credentials. Adding or previewing
+the helper does not complete the live acceptance gate recorded below.
 
 ## Public access and authentication
 
@@ -170,8 +209,8 @@ already migrated by a newer server; restore the matching pre-upgrade backup.
 
 ## Rollout and validation
 
-The initial application is absent from the cluster, so publish its new image
-digests before registering it. Talos uses Harbor with upstream fallback disabled.
+For first installation, publish the new image digests before registering the
+application. Talos uses Harbor with upstream fallback disabled.
 After signed protected merge of the reviewed change:
 
 ```sh
@@ -245,13 +284,51 @@ Public TLS, health/version, administrator login, configured server URL and
 authenticated host listing passed; the verification session was revoked.
 The browser rendered the login form. All public setup aliases returned 404.
 The initial backup Job completed and published the checksum-verified set
-`fleet-20261003T224520Z`. These checks found one administrator and zero devices.
-Nightly recurrence, offsite recovery, restore testing and real-device enrollment
-remain separate acceptance gates.
+`fleet-20261003T224520Z`. That initial server check found one administrator and
+zero devices; the later device evidence follows below. Nightly recurrence,
+offsite recovery and restore testing remain separate acceptance gates.
 
 External Secrets defaults are explicit because omitted remote-reference,
 refresh-interval and template-merge defaults caused Argo to repeat self-healing
 despite healthy workloads. Declaring the defaults preserves secret semantics.
+
+### Apple activation and device acceptance: 2026-10-03
+
+[PR #1148](https://github.com/Stuhlmuller/homelab/pull/1148) merged as
+`19c34578`; the repository-owned helper activated Apple MDM and verified its
+APNs certificate renewal date as `2027-10-03T23:22:43Z`. Certificate and secret
+material remain outside git.
+
+The selected Mac completed the Free personal enrollment flow. An approved
+local read outside the sandbox confirmed **MDM enrollment: Yes (User Approved)**
+and the public Fleet enrollment URL with `byod=1`. Its serial and hardware UUID
+matched the online Fleet host; inventory reported macOS 26.6.2 and osquery
+5.23.1. The acceptance below applies only to that exact Mac.
+
+A `DeviceInformation` query for `OSVersion` targeted only the matched Mac through
+Fleet's `/api/v1/fleet/commands/run` API. Its fresh command moved from **Pending**
+to **Acknowledged** within three seconds. Host identity, request type and command
+UUID matched the response, which reported `OSVersion: 26.6.2`. This verifies a
+live APNs/MDM query round trip.
+
+The repository-owned reversible profile test then passed with exit status 0 in
+about 14 seconds. Its five commands read the baseline profile inventory,
+acknowledged installation, confirmed the temporary profile was present,
+acknowledged removal, and confirmed absence while retaining every baseline
+profile. API session revocation also succeeded. This completes profile
+install/remove acceptance for the selected Mac.
+
+One earlier baseline `ProfileList` remained pending beyond the helper's
+90-second timeout; that attempt installed nothing. Queued at `00:33:15 UTC`,
+the read and a fresh `DeviceInformation` query were both acknowledged at
+`00:41:20 UTC`, without routing, service or device changes. The one-time push
+delay's cause is unconfirmed. Compare agent heartbeat with MDM last check-in
+and command acknowledgements when diagnosing delays; do not duplicate writes
+while a command remains pending.
+
+The iOS record now reports manual MDM **On** and a verified Fleet root CA,
+but its inventory remains blank. iOS inventory and command acceptance remain
+pending; the selected Mac's passing test does not establish iOS readiness.
 
 Upstream references: [hosting](https://fleetdm.com/docs/deploy/deploy-fleet),
 [configuration](https://fleetdm.com/docs/configuration/fleet-server-configuration),
