@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "mode": "design-only",
+  "active_version": "1.27.3",
+  "candidate_hops": [
+    "1.28.10",
+    "1.29.8",
+    "1.30.5",
+    "1.31.1"
+  ],
+  "state": "HOLD",
+  "executor_implemented": false,
+  "promotion_authorized": false,
+  "stages": [
+    "base",
+    "istiod",
+    "cni",
+    "ztunnel",
+    "gateways"
+  ],
+  "required_evidence": {
+    "artifacts": {
+      "owner": "Platform Operations / QA",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "injection": {
+      "owner": "QA",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "independent_access": {
+      "owner": "Recovery",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "recovery": {
+      "owner": "Recovery",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "reconciler_hold": {
+      "owner": "Platform Operations",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "generated_inventory": {
+      "owner": "QA / Network Security / HOME-3",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "forward_reverse_rehearsal": {
+      "owner": "QA / Recovery",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "signed_revision": {
+      "owner": "Release",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "eol_bridge_decision": {
+      "owner": "Decision Review",
+      "status": "unresolved",
+      "receipt": null
+    },
+    "execution_authorization": {
+      "owner": "Delegated decision lead",
+      "status": "unresolved",
+      "receipt": null
+    }
+  }
+}

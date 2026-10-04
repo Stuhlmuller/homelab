@@ -1,0 +1,100 @@
+{
+  "istio-base": {
+    "chart": "base",
+    "values": {}
+  },
+  "istiod": {
+    "chart": "istiod",
+    "values": {
+      "profile": "ambient",
+      "replicaCount": 1,
+      "resources": {
+        "requests": {
+          "memory": "512Mi"
+        }
+      },
+      "global": {
+        "logging": {
+          "level": "default:info"
+        }
+      },
+      "meshConfig": {
+        "accessLogFile": "/dev/stdout"
+      }
+    }
+  },
+  "istio-cni": {
+    "chart": "cni",
+    "values": {
+      "profile": "ambient",
+      "ambient": {
+        "dnsCapture": false,
+        "ipv6": false,
+        "reconcileIptablesOnStartup": false
+      },
+      "podAnnotations": {
+        "homelab.rst.io/ambient-ip-family": "ipv4"
+      },
+      "global": {
+        "logging": {
+          "level": "default:info"
+        }
+      }
+    }
+  },
+  "ztunnel": {
+    "chart": "ztunnel",
+    "values": {
+      "profile": "ambient",
+      "resources": {
+        "requests": {
+          "memory": "256Mi"
+        }
+      },
+      "env": {
+        "IPV6_ENABLED": "false"
+      },
+      "podLabels": {
+        "homelab.rst.io/service-account-issuer-cutover": "10-1-0-199-v1"
+      },
+      "updateStrategy": {
+        "rollingUpdate": {
+          "maxSurge": 0,
+          "maxUnavailable": 1
+        }
+      }
+    }
+  },
+  "istio-ingressgateway": {
+    "chart": "gateway",
+    "values": {
+      "service": {
+        "type": "ClusterIP"
+      }
+    }
+  },
+  "octelium-api-ingressgateway": {
+    "chart": "gateway",
+    "values": {
+      "name": "octelium-api-ingressgateway",
+      "labels": {
+        "istio": "octelium-api-ingressgateway"
+      },
+      "service": {
+        "type": "NodePort",
+        "ports": [
+          {
+            "name": "https",
+            "port": 443,
+            "protocol": "TCP",
+            "targetPort": 443,
+            "nodePort": 30443
+          }
+        ],
+        "annotations": {
+          "homelab.rst.io/access-plane": "octelium"
+        }
+      }
+    }
+  }
+}
