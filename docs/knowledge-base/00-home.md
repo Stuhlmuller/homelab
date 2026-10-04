@@ -35,10 +35,21 @@ in the same change.
   references for a future hardware upgrade.
 - [[source-map]] lists the source docs and repo paths imported into the vault.
 - [[patterns/new-application]] is the checklist for adding a new workload.
+- [[patterns/helm-chart-organization]] records chart, values, and generated
+  Application ownership for small deployment changes.
 - [[patterns/new-platform-service]] is the checklist for shared platform
   services.
 - [[patterns/new-terragrunt-unit]] is the checklist for new Terragrunt units.
 - [[operations/validation-gates]] collects validation expectations.
+
+## Focused Agent Workflows
+
+Project skills under `.agents/skills/` route repetitive work to canonical
+runbooks: `homelab-app-onboarding`, `terragrunt-workflows`,
+`homelab-secret-contracts`, `homelab-harbor-images`, `homelab-protected-prs`,
+and `homelab-release-verification`. Load only the workflow needed for the task;
+the release skill distinguishes validation, merge, deployment, and live
+acceptance.
 
 ## Update Rule
 

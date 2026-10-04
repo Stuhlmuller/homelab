@@ -60,7 +60,7 @@ echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
 expected_units="$(rg -c '^unit "' IaC/terragrunt.stack.hcl)"
-parsed_units="$(terragrunt_stack_unit_paths_at_ref HEAD | wc -l | tr -d ' ')"
+parsed_units="$(terragrunt_stack_unit_paths < IaC/terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
@@ -90,7 +90,7 @@ while IFS= read -r unit_dir; do
     echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
     exit 1
   fi
-done < <(terragrunt_stack_unit_paths_at_ref HEAD)
+done < <(terragrunt_stack_unit_paths < IaC/terragrunt.stack.hcl)
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
@@ -245,6 +245,7 @@ echo "::group::Terragrunt deleted-unit providers"
 echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
+python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
 python3 -I scripts/ci/wazuh-retire-test.py
 python3 -I scripts/ci/wazuh-retire-plan-test.py

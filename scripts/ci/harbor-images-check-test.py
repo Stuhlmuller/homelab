@@ -11,6 +11,35 @@ from pathlib import Path
 spec = importlib.util.spec_from_file_location("check", Path(__file__).with_name("harbor-images-check.py"))
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
+# Shared stack defaults and sparse sources must not hide chart upgrades from
+# the image inventory gate. A chart needs no Helm overrides to deploy.
+with tempfile.TemporaryDirectory() as directory:
+    original_root = check.ROOT
+    check.ROOT = Path(directory)
+    stack = check.ROOT / "IaC/terragrunt.stack.hcl"
+    stack.parent.mkdir()
+    bootstrap = check.ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
+    bootstrap.parent.mkdir(parents=True)
+    bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
+                         'chart = "argo-cd"\nchart_version = "1.0.0"\n')
+    source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
+    stack.write_text('locals { defaults = { project = "homelab" } }\n'
+                     'unit "app" { values = { defaults = local.defaults, spec = { sources = [' + source + '] } } }')
+    expected = {"source": "IaC/terragrunt.stack.hcl", "repoURL": "https://charts.example.invalid",
+                "chart": "example", "targetRevision": "2.0.0"}
+    assert expected in check.chart_sources()
+    stack.write_text(stack.read_text().replace('"2.0.0"', '"2.1.0"'))
+    assert expected not in check.chart_sources()
+    assert {**expected, "targetRevision": "2.1.0"} in check.chart_sources()
+    stack.write_text(stack.read_text().replace('"2.1.0"', 'local.hidden_version'))
+    try:
+        check.chart_sources()
+    except SystemExit as error:
+        assert "literal repoURL, chart and targetRevision" in str(error)
+    else:
+        raise AssertionError("A chart omitted from inventory extraction passed")
+    check.ROOT = original_root
+
 digest = "sha256:" + "a" * 64
 assert check.normalize("busybox") == "docker.io/library/busybox:latest"
 assert check.normalize("index.docker.io/busybox:1.38@" + digest) == "docker.io/library/busybox@" + digest

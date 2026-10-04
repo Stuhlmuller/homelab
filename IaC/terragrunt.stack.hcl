@@ -1,6 +1,48 @@
+# Application entries below contain only deviations from these shared defaults.
+# The unit template generates the raw CRD; live paths remain stable state keys.
 locals {
   repo_url        = "https://github.com/Stuhlmuller/homelab.git"
   target_revision = "main"
+  argocd_defaults = {
+    repo_url        = local.repo_url
+    target_revision = local.target_revision
+    source_root     = "clusters/homelab/apps"
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+      metadata = {
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+      spec = {
+        project = "homelab"
+        destination = {
+          name   = ""
+          server = "https://kubernetes.default.svc"
+        }
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "2m"
+            }
+          }
+        }
+      }
+    }
+  }
 }
 unit "bootstrap_argocd" {
   source                  = "./.catalog/units/bootstrap/argocd"
@@ -14,103 +56,46 @@ unit "argocd_apps_affine" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "octelium",
-      "octelium-public",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "affine"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "octelium", "octelium-public", "platform-storage"]
+    spec = {
+      syncPolicy = {
+        retry = {
+          backoff = {
+            maxDuration = "3m"
+          }
         }
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "affine"
+      ignoreDifferences = [
+        {
+          group        = "apps"
+          kind         = "StatefulSet"
+          name         = "affine-postgres"
+          namespace    = "affine"
+          jsonPointers = ["/metadata/annotations", "/spec/volumeClaimTemplates"]
+        },
+        {
+          group        = "apps"
+          kind         = "StatefulSet"
+          name         = "affine-redis"
+          namespace    = "affine"
+          jsonPointers = ["/metadata/annotations", "/spec/volumeClaimTemplates"]
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/affine"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "3m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "url"
+          value = "https://affine.stinkyboi.com"
+        },
+        {
+          name  = "rollout"
+          value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, Redis, NFS, Istio, and Octelium are healthy"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
         }
-
-        ignoreDifferences = [
-          {
-            group     = "apps"
-            kind      = "StatefulSet"
-            name      = "affine-postgres"
-            namespace = "affine"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/volumeClaimTemplates"
-            ]
-          },
-          {
-            group     = "apps"
-            kind      = "StatefulSet"
-            name      = "affine-redis"
-            namespace = "affine"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/volumeClaimTemplates"
-            ]
-          }
-        ]
-
-        info = [
-          {
-            name  = "url"
-            value = "https://affine.stinkyboi.com"
-          },
-          {
-            name  = "rollout"
-            value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, Redis, NFS, Istio, and Octelium are healthy"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -121,65 +106,23 @@ unit "argocd_apps_argocd_image_updater" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "argocd-image-updater"
+    spec = {
+      destination = {
         namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+      }
+      syncPolicy = {
+        automated = {
+          allowEmpty = true
         }
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "argocd"
+      info = [
+        {
+          name  = "purpose"
+          value = "retirement tombstone; Renovate owns repository image updates"
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/argocd-image-updater"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = true
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "purpose"
-            value = "retirement tombstone; Renovate owns repository image updates"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -190,77 +133,35 @@ unit "argocd_apps_cert_manager" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = ["external-secrets"]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "cert-manager"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "cert-manager"
-        }
-
-        sources = [
-          {
-            repoURL        = "https://charts.jetstack.io"
-            chart          = "cert-manager"
-            path           = "."
-            targetRevision = "v1.20.3"
-            helm = {
-              releaseName = "cert-manager"
-              valueFiles  = ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/cert-manager"
+    spec = {
+      sources = [
+        {
+          repoURL        = "https://charts.jetstack.io"
+          chart          = "cert-manager"
+          path           = "."
+          targetRevision = "v1.20.3"
+          helm = {
+            releaseName = "cert-manager"
+            valueFiles  = ["$values/clusters/homelab/apps/cert-manager/values-v1.20.3.yaml"]
           }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
           }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/cert-manager"
+          targetRevision = local.target_revision
         }
-      }
+      ]
     }
   }
 }
@@ -271,92 +172,48 @@ unit "argocd_apps_compass" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "cert-manager",
-      "istio",
-      "prometheus"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "compass"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["cert-manager", "istio", "prometheus"]
+    spec = {
+      destination = {
+        namespace = "monitoring"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "monitoring"
+      sources = [
+        {
+          repoURL        = "ghcr.io/adinhodovic/charts"
+          chart          = "compass"
+          path           = "."
+          targetRevision = "0.6.0"
+          helm = {
+            releaseName = "compass"
+            valueFiles  = ["$values/clusters/homelab/apps/compass/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/compass"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "ghcr.io/adinhodovic/charts"
-            chart          = "compass"
-            path           = "."
-            targetRevision = "0.6.0"
-            helm = {
-              releaseName = "compass"
-              valueFiles  = ["$values/clusters/homelab/apps/compass/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/compass"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "ingress"
+          value = "Octelium target compass.homelab with private Istio SNI backend routing"
+        },
+        {
+          name  = "state"
+          value = "stateless Kubernetes service discovery dashboard"
         }
-
-        info = [
-          {
-            name  = "ingress"
-            value = "Octelium target compass.homelab with private Istio SNI backend routing"
-          },
-          {
-            name  = "state"
-            value = "stateless Kubernetes service discovery dashboard"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -367,78 +224,29 @@ unit "argocd_apps_cordium" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "octelium-cluster",
-      "octelium-enterprise",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "cordium"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "octelium-cluster", "octelium-enterprise", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "octelium"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "octelium"
-        }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/cordium"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=false",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "bootstrap"
-            value = "Runs cordium-genesis 0.12.7 against the self-hosted Octelium Cluster"
-          },
-          {
-            name  = "access"
-            value = "Human browser access and agent API access are separate Octelium identities and Services"
-          },
-          {
-            name  = "state"
-            value = "Cordium runtime resources are generated by upstream genesis and Octelium controllers"
-          }
-        ]
+      syncPolicy = {
+        syncOptions = ["CreateNamespace=false", "ServerSideApply=true"]
       }
+      info = [
+        {
+          name  = "bootstrap"
+          value = "Runs cordium-genesis 0.12.7 against the self-hosted Octelium Cluster"
+        },
+        {
+          name  = "access"
+          value = "Human browser access and agent API access are separate Octelium identities and Services"
+        },
+        {
+          name  = "state"
+          value = "Cordium runtime resources are generated by upstream genesis and Octelium controllers"
+        }
+      ]
     }
   }
 }
@@ -449,89 +257,44 @@ unit "argocd_apps_deluge" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "deluge"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "media"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "media"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "deluge"
+            valueFiles  = ["$values/clusters/homelab/apps/deluge/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/deluge"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "deluge"
-              valueFiles  = ["$values/clusters/homelab/apps/deluge/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/deluge"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify NFS backup coverage before relying on downloads"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify NFS backup coverage before relying on downloads"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -542,70 +305,35 @@ unit "argocd_apps_descheduler" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = ["prometheus"]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "descheduler"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "kube-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "kube-system"
-        }
-
-        sources = [
-          {
-            repoURL        = "https://kubernetes-sigs.github.io/descheduler"
-            chart          = "descheduler"
-            path           = "."
-            targetRevision = "0.33.0"
-            helm = {
-              releaseName = "descheduler"
-              valueFiles  = ["$values/clusters/homelab/apps/descheduler/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
+      sources = [
+        {
+          repoURL        = "https://kubernetes-sigs.github.io/descheduler"
+          chart          = "descheduler"
+          path           = "."
+          targetRevision = "0.33.0"
+          helm = {
+            releaseName = "descheduler"
+            valueFiles  = ["$values/clusters/homelab/apps/descheduler/values.yaml"]
           }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
           }
         }
+      ]
+      syncPolicy = {
+        syncOptions = ["ServerSideApply=true"]
       }
     }
   }
@@ -617,89 +345,45 @@ unit "argocd_apps_dispatcharr" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "dispatcharr"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage"]
+    spec = {
+      project = "homelab-workloads"
+      destination = {
+        namespace = "media"
       }
-
-      spec = {
-        project = "homelab-workloads"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "media"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "dispatcharr"
+            valueFiles  = ["$values/clusters/homelab/apps/dispatcharr/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/dispatcharr"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "dispatcharr"
-              valueFiles  = ["$values/clusters/homelab/apps/dispatcharr/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/dispatcharr"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; uses dedicated PostgreSQL plus in-pod Redis; complete first-run IPTV source and admin setup through the Octelium-protected UI"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; uses dedicated PostgreSQL plus in-pod Redis; complete first-run IPTV source and admin setup through the Octelium-protected UI"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -710,84 +394,41 @@ unit "argocd_apps_external_secrets" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = ["platform-dns"]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "external-secrets"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    spec = {
+      sources = [
+        {
+          repoURL        = "https://charts.external-secrets.io"
+          chart          = "external-secrets"
+          path           = "."
+          targetRevision = "2.0.1"
+          helm = {
+            releaseName = "external-secrets"
+            valueFiles  = ["$values/clusters/homelab/apps/external-secrets/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/external-secrets"
+          targetRevision = local.target_revision
         }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "external-secrets"
+      ]
+      info = [
+        {
+          name  = "secrets"
+          value = "docs/secrets-aws-ssm.md"
         }
-
-        sources = [
-          {
-            repoURL        = "https://charts.external-secrets.io"
-            chart          = "external-secrets"
-            path           = "."
-            targetRevision = "2.0.1"
-            helm = {
-              releaseName = "external-secrets"
-              valueFiles  = ["$values/clusters/homelab/apps/external-secrets/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/external-secrets"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "secrets"
-            value = "docs/secrets-aws-ssm.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -798,6 +439,7 @@ unit "argocd_apps_fleet" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults = local.argocd_defaults
     dependencies = [
       "../aws-ssm-parameters",
       "external-secrets",
@@ -807,72 +449,28 @@ unit "argocd_apps_fleet" {
       "octelium-public",
       "platform-storage"
     ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "fleet"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    spec = {
+      syncPolicy = {
+        retry = {
+          backoff = {
+            maxDuration = "3m"
+          }
         }
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "fleet"
+      info = [
+        {
+          name  = "url"
+          value = "https://fleet.stinkyboi.com"
+        },
+        {
+          name  = "rollout"
+          value = "generated SSM secrets, External Secrets, MySQL, Redis, NFS, Istio, and public device ingress must be healthy before enrollment"
+        },
+        {
+          name  = "storage"
+          value = "clusters/homelab/apps/fleet/README.md"
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/fleet"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "3m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "url"
-            value = "https://fleet.stinkyboi.com"
-          },
-          {
-            name  = "rollout"
-            value = "generated SSM secrets, External Secrets, MySQL, Redis, NFS, Istio, and public device ingress must be healthy before enrollment"
-          },
-          {
-            name  = "storage"
-            value = "clusters/homelab/apps/fleet/README.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -883,56 +481,14 @@ unit "argocd_apps_github_actions_runner" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "github-actions-runner"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    spec = {
+      syncPolicy = {
+        automated = {
+          allowEmpty = true
         }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "github-actions-runner"
-        }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/github-actions-runner"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = true
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
+        syncOptions = ["ServerSideApply=true"]
       }
     }
   }
@@ -944,101 +500,57 @@ unit "argocd_apps_grafana" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "prometheus",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "grafana"
-        namespace = "argocd"
-        annotations = {
-          "argocd.argoproj.io/refresh" = "hard"
-        }
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    metadata = {
+      annotations = {
+        "argocd.argoproj.io/refresh" = "hard"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "monitoring"
-        }
-
-        sources = [
-          {
-            repoURL        = "https://grafana-community.github.io/helm-charts"
-            chart          = "grafana"
-            path           = "."
-            targetRevision = "12.11.2"
-            helm = {
-              releaseName = "grafana"
-              valueFiles  = ["$values/clusters/homelab/apps/grafana/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/grafana"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "alerting-reconcile"
-            value = "2026-05-30: tracking main again and bumped the pod annotation to reload alerting provisioning"
-          },
-          {
-            name  = "rollout"
-            value = "automated; verify Prometheus and NFS backup coverage before relying on dashboards"
-          },
-          {
-            name  = "ingress"
-            value = "private app access is through the Octelium service catalog with Istio SNI backend routing"
-          }
-        ]
+    }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "prometheus", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "monitoring"
       }
+      sources = [
+        {
+          repoURL        = "https://grafana-community.github.io/helm-charts"
+          chart          = "grafana"
+          path           = "."
+          targetRevision = "12.11.2"
+          helm = {
+            releaseName = "grafana"
+            valueFiles  = ["$values/clusters/homelab/apps/grafana/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/grafana"
+          targetRevision = local.target_revision
+        }
+      ]
+      info = [
+        {
+          name  = "alerting-reconcile"
+          value = "2026-05-30: tracking main again and bumped the pod annotation to reload alerting provisioning"
+        },
+        {
+          name  = "rollout"
+          value = "automated; verify Prometheus and NFS backup coverage before relying on dashboards"
+        },
+        {
+          name  = "ingress"
+          value = "private app access is through the Octelium service catalog with Istio SNI backend routing"
+        }
+      ]
     }
   }
 }
@@ -1049,67 +561,24 @@ unit "argocd_apps_grafana_alert_cleanup" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "istio"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "grafana-alert-cleanup"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "istio"]
+    spec = {
+      destination = {
+        namespace = "monitoring"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "monitoring"
+      syncPolicy = {
+        automated = {
+          allowEmpty = true
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/grafana-alert-cleanup"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = true
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "purpose"
-            value = "retirement tombstone that prunes the completed Grafana alert cleanup resources"
-          }
-        ]
+        syncOptions = ["ServerSideApply=true"]
       }
+      info = [
+        {
+          name  = "purpose"
+          value = "retirement tombstone that prunes the completed Grafana alert cleanup resources"
+        }
+      ]
     }
   }
 }
@@ -1120,208 +589,164 @@ unit "argocd_apps_istio" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = ["cert-manager"]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "istio"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "istio-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
+      sources = [
+        {
+          repoURL        = "https://istio-release.storage.googleapis.com/charts"
+          chart          = "base"
+          path           = "."
+          targetRevision = "1.27.3"
+          helm = {
+            releaseName          = "istio-base"
+            valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+            skipSchemaValidation = true
+          }
+        },
+        {
+          repoURL        = "https://istio-release.storage.googleapis.com/charts"
+          chart          = "istiod"
+          path           = "."
+          targetRevision = "1.27.3"
+          helm = {
+            releaseName = "istiod"
+            valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+            parameters = [
+              {
+                name  = "pilot.resources.requests.memory"
+                value = "512Mi"
+              }
+            ]
+            skipSchemaValidation = true
+          }
+        },
+        {
+          repoURL        = "https://istio-release.storage.googleapis.com/charts"
+          chart          = "cni"
+          path           = "."
+          targetRevision = "1.27.3"
+          helm = {
+            releaseName          = "istio-cni"
+            valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+            skipSchemaValidation = true
+          }
+        },
+        {
+          repoURL        = "https://istio-release.storage.googleapis.com/charts"
+          chart          = "ztunnel"
+          path           = "."
+          targetRevision = "1.27.3"
+          helm = {
+            releaseName = "ztunnel"
+            valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+            parameters = [
+              {
+                name  = "resources.requests.memory"
+                value = "256Mi"
+              },
+              {
+                name  = "env.IPV6_ENABLED"
+                value = "false"
+              },
+              {
+                name  = "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover"
+                value = "10-1-0-199-v1"
+              },
+              {
+                name  = "updateStrategy.rollingUpdate.maxSurge"
+                value = "0"
+              },
+              {
+                name  = "updateStrategy.rollingUpdate.maxUnavailable"
+                value = "1"
+              }
+            ]
+            skipSchemaValidation = true
+          }
+        },
+        {
+          repoURL        = "https://istio-release.storage.googleapis.com/charts"
+          chart          = "gateway"
+          path           = "."
+          targetRevision = "1.27.3"
+          helm = {
+            releaseName          = "istio-ingressgateway"
+            valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+            skipSchemaValidation = true
+          }
+        },
+        {
+          repoURL        = "https://istio-release.storage.googleapis.com/charts"
+          chart          = "gateway"
+          path           = "."
+          targetRevision = "1.27.3"
+          helm = {
+            releaseName          = "octelium-api-ingressgateway"
+            valueFiles           = ["$values/clusters/homelab/apps/istio/octelium-api-gateway-values.yaml"]
+            skipSchemaValidation = true
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/istio"
+          targetRevision = local.target_revision
+        }
+      ]
+      ignoreDifferences = [
+        {
+          group             = "admissionregistration.k8s.io"
+          kind              = "ValidatingWebhookConfiguration"
+          jqPathExpressions = [".webhooks[]?.clientConfig.caBundle", ".webhooks[]?.failurePolicy"]
+        },
+        {
+          group     = "apps"
+          kind      = "DaemonSet"
+          name      = "ztunnel"
           namespace = "istio-system"
-        }
-
-        sources = [
-          {
-            repoURL        = "https://istio-release.storage.googleapis.com/charts"
-            chart          = "base"
-            path           = "."
-            targetRevision = "1.27.3"
-            helm = {
-              releaseName          = "istio-base"
-              skipSchemaValidation = true
-              valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
-            }
-          },
-          {
-            repoURL        = "https://istio-release.storage.googleapis.com/charts"
-            chart          = "istiod"
-            path           = "."
-            targetRevision = "1.27.3"
-            helm = {
-              releaseName          = "istiod"
-              skipSchemaValidation = true
-              valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
-              parameters = [
-                {
-                  name  = "pilot.resources.requests.memory"
-                  value = "512Mi"
-                }
-              ]
-            }
-          },
-          {
-            repoURL        = "https://istio-release.storage.googleapis.com/charts"
-            chart          = "cni"
-            path           = "."
-            targetRevision = "1.27.3"
-            helm = {
-              releaseName          = "istio-cni"
-              skipSchemaValidation = true
-              valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
-            }
-          },
-          {
-            repoURL        = "https://istio-release.storage.googleapis.com/charts"
-            chart          = "ztunnel"
-            path           = "."
-            targetRevision = "1.27.3"
-            helm = {
-              releaseName          = "ztunnel"
-              skipSchemaValidation = true
-              valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
-              parameters = [
-                {
-                  name  = "resources.requests.memory"
-                  value = "256Mi"
-                },
-                {
-                  name  = "env.IPV6_ENABLED"
-                  value = "false"
-                },
-                {
-                  name  = "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover"
-                  value = "10-1-0-199-v1"
-                },
-                {
-                  name  = "updateStrategy.rollingUpdate.maxSurge"
-                  value = "0"
-                },
-                {
-                  name  = "updateStrategy.rollingUpdate.maxUnavailable"
-                  value = "1"
-                }
-              ]
-            }
-          },
-          {
-            repoURL        = "https://istio-release.storage.googleapis.com/charts"
-            chart          = "gateway"
-            path           = "."
-            targetRevision = "1.27.3"
-            helm = {
-              releaseName          = "istio-ingressgateway"
-              skipSchemaValidation = true
-              valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
-            }
-          },
-          {
-            repoURL        = "https://istio-release.storage.googleapis.com/charts"
-            chart          = "gateway"
-            path           = "."
-            targetRevision = "1.27.3"
-            helm = {
-              releaseName          = "octelium-api-ingressgateway"
-              skipSchemaValidation = true
-              valueFiles           = ["$values/clusters/homelab/apps/istio/octelium-api-gateway-values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/istio"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
+          jsonPointers = [
+            "/metadata/annotations",
+            "/spec/revisionHistoryLimit",
+            "/spec/template/metadata/annotations",
+            "/spec/template/spec/dnsPolicy",
+            "/spec/template/spec/restartPolicy",
+            "/spec/template/spec/schedulerName",
+            "/spec/template/spec/securityContext",
+            "/spec/template/spec/serviceAccount"
           ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+          jqPathExpressions = [
+            ".spec.template.spec.containers[]?.env[]?.valueFrom.fieldRef.apiVersion",
+            ".spec.template.spec.containers[]?.env[]?.valueFrom.resourceFieldRef.divisor",
+            ".spec.template.spec.containers[]?.imagePullPolicy",
+            ".spec.template.spec.containers[]?.readinessProbe.failureThreshold",
+            ".spec.template.spec.containers[]?.readinessProbe.periodSeconds",
+            ".spec.template.spec.containers[]?.readinessProbe.successThreshold",
+            ".spec.template.spec.containers[]?.readinessProbe.timeoutSeconds",
+            ".spec.template.spec.containers[]?.terminationMessagePath",
+            ".spec.template.spec.containers[]?.terminationMessagePolicy",
+            ".spec.template.spec.volumes[]?.configMap.defaultMode",
+            ".spec.template.spec.volumes[]?.projected.defaultMode"
+          ]
         }
-
-        ignoreDifferences = [
-          {
-            group = "admissionregistration.k8s.io"
-            kind  = "ValidatingWebhookConfiguration"
-            jqPathExpressions = [
-              ".webhooks[]?.clientConfig.caBundle",
-              ".webhooks[]?.failurePolicy"
-            ]
-          },
-          {
-            group     = "apps"
-            kind      = "DaemonSet"
-            name      = "ztunnel"
-            namespace = "istio-system"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/revisionHistoryLimit",
-              "/spec/template/metadata/annotations",
-              "/spec/template/spec/dnsPolicy",
-              "/spec/template/spec/restartPolicy",
-              "/spec/template/spec/schedulerName",
-              "/spec/template/spec/securityContext",
-              "/spec/template/spec/serviceAccount",
-            ]
-            jqPathExpressions = [
-              ".spec.template.spec.containers[]?.env[]?.valueFrom.fieldRef.apiVersion",
-              ".spec.template.spec.containers[]?.env[]?.valueFrom.resourceFieldRef.divisor",
-              ".spec.template.spec.containers[]?.imagePullPolicy",
-              ".spec.template.spec.containers[]?.readinessProbe.failureThreshold",
-              ".spec.template.spec.containers[]?.readinessProbe.periodSeconds",
-              ".spec.template.spec.containers[]?.readinessProbe.successThreshold",
-              ".spec.template.spec.containers[]?.readinessProbe.timeoutSeconds",
-              ".spec.template.spec.containers[]?.terminationMessagePath",
-              ".spec.template.spec.containers[]?.terminationMessagePolicy",
-              ".spec.template.spec.volumes[]?.configMap.defaultMode",
-              ".spec.template.spec.volumes[]?.projected.defaultMode",
-            ]
-          }
-        ]
-
-        info = [
-          {
-            name  = "ingress"
-            value = "docs/networking-tailnet-ingress.md"
-          }
-        ]
-      }
+      ]
+      info = [
+        {
+          name  = "ingress"
+          value = "docs/networking-tailnet-ingress.md"
+        }
+      ]
     }
   }
 }
@@ -1332,73 +757,54 @@ unit "argocd_apps_harbor" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage", "prometheus"]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-      metadata = {
-        name      = "harbor"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    spec = {
+      sources = [
+        {
+          repoURL        = "https://helm.goharbor.io"
+          chart          = "harbor"
+          path           = "."
+          targetRevision = "1.19.2"
+          helm = {
+            releaseName = "harbor"
+            valueFiles  = ["$values/clusters/homelab/apps/harbor/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/harbor"
+          targetRevision = local.target_revision
+        }
+      ]
+      syncPolicy = {
+        retry = {
+          limit = 5
+          backoff = {
+            factor      = 2
+            maxDuration = "3m"
+          }
         }
       }
-      spec = {
-        project = "homelab"
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "harbor"
+      info = [
+        {
+          name  = "url"
+          value = "https://harbor.stinkyboi.com"
+        },
+        {
+          name  = "runbook"
+          value = "clusters/homelab/apps/harbor/README.md"
         }
-        sources = [
-          {
-            repoURL        = "https://helm.goharbor.io"
-            chart          = "harbor"
-            path           = "."
-            targetRevision = "1.19.2"
-            helm = {
-              releaseName = "harbor"
-              valueFiles  = ["$values/clusters/homelab/apps/harbor/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/harbor"
-          }
-        ]
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = ["CreateNamespace=true", "ServerSideApply=true"]
-          retry = {
-            limit = 5
-            backoff = {
-              duration    = "30s"
-              factor      = 2
-              maxDuration = "3m"
-            }
-          }
-        }
-        info = [
-          { name = "url", value = "https://harbor.stinkyboi.com" },
-          { name = "runbook", value = "clusters/homelab/apps/harbor/README.md" }
-        ]
-      }
+      ]
     }
   }
 }
@@ -1409,92 +815,48 @@ unit "argocd_apps_kiali" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "istio",
-      "prometheus",
-      "grafana"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "kiali"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["istio", "prometheus", "grafana"]
+    spec = {
+      destination = {
+        namespace = "istio-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "istio-system"
+      sources = [
+        {
+          repoURL        = "https://kiali.org/helm-charts"
+          chart          = "kiali-operator"
+          path           = "."
+          targetRevision = "2.26.0"
+          helm = {
+            releaseName = "kiali-operator"
+            valueFiles  = ["$values/clusters/homelab/apps/kiali/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/kiali"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://kiali.org/helm-charts"
-            chart          = "kiali-operator"
-            path           = "."
-            targetRevision = "2.26.0"
-            helm = {
-              releaseName = "kiali-operator"
-              valueFiles  = ["$values/clusters/homelab/apps/kiali/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/kiali"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "ingress"
+          value = "private app access is through the Octelium service catalog"
+        },
+        {
+          name  = "auth"
+          value = "anonymous read-only; Octelium service-proxy access through Istio is allowlisted"
         }
-
-        info = [
-          {
-            name  = "ingress"
-            value = "private app access is through the Octelium service catalog"
-          },
-          {
-            name  = "auth"
-            value = "anonymous read-only; Octelium service-proxy access through Istio is allowlisted"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -1505,90 +867,44 @@ unit "argocd_apps_litellm" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "platform-storage",
-      "langfuse"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "litellm"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage", "langfuse"]
+    spec = {
+      destination = {
+        namespace = "ai"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "ai"
+      sources = [
+        {
+          repoURL        = "ghcr.io/berriai"
+          chart          = "litellm-helm"
+          path           = "."
+          targetRevision = "0.1.832"
+          helm = {
+            releaseName = "litellm"
+            valueFiles  = ["$values/clusters/homelab/apps/litellm/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/litellm"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "ghcr.io/berriai"
-            chart          = "litellm-helm"
-            path           = "."
-            targetRevision = "0.1.832"
-            helm = {
-              releaseName = "litellm"
-              valueFiles  = ["$values/clusters/homelab/apps/litellm/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/litellm"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify provider secrets and NFS backup coverage before exposing the gateway"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify provider secrets and NFS backup coverage before exposing the gateway"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -1599,6 +915,7 @@ unit "argocd_apps_langfuse" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults = local.argocd_defaults
     dependencies = [
       "../aws-ssm-parameters",
       "external-secrets",
@@ -1607,83 +924,39 @@ unit "argocd_apps_langfuse" {
       "platform-storage",
       "../langfuse-blob-storage"
     ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "langfuse"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    spec = {
+      sources = [
+        {
+          repoURL        = "ghcr.io/langfuse/langfuse-k8s/charts"
+          chart          = "langfuse"
+          path           = "."
+          targetRevision = "2.1.1"
+          helm = {
+            releaseName = "langfuse"
+            valueFiles  = ["$values/clusters/homelab/apps/langfuse/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/langfuse"
+          targetRevision = local.target_revision
         }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "langfuse"
+      ]
+      info = [
+        {
+          name  = "retention"
+          value = "single-replica pilot; raw event bodies expire from S3 after 30 days"
         }
-
-        sources = [
-          {
-            repoURL        = "ghcr.io/langfuse/langfuse-k8s/charts"
-            chart          = "langfuse"
-            path           = "."
-            targetRevision = "2.1.1"
-            helm = {
-              releaseName = "langfuse"
-              valueFiles  = ["$values/clusters/homelab/apps/langfuse/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/langfuse"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "retention"
-            value = "single-replica pilot; raw event bodies expire from S3 after 30 days"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -1694,85 +967,31 @@ unit "argocd_apps_media_postgres" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "media-postgres"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "media"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "media"
+      ignoreDifferences = [
+        {
+          group        = "apps"
+          kind         = "StatefulSet"
+          name         = "media-postgres"
+          namespace    = "media"
+          jsonPointers = ["/metadata/annotations", "/spec/volumeClaimTemplates"]
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/media-postgres"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; replace the SSM password placeholder and verify PostgreSQL readiness before syncing media apps"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
         }
-
-        ignoreDifferences = [
-          {
-            group     = "apps"
-            kind      = "StatefulSet"
-            name      = "media-postgres"
-            namespace = "media"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/volumeClaimTemplates"
-            ]
-          }
-        ]
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; replace the SSM password placeholder and verify PostgreSQL readiness before syncing media apps"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -1783,71 +1002,34 @@ unit "argocd_apps_metrics_server" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "metrics-server"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "kube-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "kube-system"
-        }
-
-        sources = [
-          {
-            chart          = "metrics-server"
-            repoURL        = "https://kubernetes-sigs.github.io/metrics-server/"
-            targetRevision = "3.13.1"
-            helm = {
-              releaseName = "metrics-server"
-              valuesObject = {
-                args = ["--kubelet-insecure-tls"]
-              }
-            }
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=false",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
+      sources = [
+        {
+          repoURL        = "https://kubernetes-sigs.github.io/metrics-server/"
+          chart          = "metrics-server"
+          targetRevision = "3.13.1"
+          helm = {
+            releaseName = "metrics-server"
+            valuesObject = {
+              args = ["--kubelet-insecure-tls"]
             }
           }
         }
-
-        info = [
-          {
-            name  = "purpose"
-            value = "provides metrics.k8s.io for HPA and kubectl top"
-          }
-        ]
+      ]
+      syncPolicy = {
+        syncOptions = ["CreateNamespace=false", "ServerSideApply=true"]
       }
+      info = [
+        {
+          name  = "purpose"
+          value = "provides metrics.k8s.io for HPA and kubectl top"
+        }
+      ]
     }
   }
 }
@@ -1858,98 +1040,59 @@ unit "argocd_apps_multica" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "litellm",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "multica"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "litellm", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "ai"
+      }
+      sources = [
+        {
+          repoURL        = "ghcr.io/multica-ai/charts"
+          chart          = "multica"
+          path           = "."
+          targetRevision = "0.4.29"
+          helm = {
+            releaseName = "multica"
+            valueFiles  = ["$values/clusters/homelab/apps/multica/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/multica"
+          targetRevision = local.target_revision
+        }
+      ]
+      syncPolicy = {
+        retry = {
+          backoff = {
+            maxDuration = "3m"
+          }
         }
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "ai"
+      info = [
+        {
+          name  = "url"
+          value = "https://multica.stinkyboi.com"
+        },
+        {
+          name  = "rollout"
+          value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, NFS, Istio, and Octelium are healthy"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
         }
-
-        sources = [
-          {
-            repoURL        = "ghcr.io/multica-ai/charts"
-            chart          = "multica"
-            path           = "."
-            targetRevision = "0.4.29"
-            helm = {
-              releaseName = "multica"
-              valueFiles  = ["$values/clusters/homelab/apps/multica/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/multica"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "3m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "url"
-            value = "https://multica.stinkyboi.com"
-          },
-          {
-            name  = "rollout"
-            value = "automated after generated SSM secrets, External Secrets, pgvector PostgreSQL, NFS, Istio, and Octelium are healthy"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -1960,79 +1103,30 @@ unit "argocd_apps_nofx" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "istio",
-      "octelium",
-      "litellm",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "nofx"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "istio", "octelium", "litellm", "platform-storage"]
+    spec = {
+      syncPolicy = {
+        retry = {
+          backoff = {
+            maxDuration = "3m"
+          }
         }
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "nofx"
+      info = [
+        {
+          name  = "url"
+          value = "https://nofx.stinkyboi.com"
+        },
+        {
+          name  = "rollout"
+          value = "automated after generated SSM secrets, External Secrets, NFS, Istio, and Octelium are healthy"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/nofx"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "3m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "url"
-            value = "https://nofx.stinkyboi.com"
-          },
-          {
-            name  = "rollout"
-            value = "automated after generated SSM secrets, External Secrets, NFS, Istio, and Octelium are healthy"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2043,90 +1137,44 @@ unit "argocd_apps_n8n" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "platform-storage",
-      "n8n-postgres"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "n8n"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage", "n8n-postgres"]
+    spec = {
+      destination = {
+        namespace = "automation"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "automation"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "n8n"
+            valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/n8n"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "n8n"
-              valueFiles  = ["$values/clusters/homelab/apps/n8n/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/n8n"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; preserve the instance encryption key on the n8n PVC and verify n8n-postgres plus NFS backup coverage before relying on automation history"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; preserve the instance encryption key on the n8n PVC and verify n8n-postgres plus NFS backup coverage before relying on automation history"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2137,99 +1185,47 @@ unit "argocd_apps_n8n_postgres" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "n8n-postgres"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "automation"
+      }
+      syncPolicy = {
+        managedNamespaceMetadata = {
+          labels = {
+            "app.kubernetes.io/name"                     = "automation"
+            "app.kubernetes.io/part-of"                  = "homelab"
+            "istio.io/dataplane-mode"                    = "ambient"
+            "pod-security.kubernetes.io/audit"           = "restricted"
+            "pod-security.kubernetes.io/audit-version"   = "latest"
+            "pod-security.kubernetes.io/enforce"         = "baseline"
+            "pod-security.kubernetes.io/enforce-version" = "latest"
+            "pod-security.kubernetes.io/warn"            = "restricted"
+            "pod-security.kubernetes.io/warn-version"    = "latest"
+          }
+          annotations = {}
         }
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "automation"
+      ignoreDifferences = [
+        {
+          group        = "apps"
+          kind         = "StatefulSet"
+          name         = "n8n-postgres"
+          namespace    = "automation"
+          jsonPointers = ["/metadata/annotations", "/spec/volumeClaimTemplates"]
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/n8n-postgres"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          managedNamespaceMetadata = {
-            annotations = {}
-            labels = {
-              "app.kubernetes.io/name"                     = "automation"
-              "app.kubernetes.io/part-of"                  = "homelab"
-              "istio.io/dataplane-mode"                    = "ambient"
-              "pod-security.kubernetes.io/enforce"         = "baseline"
-              "pod-security.kubernetes.io/enforce-version" = "latest"
-              "pod-security.kubernetes.io/audit"           = "restricted"
-              "pod-security.kubernetes.io/audit-version"   = "latest"
-              "pod-security.kubernetes.io/warn"            = "restricted"
-              "pod-security.kubernetes.io/warn-version"    = "latest"
-            }
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; replace the SSM password placeholders and verify PostgreSQL readiness before treating n8n as migrated"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
         }
-
-        ignoreDifferences = [
-          {
-            group     = "apps"
-            kind      = "StatefulSet"
-            name      = "n8n-postgres"
-            namespace = "automation"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/volumeClaimTemplates"
-            ]
-          }
-        ]
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; replace the SSM password placeholders and verify PostgreSQL readiness before treating n8n as migrated"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2240,80 +1236,30 @@ unit "argocd_apps_octelium" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "istio"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "octelium"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "istio"]
+    spec = {
+      destination = {
+        namespace = "octelium-client"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "octelium-client"
+      info = [
+        {
+          name  = "mode"
+          value = "Octelium service catalog is the homelab app access path; app FQDNs use private Istio SNI backend routes"
+        },
+        {
+          name  = "services"
+          value = "Serves the explicit homelab service catalog in docs/examples/octelium"
+        },
+        {
+          name  = "enterprise"
+          value = "Enterprise package octeliumee desired version 0.22.0 is adopted by the octelium-enterprise Argo CD Application"
+        },
+        {
+          name  = "state"
+          value = "Stateless connector plus in-cluster demo service"
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/octelium"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "mode"
-            value = "Octelium service catalog is the homelab app access path; app FQDNs use private Istio SNI backend routes"
-          },
-          {
-            name  = "services"
-            value = "Serves the explicit homelab service catalog in docs/examples/octelium"
-          },
-          {
-            name  = "enterprise"
-            value = "Enterprise package octeliumee desired version 0.22.0 is adopted by the octelium-enterprise Argo CD Application"
-          },
-          {
-            name  = "state"
-            value = "Stateless connector plus in-cluster demo service"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2324,69 +1270,24 @@ unit "argocd_apps_octelium_cluster" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "istio",
-      "platform-multus",
-      "octelium-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "octelium-cluster"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["istio", "platform-multus", "octelium-storage"]
+    spec = {
+      destination = {
+        namespace = "istio-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "istio-system"
+      syncPolicy = {
+        automated = {
+          prune = false
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/octelium-cluster"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = false
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=false",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "bootstrap"
-            value = "Run scripts/octelium-cluster-bootstrap.sh after platform-multus and octelium-storage are healthy"
-          }
-        ]
+        syncOptions = ["CreateNamespace=false", "ServerSideApply=true"]
       }
+      info = [
+        {
+          name  = "bootstrap"
+          value = "Run scripts/octelium-cluster-bootstrap.sh after platform-multus and octelium-storage are healthy"
+        }
+      ]
     }
   }
 }
@@ -2397,116 +1298,67 @@ unit "argocd_apps_octelium_enterprise" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "octelium-cluster",
-      "octelium-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "octelium-enterprise"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["octelium-cluster", "octelium-storage"]
+    spec = {
+      destination = {
+        namespace = "octelium"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
+      syncPolicy = {
+        syncOptions = ["CreateNamespace=false", "ServerSideApply=true", "RespectIgnoreDifferences=true"]
+      }
+      ignoreDifferences = [
+        {
+          group     = "apps"
+          kind      = "Deployment"
+          name      = "svc-console-octelium"
           namespace = "octelium"
-        }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/octelium-enterprise"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=false",
-            "ServerSideApply=true",
-            "RespectIgnoreDifferences=true"
+          jqPathExpressions = [
+            ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
           ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+        },
+        {
+          group     = "apps"
+          kind      = "Deployment"
+          name      = "svc-dirsync-octelium"
+          namespace = "octelium"
+          jqPathExpressions = [
+            ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+          ]
+        },
+        {
+          group     = "apps"
+          kind      = "Deployment"
+          name      = "svc-enterprise-octelium-api"
+          namespace = "octelium"
+          jqPathExpressions = [
+            ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+          ]
+        },
+        {
+          group     = "apps"
+          kind      = "Deployment"
+          name      = "svc-public-octelium"
+          namespace = "octelium"
+          jqPathExpressions = [
+            ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
+          ]
         }
-
-        ignoreDifferences = [
-          {
-            group     = "apps"
-            kind      = "Deployment"
-            name      = "svc-console-octelium"
-            namespace = "octelium"
-            jqPathExpressions = [
-              ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
-            ]
-          },
-          {
-            group     = "apps"
-            kind      = "Deployment"
-            name      = "svc-dirsync-octelium"
-            namespace = "octelium"
-            jqPathExpressions = [
-              ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
-            ]
-          },
-          {
-            group     = "apps"
-            kind      = "Deployment"
-            name      = "svc-enterprise-octelium-api"
-            namespace = "octelium"
-            jqPathExpressions = [
-              ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
-            ]
-          },
-          {
-            group     = "apps"
-            kind      = "Deployment"
-            name      = "svc-public-octelium"
-            namespace = "octelium"
-            jqPathExpressions = [
-              ".spec.template.spec.containers[] | select(.name == \"vigil\" or .name == \"managed\") | .image"
-            ]
-          }
-        ]
-
-        info = [
-          {
-            name  = "package"
-            value = "Octelium Enterprise package octeliumee 0.22.0"
-          },
-          {
-            name  = "ownership"
-            value = "Argo CD owns the package Kubernetes steady state after octops installation"
-          },
-          {
-            name  = "state"
-            value = "Enterprise stores use octelium-rscstore, octelium-logstore, and octelium-metricstore PVCs"
-          }
-        ]
-      }
+      ]
+      info = [
+        {
+          name  = "package"
+          value = "Octelium Enterprise package octeliumee 0.22.0"
+        },
+        {
+          name  = "ownership"
+          value = "Argo CD owns the package Kubernetes steady state after octops installation"
+        },
+        {
+          name  = "state"
+          value = "Enterprise stores use octelium-rscstore, octelium-logstore, and octelium-metricstore PVCs"
+        }
+      ]
     }
   }
 }
@@ -2517,63 +1369,8 @@ unit "argocd_apps_octelium_public" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "istio",
-      "octelium-cluster"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "octelium-public"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "octelium-public"
-        }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/octelium-public"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-      }
-    }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "istio", "octelium-cluster"]
   }
 }
 
@@ -2583,91 +1380,31 @@ unit "argocd_apps_octelium_storage" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "octelium-storage"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "platform-storage"]
+    spec = {
+      ignoreDifferences = [
+        {
+          group        = "apps"
+          kind         = "StatefulSet"
+          name         = "octelium-postgres"
+          namespace    = "octelium-storage"
+          jsonPointers = ["/metadata/annotations", "/spec/volumeClaimTemplates"]
+        },
+        {
+          group        = "apps"
+          kind         = "StatefulSet"
+          name         = "octelium-redis"
+          namespace    = "octelium-storage"
+          jsonPointers = ["/metadata/annotations", "/spec/volumeClaimTemplates"]
         }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "octelium-storage"
+      ]
+      info = [
+        {
+          name  = "state"
+          value = "PostgreSQL and Redis backing stores for octops init"
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/octelium-storage"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        ignoreDifferences = [
-          {
-            group     = "apps"
-            kind      = "StatefulSet"
-            name      = "octelium-postgres"
-            namespace = "octelium-storage"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/volumeClaimTemplates"
-            ]
-          },
-          {
-            group     = "apps"
-            kind      = "StatefulSet"
-            name      = "octelium-redis"
-            namespace = "octelium-storage"
-            jsonPointers = [
-              "/metadata/annotations",
-              "/spec/volumeClaimTemplates"
-            ]
-          }
-        ]
-
-        info = [
-          {
-            name  = "state"
-            value = "PostgreSQL and Redis backing stores for octops init"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2678,88 +1415,44 @@ unit "argocd_apps_octobot" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "cert-manager",
-      "istio",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "octobot"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["cert-manager", "istio", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "finance"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "finance"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "octobot"
+            valueFiles  = ["$values/clusters/homelab/apps/octobot/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/octobot"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "octobot"
-              valueFiles  = ["$values/clusters/homelab/apps/octobot/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/octobot"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "OctoBot UI targets octobot.homelab via Octelium; no exchange credentials, real-trading strategy, or autostart configuration are committed"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "OctoBot UI targets octobot.homelab via Octelium; no exchange credentials, real-trading strategy, or autostart configuration are committed"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2770,90 +1463,45 @@ unit "argocd_apps_openclaw" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio",
-      "litellm",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "openclaw"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio", "litellm", "platform-storage"]
+    spec = {
+      project = "homelab-workloads"
+      destination = {
+        namespace = "ai"
       }
-
-      spec = {
-        project = "homelab-workloads"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "ai"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "openclaw"
+            valueFiles  = ["$values/clusters/homelab/apps/openclaw/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/openclaw"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "openclaw"
-              valueFiles  = ["$values/clusters/homelab/apps/openclaw/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/openclaw"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify LiteLLM and NFS backup coverage before relying on runtime state"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify LiteLLM and NFS backup coverage before relying on runtime state"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -2864,74 +1512,36 @@ unit "argocd_apps_platform_crossplane" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "platform-crossplane"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "crossplane-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "crossplane-system"
-        }
-
-        sources = [
-          {
-            repoURL        = "https://charts.crossplane.io/stable"
-            chart          = "crossplane"
-            path           = "."
-            targetRevision = "2.3.3"
-            helm = {
-              releaseName = "crossplane"
-            }
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true",
-            "SkipDryRunOnMissingResource=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
+      sources = [
+        {
+          repoURL        = "https://charts.crossplane.io/stable"
+          chart          = "crossplane"
+          path           = "."
+          targetRevision = "2.3.3"
+          helm = {
+            releaseName = "crossplane"
           }
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "core only; add providers and credentials in purpose-specific changes"
-          },
-          {
-            name  = "docs"
-            value = "clusters/homelab/platform/crossplane/README.md"
-          }
-        ]
+      ]
+      syncPolicy = {
+        syncOptions = ["CreateNamespace=true", "ServerSideApply=true", "SkipDryRunOnMissingResource=true"]
       }
+      info = [
+        {
+          name  = "rollout"
+          value = "core only; add providers and credentials in purpose-specific changes"
+        },
+        {
+          name  = "docs"
+          value = "clusters/homelab/platform/crossplane/README.md"
+        }
+      ]
     }
   }
 }
@@ -2942,68 +1552,35 @@ unit "argocd_apps_platform_dns" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "platform-dns"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "kube-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "kube-system"
+      sources = [
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/platform/dns"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/platform/dns"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = false
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=false"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      syncPolicy = {
+        automated = {
+          prune = false
         }
-
-        info = [
-          {
-            name  = "dns"
-            value = "clusters/homelab/platform/dns/README.md"
-          },
-          {
-            name  = "prune"
-            value = "disabled because this app adopts all six bootstrap CoreDNS resources"
-          }
-        ]
+        syncOptions = ["CreateNamespace=false"]
       }
+      info = [
+        {
+          name  = "dns"
+          value = "clusters/homelab/platform/dns/README.md"
+        },
+        {
+          name  = "prune"
+          value = "disabled because this app adopts all six bootstrap CoreDNS resources"
+        }
+      ]
     }
   }
 }
@@ -3014,64 +1591,28 @@ unit "argocd_apps_platform_multus" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "platform-multus"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "kube-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "kube-system"
+      sources = [
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/platform/multus"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/platform/multus"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "platform"
-            value = "Talos-compatible Multus thick CNI for Octelium data-plane workloads"
-          }
-        ]
+      ]
+      syncPolicy = {
+        syncOptions = ["ServerSideApply=true"]
       }
+      info = [
+        {
+          name  = "platform"
+          value = "Talos-compatible Multus thick CNI for Octelium data-plane workloads"
+        }
+      ]
     }
   }
 }
@@ -3082,68 +1623,32 @@ unit "argocd_apps_platform_storage" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = []
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "platform-storage"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    spec = {
+      destination = {
+        namespace = "kube-system"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "kube-system"
+      sources = [
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/platform/storage"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/platform/storage"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=false"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify existing NFS provisioner and backup coverage before relying on PVCs"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
+      ]
+      syncPolicy = {
+        syncOptions = ["CreateNamespace=false"]
       }
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify existing NFS provisioner and backup coverage before relying on PVCs"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
+        }
+      ]
     }
   }
 }
@@ -3154,69 +1659,19 @@ unit "argocd_apps_policy_bot" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "cert-manager",
-      "istio"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "policy-bot"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "cert-manager", "istio"]
+    spec = {
+      project = "homelab-workloads"
+      destination = {
+        namespace = "automation"
       }
-
-      spec = {
-        project = "homelab-workloads"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "automation"
+      info = [
+        {
+          name  = "public-webhook"
+          value = "Policy Bot UI targets policy-bot.homelab via Octelium; /api/github/hook uses policy-bot-hook.stinkyboi.com through octelium-public"
         }
-
-        sources = [
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/policy-bot"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
-        }
-
-        info = [
-          {
-            name  = "public-webhook"
-            value = "Policy Bot UI targets policy-bot.homelab via Octelium; /api/github/hook uses policy-bot-hook.stinkyboi.com through octelium-public"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -3227,91 +1682,48 @@ unit "argocd_apps_prometheus" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "external-secrets",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "prometheus"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "monitoring"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "monitoring"
+      sources = [
+        {
+          repoURL        = "https://prometheus-community.github.io/helm-charts"
+          chart          = "kube-prometheus-stack"
+          path           = "."
+          targetRevision = "85.2.0"
+          helm = {
+            releaseName = "prometheus"
+            valueFiles  = ["$values/clusters/homelab/apps/prometheus/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/prometheus"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://prometheus-community.github.io/helm-charts"
-            chart          = "kube-prometheus-stack"
-            path           = "."
-            targetRevision = "85.2.0"
-            helm = {
-              releaseName = "prometheus"
-              valueFiles  = ["$values/clusters/homelab/apps/prometheus/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/prometheus"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify NFS backup coverage before relying on retained metrics"
+        },
+        {
+          name  = "storage"
+          value = "docs/storage-nfs.md"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify NFS backup coverage before relying on retained metrics"
-          },
-          {
-            name  = "storage"
-            value = "docs/storage-nfs.md"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -3322,89 +1734,45 @@ unit "argocd_apps_prowlarr" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "cert-manager",
-      "istio",
-      "media-postgres",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "prowlarr"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["cert-manager", "istio", "media-postgres", "platform-storage"]
+    spec = {
+      project = "homelab-workloads"
+      destination = {
+        namespace = "media"
       }
-
-      spec = {
-        project = "homelab-workloads"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "media"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "prowlarr"
+            valueFiles  = ["$values/clusters/homelab/apps/prowlarr/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/prowlarr"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "prowlarr"
-              valueFiles  = ["$values/clusters/homelab/apps/prowlarr/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/prowlarr"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; configure indexers and app integrations after first login, then verify NFS backup coverage"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; configure indexers and app integrations after first login, then verify NFS backup coverage"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -3415,91 +1783,44 @@ unit "argocd_apps_radarr" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "cert-manager",
-      "istio",
-      "deluge",
-      "media-postgres",
-      "prowlarr",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "radarr"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["cert-manager", "istio", "deluge", "media-postgres", "prowlarr", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "media"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "media"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "radarr"
+            valueFiles  = ["$values/clusters/homelab/apps/radarr/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/radarr"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "radarr"
-              valueFiles  = ["$values/clusters/homelab/apps/radarr/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/radarr"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -3510,91 +1831,44 @@ unit "argocd_apps_sonarr" {
   no_dot_terragrunt_stack = true
 
   values = {
-    dependencies = [
-      "cert-manager",
-      "istio",
-      "deluge",
-      "media-postgres",
-      "prowlarr",
-      "platform-storage"
-    ]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "sonarr"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
+    defaults     = local.argocd_defaults
+    dependencies = ["cert-manager", "istio", "deluge", "media-postgres", "prowlarr", "platform-storage"]
+    spec = {
+      destination = {
+        namespace = "media"
       }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "media"
+      sources = [
+        {
+          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+          chart          = "app-template"
+          path           = "."
+          targetRevision = "4.4.0"
+          helm = {
+            releaseName = "sonarr"
+            valueFiles  = ["$values/clusters/homelab/apps/sonarr/values.yaml"]
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
+          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/sonarr"
+          targetRevision = local.target_revision
         }
-
-        sources = [
-          {
-            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-            chart          = "app-template"
-            path           = "."
-            targetRevision = "4.4.0"
-            helm = {
-              releaseName = "sonarr"
-              valueFiles  = ["$values/clusters/homelab/apps/sonarr/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/sonarr"
-          }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
-          }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+      ]
+      info = [
+        {
+          name  = "rollout"
+          value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
         }
-
-        info = [
-          {
-            name  = "rollout"
-            value = "automated; verify Deluge, Prowlarr, and NFS backup coverage before relying on media automation"
-          }
-        ]
-      }
+      ]
     }
   }
 }
@@ -3605,77 +1879,35 @@ unit "argocd_apps_tailscale" {
   no_dot_terragrunt_stack = true
 
   values = {
+    defaults     = local.argocd_defaults
     dependencies = ["external-secrets"]
-    manifest = {
-      apiVersion = "argoproj.io/v1alpha1"
-      kind       = "Application"
-
-      metadata = {
-        name      = "tailscale"
-        namespace = "argocd"
-        labels = {
-          "app.kubernetes.io/managed-by" = "terragrunt"
-          "app.kubernetes.io/part-of"    = "homelab"
-        }
-      }
-
-      spec = {
-        project = "homelab"
-
-        destination = {
-          name      = ""
-          server    = "https://kubernetes.default.svc"
-          namespace = "tailscale"
-        }
-
-        sources = [
-          {
-            repoURL        = "https://pkgs.tailscale.com/helmcharts"
-            chart          = "tailscale-operator"
-            path           = "."
-            targetRevision = "1.102.3"
-            helm = {
-              releaseName = "tailscale-operator"
-              valueFiles  = ["$values/clusters/homelab/apps/tailscale/values.yaml"]
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            ref            = "values"
-            path           = "."
-            directory = {
-              include = ".argocd-values-ref-placeholder.yaml"
-            }
-          },
-          {
-            repoURL        = local.repo_url
-            targetRevision = local.target_revision
-            path           = "clusters/homelab/apps/tailscale"
+    spec = {
+      sources = [
+        {
+          repoURL        = "https://pkgs.tailscale.com/helmcharts"
+          chart          = "tailscale-operator"
+          path           = "."
+          targetRevision = "1.102.3"
+          helm = {
+            releaseName = "tailscale-operator"
+            valueFiles  = ["$values/clusters/homelab/apps/tailscale/values.yaml"]
           }
-        ]
-
-        syncPolicy = {
-          automated = {
-            allowEmpty = false
-            enabled    = true
-            prune      = true
-            selfHeal   = true
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "."
+          targetRevision = local.target_revision
+          ref            = "values"
+          directory = {
+            include = ".argocd-values-ref-placeholder.yaml"
           }
-          syncOptions = [
-            "CreateNamespace=true",
-            "ServerSideApply=true"
-          ]
-          retry = {
-            limit = "5"
-            backoff = {
-              duration    = "30s"
-              factor      = "2"
-              maxDuration = "2m"
-            }
-          }
+        },
+        {
+          repoURL        = local.repo_url
+          path           = "clusters/homelab/apps/tailscale"
+          targetRevision = local.target_revision
         }
-      }
+      ]
     }
   }
 }
