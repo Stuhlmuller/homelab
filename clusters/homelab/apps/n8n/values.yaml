@@ -86,6 +86,11 @@ controllers:
               secretKeyRef:
                 name: n8n-secrets
                 key: N8N_BOOTSTRAP_ENCRYPTION_KEY
+          CREDENTIALS_OVERWRITE_DATA:
+            valueFrom:
+              secretKeyRef:
+                name: n8n-secrets
+                key: CREDENTIALS_OVERWRITE_DATA
         command:
           - /bin/sh
           - -ec

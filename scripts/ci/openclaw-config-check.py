@@ -15,8 +15,6 @@ bootstrap = subprocess.check_output(
 gateway_version = subprocess.check_output(
     ["yq", "-r", '.controllers.openclaw.containers.app.image.tag', values], text=True,
 ).strip().split("@", 1)[0]
-installer = pathlib.Path("clusters/homelab/apps/openclaw/assistant/install-codex.py").read_text()
-assert f'VERSION = "{gateway_version}"' in installer
 assert f"backup_name=pre-{gateway_version}" in bootstrap
 marker = "OPENCLAW_CONFIG_MIGRATION"
 migration = bootstrap.split(f"<<'{marker}'\n", 1)[1].split(f"\n{marker}", 1)[0]
@@ -251,7 +249,7 @@ if entries:
 elif args == ["config", "unset", "hooks.token"]:
     del state["hooks"]["token"]
 elif args == ["assistant"]:
-    assert state["plugins"]["entries"]["codex"]["enabled"] is True
+    assert "codex" not in state["plugins"].get("entries", {})
     assert state["plugins"]["entries"]["memory-wiki"]["enabled"] is True
     assert state["plugins"]["entries"]["openrouter"]["enabled"] is True
     assert state["plugins"]["allow"] == ["discord", "openrouter"]
@@ -262,7 +260,7 @@ elif args not in (["config", "validate"], ["plugins", "enable", "discord", "--ac
 config.write_text(json.dumps(state))
 '''
 expected_events = ["batch:gateway.mode", "batch:hooks.enabled", "config unset hooks.token",
-                   "batch:hooks.token", "batch:plugins.entries.codex.enabled",
+                   "batch:hooks.token", "batch:plugins.entries.memory-wiki.enabled",
                    "assistant",
                    "config validate", "batch:agents.defaults.sandbox.mode",
                    "plugins enable discord --accept-capabilities", "verify_discord_plugin loaded",

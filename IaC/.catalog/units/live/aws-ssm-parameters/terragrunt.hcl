@@ -559,6 +559,14 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/n8n/litellm-token" = {
+      description = "n8n inference-only LiteLLM key with app attribution."
+      generated = {
+        length  = 48
+        prefix  = "sk-"
+        special = false
+      }
+    }
     "/homelab/n8n/postgres-admin-password" = {
       description = "n8n dedicated PostgreSQL admin password."
       generated = {

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "share": "disabled",
+  "enabled_providers": ["litellm"],
+  "model": "litellm/openrouter/free",
+  "small_model": "litellm/openrouter/free",
+  "provider": {
+    "litellm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Homelab LiteLLM",
+      "options": {
+        "baseURL": "http://litellm.ai.svc.cluster.local:4000/v1",
+        "apiKey": "{file:/run/multica-litellm/token}"
+      },
+      "models": {
+        "openrouter/free": {
+          "name": "OpenRouter Free (Langfuse)",
+          "tool_call": true,
+          "limit": {"context": 32768, "output": 4096}
+        }
+      }
+    }
+  }
+}

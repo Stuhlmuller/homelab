@@ -75,18 +75,13 @@ spec:
           args:
             - |
               curl --fail --location --retry 3 --max-time 180 \
-                https://github.com/openai/codex/releases/download/rust-v0.153.2/codex-x86_64-unknown-linux-musl.tar.gz -o /tmp/codex.tar.gz
-              echo 'e8cd1160071f725d2a10cab81073dd6818fc8b096372125d27ef6e66fdf0979e  /tmp/codex.tar.gz' | sha256sum --check --strict
-              tar -xzf /tmp/codex.tar.gz -C /tools
-              mv /tools/codex-x86_64-unknown-linux-musl /tools/codex
-              curl --fail --location --retry 3 --max-time 180 \
-                https://github.com/openai/codex/releases/download/rust-v0.153.2/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz -o /tmp/codex-host.tar.gz
-              echo '177a4507b9cc7f97f113ac034697b39f6a71a876a8bd508ff6d7f52f342ebe4a  /tmp/codex-host.tar.gz' | sha256sum --check --strict
-              tar -xzf /tmp/codex-host.tar.gz -C /tools
-              mv /tools/codex-code-mode-host-x86_64-unknown-linux-musl /tools/codex-code-mode-host
-              /tools/codex --version
-              mkdir -p /home/multica/.codex /home/multica/workspaces
-              cp /etc/multica-runtime/codex.toml /home/multica/.codex/config.toml
+                https://github.com/anomalyco/opencode/releases/download/v1.18.33/opencode-linux-x64.tar.gz -o /tmp/opencode.tar.gz
+              echo 'e546123213ae47909a4268692aa4b94950d011afe9cac9938753a2194f1c16d5  /tmp/opencode.tar.gz' | sha256sum --check --strict
+              tar -xzf /tmp/opencode.tar.gz -C /tools
+              /tools/opencode --version
+              mkdir -p /home/multica/.config/opencode
+              cp /etc/multica-runtime/opencode.json /home/multica/.config/opencode/opencode.json
+              mkdir -p /home/multica/workspaces
               python3 /etc/multica-runtime/bootstrap.py
           env:
             - name: HOME
@@ -163,12 +158,11 @@ spec:
               subPath: multica
               readOnly: true
             - name: tools
-              mountPath: /usr/local/bin/codex
-              subPath: codex
+              mountPath: /usr/local/bin/opencode
+              subPath: opencode
               readOnly: true
-            - name: tools
-              mountPath: /usr/local/bin/codex-code-mode-host
-              subPath: codex-code-mode-host
+            - name: model-key
+              mountPath: /run/multica-litellm
               readOnly: true
             - name: home
               mountPath: /home/multica
@@ -187,6 +181,12 @@ spec:
         - name: config
           configMap:
             name: multica-runtime-config
+        - name: model-key
+          secret:
+            secretName: multica-litellm
+            items:
+              - key: token
+                path: token
         - name: bootstrap-code
           secret:
             secretName: multica-backend-secrets

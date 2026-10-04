@@ -17,16 +17,19 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 settings = json.loads((source / "settings.json").read_text())
 runtime = (source.parent / "runtime.yaml").read_text()
-assert "model-key" not in runtime
+assert "model-key" in runtime
 assert "litellm-provider-keys" not in runtime
 assert """            - name: tools
               mountPath: /usr/local/bin/multica
               subPath: multica
               readOnly: true
 """ in runtime, "multica must be available on the agent task PATH"
-codex = (source / "codex.toml").read_text()
-assert 'forced_login_method = "chatgpt"' in codex
-assert "litellm" not in codex.lower()
+opencode = json.loads((source / "opencode.json").read_text())
+assert opencode["enabled_providers"] == ["litellm"]
+assert opencode["model"] == "litellm/openrouter/free"
+assert opencode["provider"]["litellm"]["options"]["baseURL"] == "http://litellm.ai.svc.cluster.local:4000/v1"
+assert opencode["provider"]["litellm"]["options"]["apiKey"] == "{file:/run/multica-litellm/token}"
+assert "codex" not in runtime.lower()
 
 with tempfile.TemporaryDirectory() as temporary:
     directory = Path(temporary) / "profile"

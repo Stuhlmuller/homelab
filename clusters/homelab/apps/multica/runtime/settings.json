@@ -3,7 +3,7 @@
   "server_url": "http://multica-backend.ai.svc.cluster.local:8080",
   "app_url": "https://multica.stinkyboi.com",
   "device_name": "multica-server",
-  "runtime_name": "Homelab Codex",
+  "runtime_name": "Homelab OpenCode",
   "workspaces_root": "/home/multica/workspaces",
   "max_concurrent_tasks": 1,
   "disable_auto_update": true,
