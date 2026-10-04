@@ -424,4 +424,8 @@ at zero, hooks Skip and scheduled backup suspended; it is not an authorized stop
 or sync operation. Public trust/issuer custody, named renewal/observer identities,
 signing and environment records remain HOME-66 inputs. Independent source closures
 apply only to their reviewed revisions; no integration or runtime acceptance is
-implied. QA's session-survival follow-up remains separately owned and unintegrated.
+implied. QA's session-survival follow-up #1174 at `3569689b` is now integrated
+unchanged with R1/R5 at `e8984313`; both deliveries retain their authors' commits.
+Only integration-status documentation differs from their automatic merged tree.
+HOME-66 input-dependent work stays parked; independent review of these fixed
+deliveries and the eventual integration remains an acceptance gate.

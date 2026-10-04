@@ -54,7 +54,13 @@ HOME-66 owns missing identities, environment records and trusted signing; depend
 R2/R3/R4 stay parked. No speculative execution adapter is added.
 Independent source closures apply only to reviewed `afa40cb3`, `a458b038` and
 `1acbe6c9`; they do not approve integration `8c666d4b` or this follow-up.
-QA #1174 `3569689be77196e3cf0b90af4d96d46d323ad6d4` is separate and not integrated.
+QA #1174 `3569689be77196e3cf0b90af4d96d46d323ad6d4` is now integrated with
+R1/R5 `e89843132bd7fc9a25cd9ba8b537906921ce5e33`, preserving both parents.
+The conflict-free merge changes no implementation beyond those deliveries;
+integration-only edits update documentation status. Session receipt controls are
+synthetic evidence contracts, not authenticated server proof. HOME-66 keeps
+I1/I2/I3/S1 blocked, A1 deferred, and R2/R3/environment-specific R4 parked.
+Neither fixed-delivery review nor prior tests approve this integration.
 
 ## Finite blocker table
 

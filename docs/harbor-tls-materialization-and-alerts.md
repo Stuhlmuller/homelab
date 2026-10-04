@@ -3,8 +3,9 @@
 HOLD merge and activation. This extends `8c666d4b` with input-independent R1/R5
 source only. HOME-62's issuer rejection, disabled workflow and custody hard stops
 remain binding. HOME-66 owns missing custody, environment and signing inputs.
-QA's session-survival files are untouched; #1174 requires separate integration
-and independent review. No source or test result establishes runtime acceptance.
+QA's session-survival delivery #1174 at `3569689b` is integrated unchanged;
+independent fixed-delivery and integration review remain required. No source or
+test result establishes runtime acceptance.
 
 ## Concrete materialization
 
