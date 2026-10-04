@@ -29,3 +29,22 @@ Collector stop touches no retained data. Wider TLS changes require client-impact
 and backup readiness evidence: a database dump plus same-NAS blobs is not proven
 disaster recovery. See [[architecture/storage-and-state]]. No real-data restore,
 provisioning, credential mutation, live test or operational acceptance is claimed.
+
+## Hook-safety and interrupted recovery correction
+
+The [selective-stop addendum](../../harbor-hook-safe-stop-and-readback.md) supersedes
+unrestricted sync of the replica-only overlay: full sync can run bootstrap and
+backup retention hooks. The offline request validator selects only the exporter
+Deployment with no prune/retry, after declared auto-sync pause and independent
+writer exclusion. Source-level hook exclusion is conditional; no installed
+controller or disposable runtime evidence exists. Never use ApplyOutOfSyncOnly
+as a substitute or automatically restore full auto-sync.
+
+The recovery planner retains UNKNOWN after process death, cancellation and lost
+create/mutation responses. It accepts null unknown IDs without adoption, and
+requires a later independent observer/audit/version/state correlation before
+preparing another exact-ID approval. All execution/resume/revocation flags remain
+false. HOME-62 custody and session termination remain unsupported prerequisites;
+no reusable management credential enters the general runner. SRE owns integration
+with its separate custody/reader/writer proposal and QA's unexecuted capability
+cases. No real operation or runtime hook exclusion is claimed.

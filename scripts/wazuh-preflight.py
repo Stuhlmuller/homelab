@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only Wazuh capacity gate. No credentials or workload logs are printed."""
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
@@ -8,6 +9,13 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 GIB = 1024 ** 3
+COLLECTOR_QUEUE = 2 * GIB
+IMAGE_PULL_SPARE = GIB
+# Central images include a >1Gi compressed indexer plus manager/dashboard.
+# Reserve cold download and unpacking space separately from retained PV data.
+CENTRAL_IMAGE_PULL_SPARE = 16 * GIB
+MIN_INODE_SPARE = 4096
+CENTRAL_DATA = 150 * GIB
 
 
 def read(*args):
@@ -42,6 +50,83 @@ def pod_request(spec):
         else:
             peak = max(peak, sidecars + size)
     return max(regular + sidecars, peak) + memory(spec.get("overhead", {}).get("memory", 0))
+
+
+def eviction_threshold(config, signal, capacity):
+    """Use effective kubelet thresholds, including stronger soft/reclaim settings."""
+    def quantity(value):
+        if not isinstance(value, str) or not value:
+            raise ValueError("Missing eviction threshold")
+        if value.endswith("%"):
+            percent = float(value[:-1])
+            if not 0 <= percent <= 100:
+                raise ValueError("Invalid eviction percentage")
+            return math.ceil(capacity * percent / 100)
+        return memory(value)
+
+    hard = config["evictionHard"][signal]
+    soft = (config.get("evictionSoft") or {}).get(signal, "0")
+    reclaim = (config.get("evictionMinimumReclaim") or {}).get(signal, "0")
+    return max(quantity(hard), quantity(soft)) + quantity(reclaim)
+
+
+def disk_checks(node, stats, config):
+    """Reserve collector growth without adding duplicate filesystem measurements."""
+    name = node["metadata"]["name"]
+    pressure_ok = any(c["type"] == "DiskPressure" and c["status"] == "False"
+                      for c in node["status"]["conditions"])
+    filesystems = {"nodefs": stats["node"]["fs"],
+                   "imagefs": stats["node"]["runtime"]["imageFs"]}
+    checks = []
+    for source, filesystem in filesystems.items():
+        if not isinstance(filesystem, dict):
+            raise ValueError("Missing filesystem statistics")
+        for field in ("capacityBytes", "availableBytes", "usedBytes", "inodes", "inodesFree"):
+            if type(filesystem.get(field)) is not int or filesystem[field] < 0:
+                raise ValueError("Missing or invalid filesystem statistics")
+        if (filesystem["capacityBytes"] <= 0 or filesystem["inodes"] <= 0
+                or filesystem["availableBytes"] > filesystem["capacityBytes"]
+                or filesystem["usedBytes"] > filesystem["capacityBytes"]
+                or filesystem["inodesFree"] > filesystem["inodes"]):
+            raise ValueError("Inconsistent filesystem statistics")
+        checks.append({
+            "source": source, "available": filesystem["availableBytes"],
+            "required": eviction_threshold(config, f"{source}.available", filesystem["capacityBytes"]),
+            "inodes_free": filesystem["inodesFree"],
+            # Operating room for collector databases/chunks and image extraction,
+            # not a guarantee that every future queue or image file will fit.
+            "inodes_required": (eviction_threshold(config, f"{source}.inodesFree", filesystem["inodes"])
+                                + max(MIN_INODE_SPARE, math.ceil(filesystem["inodes"] / 100))),
+        })
+
+    # Talos exposes nodefs/imagefs on EPHEMERAL. Equal capacities may also occur
+    # on separate filesystems: applying the combined budget to both is conservative.
+    # Do not sum free/used bytes or subtract image usage already reflected in free.
+    shared = filesystems["nodefs"]["capacityBytes"] == filesystems["imagefs"]["capacityBytes"]
+    queue = COLLECTOR_QUEUE * (2 if name == "acer" else 1)
+    data = CENTRAL_DATA if name == "acer" else 0
+    images = CENTRAL_IMAGE_PULL_SPARE if name == "acer" else IMAGE_PULL_SPARE
+    if shared:
+        required = max(c["required"] for c in checks) + data + queue + images
+        inodes_required = max(c["inodes_required"] for c in checks)
+        for check in checks:
+            check["required"] = required
+            check["inodes_required"] = inodes_required
+    else:
+        checks[0]["required"] += data + queue
+        checks[1]["required"] += images
+    # Retain the central startup floor, while reserving declared PV growth above
+    # eviction headroom even where percentage thresholds exceed that floor.
+    # HostPath queue use is absent from Pod ephemeral statistics; reserve full
+    # queue growth rather than credit unrelated Pod or image usage on reruns.
+    if name == "acer":
+        checks[0]["required"] = max(checks[0]["required"], 200 * GIB)
+        if shared:
+            checks[1]["required"] = max(checks[1]["required"], 200 * GIB)
+    for check in checks:
+        check["fits"] = (pressure_ok and check["available"] > check["required"]
+                         and check["inodes_free"] > check["inodes_required"])
+    return checks
 
 
 def main():
@@ -93,12 +178,15 @@ def main():
               f"incremental-Wazuh={incremental/GIB:.2f}Gi "
               f"{'PASS' if actual_fits else 'BLOCKED'}")
         failed |= not fits
-    stats = read("get", "--raw", "/api/v1/nodes/acer/proxy/stats/summary")
-    disk = stats["node"]["fs"]
-    available = disk["availableBytes"] / GIB
-    disk_ok = available >= 200
-    print(f"acer: disk-free={available:.1f}Gi required=200Gi {'PASS' if disk_ok else 'BLOCKED'}")
-    failed |= not disk_ok
+        config = read("get", "--raw", f"/api/v1/nodes/{name}/proxy/configz")["kubeletconfig"]
+        pressure = next((c["status"] for c in node["status"]["conditions"]
+                         if c["type"] == "DiskPressure"), "Unknown")
+        for check in disk_checks(node, stats, config):
+            print(f"{name}: {check['source']}-free={check['available']/GIB:.2f}Gi "
+                  f"required>{check['required']/GIB:.2f}Gi "
+                  f"inodes-free={check['inodes_free']} required>{check['inodes_required']} "
+                  f"DiskPressure={pressure} {'PASS' if check['fits'] else 'BLOCKED'}")
+            failed |= not check["fits"]
     if failed:
         raise SystemExit("Wazuh activation blocked by capacity; no changes made")
     print("Capacity gate passed. Verify certificates, secrets, sysctl, backups and ingestion separately.")
@@ -107,6 +195,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (subprocess.CalledProcessError, ValueError, KeyError) as error:
+    except (subprocess.CalledProcessError, ValueError, KeyError, TypeError) as error:
         print(f"Read-only preflight failed: {type(error).__name__}; no changes made", file=sys.stderr)
         raise SystemExit(1) from None

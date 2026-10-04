@@ -458,6 +458,20 @@ password remains in encrypted state and a private handoff file; it must be chang
 interactively before PSSO. Family identities beyond the pilot require explicit
 names and must not inherit console administrator access.
 
+The separate `operator/entra-stuhlmuller-domain` unit reads the existing
+`stuhlmuller.net` Entra domain as a non-default managed domain. It reads the
+Microsoft Graph TXT verification record, does not configure email, federation,
+or Google Workspace, and keeps verification disabled until the DNS owner has
+applied that record through its own reviewed declarative path. The companion
+`operator/entra-stuhlmuller-pilot-user` unit can then create only
+`rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
+non-default state, and the account receives no role, group, license, mailbox or
+Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
+email address alone is not an Entra password identity. Its guarded module is
+separate from the legacy AzureAD user module, and the AzureAD workflow selects
+that collection only when its own source or plan inputs change; an operator-only
+pilot change cannot trigger legacy-user reconciliation.
+
 ## Harbor registry identities
 
 [[../operations/harbor-oci|Harbor]] uses generated SSM secrets under

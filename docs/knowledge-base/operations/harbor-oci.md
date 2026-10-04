@@ -401,3 +401,14 @@ system issuer: the workflow/helper cannot execute even if acceptance flags chang
 Trust distribution, GitOps materialization, client/hook migration, actual proxy
 and Harbor-denial evidence, expiry/alerts, signing and HOME-3 remain HOLD gates.
 Recovery interruption limits are proposals, not authorized windows.
+
+
+### Fixed-proposal integration and finite gaps
+
+HOME-57 integrates QA #1172 and Recovery #1173 with the SRE custody correction
+and current main `ee07c797`. See [the finite blocker table](../../harbor-integration-blockers.md)
+for separate repository deliverables, unavailable identities/environment records,
+signing/full validation, authority and execution approvals, and runtime evidence.
+HOME-64 accepts preparation direction only; HOME-62's issuer rejection and all
+hard stops remain. Offline model/TLS results do not establish server, proxy,
+controller, effective IAM or recovery acceptance.

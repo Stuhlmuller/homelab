@@ -88,6 +88,7 @@ outside Argo CD's tracking and are unaffected by that setting.
 | Terragrunt unit templates | `IaC/.catalog/units` |
 | Generated Argo CD bootstrap unit | `IaC/bootstrap/argocd` |
 | Operator AWS apply-role policy | `IaC/operator/github-actions-role-policy` |
+| Entra custom-domain pilot | `IaC/operator/entra-stuhlmuller-domain` + `IaC/operator/entra-stuhlmuller-pilot-user` |
 | Generated Argo CD app registrations | `IaC/live/argocd-apps/<app>` |
 | Argo CD Application module | `IaC/modules/argocd-application-kubernetes` |
 | App desired state | `clusters/homelab/apps/<app>` |

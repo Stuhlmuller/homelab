@@ -14,11 +14,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+PILOTS = {
+    "stinkyboi": {
+        "unit": "IaC/live/azuread-applications/fleet-pilot-user",
+        "upn": "rodman.mac@stinkyboi.com",
+    },
+    "stuhlmuller": {
+        "unit": "IaC/operator/entra-stuhlmuller-pilot-user",
+        "upn": "rodman.mac@stuhlmuller.net",
+    },
+}
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--pilot", choices=sorted(PILOTS), default="stinkyboi")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    pilot = PILOTS[args.pilot]
     destination = args.output.expanduser().absolute()
     resolved = destination.resolve()
     if (resolved.is_relative_to(ROOT)
@@ -31,16 +44,16 @@ def main():
         with os.fdopen(descriptor, "w") as output:
             result = subprocess.run([
                 "terragrunt", "--log-disable", "--working-dir",
-                str(ROOT / "IaC/live/azuread-applications/fleet-pilot-user"), "output", "-json",
+                str(ROOT / pilot["unit"]), "output", "-json",
             ], capture_output=True, check=True, timeout=120)
             values = json.loads(result.stdout)
             upn = values["user_principal_name"]["value"]
             password = values["initial_password"]["value"]
-            if (upn != "rodman.mac@stinkyboi.com" or not isinstance(password, str)
+            if (upn != pilot["upn"] or not isinstance(password, str)
                     or len(password) < 32 or "\n" in password):
                 raise ValueError("Invalid private output")
             output.write(
-                "Fleet Mac pilot — native Microsoft Entra account\n\n"
+                f"Fleet Mac pilot ({args.pilot}) — native Microsoft Entra account\n\n"
                 f"Sign-in: {upn}\nInitial password: {password}\n\n"
                 "Use https://myaccount.microsoft.com and sign in with this work/school account.\n"
                 "Change the temporary password and complete required MFA before Platform SSO registration.\n"

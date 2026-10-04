@@ -56,16 +56,16 @@ class Gates(unittest.TestCase):
 
     def test_missing_environment_record_rejected(self):
         config = dict(self.config, execution_enabled=True, decision='HOME-99')
-        with patch.object(fixture.subprocess, 'check_output', side_effect=['a' * 40, '']):
-            with self.assertRaisesRegex(fixture.Failure, 'environment record'):
-                fixture.preflight(config, 'a' * 40)
+        with patch.object(fixture.subprocess, 'check_output', side_effect=['a' * 40, '']), \
+                self.assertRaisesRegex(fixture.Failure, 'environment record'):
+            fixture.preflight(config, 'a' * 40)
 
     def test_dirty_or_wrong_revision_rejected(self):
         config = dict(self.config, execution_enabled=True, decision='HOME-99')
         for head, dirty in (('b' * 40, ''), ('a' * 40, ' M config')):
-            with patch.object(fixture.subprocess, 'check_output', side_effect=[head, dirty]):
-                with self.assertRaisesRegex(fixture.Failure, 'clean revision'):
-                    fixture.preflight(config, 'a' * 40)
+            with patch.object(fixture.subprocess, 'check_output', side_effect=[head, dirty]), \
+                    self.assertRaisesRegex(fixture.Failure, 'clean revision'):
+                fixture.preflight(config, 'a' * 40)
 
     def test_environment_pin_and_disposal_window(self):
         lock = json.loads(fixture.LOCK.read_text())
@@ -82,9 +82,9 @@ class Gates(unittest.TestCase):
                            ('destroy_deadline_utc', '2000-01-01T00:00:00Z')):
             changed = copy.deepcopy(config)
             changed['environment_record'][key] = value
-            with patch.object(fixture.subprocess, 'check_output', side_effect=['a' * 40, '']):
-                with self.subTest(key=key), self.assertRaises(fixture.Failure):
-                    fixture.preflight(changed, 'a' * 40)
+            with patch.object(fixture.subprocess, 'check_output', side_effect=['a' * 40, '']), \
+                    self.subTest(key=key), self.assertRaises(fixture.Failure):
+                fixture.preflight(changed, 'a' * 40)
 
     def test_permissions_allow_reordering_but_not_extra_or_denied_grants(self):
         permissions = json.loads(fixture.PAYLOAD.read_text())['permissions']
@@ -124,6 +124,10 @@ class Gates(unittest.TestCase):
 
 
 class Denials(unittest.TestCase):
+    @staticmethod
+    def requested_value(before, after, _):
+        fixture.updated_record([before], [after], 1, {'v': 2})
+
     def test_only_real_authorization_status_and_code_accepted(self):
         for status in (200, 201, 301, 400, 401, 404, 405, 409, 500):
             with self.subTest(status=status), self.assertRaises(fixture.Failure):
@@ -143,8 +147,8 @@ class Denials(unittest.TestCase):
 
     def test_denial_and_positive_control_use_identical_request(self):
         suite = self.suite([response(403, {'errors': [{'code': 'FORBIDDEN'}]}), response(200)])
-        observer = MagicMock(side_effect=[{'v': 1}, {'v': 1}, {'v': 2}])
-        suite.mutation('update', 'PUT', '/target', {'v': 2}, observer, 200)
+        observer = MagicMock(side_effect=[{'id': 1, 'v': 1}, {'id': 1, 'v': 1}, {'id': 1, 'v': 2}])
+        suite.mutation('update', 'PUT', '/target', {'v': 2}, observer, 200, self.requested_value)
         first, second = suite.api.call_args_list
         self.assertEqual(first.args[:2], second.args[:2])
         self.assertEqual(first.args[3], second.args[3])
@@ -155,21 +159,91 @@ class Denials(unittest.TestCase):
     def test_denied_mutation_with_side_effect_fails_before_positive_control(self):
         suite = self.suite([response(403, {'errors': [{'code': 'FORBIDDEN'}]})])
         with self.assertRaisesRegex(fixture.Failure, 'changed fixture state'):
-            suite.mutation('update', 'PUT', '/target', {}, MagicMock(side_effect=[1, 2]), 200)
+            suite.mutation('update', 'PUT', '/target', {}, MagicMock(side_effect=[1, 2]), 200, self.requested_value)
         self.assertEqual(suite.api.call_count, 1)
         self.assertFalse(suite.results)
 
     def test_invalid_positive_control_cannot_pass(self):
         suite = self.suite([response(403, {'errors': [{'code': 'FORBIDDEN'}]}), response(400)])
         with self.assertRaises(fixture.Failure):
-            suite.mutation('update', 'PUT', '/target', {}, lambda: 1, 200)
+            suite.mutation('update', 'PUT', '/target', {}, lambda: 1, 200, self.requested_value)
         self.assertFalse(suite.results)
 
     def test_positive_status_without_state_change_cannot_pass(self):
         suite = self.suite([response(403, {'errors': [{'code': 'FORBIDDEN'}]}), response(200)])
-        with self.assertRaisesRegex(fixture.Failure, 'no observable change'):
-            suite.mutation('update', 'PUT', '/target', {}, lambda: 1, 200)
+        with self.assertRaisesRegex(fixture.Failure, 'Requested field absent'):
+            suite.mutation('update', 'PUT', '/target', {}, lambda: {'id': 1, 'v': 1}, 200, self.requested_value)
         self.assertFalse(suite.results)
+
+    def test_timestamp_only_repository_update_false_positive(self):
+        suite = self.suite([response(403, {'errors': [{'code': 'FORBIDDEN'}]}), response(200)])
+        before = [{'id': 7, 'description': 'old', 'update_time': 'before'}]
+        after = [{'id': 7, 'description': 'old', 'update_time': 'after'}]
+        with self.assertRaisesRegex(fixture.Failure, 'Requested field absent'):
+            suite.mutation('repo-update', 'PUT', '/repository', {'description': 'qa-mutated'},
+                           MagicMock(side_effect=[before, before, after]), 200,
+                           lambda old, new, _: fixture.updated_record(old, new, 7, {'description': 'qa-mutated'}))
+        self.assertFalse(suite.results)
+
+
+class Postconditions(unittest.TestCase):
+    def test_requested_description_and_only_target_timestamp_can_change(self):
+        before = [{'id': 1, 'description': 'old', 'update_time': 'a'}, {'id': 2, 'description': 'other'}]
+        after = [{'id': 1, 'description': 'new', 'update_time': 'b'}, {'id': 2, 'description': 'other'}]
+        fixture.updated_record(before, after, 1, {'description': 'new'})
+        for extra in ('description', 'update_time'):
+            corrupted = copy.deepcopy(after)
+            corrupted[1][extra] = 'unrelated change'
+            with self.assertRaisesRegex(fixture.Failure, 'Unrelated'):
+                fixture.updated_record(before, corrupted, 1, {'description': 'new'})
+
+    def test_target_identity_or_unrequested_field_change_fails(self):
+        before = [{'id': 1, 'description': 'old', 'name': 'original'}]
+        for after in ([{'id': 2, 'description': 'new', 'name': 'original'}],
+                      [{'id': 1, 'description': 'new', 'name': 'renamed'}]):
+            with self.assertRaises(fixture.Failure):
+                fixture.updated_record(before, after, 1, {'description': 'new'})
+
+    def test_exact_delete_and_unrelated_preservation(self):
+        before = [{'id': 1, 'digest': 'a'}, {'id': 2, 'digest': 'b'}]
+        fixture.deleted_record(before, [before[1]], 'a', key='digest')
+        for after in (before, [before[0]], [], [dict(before[1], update_time='changed')]):
+            with self.assertRaises(fixture.Failure):
+                fixture.deleted_record(before, after, 'a', key='digest')
+
+    def test_creation_requires_exact_name_id_and_no_unrelated_changes(self):
+        before = [{'id': 1, 'name': 'existing'}]
+        after = before + [{'id': 2, 'name': 'qa-new-tag'}]
+        fixture.created_record(before, after, {'name': 'qa-new-tag'}, 2)
+        for invalid in (before + [{'id': 2, 'name': 'wrong'}],
+                        [dict(before[0], update_time='changed'), after[1]],
+                        after + [{'id': 3, 'name': 'extra'}]):
+            with self.assertRaises(fixture.Failure):
+                fixture.created_record(before, invalid, {'name': 'qa-new-tag'}, 2)
+        with self.assertRaises(fixture.Failure):
+            fixture.created_record(before, after, {'name': 'qa-new-tag'}, 99)
+
+    def test_permission_postcondition_rejects_timestamp_only_or_extra_grants(self):
+        original = json.loads(fixture.PAYLOAD.read_text())['permissions']
+        requested = copy.deepcopy(original)
+        requested[0]['access'].append({'resource': 'repository', 'action': 'delete', 'effect': 'allow'})
+        before = [{'id': 1, 'permissions': original, 'duration': 30}]
+        for permissions in (original, requested + [original[0]]):
+            after = [{'id': 1, 'permissions': permissions, 'duration': 30, 'update_time': 'new'}]
+            with self.assertRaises(fixture.Failure):
+                fixture.updated_record(before, after, 1, {'permissions': requested})
+        fixture.updated_record(before, [{'id': 1, 'permissions': requested, 'duration': 30}],
+                               1, {'permissions': requested})
+
+    def test_created_robot_requires_actual_expiry_not_only_duration_field(self):
+        expected = dict(json.loads(fixture.PAYLOAD.read_text()), name='robot$qa-control-created')
+        created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        expires = int(created_at.timestamp()) + 30 * 86400
+        actual = dict(expected, id=9, creation_time=created_at.isoformat(), expires_at=expires)
+        fixture.created_robot([], [actual], expected, response(201, {'id': 9, 'expires_at': expires}))
+        with self.assertRaisesRegex(fixture.Failure, 'expiry differs'):
+            fixture.created_robot([], [dict(actual, expires_at=-1)], expected,
+                                  response(201, {'id': 9, 'expires_at': -1}))
 
 
 class Protocol(unittest.TestCase):
@@ -260,9 +334,11 @@ class RegistryStateMachine(unittest.TestCase):
 
         def pages(path, _credential):
             project = path.split('/')[2]
+            observed_tags = [{'id': i, 'name': tag, 'artifact_id': 1, 'repository_id': 10}
+                             for i, tag in enumerate(tags[project])]
             if path.endswith('/tags'):
-                return [{'id': i, 'name': tag} for i, tag in enumerate(tags[project])]
-            return [{'id': 1, 'digest': fixture.digest(manifest), 'tags': list(tags[project])}]
+                return observed_tags
+            return [{'id': 1, 'repository_id': 10, 'digest': fixture.digest(manifest), 'tags': observed_tags}]
 
         def registry(method, path, credential, repository, _action, body=None, _media=None):
             project = repository.split('/')[0]

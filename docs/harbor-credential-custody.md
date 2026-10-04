@@ -1,5 +1,10 @@
 # HOME-57 replacement custody and reader/writer boundaries
 
+
+The [fixed-proposal integration and finite blocker table](harbor-integration-blockers.md)
+records the #1172/#1173 integration, current-main revalidation and HOME-64's
+preparation-only decision. All execution and authority gates remain false.
+
 **Repository-only proposal; HOLD.** Based on integration
 `d141fa44a7f5992faf9904afa7f1441d2606f470`. HOME-62's rejected issuer remains
 hard-disabled in both workflow and helper. This document does not authorize a

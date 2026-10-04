@@ -65,6 +65,69 @@ def normalized_permissions(permissions):
     return sorted(result, key=lambda item: (item['kind'], item['namespace']))
 
 
+def indexed(records, key='id'):
+    require(isinstance(records, list), 'Invalid observation collection')
+    result = {item[key]: item for item in records}
+    require(len(result) == len(records), 'Duplicate observed identity')
+    return result
+
+
+def fields_equal(record, expected):
+    for key, value in expected.items():
+        actual = record.get(key)
+        if key == 'permissions':
+            require(normalized_permissions(actual) == normalized_permissions(value),
+                    'Requested permissions absent from readback')
+        else:
+            require(actual == value, 'Requested field absent from readback')
+
+
+def updated_record(before, after, identifier, expected, key='id'):
+    """Prove the specific mutation, preserving all unrelated observed records."""
+    old, new = indexed(before, key), indexed(after, key)
+    require(old.keys() == new.keys() and identifier in old, 'Updated identity set changed')
+    fields_equal(new[identifier], expected)
+    require(any((normalized_permissions(old[identifier][k]) != normalized_permissions(new[identifier][k]))
+                if k == 'permissions' else old[identifier].get(k) != new[identifier].get(k) for k in expected),
+            'Requested mutation was already present')
+    require({k: v for k, v in old.items() if k != identifier} ==
+            {k: v for k, v in new.items() if k != identifier}, 'Unrelated observed record changed')
+    # Only the target's update timestamp may change as a server side effect.
+    allowed = set(expected) | {'update_time'}
+    require({k: v for k, v in old[identifier].items() if k not in allowed} ==
+            {k: v for k, v in new[identifier].items() if k not in allowed},
+            'Unrequested target field changed')
+
+
+def deleted_record(before, after, identifier, key='id'):
+    old, new = indexed(before, key), indexed(after, key)
+    require(identifier in old and identifier not in new, 'Exact deleted identity remains or never existed')
+    require({k: v for k, v in old.items() if k != identifier} == new,
+            'Deletion changed unrelated observed records')
+
+
+def created_record(before, after, expected, identifier=None, key='id'):
+    old, new = indexed(before, key), indexed(after, key)
+    added = new.keys() - old.keys()
+    require(len(added) == 1 and old.keys() <= new.keys(), 'Creation identity delta is not exactly one')
+    actual_id = next(iter(added))
+    require(identifier is None or actual_id == identifier, 'Create response identity differs from readback')
+    require({k: new[k] for k in old} == old, 'Creation changed unrelated observed records')
+    fields_equal(new[actual_id], expected)
+    return actual_id
+
+
+def created_robot(before, after, expected, reply):
+    response = reply.json()
+    identifier = created_record(before, after, expected, response['id'])
+    actual = indexed(after)[identifier]
+    created = datetime.fromisoformat(actual['creation_time'].replace('Z', '+00:00'))
+    require(created.tzinfo is not None, 'Robot creation time missing timezone')
+    expires = int(created.timestamp()) + expected['duration'] * 86400
+    require(actual['expires_at'] == expires and response['expires_at'] == expires,
+            'Created robot expiry differs from requested lifetime')
+
+
 def fixture_image(index):
     """A deterministic, layer-free OCI image; no real workload or data."""
     config = canonical({'architecture': 'amd64', 'os': 'linux',
@@ -363,14 +426,14 @@ class Suite:
             denied(self.api('GET', path, self.robot))
             self.record('admin-read-' + path[1:])
 
-    def mutation(self, name, method, path, body, observe, positive_status):
+    def mutation(self, name, method, path, body, observe, positive_status, postcondition):
         """Denied request first, identical authorized request second on same target."""
-        before = observe()
+        before = copy.deepcopy(observe())
         self.identity_control()
         denied(self.api(method, path, self.robot, body))
         require(observe() == before, 'Denied mutation changed fixture state')
-        expect(self.api(method, path, self.admin, body), positive_status)
-        require(observe() != before, 'Positive control made no observable change')
+        control = expect(self.api(method, path, self.admin, body), positive_status)
+        postcondition(before, observe(), control)
         self.record(name)
 
     def write_cases(self):
@@ -378,22 +441,34 @@ class Suite:
             base = f'/projects/{project}/repositories/'
             # Dedicated targets ensure deletes cannot invalidate later cases.
             path = base + 'page-000'
+            repository_id = self.admin_json(path)['id']
             self.mutation(project + '-repository-update', 'PUT', path,
-                          {'description': 'qa-mutated'}, lambda: self.admin_json(path), 200)
+                          {'description': 'qa-mutated'},
+                          lambda project=project: self.pages(f'/projects/{project}/repositories', self.admin), 200,
+                          lambda old, new, _, repository_id=repository_id: updated_record(old, new, repository_id, {'description': 'qa-mutated'}))
             path = base + 'page-001/artifacts/' + self.digests[project + '/page-001'] + '/tags'
+            artifact = self.admin_json(path.removesuffix('/tags'))
             self.mutation(project + '-tag-create', 'POST', path, {'name': 'qa-new-tag'},
-                          lambda: self.pages(path, self.admin), 201)
+                          lambda path=path: self.pages(path, self.admin), 201,
+                          lambda old, new, _, artifact=artifact: created_record(old, new, {
+                              'name': 'qa-new-tag', 'artifact_id': artifact['id'],
+                              'repository_id': artifact['repository_id']}))
             path = base + 'page-002/artifacts/' + self.digests[project + '/page-002']
             inventory = base + 'page-002/artifacts'
             self.mutation(project + '-artifact-delete', 'DELETE', path, None,
-                          lambda: self.pages(inventory, self.admin), 200)
+                          lambda inventory=inventory: self.pages(inventory, self.admin), 200,
+                          lambda old, new, _, project=project: deleted_record(old, new, self.digests[project + '/page-002'], key='digest'))
             path = base + 'page-003'
+            repository_id = self.admin_json(path)['id']
             self.mutation(project + '-repository-delete', 'DELETE', path, None,
-                          lambda: self.pages(f'/projects/{project}/repositories', self.admin), 200)
+                          lambda project=project: self.pages(f'/projects/{project}/repositories', self.admin), 200,
+                          lambda old, new, _, repository_id=repository_id: deleted_record(old, new, repository_id))
         body = validate_config(self.config)
         body['name'] = 'qa-control-created'
+        expected_robot = dict(body, name='robot$qa-control-created')
         self.mutation('robot-create', 'POST', '/robots', body,
-                      lambda: self.pages('/robots', self.admin), 201)
+                      lambda: self.pages('/robots', self.admin), 201,
+                      lambda old, new, result: created_robot(old, new, expected_robot, result))
         other = next(r for r in self.pages('/robots', self.admin) if r['name'] == 'robot$qa-control-created')
         # Test other-robot expansion first; self-expansion last, then restore scope.
         for identifier in (other['id'], self.robot_id):
@@ -401,18 +476,31 @@ class Suite:
             original = self.admin_json(path)
             body = {k: copy.deepcopy(original[k]) for k in ('name', 'description', 'level', 'disable', 'duration', 'permissions')}
             body['permissions'][0]['access'].append({'resource': 'repository', 'action': 'delete', 'effect': 'allow'})
+            expected_permissions = copy.deepcopy(body['permissions'])
             self.mutation('robot-expand-' + ('self' if identifier == self.robot_id else 'other'),
-                          'PUT', path, body, lambda: self.admin_json(path), 200)
+                          'PUT', path, body, lambda: self.pages('/robots', self.admin), 200,
+                          lambda old, new, _, identifier=identifier, permissions=expected_permissions:
+                              updated_record(old, new, identifier, {'permissions': permissions}))
             restore = {k: original[k] for k in body}
+            before_restore = self.pages('/robots', self.admin)
             expect(self.api('PUT', path, self.admin, restore), 200)
-            require(normalized_permissions(self.admin_json(path)['permissions']) ==
-                    normalized_permissions(original['permissions']), 'Scope restore failed')
+            updated_record(before_restore, self.pages('/robots', self.admin), identifier,
+                           {'permissions': original['permissions']})
         original = self.admin_json('/configurations')['project_creation_restriction']['value']
         changed = 'adminonly' if original != 'adminonly' else 'everyone'
+        def configuration_postcondition(old, new, _):
+            expected = copy.deepcopy(old)
+            expected['project_creation_restriction']['value'] = changed
+            require(old['project_creation_restriction']['value'] != changed and new == expected,
+                    'Configuration requested value absent or unrelated configuration changed')
+
         self.mutation('configuration-update', 'PUT', '/configurations',
                       {'project_creation_restriction': changed},
-                      lambda: self.admin_json('/configurations')['project_creation_restriction']['value'], 200)
+                      lambda: self.admin_json('/configurations'), 200, configuration_postcondition)
+        before_restore = self.admin_json('/configurations')
         expect(self.api('PUT', '/configurations', self.admin, {'project_creation_restriction': original}), 200)
+        before_restore['project_creation_restriction']['value'] = original
+        require(self.admin_json('/configurations') == before_restore, 'Configuration restore mismatch')
 
     def registry_cases(self):
         for project in ('homelab', 'mirror'):
@@ -433,13 +521,20 @@ class Suite:
                 self.record(project + '-' + kind + '-pull')
             inventory = f'/projects/{project}/repositories/{encoded("nested/seed")}/artifacts'
             before = self.pages(inventory, self.admin)
+            tag_path = inventory + '/' + digest(manifest) + '/tags'
+            before_tags = self.pages(tag_path, self.admin)
             self.identity_control()
             path = f'/v2/{repository}/manifests/qa-denied'
             denied(self.registry('PUT', path, self.robot, repository, 'pull,push', manifest), registry=True)
             require(self.pages(inventory, self.admin) == before, 'Denied manifest changed inventory')
             expect(self.registry('PUT', path, self.admin, repository, 'pull,push', manifest), 201)
-            tags = self.pages(inventory + '/' + digest(manifest) + '/tags', self.admin)
-            require(any(t['name'] == 'qa-denied' for t in tags), 'Manifest positive control missing tag')
+            tags = self.pages(tag_path, self.admin)
+            after = self.pages(inventory, self.admin)
+            target = next(a for a in after if a['digest'] == digest(manifest))
+            created_record(before_tags, tags, {'name': 'qa-denied', 'artifact_id': target['id'],
+                                               'repository_id': target['repository_id']})
+            require(indexed(target['tags']) == indexed(tags), 'Artifact summary and tag readback disagree')
+            updated_record(before, after, digest(manifest), {'tags': target['tags']}, key='digest')
             self.record(project + '-manifest-push')
             path = f'/v2/{repository}/blobs/uploads/'
             before_upload = self.pages(inventory, self.admin)

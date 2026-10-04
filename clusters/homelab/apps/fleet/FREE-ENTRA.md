@@ -121,15 +121,29 @@ No official assurance was found for native Password PSSO with this invited-MSA
 identity; that path is unverified, not a reproduced login failure. Preserve the
 owner unchanged for tenant administration and separately authorized console SAML.
 
-The user selected `rodman.mac@stinkyboi.com` as the new internal cloud-only pilot
-identity. The [family-user module](../../../../IaC/modules/azuread-family-user/README.md)
-and `IaC/live/azuread-applications/fleet-pilot-user` create it without directory
-roles, groups, console assignment or paid service licenses. This does not create
-a mailbox or a new local Mac account. The temporary password is generated into
-encrypted state and delivered privately; the user must replace it interactively
-before PSSO registration. Future applies ignore password changes, preserving the
-user's permanent credential. Other family members need their own organizational
-identity and registration; do not share the pilot credential.
+The earlier `rodman.mac@stinkyboi.com` cloud-only pilot remains unchanged. It is
+not part of the `stuhlmuller.net` workflow below, and this runbook must not plan
+or apply it. The selected pilot for this Mac is the isolated account documented
+in the next section.
+
+### `stuhlmuller.net` Google Workspace pilot
+
+`stuhlmuller.net` remains a Google Workspace domain. The Entra operator unit
+reads its existing, non-default managed domain and returns a Microsoft TXT
+ownership record. That record is additional DNS data: preserve Google MX,
+existing SPF, DKIM and DMARC, and do not enable Microsoft mail services,
+Google SSO, Entra federation, directory-wide assignment, or automatic user
+provisioning. Adding or verifying the domain neither converts existing Google
+users nor forces them through Entra.
+
+After a separate DNS-owner GitOps change publishes the exact TXT record and the
+domain is verified, `IaC/operator/entra-stuhlmuller-pilot-user` creates only
+`rodman.mac@stuhlmuller.net`. It is a cloud-only Entra password identity for
+this Mac's PSSO pilot, not a mailbox, Google account, Fleet administrator or
+replacement for `rodman@stuhlmuller.net` recovery access. The existing
+`rodman.mac@stinkyboi.com` pilot remains unchanged. Creating any additional
+family pilot requires another explicit reviewed user unit; no domain-wide rule
+enrolls or redirects anyone.
 
 Record FileVault and secure-token status without recording recovery material.
 The user must retain their current local password and existing recovery access.
@@ -164,9 +178,9 @@ records. Preserve access and inspect registration before any cleanup.
 
 ## User action after preparation
 
-1. After the reviewed identity apply and private credential handoff, sign in to
-   [Microsoft My Account](https://myaccount.microsoft.com/) as
-   `rodman.mac@stinkyboi.com`. Replace the temporary password and complete the
+1. After the reviewed `stuhlmuller.net` pilot identity apply and private
+   credential handoff, sign in to [Microsoft My Account](https://myaccount.microsoft.com/)
+   as `rodman.mac@stuhlmuller.net`. Replace the temporary password and complete the
    tenant's required security-information registration. PSSO cannot synchronize
    a temporary password requiring change. Do not alter the existing owner account.
 2. Install the [official Microsoft Company Portal package](https://go.microsoft.com/fwlink/?linkid=853070).
@@ -262,10 +276,17 @@ apply those exact plans after protected merge:
 ```sh
 nix develop --command bash -c 'cd IaC && terragrunt stack generate'
 nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fleet plan -out /tmp/fleet-entra-saml.plan
-nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fleet-pilot-user plan -out /tmp/fleet-entra-user.plan
 nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fleet apply /tmp/fleet-entra-saml.plan
-nix develop --command terragrunt --working-dir IaC/live/azuread-applications/fleet-pilot-user apply /tmp/fleet-entra-user.plan
 ```
+
+For the `stuhlmuller.net` pilot, first follow the two-stage
+[custom-domain operator module](../../../../IaC/modules/entra-domain-verification/README.md):
+read the existing domain with verification disabled, publish its exact returned
+TXT through the DNS owner's reviewed code path, then enable verification in a
+separate reviewed commit. Only after its `Managed`, verified, non-default status
+is confirmed may the operator plan and apply
+`IaC/operator/entra-stuhlmuller-pilot-user`. Do not add a DNS record manually
+or enable a domain-wide Entra/Google SSO setting to shortcut this sequence.
 
 Treat plans, plan JSON, logs and credential outputs as private. Set `umask 077`
 inside the Nix shell when saving artifacts. Never attach them to a public PR.
@@ -284,7 +305,7 @@ nix develop --command python3 -I scripts/fleet-free-setup.py console-sso --execu
 python3 -I scripts/fleet-free-setup.py reporting --execute
 python3 -I scripts/fleet-free-setup.py mac-pilot --execute
 python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --execute
-nix develop --command python3 -I scripts/fleet-entra-pilot-credentials.py --output <PRIVATE_FILE_OUTSIDE_REPO>
+nix develop --command python3 -I scripts/fleet-entra-pilot-credentials.py --pilot stuhlmuller --output <PRIVATE_FILE_OUTSIDE_REPO>
 ```
 
 Omit `--execute` to preview without reading credentials or contacting APIs.
