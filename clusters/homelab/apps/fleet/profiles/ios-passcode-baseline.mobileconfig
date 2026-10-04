@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadDescription</key>
+			<string>Require a non-simple passcode of at least 6 characters, allow numeric passcodes, lock after at most 5 minutes of inactivity, and require the passcode immediately.</string>
+			<key>PayloadDisplayName</key>
+			<string>iPhone and iPad passcode</string>
+			<key>PayloadIdentifier</key>
+			<string>com.stinkyboi.fleet.ios.passcode-baseline.passcode</string>
+			<key>PayloadType</key>
+			<string>com.apple.mobiledevice.passwordpolicy</string>
+			<key>PayloadUUID</key>
+			<string>6B2DEC33-4309-5CFC-87D5-558A2BA4B61F</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>allowSimple</key>
+			<false/>
+			<key>forcePIN</key>
+			<true/>
+			<key>maxGracePeriod</key>
+			<integer>0</integer>
+			<key>maxInactivity</key>
+			<integer>5</integer>
+			<key>minLength</key>
+			<integer>6</integer>
+			<key>requireAlphanumeric</key>
+			<false/>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Family iPhone and iPad passcode baseline. No scheduled passcode expiry, passcode history, or failed-attempt erase threshold is configured.</string>
+	<key>PayloadDisplayName</key>
+	<string>Family iPhone passcode baseline</string>
+	<key>PayloadIdentifier</key>
+	<string>com.stinkyboi.fleet.ios.passcode-baseline</string>
+	<key>PayloadOrganization</key>
+	<string>Stinkyboi homelab</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>38372011-9FED-5383-9ED9-E9F876A8F42C</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+	<key>TargetDeviceType</key>
+	<integer>1</integer>
+</dict>
+</plist>

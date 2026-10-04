@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>PayloadDescription</key>
+			<string>Require a non-simple password of at least 8 characters, lock after at most 5 minutes of inactivity, and require the password immediately.</string>
+			<key>PayloadDisplayName</key>
+			<string>Mac password and screen lock</string>
+			<key>PayloadIdentifier</key>
+			<string>com.stinkyboi.fleet.macos.security-baseline.passcode</string>
+			<key>PayloadType</key>
+			<string>com.apple.mobiledevice.passwordpolicy</string>
+			<key>PayloadUUID</key>
+			<string>FCB90158-7055-518C-92D2-BFD7A312D5F5</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>allowSimple</key>
+			<false/>
+			<key>changeAtNextAuth</key>
+			<false/>
+			<key>forcePIN</key>
+			<true/>
+			<key>maxGracePeriod</key>
+			<integer>0</integer>
+			<key>maxInactivity</key>
+			<integer>5</integer>
+			<key>minLength</key>
+			<integer>8</integer>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Family Mac password and screen-lock baseline compatible with Microsoft Entra password synchronization. No scheduled password expiry, forced rotation, or failed-attempt threshold is configured.</string>
+	<key>PayloadDisplayName</key>
+	<string>Family Mac security baseline</string>
+	<key>PayloadIdentifier</key>
+	<string>com.stinkyboi.fleet.macos.security-baseline</string>
+	<key>PayloadOrganization</key>
+	<string>Stinkyboi homelab</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>F9764F5D-1295-52A0-AED4-2EBCE7E373B5</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+	<key>TargetDeviceType</key>
+	<integer>5</integer>
+</dict>
+</plist>

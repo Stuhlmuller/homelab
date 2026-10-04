@@ -956,6 +956,17 @@ See [the operator path](../../octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
 
+The [Free Entra acceptance checklist](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
+adds separate gates for Microsoft Password Platform SSO and console SAML. The
+profile operator is dry-run by default; its Fleet API validation uses
+`configuration_profiles/batch?dry_run=true`, without replacing global profiles.
+Require exact local Mac identity, correct platform-specific profile UUIDs,
+acknowledged installation, retained pre-existing profiles, and session revocation.
+The Entra app/user units require focused encrypted plans before protected apply.
+Browser SAML identity, device/user registration, actual Mac password sync,
+offline login, and FileVault unlock must each be verified independently. Record
+failed versus untested checks explicitly; Argo health is not their acceptance.
+
 Fleet adds bootstrap API regression tests for closed first-admin setup,
 administrator identity validation, token revocation and credential redaction.
 Backup tests cover dump and checksum failures, atomic publication, collision

@@ -32,6 +32,16 @@ blocks public first-admin setup. MySQL, Redis and nightly MySQL backups use
 retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md).
 
+Fleet's [Free Entra setup](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
+separates native Microsoft Password Platform SSO from console SAML. Company
+Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
+script delivers the initial Mac profiles with host-scoped commands, preserving
+other devices and profiles; this is not continuous managed-profile assignment.
+The console enterprise app permits only an individually assigned, precreated
+administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
+Entra device-compliance integration is enabled. iOS uses MDM inventory/security
+evidence; Fleet 4.92.2 SQL policies support macOS/Linux, not iOS.
+
 | App                     | Kind                      | Namespace               | GitOps path                                   | Terragrunt path                              | Depends on                                                  |
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/live/argocd-apps/platform-dns`          | Argo CD bootstrap                                           |

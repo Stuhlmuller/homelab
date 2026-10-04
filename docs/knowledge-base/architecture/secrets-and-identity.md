@@ -421,6 +421,35 @@ verifies the human-access policy. Existing operator credentials stay private;
 the temporary native transport changes no saved host or client settings.
 See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
 
+## Fleet Free identity boundaries
+
+See the [Free Entra runbook](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+Native Microsoft Password Platform SSO uses Company Portal's extension and each
+person's Entra account. It preserves the existing local Mac account; no Fleet
+Premium password-sync or Intune enrollment is configured. Registration alone
+does not establish management or compliance. Password, offline login and
+FileVault acceptance require interactive tests.
+
+Console SAML is a separate `azuread-applications/fleet` Terragrunt unit. Its
+single-tenant enterprise application requires individual assignment, selects a
+Microsoft-generated signing certificate declaratively, and exposes only sensitive
+runtime metadata outputs. The initial Fleet administrator remains a recovery
+account; only the authorized Entra identity is precreated as an SSO administrator.
+JIT/SCIM provisioning stays disabled. The public native-client route continues
+without Octelium redirects; Fleet authenticates administrative requests.
+
+Read-only inspection found Entra Free and enabled Security Defaults. The existing
+tenant owner is an external Microsoft-account member, not an internal cloud
+password identity. Preserve it; use the separately authorized native pilot
+account for Mac Password SSO. Do not infer password support from `UserType=Member`
+alone, weaken MFA, or convert/reset the existing tenant administrator.
+The `azuread-applications/fleet-pilot-user` unit stays in the existing AzureAD
+CI collection despite owning a user. It grants no role, group or license, protects
+against destruction, and ignores later password changes. Its generated initial
+password remains in encrypted state and a private handoff file; it must be changed
+interactively before PSSO. Family identities beyond the pilot require explicit
+names and must not inherit console administrator access.
+
 ## Harbor registry identities
 
 [[../operations/harbor-oci|Harbor]] uses generated SSM secrets under
