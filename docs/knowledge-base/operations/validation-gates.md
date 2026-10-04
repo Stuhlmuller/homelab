@@ -1020,6 +1020,29 @@ Keep device identifiers, certificates and secrets out of git.
 Compare agent heartbeat with MDM check-in/acknowledgement when diagnosing
 delivery delays; do not duplicate writes while a command remains pending.
 
+The October 3 Free/Entra pilot merged in [PR #1152](https://github.com/Stuhlmuller/homelab/pull/1152)
+and applied the two focused Entra units without modifying existing identities
+or adding licenses. Mac baseline and native PSSO profile installation passed
+MDM acknowledgement, exact identifier/UUID readback and unrelated-profile
+retention. Local inspection retained user-approved Fleet MDM, FileVault and the
+existing secure token; screen-lock delay became immediate. Managed screensaver
+preferences read back `idleTime=300`, `askForPassword=1`, and
+`askForPasswordDelay=0` (display-sleep timers are separate). A supported host
+refetch produced fresh inventory and a passing FileVault SQL policy result.
+Company Portal, PSSO registration and password/login acceptance were still pending.
+
+The first real console SAML callback returned `account_disabled`: Fleet matched
+the signed NameID to the existing password-login account, whose SSO flag is
+deliberately false. Settings readback alone had not detected this external-MSA
+identity mapping difference. Preserve recovery access and correct the dedicated
+Entra application's claim mapping through the SAML module; retest the browser
+callback after apply. The iPhone passcode install initially returned Apple
+`NotNow`, then appeared in a fresh `ProfileList` with the exact expected UUID
+without resubmitting installation. Its later `SecurityInfo` also returned
+`NotNow`; passcode compliance and enrollment-mode readback remain pending device
+availability. Inspect the existing command before any retry; do not enqueue
+duplicate profile writes.
+
 An external Python `urllib` probe with its default user agent received HTTP 403
 with a Cloudflare response header. The same endpoint returned 200 for curl, the
 browser and an identified `Fleet-verification/1.0` client; authenticated API
