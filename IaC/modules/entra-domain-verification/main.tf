@@ -40,15 +40,14 @@ data "msgraph_resource" "verification_dns" {
 }
 
 # The action is deliberately disabled until the DNS owner has published the
-# record and authoritative DNS returns the exact Entra-provided value.
+# record and authoritative DNS returns the exact Entra-provided value. Standard
+# Graph verification is a bodyless POST: its default does not request a domain
+# takeover.
 resource "msgraph_resource_action" "verify" {
   count        = var.verify_domain ? 1 : 0
   resource_url = "domains/${var.domain_name}"
   action       = "verify"
   method       = "POST"
-  body = {
-    forceTakeover = false
-  }
 
   lifecycle {
     prevent_destroy = true

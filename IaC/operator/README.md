@@ -28,7 +28,8 @@ and verifies it only after the DNS owner has published that record. It is
 intentionally an operator unit: verification requires tenant-wide domain
 authority that the CI identities must not receive.
 
-The unit requires a managed, non-default and non-initial domain and always uses
+The unit requires a managed, non-default and non-initial domain and sends the
+standard bodyless Graph verification request, which defaults to
 `forceTakeover = false`. It cannot create, delete, federate, make a default
 domain, configure Microsoft 365 mail services, or change Google Workspace.
 The companion `entra-stuhlmuller-pilot-user` unit creates only
