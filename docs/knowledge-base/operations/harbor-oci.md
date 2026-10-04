@@ -67,7 +67,9 @@ Harbor vulnerability collector. It queries only completed scan summaries for the
 `homelab` and `mirror` projects and emits aggregate counts per project, without
 artifact names, digests, CVE IDs, or credentials in metrics. The Grafana rule
 alerts at critical severity after five minutes for a nonzero count; absent data
-and evaluation errors also alert. Triage in Harbor, then rebuild and roll out a
+and evaluation errors also alert. Cached metrics expire within six minutes of a
+failed collection, and script revisions roll the collector through its
+versioned pod-template annotation. Triage in Harbor, then rebuild and roll out a
 remediated image through GitOps. Source: `clusters/homelab/apps/harbor/vulnerability-exporter.py`,
 `clusters/homelab/apps/harbor/vulnerability-exporter.yaml`, and
 `clusters/homelab/apps/grafana/values.yaml`.
