@@ -12,6 +12,7 @@ in the same change.
 
 ## Start Here
 
+- [[operations/soc2-readiness]] records proposed readiness scope and evidence limits.
 - [[architecture/cluster-topology]] records the current Talos and Kubernetes
   shape.
 - [[architecture/gitops-flow]] explains how changes move from git to the
