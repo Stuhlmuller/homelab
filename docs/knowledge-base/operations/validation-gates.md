@@ -1078,3 +1078,11 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Kubernetes controller patch candidate
+
+Run `python3 scripts/ci/kubernetes-patch-test.py` for HOME-54 component/catalog
+checks and synthetic RBAC hints. Reproduce the literal grant inventory with
+`python3 scripts/kubernetes-rbac-inventory.py`. These checks do not prove live
+authorization, full chart rendering, Talos strict renders or recovery readiness;
+see [the independent review gates](../../kubernetes-cve-2026-2270.md).
