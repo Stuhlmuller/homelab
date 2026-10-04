@@ -10,10 +10,11 @@ AzureAD 3.9.0 has no domain resource, so the module uses the generic MSGraph
 only Graph GET requests; it has no managed resource or state adoption.
 
 The module requires the existing domain to remain `Managed`, non-default, and
-non-initial. `forceTakeover` is always false. It neither configures Microsoft
-365 mail services nor changes Google Workspace, MX, SPF, DKIM, DMARC, Google
-SSO, existing Google accounts, or Entra accounts other than the separately
-declared pilot user.
+non-initial. Its standard Graph verification request is a bodyless `POST`,
+which uses Graph's default `forceTakeover = false`; it does not request a
+domain takeover. It neither configures Microsoft 365 mail services nor changes
+Google Workspace, MX, SPF, DKIM, DMARC, Google SSO, existing Google accounts,
+or Entra accounts other than the separately declared pilot user.
 
 ## Two-stage operator rollout
 

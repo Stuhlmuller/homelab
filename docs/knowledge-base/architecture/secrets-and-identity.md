@@ -464,8 +464,10 @@ Microsoft Graph TXT verification record, does not configure email, federation,
 or Google Workspace, and keeps verification disabled until the DNS owner has
 applied that record through its own reviewed declarative path. Once both
 authoritative servers return it, the reviewed phase-two catalog change enables
-the sole Graph verification action; its private saved plan must confirm the
-domain remains managed and non-default. The companion
+the sole Graph verification action. That action intentionally uses the
+standard bodyless Graph request, retaining the service default of no domain
+takeover; its private saved plan must confirm the domain remains managed and
+non-default. The companion
 `operator/entra-stuhlmuller-pilot-user` unit can then create only
 `rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
 non-default state, and the account receives no role, group, license, mailbox or

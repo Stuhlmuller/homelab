@@ -325,7 +325,12 @@ done
 )
 rg -Fq 'data "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf
 rg -Fq 'resource "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf && exit 1
-rg -Fq 'forceTakeover = false' IaC/modules/entra-domain-verification/main.tf
+verify_action_block="$(sed -n '/^resource "msgraph_resource_action" "verify" {/,/^}$/p' IaC/modules/entra-domain-verification/main.tf)"
+rg -Fq 'method       = "POST"' <<<"$verify_action_block"
+if rg -q '^[[:space:]]*(body[[:space:]]*=|forceTakeover[[:space:]]*=)' <<<"$verify_action_block"; then
+  echo "The standard Entra domain verification action must use a bodyless POST." >&2
+  exit 1
+fi
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
 rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
