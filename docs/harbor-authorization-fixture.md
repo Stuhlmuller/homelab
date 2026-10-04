@@ -63,8 +63,8 @@ Harbor and registry APIs with the collector credential, bypassing its Client.
 | Cross-project | Administrator confirms private targets exist; collector receives 403 plus Harbor authorization error, anonymous private access fails, public controls succeed. |
 | Global listing | Exhaust pages of `/projects` and `/repositories`; no unrelated private project/repository appears. A filtered 200 is not failure. |
 | Admin reads | `/users` and `/configurations` deny the collector while the administrator succeeds. |
-| Repository/artifact/tag mutations | PUT description, DELETE repository, DELETE artifact and POST tag in **both** allowed projects; denial, unchanged full readback, then identical administrator request and changed readback. |
-| Robot administration | POST robot, PUT other-robot and self permission expansion; same denial/state/control sequence. Administrator restores original scopes after controls; restore is verified. |
+| Repository/artifact/tag mutations | PUT requires the requested description; DELETE requires the exact repository ID/artifact digest to disappear; POST requires exactly one new tag with the requested name and artifact/repository IDs. Other observed records must remain identical. |
+| Robot administration | POST requires exactly one new ID matching the response and requested name/scope/lifetime fields; PUT requires the exact requested permissions. Other robot records remain identical. Administrator scope restoration uses the same field-specific oracle. |
 | Configuration | PUT toggles project-creation restriction only on the disposable instance; verify denial, unchanged value, effective positive control and restore. |
 | Registry pulls | Existing private manifest and config blob deny the collector while administrator succeeds. Public mirror content matches successful anonymous baseline. |
 | Registry pushes | Valid manifest PUT denies collector, preserves artifact inventory, then administrator creates the expected tag. Upload POST/PATCH/PUT deny collector; valid administrator upload sessions provide positive targets; append/commit preserve upload offset and blob absence after denials, then controls append/commit exact bytes. |
@@ -85,6 +85,24 @@ upload on disk; backend state inspection remains required if that stronger
 claim is needed. The full-state comparisons intentionally tolerate no unrelated
 mutations: disable automatic scans and other actors or treat drift as an
 inconclusive run. Do not weaken comparisons to make the fixture pass.
+
+The original positive-control check accepted any changed observation. Independent
+review reproduced a false pass when only `update_time` changed. The corrected
+oracle requires the operation-specific effect above; a timestamp alone cannot
+satisfy it. Only the mutated target's `update_time` may differ incidentally;
+unrelated timestamps and unrequested target fields remain protected. Configuration
+checks compare the entire map against the exact one-value change and restore.
+Registry manifest checks bind the new tag to the exact artifact/repository and
+cross-check tag-list and artifact-summary readbacks. These are bounded observed
+collections, not a claim to inspect every server object or backend byte.
+
+HOME-62's separate [issuer capability proposal](harbor-issuer-capability-proposal.md)
+prepares direct-API cases and offline evidence oracles only. It does not add an
+issuer credential reader, network adapter or execution path to this general
+collector fixture. The existing administrator input remains **test-only** for
+the independently approved disposable server; it must never be a reusable
+production management credential. No supported production custody path is
+established by either proposal.
 
 ## Full-acceptance cases still requiring fixture integrations
 

@@ -13,6 +13,14 @@ collector/alert integration, HOME-59 all-hop TLS and HOME-3 isolation remain
 separate gates. Even a successful implemented subset returns incomplete, not
 operational acceptance. See [[operations/harbor-oci]].
 
+The corrected fixture rejects timestamp-only positive controls and preserves
+unrelated observed records while checking exact fields, IDs, digests and grants.
+The separate [HOME-62 capability proposal](../../harbor-issuer-capability-proposal.md)
+adds 54 unexecuted direct-API/session recipes and offline evidence oracles,
+without a credential reader or network adapter. Existing issuer hard stops remain;
+capability observations cannot grant authority acceptance. Custody, provisioning,
+checkpoint controls, session/expiry windows and verified teardown are unresolved.
+
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
 

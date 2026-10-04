@@ -20,6 +20,7 @@ python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
 python3 -I scripts/ci/harbor-vulnerability-exporter-test.py
 python3 -I scripts/ci/harbor-authorization-fixture-test.py
+python3 -I scripts/ci/harbor-issuer-capability-plan-test.py
 python3 -I scripts/ci/harbor-vulnerability-credential-test.py
 python3 -I scripts/ci/harbor-vulnerability-recovery-test.py
 python3 -I scripts/ci/octelium-wazuh-reconcile-test.py
