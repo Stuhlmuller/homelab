@@ -48,9 +48,11 @@ email to the password-only recovery account. The [SAML module](../../../../IaC/m
 therefore declares a dedicated, stable Graph claims mapping from
 `userprincipalname` to SAML NameID, preserving basic claims and the existing
 signing key. Keep the recovery account password-only and the organizational UPN
-account SSO-only. Retest the real callback after applying the mapping; until
-then, console login remains failed rather than verified. No paid feature,
-static shared NameID, tenant-owner conversion or license bypass is used.
+account SSO-only. After applying a mapping change, verify the real callback,
+resulting Fleet account and separate recovery login. Record the acceptance
+result privately; a successful plan or settings readback cannot establish
+login success. No paid feature, static shared NameID, tenant-owner conversion
+or license bypass is used.
 
 Mac Platform SSO uses the native Microsoft extension and device/user
 registration. It does not use Fleet's console SAML application to synchronize
@@ -174,9 +176,10 @@ records. Preserve access and inspect registration before any cleanup.
 3. After the Fleet PSSO profile is installed, while signed into the existing
    local account, choose macOS **Registration Required > Register**. Sign in with
    the new internal pilot Entra account and complete any required MFA.
-4. Enter the current Mac-account password in the macOS authorization prompt.
-   Complete the subsequent password-synchronization prompt if shown. Enter
-   credentials only into the Microsoft/macOS UI, never into chat or scripts.
+4. Enter the current Mac-account password whenever macOS requests local
+   authorization and the new Entra password in Microsoft's prompt; their order
+   can vary. Complete password synchronization if prompted. Enter credentials
+   only into the Microsoft/macOS UI, never into chat or scripts.
 5. Complete the acceptance checks below before repeating this process from each
    other person's existing local account on each Mac.
 
