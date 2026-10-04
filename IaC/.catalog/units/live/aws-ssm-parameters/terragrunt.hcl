@@ -41,6 +41,42 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/fleet/mysql-password" = {
+      description = "Fleet dedicated MySQL application password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/fleet/mysql-root-password" = {
+      description = "Fleet MySQL administrator password, restricted to database initialization and recovery."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/fleet/redis-password" = {
+      description = "Fleet dedicated Redis authentication password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/fleet/server-private-key" = {
+      description = "Fleet stable 32-byte server encryption key; retain with MySQL backups."
+      generated = {
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/fleet/admin-password" = {
+      description = "Initial Fleet administrator password for first-run setup."
+      generated = {
+        length  = 40
+        special = false
+        prefix  = "Aa1!"
+      }
+    }
     "/homelab/harbor/admin-password" = {
       description = "Initial Harbor administrator password."
       generated = {

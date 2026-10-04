@@ -5,9 +5,8 @@ import contextlib
 import importlib.util
 import io
 import json
-from pathlib import Path
 import tempfile
-
+from pathlib import Path
 
 spec = importlib.util.spec_from_file_location("check", Path(__file__).with_name("harbor-images-check.py"))
 check = importlib.util.module_from_spec(spec)
@@ -29,10 +28,14 @@ assert digests == {digest}
 with tempfile.TemporaryDirectory() as directory:
     check.ROOT = Path(directory)
     check.CATALOG = check.ROOT / "images.json"
+    check.FLEET_CATALOG = check.ROOT / "fleet-images.json"
     check.CHARTS = check.ROOT / "charts.json"
-    check.CATALOG.write_text(json.dumps({"images": [
+    catalog = {"images": [
         {"source": "docker.io/library/busybox@" + digest},
-        {"source": "quay.io/example/operator@" + digest}]}))
+        {"source": "quay.io/example/operator@" + digest}]}
+    check.CATALOG.write_text(json.dumps(catalog))
+    check.FLEET_CATALOG.write_text(json.dumps(catalog))
+    check.rendered_fleet_images = lambda: images
     check.CHARTS.write_text("[]")
     mirrors = {registry: {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
                           "overridePath": True, "skipFallback": True}
@@ -40,9 +43,34 @@ with tempfile.TemporaryDirectory() as directory:
     check.yaml_documents = lambda paths: (
         [{"machine": {"registries": {"mirrors": mirrors}}}]
         if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
-    check.chart_sources = lambda: []
+    check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    check.FLEET_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Fleet mirror scope missing rendered image: quay.io/example/operator@" in str(error)
+    else:
+        raise AssertionError("Fleet scope missing a rendered image passed")
+    extra = {"source": "docker.io/library/busybox@sha256:" + "b" * 64}
+    expanded = {"images": [*catalog["images"], extra]}
+    check.CATALOG.write_text(json.dumps(expanded))
+    check.FLEET_CATALOG.write_text(json.dumps(expanded))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Fleet mirror scope has unrendered image: " + extra["source"] in str(error)
+    else:
+        raise AssertionError("Fleet scope extra catalog digest passed")
+    check.CATALOG.write_text(json.dumps(catalog))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Fleet mirror scope source absent from full catalog: " + extra["source"] in str(error)
+    else:
+        raise AssertionError("Fleet scope source absent from the full catalog passed")
+    check.FLEET_CATALOG.write_text(json.dumps(catalog))
     documents[0]["initContainers"][0]["image"] = "busybox:missing"
     try:
         check.check()

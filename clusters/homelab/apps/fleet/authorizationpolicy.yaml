@@ -1,0 +1,82 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: fleet-strict
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fleet-default-deny
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fleet-server
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fleet
+      app.kubernetes.io/component: server
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/fleet/sa/fleet-bootstrap
+      to:
+        - operation:
+            ports: ["8080"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fleet-datastores
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/fleet/sa/fleet
+      to:
+        - operation:
+            ports: ["3306", "6379"]
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: fleet-mysql-backup
+  namespace: fleet
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: fleet
+      app.kubernetes.io/component: mysql
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/fleet/sa/fleet-backup
+      to:
+        - operation:
+            ports: ["3306"]

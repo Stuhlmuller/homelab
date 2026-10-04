@@ -165,6 +165,7 @@ hostnames=(
   "console.${domain}"
   "deluge.${domain}"
   "dispatcharr.${domain}"
+  "fleet.${domain}"
   "grafana.${domain}"
   "harbor.${domain}"
   "kiali.${domain}"

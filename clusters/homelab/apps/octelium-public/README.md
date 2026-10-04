@@ -14,6 +14,9 @@ tailnet:
   reviewed external callbacks that cannot complete an Octelium browser login
 - `kubernetes-api-ci.stinkyboi.com` for the policy-bound clientless CI
   Kubernetes Service
+- `fleet.stinkyboi.com` for Fleet's native user and device authentication,
+  directly through Istio with public first-admin setup permanently blocked;
+  see the [Fleet exception](../fleet/README.md#public-access-and-authentication).
 
 `octelium-api.stinkyboi.com` serves the browser API;
 `octelium-transport.stinkyboi.com` carries native clients over TCP.

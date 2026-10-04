@@ -1,0 +1,41 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: fleet-octelium-public
+  namespace: fleet
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "Fleet native user login, authenticated device enrollment and MDM check-in; public first-admin setup is blocked."
+spec:
+  hosts:
+    - fleet.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    # Both API aliases exist upstream. Keep setup blocked after bootstrap too,
+    # including during a restore to an empty database.
+    - name: deny-first-admin-setup
+      match:
+        - uri:
+            exact: /api/v1/setup
+        - uri:
+            prefix: /api/v1/setup/
+        - uri:
+            exact: /api/setup
+        - uri:
+            prefix: /api/setup/
+        - uri:
+            exact: /setup
+        - uri:
+            prefix: /setup/
+      directResponse:
+        status: 404
+    - name: fleet-native-authentication
+      route:
+        - destination:
+            host: fleet.fleet.svc.cluster.local
+            port:
+              number: 8080

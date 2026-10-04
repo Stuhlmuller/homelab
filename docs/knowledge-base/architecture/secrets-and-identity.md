@@ -66,6 +66,26 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
 
 ## Identity Notes
 
+- Fleet uses five generated `/homelab/fleet/` SSM values: database user/root
+  passwords, Redis password, a stable 32-byte server encryption key and initial
+  administrator password. Namespace `fleet` has a scoped store/policy contract.
+  Separate mounted Secrets keep the root password out of Fleet and the admin
+  password exclusively in its one-time bootstrap Job. The initial account uses
+  `rodman@stuhlmuller.net`; subsequent syncs preserve user changes. APNs and
+  platform signing identities still require their provider setup. Preserve them
+  with the database and server key. See the [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md).
+  The repository-owned `scripts/fleet-download-apple-csr.py` prepares Apple's
+  vendor-signed CSR using the initial administrator Secret without printing
+  credentials. Its first request creates encrypted SCEP/APNs keys in MySQL;
+  preserve that database with the server encryption key. The public CSR goes
+  to Fleet's signing service; the operator must still issue the APNs certificate
+  through their Apple account and upload it in Fleet before device enrollment.
+  Its `--certificate` mode performs first activation through Fleet's APNs setup
+  API, refuses to overwrite an enabled integration, verifies enabled state and
+  certificate metadata, and revokes its session. Certificate renewal remains
+  the documented Fleet UI flow using the same Apple account. APNs material
+  stays encrypted in MySQL and outside git.
+
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
   literal Microsoft Entra issuer committed in
