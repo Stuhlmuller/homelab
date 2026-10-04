@@ -486,7 +486,7 @@ HOME-57 isolates the collector Secret (`harbor-vulnerability-exporter`, key
 `robot-password`) from admin credentials. The disabled protected workflow
 publishes one JSON lifecycle envelope to the exact
 `/homelab/harbor/vulnerability-robot-password` SecureString. An unregistered
-independent ESO polls only its `secret` property; the shared Harbor OnChange
+ExternalSecret polls only its `secret` property through a separate namespaced store; the shared Harbor OnChange
 secret is unchanged. The SSM catalog uses externally managed value semantics,
 so later IaC does not restore retired credentials. A dedicated OIDC role proposal
 permits only this parameter and context-bound KMS use. HOME-62 rejected system-robot
@@ -512,3 +512,13 @@ override and checks exact upstream identities. Standalone recovery is metadata-o
 and cannot mutate or enable. See [integration and custody gates](../../harbor-tls-and-recovery-integration.md).
 Public CA distribution, proxy runtime/rotation proof and replacement operator custody
 remain unimplemented activation prerequisites; no TLS/server authorization is claimed.
+
+HOME-57's [custody and boundary correction](../../harbor-credential-custody.md)
+inventories 37 shared `aws-ssm` consumers in 17 namespaces. The collector parameter
+now has `reader_access=false`; its unregistered namespaced store uses a separate
+unprovisioned exact-parameter reader credential. No effective IAM/RBAC is proved.
+Shared ESO controller and Harbor namespace privileges remain trust boundaries.
+The replacement person-bound native-admin custody path is broad and unsupported
+operationally; it never injects admin credentials into the rejected runner.
+Environment-form OIDC does not bind workflow/SHA; pre/post SSM checks are not CAS,
+and ESO may project a racing write. Job, STS, key, robot and bearer lifetimes differ.

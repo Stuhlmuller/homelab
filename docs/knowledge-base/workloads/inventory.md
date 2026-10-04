@@ -290,3 +290,13 @@ to the evidence recorded there.
 Fluent Bit collectors in namespace `wazuh`; its explicit-stack Application
 targets main with automated sync disabled pending memory capacity. See
 [[operations/wazuh-siem]] and the [rollout runbook](../../../clusters/homelab/apps/wazuh/README.md).
+
+
+### Harbor collector custody proposal (HOME-57)
+
+The collector's unregistered credential projection references a separate
+namespace-scoped SecretStore, with exact-parameter reader policy and unprovisioned
+credential custody. The catalog excludes shared reader access. The active shared
+store and other consumers are unchanged. See [reader/writer and custody evidence](../../harbor-credential-custody.md).
+No effective IAM/RBAC, replacement operator path, all-hop acceptance or executable
+recovery is established; HOME-62's system-issuer hard stop remains in force.

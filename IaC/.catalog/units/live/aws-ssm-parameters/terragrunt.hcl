@@ -193,8 +193,9 @@ inputs = {
     # HOME-57 proposal: externally issued JSON envelope; module ignores value
     # drift so a later apply cannot restore a retired robot credential.
     "/homelab/harbor/vulnerability-robot-password" = {
-      description   = "Dedicated Harbor scan-summary robot lifecycle envelope; protected CI owns value."
+      description   = "Harbor scan-summary envelope; operator custody and dedicated reader remain gated by HOME-62."
       initial_value = "{\"schema\":1,\"state\":\"unissued\"}"
+      reader_access = false
     }
     "/homelab/nofx/harbor-pull-password" = {
       description = "Namespace-scoped copy of the read-only Harbor homelab project robot credential."
