@@ -110,6 +110,18 @@ raw CRD-shaped `manifest`, so Application fields use their native names such as
 at this repository, set `targetRevision` to `main` unless a temporary
 non-default branch is explicitly documented for testing or recovery.
 
+The stack's `local.argocd_defaults` owns common metadata, project, destination,
+sync policy, repository, and revision. Entries pass `values.defaults` plus only
+their `metadata`/`spec` exceptions and dependencies. The template derives the
+name, default namespace, and ordinary app source from the unit directory name.
+Map merging preserves inherited sync settings; lists replace rather than append.
+See the [registration example](../../../docs/argocd-app-onboarding.md#register-with-shared-defaults)
+and [[patterns/helm-chart-organization]]. Bootstrap, retirement, self-management,
+and child-Application lifecycles keep their existing owners. The latter include
+Cordium bootstrap and both storage provisioners under `platform-storage`.
+Refactor scope and equivalence evidence:
+[[operations/terragrunt-dry-refactor-2026-10-04]].
+
 The module delegates the CRD schema to `kubernetes_manifest` while retaining
 repository policy for encrypted state, field-manager ownership, and the small
 set of fields Argo CD or the API server normalizes. Repository-owned source

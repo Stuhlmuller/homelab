@@ -117,9 +117,74 @@ Terragrunt registers Applications through the repository-local
 `IaC/modules/argocd-application-kubernetes` module. The module writes Argo CD
 `Application` CRDs through the Kubernetes provider, so routine registration does
 not require an exposed Argo CD API endpoint, an auth token in operator
-environment variables, or a manual local `argocd login`. Each Terragrunt unit
-passes a raw CRD-shaped `manifest`; use Argo CD field names directly instead of
-a second module-specific schema.
+environment variables, or a manual local `argocd login`. The shared unit
+generates a raw CRD-shaped `manifest`; app overrides use Argo CD field names.
+
+## Register With Shared Defaults
+
+Edit `IaC/terragrunt.stack.hcl`, not the ignored generated files in
+`IaC/live/argocd-apps`. All workload and platform Applications use
+`IaC/.catalog/units/live/argocd-app`. A plain repository application needs only:
+
+```hcl
+unit "argocd_apps_example" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/example"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    defaults     = local.argocd_defaults
+    dependencies = ["external-secrets"]
+    spec = {
+      project = "homelab-workloads"
+    }
+  }
+}
+```
+
+This example assumes the selected AppProject already permits the app's sources,
+namespace, and rendered resources. The directory basename supplies the
+Application name, destination namespace, and default
+`clusters/homelab/apps/<name>` source. The stack owns repository/revision,
+metadata labels, destination server, project, automated sync, retry, and sync
+options. Add `spec.destination.namespace` or `spec.sources` for exceptions.
+Keep existing unit paths stable: they determine remote-state keys.
+
+`values.metadata` and `values.spec` are sparse CRD overrides. The template merges
+metadata labels, destination, sync policy, automated sync, retry, and backoff
+maps. Other fields replace their defaults; lists always replace, including
+`sources`, `syncOptions`, `info`, and `ignoreDifferences`. Use
+`syncPolicy.automated.enabled = false` to disable automatic sync. Do not use
+`null` to remove the required merge maps.
+
+Helm applications keep explicit chart repository, chart, pinned revision,
+release name, and values files in `spec.sources`; see
+[Helm chart organization](knowledge-base/patterns/helm-chart-organization.md).
+Dependencies are relative to the sibling application directory: use an app name
+for another Application and `../../aws-ssm-parameters` for that shared AWS unit.
+Bootstrap installs Argo CD before its CRDs exist; the retired Wazuh unit retains
+its separate state-retirement module. Argo's self-management, Cordium's bootstrap
+child, and the two storage provisioner children retain their existing lifecycle
+owners; their parent deployments are registered by this same stack.
+
+Generate and inspect one application before running the repository gate:
+
+```sh
+terragrunt --working-dir IaC stack generate
+terragrunt --log-disable --working-dir IaC/live/argocd-apps/example \
+  render --json --write=false --no-color \
+  | jq '{manifest: .inputs.manifest, dependencies: .dependencies.paths}'
+terragrunt hcl fmt --check
+terragrunt hcl validate
+nix develop --command bash scripts/ci/static-checks.sh
+nix develop --command bash scripts/ci/conftest-policies.sh
+```
+
+New units also need a reviewed provider lock file under their generated live
+directory; commit the lock, never generated HCL or state. The protected pipeline
+still plans and applies the generated units. Roll back a registration refactor
+by reverting the stack/template changes together and regenerating; no backend
+migration is needed when the unit paths remain unchanged.
 
 ## Image Updates
 

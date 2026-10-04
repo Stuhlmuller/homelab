@@ -26,6 +26,15 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
 
+The static gate's `scripts/ci/terragrunt-stack-test.py` generates sparse and
+overridden Applications from the real shared template, checking default
+inheritance, list replacement, historical backend keys, changed-unit selection,
+Azure credential isolation, and retirement ownership. Catalog fixtures carry
+shape only; production defaults belong in `IaC/terragrunt.stack.hcl`.
+For a stack refactor, also compare every affected generated unit's inputs,
+dependencies, backend configuration, provider generation, and module source
+against the pre-change revision. HCL validity alone does not prove equivalence.
+
 The static gate runs `scripts/ci/job-alert-recovery-check.py` with the Nix-pinned
 promtool against the actual Job recovery rules. Its synthetic histories cover
 failure/success ordering, false/unknown condition gauges and transitions to true,
@@ -667,10 +676,19 @@ Focused unit validation:
 
 ```sh
 cd IaC/live/<stack>/<unit>
-terragrunt --log-disable init -backend=false -no-color
-terragrunt --log-disable validate -no-color
+terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
+# Only before an authenticated live plan, reconnect to the intended backend:
+terragrunt --log-disable init -reconfigure -no-color
 terragrunt --log-disable plan -no-color
 ```
+
+For a new unit, establish and review its provider lock first. Shared-app units
+can copy a reviewed peer lock when the module/provider constraints match.
+Backend-free OpenTofu validation does not guarantee credential-free Terragrunt
+initialization: existing backend metadata or Terragrunt's S3 checks can still
+require AWS access. Use an isolated module copy for offline validation when
+that access is unavailable; do not silently switch a later plan to local state.
 
 Explicit stack validation:
 

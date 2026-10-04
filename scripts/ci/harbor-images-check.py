@@ -82,10 +82,12 @@ def rendered_fleet_images():
 def chart_sources():
     stack = ROOT / "IaC/terragrunt.stack.hcl"
     charts = []
-    for match in re.finditer(r"\{([^{}]*\bchart\s*=[^{}]*)\bhelm\s*=", stack.read_text()):
+    for match in re.finditer(r"\{([^{}]*\bchart\s*=[^{}]*)", stack.read_text()):
         fields = dict(re.findall(r'(repoURL|chart|targetRevision)\s*=\s*"([^\"]+)"', match[1]))
-        if set(fields) == {"repoURL", "chart", "targetRevision"}:
-            charts.append({"source": str(stack.relative_to(ROOT)), **fields})
+        if set(fields) != {"repoURL", "chart", "targetRevision"}:
+            raise SystemExit("Stack chart sources must keep literal repoURL, chart and targetRevision "
+                             "before nested options for image inventory extraction")
+        charts.append({"source": str(stack.relative_to(ROOT)), **fields})
     bootstrap = ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],

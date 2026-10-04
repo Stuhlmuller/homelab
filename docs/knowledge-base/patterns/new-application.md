@@ -19,7 +19,11 @@ Use this checklist before adding a new runtime application.
 
 1. Add app desired state under `clusters/homelab/apps/<app>`.
 2. Register the Application in `IaC/terragrunt.stack.hcl` using the shared
-   `IaC/.catalog/units/live/argocd-app` template.
+   `IaC/.catalog/units/live/argocd-app` template. Set
+   `values.defaults = local.argocd_defaults`; specify only `metadata`/`spec`
+   exceptions. The unit directory supplies the name, namespace, and ordinary
+   repository source path. Follow the compact example in
+   `docs/argocd-app-onboarding.md`; never copy generated HCL.
 3. Use `main` as the target revision for Git-backed sources unless a temporary
    branch is explicitly documented.
 4. Add Terragrunt dependencies for registration ordering as sibling app names
@@ -29,6 +33,9 @@ Use this checklist before adding a new runtime application.
 7. Use ExternalSecret and SSM parameter references for secret material.
 8. Document persistent storage, backup, and restore behavior before considering
    the app production-ready.
+
+For charts and values, follow [[patterns/helm-chart-organization]]. For the
+focused agent workflow, use `.agents/skills/homelab-app-onboarding/SKILL.md`.
 
 ## Ingress Rule
 

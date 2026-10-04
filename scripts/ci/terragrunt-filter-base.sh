@@ -17,15 +17,12 @@ terragrunt_generate_stack() {
   )
 }
 
-terragrunt_stack_units_at_ref() {
-  local ref="$1"
-  local path_prefix="${2:-}"
+# Keep unit identity literal in the stack. Locals may compose values, while
+# ownership and retirement checks read unit blocks without evaluating providers.
+terragrunt_stack_units() {
+  local path_prefix="${1:-}"
 
-  if ! git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
-    return 0
-  fi
-
-  git show "${ref}:IaC/terragrunt.stack.hcl" | awk -v prefix="$path_prefix" '
+  awk -v prefix="$path_prefix" '
     function emit_unit() {
       if (prefix == "" || index(unit_path, prefix) == 1) {
         printf "%s", unit_block
@@ -60,6 +57,21 @@ terragrunt_stack_units_at_ref() {
       }
     }
   '
+}
+
+terragrunt_stack_units_at_ref() {
+  local ref="$1"
+  local path_prefix="${2:-}"
+
+  if ! git cat-file -e "${ref}:IaC/terragrunt.stack.hcl" 2>/dev/null; then
+    return 0
+  fi
+
+  git show "${ref}:IaC/terragrunt.stack.hcl" | terragrunt_stack_units "$path_prefix"
+}
+
+terragrunt_stack_unit_paths() {
+  terragrunt_stack_units | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
 }
 
 terragrunt_stack_unit_paths_at_ref() {
