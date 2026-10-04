@@ -37,6 +37,8 @@ separates native Microsoft Password Platform SSO from console SAML. Company
 Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
 script delivers the initial Mac profiles with host-scoped commands, preserving
 other devices and profiles; this is not continuous managed-profile assignment.
+The iPhone/iPad passcode baseline is retired; its operator action permits only
+removal and preserves enrollment and unrelated profiles.
 The console enterprise app permits only an individually assigned, precreated
 administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security
