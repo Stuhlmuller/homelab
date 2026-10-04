@@ -18,7 +18,7 @@ headroom. Do not lower requests to force them onto the single control-plane
 node. Moving workloads among existing nodes cannot resolve an aggregate
 memory deficit. Add capacity or obtain the operator's selection of workloads
 to retire, then validate again before enabling sync in a reviewed change.
-The current local volumes and central receiver are pinned to `acer`; moving
+The core workloads, local volumes and central receiver are pinned to `acer`; moving
 to a new node requires updating those selectors, volumes, Talos
 endpoint and helper node inventory together.
 

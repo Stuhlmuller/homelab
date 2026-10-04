@@ -13,6 +13,8 @@ blocked. Wazuh and its collectors request 7.12GiB on the central node plus
 an aggregate memory deficit. Add capacity or obtain the operator's selection
 of workloads to retire before activation. Declared local-volume capacity is
 not a filesystem quota.
+The dashboard is pinned alongside manager/indexer so its memory and image
+requirements match the central-node preflight budget.
 
 The logging rollout required
 [PR #1167](https://github.com/Stuhlmuller/homelab/pull/1167) to put ClickHouse's

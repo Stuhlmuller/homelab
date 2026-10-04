@@ -21,6 +21,9 @@ spec:
         app.kubernetes.io/name: wazuh-dashboard
         app.kubernetes.io/part-of: wazuh
     spec:
+      # Match the central memory and cold-image budget in wazuh-preflight.py.
+      nodeSelector:
+        kubernetes.io/hostname: acer
       serviceAccountName: wazuh
       automountServiceAccountToken: false
       securityContext:

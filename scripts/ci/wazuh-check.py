@@ -37,7 +37,7 @@ for kind in ('StatefulSet', 'Deployment', 'DaemonSet'):
             assert '@sha256:' in container['image'], name
             assert not container.get('securityContext', {}).get('privileged'), name
             assert not any('secretKeyRef' in item.get('valueFrom', {}) for item in container.get('env', [])), name
-        if name in ('wazuh-indexer', 'wazuh-manager'):
+        if name in ('wazuh-indexer', 'wazuh-manager', 'wazuh-dashboard'):
             assert spec['nodeSelector']['kubernetes.io/hostname'] == 'acer'
 node = objects['DaemonSet', 'wazuh-node-logs']['spec']['template']['spec']
 logs = [v for v in node['containers'][0]['volumeMounts'] if v['name'] == 'logs']
