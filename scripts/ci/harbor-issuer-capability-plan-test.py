@@ -155,13 +155,95 @@ class Oracles(unittest.TestCase):
 
 
 class Sessions(unittest.TestCase):
+    def probe(self, at, status):
+        context = {'request_sha256': 'a' * 64, 'target_id': 'private-artifact-immutable-id',
+                   'private_revision': 'private-acl-revision-1', 'route_sha256': 'b' * 64}
+        return dict(context, at=at, status=status, authenticated_origin=True,
+                    subject_id=4, session_ref='subject-session-1',
+                    error_class='session-expired', error_code='UNAUTHORIZED',
+                    error_classification_verified=True,
+                    controls=[dict(context, at=at + offset, status=200,
+                                   authenticated_origin=True, authenticated_access=True,
+                                   subject_id=99, session_ref='independent-session-1')
+                              for offset in (-1, 1)])
+
     def sample(self):
+        baseline = {key: self.probe(21, 200)[key] for key in plan.SESSION_CONTEXT_FIELDS}
         return {'private_resource': True, 'anonymous_status': 401, 'same_request': True,
                 'same_session_handle': True, 'baseline_status': 200, 'fresh_basic_before_status': 200,
                 'subject_id': 4, 'boundary_subject_id': 4, 'boundary_verified': True,
                 'fresh_basic_after_status': 401, 'minted_at': 10, 'boundary_at': 20,
                 'expires_at': 100, 'clock_skew_seconds': 5,
-                'probes': [{'at': 21, 'status': 200}, {'at': 105, 'status': 401}]}
+                'baseline_context': baseline, 'session_ref': 'subject-session-1',
+                'probes': [self.probe(21, 200), self.probe(105, 401)]}
+
+    def assert_inconclusive(self, sample):
+        c = case('session-subject', 'rotation:registry-bearer', 'session', 'independent-observer')
+        with self.assertRaises(plan.Inconclusive):
+            plan.session_survival(c, sample)
+
+    def test_missing_controls_reproduces_reviewed_false_positive(self):
+        sample = self.sample()
+        del sample['probes'][-1]['controls']
+        self.assert_inconclusive(sample)
+
+    def test_missing_failed_stale_and_unindependent_controls(self):
+        for field, value in (('status', 401), ('status', 403), ('status', 500),
+                             ('at', 99), ('at', 111), ('authenticated_access', False),
+                             ('authenticated_origin', False), ('subject_id', 4),
+                             ('session_ref', 'subject-session-1')):
+            for index in (0, 1):
+                sample = self.sample()
+                sample['probes'][-1]['controls'][index][field] = value
+                with self.subTest(field=field, value=value, index=index):
+                    self.assert_inconclusive(sample)
+        for key in ('at', 'subject_id', 'session_ref', 'authenticated_access'):
+            sample = self.sample()
+            del sample['probes'][-1]['controls'][0][key]
+            self.assert_inconclusive(sample)
+
+    def test_every_denial_needs_controls_not_only_final_probe(self):
+        sample = self.sample()
+        sample['probes'].insert(1, self.probe(50, 401))
+        del sample['probes'][1]['controls']
+        self.assert_inconclusive(sample)
+
+    def test_request_target_privacy_and_route_changes_are_inconclusive(self):
+        for key in plan.SESSION_CONTEXT_FIELDS:
+            for location in ('probe', 'before', 'after'):
+                sample = self.sample()
+                probe = sample['probes'][-1]
+                receipt = probe if location == 'probe' else probe['controls'][location == 'after']
+                receipt[key] = 'changed'
+                with self.subTest(key=key, location=location):
+                    self.assert_inconclusive(sample)
+        sample = self.sample()
+        del sample['baseline_context']
+        self.assert_inconclusive(sample)
+
+    def test_unattributed_denials_and_changed_sessions_are_inconclusive(self):
+        for field, value in (('error_class', 'forbidden'), ('error_class', 'proxy-denial'),
+                             ('error_classification_verified', False), ('error_code', ''),
+                             ('authenticated_origin', False), ('subject_id', 99),
+                             ('session_ref', 'other-session')):
+            sample = self.sample()
+            sample['probes'][-1][field] = value
+            with self.subTest(field=field):
+                self.assert_inconclusive(sample)
+        sample = self.sample()
+        sample['probes'][-1]['status'] = 403
+        sample['probes'][-1]['error_class'] = 'forbidden'
+        self.assert_inconclusive(sample)
+
+    def test_controls_must_bracket_and_keep_independent_session(self):
+        for before, after in ((106, 107), (103, 104)):
+            sample = self.sample()
+            sample['probes'][-1]['controls'][0]['at'] = before
+            sample['probes'][-1]['controls'][1]['at'] = after
+            self.assert_inconclusive(sample)
+        sample = self.sample()
+        sample['probes'][-1]['controls'][1]['session_ref'] = 'another-independent-session'
+        self.assert_inconclusive(sample)
 
     def test_basic_rejection_does_not_hide_surviving_bearer(self):
         c = case('session-subject', 'rotation:registry-bearer', 'session', 'independent-observer')
@@ -173,7 +255,7 @@ class Sessions(unittest.TestCase):
     def test_missing_expiry_observation_stays_incomplete(self):
         c = case('issuer', 'disable:registry-bearer', 'session', 'independent-observer')
         sample = self.sample()
-        sample['probes'] = [{'at': 21, 'status': 401}]
+        sample['probes'] = [self.probe(21, 401)]
         self.assertFalse(plan.session_survival(c, sample)['observation_complete'])
 
     def test_token_usable_after_expiry_is_reported(self):

@@ -202,6 +202,7 @@ def session_recipe(case, identities):
             'executor': 'separately-approved-isolated-custodian',
             'baseline': 'same usable session on existing private resource; anonymous denial',
             'replay': 'same session handle and exact request before/after boundary through expiry',
+            'denial_controls': 'independent authenticated access to same private target before/after each denial within 5 seconds; fixed request and route; verified session error',
             'missing_or_unsupported_session': 'inconclusive; never add issuer grants to force success'}
 
 
@@ -296,6 +297,48 @@ def evaluate(case, identities, evidence):
             'operational_acceptance': 'not-established'}
 
 
+# Maximum elapsed time on either side of a denial; adapter must use one clock.
+SESSION_CONTROL_WINDOW_SECONDS = 5
+SESSION_CONTEXT_FIELDS = ('request_sha256', 'target_id', 'private_revision', 'route_sha256')
+
+
+def session_observation(probe, baseline, subject_id, session_ref):
+    """Validate sanitized receipts, never authenticate a server or a credential."""
+    require(isinstance(probe, dict), 'Missing session observation')
+    require(all(probe.get(key) == baseline[key] for key in SESSION_CONTEXT_FIELDS),
+            'Session target, private state, request or route changed')
+    require(probe.get('subject_id') == subject_id and probe.get('session_ref') == session_ref,
+            'Observed session identity or handle changed')
+    require(probe.get('authenticated_origin') is True,
+            'Session response origin not authenticated')
+    if probe.get('status') == 200:
+        return
+    require(probe.get('error_class') in ('session-invalid', 'session-expired')
+            and isinstance(probe.get('error_code'), str) and bool(probe['error_code'])
+            and probe.get('error_classification_verified') is True,
+            'Denial is not an attributed session authentication error')
+    controls = probe.get('controls')
+    require(isinstance(controls, list) and len(controls) == 2,
+            'Missing independent controls bracketing denial')
+    for control in controls:
+        require(isinstance(control, dict) and control.get('status') == 200
+                and control.get('authenticated_origin') is True
+                and control.get('authenticated_access') is True,
+                'Independent positive access failed or unauthenticated')
+        require(all(control.get(key) == baseline[key] for key in SESSION_CONTEXT_FIELDS),
+                'Independent control target, private state, request or route changed')
+        require(control.get('subject_id') is not None and control['subject_id'] != subject_id
+                and bool(control.get('session_ref')) and control['session_ref'] != session_ref,
+                'Positive control is not an independent identity and session')
+        require(type(control.get('at')) in (int, float)
+                and abs(control['at'] - probe['at']) <= SESSION_CONTROL_WINDOW_SECONDS,
+                'Independent control missing a timestamp or stale')
+    require(controls[0]['at'] <= probe['at'] <= controls[1]['at']
+            and controls[0]['subject_id'] == controls[1]['subject_id']
+            and controls[0]['session_ref'] == controls[1]['session_ref'],
+            'Positive controls do not bracket denial with a continuous independent session')
+
+
 def session_survival(case, evidence):
     """Do not confuse loss of Basic access with termination of existing tokens."""
     require(case in cases() and case['operation'] == 'session', 'Unknown session case')
@@ -315,6 +358,13 @@ def session_survival(case, evidence):
     require(bool(probes) and all(p['at'] > boundary and p['status'] in (200, 401, 403) for p in probes),
             'Missing or inconclusive session probes')
     require(all(a['at'] < b['at'] for a, b in pairwise(probes)), 'Session probes out of order')
+    baseline = evidence.get('baseline_context')
+    require(isinstance(baseline, dict)
+            and all(isinstance(baseline.get(key), str) and bool(baseline[key])
+                    for key in SESSION_CONTEXT_FIELDS), 'Missing baseline target continuity receipt')
+    require(bool(evidence.get('session_ref')), 'Missing opaque session reference')
+    for probe in probes:
+        session_observation(probe, baseline, evidence['subject_id'], evidence['session_ref'])
     survived = any(p['at'] < expires and p['status'] == 200 for p in probes)
     ended = probes[-1]['at'] >= expires + evidence['clock_skew_seconds'] and probes[-1]['status'] in (401, 403)
     # Never infer immediate revocation from a single denial or a stopped process.

@@ -87,6 +87,35 @@ timestamps, credential/session expiry and status/error attribution, never token,
 cookie, Basic header or response-secret material. Also test fresh Basic before
 and old Basic after; those observations cannot substitute for old-session replay.
 
+Every denial now requires two independent authenticated 200 controls to the same
+private target, bracketing that observation within five seconds on either side
+on a common monotonic clock. Both controls use the same independent identity and
+opaque session reference, distinct from the boundary subject and replay session.
+This is an offline evidence contract, not approval of a polling cadence or window.
+Missing, failed, stale, one-sided or aliased controls make the case inconclusive,
+including an earlier denial followed by an otherwise valid final observation.
+
+`baseline_context`, every probe and each control bind `request_sha256` (exact
+method/path/body), `target_id` (immutable private object identity),
+`private_revision` (independently verified privacy/ACL state), and `route_sha256`
+(origin, TLS peer/trust and routing configuration identity). Changes or missing
+bindings are inconclusive. Probe subject/session references must remain fixed.
+Controls attest `authenticated_access` and all responses attest
+`authenticated_origin`; redirect, proxy, transport and routing failures cannot
+be classified as session termination. Each denial must carry a nonempty sanitized
+`error_code`, `error_classification_verified`, and the normalized class
+`session-invalid` or `session-expired`. Generic FORBIDDEN/permission denial is
+inconclusive, even with HTTP 403 and a successful independent control.
+
+These fields are synthetic receipt assertions, **not cryptographic proof**.
+The future separately approved adapter must establish target/privacy continuity,
+authenticated origin and independent access, and validate a protocol-specific
+mapping from actual pinned-server responses to session error classes. No such
+adapter or verified error mapping is supplied. A boolean or raw status supplied
+by an untrusted reporter cannot establish runtime acceptance. Unsupported or
+ambiguous server errors remain inconclusive; no grants may be added to force a
+control to pass. Custody/environment/signing prerequisites remain with HOME-66.
+
 The offline oracle reports surviving sessions separately from rejection of old
 Basic credentials. It flags usability after declared session expiry and requires
 observation through expiry plus measured clock skew for a complete record. A

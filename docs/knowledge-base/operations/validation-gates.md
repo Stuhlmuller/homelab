@@ -20,6 +20,11 @@ adds 54 unexecuted direct-API/session recipes and offline evidence oracles,
 without a credential reader or network adapter. Existing issuer hard stops remain;
 capability observations cannot grant authority acceptance. Custody, provisioning,
 checkpoint controls, session/expiry windows and verified teardown are unresolved.
+Session denials require independent positive access bracketing every observation
+within five seconds, fixed private target/request/route receipts and verified
+session-error attribution. Missing/failed/stale controls or route changes are
+inconclusive. These are offline receipt checks, not authenticated runtime evidence;
+the server adapter/error mapping remains absent and HOME-66 prerequisites stay open.
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
