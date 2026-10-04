@@ -37,9 +37,11 @@ instance key; do not rotate the SSM value without following an n8n-supported
   Secrets renders it into `CREDENTIALS_OVERWRITE_DATA`, so an intentionally
   blank `openAiApi` credential resolves to
   `http://litellm.ai.svc.cluster.local:4000/v1` without serializing the key in
-  a workflow. The active Bedrock workflow is not changed by this manifest;
-  migrate it with n8n's supported API/CLI and verify its Langfuse generation
-  before removing its AWS credential.
+  a workflow. The `migrate-ai-workflow` init container idempotently replaces
+  the active workflow's fixed Bedrock node with that credential and the
+  `openrouter/free` model through n8n's supported CLI. It refuses an unexpected
+  node shape rather than changing another workflow. Verify a resulting Langfuse
+  generation before retiring the AWS credential.
 
 ## Access Contract
 
